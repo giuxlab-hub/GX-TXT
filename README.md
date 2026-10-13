@@ -1,6 +1,8 @@
 # GX-TXT
 
-GX-TXT is a modular scientific data acquisition, analysis and visualization framework. It combines Tcl/Tk desktop interfaces with GNU Octave and Python, canonical scientific Datasets, extensible modules and 2D/3D graphics.
+GX-TXT is a desktop scientific workbench for working with **experimental measurements from import to interpretation**. It brings oscilloscope CSV captures, spectra, tables, audio, images, documents and geometric data into persistent Sessions as canonical Datasets, preserving variable IDs, units, metadata and provenance.
+
+Within the same Session you can inspect and compare measurements, perform numerical, statistical and spectral analyses or curve fitting, run registered Python and GNU Octave scripts through the Script Bridge, and create scientific 2D/3D plots and interactive viewers. Derived results stay connected to their source Datasets, while independent modules extend the workflow through public CORE APIs.
 
 **Source version:** 0.9.8.10-dev-095  
 **License:** GNU GPL-3.0-or-later (see [LICENSE](LICENSE)). Third-party packages and assets retain their applicable licenses.
