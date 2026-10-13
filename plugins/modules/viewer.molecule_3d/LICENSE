@@ -1,0 +1,6 @@
+GNU GENERAL PUBLIC LICENSE
+Version 3, 29 June 2007
+
+This plugin's code is distributed under GPL-3.0-or-later. See the framework root LICENSE for the full text.
+
+The individual wwPDB Chemical Component Dictionary SDF data files under library/ are CC0-1.0 and are identified separately in library/manifest.tsv.

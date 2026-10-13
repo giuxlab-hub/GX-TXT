@@ -1,0 +1,37 @@
+{
+  "solver": "PySCF",
+  "solver_version": "2.14.0",
+  "input_file": "generate_density.py",
+  "input_sha256": "cd06478555abc8a7dca83d3292fa5108c7e0a1a4cbd75db3453fbcc9367150e9",
+  "calculation_date": "2026-10-01",
+  "water": {
+    "method": "molecular RHF/STO-3G",
+    "energy_hartree": -74.94588076098967,
+    "atoms": "O(0,0,0), H(0.758602,0,0.504284), H(-0.758602,0,0.504284) Angstrom",
+    "grid": [
+      48,
+      48,
+      48
+    ]
+  },
+  "diamond": {
+    "method": "periodic Gamma-point RHF/GTH-SZV/GTH-Pade",
+    "energy_hartree": -10.137229024352761,
+    "cell_a_angstrom": 3.56658,
+    "primitive_vectors": "(0,a/2,a/2),(a/2,0,a/2),(a/2,a/2,0)",
+    "atoms": "C at (3a/8,3a/8,3a/8) and (5a/8,5a/8,5a/8) Angstrom; aligns with COD 2101499 symmetry-expanded sites",
+    "grid": [
+      32,
+      32,
+      32
+    ]
+  },
+  "conversion_steps": "crystal_data.py reads original CUBE values in e/Bohr^3, converts origin/axes/embedded atom coordinates to Angstrom using 0.529177210903 Angstrom/Bohr, preserves scalar values without rescaling, and writes derived VTI. CIF expansion writes derived VTP. Original files remain unchanged.",
+  "output_rights": "CC0-1.0 dedication by GX-TXT Task 006 authors",
+  "files": {
+    "water_pyscf.log": "4a9cc64cf9482c4eeb8d061e25500fd2c74e6747843be160173cdc18f1d06b2c",
+    "water_density.cube": "e5ca6edfe90ed392fb2254debe6ad0f05b6abbdcc4d2aaa56fe461c51331feb3",
+    "diamond_pyscf.log": "6108d34ee2d8bfbaebb78723b3950f8a8524f1061f9bc8b55013e745339d80e3",
+    "diamond_density.cube": "db8ca3e941fe6c76f7dd8f4b6f0eb82bef51093758b55973f40ff0702274e316"
+  }
+}

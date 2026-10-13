@@ -1,0 +1,4 @@
+gxtxt.ir_waveform 3.6.2
+Target: GX-TXT Pipeline 0.9.8.09
+Module API: 1
+License: GPL-3.0-or-later

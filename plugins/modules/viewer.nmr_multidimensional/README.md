@@ -1,0 +1,7 @@
+# Multidimensional NMR Viewer
+
+Open a `spectrum.nmr_multidimensional` Dataset from a Session. The viewer keeps NMR semantics separate from the 1-D Spectrum Viewer. F1/F2/F3 controls select an acquired sample coordinate; the plane selector chooses the two displayed axes. The contour map shows positive blue and negative red contours. The upper and right traces show the selected 1-D slices (blue) and maximum projections (gray). A gold crosshair marks the exact selected sample; the readout reports its ppm coordinates and measured intensity. The peak table lists local positive maxima above the selected threshold.
+
+Use the contour threshold and level count to adjust the display. Click a peak region to move the crosshair, use the mouse wheel to zoom, drag with the right mouse button to pan, and use **Reset view** to restore full ppm ranges. The axes follow the NMR convention of descending ppm by default. Choose **Publish plane**, **Publish X profile**, or **Publish max projection** to make a canonical table Dataset with source-coordinate provenance. For a 3-D spectrum, max projection collapses the omitted axis and publishes the full 2-D result. **Save view** persists the Dataset, plane, coordinates, contour settings and bounds in the Session; reopening restores them.
+
+The source panel displays the original NMRPipe file identity, SHA-256, citation and rights as recorded at acquisition. A processed real NMRPipe spectrum is required; complex FID processing remains outside this viewer.

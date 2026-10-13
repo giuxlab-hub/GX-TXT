@@ -1,0 +1,6 @@
+SPDX-License-Identifier: GPL-3.0-or-later
+
+The executable plugin code and package documentation are licensed under the GNU General Public License, version 3 or (at your option) any later version.
+https://www.gnu.org/licenses/gpl-3.0.html
+
+No source geographic dataset is included in this plugin package. The separate Session Generator's derived data retain the source terms and attribution obligations documented in its reference/ directory.

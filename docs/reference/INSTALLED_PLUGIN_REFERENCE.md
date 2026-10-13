@@ -1,0 +1,663 @@
+# GX-TXT installed plugin/API reference
+
+Generated from installed descriptors. Normative contracts remain the Markdown files under `docs/api/`.
+
+## Dataset contracts
+- `application/sla` - Plugin-declared dataset contract.
+  - providers: 
+  - producers: 
+  - consumers: viewer.native_3d
+- `audio.source` - Canonical opaque audio source preserving the original source bytes. The source may be compressed, lossless, lossy, containerized PCM or explicitly described headerless raw PCM; decoding to scientific sample variables is a downstream operation.
+  - providers: acq.audio
+  - producers: acq.audio
+  - consumers: 
+- `audio.waveform` - Canonical opaque binary linear-PCM audio waveform.
+  - providers: acq.wav
+  - producers: acq.wav
+  - consumers: analysis.audio_decode
+- `code.source` - Source-code specialization of document.text with code.language detection metadata. A language hint does not imply syntactic validity or permission to execute the payload.
+  - providers: acq.text_document
+  - producers: acq.text_document
+  - consumers: 
+- `curve_family.table` - Canonical family-of-curves table.
+  - providers: GX-TXT core
+  - producers: dataset.extract, viewer.curve_digitizer
+  - consumers: dataset.extract, curvefit.family_global, model.spice_build_validate, analysis.dataset_expression, analysis.statistics.descriptive, analysis.statistics.grouped, analysis.statistics.correlation, analysis.statistics.distribution, analysis.statistics.outliers, analysis.statistics.weighted, analysis.statistics.tests, analysis.statistics.anova, analysis.regression, analysis.statistics.pca, analysis.statistics.resampling, plot.dataset
+- `document.pdf` - Verified preserved PDF document represented as a canonical opaque binary Dataset. Consumers may rely on valid preserved PDF bytes, stable Dataset identity, provenance/integrity, PDF format identity and page count; text layers, raster pages and optional document metadata are not implied.
+  - providers: acq.pdf_document
+  - producers: acq.pdf_document, viewer.pdf_ocr
+  - consumers: viewer.pdf_ocr, viewer.table_extractor, viewer.document_extractors
+- `document.text` - UTF-8 plain-text document Dataset.
+  - providers: acq.text_document, viewer.pdf_ocr, viewer.document_extractors
+  - producers: acq.text_document, viewer.pdf_ocr, viewer.document_extractors
+  - consumers: 
+- `geometry.mesh` - Opaque source-preserving serialized mesh or unstructured grid. The Dataset format selects the reader; geometry/field arrays are not tabular Dataset variables. Validation scope and format metadata are explicit.
+  - providers: acq.geometry_3d
+  - producers: acq.geometry_3d
+  - consumers: viewer.native_3d
+- `image.raster` - Canonical opaque binary raster image dataset. Pixel decoding and image analysis are consumer responsibilities.
+  - providers: acq.image_binary
+  - producers: acq.image_binary, viewer.pdf_ocr
+  - consumers: viewer.curve_digitizer, viewer.curve_trace_assistant, viewer.table_extractor, viewer.document_extractors
+- `model.cad` - Opaque source-preserving CAD exchange model. CAD entities and embedded units remain in the original payload; no tessellation or geometry decoding is implied by acquisition.
+  - providers: acq.geometry_3d
+  - producers: acq.geometry_3d
+  - consumers: viewer.native_3d
+- `model/obj` - Plugin-declared dataset contract.
+  - providers: 
+  - producers: 
+  - consumers: viewer.native_3d
+- `model/step` - Plugin-declared dataset contract.
+  - providers: 
+  - producers: 
+  - consumers: viewer.native_3d
+- `raw.audio` - Plugin-declared dataset contract.
+  - providers: 
+  - producers: 
+  - consumers: acq.audio
+- `raw.audio.wav` - Plugin-declared dataset contract.
+  - providers: 
+  - producers: 
+  - consumers: acq.wav
+- `raw.csv` - Raw CSV acquisition source.
+  - providers: GX-TXT core
+  - producers: 
+  - consumers: acq.rigol_csv, acq.generic_csv
+- `raw.geometry` - Plugin-declared dataset contract.
+  - providers: 
+  - producers: 
+  - consumers: acq.geometry_3d
+- `raw.image` - Plugin-declared dataset contract.
+  - providers: 
+  - producers: 
+  - consumers: acq.image_binary
+- `raw.pdf` - Plugin-declared dataset contract.
+  - providers: 
+  - producers: 
+  - consumers: acq.pdf_document
+- `raw.tektronix_current_log` - Plugin-declared dataset contract.
+  - providers: 
+  - producers: 
+  - consumers: acq.tektronix_current_log
+- `raw.text` - Plugin-declared dataset contract.
+  - providers: 
+  - producers: 
+  - consumers: acq.text_document
+- `raw.xas` - Plugin-declared dataset contract.
+  - providers: 
+  - producers: 
+  - consumers: acq.xas
+- `spectrum.family` - Plugin-declared dataset contract.
+  - providers: GX-TXT core
+  - producers: acq.xas, analysis.spectroscopy.uvvis_exploration, analysis.xas.normalize
+  - consumers: analysis.spectroscopy.uvvis, analysis.spectroscopy.uvvis_exploration, analysis.xas.normalize, plot.dataset, viewer.xas_spectra
+- `spectrum.scientific` - Generic one-dimensional scientific spectrum with arbitrary X and Y quantities/units.
+  - providers: GX-TXT core
+  - producers: acq.xas, analysis.spectroscopy.ir, analysis.spectroscopy.uvvis_exploration, analysis.xas.normalize
+  - consumers: analysis.spectroscopy.ir, analysis.spectroscopy.uvvis, analysis.spectroscopy.uvvis_exploration, analysis.xas.normalize, viewer.spectral_library, viewer.xas_spectra
+- `spectrum.table` - Canonical frequency-domain spectrum table (independent variable: frequency).
+  - providers: GX-TXT core
+  - producers: dataset.extract, analysis.fft_spectrum, analysis.cross_spectral_transfer, analysis.welch_spectrum, analysis.fractional_octave_spectrum, analysis.envelope_spectrum
+  - consumers: dataset.extract, analysis.fractional_octave_spectrum, analysis.harmonic_analysis, analysis.spectral_features, analysis.dataset_expression, analysis.statistics.descriptive, analysis.statistics.correlation, analysis.statistics.distribution, analysis.statistics.outliers, analysis.statistics.weighted, analysis.statistics.tests, analysis.statistics.anova, analysis.regression, analysis.statistics.pca, analysis.statistics.resampling, plot.dataset
+- `table.generic` - Generic canonical tabular dataset.
+  - providers: GX-TXT core
+  - producers: acq.generic_csv, dataset.extract, analysis.time_dependent_fft, analysis.harmonic_analysis, analysis.cepstrum, analysis.spectroscopy.ir, analysis.spectroscopy.uvvis, analysis.spectroscopy.uvvis_exploration, analysis.spectral_features, analysis.xas.normalize, analysis.dataset_expression, analysis.statistics.descriptive, analysis.statistics.grouped, analysis.statistics.correlation, analysis.statistics.distribution, analysis.statistics.outliers, analysis.statistics.weighted, analysis.statistics.tests, analysis.statistics.anova, analysis.regression, analysis.statistics.pca, analysis.statistics.resampling, demo.numeric.interpolation, demo.numeric.smoothing, demo.numeric.calculus, demo.numeric.regression, demo.numeric.statistics, demo.numeric.nonlinear_fit, demo.numeric.peaks, demo.numeric.uncertainty, demo.numeric.root_finding, demo.numeric.minimization, demo.environmental.levoglucosan_campaign, viewer.curve_digitizer, viewer.table_extractor, viewer.document_extractors
+  - consumers: dataset.extract, analysis.time_dependent_fft, analysis.cross_spectral_transfer, analysis.welch_spectrum, analysis.fractional_octave_spectrum, analysis.envelope_spectrum, analysis.spectroscopy.ir, analysis.dataset_expression, analysis.statistics.descriptive, analysis.statistics.grouped, analysis.statistics.correlation, analysis.statistics.distribution, analysis.statistics.outliers, analysis.statistics.weighted, analysis.statistics.tests, analysis.statistics.anova, analysis.regression, analysis.statistics.pca, analysis.statistics.resampling, demo.numeric.interpolation, demo.numeric.smoothing, demo.numeric.calculus, demo.numeric.regression, demo.numeric.statistics, demo.numeric.nonlinear_fit, demo.numeric.peaks, plot.dataset, demo.numeric.uncertainty, demo.numeric.root_finding, demo.numeric.minimization, demo.environmental.levoglucosan_campaign, demo.visualization.surface3d, demo.geospatial.ticino_valley_3d, viewer.spectral_library, analysis.definition_demo
+- `timeseries.table` - Canonical time-series table.
+  - providers: GX-TXT core
+  - producers: acq.rigol_csv, acq.tektronix_current_log, sequence.table_join, dataset.extract, analysis.audio_decode, analysis.envelope_spectrum
+  - consumers: gxtxt.ir_waveform, gxtxt.ir_identify, sequence.table_join, dataset.extract, analysis.fft_spectrum, analysis.time_dependent_fft, analysis.cross_spectral_transfer, analysis.welch_spectrum, analysis.envelope_spectrum, analysis.cepstrum, analysis.dataset_expression, analysis.statistics.descriptive, analysis.statistics.grouped, analysis.statistics.correlation, analysis.statistics.distribution, analysis.statistics.outliers, analysis.statistics.weighted, analysis.statistics.tests, analysis.statistics.anova, analysis.regression, analysis.statistics.pca, analysis.statistics.resampling, demo.numeric.nonlinear_fit, plot.dataset
+
+## Modules
+- `acq.rigol_csv` - Rigol oscilloscope CSV import
+  - inputs: raw.csv
+  - outputs: timeseries.table raw/*;channels/*;metadata/datasets.ini
+  - bindings: 
+  - documentation: valid / MANUAL.md
+- `acq.generic_csv` - Generic CSV dataset import
+  - inputs: raw.csv
+  - outputs: table.generic raw/*;datasets/*.csv;metadata/datasets.ini
+  - bindings: 
+  - documentation: valid / README.md
+- `acq.wav` - WAV/PCM raw audio import
+  - inputs: raw.audio.wav
+  - outputs: audio.waveform datasets/*;metadata/datasets.ini
+  - bindings: 
+  - documentation: valid / README.md
+- `acq.audio` - Audio file import
+  - inputs: raw.audio
+  - outputs: audio.source datasets/*;metadata/datasets.ini;metadata/datasets/*
+  - bindings: 
+  - documentation: valid / AUDIO_IMPORTER_GUIDE.md
+- `acq.xas` - XAS spectra import
+  - inputs: raw.xas
+  - outputs: spectrum.scientific;spectrum.family raw/*;datasets/*;metadata/datasets.ini
+  - bindings: 
+  - documentation: invalid / MANUAL.md
+- `gxtxt.ir_waveform` - IR waveform / MARK-SPACE analysis
+  - inputs: timeseries.table
+  - outputs:  eventi_mark_space.csv;burst.csv;duration_clusters_comparison.csv;analog_chain_comparison.csv;analog_chain_timeseries.csv;ir_analysis_manifest.ini;riepilogo_VIR.txt;render_cache.mat
+  - bindings: signal, time, compare1, compare2, compare3, compare4, compare5, compare6, compare7
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: valid / README.md
+- `gxtxt.ir_identify` - IR protocol identification
+  - inputs: timeseries.table
+  - outputs:  protocol_identification.txt;protocol_candidates.csv;protocol_timing.csv;protocol_frame.csv;render_cache.mat
+  - bindings: signal
+  - documentation: invalid / README.md
+- `acq.tektronix_current_log` - Tektronix current log import
+  - inputs: raw.tektronix_current_log
+  - outputs: timeseries.table raw/*;datasets/*.csv;metadata/datasets.ini
+  - bindings: 
+  - documentation: valid / README.md
+- `acq.image_binary` - Image importer
+  - inputs: raw.image
+  - outputs: image.raster datasets/*;metadata/datasets.ini;metadata/datasets/*
+  - bindings: 
+  - documentation: valid / README.md
+- `acq.pdf_document` - PDF Document Import
+  - inputs: raw.pdf
+  - outputs: document.pdf datasets/*;metadata/datasets.ini;metadata/datasets/*
+  - bindings: 
+  - documentation: valid / MANUAL.md
+- `acq.geometry_3d` - 3D Geometry Import
+  - inputs: raw.geometry
+  - outputs: geometry.mesh;model.cad datasets/*;metadata/datasets.ini;metadata/datasets/*
+  - bindings: 
+  - documentation: valid / MANUAL.md
+- `acq.text_document` - Text and Source Code Import
+  - inputs: raw.text
+  - outputs: document.text;code.source datasets/*;metadata/datasets.ini;metadata/datasets/*
+  - bindings: 
+  - documentation: valid / MANUAL.html
+- `sequence.table_join` - Sequential Table Join
+  - inputs: timeseries.table
+  - outputs: timeseries.table joined_sequence.csv;join_report.txt
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: valid / README.md
+- `dataset.extract` - Dataset Extract
+  - inputs: table.generic;timeseries.table;curve_family.table;spectrum.table
+  - outputs: table.generic;timeseries.table;curve_family.table;spectrum.table extract_report.txt;extract_provenance.ini
+  - bindings: trace_x, trace_y
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: valid / README.md
+- `analysis.audio_decode` - Audio decode
+  - inputs: audio.waveform
+  - outputs: timeseries.table decode_info.txt
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: valid / README.md
+- `curve.replicate_analysis` - Replicate Curve Analysis
+  - inputs: 
+  - outputs:  consensus_for_fitting.csv;uncertainty_profile.csv;replicate_statistics.csv;source_statistics.csv;replicate_analysis_summary.txt;render_cache.mat
+  - bindings: x, family, y, replicate
+  - documentation: invalid / README.md
+- `analysis.fft_spectrum` - FFT Spectrum & Error Analysis
+  - inputs: timeseries.table
+  - outputs: spectrum.table fft_metrics.ini;fft_report.txt
+  - bindings: independent, signal
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: valid / README.md
+- `curvefit.family_global` - Curve Family Fitting
+  - inputs: curve_family.table
+  - outputs:  fit_parameters.csv;fit_summary.txt;fit_predictions.csv;fit_metrics_by_family.csv;fit_metrics_by_domain.csv;fit_metrics_by_family_domain.csv;render_cache.mat
+  - bindings: x, family, y
+  - documentation: valid / README.md
+- `analysis.time_dependent_fft` - Time-Dependent FFT
+  - inputs: timeseries.table;table.generic
+  - outputs: table.generic time_dependent_fft_report.txt;plot_dataset_recipe.txt;window_plot_index.txt;split_export_index.txt;render_cache.mat
+  - bindings: time, signal
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: valid / MANUAL.md
+  - render cache API: 1
+- `analysis.cross_spectral_transfer` - Cross-Spectral & Transfer Function Analysis
+  - inputs: timeseries.table;table.generic
+  - outputs: spectrum.table cross_spectral_report.txt;automatic_graphs.ini
+  - bindings: time, input_signal, output_signal
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+  - render cache API: 1
+- `analysis.welch_spectrum` - Welch PSD & Averaged Spectrum
+  - inputs: timeseries.table;table.generic
+  - outputs: spectrum.table welch_spectrum_report.txt;render_cache.mat
+  - bindings: time, signal
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: valid / MANUAL.md
+  - render cache API: 1
+- `analysis.fractional_octave_spectrum` - Fractional-Octave Band Analysis
+  - inputs: spectrum.table;table.generic
+  - outputs: spectrum.table fractional_octave_report.txt;automatic_graphs.ini
+  - bindings: frequency, psd
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: valid / MANUAL.md
+- `analysis.envelope_spectrum` - Envelope Spectrum & Demodulation Analysis
+  - inputs: timeseries.table;table.generic
+  - outputs: spectrum.table;timeseries.table envelope_spectrum_report.txt;automatic_graphs.ini
+  - bindings: time, signal
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.harmonic_analysis` - Harmonic Analysis
+  - inputs: spectrum.table
+  - outputs: table.generic harmonic_analysis_metrics.ini;harmonic_analysis_report.txt;automatic_graphs.ini
+  - bindings: frequency, amplitude
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.cepstrum` - Cepstrum Analysis
+  - inputs: timeseries.table
+  - outputs: table.generic cepstrum_metrics.ini;cepstrum_report.txt;automatic_graphs.ini
+  - bindings: independent, signal
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.spectroscopy.ir` - IR Spectroscopy and Reference Matching
+  - inputs: spectrum.scientific;table.generic
+  - outputs: spectrum.scientific;table.generic ir_analysis_report.txt;01_ir_overlay.png;automatic_graphs.ini
+  - bindings: spectral_x, spectral_y
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / README.md
+- `analysis.spectroscopy.uvvis` - UV/Vis Spectral Family Quantitation
+  - inputs: spectrum.family;spectrum.scientific
+  - outputs: table.generic uvvis_report.md;01_family_overlay.png;02_calibration.png;03_residuals.png;automatic_graphs.ini
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary, blank, unknown
+  - documentation: invalid / MANUAL.md
+- `analysis.spectroscopy.uvvis_exploration` - UV/Vis Spectrum and Time-Series Exploration
+  - inputs: spectrum.scientific;spectrum.family
+  - outputs: table.generic;spectrum.scientific;spectrum.family uvvis_exploration_report.md;01_uvvis_exploration.png;render_cache.mat
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary, blank
+  - documentation: invalid / MANUAL.md
+- `analysis.spectral_features` - Spectral Features
+  - inputs: spectrum.table
+  - outputs: table.generic spectral_features_metrics.ini;spectral_features_report.txt;automatic_graphs.ini
+  - bindings: frequency, value
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `model.spice_build_validate` - SPICE Build and Validation
+  - inputs: curve_family.table
+  - outputs:  spice_model.lib;spice_testbench_x_sweep.cir;spice_testbench_family_sweep.cir;spice_testbench_validation.cir;ngspice_x_sweep.log;ngspice_family_sweep.log;ngspice_validation.log;ngspice_x_sweep.dat;ngspice_family_sweep.dat;ngspice_validation.dat;spice_predictions.csv;spice_validation_metrics.csv;spice_validation_metrics_by_family.csv;spice_validation_summary.txt;render_cache.mat
+  - bindings: x, family, y
+  - documentation: valid / README.md
+- `analysis.xas.normalize` - XAS normalization
+  - inputs: spectrum.scientific;spectrum.family
+  - outputs: spectrum.scientific;spectrum.family;table.generic xas_normalization_report.txt;xas_normalization_diagnostics.csv
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.dataset_expression` - Dataset Expression
+  - inputs: table.generic;timeseries.table;curve_family.table;spectrum.table
+  - outputs: table.generic expression_report.txt;expression_summary.ini;expression_definition.ini;automatic_graphs.ini
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.statistics.descriptive` - Descriptive Statistics
+  - inputs: table.generic;timeseries.table;curve_family.table;spectrum.table
+  - outputs: table.generic descriptive_statistics_report.txt;descriptive_statistics_summary.ini;descriptive_plot_request.ini;automatic_graphs.ini
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.statistics.grouped` - Grouped Statistics
+  - inputs: table.generic;timeseries.table;curve_family.table
+  - outputs: table.generic grouped_statistics_report.txt;grouped_statistics_summary.ini;automatic_graphs.ini
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.statistics.correlation` - Covariance and Correlation
+  - inputs: table.generic;timeseries.table;curve_family.table;spectrum.table
+  - outputs: table.generic correlation_report.txt;correlation_summary.ini;automatic_graphs.ini
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.statistics.distribution` - Empirical Distribution
+  - inputs: table.generic;timeseries.table;curve_family.table;spectrum.table
+  - outputs: table.generic distribution_report.txt;distribution_summary.ini;automatic_graphs.ini
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.statistics.outliers` - Outlier Flags
+  - inputs: table.generic;timeseries.table;curve_family.table;spectrum.table
+  - outputs: table.generic outliers_report.txt;outliers_summary.ini;automatic_graphs.ini
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.statistics.weighted` - Weighted Statistics
+  - inputs: table.generic;timeseries.table;curve_family.table;spectrum.table
+  - outputs: table.generic weighted_report.txt;weighted_summary.ini;automatic_graphs.ini
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.statistics.tests` - Hypothesis Tests
+  - inputs: table.generic;timeseries.table;curve_family.table;spectrum.table
+  - outputs: table.generic tests_report.txt;tests_summary.ini;automatic_graphs.ini
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.statistics.anova` - One-way ANOVA
+  - inputs: table.generic;timeseries.table;curve_family.table;spectrum.table
+  - outputs: table.generic anova_report.txt;anova_summary.ini;automatic_graphs.ini
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.regression` - Regression
+  - inputs: table.generic;timeseries.table;curve_family.table;spectrum.table
+  - outputs: table.generic regression_report.txt;regression_summary.ini;automatic_graphs.ini
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.statistics.pca` - Principal Component Analysis
+  - inputs: table.generic;timeseries.table;curve_family.table;spectrum.table
+  - outputs: table.generic pca_report.txt;pca_summary.ini;automatic_graphs.ini
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.statistics.resampling` - Resampling Inference
+  - inputs: table.generic;timeseries.table;curve_family.table;spectrum.table
+  - outputs: table.generic resampling_report.txt;resampling_summary.ini;automatic_graphs.ini
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `math.numeric` - Numerical service
+  - inputs: 
+  - outputs:  
+  - bindings: 
+  - documentation: valid / README.md
+- `demo.numeric.interpolation` - Numerical Interpolation Demo
+  - inputs: table.generic
+  - outputs: table.generic interpolation_metrics.ini;interpolation_report.txt;render_cache.mat
+  - bindings: x, y
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `demo.numeric.smoothing` - Numerical Smoothing Demo
+  - inputs: table.generic
+  - outputs: table.generic smoothing_metrics.ini;smoothing_report.txt;render_cache.mat
+  - bindings: x, measured, reference
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `demo.numeric.calculus` - Numerical Calculus Demo
+  - inputs: table.generic
+  - outputs: table.generic calculus_metrics.ini;calculus_report.txt;render_cache.mat
+  - bindings: x, function, derivative_reference, antiderivative_reference
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `demo.numeric.regression` - Numerical Regression Demo
+  - inputs: table.generic
+  - outputs: table.generic regression_metrics.ini;regression_report.txt;render_cache.mat
+  - bindings: x, measured, reference, sigma, weight
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `demo.numeric.statistics` - Numerical Statistics Demo
+  - inputs: table.generic
+  - outputs: table.generic statistics_metrics.ini;statistics_report.txt;render_cache.mat
+  - bindings: value, weight
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `demo.numeric.nonlinear_fit` - Nonlinear fit integration demo
+  - inputs: table.generic;timeseries.table
+  - outputs: table.generic fit_report.txt;fit_metrics.ini;render_cache.mat
+  - bindings: x, y
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `demo.numeric.peaks` - Numerical Peak Detection Demo
+  - inputs: table.generic
+  - outputs: table.generic peak_detection_metrics.ini;peak_detection_report.txt;render_cache.mat
+  - bindings: x, signal
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `library.spectroscopy.ir.reference` - IR Reference Library Type Provider
+  - inputs: 
+  - outputs:  
+  - bindings: 
+  - documentation: valid / README.md
+- `plot.dataset` - Scientific Dataset Plot
+  - inputs: table.generic;timeseries.table;curve_family.table;spectrum.table;spectrum.family
+  - outputs:  render_cache.mat;plot_summary.txt
+  - bindings: x, y, z, family, color
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: valid / README.md
+  - render cache API: 1
+- `demo.numeric.uncertainty` - Numerical Uncertainty Demo
+  - inputs: table.generic
+  - outputs: table.generic uncertainty_metrics.ini;uncertainty_report.txt;render_cache.mat
+  - bindings: value, aux
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `demo.numeric.root_finding` - Numerical Root Finding Demo
+  - inputs: table.generic
+  - outputs: table.generic root_finding_metrics.ini;root_finding_report.txt
+  - bindings: x, function
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `demo.numeric.minimization` - Numerical 1D Minimization Demo
+  - inputs: table.generic
+  - outputs: table.generic minimization_metrics.ini;minimization_report.txt
+  - bindings: x, function
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `analysis.octave_script` - Octave Script
+  - inputs: 
+  - outputs:  octave_script_run_report.txt;executed_script.m
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: valid / MANUAL.md
+- `analysis.python_script` - Python Script
+  - inputs:
+  - outputs: python_script_run_report.txt;executed_script.py
+  - bindings:
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: valid / MANUAL.md
+- `demo.environmental.levoglucosan_campaign` - Sardinia Levoglucosan Campaign Demo
+  - inputs: table.generic
+  - outputs: table.generic levoglucosan_campaign_report.txt;levoglucosan_campaign_metrics.ini;automatic_graphs.ini;analysis_outputs.ini
+  - bindings: day_of_year, month, site_id, replicate_id, levoglucosan, fire_event_id, fire_exposure, fire_distance, latitude, longitude, elevation, below_lod, below_loq
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+- `demo.visualization.surface3d` - 3D Surface Visualization Demo
+  - inputs: table.generic
+  - outputs:  surface3d_report.txt;surface3d_metrics.ini;render_cache.mat
+  - bindings: x, y, z
+  - analysis source map API: 1
+  - default source IDs: primary
+  - documentation: invalid / MANUAL.md
+  - render cache API: 1
+- `demo.geospatial.ticino_valley_3d` - Ticino Valley 3D Cartography Demo
+  - inputs: table.generic
+  - outputs:  ticino_valley_report.txt;ticino_valley_metrics.ini;render_cache.mat
+  - bindings: 
+  - analysis source map API: 1
+  - default source IDs: primary, river, settlements, hydraulic
+  - documentation: invalid / MANUAL.md
+  - render cache API: 1
+- `viewer.curve_digitizer` - Curve Digitalizer
+  - inputs: image.raster
+  - outputs: table.generic;curve_family.table 
+  - bindings: 
+  - documentation: valid / MANUAL.md
+- `viewer.curve_trace_assistant` - Curve Trace Assistant
+  - inputs: image.raster
+  - outputs:  
+  - bindings: 
+  - documentation: invalid / MANUAL.md
+- `viewer.pdf_ocr` - PDF OCR Viewer
+  - inputs: document.pdf
+  - outputs: image.raster;document.text;document.pdf 
+  - bindings: 
+  - documentation: valid / MANUAL.md
+- `viewer.spectral_library` - Scientific Spectral Library Viewer
+  - inputs: spectrum.scientific;table.generic
+  - outputs:  
+  - bindings: 
+  - documentation: invalid / README.md
+- `viewer.table_extractor` - Table Extractor
+  - inputs: image.raster;document.pdf
+  - outputs: table.generic 
+  - bindings: 
+  - documentation: valid / MANUAL.md
+- `viewer.document_extractors` - Document Extraction Viewers
+  - inputs: image.raster;document.pdf
+  - outputs: document.text;table.generic 
+  - bindings: 
+  - documentation: invalid / README.md
+- `analysis.digitization_quality` - Digitization Quality
+  - inputs: 
+  - outputs:  
+  - bindings: 
+  - documentation: invalid / MANUAL.md
+- `viewer.native_3d` - Native 3D Viewer
+  - inputs: geometry.mesh;model.cad;application/sla;model/obj;model/step
+  - outputs:  
+  - bindings: 
+  - documentation: valid / MANUAL.md
+- `viewer.xas_spectra` - XAS spectra viewer
+  - inputs: spectrum.scientific;spectrum.family
+  - outputs:  
+  - bindings: 
+  - documentation: invalid / MANUAL.md
+- `analysis.definition_demo` - Scientific Analysis API Demo
+  - inputs: table.generic
+  - outputs:  analysis_result.csv;analysis_summary.txt;01_analysis_definition_demo.png;render_cache.mat
+  - bindings: 
+  - documentation: valid / README.md
+  - render cache API: 1
+- `export.session_html` - Session HTML Export
+  - inputs: 
+  - outputs:  index.html
+  - bindings: 
+  - documentation: valid / SESSION_HTML_EXPORT.md
+
+## Scientific Analysis Definitions
+- `example.ir_chain_metrics_v1` - IR analog-chain metrics API example
+  - kind: tabular
+  - capabilities: expression;compare;normalize;plot;export
+  - documentation: valid / README.md
+
+## Mathematical Models
+- `triode.koren_v1` - Koren triode model
+  - kind: triode
+  - documentation: valid / README.md
+
+## Instruments
+- `instrument.generic` - Generic laboratory instrument
+  - documentation: valid / README.md
+- `instrument.oscilloscope` - Oscilloscope
+  - documentation: valid / README.md
+
+## Documentation Registry
+- `analysis_definition:example.ir_chain_metrics_v1`: valid - README.md
+- `instrument:instrument.generic`: valid - README.md
+- `instrument:instrument.oscilloscope`: valid - README.md
+- `model:triode.koren_v1`: valid - README.md
+- `module:acq.audio`: valid - AUDIO_IMPORTER_GUIDE.md
+- `module:acq.generic_csv`: valid - README.md
+- `module:acq.geometry_3d`: valid - MANUAL.md
+- `module:acq.image_binary`: valid - README.md
+- `module:acq.pdf_document`: valid - MANUAL.md
+- `module:acq.rigol_csv`: valid - MANUAL.md
+- `module:acq.tektronix_current_log`: valid - README.md
+- `module:acq.text_document`: valid - MANUAL.html
+- `module:acq.wav`: valid - README.md
+- `module:acq.xas`: invalid - MANUAL.md
+- `module:analysis.audio_decode`: valid - README.md
+- `module:analysis.cepstrum`: invalid - MANUAL.md
+- `module:analysis.cross_spectral_transfer`: invalid - MANUAL.md
+- `module:analysis.dataset_expression`: invalid - MANUAL.md
+- `module:analysis.definition_demo`: valid - README.md
+- `module:analysis.digitization_quality`: invalid - MANUAL.md
+- `module:analysis.envelope_spectrum`: invalid - MANUAL.md
+- `module:analysis.fft_spectrum`: valid - README.md
+- `module:analysis.fractional_octave_spectrum`: valid - MANUAL.md
+- `module:analysis.harmonic_analysis`: invalid - MANUAL.md
+- `module:analysis.octave_script`: valid - MANUAL.md
+- `module:analysis.python_script`: valid - MANUAL.md
+- `module:analysis.regression`: invalid - MANUAL.md
+- `module:analysis.spectral_features`: invalid - MANUAL.md
+- `module:analysis.spectroscopy.ir`: invalid - README.md
+- `module:analysis.spectroscopy.uvvis`: invalid - MANUAL.md
+- `module:analysis.spectroscopy.uvvis_exploration`: invalid - MANUAL.md
+- `module:analysis.statistics.anova`: invalid - MANUAL.md
+- `module:analysis.statistics.correlation`: invalid - MANUAL.md
+- `module:analysis.statistics.descriptive`: invalid - MANUAL.md
+- `module:analysis.statistics.distribution`: invalid - MANUAL.md
+- `module:analysis.statistics.grouped`: invalid - MANUAL.md
+- `module:analysis.statistics.outliers`: invalid - MANUAL.md
+- `module:analysis.statistics.pca`: invalid - MANUAL.md
+- `module:analysis.statistics.resampling`: invalid - MANUAL.md
+- `module:analysis.statistics.tests`: invalid - MANUAL.md
+- `module:analysis.statistics.weighted`: invalid - MANUAL.md
+- `module:analysis.time_dependent_fft`: valid - MANUAL.md
+- `module:analysis.welch_spectrum`: valid - MANUAL.md
+- `module:analysis.xas.normalize`: invalid - MANUAL.md
+- `module:curve.replicate_analysis`: invalid - README.md
+- `module:curvefit.family_global`: valid - README.md
+- `module:dataset.extract`: valid - README.md
+- `module:demo.environmental.levoglucosan_campaign`: invalid - MANUAL.md
+- `module:demo.geospatial.ticino_valley_3d`: invalid - MANUAL.md
+- `module:demo.numeric.calculus`: invalid - MANUAL.md
+- `module:demo.numeric.interpolation`: invalid - MANUAL.md
+- `module:demo.numeric.minimization`: invalid - MANUAL.md
+- `module:demo.numeric.nonlinear_fit`: invalid - MANUAL.md
+- `module:demo.numeric.peaks`: invalid - MANUAL.md
+- `module:demo.numeric.regression`: invalid - MANUAL.md
+- `module:demo.numeric.root_finding`: invalid - MANUAL.md
+- `module:demo.numeric.smoothing`: invalid - MANUAL.md
+- `module:demo.numeric.statistics`: invalid - MANUAL.md
+- `module:demo.numeric.uncertainty`: invalid - MANUAL.md
+- `module:demo.visualization.surface3d`: invalid - MANUAL.md
+- `module:export.session_html`: valid - SESSION_HTML_EXPORT.md
+- `module:gxtxt.ir_identify`: invalid - README.md
+- `module:gxtxt.ir_waveform`: valid - README.md
+- `module:library.spectroscopy.ir.reference`: valid - README.md
+- `module:math.numeric`: valid - README.md
+- `module:model.spice_build_validate`: valid - README.md
+- `module:plot.dataset`: valid - README.md
+- `module:sequence.table_join`: valid - README.md
+- `module:viewer.curve_digitizer`: valid - MANUAL.md
+- `module:viewer.curve_trace_assistant`: invalid - MANUAL.md
+- `module:viewer.document_extractors`: invalid - README.md
+- `module:viewer.native_3d`: valid - MANUAL.md
+- `module:viewer.pdf_ocr`: valid - MANUAL.md
+- `module:viewer.spectral_library`: invalid - README.md
+- `module:viewer.table_extractor`: valid - MANUAL.md
+- `module:viewer.xas_spectra`: invalid - MANUAL.md

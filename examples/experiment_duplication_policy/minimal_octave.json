@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "id": "example.policy.octave.minimal",
+  "name": "Experiment Policy octave minimal",
+  "description": "Public capability and policy author example",
+  "version": "1.0.0",
+  "group": "Examples / Scripting",
+  "license": "GPL-3.0-or-later",
+  "profile": "A",
+  "language": "Octave",
+  "source": "policy_author.m",
+  "sources": [
+    {
+      "id": "primary",
+      "required": true
+    }
+  ],
+  "fields": [
+    {
+      "id": "gain",
+      "type": "number",
+      "default": "2"
+    }
+  ],
+  "outputs": {
+    "files": [
+      "result.txt"
+    ]
+  },
+  "required_apis": [
+    "EXPERIMENT_DUPLICATION_POLICY_API_v1@1",
+    "SESSION_EXPERIMENT_API_v1@1",
+    "CANONICAL_DATASET_API_v2@2"
+  ]
+}

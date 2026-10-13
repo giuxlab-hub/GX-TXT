@@ -1,0 +1,192 @@
+GX-TXT Variables — technical guide
+
+01. Dataset and Variable identity
+A Dataset is one canonical scientific or media resource registered in a Session.
+A Variable is a logical quantity within that Dataset. A table may contain time,
+voltage and a textual sample name. A mesh may have no table Variables at all.
+Always resolve a Variable within its Dataset; a column number alone is not an
+identity. Preview and read-only consultation do not publish derived Datasets.
+
+02. Stable identifiers
+Dataset IDs and Variable IDs are stable references used by CORE APIs, source
+maps and saved consumers. Renaming a canonical Variable or changing its display
+label does not give it a new Variable ID. The same Variable ID in another Dataset
+is a different reference. Use supported rename APIs to update Dataset references;
+do not rename payload files or edit the registry by hand.
+
+03. RAW provenance and canonical schema
+RAW preserves source evidence: source file, integrity hash, original header and
+source position. The canonical schema describes what GX-TXT exposes to consumers.
+A source-preserving binary Dataset can have domain metadata without table columns.
+Changing a schema declaration does not rewrite RAW. Reference-mode RAW may become
+unavailable when an external source moves; use Verify RAW source to diagnose it.
+
+04. Headers, names, labels and positions
+Original header is source text. RAW/source column is the original one-based input
+position. Canonical name is the editable API-facing name; canonical position is
+its current place among enabled columns. Display label is presentation text.
+Names must be valid and unique among enabled variables; labels need not be used
+as source-map keys. Never infer a physical quantity from a decorative label.
+
+05. Use and disabled variables
+Use controls whether a variable is exposed in the canonical table. Disabling a
+CSV variable can rewrite the exposed columns through the reversible schema-source
+snapshot. Its stable ID and source metadata remain preserved. A disabled variable
+is not a zero-valued signal and is not a request to delete RAW evidence. Consumers
+that require it must be rebound or the variable enabled again.
+
+06. Editing and Save Schema
+Edit fields in Variables, then press the Save Schema icon above the navigator.
+CORE validates names, semantic fields, units, conversion formulas and dimensional
+relationships before accepting changes. The combined v3 schema API makes these
+changes transactionally and restores payload/registry/Manifest on failure.
+Metadata-only changes avoid a scientific rewrite. CSV name/Use changes can alter
+the canonical table layout. Existing source fingerprints may become stale after
+scientific schema changes; reopen affected views or explicitly rebind consumers.
+
+07. Semantic Roles
+A role describes scientific meaning, such as time, frequency or voltage. It is
+separate from a unit and from the numeric representation. CORE and enabled plugins
+supply suggestions; custom role IDs are accepted. Auto inference uses elapsed-time
+kind, known name aliases and unambiguous unit hints. Semantic source records user,
+importer, plugin, inferred or default, with a reason. Explicit user assignments
+survive ordinary inference. A missing plugin does not erase its saved role ID.
+
+08. Meaning versus labels
+Changing Display label to Temperature does not calibrate voltage into temperature.
+Changing Semantic role declares interpretation; it does not perform measurement
+conversion. Check provenance and instrument calibration before assigning meaning.
+An explicit data transformation must use the existing numerical/Transform services
+and, when required, deliberate publication of a new Dataset.
+
+09. Unit Registry and dimensions
+The Unit Registry resolves known units and compatible dimensional conversions.
+For example, seconds and milliseconds share a dimension; seconds and volts do not.
+A consumer must request a conversion explicitly and reject incompatible dimensions.
+Unit strings do not authorize geometric conversion or supply missing calibration.
+A mesh with undeclared units is displayed in raw coordinates.
+
+10. Declared, canonical and display units
+Unit describes the stored/source quantity. Optional Canonical unit plus To canonical
+and From canonical define an explicit reversible relation. Both formulas are
+required. x is the input; supported syntax includes numbers, arithmetic, powers,
+parentheses and log/log10/exp/sqrt. Example: custom_activity to mol/L uses x*1e-3
+and x*1e3. These declarations do not themselves rewrite RAW or canonical values.
+Consumers apply them when supported and requested. A display unit changes the
+presentation through a compatible conversion, not the authoritative source rows.
+
+11. Unknown and opaque units
+An unknown unit can be preserved and compared with itself. CORE must not invent
+conversion factors for opaque quantities such as context-dependent ppm or pH.
+A label, acquisition filename or unit spelling cannot establish concentration,
+chemical reference, acoustic pressure or an instrument calibration. Supply an
+explicit valid conversion or retain the original units with a clear diagnostic.
+
+12. Value Kind
+number means numeric quantity; text means textual values; elapsed_time means a
+duration represented numerically for calculation. Value kind governs parsing and
+interpretation, not Dataset contract. With value_format=hms, HH:MM:SS is normalized
+to seconds. A declared s/min/h source unit does not rescale that normalized HMS
+value a second time. Temporal fields apply to enabled elapsed_time variables.
+
+13. Data Type (dtype)
+dtype describes an element's storage/logical type, for example float32, float64 or
+string. Value kind describes how to interpret it. A duration may be float64 and
+elapsed_time; a measured signal may be float64 and number. Declaring dtype does
+not implement an arbitrary payload cast. Providers validate supported types and
+shapes; incompatible declarations produce diagnostics rather than fabricated data.
+
+14. Decimal separators and normalization
+Source decimal selects dot or comma for parsing serialized numbers. Internal
+numeric values use the dot convention. It is independent of the CSV delimiter:
+a comma decimal in a comma-delimited file needs correct quoting or a different
+delimiter. Changing source formatting metadata is not scientific scaling. Inspect
+canonical table pages to verify parsed values before analysis.
+
+15. Temporal references
+Time reference is elapsed or absolute; Time origin records the reference origin.
+Duration units and origin are distinct. Temporal Sets resolve intervals using an
+explicit temporal Variable and its validated schema. An origin declaration does
+not recover unknown timestamps or change sample ordering. Preserve the original
+clock reference and sampling provenance; do not infer a timezone from a label.
+
+16. Schema v3 dimensions
+rank is the number of dimensions (zero is a scalar). shape lists sizes in storage
+order, separated by semicolons. dimension_ids names the corresponding logical
+dimensions. Each list must have rank entries. coordinate_variable_ids links stable
+coordinate Variables. A rank-two array is not automatically a time series; examine
+its dimensions and coordinate relationships before choosing a plane or axis.
+
+17. Coordinate roles and axes
+coordinate_role is data, coordinate or auxiliary. axis_kind is explicit, uniform
+or none. Explicit axes carry values. A uniform axis declares origin, nonzero step
+and nonnegative count; CORE generates only the requested coordinate chunk as
+origin + index*step. An absent axis does not justify assigning physical units or
+inventing coordinate values. Index positions must be labeled as indices.
+
+18. Components and groups
+component_ids links Variables forming a vector/component set. group_id identifies
+a logical group. These are stable schema relationships, not instructions to flatten
+or reorder a multidimensional payload. Component meaning and dimensionality must
+come from the producer/schema. Private provider locators remain implementation
+details and must never replace public Variable IDs in scripts.
+
+19. Dataset contract and Variable kind
+Contract describes the Dataset as a whole: table.generic, timeseries.table,
+spectrum.family, geometry.mesh or document.pdf, for example. Value kind describes
+one Variable. A scientific table can contain text labels and numeric quantities.
+Changing a text column to number does not change the contract or validate all of
+its values. Opaque geometry and media contracts need their corresponding readers.
+
+20. Source maps and bindings
+Module source maps bind a Dataset ID plus Variable IDs to declared input roles.
+This survives canonical label/name changes when consumers follow stable IDs.
+Choose an explicit source and variable binding; unrelated module selection must
+not determine which Dataset opens. Source SHA and scientific schema fingerprints
+identify revisions. Missing or changed sources require deliberate re-resolution.
+
+21. Scientific plotting
+Select X and Y by scientific coordinate relationships or explicit choice. Never
+assume that the first two numeric columns are an XY pair. Curve Source preserves
+original ordering, source-row identities and gaps. Its bounded display reduction
+retains selected original points; it is a visual proxy, not resampling or a new
+Dataset. Table Stream pages expose canonical values independently of the proxy.
+Family member filters must be explicit. Multidimensional arrays require valid
+slices/planes rather than pretending their flattened storage is ordinary XY data.
+
+22. Metadata, lineage and traceability
+Structured Metadata holds namespaced public fields. Private Metadata separately
+holds ownership/framework state and plugin-private fields; the public metadata
+editor cannot overwrite reserved keys. Notes use UTF-8 GX-Markup. Registry source
+Dataset IDs and provenance describe lineage; a content replacement preserves
+historical fields unless explicitly changed. Preview never rewrites these records.
+
+23. Worked examples
+Time/voltage CSV: keep original headers and IDs; name variables time and voltage;
+set time to elapsed_time with its genuine unit, and voltage to number/V. Confirm
+semantic roles, Save Schema, then select those IDs for the scientific plot. A blank
+or nonfinite measurement must appear as a gap, not a line to zero.
+
+Custom concentration: retain the measured numeric values and source calibration.
+Declare custom_activity -> mol/L with x*1e-3 and x*1e3 only when justified. Merely
+renaming the label Concentration is insufficient. Verify a known reference value.
+
+Two-dimensional NMR: retain rank two, its true shape and coordinate IDs. Select a
+plane according to stored dimensions and spectral coordinate units. Do not infer
+time from storage order or assume ppm is universally convertible to hertz.
+
+Disabled auxiliary column: clear Use, Save Schema, and verify the source header
+and stable ID remain. Re-enable through the schema-source recovery path when
+needed; do not reconstruct lost source values from a reduced plot.
+
+24. Troubleshooting
+Duplicate canonical name: choose unique names; labels can remain descriptive.
+Invalid conversion: provide both formulas and a canonical unit; check domains.
+No plot: confirm enabled numeric variables, compatible dimensions and explicit
+X/Y mapping. Text or arbitrary arrays cannot be plotted as conventional curves.
+Wrong decimal values: inspect delimiter, quoting, decimal separator and source.
+Stale view: refresh and reopen after a source/schema revision or Session change.
+Missing RAW: verify reference storage; preserve the canonical Dataset and report
+the missing external source. Do not silently substitute another file.
+Unsupported format: retain bytes and inspect capability diagnostics. Metadata-only
+inspection is not proof that a scientific or geometric renderer supports it.

@@ -1,0 +1,1 @@
+function [A,text]=gxtxt_audio_decode_diagnostics(A),fputs(A.bridge_in,"DIAG\n");fflush(A.bridge_in);p=gxtxt_table_stream_v3_parts(gxtxt_persistent_bridge_readline(A.bridge_out,A.bridge_pid,'Audio Decode'));text=gxtxt_table_stream_v3_decode(p{2});endfunction

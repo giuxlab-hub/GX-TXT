@@ -1,0 +1,5 @@
+bf8d0257666f1c3122726d5e4bcfb9290df197a9f5fd0c5b064394c833e53d0f  ./MANUAL.md
+54865e0eaba77dcb4e6fb56c35663bde8e39794e54329d6d01f35ed6803a76cb  ./SECTION_PROFILE_VIEWER_API_v1.md
+bc0821d21a037a87dc88e03f984bf9ac5222dae20db46549c5e3ef58cfc9bdfd  ./api/section_profile_viewer_api_v1.tcl
+b54e981119f8e979d20c2a5b5059e53bc7ba810bf0ab54a51c2fff719eb32aa7  ./module.ini
+6a05364bc4cd6fa730b45619ea82275ca56fe3731f4bd6360fbc15e9769ca684  ./plugin-package.ini

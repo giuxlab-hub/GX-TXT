@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "formats": [
+    {"id": "stl", "label": "STL triangle mesh", "extensions": [".stl"], "canonical_extension": ".stl", "contract": "geometry.mesh", "media_type": "application/sla", "parser": "stl", "viewer_use": "model"},
+    {"id": "obj", "label": "Wavefront OBJ geometry", "extensions": [".obj"], "canonical_extension": ".obj", "contract": "geometry.mesh", "media_type": "model/obj", "parser": "obj", "viewer_use": "model"},
+    {"id": "step", "label": "STEP CAD model", "extensions": [".step", ".stp"], "canonical_extension": ".step", "contract": "model.cad", "media_type": "model/step", "parser": "step", "viewer_use": "model"},
+    {"id": "vtu", "label": "VTK XML unstructured grid", "extensions": [".vtu"], "canonical_extension": ".vtu", "contract": "geometry.mesh", "media_type": "application/vnd.vtk", "parser": "vtu", "viewer_use": "scientific_layer"},
+    {"id": "vtp", "label": "VTK XML polydata", "extensions": [".vtp"], "canonical_extension": ".vtp", "contract": "geometry.mesh", "media_type": "application/vnd.vtk", "parser": "vtp", "viewer_use": "scientific_layer"},
+    {"id": "vti", "label": "VTK XML 3D scalar image", "extensions": [".vti"], "canonical_extension": ".vti", "contract": "field.scalar_3d", "media_type": "application/vnd.vtk", "parser": "vti", "viewer_use": "scientific_layer"}
+  ]
+}

@@ -1,0 +1,33 @@
+# operation_id|summary
+convert.representation|convert representation
+convert.renormalize|convert renormalize
+compose.cascade|compose cascade
+compose.deembed_left|compose deembed left
+compose.deembed_right|compose deembed right
+compose.deembed_both|compose deembed both
+compose.series|compose series
+compose.shunt|compose shunt
+metric.return_loss|metric return loss
+metric.insertion_loss|metric insertion loss
+metric.isolation|metric isolation
+metric.vswr|metric vswr
+metric.reflection|metric reflection
+metric.transmission|metric transmission
+metric.impedance|metric impedance
+metric.admittance|metric admittance
+metric.group_delay|metric group delay
+metric.phase_delay|metric phase delay
+quality.reciprocity|quality reciprocity
+quality.passivity|quality passivity
+quality.losslessness|quality losslessness
+quality.stability|quality stability
+sweep.describe|sweep describe
+sweep.mixed_mode|sweep mixed mode
+compose.port_extension|Shift a two-port reference plane by explicit port delays
+metric.transducer_gain|Compute two-port transducer power gain for declared source and load reflections
+sweep.convert|Convert each complex frequency-sweep network matrix
+sweep.renormalize|Renormalize each complex frequency-sweep S matrix
+sweep.group_delay|Differentiate a selected sweep transmission phase in frequency
+quality.causality|Check negative-time energy of a two-sided uniformly sampled response
+calibration.one_port_solve|Solve a three-term one-port error model from standards
+calibration.one_port_apply|Apply declared one-port error coefficients

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>GX-TXT Octave Script Manual</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">GX-TXT Octave Script Manual</h1>
+</header>
+<h1 id="gx-txt-octave-script-manual">GX-TXT Octave Script — Manual</h1>
+<p>SPDX-License-Identifier: GPL-3.0-or-later</p>
+<p><strong>Module:</strong> <code>analysis.octave_script</code>
+1.3.0<br />
+<strong>Editor API:</strong>
+<code>OCTAVE_SCRIPT_EDITOR_API_v1</code><br />
+<strong>Execution:</strong> CORE Script Registry and
+<code>OCTAVE_SCRIPT_BRIDGE_API_v1</code></p>
+<h2 id="purpose">Purpose</h2>
+<p>The Octave Script Workspace edits GNU Octave <code>.m</code> programs
+that run against registered GX-TXT public APIs. Script Registry is the
+authoritative executable identity. The Workspace, Script Library,
+Session Script Explorer and normal Octave Analysis selector see the same
+registered source.</p>
+<p>The bridge is not a sandbox. Scripts run as researcher-authored code
+with the current user’s local permissions. Use trusted source and review
+its required APIs and input parameters before execution.</p>
+<h2 id="create-and-run-a-session-script">Create and run a Session
+script</h2>
+<ol type="1">
+<li>Open a Session and enable the <strong>Octave Script</strong>
+module.</li>
+<li>Open <strong>Viewers → Octave Script Workspace</strong> and choose
+<strong>New</strong>.</li>
+<li>Choose <strong>Session</strong> scope, enter a stable Script ID and
+name, write the source, then choose <strong>Save</strong>.</li>
+<li>The saved script is immediately listed as
+<code>session:&lt;script_id&gt;</code> in Script Library, Session Script
+Explorer and the normal <code>analysis.octave_script</code>
+registered-script selector.</li>
+<li>In Analysis choose <code>source_mode=registered_script</code>,
+select the Session script, set any input aliases and parameters, then
+run.</li>
+<li>Save and reopen the Session to reuse the same identity and source. A
+run uses an immutable verified copy and records its source SHA-256 in
+execution provenance.</li>
+</ol>
+<p>Choose <strong>User</strong> scope for a reusable
+<code>user:&lt;script_id&gt;</code> Library script. A user script is
+separate from Session identity. Assign it to a Session through Script
+Library when it should become a Session input. Editing a user script
+never silently rewrites a Session copy.</p>
+<h2 id="edit-copy-and-remove">Edit, copy and remove</h2>
+<p>Selecting a registered script in the Workspace loads its current
+name, description and code. <strong>Save</strong> updates that exact
+registered identity and its ordinary revision and SHA-256. Metadata such
+as language, semantic version, required APIs and typed parameters
+remains under Script Registry authority. Concurrent edits are checked
+against the previously loaded SHA-256; reload before retrying a stale
+save.</p>
+<p><strong>Save copy</strong> creates a new Script ID.
+<strong>Delete</strong> removes the selected registered record after
+confirmation. Script Library and Session Script Explorer reflect normal
+registry changes. Scope and stable ID of an existing record cannot be
+changed in place; create a copy or assign a user script to the
+Session.</p>
+<h2 id="legacy-workspace-documents">Legacy Workspace documents</h2>
+<p>Documents saved by older versions through
+<code>INTERACTIVE_DOCUMENT_API_v1</code> remain visible in the Workspace
+with a <code>legacy:</code> reference. They are readable without
+changing their Session identity. Select one and choose <strong>Register
+as Session Script</strong> or <strong>Register as User Script</strong>
+to create a new executable registry record from its source. The legacy
+document remains until explicitly deleted. New Workspace saves use
+Script Registry and do not create a legacy Interactive Document.</p>
+<h2 id="import-and-export">Import and export</h2>
+<p><strong>Import .m</strong> loads UTF-8 source into the editor. Choose
+a scope and Script ID, then Save to register it. <strong>Export
+.m</strong> writes the current source as an external Octave file.
+Import/export is useful for interchange and is not required between
+Workspace and Analysis. The Analysis <code>external_file</code> mode can
+run a standalone <code>.m</code> when intentionally selected.</p>
+<h2 id="workspace-editing-controls">Workspace editing controls</h2>
+<p>The editor provides line numbers, syntax coloring, search
+next/previous, go-to-line, undo/redo, UTF-8 source, a bridge template
+and snippets. Its list shows registered Session and User scripts plus
+readable legacy documents. The Workspace requires an open Session for
+Session scope; user scope uses the user’s Script Registry library.</p>
+<h2 id="script-source-and-public-apis">Script source and public
+APIs</h2>
+<p>A script can call <code>gxtxt_context()</code> to inspect Session
+context and aliases. Use <code>gxtxt_api_list()</code>,
+<code>gxtxt_api_describe()</code>, <code>gxtxt_api_require()</code> and
+<code>gxtxt_api_call()</code> for public API discovery and invocation.
+The editor and runner contain no private Dataset, Plot Dataset,
+numerical or publication adapter. API arguments and results use the
+documented Script Bridge typed-node contract.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode octave"><code class="sourceCode octave"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>ctx <span class="op">=</span> gxtxt_context()<span class="op">;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>api <span class="op">=</span> gxtxt_api_require(<span class="st">&#39;NUMERIC_API_v1@1:math.numeric&#39;</span>)<span class="op">;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>value <span class="op">=</span> gxtxt_api_call(<span class="st">&#39;NUMERIC_API_v1&#39;</span><span class="op">,</span> <span class="st">&#39;array_unary.abs&#39;</span><span class="op">,</span> <span class="op">...</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  {<span class="fu">struct</span>(<span class="st">&#39;kind&#39;</span><span class="op">,</span><span class="st">&#39;array&#39;</span><span class="op">,</span><span class="st">&#39;shape&#39;</span><span class="op">,</span>[<span class="fl">1</span> <span class="fl">1</span>]<span class="op">,</span><span class="st">&#39;real&#39;</span><span class="op">,-</span><span class="fl">2</span>)})<span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">disp</span>(value)<span class="op">;</span></span></code></pre></div>
+<p>Required API preflight combines the registered script’s declared
+required APIs with the optional Analysis configuration list. Missing or
+incompatible APIs fail before the script runs. Script Library can edit
+semantic version, description, required APIs and typed parameter
+declarations for the same Script Registry identity.</p>
+<h2 id="analysis-configuration">Analysis configuration</h2>
+<ul>
+<li><strong>Script source mode:</strong> <code>registered_script</code>
+for a Session record, or <code>external_file</code> for a standalone
+<code>.m</code>.</li>
+<li><strong>Session registered script:</strong>
+<code>session:&lt;script_id&gt;</code>; the selector lists current
+Session Octave scripts.</li>
+<li><strong>Working directory:</strong> optional explicit execution
+directory. Leave empty to use the Session directory.</li>
+<li><strong>Include script directory:</strong> opt in when helper
+<code>.m</code> files beside an external script are needed.</li>
+<li><strong>Arguments:</strong> module-specific text passed to the
+script execution context.</li>
+<li><strong>Required APIs:</strong> optional additional API
+preflight.</li>
+</ul>
+<p>The runner writes <code>executed_script.m</code> and
+<code>octave_script_run_report.txt</code> for each Analysis run. The
+snapshot and report identify the exact source used. Script Library Run
+and Session Script Explorer Run use CORE Script Execution with the same
+registry identity rules.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p>If a new Workspace script is absent from Analysis, check that its
+scope is <strong>Session</strong>, its language is Octave and the module
+is enabled; the selector intentionally excludes user-only scripts. If
+Save reports a changed source SHA-256, reopen the record and reapply the
+edit. A legacy document must be explicitly registered before it is an
+Analysis input. If public API preflight fails, inspect required API IDs
+and versions in Script Library.</p>
+<h2 id="references">References</h2>
+<ul>
+<li><code>OCTAVE_SCRIPT_EDITOR_API_v1.md</code> for the Workspace
+activation and persistence contract.</li>
+<li>CORE <code>SCRIPT_REGISTRY_API_v1</code>,
+<code>SCRIPT_EXECUTION_API_v1</code>,
+<code>OCTAVE_SCRIPT_BRIDGE_API_v1</code> and
+<code>VIEWER_PROVIDER_API_v1</code> documentation.</li>
+<li><code>examples/</code> for executable Bridge examples.</li>
+</ul>
+<section><h2>Combined stabilization API additions (dev-051)</h2><p>Use gxtxt_api_call for graph presentation (equal aspect and transparent background), annotations, Graph Notes, Graph Metadata, explicit Dataset publish_series / completed-file publish_auto, and Numerical curve_model_fit/evaluate/project. Runnable Python and Octave examples are in examples/scripts/combined_stabilization.*. Portable Resource ZIP operations are host-only. Namespaced metadata keys are preserved; Octave uses dynamic field access.</p><p>See docs/api/OCTAVE_SCRIPT_BRIDGE_API_v1.md and SCRIPT_BRIDGE_COVERAGE_v1.json for operation contracts.</p></section>
+</body>
+</html>

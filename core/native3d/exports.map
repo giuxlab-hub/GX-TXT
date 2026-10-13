@@ -1,0 +1,4 @@
+GX3DE_1 {
+    global: gx3de_*;
+    local: *;
+};

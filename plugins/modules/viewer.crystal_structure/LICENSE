@@ -1,0 +1,13 @@
+SPDX-License-Identifier: GPL-3.0-or-later
+
+GX-TXT plugin code is licensed under GPL-3.0-or-later. The COD source CIFs
+are CC0-1.0, with original crystallographic authors cited in each CIF. The
+PySCF-computed density CUBE output examples are dedicated to CC0-1.0 by the
+GX-TXT Task 006 authors. See library/index.tsv for per-file attribution and
+SHA-256.
+
+The bundled `runtime/symmetry_groups.json` is a table of crystallographic
+space-group operations generated using Gemmi's space-group database. Gemmi is
+copyright 2017-2025 Global Phasing Ltd and licensed under MPL-2.0 (or LGPL-3.0
+at the user's option): https://github.com/project-gemmi/gemmi . The runtime
+does not link to or require Gemmi.

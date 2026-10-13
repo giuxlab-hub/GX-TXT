@@ -1,0 +1,65 @@
+"""Provider-owned Script Bridge binding for RF_NETWORK_API_v1."""
+# SPDX-License-Identifier: GPL-3.0-or-later
+from pathlib import Path
+from gxtxt_script_bridge_server import BridgeError, NumericArray
+
+_OPERATIONS = {}
+for line in (Path(__file__).with_name("operations_v1.tsv")).read_text(encoding="utf-8").splitlines():
+    if line and not line.startswith("#"):
+        name, summary = line.split("|", 1)
+        _OPERATIONS[name] = {"name": name, "summary": summary, "argument_convention": "a, b, c typed operands; optional typed options struct", "result_convention": "typed numeric result struct", "arguments": [{"name": key, "kind": "typed operand", "required": key != "options"} for key in ("a","b","c","options")], "result_contract": "numeric and diagnostic fields", "unit_behavior": "Operation-specific; see provider documentation"}
+_FAMILIES = {}
+for line in (Path(__file__).with_name("family_contracts_v1.tsv")).read_text(encoding="utf-8").splitlines():
+    if line and not line.startswith("#"):
+        fields = line.split("|")
+        if len(fields) != 7:
+            raise RuntimeError("invalid scientific family contract")
+        family, operands, input_shapes, result_shapes, units, complex_behavior, errors = fields
+        _FAMILIES[family] = {"operands": operands, "input_shapes": input_shapes,
+                             "result_shapes": result_shapes, "units": units,
+                             "complex_behavior": complex_behavior, "errors": errors.split(";")}
+for name, operation in _OPERATIONS.items():
+    operation.update(_FAMILIES[name.split(".", 1)[0]])
+
+REGISTRATION = {"api_id": "RF_NETWORK_API_v1", "api_version": 1, "provider_kind": "module", "provider_id": "math.rf_network", "documentation_ref": "plugins/modules/math.rf_network/RF_NETWORK_API_v1.md", "operations": _OPERATIONS}
+
+def _adapt(host, raw, types):
+    out = {}
+    for key, value in host.as_dict(raw).items():
+        kind = types.get(key)
+        if kind == "number":
+            out[key] = float(value)
+        elif kind == "boolean":
+            out[key] = str(value).lower() in ("1", "true", "yes", "on")
+        elif kind == "string":
+            out[key] = str(value)
+        elif kind == "vector":
+            values = [float(x) for x in host.as_list(value)]
+            out[key] = NumericArray(values, [len(values), 1])
+        elif kind == "matrix":
+            rows = [host.as_list(row) for row in host.as_list(value)]
+            nr = len(rows); nc = len(rows[0]) if rows else 0
+            if any(len(row) != nc for row in rows):
+                raise BridgeError("GXTXT:ScriptBridge:Transport", "matrix rows differ")
+            out[key] = NumericArray([float(rows[r][c]) for c in range(nc) for r in range(nr)], [nr, nc])
+        elif kind == "tensor":
+            tensor = host.as_dict(value)
+            shape = [int(x) for x in host.as_list(tensor["shape"])]
+            values = [float(x) for x in host.as_list(tensor["values"])]
+            out[key] = NumericArray(values, shape)
+        else:
+            raise BridgeError("GXTXT:ScriptBridge:Transport", f"unsupported result field {key} type {kind}")
+    return out
+
+def invoke(host, operation, args):
+    if operation not in _OPERATIONS:
+        raise BridgeError("GXTXT:ScriptBridge:UnknownOperation", operation)
+    if len(args) not in (3,4):
+        raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "scientific operation requires a, b, c and optional options")
+    host.call("::GX::modulePublicApiActivate", "math.rf_network", "RF_NETWORK_API_v1")
+    family, action = operation.split(".", 1)
+    if len(args) == 3:
+        args.append({"kind": "struct", "fields": {}})
+    raw = host.call("::GX::RFNetworkAPIv1::call", family, action, *args)
+    types = host.as_dict(host.call("::GX::RFNetworkAPIv1::resultTypes"))
+    return _adapt(host, raw, types)

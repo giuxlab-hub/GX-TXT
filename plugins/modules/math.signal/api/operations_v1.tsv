@@ -1,0 +1,85 @@
+# operation_id|summary
+convolution.linear|convolution linear
+convolution.circular|convolution circular
+convolution.deconvolve|convolution deconvolve
+correlation.auto|correlation auto
+correlation.cross|correlation cross
+correlation.delay|correlation delay
+filter.inspect|filter inspect
+filter.causal|filter causal
+filter.zero_phase|filter zero phase
+filter.sos|filter sos
+design.butterworth|design butterworth
+design.chebyshev1|design chebyshev1
+design.chebyshev2|design chebyshev2
+design.elliptic|design elliptic
+design.fir_window|design fir window
+multirate.decimate|multirate decimate
+multirate.interpolate|multirate interpolate
+multirate.rational|multirate rational
+lti.inspect|lti inspect
+lti.tf|lti tf
+lti.zpk|lti zpk
+lti.ss|lti ss
+lti.zoh|lti zoh
+lti.tustin|lti tustin
+response.evaluate|response evaluate
+response.frequency|response frequency
+response.impulse|response impulse
+response.step|response step
+response.input|response input
+spectral.periodogram|spectral periodogram
+spectral.welch|spectral welch
+spectral.cross_psd|spectral cross psd
+spectral.coherence|spectral coherence
+spectral.frf_h1|spectral frf h1
+spectral.frf_h2|spectral frf h2
+stft.forward|stft forward
+stft.inverse|stft inverse
+quality.basic|quality basic
+quality.snr|quality snr
+quality.harmonics|quality harmonics
+events.crossings|events crossings
+events.period|events period
+events.delay|events delay
+analytic.signal|analytic signal
+analytic.envelope|analytic envelope
+analytic.phase|analytic phase
+analytic.instantaneous_frequency|analytic instantaneous frequency
+frequency_metric.gain|frequency_metric gain
+frequency_metric.group_delay|frequency_metric group delay
+frequency_metric.phase_delay|frequency_metric phase delay
+frequency_metric.peak|frequency_metric peak
+frequency_metric.resonance|frequency_metric resonance
+frequency_metric.bandwidth|frequency_metric bandwidth
+frequency_metric.q|frequency_metric q
+frequency_metric.margins|frequency_metric margins
+time_metric.step|time_metric step
+time_metric.slew|time_metric slew
+time_metric.pulse|time_metric pulse
+design.bessel|design bessel
+design.estimate_order|Estimate order and cutoff from passband and stopband specifications
+lti.foh|Discretize a continuous LTI system with first-order hold
+lti.prewarp|Discretize with bilinear prewarping at a declared frequency
+lti.matched|Discretize with matched pole-zero conversion
+cepstrum.real|Compute real cepstrum with explicit magnitude floor
+cepstrum.complex|Compute phase-unwrapped complex cepstrum
+cepstrum.inverse|Invert a complex cepstrum
+cepstrum.lifter|Retain a declared quefrency band
+wavelet.dwt|Periodic orthogonal discrete wavelet transform
+wavelet.inverse_dwt|Inverse periodic orthogonal DWT
+wavelet.cwt|Continuous wavelet transform at explicit scales
+wavelet.scalogram|Scalogram power with explicit axes
+generate.sine|Deterministic sine on a supplied time axis
+generate.multi_tone|Deterministic multi-tone waveform
+generate.chirp|Linear-frequency chirp
+generate.square|Duty-controlled square waveform
+generate.pulse|Duty-controlled pulse waveform
+generate.impulse|Discrete impulse at a declared sample
+generate.white_noise|Seeded white Gaussian noise
+generate.colored_noise|Seeded power-law colored noise
+generate.am|Amplitude-modulated example waveform
+generate.fm|Frequency-modulated example waveform
+quality.spectrum|Compute coherent-bin SNR SINAD THD THD+N SFDR and ENOB
+spectral.asd|Compute amplitude spectral density from Welch PSD
+spectral.window_metrics|Compute coherent gain power gain and ENBW for a declared window

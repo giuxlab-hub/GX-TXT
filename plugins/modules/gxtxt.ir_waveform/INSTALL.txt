@@ -1,0 +1,34 @@
+gxtxt.ir_waveform module version: 3.6.2
+Target: GX-TXT Pipeline 0.9.8.09 or later compatible release.
+Package format: Plugin Install API v1.
+
+Install/update through GX-TXT:
+  Modules -> Install plugin...       (new managed installation)
+  Modules -> Update selected...      (existing managed installation)
+
+The package contains no installer script. GX-TXT validates and stages it through
+Plugin Install API v1.
+
+Important source-selection change in 3.6.0:
+1. Open the Analysis configuration for gxtxt.ir_waveform.
+2. In "Dataset sources (Analysis Source Map API v1)", select the real input
+   timeseries.table Dataset in the required "primary" row.
+3. Bind "IR waveform signal" to primary.<signal>, for example primary.CH3.
+4. Leave the time binding on Auto when the Dataset contains time_s, or select
+   primary.time_s explicitly.
+5. For comparison traces stored in other Datasets, use "+ Add source", select
+   the additional Dataset, then bind compare1..compare7 to that source, for
+   example source2.CH4.
+
+"primary" is a framework source alias. It is not a Dataset name and the module
+does not search for a Dataset named "primary".
+
+Recommended validation:
+1. Confirm that config.dataset_id is no longer shown in Calculation configuration.
+2. Confirm that the primary Dataset selection changes the available primary.*
+   variable bindings.
+3. Run the existing 38 kHz synthetic and carrier-lock tests.
+4. Run test_ir_waveform_adaptive_carrier.m (nominal 38 kHz, measured 56 kHz).
+5. Run test_ir_waveform_comparison.m with comparison traces from one or more
+   selected Analysis Sources.
+6. Run a real multi-channel Rigol acquisition and verify the generated metrics.

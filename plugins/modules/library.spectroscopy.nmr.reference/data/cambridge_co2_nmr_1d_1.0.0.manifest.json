@@ -1,0 +1,456 @@
+{
+  "library_id": "cambridge_co2_supercapacitor_nmr_1d",
+  "source_archive_sha256": "4972bccc6d5778830f4edce8e96c96694579274d57f64f21f98638b3cdbf3a51",
+  "package_sha256": "ce684ebef015919d2b93f767bfac6ccbf3f15a90d98499c08071694fc0d246ec",
+  "entries": [
+    {
+      "entry_id": "main_3_3a_0_0",
+      "nucleus": "^1H",
+      "sample": "YP80F + 8.8 psi of 13CO2 (302)",
+      "original_path": "260608 Open Data for Apollo/Main/3/3a/0-0.dx",
+      "original_sha256": "7884833df7e405d102c4ac32563d592953e743be58af420bf0d334104ed6fcef",
+      "processed_points": 131072,
+      "processing": {
+        "processing": "already_processed",
+        "reference_offset_ppm": 24.93522
+      }
+    },
+    {
+      "entry_id": "main_3_3a_0_22",
+      "nucleus": "^1H",
+      "sample": "YP80F + DI water (4:1 loading) dosed with 8.8 psi of 13CO2 (307)",
+      "original_path": "260608 Open Data for Apollo/Main/3/3a/0-22.dx",
+      "original_sha256": "7d6b659230cfb5456de848186c441c346c23088ecf3ccba7ca726bb736024644",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 5e-05,
+        "carrier_hz": 324.2673,
+        "base_frequency_mhz": 400.33
+      }
+    },
+    {
+      "entry_id": "main_3_3a_0_52",
+      "nucleus": "^1H",
+      "sample": "YP80F + DI water (2:1 loading) dosed with 8.9 psi of 13CO2 (309)",
+      "original_path": "260608 Open Data for Apollo/Main/3/3a/0-52.dx",
+      "original_sha256": "ea9d082512fee32e363097e83fd72d427b8b4c3cd0ff50ce0df4fdd4704ed9c8",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 5e-05,
+        "carrier_hz": 324.2673,
+        "base_frequency_mhz": 400.33
+      }
+    },
+    {
+      "entry_id": "main_3_3a_0_93",
+      "nucleus": "^1H",
+      "sample": "YP80F + DI water (4:3 loading) dosed with 8.9 psi of 13CO2 (318)",
+      "original_path": "260608 Open Data for Apollo/Main/3/3a/0-93.dx",
+      "original_sha256": "144af9cdc8625b4c196529bd0d4ffaa28e57f13826593f5af0a7be5a9b08c407",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 5e-05,
+        "carrier_hz": 324.2673,
+        "base_frequency_mhz": 400.33
+      }
+    },
+    {
+      "entry_id": "main_3_3a_1_33",
+      "nucleus": "^1H",
+      "sample": "YP80F + DIwater (1:1.3) (302)",
+      "original_path": "260608 Open Data for Apollo/Main/3/3a/1-33.dx",
+      "original_sha256": "7bd73dae489d151627a2d1bb69743ad7ea5b9f19b614757c9d3b747000cb4903",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 5e-05,
+        "carrier_hz": 324.2673,
+        "base_frequency_mhz": 400.33
+      }
+    },
+    {
+      "entry_id": "main_3_3a_1_54",
+      "nucleus": "^1H",
+      "sample": "YP80F + DIwater + 13CO2 (9.0 psi) (1:1.6) (312)",
+      "original_path": "260608 Open Data for Apollo/Main/3/3a/1-54.dx",
+      "original_sha256": "496a6698ed87f6b68799950ac4435259f51276e400254b29e4c33b1d0bba5e67",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 5e-05,
+        "carrier_hz": 324.2673,
+        "base_frequency_mhz": 400.33
+      }
+    },
+    {
+      "entry_id": "main_3_3a_2_01",
+      "nucleus": "^1H",
+      "sample": "YP80F + DIwater (1:2) + 13CO2 (8.9 psi) (315)",
+      "original_path": "260608 Open Data for Apollo/Main/3/3a/2-01.dx",
+      "original_sha256": "c68bce0e1b47707648e03d11d587fe7f444dabc07becb444e5bb9d93fcad4eee",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 5e-05,
+        "carrier_hz": 324.2673,
+        "base_frequency_mhz": 400.33
+      }
+    },
+    {
+      "entry_id": "main_4_4a_0_0",
+      "nucleus": "^13C",
+      "sample": "YP80F dosed with 8.8 psi of 13CO2 (302)",
+      "original_path": "260608 Open Data for Apollo/Main/4/4a/0-0.dx",
+      "original_sha256": "4832f4f06c714952d5b8b706804fce65f8b0e29e3d84a1f75e0398547b6fa335",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 1.9999999999999998e-05,
+        "carrier_hz": 11072.94,
+        "base_frequency_mhz": 100.663059
+      }
+    },
+    {
+      "entry_id": "main_4_4a_0_22",
+      "nucleus": "^13C",
+      "sample": "YP80F + DI water (4:1 loading) dosed with 8.8 psi of 13CO2 (307)",
+      "original_path": "260608 Open Data for Apollo/Main/4/4a/0-22.dx",
+      "original_sha256": "4826f7ed73241cd5f4fbd7ce464216669c42d3ce3909b77a6a136a47ca35c671",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 1.9999999999999998e-05,
+        "carrier_hz": 11072.94,
+        "base_frequency_mhz": 100.663059
+      }
+    },
+    {
+      "entry_id": "main_4_4a_0_52",
+      "nucleus": "^13C",
+      "sample": "YP80F + DI water (2:1 loading) dosed with 8.9 psi of 13CO2 (309)",
+      "original_path": "260608 Open Data for Apollo/Main/4/4a/0-52.dx",
+      "original_sha256": "107c708f9fb6a4ddd422f46514929a49ff73cc8c24b68800357a766e0160830b",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 1.9999999999999998e-05,
+        "carrier_hz": 11072.94,
+        "base_frequency_mhz": 100.663059
+      }
+    },
+    {
+      "entry_id": "main_4_4a_0_93",
+      "nucleus": "^13C",
+      "sample": "YP80F + DI water (4:3 loading) dosed with 8.9 psi of 13CO2 (318)",
+      "original_path": "260608 Open Data for Apollo/Main/4/4a/0-93.dx",
+      "original_sha256": "e07d1c832db071496e4c3058bbfa51e942e870ffb19c3e28018590bf0ff9438f",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 1.9999999999999998e-05,
+        "carrier_hz": 11072.94,
+        "base_frequency_mhz": 100.663059
+      }
+    },
+    {
+      "entry_id": "main_4_4a_1_33",
+      "nucleus": "^13C",
+      "sample": "YP80F + DIwater (1:1.3) + 13CO2 (9.3 psi) (302)",
+      "original_path": "260608 Open Data for Apollo/Main/4/4a/1-33.dx",
+      "original_sha256": "6ed437cfbd5d8fc08c6250a650eb0a3c20b033ca8995da8005340310fecdf916",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 1.9999999999999998e-05,
+        "carrier_hz": 11072.94,
+        "base_frequency_mhz": 100.663059
+      }
+    },
+    {
+      "entry_id": "main_4_4a_1_54",
+      "nucleus": "^13C",
+      "sample": "YP80F + DIwater + 13CO2 (9.0 psi) (1:1.6) (312)",
+      "original_path": "260608 Open Data for Apollo/Main/4/4a/1-54.dx",
+      "original_sha256": "830f6cfcf181f5990fabad31288fb785aed063d5bc6f963b7b58d7e7f73a6fd3",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 1.9999999999999998e-05,
+        "carrier_hz": 11072.94,
+        "base_frequency_mhz": 100.663059
+      }
+    },
+    {
+      "entry_id": "main_4_4a_2_01",
+      "nucleus": "^13C",
+      "sample": "YP80F + DIwater (1:2) + 13CO2 (8.9 psi) (315)",
+      "original_path": "260608 Open Data for Apollo/Main/4/4a/2-01.dx",
+      "original_sha256": "436933ee1e7d3ecd2143fe6069204f064e1eccc6e9f9804875d0140d2bc61731",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 1.9999999999999998e-05,
+        "carrier_hz": 11072.94,
+        "base_frequency_mhz": 100.663059
+      }
+    },
+    {
+      "entry_id": "main_5_5a_acc_10",
+      "nucleus": "^13C",
+      "sample": "13CO2-dosed ACC-20 + 1 M Na2SO4 (1:2 pv/v ratio)",
+      "original_path": "260608 Open Data for Apollo/Main/5/5a/ACC-10.dx",
+      "original_sha256": "0bd6fb078b821b1c88b4bd31597b5ee38ba714880c6aedd2b7dfd16acd119cbd",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 1.9999999999999998e-05,
+        "carrier_hz": 11072.94,
+        "base_frequency_mhz": 100.663059
+      }
+    },
+    {
+      "entry_id": "main_5_5a_acc_20",
+      "nucleus": "^13C",
+      "sample": "ACC-20 + 1 M Na2SO4 + 13CO2 - 307",
+      "original_path": "260608 Open Data for Apollo/Main/5/5a/ACC-20.dx",
+      "original_sha256": "d9a45ab1b10638cc5a48f393b1c9ddc11773cedccefdc73b062d465655ae9498",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 1.9999999999999998e-05,
+        "carrier_hz": 11072.94,
+        "base_frequency_mhz": 100.663059
+      }
+    },
+    {
+      "entry_id": "main_5_5a_cmk_3",
+      "nucleus": "^13C",
+      "sample": "CMK-3 with 1 M Na2SO4 (2:3 ratio) dosed with 13CO2 (302)",
+      "original_path": "260608 Open Data for Apollo/Main/5/5a/CMK-3.dx",
+      "original_sha256": "fb421b640395322b896883d6d424cdf12e73f9fb5e2e77fa4a5980449ab08f58",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 1.9999999999999998e-05,
+        "carrier_hz": 11072.94,
+        "base_frequency_mhz": 100.663059
+      }
+    },
+    {
+      "entry_id": "main_5_5a_yp50f",
+      "nucleus": "^13C",
+      "sample": "YP50F with 1 M Na2SO4 (2:3 ratio) dosed with 13CO2 (302)",
+      "original_path": "260608 Open Data for Apollo/Main/5/5a/YP50F.dx",
+      "original_sha256": "510fa3367dae9151548ae75c9f09307df6798090deccdeb58fe55c593f95d16b",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 1.9999999999999998e-05,
+        "carrier_hz": 11072.94,
+        "base_frequency_mhz": 100.663059
+      }
+    },
+    {
+      "entry_id": "main_5_5a_yp80f",
+      "nucleus": "^13C",
+      "sample": "13CO2-dosed YP80F + 1 M Na2SO4 (1:1.5 m/v ratio)",
+      "original_path": "260608 Open Data for Apollo/Main/5/5a/YP80F.dx",
+      "original_sha256": "fe3d900ce79e1ec0e818e86d37240709716a49a71211a8c83246ca64c4d860ad",
+      "processed_points": 8192,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 8192,
+        "phase_deg": 0.0,
+        "dwell_seconds": 1.9999999999999998e-05,
+        "carrier_hz": 11072.94,
+        "base_frequency_mhz": 100.663059
+      }
+    },
+    {
+      "entry_id": "si_s8_8b_4_82_x_10_3",
+      "nucleus": "^13C",
+      "sample": "20uL 0.5M HCl",
+      "original_path": "260608 Open Data for Apollo/SI/S8/8b/-4 82 x 10^-3.dx",
+      "original_sha256": "7beb241f00df7db5c66f348dd289a1eae5ddae25d0ae4bdcff250e4f26be1ffc",
+      "processed_points": 32768,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 32768,
+        "phase_deg": 0.0,
+        "dwell_seconds": 2.4599999999999998e-05,
+        "carrier_hz": 16920.1939999937,
+        "base_frequency_mhz": 150.88395
+      }
+    },
+    {
+      "entry_id": "si_s8_8b_1_50_x_10_2",
+      "nucleus": "^13C",
+      "sample": "20uL 1.5M NaOH",
+      "original_path": "260608 Open Data for Apollo/SI/S8/8b/1 50 x 10^-2.dx",
+      "original_sha256": "e68ab15d3592eb5e62a74d0481f34e4636892b53576b133c7644256800ab24fa",
+      "processed_points": 32768,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 32768,
+        "phase_deg": 0.0,
+        "dwell_seconds": 2.4599999999999998e-05,
+        "carrier_hz": 16920.1939999937,
+        "base_frequency_mhz": 150.88395
+      }
+    },
+    {
+      "entry_id": "si_s8_8b_1_99_x_10_3",
+      "nucleus": "^13C",
+      "sample": "20uL 0.2M NaOH",
+      "original_path": "260608 Open Data for Apollo/SI/S8/8b/1 99 x 10^-3.dx",
+      "original_sha256": "37bacb49f66e890c2a6e3ee0ff0cc208c92f80c6160f3cbc32073f8ae122c347",
+      "processed_points": 32768,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 32768,
+        "phase_deg": 0.0,
+        "dwell_seconds": 2.4599999999999998e-05,
+        "carrier_hz": 16920.1939999937,
+        "base_frequency_mhz": 150.88395
+      }
+    },
+    {
+      "entry_id": "si_s8_8b_2_29_x_10_2",
+      "nucleus": "^13C",
+      "sample": "20uL 2.3M NaOH",
+      "original_path": "260608 Open Data for Apollo/SI/S8/8b/2 29 x 10^-2.dx",
+      "original_sha256": "a6588af6e41e742e74da4c6d3ac0f7f542469ba59a282e6340fb75fb68744c2e",
+      "processed_points": 32768,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 32768,
+        "phase_deg": 0.0,
+        "dwell_seconds": 2.4599999999999998e-05,
+        "carrier_hz": 16920.1939999937,
+        "base_frequency_mhz": 150.88395
+      }
+    },
+    {
+      "entry_id": "si_s8_8b_6_98_x_10_3",
+      "nucleus": "^13C",
+      "sample": "20uL 0.7M NaOH",
+      "original_path": "260608 Open Data for Apollo/SI/S8/8b/6 98 x 10^-3.dx",
+      "original_sha256": "a5ff2eec3a7b554823760e4fb44bffb5377fcca324dcbd86be1585e783a4925b",
+      "processed_points": 32768,
+      "processing": {
+        "processing": "fid_fft",
+        "window": "exponential",
+        "line_broadening_hz": 2.0,
+        "zero_fill_factor": 1,
+        "fft_points": 32768,
+        "phase_deg": 0.0,
+        "dwell_seconds": 2.4599999999999998e-05,
+        "carrier_hz": 16920.1939999937,
+        "base_frequency_mhz": 150.88395
+      }
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+# Faculty guide
+
+Import the bundled `nist.pnnl.ir.optical_constants.2017` library ZIP using Scientific Reference Library API v1. Import the derived ethanol absorption-index JCAMP as a `spectrum.scientific` Dataset, configure IR Analysis with `absorption_index`, 500 to 3700 cm^-1 and the bundled library, then inspect peaks, candidate scores, overlay and variants. The sample and ethanol reference are from the **same original record**: a self-comparison that checks the pipeline, not an independent identification. Original two-block JCAMPs contain dispersion n and absorption k; they are not absorbance. The fully analyzed faculty Session is distributed separately under DEMO/SESSION.

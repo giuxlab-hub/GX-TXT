@@ -1,0 +1,9 @@
+# UV/Vis Spectrum and Time-Series Exploration
+
+This internal Analysis module has two explicit workflows. **Single spectrum** accepts a `spectrum.scientific` UV/Vis Dataset, converts valid absorbance or fractional/percent transmittance to absorbance, optionally subtracts a documented blank, and applies requested public NUMERIC API baseline, smoothing and normalization operations. It publishes a separate processed Dataset, detected peaks and response at the analyst's selected wavelength. Source and blank Datasets remain unchanged.
+
+**Time series** accepts a `spectrum.family` whose parameter is `elapsed_time` or `time`. Every member is processed with the same settings, a selected-wavelength response is published as an ordinary table with its original time unit, and a separate processed family is retained. The graph shows up to twelve family curves and the full response-vs-time trace. It does not fit a kinetic model or claim a reaction rate.
+
+Blank subtraction operates in absorbance units. For transmittance, the module converts both sample and blank before subtraction. It refuses nonpositive transmittance, wavelengths outside source coverage, missing ordinate provenance and incompatible input contracts. Normalized outputs are labeled relative and are not represented as physical absorbance spectra. Graphs have a real, persistent Plot Variant legend and can rerender from saved scientific cache without rerunning the analysis.
+
+The existing **UV/Vis Spectral Family Quantitation** module remains the concentration-calibration workflow. Use its ten-spectrum Manchester Session for standards, regression, residuals and held-out validation. Use this module for source inspection or genuine elapsed-time families. A time-series teaching fixture must be labeled synthetic until rights-cleared measured time spectra are available.

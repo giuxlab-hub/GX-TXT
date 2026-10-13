@@ -1,0 +1,47 @@
+# GX-TXT source checkout
+
+# Local state, private work records and generated output
+/_LOCAL_RELEASE_ARCHIVE/
+/NVIDIA Corporation/
+/validation/
+/demo_sessions/
+/docs/evidence/
+/docs/reports/
+/docs/developer/
+/docs/architecture/
+/plugin_packages/task008_release/
+/GX-TXT_REMAINING_WORK_TODO.md
+/SCRIPT_CATALOG.md
+/DEV*_TECHNICAL_HANDOFF.md
+**/*HANDOFF*.md
+**/*handoff*.md
+**/*AGENT_REPORT*.md
+**/*agent_report*.md
+/PUBLICATION_REVIEW_NOTES.txt
+
+# Local, non-distributed publication audit and verification evidence
+/_PUBLICATION_REVIEW/
+
+# Private-only test PDFs and their dependent generator
+/session_generator_libraries/gxtxt.accepted_generators/generators/document_extraction_teacher/
+
+# Files created during development or validation
+**/__pycache__/
+*.pyc
+*.pyo
+*.swp
+*.tmp
+*.bak
+*.orig
+.DS_Store
+Thumbs.db
+*.log
+
+# User-local credentials and configuration
+.env
+.env.*
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_ed25519

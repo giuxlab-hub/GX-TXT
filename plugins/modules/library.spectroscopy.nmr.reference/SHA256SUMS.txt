@@ -1,0 +1,7 @@
+bed535a06686a084e1f5460c9617ecfc0cefe82bad07c986736565fc3762c9d5  ./LICENSE
+e74a6b6b9bd9848beece9009d7bd32a430b9e45fc9f188593dd52e1c4a370bf8  ./README.md
+e1aaf1381ee40ae6b27261c9da90292733e6fbf86b0f7cb59caf85a9747bb782  ./api/nmr_library_provider.py
+9c997303ff8dc7c550b193cce6e4660cb84e5b4de38e72815f4b663bfd62b722  ./data/cambridge_co2_nmr_1d_1.0.0.manifest.json
+ce684ebef015919d2b93f767bfac6ccbf3f15a90d98499c08071694fc0d246ec  ./data/cambridge_co2_nmr_1d_1.0.0.zip
+55199d5b0e750375327fbe2e960f3a26bb561a5c40839a4a47a6bab392307881  ./module.ini
+751e40c974b8f8e781acdbe3cf78c8c1b8489390319c9b783f79ba1d3411c34f  ./plugin-package.ini

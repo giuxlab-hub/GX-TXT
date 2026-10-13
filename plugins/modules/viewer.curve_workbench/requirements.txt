@@ -1,0 +1,2 @@
+# Shared CORE bounded image compositing and previews.
+Pillow>=10

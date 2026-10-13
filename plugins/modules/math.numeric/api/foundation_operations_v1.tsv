@@ -1,0 +1,116 @@
+# family|action|arguments|input_shapes|result_shape|summary|flags
+family|align|x,y,target|aligned scientific data|structured|Align in the family family|data_only
+family|surface|x,y,target|aligned scientific data|structured|Surface in the family family|data_only
+family|derivative|x,y,target|aligned scientific data|structured|Derivative in the family family|data_only
+family|extrema|x,y,target|aligned scientific data|structured|Extrema in the family family|data_only
+family|envelope|x,y,target|aligned scientific data|structured|Envelope in the family family|data_only
+tensor|transpose|tensor,other,unused|matrix or tensor|structured|Transpose in the tensor family|data_only
+tensor|conjugate_transpose|tensor,other,unused|matrix or tensor|structured|Conjugate transpose in the tensor family|data_only
+tensor|trace|tensor,other,unused|matrix or tensor|structured|Trace in the tensor family|data_only
+tensor|symmetric_part|tensor,other,unused|matrix or tensor|structured|Symmetric part in the tensor family|data_only
+tensor|antisymmetric_part|tensor,other,unused|matrix or tensor|structured|Antisymmetric part in the tensor family|data_only
+tensor|contract|tensor,other,unused|matrix or tensor|structured|Contract in the tensor family|data_only
+tensor|apply|tensor,other,unused|matrix or tensor|structured|Apply in the tensor family|data_only
+tensor|outer|tensor,other,unused|matrix or tensor|structured|Outer in the tensor family|data_only
+scattered|interpolate|points,values,query|point cloud and query points|structured|Interpolate in the scattered family|data_only
+vector|dot|vector,other,third|numeric vectors|structured|Dot in the vector family|data_only
+vector|cross|vector,other,third|numeric vectors|structured|Cross in the vector family|data_only
+vector|norm|vector,other,third|numeric vectors|structured|Norm in the vector family|data_only
+vector|normalize|vector,other,third|numeric vectors|structured|Normalize in the vector family|data_only
+vector|outer|vector,other,third|numeric vectors|structured|Outer in the vector family|data_only
+vector|projection|vector,other,third|numeric vectors|structured|Projection in the vector family|data_only
+vector|angle|vector,other,third|numeric vectors|structured|Angle in the vector family|data_only
+vector|triple|vector,other,third|numeric vectors|structured|Triple in the vector family|data_only
+vector|contract|vector,other,third|numeric vectors|structured|Contract in the vector family|data_only
+grid|interpolate|axes,values,query|regular grid and query points|structured|Interpolate in the grid family|data_only
+grid|sample|axes,values,query|regular grid and query points|structured|Sample in the grid family|data_only
+grid|compatible|axes,values,query|regular grid and query points|structured|Compatible in the grid family|data_only
+grid|resample|axes,values,query|regular grid and query points|structured|Resample in the grid family|data_only
+calculus|integrate2|axes,values,extra|numeric arrays or callback|structured|Integrate2 in the calculus family|data_only
+calculus|integrate3|axes,values,extra|numeric arrays or callback|structured|Integrate3 in the calculus family|data_only
+calculus|weighted_integral|axes,values,extra|numeric arrays or callback|structured|Weighted integral in the calculus family|data_only
+calculus|gradient_grid|axes,values,extra|numeric arrays or callback|structured|Gradient grid in the calculus family|data_only
+calculus|line_integral|axes,values,extra|numeric arrays or callback|structured|Line integral in the calculus family|data_only
+calculus|line_scalar_integral|axes,values,extra|numeric arrays or callback|structured|Line scalar integral in the calculus family|data_only
+calculus|surface_flux|axes,values,extra|numeric arrays or callback|structured|Surface flux in the calculus family|data_only
+calculus|surface_integral|axes,values,extra|numeric arrays or callback|structured|Surface integral in the calculus family|data_only
+calculus|gradient|axes,values,extra|numeric arrays or callback|structured|Gradient in the calculus family|callback
+calculus|jacobian|axes,values,extra|numeric arrays or callback|structured|Jacobian in the calculus family|callback
+calculus|hessian|axes,values,extra|numeric arrays or callback|structured|Hessian in the calculus family|callback
+calculus|directional|axes,values,extra|numeric arrays or callback|structured|Directional in the calculus family|callback
+special|erf|value,parameter,unused|scalar or numeric array|structured|Erf in the special family|data_only
+special|erfc|value,parameter,unused|scalar or numeric array|structured|Erfc in the special family|data_only
+special|gamma|value,parameter,unused|scalar or numeric array|structured|Gamma in the special family|data_only
+special|log_gamma|value,parameter,unused|scalar or numeric array|structured|Log gamma in the special family|data_only
+special|beta|value,parameter,unused|scalar or numeric array|structured|Beta in the special family|data_only
+special|incomplete_gamma|value,parameter,unused|scalar or numeric array|structured|Incomplete gamma in the special family|data_only
+special|incomplete_beta|value,parameter,unused|scalar or numeric array|structured|Incomplete beta in the special family|data_only
+special|bessel_j|value,parameter,unused|scalar or numeric array|structured|Bessel j in the special family|data_only
+special|bessel_y|value,parameter,unused|scalar or numeric array|structured|Bessel y in the special family|data_only
+special|bessel_i|value,parameter,unused|scalar or numeric array|structured|Bessel i in the special family|data_only
+special|bessel_k|value,parameter,unused|scalar or numeric array|structured|Bessel k in the special family|data_only
+special|spherical_bessel_j|value,parameter,unused|scalar or numeric array|structured|Spherical bessel j in the special family|data_only
+special|spherical_bessel_y|value,parameter,unused|scalar or numeric array|structured|Spherical bessel y in the special family|data_only
+special|airy|value,parameter,unused|scalar or numeric array|structured|Airy in the special family|data_only
+special|exponential_integral|value,parameter,unused|scalar or numeric array|structured|Exponential integral in the special family|data_only
+special|sinc|value,parameter,unused|scalar or numeric array|structured|Sinc in the special family|data_only
+geometry|plane_frame|first,second,third|geometric points, meshes or files|structured|Plane frame in the geometry family|data_only
+geometry|plane_three_points|first,second,third|geometric points, meshes or files|structured|Plane three points in the geometry family|data_only
+geometry|centroid|first,second,third|geometric points, meshes or files|structured|Centroid in the geometry family|data_only
+geometry|plane_offset|first,second,third|geometric points, meshes or files|structured|Plane offset in the geometry family|data_only
+geometry|plane_flip|first,second,third|geometric points, meshes or files|structured|Plane flip in the geometry family|data_only
+geometry|plane_orient|first,second,third|geometric points, meshes or files|structured|Plane orient in the geometry family|data_only
+geometry|trajectory_tangent|first,second,third|geometric points, meshes or files|structured|Trajectory tangent in the geometry family|data_only
+geometry|plane_containing_tangent|first,second,third|geometric points, meshes or files|structured|Plane containing tangent in the geometry family|data_only
+geometry|trajectory_plane_intersections|first,second,third|geometric points, meshes or files|structured|Trajectory plane intersections in the geometry family|data_only
+geometry|mesh_section|first,second,third|geometric points, meshes or files|structured|Mesh section in the geometry family|data_only
+geometry|frame_transform|first,second,third|geometric points, meshes or files|structured|Frame transform in the geometry family|data_only
+geometry|nearest|first,second,third|geometric points, meshes or files|structured|Nearest in the geometry family|data_only
+geometry|kdtree_query|first,second,third|geometric points, meshes or files|structured|Kdtree query in the geometry family|data_only
+geometry|point_segment_distance|first,second,third|geometric points, meshes or files|structured|Point segment distance in the geometry family|data_only
+geometry|triangle_area|first,second,third|geometric points, meshes or files|structured|Triangle area in the geometry family|data_only
+geometry|tetrahedron_volume|first,second,third|geometric points, meshes or files|structured|Tetrahedron volume in the geometry family|data_only
+geometry|barycentric|first,second,third|geometric points, meshes or files|structured|Barycentric in the geometry family|data_only
+geometry|plane_fit|first,second,third|geometric points, meshes or files|structured|Plane fit in the geometry family|data_only
+geometry|line_fit|first,second,third|geometric points, meshes or files|structured|Line fit in the geometry family|data_only
+geometry|rigid_transform|first,second,third|geometric points, meshes or files|structured|Rigid transform in the geometry family|data_only
+geometry|mesh_surface_area|first,second,third|geometric points, meshes or files|structured|Mesh surface area in the geometry family|data_only
+geometry|mesh_volume|first,second,third|geometric points, meshes or files|structured|Mesh volume in the geometry family|data_only
+geometry|point_triangle_distance|first,second,third|geometric points, meshes or files|structured|Point triangle distance in the geometry family|data_only
+geometry|point_mesh_distance|first,second,third|geometric points, meshes or files|structured|Point mesh distance in the geometry family|data_only
+geometry|delaunay|first,second,third|geometric points, meshes or files|structured|Delaunay in the geometry family|data_only
+geometry|voronoi|first,second,third|geometric points, meshes or files|structured|Voronoi in the geometry family|data_only
+geometry|orientation2d|first,second,third|geometric points, meshes or files|structured|Orientation2d in the geometry family|data_only
+geometry|orientation3d|first,second,third|geometric points, meshes or files|structured|Orientation3d in the geometry family|data_only
+geometry|mesh_smooth|first,second,third|geometric points, meshes or files|structured|Mesh smooth in the geometry family|file_resource
+geometry|mesh_remesh|first,second,third|geometric points, meshes or files|structured|Mesh remesh in the geometry family|file_resource
+geometry|mesh_boolean|first,second,third|geometric points, meshes or files|structured|Mesh boolean in the geometry family|file_resource
+geometry|volume_slice|first,second,third|geometric points, meshes or files|structured|Volume slice in the geometry family|file_resource
+sparse|construct|sparse_matrix,other,unused|sparse matrix and numeric array|structured|Construct in the sparse family|data_only
+sparse|matvec|sparse_matrix,other,unused|sparse matrix and numeric array|structured|Matvec in the sparse family|data_only
+sparse|solve|sparse_matrix,other,unused|sparse matrix and numeric array|structured|Solve in the sparse family|data_only
+sparse|least_squares|sparse_matrix,other,unused|sparse matrix and numeric array|structured|Least squares in the sparse family|data_only
+sparse|eigen_subset|sparse_matrix,other,unused|sparse matrix and numeric array|structured|Eigen subset in the sparse family|data_only
+equations|solve|residual,initial,parameters|execution-scoped callback and numeric array|structured|Solve in the equations family|callback
+equations|multiple_start|residual,initial,parameters|execution-scoped callback and numeric array|structured|Multiple start in the equations family|callback
+equations|continuation|residual,initial,parameters|execution-scoped callback and numeric array|structured|Continuation in the equations family|callback
+variational|action|functional,values,extra|numeric arrays or execution-scoped callback|structured|Action in the variational family|callback
+variational|functional|functional,values,extra|numeric arrays or execution-scoped callback|structured|Functional in the variational family|callback
+variational|legendre|functional,values,extra|numeric arrays or execution-scoped callback|structured|Legendre in the variational family|callback
+variational|first_variation|functional,values,extra|numeric arrays or execution-scoped callback|structured|First variation in the variational family|callback
+variational|euler_lagrange_residual|functional,values,extra|numeric arrays or execution-scoped callback|structured|Euler lagrange residual in the variational family|callback
+variational|constrained|functional,values,extra|numeric arrays or execution-scoped callback|structured|Constrained in the variational family|callback
+statistics|confidence_interval|samples,other,extra|numeric observations and options|structured|Confidence interval in the statistics family|data_only
+statistics|robust_location|samples,other,extra|numeric observations and options|structured|Robust location in the statistics family|data_only
+statistics|robust_regression|samples,other,extra|numeric observations and options|structured|Robust regression in the statistics family|data_only
+statistics|covariance_diagnostics|samples,other,extra|numeric observations and options|structured|Covariance diagnostics in the statistics family|data_only
+statistics|partial_correlation|samples,other,extra|numeric observations and options|structured|Partial correlation in the statistics family|data_only
+statistics|multiple_testing|samples,other,extra|numeric observations and options|structured|Multiple testing in the statistics family|data_only
+statistics|bootstrap_ci|samples,other,extra|numeric observations and options|structured|Bootstrap ci in the statistics family|data_only
+statistics|permutation_test|samples,other,extra|numeric observations and options|structured|Permutation test in the statistics family|data_only
+statistics|logistic_regression|samples,other,extra|numeric observations and options|structured|Logistic regression in the statistics family|data_only
+statistics|glm|samples,other,extra|numeric observations and options|structured|Glm in the statistics family|data_only
+statistics|survival_kaplan_meier|samples,other,extra|numeric observations and options|structured|Survival kaplan meier in the statistics family|data_only
+statistics|kmeans|samples,other,extra|numeric observations and options|structured|Kmeans in the statistics family|data_only
+ode|solve|rhs,time_span,initial_state|execution-scoped callback and numeric state|structured|Solve in the ode family|callback
+constrained|solve|objective,initial,constraints|execution-scoped callback and constraints|structured|Solve in the constrained family|callback

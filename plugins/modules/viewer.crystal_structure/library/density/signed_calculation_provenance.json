@@ -1,0 +1,25 @@
+{
+  "solver": "PySCF",
+  "solver_version": "2.14.0",
+  "method": "molecular RHF/STO-3G for perturbed water; scalar subtraction on original-water CUBE grid",
+  "perturbation": "One O-H bond endpoint moved from x=0.758602 to 0.818602 Angstrom; other coordinates unchanged",
+  "perturbed_energy_hartree": -74.94985157521751,
+  "reference_cube_sha256": "e5ca6edfe90ed392fb2254debe6ad0f05b6abbdcc4d2aaa56fe461c51331feb3",
+  "grid_shape": [
+    48,
+    48,
+    48
+  ],
+  "difference_range_e_per_bohr3": [
+    -0.04691742616989386,
+    0.04852659492752731
+  ],
+  "source_rights": "CC0-1.0 dedication by GX-TXT Task 006 authors",
+  "files": {
+    "water_perturbed_pyscf.log": "8d95d79c7d8e465e1e4f5dab105289d3622574c2b77ecfd3bf97d278a0be08ba",
+    "water_displacement_difference.cube": "6604b1df3690d28d433caa3dad4fd1ea9b1b5a326ca941b92b83eef710c692c0"
+  },
+  "input_file": "generate_signed_density.py",
+  "input_sha256": "1b00406bdcfafb9a14c445f307eec966b22ef44a6e196ad1b6b0d33072f26462",
+  "conversion_steps": "Difference on common original-water CUBE grid (values e/Bohr^3); crystal_data.py converts grid coordinates to Angstrom for VTI/VTP display but preserves source scalar values."
+}

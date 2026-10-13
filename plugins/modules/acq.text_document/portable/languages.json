@@ -1,0 +1,631 @@
+{
+  "schema_version": 1,
+  "detection_version": "1.0.0",
+  "description": "Declarative language hints only; no plugin/module versions or framework paths. Content signatures are isolated in text_probe.py. IDs describe syntax, not execution capability.",
+  "languages": {
+    "plaintext": {
+      "label": "Plain text",
+      "category": "text",
+      "extensions": [
+        ".txt",
+        ".text",
+        ".log"
+      ],
+      "filenames": [
+        "README",
+        "LICENSE",
+        "COPYING",
+        "NOTICE",
+        "CHANGELOG"
+      ],
+      "interpreters": [],
+      "aliases": []
+    },
+    "unknown": {
+      "label": "Unknown language",
+      "category": "text",
+      "extensions": [],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "python": {
+      "label": "Python",
+      "category": "code",
+      "extensions": [
+        ".py",
+        ".pyw",
+        ".pyi"
+      ],
+      "filenames": [],
+      "interpreters": [
+        "python",
+        "python2",
+        "python3",
+        "pypy",
+        "pypy3"
+      ],
+      "aliases": [
+        "py"
+      ]
+    },
+    "tcl": {
+      "label": "Tcl",
+      "category": "code",
+      "extensions": [
+        ".tcl",
+        ".tk",
+        ".itcl",
+        ".tm"
+      ],
+      "filenames": [],
+      "interpreters": [
+        "tclsh",
+        "wish"
+      ],
+      "aliases": [
+        "tk"
+      ]
+    },
+    "octave": {
+      "label": "GNU Octave",
+      "category": "code",
+      "extensions": [
+        ".octave"
+      ],
+      "filenames": [],
+      "interpreters": [
+        "octave",
+        "octave-cli"
+      ],
+      "aliases": []
+    },
+    "matlab": {
+      "label": "MATLAB",
+      "category": "code",
+      "extensions": [],
+      "filenames": [],
+      "interpreters": [
+        "matlab"
+      ],
+      "aliases": []
+    },
+    "matlab-octave": {
+      "label": "MATLAB / GNU Octave (ambiguous)",
+      "category": "code",
+      "extensions": [
+        ".m"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "objective-c": {
+      "label": "Objective-C",
+      "category": "code",
+      "extensions": [
+        ".mm"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": [
+        "objc"
+      ]
+    },
+    "c": {
+      "label": "C",
+      "category": "code",
+      "extensions": [
+        ".c"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "cpp": {
+      "label": "C++",
+      "category": "code",
+      "extensions": [
+        ".cpp",
+        ".cc",
+        ".cxx",
+        ".hpp",
+        ".hh",
+        ".hxx"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": [
+        "c++",
+        "cxx"
+      ]
+    },
+    "c-cpp": {
+      "label": "C / C++ (ambiguous header)",
+      "category": "code",
+      "extensions": [
+        ".h"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "bash": {
+      "label": "Bash",
+      "category": "code",
+      "extensions": [
+        ".bash"
+      ],
+      "filenames": [
+        ".bashrc",
+        ".bash_profile"
+      ],
+      "interpreters": [
+        "bash"
+      ],
+      "aliases": []
+    },
+    "sh": {
+      "label": "POSIX shell",
+      "category": "code",
+      "extensions": [
+        ".sh"
+      ],
+      "filenames": [
+        ".profile"
+      ],
+      "interpreters": [
+        "sh",
+        "dash",
+        "ash"
+      ],
+      "aliases": [
+        "shell"
+      ]
+    },
+    "zsh": {
+      "label": "Zsh",
+      "category": "code",
+      "extensions": [
+        ".zsh"
+      ],
+      "filenames": [
+        ".zshrc"
+      ],
+      "interpreters": [
+        "zsh"
+      ],
+      "aliases": []
+    },
+    "fish": {
+      "label": "Fish shell",
+      "category": "code",
+      "extensions": [
+        ".fish"
+      ],
+      "filenames": [],
+      "interpreters": [
+        "fish"
+      ],
+      "aliases": []
+    },
+    "powershell": {
+      "label": "PowerShell",
+      "category": "code",
+      "extensions": [
+        ".ps1",
+        ".psm1"
+      ],
+      "filenames": [],
+      "interpreters": [
+        "pwsh",
+        "powershell"
+      ],
+      "aliases": [
+        "ps1"
+      ]
+    },
+    "batch": {
+      "label": "Windows batch",
+      "category": "code",
+      "extensions": [
+        ".bat",
+        ".cmd"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": [
+        "dosbatch"
+      ]
+    },
+    "javascript": {
+      "label": "JavaScript",
+      "category": "code",
+      "extensions": [
+        ".js",
+        ".mjs",
+        ".cjs",
+        ".jsx"
+      ],
+      "filenames": [],
+      "interpreters": [
+        "node",
+        "nodejs"
+      ],
+      "aliases": [
+        "js"
+      ]
+    },
+    "typescript": {
+      "label": "TypeScript",
+      "category": "code",
+      "extensions": [
+        ".ts",
+        ".tsx"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": [
+        "ts"
+      ]
+    },
+    "csharp": {
+      "label": "C#",
+      "category": "code",
+      "extensions": [
+        ".cs"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": [
+        "cs"
+      ]
+    },
+    "java": {
+      "label": "Java",
+      "category": "code",
+      "extensions": [
+        ".java"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "fortran": {
+      "label": "Fortran",
+      "category": "code",
+      "extensions": [
+        ".f",
+        ".for",
+        ".f77",
+        ".f90",
+        ".f95",
+        ".f03",
+        ".f08"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "rust": {
+      "label": "Rust",
+      "category": "code",
+      "extensions": [
+        ".rs"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": [
+        "rs"
+      ]
+    },
+    "go": {
+      "label": "Go",
+      "category": "code",
+      "extensions": [
+        ".go"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "r": {
+      "label": "R",
+      "category": "code",
+      "extensions": [
+        ".r",
+        ".rscript"
+      ],
+      "filenames": [],
+      "interpreters": [
+        "Rscript",
+        "R"
+      ],
+      "aliases": [
+        "rscript"
+      ]
+    },
+    "julia": {
+      "label": "Julia",
+      "category": "code",
+      "extensions": [
+        ".jl"
+      ],
+      "filenames": [],
+      "interpreters": [
+        "julia"
+      ],
+      "aliases": []
+    },
+    "ruby": {
+      "label": "Ruby",
+      "category": "code",
+      "extensions": [
+        ".rb",
+        ".rake"
+      ],
+      "filenames": [
+        "Gemfile",
+        "Rakefile"
+      ],
+      "interpreters": [
+        "ruby"
+      ],
+      "aliases": []
+    },
+    "perl": {
+      "label": "Perl",
+      "category": "code",
+      "extensions": [
+        ".pm"
+      ],
+      "filenames": [],
+      "interpreters": [
+        "perl"
+      ],
+      "aliases": []
+    },
+    "prolog": {
+      "label": "Prolog",
+      "category": "code",
+      "extensions": [
+        ".pro"
+      ],
+      "filenames": [],
+      "interpreters": [
+        "swipl"
+      ],
+      "aliases": []
+    },
+    "perl-prolog": {
+      "label": "Perl / Prolog (ambiguous)",
+      "category": "code",
+      "extensions": [
+        ".pl"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "lua": {
+      "label": "Lua",
+      "category": "code",
+      "extensions": [
+        ".lua"
+      ],
+      "filenames": [],
+      "interpreters": [
+        "lua",
+        "luajit"
+      ],
+      "aliases": []
+    },
+    "php": {
+      "label": "PHP",
+      "category": "code",
+      "extensions": [
+        ".php"
+      ],
+      "filenames": [],
+      "interpreters": [
+        "php"
+      ],
+      "aliases": []
+    },
+    "sql": {
+      "label": "SQL",
+      "category": "code",
+      "extensions": [
+        ".sql"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "make": {
+      "label": "Makefile",
+      "category": "configuration",
+      "extensions": [
+        ".mk"
+      ],
+      "filenames": [
+        "Makefile",
+        "GNUmakefile"
+      ],
+      "interpreters": [],
+      "aliases": [
+        "makefile"
+      ]
+    },
+    "cmake": {
+      "label": "CMake",
+      "category": "configuration",
+      "extensions": [
+        ".cmake"
+      ],
+      "filenames": [
+        "CMakeLists.txt"
+      ],
+      "interpreters": [],
+      "aliases": []
+    },
+    "dockerfile": {
+      "label": "Dockerfile",
+      "category": "configuration",
+      "extensions": [],
+      "filenames": [
+        "Dockerfile",
+        "Containerfile"
+      ],
+      "interpreters": [],
+      "aliases": []
+    },
+    "json": {
+      "label": "JSON",
+      "category": "configuration",
+      "extensions": [
+        ".json",
+        ".ipynb"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": [
+        "jsonc"
+      ]
+    },
+    "yaml": {
+      "label": "YAML",
+      "category": "configuration",
+      "extensions": [
+        ".yaml",
+        ".yml"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": [
+        "yml"
+      ]
+    },
+    "toml": {
+      "label": "TOML",
+      "category": "configuration",
+      "extensions": [
+        ".toml"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "ini": {
+      "label": "INI",
+      "category": "configuration",
+      "extensions": [
+        ".ini",
+        ".cfg",
+        ".conf"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "xml": {
+      "label": "XML",
+      "category": "markup",
+      "extensions": [
+        ".xml",
+        ".xsd",
+        ".svg"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "html": {
+      "label": "HTML",
+      "category": "markup",
+      "extensions": [
+        ".html",
+        ".htm"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "css": {
+      "label": "CSS",
+      "category": "code",
+      "extensions": [
+        ".css"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "markdown": {
+      "label": "Markdown",
+      "category": "markup",
+      "extensions": [
+        ".md",
+        ".markdown"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": [
+        "md"
+      ]
+    },
+    "rst": {
+      "label": "reStructuredText",
+      "category": "markup",
+      "extensions": [
+        ".rst"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": []
+    },
+    "tex": {
+      "label": "TeX / LaTeX",
+      "category": "markup",
+      "extensions": [
+        ".tex",
+        ".sty",
+        ".cls"
+      ],
+      "filenames": [],
+      "interpreters": [],
+      "aliases": [
+        "latex"
+      ]
+    },
+    "gitignore": {
+      "label": "Git ignore rules",
+      "category": "configuration",
+      "extensions": [],
+      "filenames": [
+        ".gitignore",
+        ".dockerignore"
+      ],
+      "interpreters": [],
+      "aliases": []
+    }
+  },
+  "case_sensitive_extensions": {
+    ".C": "cpp"
+  },
+  "ambiguities": {
+    "matlab-octave": [
+      "matlab",
+      "octave",
+      "objective-c"
+    ],
+    "c-cpp": [
+      "c",
+      "cpp"
+    ],
+    "perl-prolog": [
+      "perl",
+      "prolog"
+    ]
+  }
+}

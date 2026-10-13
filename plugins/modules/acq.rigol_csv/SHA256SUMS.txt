@@ -1,0 +1,8 @@
+1c2d3cacde9651b70bcaa0334d45861f4109d4af9c12121046dcc4e256fee724  ./CHANGELOG.md
+3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986  ./LICENSE
+0873722514157e24d7342dd6be1e7b714cac39320abcf912ea8319cb0b8e2f22  ./MANUAL.md
+dedf6677c45705c045e80c6bdfc6ad518165fa6cc9adf7a33d962bfc0db17711  ./README.md
+b640f6bf96588aabb3c35806f5876efe1483e9e137e2305c9160d752b6c0b7a2  ./module.ini
+d9d1e6fd08f0c3153c32097aea8b046c1d9f0a05b578a5b7274061c0f0d88712  ./plugin-package.ini
+ea666487c6fb85859447da8a1c1ba803244d7baadcd35bd617edfe5f2e1934f2  ./runtime/acquisition_handler.tcl
+ce82fdb86536895fcc7abd1d522ed4ccca7d55c6f8b689cfe736b8b76db9d08b  ./runtime/gxtxt_csv_worker.m

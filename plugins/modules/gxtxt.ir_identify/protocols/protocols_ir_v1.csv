@@ -1,0 +1,7 @@
+id,name,kind,carrier_khz,header_mark_us,header_space_us,bit_mark_us,zero_space_us,one_space_us,zero_mark_us,one_mark_us,bit_space_us,unit_us,bits,lsb_first
+nec,NEC family,pulse_distance,38,9000,4500,560,560,1690,,,,,32,1
+samsung,Samsung,pulse_distance,38,4480,4480,560,560,1680,,,,,32;48,1
+kaseikyo,Panasonic / Kaseikyo,pulse_distance,37,3456,1728,432,432,1296,,,,,48,1
+sony_sirc,Sony SIRC,pulse_width,40,2400,600,,,,600,1200,600,,12;15;20,1
+philips_rc5,Philips RC5,biphase,36,,,,,,,,,889,14,0
+philips_rc6,Philips RC6,biphase_header,36,2666,889,,,,,,,444,22;37,0

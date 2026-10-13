@@ -1,0 +1,7 @@
+22d87afd2b5948877f50d68e2317f0a2e5f7fd6155f5dfc205bab9cba2425399  ./CHANGELOG.md
+97a00a044bf11efe34464bcf515da22f1de6bcc65bdbfaa4361d25e90142b8a8  ./DEPENDENCIES.md
+d43e7a7b7162985bb713edeec092982720fa7ba649937e33b061c1b295ea9fa8  ./LICENSE
+da1cfb2396ccbf08ded811c44de00d40ec18e803fbaf6ebcc98b61f3adf4268f  ./README.md
+4d0c28e7499db99deeca515af6c252df4872a7403e67fe495894504cdf65d113  ./api/document_extractors_viewer_api_v1.tcl
+21311fa42205173c2a1ec874e912b7f0b10d1fd4f05038329ba3a627d3446eed  ./module.ini
+dbba64d48fbaa781fc57c5d8feef71c8cb003dd62da6174de288556f434d12ae  ./plugin-package.ini

@@ -1,0 +1,4 @@
+3c908fd0acbc45373666aefb397ba7acd10a4da0418a4fba7557777c71d36120  ./MANUAL.md
+b0f1419364f45dfaa92e7c535b8764c0efb96fdd5b30733744805d0afd29d148  ./api/interactive_curve_builder_api_v1.tcl
+e0ad4081e275caf812d2030d488b706ea1ab6f75d388a624bef6ce5e29bbac21  ./module.ini
+5ef85ed91895ea0def884ab59aaae136dbb6742c9a0fe0199b462503167cdf2f  ./plugin-package.ini

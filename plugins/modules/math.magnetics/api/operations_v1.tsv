@@ -1,0 +1,58 @@
+# operation_id|summary
+coordinates.cartesian_to_cylindrical|coordinates cartesian to cylindrical
+coordinates.cylindrical_to_cartesian|coordinates cylindrical to cartesian
+coordinates.cartesian_to_spherical|coordinates cartesian to spherical
+coordinates.spherical_to_cartesian|coordinates spherical to cartesian
+field.magnitude|field magnitude
+field.phasor|field phasor
+field.normal_component|field normal component
+field.sample|field sample
+field.gradient|field gradient
+field.divergence|field divergence
+field.curl|field curl
+integral.line|integral line
+integral.circulation|integral circulation
+integral.mmf|integral mmf
+integral.surface_flux|integral surface flux
+integral.flux|integral flux
+integral.volume|integral volume
+constitutive.vacuum_permeability|constitutive vacuum permeability
+constitutive.b_from_h|constitutive b from h
+constitutive.h_from_b|constitutive h from b
+constitutive.permeability|constitutive permeability
+circuit.reluctance|circuit reluctance
+circuit.permeance|circuit permeance
+circuit.series_reluctance|circuit series reluctance
+circuit.parallel_reluctance|circuit parallel reluctance
+circuit.mmf|circuit mmf
+circuit.flux_linkage|circuit flux linkage
+circuit.inductance|circuit inductance
+circuit.mutual_inductance|circuit mutual inductance
+circuit.coupling|circuit coupling
+energy.density|energy density
+energy.integrated|energy integrated
+energy.coenergy_curve|energy coenergy curve
+energy.energy_curve|energy energy curve
+bh.loop_area|bh loop area
+bh.remanence|bh remanence
+bh.coercivity|bh coercivity
+bh.differential_permeability|bh differential permeability
+bh.saturation_indicator|bh saturation indicator
+circuit.inductance_matrix|Build a physically bounded two-coil inductance matrix
+circuit.energy_derived_inductance|Extract inductance from declared magnetic energy and current
+field.dot|Compute Hermitian dot product of complex three-component fields
+field.cross|Compute cross product of three-component fields
+field.time_average_power|Compute complex phasor Poynting vector and active/reactive densities
+field.laplacian|Compute nonuniform-grid 3D scalar Laplacian
+field.joule_loss|Compute declared E/J Joule loss density
+integral.power|Integrate Poynting flux through an oriented triangle surface
+constitutive.anisotropic_b_from_h|Apply positive Hermitian relative permeability tensor
+constitutive.nonlinear_b_from_h|Interpolate a declared monotonic B-H relation
+energy.electric_density|Compute electric energy density with explicit permittivity
+energy.force_from_gradient|Compute force from supplied energy gradient
+energy.torque_from_gradient|Compute torque from supplied angular energy gradient
+bh.incremental_permeability|Finite-span incremental permeability about a bias
+bh.interpolate|Interpolate a measured monotonic B-H curve
+bh.cycle_align|Rotate a measured cycle to its maximum-H anchor
+loss.steinmetz|Empirical sinusoidal Steinmetz loss density
+loss.arbitrary_waveform|Improved generalized Steinmetz waveform integration
