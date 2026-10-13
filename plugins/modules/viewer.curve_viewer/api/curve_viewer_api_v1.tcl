@@ -1,8 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-namespace eval ::GX::CurveViewer {variable st;array set st {};variable version 0.2.0;variable sourceEpoch 0}
+namespace eval ::GX::CurveViewer {variable st;array set st {};variable version 0.3.0;variable sourceEpoch 0}
 proc ::GX::CurveViewer::_safe {w command} {
     variable st
-    if {[catch {uplevel #0 $command} message options]} {
+    try {
+        if {[dict exists $::GX::ScientificHistory::viewers $w] && [lindex $command 0] ni {::GX::CurveViewer::_redraw ::GX::CurveViewer::_select ::GX::CurveViewer::_close ::GX::CurveViewer::_sourceBatchNext ::GX::CurveViewer::_sourceCancel}} {
+            if {![::GX::scientificHistoryViewerPrepareEdit $w]} return
+        }
+        uplevel #0 $command
+    } on error {message options} {
         if {[info exists st($w,status)]} {set st($w,status) $message}
         tk_messageBox -parent $w -icon error -type ok -title "Curve Viewer" -message $message
         return
@@ -203,7 +208,7 @@ proc ::GX::CurveViewer::_sourceAdd {w} {
         dict set record manual_family $st($w,manualFamily)
         if {$st($w,editing) ne {}} {
             set old [dict get $st($w,records) $st($w,editing)]
-            foreach key {visible color width direction} {dict set record $key [dict get $old $key]}
+            foreach key {visible color width direction presentation_label line_style marker} {if {[dict exists $old $key]} {dict set record $key [dict get $old $key]}}
         }
         lappend st($w,sourceQueue) $record
     }
@@ -261,6 +266,12 @@ proc ::GX::CurveViewer::_sourceProgress {w progress} {
 proc ::GX::CurveViewer::_sourceCancel {w} {
     variable st
     if {$st($w,sourceJob) ne ""} {::GX::curveSourceCancel $st($w,sourceJob)}
+    if {[info exists st($w,restoring)] && $st($w,restoring)} {
+        if {$st($w,restoreAfter) ne {}} {after cancel $st($w,restoreAfter)}
+        set st($w,restoreEpoch) [incr ::GX::CurveViewer::sourceEpoch]
+        set st($w,restoreQueue) {};set st($w,incomplete) 1;set st($w,restoring) 0
+        set st($w,status) {Opening cancelled; saved Workspace remains unchanged. Reopen to finish.}
+    }
     set st($w,sourceJob) {};set st($w,sourceEpoch) [incr ::GX::CurveViewer::sourceEpoch]
     _sourceBatchCleanup $w
     if {[winfo exists $w.source]} {destroy $w.source}
@@ -278,19 +289,28 @@ proc ::GX::CurveViewer::_sourceDone {w epoch token record result} {
     lappend st($w,sourceLoaded) [list $token $record]
     _safe $w [list ::GX::CurveViewer::_sourceBatchNext $w]
 }
-proc ::GX::CurveViewer::add {w record {token ""}} {
+proc ::GX::CurveViewer::add {w record {token ""} {prepared {}}} {
     variable st
     _scope $w
     set native ""
     try {
-        if {$token eq ""} {set token [::GX::curveSourceOpen $::GX::currentSession [dict get $record request]]}
-        set descriptor [::GX::curveSourceDescribe $token]
-        if {[dict exists $record source_id]&&[dict get $record source_id] ne [dict get $descriptor source_id]} {error "Source Dataset or scientific binding changed; remove and re-add this curve"}
-        set display [::GX::curveSourceDisplay $token]
-        set native [::GX::Native2D::core add $st($w,scene) [dict get $display points]]
-        if {[dict get $display breaks] ne {}} {::GX::Native2D::core set_breaks $st($w,scene) $native [dict get $display breaks]}
+        set cacheHit 0
+        if {$token eq {} && $prepared ne {} && [dict exists $prepared native]} {
+            set descriptor [dict get $prepared descriptor];set display [dict get $prepared display];set native [dict get $prepared native];set cacheHit 1
+        } elseif {$token eq {} && [dict exists $record display_cache] && $st($w,document) ne {}} {
+            if {![catch {::GX::curveSourceDisplayCacheRestore $::GX::currentSession $st($w,document) [dict get $record display_cache] [dict get $record id] [dict get $record request] $st($w,scene)} cached]} {
+                set descriptor [dict get $cached descriptor];set display [dict get $cached display];set native [dict get $cached native];set cacheHit 1
+            } else {dict unset record display_cache;set st($w,status) "Rebuilding display [dict get $record id]: $cached"}
+        }
+        if {!$cacheHit} {
+            if {$token eq ""} {set token [::GX::curveSourceOpen $::GX::currentSession [dict get $record request]]}
+            set descriptor [::GX::curveSourceDescribe $token]
+            if {$prepared eq {}} {set display [::GX::curveSourceDisplay $token]} else {set display $prepared}
+            set native [::GX::Native2D::core add $st($w,scene) [dict get $display points]]
+            if {[dict get $display breaks] ne {}} {::GX::Native2D::core set_breaks $st($w,scene) $native [dict get $display breaks]}
+        }
         set color [::GX::uiFieldColorToRGBA [dict get $record color]]
-        ::GX::Native2D::core object_style $st($w,scene) $native [dict create color $color line_width [dict get $record width] marker 0 visible [dict get $record visible] locked 1]
+        ::GX::Native2D::core object_style $st($w,scene) $native [dict create color $color line_width [dict get $record width] marker [::GX::datasetPublicationV2DictDefault $record marker 0] line_style [::GX::datasetPublicationV2DictDefault $record line_style 0] visible [dict get $record visible] locked 1]
         ::GX::Native2D::core direction_marker $st($w,scene) $native [dict get $record direction]
         dict set record token $token;dict set record native $native;dict set record descriptor $descriptor
         dict set record source_id [dict get $descriptor source_id];dict set record display $display;dict set record status ready
@@ -304,6 +324,7 @@ proc ::GX::CurveViewer::add {w record {token ""}} {
 }
 proc ::GX::CurveViewer::_refresh {w} {
     variable st
+    set chosen [_chosenLabels $w]
     foreach item [$w.sources children {}] {
         if {![dict exists $st($w,records) $item]} {$w.sources delete $item}
     }
@@ -313,7 +334,7 @@ proc ::GX::CurveViewer::_refresh {w} {
         foreach v [dict get $descriptor variables] {lappend labels [_axisText $v]}
         set mode [expr {[dict get $record visible] ? "shown" : "hidden"}]
         if {[dict get $record status] ne "ready"} {set mode [dict get $record status]}
-        set name [dict get $record name]
+        set name [dict get $chosen $id]
         set predicates [llength [::GX::datasetPublicationV2DictDefault [dict get $record request] filters {}]]
         if {$predicates} {append name " · $predicates predicates"}
         set values [list $name [dict get $record request dataset_id] [join $labels { / }] [dict get $descriptor row_count] $mode]
@@ -327,6 +348,9 @@ proc ::GX::CurveViewer::_select {w} {
     ::GX::Native2D::core clear $st($w,scene)
     set count 0
     foreach id [$w.sources selection] {
+        # A queued TreeviewSelect can arrive between incremental restore steps.
+        # Its old row remains a UI item until the new source collection is ready.
+        if {![dict exists $st($w,records) $id]} continue
         set record [dict get $st($w,records) $id]
         set native [dict get $record native]
         if {$native ne "" && [dict get $record visible]} {
@@ -343,7 +367,7 @@ proc ::GX::CurveViewer::_fit {w selected} {
         if {![_select $w]} {error "Selected curves are hidden or unavailable; show or reload them first"}
         ::GX::Native2D::core fit_selected $st($w,scene)
     } else {::GX::Native2D::core fit $st($w,scene)}
-    _redraw $w;_save $w
+    _redraw $w;_save $w [expr {$selected ? "Fit selected view" : "Fit all sources"}]
 }
 proc ::GX::CurveViewer::_visibility {w shown} {
     variable st
@@ -352,7 +376,7 @@ proc ::GX::CurveViewer::_visibility {w shown} {
         set native [dict get $st($w,records) $id native]
         if {$native ne ""} {::GX::Native2D::core visible $st($w,scene) $native $shown}
     }
-    _refresh $w;_redraw $w;_save $w
+    _refresh $w;_redraw $w;_save $w [expr {$shown ? "Show selected sources" : "Hide selected sources"}]
 }
 proc ::GX::CurveViewer::_remove {w} {
     variable st
@@ -362,16 +386,16 @@ proc ::GX::CurveViewer::_remove {w} {
         if {[dict get $record token] ne ""} {::GX::curveSourceClose [dict get $record token]}
         dict unset st($w,records) $id
     }
-    _refresh $w;_redraw $w;_save $w
+    _refresh $w;_redraw $w;_save $w {Remove displayed sources}
 }
 proc ::GX::CurveViewer::_preview {w} {
     variable st
     set selected [$w.sources selection]
     if {[llength $selected]!=1} {error "Select exactly one source curve for its Dataset Preview"}
-    ::GX::curveSourceDescribe [dict get $st($w,records) [lindex $selected 0] token]
+    ::GX::curveSourceDescribe [_canonicalToken $w [lindex $selected 0]]
     ::GX::datasetPreviewOpenTable [dict get $st($w,records) [lindex $selected 0] request dataset_id]
 }
-proc ::GX::CurveViewer::_presentationChanged {w} {_redraw $w;_save $w}
+proc ::GX::CurveViewer::_presentationChanged {w} {_redraw $w;_save $w {Change axes / grid presentation}}
 proc ::GX::CurveViewer::_presentation {w} {
     variable st
     ::GX::native2DGridForm $w.grid $st($w,scene) [list ::GX::CurveViewer::_presentationChanged $w] $w
@@ -384,23 +408,32 @@ proc ::GX::CurveViewer::_properties {w} {
     if {[dict get $r native] eq ""} {error "Source is unavailable; remove and re-add it"}
     set fields [dict create color [dict create type color alpha 1 label "Curve color / opacity"] width [dict create type number min .1 max 64 label "Line width (px)"] direction [dict create type boolean label "Show direction"]]
     set values [dict create color [dict get $r color] width [dict get $r width] direction [dict get [::GX::Native2D::core direction_marker $st($w,scene) [dict get $r native]] visible]]
+    dict set fields line_style [dict create type choice label {Line pattern} values {solid dashed dotted}]
+    dict set fields marker [dict create type choice label {Point markers} values {none circle square cross}]
+    dict set values line_style [lindex {solid dashed dotted} [::GX::datasetPublicationV2DictDefault $r line_style 0]]
+    dict set values marker [lindex {none circle square cross} [::GX::datasetPublicationV2DictDefault $r marker 0]]
     ::GX::uiFieldFormCreate $w.properties "Curve presentation" $fields $values [list ::GX::CurveViewer::_propertiesApply $w $id] $w
 }
 proc ::GX::CurveViewer::_propertiesApply {w id values} {
     variable st
+    _scope $w
+    if {![::GX::scientificHistoryViewerPrepareEdit $w]} return
     if {![dict exists $st($w,records) $id]} {error "The source curve was removed"}
     set native [dict get $st($w,records) $id native]
-    ::GX::Native2D::core object_style $st($w,scene) $native [dict create color [::GX::uiFieldColorToRGBA [dict get $values color]] line_width [dict get $values width]]
+    set pattern [lsearch -exact {solid dashed dotted} [::GX::datasetPublicationV2DictDefault $values line_style [lindex {solid dashed dotted} [::GX::datasetPublicationV2DictDefault [dict get $st($w,records) $id] line_style 0]]]]
+    set marker [lsearch -exact {none circle square cross} [::GX::datasetPublicationV2DictDefault $values marker [lindex {none circle square cross} [::GX::datasetPublicationV2DictDefault [dict get $st($w,records) $id] marker 0]]]]
+    ::GX::Native2D::core object_style $st($w,scene) $native [dict create color [::GX::uiFieldColorToRGBA [dict get $values color]] line_width [dict get $values width] line_style $pattern marker $marker]
+    dict set st($w,records) $id line_style $pattern;dict set st($w,records) $id marker $marker
     ::GX::Native2D::core direction_marker $st($w,scene) $native [dict create visible [dict get $values direction]]
     foreach key {color width} {dict set st($w,records) $id $key [dict get $values $key]}
-    _redraw $w;_save $w
+    _redraw $w;_save $w "Change curve style: $id"
 }
 proc ::GX::CurveViewer::snapshot {w} {
     variable st
-    set labels {};set axes [dict create x {} y {}]
+    set labels {};set axes [dict create x {} y {}];set chosen [_chosenLabels $w]
     dict for {id r} $st($w,records) {
         if {[dict get $r native] eq ""} continue
-        dict set labels [dict get $r native] "[dict get $r name] ([dict get $r request dataset_id])"
+        dict set labels [dict get $r native] [dict get $chosen $id]
         if {![dict get $r visible]} continue
         foreach axis {x y} spec [dict get $r descriptor variables] {
             set label [_axisText $spec]
@@ -412,7 +445,7 @@ proc ::GX::CurveViewer::snapshot {w} {
         set label [expr {[llength $names]==1 ? [lindex $names 0] : [llength $names]>1 ? "[string toupper $axis] · mixed bindings/units (see table)" : [string toupper $axis]}]
         dict set axes $axis $label
     }
-    return [::GX::native2DPresentationSnapshot $st($w,scene) [dict create object_labels $labels x_label [dict get $axes x] y_label [dict get $axes y] title "Dataset curves" font_size 13 legend auto]]
+    return [::GX::native2DPresentationSnapshot $st($w,scene) [dict create object_labels $labels x_label [dict get $axes x] y_label [dict get $axes y] title "Dataset curves" font_size 13 legend [expr {[dict get $st($w,labelPreferences) legend_visible] ? "auto" : ""}]]]
 }
 proc ::GX::CurveViewer::_export {w} {
     variable st;variable version
@@ -427,8 +460,8 @@ proc ::GX::CurveViewer::_publicationContext {w} {
     set ids [$w.sources selection]
     if {[llength $ids]!=1} {error {Select exactly one visible source/member curve}}
     set record [dict get $st($w,records) [lindex $ids 0]]
-    if {![dict get $record visible] || [dict get $record token] eq {}} {error {The selected source must be visible and available}}
-    set descriptor [::GX::curveSourceDescribe [dict get $record token]]
+    if {![dict get $record visible] || [dict get $record status] ne "ready"} {error {The selected source must be visible and available}}
+    set descriptor [::GX::curveSourceDescribe [_canonicalToken $w [lindex $ids 0]]]
     _save $w
     set document [::GX::interactiveDocumentRead $st($w,document)]
     return [dict create workbench_id viewer.curve_viewer workbench_version $version document_id $st($w,document) revision [dict get $document revision] selection [dict create kind curve_source source_id [lindex $ids 0] request [dict get $record request] descriptor $descriptor session_token $st($w,session_token) document_generation [dict get $document generation]]]
@@ -440,11 +473,7 @@ proc ::GX::CurveViewer::_publish {w} {
     $dialog.status configure -text "Scientific source: [dict get $selection request dataset_id]; X=[dict get $selection request x_variable_id], Y=[dict get $selection request y_variable_id]; filters=[::GX::datasetPublicationV2DictDefault [dict get $selection request] filters {}]. Exact rows only."
 }
 proc ::GX::CurveViewer::_publishAvailability {w} {
-    set available [expr {[::GX::workbenchExtensionProviderList viewer.curve_viewer utility] ne {}}]
-    if {$available && ![winfo exists $w.toolbar.publish]} {
-        ttk::button $w.toolbar.publish -text {Publish Dataset…} -command [list ::GX::CurveViewer::_safe $w [list ::GX::CurveViewer::_publish $w]]
-        ::GX::native2DToolbarLayout $w.toolbar [winfo width $w.toolbar]
-    } elseif {!$available && [winfo exists $w.toolbar.publish]} {destroy $w.toolbar.publish}
+    if {[dict exists $::GX::ViewerCommands::windows $w]} {::GX::viewerCommandMenusRefresh $w}
 }
 proc ::GX::CurveViewer::_redraw {w} {
     variable st
@@ -457,9 +486,15 @@ proc ::GX::CurveViewer::_redraw {w} {
 }
 proc ::GX::CurveViewer::_zoom {w factor x y} {
     variable st
-    ::GX::Native2D::core zoom $st($w,scene) $factor [list $x $y];_redraw $w;_save $w
+    if {![_ready $w] || ![::GX::scientificHistoryViewerEditable $w]} return
+    if {![::GX::scientificHistoryViewerPrepareEdit $w]} return
+    ::GX::Native2D::core zoom $st($w,scene) $factor [list $x $y];_redraw $w;_save $w {Zoom view}
 }
-proc ::GX::CurveViewer::_panDown {w x y} {variable st;set st($w,pan) [list $x $y]}
+proc ::GX::CurveViewer::_panDown {w x y} {
+    variable st
+    if {![::GX::scientificHistoryViewerPrepareEdit $w]} return
+    set st($w,pan) [list $x $y]
+}
 proc ::GX::CurveViewer::_panMove {w x y} {
     variable st
     if {$st($w,pan) eq {}} return
@@ -467,7 +502,12 @@ proc ::GX::CurveViewer::_panMove {w x y} {
     ::GX::Native2D::core pan $st($w,scene) [expr {$x-$oldX}] [expr {$y-$oldY}]
     set st($w,pan) [list $x $y];_redraw $w
 }
-proc ::GX::CurveViewer::_panUp {w} {variable st;set st($w,pan) {};_save $w}
+proc ::GX::CurveViewer::_panUp {w} {
+    variable st
+    if {[info exists st($w,legendPressed)] && $st($w,legendPressed)} {set st($w,legendPressed) 0;return}
+    if {$st($w,pan) eq {}} return
+    set st($w,pan) {};_save $w {Pan view}
+}
 proc ::GX::CurveViewer::_coordinates {w x y} {
     variable st
     if {[info exists st($w,scene)]} {set st($w,coordinates) [::GX::native2DCoordinateReadout $st($w,scene) [list $x $y]]}
@@ -476,7 +516,13 @@ proc ::GX::CurveViewer::_catalogChanged {w receipt} {
     variable st
     if {![winfo exists $w]} return
     dict for {id record} $st($w,records) {
-        if {[catch {set descriptor [::GX::curveSourceDescribe [dict get $record token]]} message]} {
+        if {[catch {
+            if {[dict get $record token] eq {}} {
+                set validation [::GX::curveSourceValidateSnapshot $::GX::currentSession [dict get $record descriptor]]
+                if {![dict get $validation valid]} {error {Source changed; reopen to rebuild its display}}
+                set descriptor [dict get $record descriptor]
+            } else {set descriptor [::GX::curveSourceDescribe [dict get $record token]]}
+        } message]} {
             dict set st($w,records) $id status "changed: reload source"
             set st($w,status) $message
         } else {
@@ -492,15 +538,38 @@ proc ::GX::CurveViewer::_payload {w} {
     set records {}
     dict for {id r} $st($w,records) {
         if {[dict get $r native] ne ""} {dict set r direction [::GX::Native2D::core direction_marker $st($w,scene) [dict get $r native]]}
+        if {![dict exists $r display_cache] && [dict get $r token] ne {} && $st($w,document) ne {}} {
+            if {[catch {::GX::curveSourceDisplayCacheStore $st($w,document) [dict get $r token] $id} cache]} {
+                set st($w,status) "Display cache unavailable; canonical source remains active: $cache"
+            } else {
+                dict set r display_cache $cache
+                dict set st($w,records) $id display_cache $cache
+            }
+        }
         lappend records [dict remove $r token native display status]
     }
     set payload [dict create version 1 records $records next $st($w,next) presentation [::GX::Native2D::core presentation $st($w,scene)] view_requested [::GX::Native2D::core view_requested $st($w,scene)]]
+    set view [dict get $payload view_requested];lset view 0 1280;lset view 1 720
+    dict set payload view_requested $view
+    dict set payload selected_ids [$w.sources selection]
+    dict set payload label_preferences $st($w,labelPreferences)
     return $payload
 }
 proc ::GX::CurveViewer::_currentWorkspace {w} {variable st;return $st($w,document)}
-proc ::GX::CurveViewer::_save {w} {
+proc ::GX::CurveViewer::_save {w {description {Save Viewer state}}} {
     variable st
+    if {[info exists st($w,restoring)] && $st($w,restoring)} return
+    if {[info exists st($w,incomplete)] && $st($w,incomplete)} return
+    if {$st($w,document) eq {}} {_writePayload $w [_payload $w]}
+    if {[dict exists $::GX::ScientificHistory::viewers $w]} {
+        if {![::GX::scientificHistoryViewerEditable $w]} return
+        return [::GX::scientificHistoryViewerChanged $w $description]
+    }
     set payload [_payload $w]
+    _writePayload $w $payload
+}
+proc ::GX::CurveViewer::_writePayload {w payload} {
+    variable st
     if {$st($w,document) eq {}} {
         set name $st($w,workspaceName)
         if {$name eq {}} {set name "Curve Viewer [clock clicks]"}
@@ -515,11 +584,12 @@ proc ::GX::CurveViewer::_save {w} {
     set doc [::GX::interactiveDocumentRead $st($w,document)]
     set st($w,documentRevision) [dict get $doc revision];set st($w,documentGeneration) [dict get $doc generation]
     set st($w,savedPayload) [dict remove [dict get $doc payload] workspace_metadata]
-    wm title $w "Curve Viewer — [dict get [::GX::sessionWorkspaceGet $st($w,document)] name]"
+    ::GX::sessionWorkspaceViewerTitlesRefresh
 }
 proc ::GX::CurveViewer::_close {w} {
     variable st
     _sourceCancel $w
+    if {[info exists st($w,configurationSubscription)]} {::GX::configurationUnsubscribe $st($w,configurationSubscription)}
     if {![catch {set token [::GX::interactiveDocumentSessionToken]}]&&$token eq $st($w,session_token)} {_save $w}
     ::GX::datasetCatalogUnsubscribe $st($w,subscription)
     dict for {id r} $st($w,records) {if {[dict get $r token] ne ""} {::GX::curveSourceClose [dict get $r token]}}
@@ -543,6 +613,7 @@ proc ::GX::CurveViewer::open {{context {}}} {
         return $w
     }
     set st($w,scene) [::GX::Native2D::core scene];set st($w,records) {};set st($w,next) 0
+    set st($w,labelPreferences) [_labelValidate [dict get [::GX::configurationResolve modules.curve_viewer.labels] effective]]
     set st($w,workspaceName) [::GX::datasetPublicationV2DictDefault $context workspace_name {}]
     set st($w,sourceQueue) {};set st($w,sourceLoaded) {};set st($w,sourceEpoch) [incr ::GX::CurveViewer::sourceEpoch];set st($w,editing) {}
     set st($w,document) "";set st($w,session_token) [::GX::interactiveDocumentSessionToken];set st($w,sourceJob) ""
@@ -554,14 +625,14 @@ proc ::GX::CurveViewer::open {{context {}}} {
     ttk::menubutton $w.toolbar.workspace -text Workspace -menu $w.toolbar.workspace.menu
     menu $w.toolbar.workspace.menu -tearoff 0
     ::GX::sessionWorkspaceViewerMenu $w.toolbar.workspace.menu curve_viewer [dict create current [list ::GX::CurveViewer::_currentWorkspace $w] save [list ::GX::CurveViewer::_save $w] close [list ::GX::CurveViewer::_close $w] open ::GX::CurveViewer::open] $w
-    pack $w.toolbar.workspace -side left -padx 3
+
     foreach {key label command} [list add "Add curve…" [list _sourceOpen $w] filters "Source filters…" [list _sourceEdit $w] fit_selected "Fit selected" [list _fit $w 1] fit_all "Fit all" [list _fit $w 0] show "Show" [list _visibility $w 1] hide "Hide" [list _visibility $w 0] remove "Remove from view" [list _remove $w] preview "Dataset Preview" [list _preview $w] properties "Curve style…" [list _properties $w] presentation "Grid / view…" [list _presentation $w] export "Export…" [list _export $w] save "Save view" [list _save $w]] {
         ttk::button $w.toolbar.$key -text $label -command [list ::GX::CurveViewer::_safe $w [list ::GX::CurveViewer::[lindex $command 0] {*}[lrange $command 1 end]]]
         pack $w.toolbar.$key -side left -padx 3
     }
     _publishAvailability $w
     bind $w <FocusIn> [list ::GX::CurveViewer::_publishAvailability $w]
-    bind $w.toolbar <Configure> [list ::GX::native2DToolbarLayout $w.toolbar %w]
+    _menus $w
     ttk::label $w.status -textvariable ::GX::CurveViewer::st($w,status) -wraplength 1200
     pack $w.status -side bottom -fill x -padx 8 -pady 4
     ttk::label $w.coordinates -textvariable ::GX::CurveViewer::st($w,coordinates);pack $w.coordinates -side bottom -fill x -padx 8
@@ -577,7 +648,8 @@ proc ::GX::CurveViewer::open {{context {}}} {
     bind $w.canvas <Configure> [list ::GX::CurveViewer::_safe $w [list ::GX::CurveViewer::_redraw $w]]
     bind $w.canvas <Button-4> [list ::GX::CurveViewer::_zoom $w .85 %x %y]
     bind $w.canvas <Button-5> [list ::GX::CurveViewer::_zoom $w 1.18 %x %y]
-    bind $w.canvas <ButtonPress-1> [list ::GX::CurveViewer::_panDown $w %x %y]
+    bind $w.canvas <ButtonPress-1> [list ::GX::CurveViewer::_legendPress $w %x %y %s]
+    bind $w.canvas <Button-3> [list ::GX::CurveViewer::_legendContext $w %x %y %X %Y]
     bind $w.canvas <B1-Motion> [list ::GX::CurveViewer::_panMove $w %x %y]
     bind $w.canvas <ButtonRelease-1> [list ::GX::CurveViewer::_panUp $w]
     bind $w.canvas <Motion> [list ::GX::CurveViewer::_coordinates $w %x %y]
@@ -588,22 +660,14 @@ proc ::GX::CurveViewer::open {{context {}}} {
     if {$documents ne {}} {
         set doc [::GX::interactiveDocumentRead [dict get [lindex $documents 0] id]];set payload [dict get $doc payload]
         if {[dict get $payload version]!=1} {error "Unsupported Curve Viewer document"}
-        foreach record [dict get $payload records] {
-            if {[catch {add $w $record} message]} {
-                if {![dict exists $record descriptor]} {set st($w,status) $message;continue}
-                dict set record native "";dict set record token "";dict set record status "unavailable: re-add source"
-                dict set st($w,records) [dict get $record id] $record
-                set st($w,status) $message
-            }
-        }
-        set st($w,next) [dict get $payload next];set st($w,document) [dict get $doc id]
+        set st($w,document) [dict get $doc id]
         set st($w,documentRevision) [dict get $doc revision];set st($w,documentGeneration) [dict get $doc generation]
         set st($w,savedPayload) [dict remove [dict get $doc payload] workspace_metadata]
-        ::GX::Native2D::core presentation $st($w,scene) [dict get $payload presentation]
-        ::GX::Native2D::core view $st($w,scene) [dict get $payload view_requested]
-        _refresh $w;_redraw $w
+        _restoreStart $w $payload
     }
     if {$requested eq "new"} {_save $w}
+    if {![info exists st($w,restoring)] || !$st($w,restoring)} {_historyAttach $w}
+    ::GX::sessionWorkspaceViewerTitle $w {Curve Viewer} [list ::GX::CurveViewer::_currentWorkspace $w] [list set ::GX::CurveViewer::st($w,workspaceName)]
     return $w
 }
 proc ::GX::CurveViewer::viewerDispatch {action scene} {
@@ -611,3 +675,6 @@ proc ::GX::CurveViewer::viewerDispatch {action scene} {
     return [open [::GX::datasetPublicationV2DictDefault $scene open_context {}]]
 }
 ::GX::viewerBackendRegister curve_viewer_tk ::GX::CurveViewer::viewerDispatch
+
+source [file join [file dirname [info script]] curve_viewer_settings.tcl]
+source [file join [file dirname [info script]] curve_viewer_integrated.tcl]

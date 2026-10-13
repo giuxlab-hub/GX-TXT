@@ -10,8 +10,20 @@ The API provides mathematical primitives. It includes reusable FFT/IFFT, analyti
 
 ## 2. Discovery
 
-The public service provides `polar_coordinates(X,Y,options)` and
-`cartesian_coordinates(theta,radius,options)`, available in Octave and both
+The Octave public service provides `point_sequence_order(points, options)` for a
+finite 2..4096 by 2 or 3 matrix. `policy=x_monotone|geometry_auto` and an explicit
+zero-based `start_index` select a deterministic candidate. Results include
+unchanged points, permutation/inverse, changed count, segment starts, ambiguity,
+coincident-point and 2-D crossing diagnostics. Geometry always requires review;
+when starting at ordinal zero, an exactly repeated final closing observation is
+retained at the end with its distinct original identity. The receipt records
+`closed_endpoint_preserved` and algorithm `stable_x_or_greedy_nearest_v2`.
+This endpoint rule does not infer unique interior connectivity or close open paths;
+3-D topology cannot be inferred. It neither interpolates nor changes a Dataset.
+This is an Octave binding callable through the typed host dispatcher;
+no direct Python/Script Bridge binding is advertised for this operation.
+
+The public service also provides `polar_coordinates(X,Y,options)` and`cartesian_coordinates(theta,radius,options)`, available in Octave and both
 Script Bridge languages. The explicit frame options are `origin`,
 `theta_zero` (radians), `clockwise`, `angle_unit=rad|deg`,
 `unwrap_policy=cut|continuous` and `angle_cut` in the chosen angular unit.
@@ -789,3 +801,18 @@ curve = gxtxt_numeric_v1('curve_model_evaluate',state,linspace(0,1,1000)');
 ```
 
 Units remain caller-owned; model fitting does not infer physical conversions. These operations are numerical services and contain no Dataset/GUI publication lifecycle.
+# Additive positive coordinate translation (integrated dev096 candidate)
+
+Octave: `gxtxt_numeric_v1('positive_translation', values, options)` accepts a
+complete finite real array and `{mode: auto|manual|off, delta: finite scalar}`.
+Default AUTO resolves zero for strictly positive input; otherwise it adds
+`-min(values) + max(realmin,32*eps(max(abs(values))))`, then verifies finiteness
+and strict positivity. Manual adds its exact declared scalar; Off adds zero.
+Return fields include `values`, `mode`, `delta`, `margin`, original/transformed
+bounds and versioned forward/inverse formulas. Units are preserved; callers
+associate the same original axis units with the scalar. This is an additive
+mapping, with no fitted parameters, scaling, omission or clipping. Existing
+`array_binary` operations perform the arithmetic; existing solvers are unchanged.
+The operation is advertised as an Octave binding in the existing operation
+catalog, without claiming a Tcl binding.
+

@@ -193,3 +193,50 @@ Version1/2 legacy documents remain available; saving an older document upgrades
 its schema with the same Document identity and preserved metadata. Scientific
 source changes/missing sources produce diagnostics while recoverable accepted
 fits remain available. CORE owns lifecycle, resource remapping and portable backup.
+## Fit controls, panel configuration and input translation
+
+The scroll controls now have actual Tk ancestors inside the left viewport, so
+clipping applies during scrolling. Preview fit and Accept fit are in the single
+top Fit menu; factory keys are F5 and F6. All actionable commands contribute
+stable configurable slots through CORE Configuration. View → Panels /
+Configuration opens the same module editor as central Configuration → Modules.
+Each of the eight panel categories can be visible, collapsed or hidden. User
+defaults are inherited by Session overrides; there is no separate Workspace
+panel registry. Hiding a panel preserves its scientific state.
+
+Fit → Input translation offers AUTO (factory default), Manual and Off separately
+for independent u and dependent v. AUTO examines every finite training value,
+complete source value used for residual evaluation and functional output domain.
+It uses zero for a strictly positive range; otherwise C = −minimum +
+max(realmin, 32×eps(maximum absolute value)). Overflow or an unresolved positive
+margin fails without accepting a fit. Manual uses the declared constant; it does
+not silently force positivity. Off means zero. Model-specific domain validation
+still applies. For X=f(Y), u is physical Y and v is physical X. Radial mapping
+acts on theta/radius after the explicitly declared polar frame. Geometric models
+translate physical X/Y; their dimensionless parameter remains unchanged.
+
+All models are solved by the existing Numerical API. Physical output is
+u=u_fit−delta_u and v=f(u+delta_u)−delta_v, with each inverse applied once before
+Preview, Accept, CSV or Dataset publication. Coefficients and initial parameters
+refer to fit-space. Residuals compare original-coordinate observations and
+physical predictions. Each receipt records modes, actual constants, original and
+transformed bounds, physical Variable IDs, original units, forward/inverse rules
+and coefficient space. Accepted geometry and provenance remain frozen when the
+user changes settings; Preview must be repeated before a new Accept/Publication.
+Existing accepted records are restored without refitting or another inverse.
+
+History uses CORE Scientific Recipe and the current Session Workspace. Sources,
+selection, model/translation settings, Preview resources, accepted curves and
+presentation are reversible local state. Undo/Redo retain the future; older-step
+browsing is read-only until Return to latest or an explicitly confirmed restart.
+The compact Description/History selector shares the footer. Workspace → Clear
+History requires the latest idle state and explicit confirmation, with an
+optional external Workspace backup. It preserves current scientific resources.
+Published Datasets and external exported files have separate owners and remain
+present after local Undo. Portable Workspace export/import carries the retained
+Recipe and its owned scientific resources.
+
+Focused numerical and native Debian GUI checks are recorded in the integrated
+progress report. Exhaustive per-control/model and final-package acceptance are
+still required before release.
+

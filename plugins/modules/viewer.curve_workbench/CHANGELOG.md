@@ -1,3 +1,7 @@
+# viewer.curve_workbench 2.15.2
+
+Reuse shared CORE Viewer command validation and authoritative Workspace titles while preserving retained geometry and existing History.
+
 ## 2.15.1 — GX-TXT dev094
 
 Explicit CORE Scientific Recipe history rebase with confirmed Workspace Clear History; generic shared central/local shortcut configuration. Existing geometry and layouts remain unchanged.

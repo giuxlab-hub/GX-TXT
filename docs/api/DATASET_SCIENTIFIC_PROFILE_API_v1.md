@@ -107,7 +107,7 @@ rows with bounded high cardinality and GUI heartbeat, zero repeated range/stream
 reads through two consumers, fresh-interpreter reopen, partial coverage, corruption,
 mid-build cancellation, replacement races, metadata-failure rollback, high-rank
 unsupported state, and a ten-million-element implicit axis with zero data reads.
-Focused logs and timing/RSS are in `docs/evidence/dev075`.
+These checks exercise bounded resource use, numerical equivalence and cancellation without altering the original Dataset.
 
 # Legacy categorical component (dev073/dev074; preserved)
 
@@ -187,8 +187,8 @@ validated before merging, so obsolete inventories cannot cross a Dataset replace
 incomplete descriptive distinct sample. `datasetProfileVariable` still reports the
 actual requested summary's partial coverage: complete membership does not imply
 complete numeric statistics. Existing API identity, metadata key and signatures stay
-unchanged. Focused CSV/HDF5 and real Preview/Graph Series checks are in
-`validation/preview_dev076/` and `docs/reports/PREVIEW_CORRECTIONS_dev076.md`.
+unchanged. The public contract applies consistently to CSV/HDF5 sources,
+Preview and Graph Series consumers.
 
 ### Explicit filter binding (dev094)
 

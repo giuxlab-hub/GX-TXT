@@ -22,6 +22,10 @@ function out = gxtxt_numeric_v1(operation, varargin)
       require_nargs(op,varargin,2,3); out=op_array_unary(varargin{1},varargin{2},arg_opts(varargin,3));
     case 'array_binary'
       require_nargs(op,varargin,3,4); out=op_array_binary(varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
+    case 'positive_translation'
+      require_nargs(op,varargin,1,2); out=gxtxt_numeric_positive_translation_v1(varargin{1},arg_opts(varargin,2));
+    case 'point_sequence_order'
+      require_nargs(op,varargin,1,2); out=gxtxt_numeric_point_sequence_order_v1(varargin{1},arg_opts(varargin,2));
     case 'array_compare'
       require_nargs(op,varargin,3,4); out=op_array_compare(varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
     case 'array_mask'

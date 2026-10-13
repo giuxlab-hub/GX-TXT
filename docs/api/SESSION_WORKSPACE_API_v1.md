@@ -89,3 +89,16 @@ the accepted version before invoking the module-owned inert payload validator.
 New documents use the provider's current version. Curve Fit advertises existing
 v1/v2 compatibility; its authoritative restore suppresses autosave until complete,
 and a subsequent save promotes a v1 document to v2 on the same ID.
+
+## Shared OS title projection (dev096)
+
+`sessionWorkspaceViewerTitle window base_title current_callback ?draft_callback?`
+subscribes a Viewer window to the existing Workspace GUI lifecycle. The current
+callback returns its actual Workspace ID. The title retains Viewer type/mode and
+shows `Workspace: <authoritative name>` immediately and after Workspace changes,
+including Manager rename. A truly unsaved draft is explicitly marked unsaved;
+stale Session ownership shows None. Destroy releases the projection. This holds
+callbacks and widget paths only; it does not change Document identity, revision,
+generation or scientific contents. `sessionWorkspaceViewerTitlesRefresh` supports
+immediate host updates during a local transition; normal owner mutations use the
+existing idle notification. No provider-specific CORE branches are added.

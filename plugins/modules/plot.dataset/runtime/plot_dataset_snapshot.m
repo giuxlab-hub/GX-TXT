@@ -38,6 +38,33 @@ if (strcmp(operation, 'transient2d'))
   P=struct('mode','graph_series','graph_id',graph,'variant_id','','x_name','X','x_meta',struct('unit',x_unit),'series',series);
   gxtxt_setup_graphics();pd_render_2d(destination,cfg,P,graph,'graph.png');
   printf('2D transient preview points=%d series=%d\n',rows(values),n);
+elseif (strcmp(operation, 'transient_independent2d'))
+  if(!strcmp(graph,'plot.dataset.xy')),error('Independent transient preview requires XY graph');endif
+  fid=fopen(source,'r');if(fid<0),error('Independent transient request is missing');endif
+  cfg=struct();series=[];
+  unwind_protect
+    title=fgetl(fid);n=str2double(fgetl(fid));
+    if(!isfinite(n)||n!=fix(n)||n<1||n>64),error('Invalid independent series count');endif
+    for k=1:n
+      fields=strsplit(fgetl(fid),'\t','collapsedelimiters',false);count=str2double(fgetl(fid));
+      if(numel(fields)!=3||!isfinite(count)||count!=fix(count)||count<1||count>200000),error('Invalid independent series header');endif
+      values=zeros(count,2);
+      for row=1:count
+        cells=strsplit(fgetl(fid),'\t');if(numel(cells)!=2),error('Invalid independent point pair');endif
+        values(row,:)=cellfun(@str2double,cells);
+      endfor
+      if(any(!isfinite(values(:)))),error('Independent preview coordinates must be finite');endif
+      item=struct('name',fields{1},'axis','left','panel_id','main','label',fields{1},'series_id',sprintf('independent_%d',k),'dataset_id','',...
+        'meta',struct('unit',fields{3}),'x_name','X','x_meta',struct('unit',fields{2}),...
+        'data',struct('x',values(:,1),'y',values(:,2),'source_row_indices',-ones(count,1),'aux_ids',{{}},'aux_values',{{}},'aux_meta',{{}},'valid_rows',count,'display_rows',count),...
+        'presentation',struct('kind','line_marker'));
+      if(k==1),series=item;else series(end+1)=item;endif
+    endfor
+  unwind_protect_cleanup,fclose(fid);end_unwind_protect
+  if(exist(destination,'dir')!=7),mkdir(destination);endif
+  P=struct('mode','graph_series','graph_id',graph,'variant_id','','x_name','X','x_meta',series(1).x_meta,'series',series);
+  gxtxt_setup_graphics();pd_render_2d(destination,cfg,P,graph,'graph.png');
+  printf('Independent transient preview series=%d\n',n);
 elseif (strcmp(operation, 'transient3d'))
   if(!strcmp(graph,'plot.dataset.xyz')),error('3D transient preview requires XYZ graph');endif
   fid=fopen(source,'r');if(fid<0),error('3D transient request is missing');endif

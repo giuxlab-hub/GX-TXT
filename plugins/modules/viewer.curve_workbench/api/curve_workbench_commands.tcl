@@ -164,23 +164,16 @@ proc ::GX::CurveWorkbench::_shortcutsLoad {w} {
 proc ::GX::CurveWorkbench::_shortcutsInstall {w bindings} {
     variable st
     dict for {id shortcut} $bindings {dict set st($w,commands) $id shortcut $shortcut}
-    set tag GXWorkbenchCommands$w
-    bind $tag <KeyPress> [format {if {[::GX::CurveWorkbench::_commandKey %s %%K %%s]} {break}} [list $w]]
-    foreach widget [list $w.right.viewport.canvas $w.leftScroll.viewport.content.curves] {
-        set tags [bindtags $widget]
-        if {$tag ni $tags} {bindtags $widget [linsert $tags 0 $tag]}
+    if {![dict exists $::GX::ViewerCommands::windows $w]} {
+        set handlers {}
+        foreach id [dict keys $bindings] {
+            dict set handlers $id [dict create command [list ::GX::CurveWorkbench::_commandInvoke $w $id] enabled [list ::GX::CurveWorkbench::_commandEnabled $w $id]]
+        }
+        ::GX::viewerCommandsAttach $w viewer.curve_workbench $handlers {} [list $w.right.viewport.canvas $w.leftScroll.viewport.content.curves]
     }
 }
 proc ::GX::CurveWorkbench::_commandKey {w key state} {
-    variable st
-    if {$state&0x8} {return 0}
-    set chord {};if {$state&0x4} {lappend chord Ctrl};if {$state&0x1} {lappend chord Shift}
-    if {[string length $key]==1} {set key [string tolower $key]}
-    lappend chord $key;set chord [join $chord +]
-    dict for {id command} $st($w,commands) {
-        if {[dict get $command shortcut] ne {}&&[dict get $command shortcut] eq $chord} {_commandInvoke $w $id;return 1}
-    }
-    return 0
+    return [::GX::viewerCommandKey $w [focus] $key $state]
 }
 proc ::GX::CurveWorkbench::_shortcutsOpen {w} {
     ::GX::configurationModuleDialog viewer.curve_workbench $w

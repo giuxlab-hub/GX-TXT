@@ -77,3 +77,21 @@ return fields and verifies SHA-256 using this same location guard.
 Script Bridge `SESSION_INSPECTION_API_v1.dataset_location(dataset_id)` provides the
 current-Session availability record to Python/Octave, omitting absolute `path`.
 Read-only availability is not proof of payload integrity or module execution.
+
+## Current Dataset section documents (dev096 host service)
+
+`datasetInspectionSectionDocument dataset_id section ?request?` returns the
+complete UTF-8 text of `notes`, ordinary `metadata`, explicitly selected
+`technical` inspection, `variables`, or `temporal` sets. The result contains
+`dataset_id`, `section`, `source`, `text`, and the current `session_token`.
+It projects the existing Notes/Metadata/Schema/Temporal owners and does not read
+or rewrite scientific payloads or implement a separate metadata authority.
+
+The default request is `source saved`. GUI hosts may supply `source draft`
+and the relevant `notes`, `metadata`, or `variables` value. Metadata's optional
+`pending_metadata` is an inert `{key value}` dictionary for the editor's typed,
+unapplied buffer. Reserved CORE keys are omitted from both ordinary values and
+that buffer. Draft documents are visibly identified as unsaved; the operation
+does not save edits. Dataset/plot images retain their existing rendering owner.
+This projection accepts current GUI editor context and is intentionally host-only;
+scripts retain the existing structured Session Inspection and Metadata APIs.

@@ -5,13 +5,68 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 import math
+import sys
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.image as mpimg
+from matplotlib.backends.backend_agg import RendererAgg
+from matplotlib.font_manager import FontProperties
 
 PAGES_MM = {'A4': (210.0,297.0), 'A3': (297.0,420.0), 'LETTER': (215.9,279.4)}
+
+
+def compose_text(a, width_mm, height_mm):
+    """Paginate complete UTF-8 text using the same PDF and host page settings."""
+    matplotlib.rcParams['pdf.fonttype'] = 42
+    text = (sys.stdin.buffer.read().decode('utf-8') if a.text_input == '-'
+            else Path(a.text_input).read_text(encoding='utf-8'))
+    dpi = 100
+    font = FontProperties(family='DejaVu Sans', size=10)
+    renderer = RendererAgg(1, 1, dpi)
+    available = (width_mm - 2 * a.margin_mm) / 25.4 * dpi
+    if available <= 0 or height_mm <= 2 * a.margin_mm + 20:
+        raise ValueError('Page margins leave no printable text area')
+    lines = []
+    for paragraph in text.split('\n'):
+        if not paragraph:
+            lines.append('')
+            continue
+        remaining = paragraph
+        while remaining:
+            low, high = 1, min(32, len(remaining))
+            while high < len(remaining) and renderer.get_text_width_height_descent(remaining[:high], font, False)[0] <= available:
+                low = high
+                high = min(2 * high, len(remaining))
+            while low < high:
+                middle = (low + high + 1) // 2
+                if renderer.get_text_width_height_descent(remaining[:middle], font, False)[0] <= available:
+                    low = middle
+                else:
+                    high = middle - 1
+            end = low
+            if end < len(remaining):
+                space = remaining.rfind(' ', 0, end + 1)
+                if space > 0:
+                    end = space + 1
+            lines.append(remaining[:end])
+            remaining = remaining[end:]
+    line_mm = 14 * 25.4 / 72
+    per_page = max(1, math.floor((height_mm - 2 * a.margin_mm - 12) / line_mm))
+    count = max(1, math.ceil(len(lines) / per_page))
+    with PdfPages(a.output) as pdf:
+        for first in range(0, max(1, len(lines)), per_page):
+            fig = plt.figure(figsize=(width_mm / 25.4, height_mm / 25.4))
+            for row, line in enumerate(lines[first:first + per_page]):
+                fig.text(a.margin_mm / width_mm,
+                         1 - (a.margin_mm + (row + 1) * line_mm) / height_mm,
+                         line, fontproperties=font, va='baseline')
+            fig.text(.5, a.margin_mm / height_mm, f'{first // per_page + 1} / {count}',
+                     ha='center', fontsize=8)
+            pdf.savefig(fig)
+            plt.close(fig)
+    print(f'PDF created: {a.output} ({count} pages; complete UTF-8 text)')
 
 
 def main():
@@ -25,11 +80,19 @@ def main():
     ap.add_argument('--gap-mm',type=float,default=5.0)
     ap.add_argument('--title',default='')
     ap.add_argument('--captions',type=int,default=1)
-    ap.add_argument('images',nargs='+')
+    ap.add_argument('--text-input', help='UTF-8 document path, or - for stdin; separate from plot images')
+    ap.add_argument('images',nargs='*')
     a=ap.parse_args()
     if a.rows<1 or a.cols<1: raise SystemExit('rows/cols devono essere >=1')
     w,h=PAGES_MM[a.page]
     if a.orientation=='landscape': w,h=h,w
+    if a.text_input:
+        if a.images:
+            raise SystemExit('Choose text input or plot images separately')
+        compose_text(a, w, h)
+        return
+    if not a.images:
+        raise SystemExit('Select plot images or a UTF-8 text document')
     fw,fh=w/25.4,h/25.4
     out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True)
     per=a.rows*a.cols

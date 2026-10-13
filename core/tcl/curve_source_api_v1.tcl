@@ -2,7 +2,11 @@
 # Backend-neutral Dataset curve identity, exact access and bounded display.
 namespace eval ::GX::CurveSource {variable serial 0;variable records;array set records {}}
 proc ::GX::curveSourceApiInfo {} {
-    return [dict create api_id CURVE_SOURCE_API_v1 api_version 1 operations {open describe validate_snapshot display page locate_rows open_stream close_stream close} chunk_rows_max 65536 display_budget_max 65536 display_policy ordered_xy_extrema_per_source_row_bucket scientific_authority canonical_dataset display_is_scientific_data 0 continuity_policies {source_row_adjacency}]
+    return [dict create api_id CURVE_SOURCE_API_v1 api_version 1 operations {open describe dataset_identity validate_snapshot display display_cache_store display_cache_restore page locate_rows open_stream close_stream close} chunk_rows_max 65536 display_budget_max 65536 display_policy ordered_xy_extrema_per_source_row_bucket scientific_authority canonical_dataset display_is_scientific_data 0 continuity_policies {source_row_adjacency}]
+}
+proc ::GX::curveSourceDatasetIdentity {session dataset} {
+    if {[file normalize $session] ne [file normalize [sessionInspectionCurrentSession]]} {error {Curve Source identity belongs to another active Session}}
+    return [_curveSourceIdentity $session [datasetPublicationV2ValidateId dataset $dataset]]
 }
 proc ::GX::curveSourceValidateSnapshot {session descriptor} {
     if {[dict get $descriptor api_id] ne "CURVE_SOURCE_API_v1"||[dict get $descriptor api_version]!=1} {error "Invalid Curve Source snapshot"}
@@ -408,3 +412,4 @@ proc ::GX::curveSourceWithNumericInput {token consumer {pointMask {}} {progress 
 }
 
 source [file join [file dirname [info script]] curve_source_continuity_v1.tcl]
+source [file join [file dirname [info script]] curve_source_display_cache.tcl]

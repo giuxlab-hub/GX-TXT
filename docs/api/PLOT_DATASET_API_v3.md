@@ -1,5 +1,15 @@
 # Plot Dataset API v3 — current public facade
 
+The dev096 Builder adapter adds host-only
+`renderTransientIndependentCurves2D series label destination`: each of 1..64
+series has its own finite `x_values`, `y_values`, `label`, `x_unit`, `y_unit`;
+total points are bounded at 200000. It uses the existing transient snapshot
+worker and 2D renderer and creates no Dataset/Graph/Workspace. Scripts do not
+gain a filesystem destination operation. Optional PlotSpec v2 series fields
+`source_row_ordinals` and `source_row_continuity` preserve exact selected-row
+display and explicit gaps; old specs and the default continuity policy retain
+their previous behavior. Full source values remain canonical and immutable.
+
 GX-TXT 0.9.8.10-dev hosts this API in `plot.dataset` 3.12.6. Activate only
 `::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3` for a new
 consumer. The namespace is `::GX::PlotDatasetAPIv3`. It loads its stable v1/v2

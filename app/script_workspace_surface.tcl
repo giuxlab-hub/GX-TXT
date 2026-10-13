@@ -129,9 +129,9 @@ proc ::GX::rebuildNativeAnalysisGui {} {
     scriptWorkspaceRefreshChoices
 }
 
-proc ::GX::scriptWorkspaceRunDialog {} {
+proc ::GX::scriptWorkspaceRunDialog {{reference {}} {previous {}}} {
     variable scriptRunUi
-    set reference $::GX::scriptWorkspaceChoice
+    if {$reference eq {}} {set reference $::GX::scriptWorkspaceChoice}
     if {$reference eq ""} { error "Select a registered script first." }
     set m [scriptRegistryDescribe $reference]
     set w .gxtxtScriptRun
@@ -140,6 +140,9 @@ proc ::GX::scriptWorkspaceRunDialog {} {
     wm title $w "Run [dict get $m name]"
     grid columnconfigure $w 1 -weight 1
     set scriptRunUi(reference) $reference
+    set scriptRunUi(session_token) [interactiveDocumentSessionToken]
+    set scriptRunUi(rerun) [expr {$previous ne {}}]
+    set scriptRunUi(reviewed) 0
     set row 0
     ttk::label $w.info -text "[dict get $m language]  $reference  v[dict get $m version]  SHA-256: [dict get $m sha256]" -wraplength 600
     grid $w.info -row $row -column 0 -columnspan 2 -sticky ew -padx 8 -pady 8
@@ -154,6 +157,33 @@ proc ::GX::scriptWorkspaceRunDialog {} {
     }
     set scriptRunUi(metadata) $m
     set row [scriptRunBindingsBuild $w $row]
+    if {$previous ne {}} {
+        set review "NEW Job after explicit review. Historical [dict get $previous id] stays unchanged.\nOriginal $reference revision [scriptJobField $previous script_revision] SHA [scriptJobField $previous source_sha256]\nAvailable $reference revision [dict get $m revision] SHA [dict get $m sha256]"
+        dict for {name value} [scriptJobField $previous parameters {}] {
+            if {[dict exists $m parameters $name]} {set scriptRunUi(parameter,$name) $value} else {append review "\nPrevious parameter '$name' is absent from the current Script; review its new schema."}
+        }
+        dict for {alias binding} [scriptJobField $previous inputs {}] {
+            scriptRunBindingAdd
+            set n $scriptRunUi(input_count);set id [dict get $binding dataset_id]
+            set scriptRunUi(alias,$n) $alias;set scriptRunUi(label,$n) [datasetPublicationV2DictDefault $binding label {}]
+            set available [expr {$id in $scriptRunUi(eligible)}]
+            if {$available && [dict exists $binding revision]} {
+                if {[catch {datasetRevisionToken $id $::GX::currentSession} revision] || $revision ne [dict get $binding revision]} {set available 0;append review "\nInput $alias / $id revision changed: explicitly rebind it."}
+            }
+            if {$available} {set scriptRunUi(dataset,$n) $id} else {append review "\nInput $alias / $id is missing, changed or outside current namespace: choose a valid binding."}
+        }
+        set output [scriptJobField $previous output {}]
+        if {[dict exists $output dataset_id]} {
+            set scriptRunUi(output_id) [dict get $output dataset_id]
+            set scriptRunUi(output_label) [datasetPublicationV2DictDefault $output label {}]
+            if {[datasetField $scriptRunUi(output_id) id {}] ne {}} {append review "\nOutput $scriptRunUi(output_id) already exists: choose a new ID or deliberately request an authorized owned replacement."}
+        }
+        $w.info configure -text "[$w.info cget -text]\n$review"
+        grid $w.bindings
+        ttk::checkbutton $w.review -text {I reviewed the current Script, parameters, inputs and output request} -variable ::GX::scriptRunUi(reviewed)
+        grid $w.review -row $row -column 0 -columnspan 2 -sticky w -padx 8 -pady 5
+        incr row
+    }
     ttk::button $w.run -text Run -command ::GX::scriptWorkspaceRunCommit
     ttk::button $w.cancel -text Close -command [list destroy $w]
     grid $w.run -row $row -column 0 -padx 8 -pady 8
@@ -168,6 +198,9 @@ proc ::GX::scriptWorkspaceRunCommit {} {
     variable scriptRunUi
     set w .gxtxtScriptRun
     if {[catch {
+        if {$scriptRunUi(session_token) ne [interactiveDocumentSessionToken]} {error {Session changed; reopen the Run review}}
+        if {$scriptRunUi(rerun) && !$scriptRunUi(reviewed)} {error {Explicit review is required before creating a new Job}}
+        if {[dict get [scriptRegistryDescribe $scriptRunUi(reference)] sha256] ne [dict get $scriptRunUi(metadata) sha256]} {error {Registered Script changed during review; reopen Run and review the current revision}}
         set supplied [dict create]
         dict for {name descriptor} [dict get $scriptRunUi(metadata) parameters] {
             if {$scriptRunUi(parameter,$name) ne ""} {dict set supplied $name $scriptRunUi(parameter,$name)}

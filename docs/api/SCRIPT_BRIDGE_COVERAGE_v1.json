@@ -575,6 +575,10 @@
         "validate_snapshot": {
           "status": "script_callable",
           "script_operation": "validate_snapshot"
+        },
+        "curveSourceDatasetIdentity": {
+          "status": "intentionally_host_only",
+          "reason": "Current Session source identity for host context validation; no new script authority."
         }
       },
       "api_policy": {
@@ -9455,6 +9459,10 @@
         "validate_spec": {
           "status": "script_callable",
           "script_operation": "validate_spec"
+        },
+        "renderTransientIndependentCurves2D": {
+          "status": "intentionally_not_script_safe",
+          "reason": "Caller-owned destination and preview lifetime require host filesystem policy."
         }
       },
       "public_operations": {
@@ -10739,6 +10747,98 @@
         "scientificRecipeGeometryState": {
           "status": "intentionally_host_only",
           "reason": "Validated complete logical geometry snapshots are adopted by the owning host; scripts return the bounded replay proposal."
+        },
+        "scientificHistoryCreate": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryValidate": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryState": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryAppend": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryNavigate": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryBranch": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerAttach": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerRecord": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerState": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerEditable": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerPrepareEdit": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerChanged": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerNavigate": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerBrowse": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerClear": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryStripFields": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryStripValidate": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerStripSet": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerStripToggle": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerStrip": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryGroupedEntries": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerDetails": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerRefresh": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
         }
       },
       "public_operations": {
@@ -10789,6 +10889,98 @@
         "scientificRecipeGeometryState": {
           "status": "intentionally_host_only",
           "reason": "Validated complete logical geometry snapshots are adopted by the owning host; scripts return the bounded replay proposal."
+        },
+        "scientificHistoryCreate": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryValidate": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryState": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryAppend": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryNavigate": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryBranch": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerAttach": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerRecord": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerState": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerEditable": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerPrepareEdit": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerChanged": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerNavigate": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerBrowse": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerClear": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryStripFields": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryStripValidate": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerStripSet": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerStripToggle": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerStrip": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryGroupedEntries": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerDetails": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
+        },
+        "scientificHistoryViewerRefresh": {
+          "status": "intentionally_host_only",
+          "reason": "Registered Workspace host capture/restore/commit and live Viewer, Session, resource and confirmation lifetimes remain host-owned; scripts use validated inert Recipe proposals."
         }
       }
     },
@@ -11202,6 +11394,10 @@
         "sessionInspectionWriteSnapshot": {
           "status": "intentionally_not_script_safe",
           "reason": "Writes to a caller destination without a Script Workspace destination policy."
+        },
+        "datasetInspectionSectionDocument": {
+          "status": "intentionally_host_only",
+          "reason": "Current GUI draft buffers and active Dataset section belong to the host; scripts retain structured canonical inspection/metadata operations."
         }
       },
       "documented_public_commands": [
@@ -11272,6 +11468,10 @@
         "sessionInspectionWriteSnapshot": {
           "status": "intentionally_not_script_safe",
           "reason": "Writes to a caller destination without a Script Workspace destination policy."
+        },
+        "datasetInspectionSectionDocument": {
+          "status": "intentionally_host_only",
+          "reason": "Current GUI draft buffers and active Dataset section belong to the host; scripts retain structured canonical inspection/metadata operations."
         }
       },
       "documentation_ref": "docs/api/SESSION_INSPECTION_API_v1.md",
@@ -13065,6 +13265,10 @@
         "uiFieldControlsLayout": {
           "status": "intentionally_host_only",
           "reason": "Widget geometry/focus/scroll lifecycle belongs to the host; scripts use the shared headless typed normalization services."
+        },
+        "uiMenuRowAttach": {
+          "status": "intentionally_host_only",
+          "reason": "Native menubutton overflow and window/font/destroy lifecycle belong to the GUI host; existing menu commands retain their own API and shortcut authority."
         }
       },
       "api_policy": {
@@ -13095,6 +13299,10 @@
         "uiFieldControlsLayout": {
           "status": "intentionally_host_only",
           "reason": "Widget geometry/focus/scroll lifecycle belongs to the host; scripts use the shared headless typed normalization services."
+        },
+        "uiMenuRowAttach": {
+          "status": "intentionally_host_only",
+          "reason": "Native menubutton overflow and window/font/destroy lifecycle belong to the GUI host; existing menu commands retain their own API and shortcut authority."
         }
       }
     },
@@ -13783,6 +13991,49 @@
         "bindings_set": {
           "status": "intentionally_host_only",
           "reason": "Trusted host/module ownership, canonical administration or live consumer mutation; safe Bridge returns no capability handles."
+        }
+      }
+    },
+    {
+      "api_id": "FILE_PUBLICATION_API_v1",
+      "api_version": 1,
+      "provider": "file_publication",
+      "status": "intentionally_host_only",
+      "reason": "Explicit external destinations, host writer callbacks and atomic complete-file publication belong to the GUI/controller owner; Script Jobs must not gain arbitrary filesystem writes.",
+      "script_languages": [],
+      "operations": [],
+      "operation_languages": {},
+      "documentation_ref": "docs/api/FILE_PUBLICATION_API_v1.md",
+      "api_policy": {
+        "status": "intentionally_host_only",
+        "reason": "Explicit external destinations, host writer callbacks and atomic complete-file publication belong to the GUI/controller owner; Script Jobs must not gain arbitrary filesystem writes."
+      },
+      "operation_coverage": {
+        "filePublicationApiInfo": {
+          "status": "intentionally_host_only",
+          "reason": "Explicit external destinations, host writer callbacks and atomic complete-file publication belong to the GUI/controller owner; Script Jobs must not gain arbitrary filesystem writes."
+        },
+        "filePublicationPublishBundle": {
+          "status": "intentionally_host_only",
+          "reason": "Explicit external destinations, host writer callbacks and atomic complete-file publication belong to the GUI/controller owner; Script Jobs must not gain arbitrary filesystem writes."
+        },
+        "filePublicationTextDocument": {
+          "status": "intentionally_host_only",
+          "reason": "Explicit external destinations, host writer callbacks and atomic complete-file publication belong to the GUI/controller owner; Script Jobs must not gain arbitrary filesystem writes."
+        }
+      },
+      "public_operations": {
+        "filePublicationApiInfo": {
+          "status": "intentionally_host_only",
+          "reason": "Explicit external destinations, host writer callbacks and atomic complete-file publication belong to the GUI/controller owner; Script Jobs must not gain arbitrary filesystem writes."
+        },
+        "filePublicationPublishBundle": {
+          "status": "intentionally_host_only",
+          "reason": "Explicit external destinations, host writer callbacks and atomic complete-file publication belong to the GUI/controller owner; Script Jobs must not gain arbitrary filesystem writes."
+        },
+        "filePublicationTextDocument": {
+          "status": "intentionally_host_only",
+          "reason": "Explicit external destinations, host writer callbacks and atomic complete-file publication belong to the GUI/controller owner; Script Jobs must not gain arbitrary filesystem writes."
         }
       }
     }

@@ -63,3 +63,48 @@ Curve Workbench offers explicit Workspace → Clear History with confirmation an
 portable-backup navigation. Precommit failure preserves old live/saved History;
 a postcommit recovery warning reports the committed reset accurately. Undo/Redo
 restart empty; current scientific records, resources, parameters and notes survive.
+
+## Shared Workspace History host adapter (dev096)
+
+`scientificHistoryCreate(owner, snapshot)`, `scientificHistoryAppend(owner,
+record, snapshot, description)`, `scientificHistoryNavigate(owner, record,
+index)`, `scientificHistoryBranch(owner, record, index)`, and
+`scientificHistoryState(record, index=-1)` use the same immutable Recipe base
+and patches. A record has a persisted cursor, complete retention, meaningful
+timestamps/descriptions and the existing 8 MiB/4096-step bounds. Its registered
+Recipe host validates inert scientific snapshots and resource references.
+Rebase also resets a present cursor to zero. Geometry/arrays remain resource
+references where required; no second History persistence store is introduced.
+
+`scientificHistoryViewerAttach` takes capture/restore/commit/guard callbacks.
+`scientificHistoryViewerState(window)` returns the inert currently displayed
+checkpoint, including the browse cursor when browsing. Hosts use it to restore
+bound form controls before a guarded edit, so cancelling a branch preserves the
+visible values and accepting it can apply the captured new user choice.
+The host commit uses Session Workspace/Interactive Document transactions.
+`scientificHistoryViewerChanged` commits one semantic operation, rolling back
+live state on precommit failure. Navigation separates durable Undo/Redo from
+read-only browsing. `PrepareEdit` requires confirmed branching after Undo;
+`ViewerClear` guards latest state and offers protected portable backup before
+calling Recipe Rebase. Export/publication side effects are outside local Undo.
+The common `ViewerStrip` presents a compact Description/History selector and
+timeline, with Previous/Next/Return to latest/explicit restart context actions.
+This adapter is used only by History-capable hosts; Interactive Curve Builder
+must not attach it.
+
+`scientificHistoryStripFields` and `scientificHistoryStripValidate` supply the
+typed `visible`, `mode` (`Description` / `History`) and `grouped` preferences to
+the host's existing Configuration contribution. `scientificHistoryViewerStrip`
+accepts an optional configuration ID and pack-layout arguments; it subscribes to
+that authority and releases the subscription when the owning Viewer closes.
+`scientificHistoryViewerStripSet` / `Toggle` use the current Session token and
+persist through Configuration rather than adding a history snapshot or private
+settings file. Hiding the strip preserves the complete History record.
+
+`scientificHistoryGroupedEntries` groups consecutive equal descriptions and
+operations at most 60 seconds apart for presentation only; indices and all
+individual patches remain intact. `scientificHistoryViewerDetails` exposes full
+read-only status text or each individual timed operation. The shared strip
+adjusts its common height to the current font/control metrics, retains horizontal
+timeline scrolling and exposes context actions through the existing configurable
+Viewer command catalog. These are host GUI services, not Script Bridge commands.

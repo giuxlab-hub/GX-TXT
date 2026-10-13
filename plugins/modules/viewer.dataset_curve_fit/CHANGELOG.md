@@ -1,3 +1,7 @@
+# viewer.dataset_curve_fit 0.5.0
+
+Automatic reversible fit-space translation, shared History/shortcuts, scoped panels and true scrolling, exact-source counts and guarded cancellation/rollback.
+
 ## 0.4.0 — GX-TXT dev094
 
 Grouped menus, scrollable left controls and prominent resizable right canvas; named exact-ID CORE Session Workspaces. Numerical fitting behavior is unchanged.

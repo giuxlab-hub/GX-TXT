@@ -12,7 +12,7 @@ namespace eval ::GX {
 }
 
 proc ::GX::configurationApiInfo {} {
-    return [dict create api_name CONFIGURATION_API_v1 api_version 1 scopes {framework user module session runtime} module_scopes {user session} operations {register fields get set validate save module_discover module_fields resolve scoped_value commit subscribe unsubscribe}]
+    return [dict create api_name CONFIGURATION_API_v1 api_version 1 scopes {framework user module session runtime} module_scopes {user session} operations {register fields get set validate save module_discover module_fields resolve scoped_value commit subscribe unsubscribe viewer_command_catalog viewer_commands_attach viewer_command_invoke viewer_commands_detach}]
 }
 
 proc ::GX::configurationPath {} {
@@ -460,3 +460,4 @@ proc ::GX::openSessionPath {path} {
 }
 
 source [file join [file dirname [info script]] configuration_modules_v1.tcl]
+source [file join [file dirname [info script]] configuration_viewer_commands.tcl]

@@ -1,5 +1,16 @@
 # Interactive Document Resource API v1
 
+Dev096 candidate: an optional derivative may declare both `disposable=1` and
+`scientific_authority=0` in its metadata. Workspace preflight/reference discovery
+still validates logical owner/generation and SHA syntax, but permits a missing
+or corrupt optional blob so its owning service can rebuild. Reader/Info remain
+strict and verify complete size/SHA. Scientific resources retain strict
+preflight. `interactiveDocumentResourceFinalize writer ?repair_disposable?` and
+`interactiveDocumentNative2DStore document scene object ?metadata?
+?repair_disposable?` default to false; true can atomically repair only a freshly
+verified derivative with those two explicit flags. Symlinks are always rejected.
+This adds no caller-selected storage path or scientific mutation authority.
+
 CORE owns content-addressed binary resources associated with a real Session
 Interactive Document. These resources do not register Datasets. References
 contain the document ID, SHA-256, byte size, format and public metadata; no

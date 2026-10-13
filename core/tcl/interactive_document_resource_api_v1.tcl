@@ -73,7 +73,7 @@ proc ::GX::interactiveDocumentResourceAbort {token} {
     if {![catch {file lstat $temporary status}]&&$status(type) eq "file"&&[list $status(dev) $status(ino)] eq [dict get $writer temporary_identity]} {file delete -- $temporary}
     dict unset writers $token
 }
-proc ::GX::interactiveDocumentResourceFinalize {token} {
+proc ::GX::interactiveDocumentResourceFinalize {token {repairDisposable 0}} {
     variable ::GX::DocumentResource::writers
     set writer [_documentResourceWriter $token]
     set temporary [dict get $writer temporary]
@@ -81,22 +81,32 @@ proc ::GX::interactiveDocumentResourceFinalize {token} {
     if {[file size $temporary]!=[dict get $writer bytes]} {error "Pending Document resource size changed"}
     set sha [sha256File $temporary]
     set target [file join [_documentResourceRoot [dict get $writer document]] ${sha}.blob]
-    if {[file exists $target]&&([file type $target] eq "link"||[sha256File $target] ne $sha)} {error "Existing Document resource is corrupt"}
+    if {[file exists $target]&&[file type $target] eq "link"} {error {Document resource symlinks are forbidden}}
+    set corrupt [expr {[file exists $target] && [sha256File $target] ne $sha}]
+    if {$corrupt && (!$repairDisposable || ![_documentResourceDisposable [dict get $writer metadata]])} {error "Existing Document resource is corrupt"}
     close [dict get $writer channel]
     dict set writer channel "";dict set writers $token $writer
-    if {[file exists $target]} {file delete -force -- $temporary} else {file rename -- $temporary $target}
+    if {$corrupt} {file rename -force -- $temporary $target} elseif {[file exists $target]} {file delete -force -- $temporary} else {file rename -- $temporary $target}
     dict unset writers $token
     return [dict create api_id INTERACTIVE_DOCUMENT_RESOURCE_API_v1 document_id [dict get $writer document] owner_generation [dict get $writer owner_generation] sha256 $sha size_bytes [dict get $writer bytes] metadata [dict get $writer metadata]]
 }
 proc ::GX::interactiveDocumentResourceInfo {reference} {
+    set path [_documentResourceIdentity $reference]
+    if {![file isfile $path]||[file type $path] eq "link"||[file size $path]!=[dict get $reference size_bytes]||[sha256File $path] ne [dict get $reference sha256]} {error "Document resource is missing or corrupt"}
+    return $reference
+}
+proc ::GX::_documentResourceDisposable {metadata} {
+    return [expr {[datasetPublicationV2DictDefault $metadata disposable 0] eq "1" && [datasetPublicationV2DictDefault $metadata scientific_authority 1] eq "0"}]
+}
+proc ::GX::_documentResourceIdentity {reference} {
     foreach key {api_id document_id sha256 size_bytes metadata} {if {![dict exists $reference $key]} {error "Invalid Document resource reference"}}
     set sha [dict get $reference sha256]
     if {[dict get $reference api_id] ne "INTERACTIVE_DOCUMENT_RESOURCE_API_v1"||![regexp {^[a-f0-9]{64}$} $sha]||![string is entier -strict [dict get $reference size_bytes]]||[dict get $reference size_bytes]<0||[catch {dict size [dict get $reference metadata]}]} {error "Invalid Document resource identity"}
     set document [dict get $reference document_id]
     set path [file join [_documentResourceRoot $document 1] ${sha}.blob]
     if {[dict exists $reference owner_generation]&&[dict get $reference owner_generation] ne [_documentResourceOwnerGeneration $document]} {error "Document resource owner was replaced"}
-    if {![file isfile $path]||[file type $path] eq "link"||[file size $path]!=[dict get $reference size_bytes]||[sha256File $path] ne $sha} {error "Document resource is missing or corrupt"}
-    return $reference
+    if {[file exists $path] && [file type $path] eq "link"} {error {Document resource symlinks are forbidden}}
+    return $path
 }
 proc ::GX::interactiveDocumentResourceImportNumeric {document file metadata} {
     if {![dict exists $metadata origin]} {dict set metadata origin [_scientificImportedOrigin]}
@@ -186,7 +196,9 @@ proc ::GX::_documentResourceReferences {value document depth budgetName referenc
     if {![catch {dict get $value api_id} marker]&&$marker eq "INTERACTIVE_DOCUMENT_RESOURCE_API_v1"} {
         if {[dict get $value document_id] eq $document} {
             set sha [dict get $value sha256];set identity [dict remove $value metadata]
-            if {![dict exists $references $sha]||[dict get $references $sha] ne $identity} {interactiveDocumentResourceInfo $value}
+            if {![dict exists $references $sha]||[dict get $references $sha] ne $identity} {
+                if {[_documentResourceDisposable [dict get $value metadata]]} {_documentResourceIdentity $value} else {interactiveDocumentResourceInfo $value}
+            }
             dict set references $sha $identity
         }
         # Retained image resources can themselves own a managed raster receipt.
@@ -275,7 +287,7 @@ proc ::GX::_documentResourceDeleteCommit {document plan} {
     foreach path [dict get $plan unreferenced] {file delete -- $path}
     if {![dict get $plan retained]} {file delete -force -- [dict get $plan root]}
 }
-proc ::GX::interactiveDocumentNative2DStore {document scene object {metadata {}}} {
+proc ::GX::interactiveDocumentNative2DStore {document scene object {metadata {}} {repairDisposable 0}} {
     native2DEnsure
     set count [::GX::Native2D::core count $scene $object]
     dict set metadata sketch_attributes [::GX::Native2D::core identity_attributes $scene $object]
@@ -291,7 +303,7 @@ proc ::GX::interactiveDocumentNative2DStore {document scene object {metadata {}}
             set n [expr {min(65536,$count-$start)}]
             interactiveDocumentResourceAppend $writer [::GX::Native2D::core points_binary $scene $object $start $n]
         }
-        set result [interactiveDocumentResourceFinalize $writer];set writer ""
+        set result [interactiveDocumentResourceFinalize $writer $repairDisposable];set writer ""
         return $result
     } finally {if {$writer ne ""} {interactiveDocumentResourceAbort $writer}}
 }

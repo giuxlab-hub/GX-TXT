@@ -4,7 +4,7 @@
 namespace eval ::GX::DatasetCurveFit {
     variable state
     variable serial 0
-    variable version "0.4.0"
+    variable version "0.5.0"
     variable root [file normalize [file join [file dirname [info script]] ../../../..]]
 }
 
@@ -55,7 +55,7 @@ proc ::GX::DatasetCurveFit::_uiVariableChoices {w} {
     }
     set state($w,displayToId) $displayToId
     set state($w,idToDisplay) $idToDisplay
-    foreach {field widget candidates} [list x $w.source.x [dict get $schema numeric] y $w.source.y [dict get $schema numeric] filterVar $w.filter.variable [dict get $schema all]] {
+    foreach {field widget candidates} [list x $w.left.viewport.content.source.body.x [dict get $schema numeric] y $w.left.viewport.content.source.body.y [dict get $schema numeric] filterVar $w.left.viewport.content.filters.controls.variable [dict get $schema all]] {
         $widget configure -values [lmap id $candidates {dict get $idToDisplay $id}]
         if {$field eq "filterVar"} {set displayField displayFilterVar} else {set displayField "display[string toupper [string index $field 0]][string range $field 1 end]"}
         set state($w,$displayField) [expr {$state($w,$field) ne "" && [dict exists $idToDisplay $state($w,$field)] ? [dict get $idToDisplay $state($w,$field)] : ""}]
@@ -132,10 +132,12 @@ proc ::GX::DatasetCurveFit::new {} {
     set state($key,deferDispose) 0;set state($key,orientation) y_of_x
     set state($key,sourceStatus) ready;set state($key,sourceError) "";set state($key,savedSelection) {};set state($key,sourcePointCount) 0
     set state($key,polarFrame) [_defaultPolarFitFrame $state($key,scene)]
+    foreach axis {U V} {set state($key,translation${axis}Mode) auto;set state($key,translation${axis}Delta) 0}
     return $key
 }
 proc ::GX::DatasetCurveFit::close {key} {
     variable state
+    if {[info exists state($key,configurationSubscription)]} {::GX::configurationUnsubscribe $state($key,configurationSubscription)}
     if {[info exists state($key,catalogSubscription)]} {::GX::datasetCatalogUnsubscribe $state($key,catalogSubscription)}
     if {[info exists state($key,catalogAfter)]&&$state($key,catalogAfter) ne ""} {after cancel $state($key,catalogAfter)}
     _workspaceCapture $key
@@ -430,6 +432,17 @@ proc ::GX::DatasetCurveFit::_runNumeric {model degree initial training source do
         set smoothing [expr {[dict exists $options smoothing_lambda] ? [dict get $options smoothing_lambda] : ""}]
         foreach {name value} [list TRAIN $trainFile SOURCE $sourceFile TRAIN_FORMAT $trainFormat SOURCE_FORMAT $sourceFormat BINARY_OUTPUT $binary INITIAL [file join $temp initial.csv] RESULT [file join $temp result.tsv] FITTED [file join $temp fitted.csv] RESIDUAL [file join $temp residual.csv] MODEL_STATE [file join $temp model_state.json] NUMERIC_API_DIR $api MODEL $model DEGREE $degree DOMAIN_MODE [expr {$range ? "range" : "source"}] DOMAIN_MIN $domainMin DOMAIN_MAX $domainMax DOMAIN_SAMPLES $domainSamples PERIOD $period SMOOTHING $smoothing ORIENTATION [_fitOrientation $model $options]] {dict set workerEnvironment GXDCF_$name $value}
         foreach {name field fallback} {PARAMETERIZATION parameterization row_order TOPOLOGY topology auto USER_PERIOD user_period "" CLOSURE_TOLERANCE closure_tolerance ""} {dict set workerEnvironment GXDCF_$name [::GX::datasetPublicationV2DictDefault $options $field $fallback]}
+        foreach axis {u v} {
+            # Old public v1 calls have no translation option. The GUI supplies
+            # its explicit AUTO defaults through _uiFitOptions.
+            set mapping [::GX::datasetPublicationV2DictDefault $options translation_$axis [dict create mode off delta 0]]
+            set mode [::GX::datasetPublicationV2DictDefault $mapping mode off]
+            if {$mode ni {auto manual off}} {error {Translation mode must be auto, manual or off}}
+            set delta [::GX::datasetPublicationV2DictDefault $mapping delta 0]
+            _finite $delta {Translation constant}
+            dict set workerEnvironment GXDCF_TRANSLATION_[string toupper $axis]_MODE $mode
+            dict set workerEnvironment GXDCF_TRANSLATION_[string toupper $axis]_DELTA $delta
+        }
         if {[_fitOrientation $model $options] eq "r_of_theta"} {
             set frame [dict get $options polar_frame]
             foreach {name value} [list ORIGIN_X [lindex [dict get $frame origin] 0] ORIGIN_Y [lindex [dict get $frame origin] 1] ZERO [dict get $frame theta_zero] CLOCKWISE [dict get $frame clockwise] UNIT [dict get $frame angle_unit] POLICY [dict get $frame unwrap_policy] CUT [dict get $frame angle_cut]] {dict set workerEnvironment GXDCF_POLAR_$name $value}
@@ -547,6 +560,10 @@ proc ::GX::DatasetCurveFit::preview {key model scope domainSpec {degree 2} {init
     if {$orientation eq "r_of_theta"} {dict set result polar_frame $frame;dict set result coordinate_mode polar;dict set result independent_axis theta}
     dict set result degree $degree;dict set result initial $initial
     dict set result options $options
+    dict set result translation [_translationMetadata $key $result]
+    # Structured Dataset metadata uses one field per line. Keep the same
+    # physical expression in a portable single-line representation.
+    dict set result physical_formula [string map [list \r {} \n {; }] [formula $result]]
     dict set result source_id $state($key,source)
     dict set result selected_indices $selectedSnapshot
     dict set result selection_descriptor $selectionSnapshot
@@ -807,8 +824,8 @@ proc ::GX::DatasetCurveFit::_restoreLegacyState {w requestedDataset {exact {}}} 
         }
         loadSource $w $dataset $state($w,x) $state($w,y) $filters
     }
-    $w.filters delete 0 end
-    foreach filter $filters {$w.filters insert end "[dict get $filter variable] [dict get $filter operator] [join [dict get $filter value] ,]"}
+    $w.left.viewport.content.filters.list delete 0 end
+    foreach filter $filters {$w.left.viewport.content.filters.list insert end "[dict get $filter variable] [dict get $filter operator] [join [dict get $filter value] ,]"}
     foreach index [dict get $payload selected] {selectPoint $w $index add}
     foreach record [dict get $payload records] {
         # Repair legacy dev-051 sample lineage when restoring an accepted curve.
@@ -832,7 +849,7 @@ proc ::GX::DatasetCurveFit::_restoreLegacyState {w requestedDataset {exact {}}} 
     _uiModelFields $w
     _uiDomainFields $w
     _refreshFits $w
-    if {[llength $state($w,records)]} {$w.fits selection set end}
+    if {[llength $state($w,records)]} {$w.left.viewport.content.accepted.list selection set end}
     $w.actions.preview configure -state normal
     $w.actions.accept configure -state disabled
     $w.actions.publish configure -state disabled
@@ -844,11 +861,17 @@ proc ::GX::DatasetCurveFit::_restoreLegacyState {w requestedDataset {exact {}}} 
 
 proc ::GX::DatasetCurveFit::_uiSafe {w script} {
     variable state
-    if {[catch {uplevel #0 $script} err options]} {
+    try {
+        if {[namespace tail [lindex $script 0]] ne "_uiApplySetting" && ![_commitFocusedSetting $w]} return
+        if {[dict exists $::GX::ScientificHistory::viewers $w] && ![::GX::scientificHistoryViewerPrepareEdit $w]} return
+        set descriptions [dict create _uiPreview {Preview fit} _uiAccept {Accept fitted curve} _uiLoad {Add Dataset curve} _uiDataset {Choose Dataset axes} _uiOrientation {Choose fit orientation} _uiClear {Clear fitting point selection} _uiAddFilter {Add source filter} _uiRemoveFilter {Remove source filter} _uiFitAction {Edit accepted fit presentation} _uiRemoveLastRect {Remove fitting rectangle} _workspaceSelect {Activate source curve} _uiLoadSample {Load built-in sample}]
+        set state($w,historyDescription) [::GX::datasetPublicationV2DictDefault $descriptions [namespace tail [lindex $script 0]] {Update fitter working context}]
+        uplevel #0 $script
+    } on error {err options} {
         set state($w,status) $err
         if {[dict get $options -errorcode] eq {GX CURVE_SOURCE CANCELLED}} return
         tk_messageBox -parent $w -icon error -type ok -title "Dataset Curve Fit" -message $err
-    }
+    } finally {unset -nocomplain state($w,historyDescription)}
 }
 proc ::GX::DatasetCurveFit::_markSourceDirty {w} {
     variable state
@@ -870,7 +893,7 @@ proc ::GX::DatasetCurveFit::_uiDataset {w} {
     if {$state($w,filterVar) ni [dict get $schema all]} {set state($w,filterVar) [lindex [dict get $schema all] 0]}
     _uiVariableChoices $w
     set state($w,filters) {}
-    $w.filters delete 0 end
+    $w.left.viewport.content.filters.list delete 0 end
     _uiFilterOperator $w
     if {$state($w,source) eq ""} {set state($w,status) "Choose filters, then load the Dataset curve."} else {_markSourceDirty $w}
 }
@@ -879,7 +902,7 @@ proc ::GX::DatasetCurveFit::_uiFilterOperator {w} {
     if {$state($w,filterVar) eq ""} return
     set kind [dict get [dict get $state($w,schema) kinds] $state($w,filterVar)]
     set ops [expr {$kind eq "number" ? {= != < <= > >= between} : {= != contains LIKE}}]
-    $w.filter.operator configure -values $ops
+    $w.left.viewport.content.filters.controls.operator configure -values $ops
     if {$state($w,filterOp) ni $ops} {set state($w,filterOp) =}
 }
 proc ::GX::DatasetCurveFit::_uiAddFilter {w} {
@@ -893,16 +916,16 @@ proc ::GX::DatasetCurveFit::_uiAddFilter {w} {
     set kind [dict get [dict get $state($w,schema) kinds] $state($w,filterVar)]
     filterMatch $kind [expr {$kind eq "number" ? 0 : ""}] $state($w,filterOp) $value
     lappend state($w,filters) $filter
-    $w.filters insert end "$state($w,filterVar) $state($w,filterOp) [join $value ,]"
+    $w.left.viewport.content.filters.list insert end "$state($w,filterVar) $state($w,filterOp) [join $value ,]"
     set state($w,status) "[llength $state($w,filters)] filters; reload the Dataset curve to apply."
     _markSourceDirty $w
 }
 proc ::GX::DatasetCurveFit::_uiRemoveFilter {w} {
     variable state
-    set index [lindex [$w.filters curselection] 0]
+    set index [lindex [$w.left.viewport.content.filters.list curselection] 0]
     if {$index eq ""} return
     set state($w,filters) [lreplace $state($w,filters) $index $index]
-    $w.filters delete $index
+    $w.left.viewport.content.filters.list delete $index
     _markSourceDirty $w
 }
 proc ::GX::DatasetCurveFit::_uiLoad {w} {
@@ -910,20 +933,20 @@ proc ::GX::DatasetCurveFit::_uiLoad {w} {
     if {[info exists state($w,loading)]&&$state($w,loading)} {error "A Dataset source is already loading"}
     set state($w,loading) 1;set state($w,sourceJob) "";set state($w,sourceCancelled) 0;set state($w,closeRequested) 0
     set controls [_sourceControls $w 1]
-    $w.filter.cancel configure -state normal
+    $w.left.viewport.content.filters.controls.cancel configure -state normal
     try {
         loadSource $w $state($w,dataset) $state($w,x) $state($w,y) $state($w,filters)
     } finally {
         set state($w,loading) 0;set state($w,sourceJob) ""
         _sourceControls $w 0 $controls
         _workspaceRefresh $w
-        $w.filter.cancel configure -state disabled
+        $w.left.viewport.content.filters.controls.cancel configure -state disabled
         if {$state($w,closeRequested)} {after idle [list ::GX::DatasetCurveFit::_closeWindow $w]}
     }
     set state($w,status) "Loaded [llength [sourcePoints $w]] Dataset points into Native 2D; click or drag to select fit points."
     if {[dict exists $state($w,sourceDescriptor) row_count]} {set state($w,status) "Added $state($w,activeSource): [dict get $state($w,sourceDescriptor) row_count] exact source rows; [llength [sourcePoints $w]] display points. Fit all reads exact data."}
     set state($w,report) ""
-    $w.residuals delete [$w.residuals children {}]
+    $w.right.residuals.table delete [$w.right.residuals.table children {}]
     _refreshFits $w
     $w.actions.preview configure -state normal
     $w.actions.accept configure -state disabled
@@ -937,7 +960,7 @@ proc ::GX::DatasetCurveFit::_uiLoadSample {w} {
     loadSample $w $state($w,sample)
     set state($w,status) "Loaded built-in sample into Native 2D. It is local to the fitter until explicitly published."
     set state($w,report) ""
-    $w.residuals delete [$w.residuals children {}]
+    $w.right.residuals.table delete [$w.right.residuals.table children {}]
     _refreshFits $w
     $w.actions.preview configure -state normal
     $w.actions.accept configure -state disabled
@@ -957,7 +980,7 @@ proc ::GX::DatasetCurveFit::_uiModel {w} {
     set parametric [expr {$state($w,model) in {circular_arc quadratic_bezier cubic_bezier parametric_polynomial parametric_spline}}]
     if {$parametric && $state($w,domain) eq "range"} {set state($w,domain) parameter}
     if {!$parametric && $state($w,domain) eq "parameter"} {set state($w,domain) range}
-    $w.settings.domain configure -values [expr {$parametric ? {source parameter} : {source range}}]
+    $w.left.viewport.content.settings.body.domain configure -values [expr {$parametric ? {source parameter} : {source range}}]
     if {$parametric && $state($w,domain) eq "parameter"} {
         if {$state($w,min) eq ""} {set state($w,min) 0}
         if {$state($w,max) eq ""} {set state($w,max) 1}
@@ -966,23 +989,26 @@ proc ::GX::DatasetCurveFit::_uiModel {w} {
     _orientationLabels $w
     _uiModelFields $w
     _uiDomainFields $w
+    _invalidateSettings $w
+    _workspaceCapture $w;_saveState $w
 }
 proc ::GX::DatasetCurveFit::_uiModelFields {w} {
     variable state
-    $w.settings.parametric configure -state [expr {$state($w,model) in {parametric_polynomial parametric_spline} ? "normal" : "disabled"}]
-    $w.settings.polar configure -state [expr {$state($w,orientation) eq "r_of_theta" ? "normal" : "disabled"}]
-    $w.parameters.degree configure -state [expr {$state($w,model) in {polynomial parametric_polynomial fourier} ? "normal" : "disabled"}]
-    $w.parameters.initial configure -state [expr {$state($w,model) in {exponential power_law gaussian} ? "normal" : "disabled"}]
-    $w.parameters.period configure -state [expr {$state($w,model) eq "fourier" ? "normal" : "disabled"}]
-    $w.parameters.smoothing configure -state [expr {$state($w,model) eq "smoothing_spline" ? "normal" : "disabled"}]
-    $w.parameters.l_degree configure -text [expr {$state($w,model) eq "fourier" ? "Order N" : "Degree"}]
+    $w.left.viewport.content.settings.body.domain configure -values [expr {$state($w,model) in {circular_arc quadratic_bezier cubic_bezier parametric_polynomial parametric_spline} ? {source parameter} : {source range}}]
+    $w.left.viewport.content.settings.body.parametric configure -state [expr {$state($w,model) in {parametric_polynomial parametric_spline} ? "normal" : "disabled"}]
+    $w.left.viewport.content.settings.body.polar configure -state [expr {$state($w,orientation) eq "r_of_theta" ? "normal" : "disabled"}]
+    $w.left.viewport.content.settings.parameters.degree configure -state [expr {$state($w,model) in {polynomial parametric_polynomial fourier} ? "normal" : "disabled"}]
+    $w.left.viewport.content.settings.parameters.initial configure -state [expr {$state($w,model) in {exponential power_law gaussian} ? "normal" : "disabled"}]
+    $w.left.viewport.content.settings.parameters.period configure -state [expr {$state($w,model) eq "fourier" ? "normal" : "disabled"}]
+    $w.left.viewport.content.settings.parameters.smoothing configure -state [expr {$state($w,model) eq "smoothing_spline" ? "normal" : "disabled"}]
+    $w.left.viewport.content.settings.parameters.l_degree configure -text [expr {$state($w,model) eq "fourier" ? "Order N" : "Degree"}]
 }
 proc ::GX::DatasetCurveFit::_uiDomainFields {w} {
     variable state
     set enabled [expr {$state($w,domain) in {range parameter} ? "normal" : "disabled"}]
-    foreach field {min max samples} {$w.parameters.$field configure -state $enabled}
+    foreach field {min max samples} {$w.left.viewport.content.settings.parameters.$field configure -state $enabled}
     set independent [expr {$state($w,orientation) eq "x_of_y" ? "Y" : ($state($w,orientation) eq "parametric" ? "t" : ($state($w,orientation) eq "r_of_theta" ? "theta" : "X"))}]
-    foreach bound {min max} {$w.parameters.l_$bound configure -text "$independent $bound"}
+    foreach bound {min max} {$w.left.viewport.content.settings.parameters.l_$bound configure -text "$independent $bound"}
 }
 proc ::GX::DatasetCurveFit::_uiPreview {w} {
     variable state
@@ -999,19 +1025,20 @@ proc ::GX::DatasetCurveFit::_uiPreview {w} {
     set state($w,report) "[formula $result]\n[parameterReport $result]\nFit points: [dict get $result train_n]  $metric: [format %.6g [dict get $result train_rmse]]  $r2: [format %.6g [dict get $result train_r2]]\nAll source points: $metric [format %.6g [dict get $result source_rmse]]  $r2 [format %.6g [dict get $result source_r2]]  Converged: [dict get $result converged]"
     _residualColumns $w $result
     set state($w,residualStart) 0
-    $w.residuals delete [$w.residuals children {}]
+    $w.right.residuals.table delete [$w.right.residuals.table children {}]
     set index 0
     foreach row [dict get $result residual] {
         lassign $row x observed fitted residual
         set sourceRows [expr {[dict exists $result residual_rows] ? [dict get $result residual_rows] : $state($w,rows)}]
         set values [list [lindex $sourceRows $index] [format %.9g $x] [format %.9g $observed] [format %.9g $fitted] [format %.9g $residual]]
         if {[dict get $result parametric]} {lappend values [format %.9g [lindex $row 4]] [format %.9g [lindex $row 5]]}
-        $w.residuals insert {} end -values $values
+        $w.right.residuals.table insert {} end -values $values
         incr index
     }
     set state($w,status) "Preview ready. Output X domain is independent of fit-point selection. Accept to add a new CORE curve."
     $w.actions.accept configure -state normal
     $w.actions.publish configure -state normal
+    _saveState $w
     redraw $w
 }
 proc ::GX::DatasetCurveFit::_uiAccept {w} {
@@ -1036,8 +1063,8 @@ proc ::GX::DatasetCurveFit::_uiAccept {w} {
     set state($w,previewFitId) $id
     set state($w,status) "Accepted Native 2D CORE curve $id. Publish as Dataset separately if needed."
     _refreshFits $w
-    $w.fits selection clear 0 end
-    $w.fits selection set end
+    $w.left.viewport.content.accepted.list selection clear 0 end
+    $w.left.viewport.content.accepted.list selection set end
     $w.actions.accept configure -state disabled
     $w.actions.publish configure -state normal
     $w.actions.export configure -state normal
@@ -1096,7 +1123,7 @@ proc ::GX::DatasetCurveFit::_promptFitName {parent suggestion} {
 }
 proc ::GX::DatasetCurveFit::_uiPublishAccepted {w} {
     variable state
-    set index [lindex [$w.fits curselection] 0]
+    set index [lindex [$w.left.viewport.content.accepted.list curselection] 0]
     if {$index eq ""} {error "Select an accepted fit to publish"}
     set record [lindex $state($w,records) $index]
     set lineage [dict get $record provenance]
@@ -1146,7 +1173,7 @@ proc ::GX::DatasetCurveFit::publishFitDataset {key name {fitId ""}} {
     set definition [dict create dataset_id $datasetId contract table.generic storage auto expected_rows [dict get $result output_n] estimated_numeric_bytes [expr {16*[dict get $result output_n]}] producer_version $version source "Dataset Curve Fit" provenance $provenance notes $name source_dataset_ids [expr {$sourceKind eq "dataset" ? [list $sourceIdentity] : {}}] source_variable_ids [expr {$sourceKind eq "dataset" ? [list [dict get $bindings x] [dict get $bindings y]] : {}}]]
     set fitMetadata [dict create dataset.display_name $name curve_fit.producer viewer.dataset_curve_fit curve_fit.source_kind $sourceKind curve_fit.source_sha256 $sourceSha curve_fit.source_x_variable_id [dict get $bindings x] curve_fit.source_y_variable_id [dict get $bindings y] curve_fit.source_x_name [dict get $labels x] curve_fit.source_y_name [dict get $labels y] curve_fit.filters $filters curve_fit.model [dict get $result model] curve_fit.parameters [dict get $result parameters] curve_fit.scope [dict get $result scope] curve_fit.domain [dict get $result domain] curve_fit.grid_kind [dict get $result grid_kind] curve_fit.output_n [dict get $result output_n] curve_fit.selected_indices [dict get $result selected_indices] curve_fit.train_n [dict get $result train_n] curve_fit.train_rmse [dict get $result train_rmse] curve_fit.train_r2 [dict get $result train_r2] curve_fit.source_rmse [dict get $result source_rmse] curve_fit.source_r2 [dict get $result source_r2]]
     if {[dict exists $result model_state_json]} {dict set fitMetadata curve_fit.model_state_json [dict get $result model_state_json]}
-    foreach field {orientation metric_unit coordinate_mode independent_axis polar_frame angular_min angular_max angle_unit unwrap_policy topology parameterization parameter_variable_descriptor model_state_resource model_state_storage model_state_bytes parameters_storage parameter_count degree options residual_convention r2_convention zero_normal_sign_policy train_geometric_rmse source_geometric_rmse train_max_geometric_distance source_max_geometric_distance residual_stride residual_columns selection_descriptor} {
+    foreach field {translation physical_formula orientation metric_unit coordinate_mode independent_axis polar_frame angular_min angular_max angle_unit unwrap_policy topology parameterization parameter_variable_descriptor model_state_resource model_state_storage model_state_bytes parameters_storage parameter_count degree options residual_convention r2_convention zero_normal_sign_policy train_geometric_rmse source_geometric_rmse train_max_geometric_distance source_max_geometric_distance residual_stride residual_columns selection_descriptor} {
         if {[dict exists $result $field]} {dict set fitMetadata curve_fit.$field [dict get $result $field]}
     }
     dict for {field value} $lineage {dict set fitMetadata curve_fit.$field $value}
@@ -1224,13 +1251,14 @@ proc ::GX::DatasetCurveFit::_uiClear {w} {
     if {$state($w,source) eq ""} return
     clearSelection $w
     set state($w,rects) {}
+    _invalidateSelectionPreview $w
     set state($w,status) "CORE fit-point selection cleared."
     _saveState $w
     redraw $w
 }
 proc ::GX::DatasetCurveFit::_uiExport {w} {
     variable state
-    set index [lindex [$w.fits curselection] 0]
+    set index [lindex [$w.left.viewport.content.accepted.list curselection] 0]
     set id [expr {$index eq "" ? $state($w,accepted) : [dict get [lindex $state($w,records) $index] fit_curve_id]}]
     set path [::GX::workspaceSaveFile export_dir -parent $w -defaultextension .csv -filetypes {{{CSV files} {.csv}} {{All files} {*}}}]
     if {$path eq ""} return
@@ -1239,18 +1267,18 @@ proc ::GX::DatasetCurveFit::_uiExport {w} {
 }
 proc ::GX::DatasetCurveFit::_refreshFits {w} {
     variable state
-    if {![winfo exists $w.fits]} return
-    $w.fits delete 0 end
+    if {![winfo exists $w.left.viewport.content.accepted.list]} return
+    $w.left.viewport.content.accepted.list delete 0 end
     set index 0
     foreach record $state($w,records) {
-        $w.fits insert end "[expr {[dict get $record visible] ? "●" : "○"}] [dict get $record label]"
-        $w.fits itemconfigure $index -foreground [_rgbHex [dict get $record color]]
+        $w.left.viewport.content.accepted.list insert end "[expr {[dict get $record visible] ? "●" : "○"}] [dict get $record label]"
+        $w.left.viewport.content.accepted.list itemconfigure $index -foreground [_rgbHex [dict get $record color]]
         incr index
     }
 }
 proc ::GX::DatasetCurveFit::_uiFitAction {w action} {
     variable state
-    set index [lindex [$w.fits curselection] 0]
+    set index [lindex [$w.left.viewport.content.accepted.list curselection] 0]
     if {$index eq ""} {error "Select an accepted fit first"}
     set record [lindex $state($w,records) $index]
     set id [dict get $record id]
@@ -1262,10 +1290,10 @@ proc ::GX::DatasetCurveFit::_uiFitAction {w action} {
     if {$action eq "delete" && $state($w,previewFitId) eq $id} {
         set state($w,preview) {};set state($w,previewAccepted) 0;set state($w,previewFitId) ""
         set state($w,report) ""
-        $w.residuals delete [$w.residuals children {}]
+        $w.right.residuals.table delete [$w.right.residuals.table children {}]
     }
     _refreshFits $w
-    if {$action eq "visibility"} {$w.fits selection set $index}
+    if {$action eq "visibility"} {$w.left.viewport.content.accepted.list selection set $index}
     $w.actions.export configure -state [expr {[llength $state($w,records)] ? "normal" : "disabled"}]
     set state($w,status) "Updated accepted fit $id."
     _saveState $w
@@ -1277,14 +1305,15 @@ proc ::GX::DatasetCurveFit::_uiRemoveLastRect {w} {
     set id [lindex $state($w,rects) end]
     ::GX::Native2D::core remove_rect $state($w,selectionScene) $id
     set state($w,rects) [lrange $state($w,rects) 0 end-1]
+    _invalidateSelectionPreview $w
     set state($w,status) "Removed the last selection rectangle; [llength [selectedIndices $w]] points remain selected."
     _saveState $w
     redraw $w
 }
 proc ::GX::DatasetCurveFit::_plotFrame {w} {
     variable state
-    set width [winfo width $w.canvas]
-    set height [winfo height $w.canvas]
+    set width [winfo width $w.right.plot.canvas]
+    set height [winfo height $w.right.plot.canvas]
     set state($w,residualPlotVisible) [expr {$state($w,showResiduals)&&$state($w,preview) ne {}&&$height>=230}]
     set bottom [expr {$state($w,residualPlotVisible) ? min($height-131,max(80,round($height*$state($w,residualFraction))-30)) : $height-55}]
     return [list 76 [expr {max(100,$width-64)}] 24 $bottom]
@@ -1292,9 +1321,9 @@ proc ::GX::DatasetCurveFit::_plotFrame {w} {
 proc ::GX::DatasetCurveFit::_residualPanel {w} {
     variable state
     if {[winfo exists $w.right.residuals]} {_residualPanelLayout $w} elseif {$state($w,showResiduals)} {
-        pack $w.residuals -after $w.status -side bottom -fill x -padx 8
-        pack $w.residualPager -after $w.residuals -side bottom -fill x -padx 8
-    } else {pack forget $w.residuals;pack forget $w.residualPager}
+        pack $w.right.residuals.table -after $w.footer.status -side bottom -fill x -padx 8
+        pack $w.right.residuals.pager -after $w.right.residuals.table -side bottom -fill x -padx 8
+    } else {pack forget $w.residuals;pack forget $w.right.residuals.pager}
     redraw $w;_saveState $w
 }
 proc ::GX::DatasetCurveFit::_residualResize {w value} {
@@ -1304,14 +1333,22 @@ proc ::GX::DatasetCurveFit::_residualResize {w value} {
 }
 proc ::GX::DatasetCurveFit::_residualPageUi {w step} {
     variable state
-    if {$state($w,preview) eq {}||![dict exists $state($w,preview) residual_resource]} {error "Preview a Dataset fit to read exact residual pages"}
+    if {$state($w,preview) eq {}} {error "Preview a fit to read exact residual pages"}
     set report $state($w,preview)
     set start [expr {max(0,min([dict get $report source_n]-200,$state($w,residualStart)+$step))}]
-    set page [_numericResidualPage $report $start 200]
+    if {[dict exists $report residual_resource]} {
+        set page [_numericResidualPage $report $start 200]
+    } else {
+        # Built-in/legacy fits retain complete inline residuals. History restore
+        # must use those original values, including during failed-save rollback.
+        set rows [dict get $report residual]
+        set ids [::GX::datasetPublicationV2DictDefault $report residual_rows $state($w,rows)]
+        set page [dict create rows [lrange $rows $start [expr {$start+199}]] source_rows [lrange $ids $start [expr {$start+199}]] row_count [llength $rows]]
+    }
     _residualColumns $w $report
-    $w.residuals delete [$w.residuals children {}]
+    $w.right.residuals.table delete [$w.right.residuals.table children {}]
     foreach row [dict get $page rows] id [dict get $page source_rows] {
-        $w.residuals insert {} end -values [list $id {*}[lmap v $row {format %.9g $v}]]
+        $w.right.residuals.table insert {} end -values [list $id {*}[lmap v $row {format %.9g $v}]]
     }
     set state($w,residualStart) $start
     set state($w,residualStatus) "Exact residual rows [expr {$start+1}]–[expr {$start+[llength [dict get $page rows]]}] / [dict get $page row_count]"
@@ -1366,8 +1403,8 @@ proc ::GX::DatasetCurveFit::_axisLabel {w variable} {
 }
 proc ::GX::DatasetCurveFit::redraw {w} {
     variable state
-    if {![winfo exists $w.canvas]} return
-    set c $w.canvas
+    if {![winfo exists $w.right.plot.canvas]} return
+    set c $w.right.plot.canvas
     # Restore may run before Tk maps this canvas. Its Configure event performs
     # the first render once a valid native viewport is available.
     if {[winfo width $c]<120 || [winfo height $c]<160} {$c delete all;return}
@@ -1476,18 +1513,25 @@ proc ::GX::DatasetCurveFit::redraw {w} {
 }
 proc ::GX::DatasetCurveFit::_mouseDown {w x y stateBits} {
     variable state
+    # Commit the focused parameter before starting a guarded gesture. Tk queues
+    # FocusOut after this handler; starting the gesture first would reject the
+    # pending field commit as an operation in progress.
+    if {![_commitFocusedSetting $w]} return
+    focus $w.right.plot.canvas
+    if {![_historyEditable $w]} return
     if {[info exists state($w,loading)]&&$state($w,loading)} return
     if {[catch {_assertLoaded $w}]} return
+    if {[catch {::GX::scientificHistoryViewerPrepareEdit $w} accepted] || !$accepted} return
     set state($w,press) [list $x $y $stateBits]
 }
 proc ::GX::DatasetCurveFit::_mouseMove {w x y} {
     variable state
     if {![info exists state($w,press)]} return
     lassign $state($w,press) x0 y0 bits
-    $w.canvas delete selection_drag
+    $w.right.plot.canvas delete selection_drag
     if {hypot($x-$x0,$y-$y0) > 5} {
-        $w.canvas create rectangle [expr {min($x0,$x)}] [expr {min($y0,$y)}] [expr {max($x0,$x)}] [expr {max($y0,$y)}] -outline #e87913 -width 2 -dash {5 3} -tags selection_drag
-        ::GX::native2DCanvasClipItems $w.canvas $state($w,scene) [$w.canvas find withtag selection_drag]
+        $w.right.plot.canvas create rectangle [expr {min($x0,$x)}] [expr {min($y0,$y)}] [expr {max($x0,$x)}] [expr {max($y0,$y)}] -outline #e87913 -width 2 -dash {5 3} -tags selection_drag
+        ::GX::native2DCanvasClipItems $w.right.plot.canvas $state($w,scene) [$w.right.plot.canvas find withtag selection_drag]
     }
 }
 proc ::GX::DatasetCurveFit::_mouseUp {w x y stateBits} {
@@ -1495,7 +1539,7 @@ proc ::GX::DatasetCurveFit::_mouseUp {w x y stateBits} {
     if {$state($w,source) eq "" || ![info exists state($w,press)]} return
     lassign $state($w,press) x0 y0 bits
     unset state($w,press)
-    $w.canvas delete selection_drag
+    $w.right.plot.canvas delete selection_drag
     if {![dict get $state($w,sources) $state($w,activeSource) visible]} return
     if {[catch {_assertLoaded $w}]} return
     set extended [expr {($bits & 0x0001) || ($bits & 0x0004)}]
@@ -1526,9 +1570,15 @@ proc ::GX::DatasetCurveFit::_mouseUp {w x y stateBits} {
             if {$mode eq "replace"} {set state($w,rects) {}}
         } elseif {!$extended} {::GX::Native2D::core clear $scene;set state($w,rects) {}}
     }
+    _invalidateSelectionPreview $w
     set state($w,status) "[llength [selectedIndices $w]] CORE points selected for fitting."
-    _saveState $w
+    _historyGestureSave $w {Select fitting points}
     redraw $w
+}
+proc ::GX::DatasetCurveFit::_historyGestureSave {w description} {
+    variable state
+    set state($w,historyDescription) $description
+    try {_saveState $w} finally {unset -nocomplain state($w,historyDescription)}
 }
 proc ::GX::DatasetCurveFit::_rememberNativeView {w} {
     variable state
@@ -1537,14 +1587,21 @@ proc ::GX::DatasetCurveFit::_rememberNativeView {w} {
 }
 proc ::GX::DatasetCurveFit::_zoom {w factor {px ""} {py ""}} {
     variable state
+    if {![_historyEditable $w]} return
+    if {![_commitFocusedSetting $w]} return
     if {$state($w,source) eq ""&&$state($w,records) eq {}} return
+    if {[catch {::GX::scientificHistoryViewerPrepareEdit $w} accepted] || !$accepted} return
     if {$px eq ""} {lassign [_plotFrame $w] left right top bottom;set px [expr {($left+$right)/2.0}];set py [expr {($top+$bottom)/2.0}]}
     ::GX::Native2D::core zoom $state($w,scene) $factor [list $px $py]
     _rememberNativeView $w
     redraw $w
+    _historyGestureSave $w {Zoom chart view}
 }
 proc ::GX::DatasetCurveFit::_panDown {w x y} {
     variable state
+    if {![_historyEditable $w]} return
+    if {![_commitFocusedSetting $w]} return
+    if {[catch {::GX::scientificHistoryViewerPrepareEdit $w} accepted] || !$accepted} return
     if {$state($w,source) ne ""||$state($w,records) ne {}} {set state($w,pan) [list $x $y]}
 }
 proc ::GX::DatasetCurveFit::_panMove {w x y} {
@@ -1558,13 +1615,17 @@ proc ::GX::DatasetCurveFit::_panMove {w x y} {
 }
 proc ::GX::DatasetCurveFit::_panUp {w} {
     variable state
-    unset -nocomplain state($w,pan)
-    _saveState $w
+    if {![info exists state($w,pan)]} return
+    unset state($w,pan)
+    _historyGestureSave $w {Pan chart view}
 }
 proc ::GX::DatasetCurveFit::_resetView {w} {
     variable state
+    if {![_historyEditable $w]} return
+    if {![_commitFocusedSetting $w]} return
+    if {[catch {::GX::scientificHistoryViewerPrepareEdit $w} accepted] || !$accepted} return
     set state($w,viewBounds) {}
-    _saveState $w
+    _historyGestureSave $w {Fit chart view}
     redraw $w
 }
 proc ::GX::DatasetCurveFit::_wheel {w delta x y} {
@@ -1573,12 +1634,17 @@ proc ::GX::DatasetCurveFit::_wheel {w delta x y} {
 proc ::GX::DatasetCurveFit::_closeWindow {w} {
     variable state
     if {[info exists state($w,loading)]&&$state($w,loading)} {set state($w,closeRequested) 1;_sourceCancel $w;return}
-    if {[catch {
-        _saveState $w
-        if {$state($w,documentId) ne ""} {::GX::interactiveDocumentResourceCollect $state($w,documentId)}
-    } err]} {
-        tk_messageBox -parent $w -icon error -type ok -title "Dataset Curve Fit" -message "Could not save viewer state: $err"
-        return
+    # A stale Viewer cannot write or collect resources in another Session.
+    # Its already persisted Workspace remains with its original owner; release
+    # only this window's live handles when closing after a Session switch.
+    if {![catch {_assertSession $w}]} {
+        if {[catch {
+            _saveState $w
+            if {$state($w,documentId) ne ""} {::GX::interactiveDocumentResourceCollect $state($w,documentId)}
+        } err]} {
+            tk_messageBox -parent $w -icon error -type ok -title "Dataset Curve Fit" -message "Could not save viewer state: $err"
+            return
+        }
     }
     close $w
     destroy $w
@@ -1623,61 +1689,64 @@ proc ::GX::DatasetCurveFit::open {{context {}}} {
     if {$requestedDataset ne ""} {set state($w,dataset) $requestedDataset}
     if {![catch {set token [::GX::interactiveDocumentSessionToken]}]} {set state($w,sessionToken) $token}
     toplevel $w;wm title $w "Dataset Curve Fit"
+    _layoutPrepare $w
     ::GX::uiFieldWindowFit $w 1420 980
     wm protocol $w WM_DELETE_WINDOW [list ::GX::DatasetCurveFit::_closeWindow $w]
     bind $w <Escape> [list ::GX::DatasetCurveFit::_sourceCancel $w]
-    ttk::frame $w.source -padding 5;pack $w.source -fill x
+    ttk::frame $w.left.viewport.content.source.body -padding 5;pack $w.left.viewport.content.source.body -fill x
     foreach {field label width} {dataset Dataset 24 x X 18 y Y 18} {
-        ttk::label $w.source.l_$field -text $label
+        ttk::label $w.left.viewport.content.source.body.l_$field -text $label
         if {$field eq "dataset"} {set variable dataset} else {set variable "display[string toupper $field]"}
-        ttk::combobox $w.source.$field -textvariable ::GX::DatasetCurveFit::state($w,$variable) -state readonly -width $width
-        pack $w.source.l_$field $w.source.$field -side left -padx 4
+        ttk::combobox $w.left.viewport.content.source.body.$field -textvariable ::GX::DatasetCurveFit::state($w,$variable) -state readonly -width $width
+        pack $w.left.viewport.content.source.body.l_$field $w.left.viewport.content.source.body.$field -side left -padx 4
     }
-    ::GX::datasetSelectorAttach $w.source.dataset ::GX::DatasetCurveFit::datasets
+    ::GX::datasetSelectorAttach $w.left.viewport.content.source.body.dataset ::GX::DatasetCurveFit::datasets
     if {$state($w,dataset) ni [datasets]} {set state($w,dataset) [lindex [datasets] 0]}
-    bind $w.source.dataset <<ComboboxSelected>> [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiDataset $w]]
-    foreach field {x y} {bind $w.source.$field <<ComboboxSelected>> [list ::GX::DatasetCurveFit::_uiSelectVariable $w $field]}
-    ttk::frame $w.samples -padding 5;pack $w.samples -fill x
-    ttk::label $w.samples.label -text "Built-in / Test sample"
-    ttk::combobox $w.samples.choice -textvariable ::GX::DatasetCurveFit::state($w,sample) -values [dict keys [sampleCatalog]] -state readonly -width 24
-    ttk::button $w.samples.load -text "Open sample in fitter" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiLoadSample $w]]
-    ttk::button $w.samples.publish -text "Publish sample as Dataset..." -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiPublishSample $w]]
-    pack $w.samples.label $w.samples.choice $w.samples.load $w.samples.publish -side left -padx 4
-    ttk::checkbutton $w.source.ids -text "Show variable IDs" -variable ::GX::DatasetCurveFit::state($w,showIds) -command [list ::GX::DatasetCurveFit::_uiVariableChoices $w]
-    pack $w.source.ids -side left -padx 4
-    ttk::frame $w.filter -padding 5;pack $w.filter -fill x
-    ttk::label $w.filter.title -text "Filters (all conditions must match)"
-    ttk::combobox $w.filter.variable -textvariable ::GX::DatasetCurveFit::state($w,displayFilterVar) -state readonly -width 20
-    ttk::combobox $w.filter.operator -textvariable ::GX::DatasetCurveFit::state($w,filterOp) -state readonly -width 10
-    ttk::entry $w.filter.value -textvariable ::GX::DatasetCurveFit::state($w,filterValue) -width 27
-    ttk::button $w.filter.add -text "Add filter" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiAddFilter $w]]
-    ttk::button $w.filter.remove -text "Remove selected" -command [list ::GX::DatasetCurveFit::_uiRemoveFilter $w]
-    ttk::button $w.filter.load -text "Add Dataset curve" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiLoad $w]]
-    ttk::button $w.filter.cancel -text "Cancel operation" -state disabled -command [list ::GX::DatasetCurveFit::_sourceCancel $w]
-    foreach item {title variable operator value add remove load cancel} {pack $w.filter.$item -side left -padx 3}
-    bind $w.filter.variable <<ComboboxSelected>> [list ::GX::DatasetCurveFit::_uiSelectVariable $w filterVar]
-    listbox $w.filters -height 1 -exportselection 0;pack $w.filters -fill x -padx 8
-    ttk::frame $w.settings -padding 5;pack $w.settings -fill x
-    ttk::label $w.settings.l_orientation -text "Fit orientation"
-    ttk::combobox $w.settings.orientation -textvariable ::GX::DatasetCurveFit::state($w,orientationLabel) -state readonly -values {{Y = f(X)} {X = f(Y)} {R = f(theta) (experimental)}} -width 26
-    pack $w.settings.l_orientation $w.settings.orientation -side left -padx 4
-    bind $w.settings.orientation <<ComboboxSelected>> [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiOrientation $w]]
+    bind $w.left.viewport.content.source.body.dataset <<ComboboxSelected>> [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiDataset $w]]
+    foreach field {x y} {bind $w.left.viewport.content.source.body.$field <<ComboboxSelected>> [list ::GX::DatasetCurveFit::_uiSelectVariable $w $field]}
+    ttk::frame $w.left.viewport.content.samples.body -padding 5;pack $w.left.viewport.content.samples.body -fill x
+    ttk::label $w.left.viewport.content.samples.body.label -text "Built-in / Test sample"
+    ttk::combobox $w.left.viewport.content.samples.body.choice -textvariable ::GX::DatasetCurveFit::state($w,sample) -values [dict keys [sampleCatalog]] -state readonly -width 24
+    ttk::button $w.left.viewport.content.samples.body.load -text "Open sample in fitter" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiLoadSample $w]]
+    ttk::button $w.left.viewport.content.samples.body.publish -text "Publish sample as Dataset..." -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiPublishSample $w]]
+    pack $w.left.viewport.content.samples.body.label $w.left.viewport.content.samples.body.choice $w.left.viewport.content.samples.body.load $w.left.viewport.content.samples.body.publish -side left -padx 4
+    ttk::checkbutton $w.left.viewport.content.source.body.ids -text "Show variable IDs" -variable ::GX::DatasetCurveFit::state($w,showIds) -command [list ::GX::DatasetCurveFit::_uiVariableChoices $w]
+    pack $w.left.viewport.content.source.body.ids -side left -padx 4
+    ttk::frame $w.left.viewport.content.filters.controls -padding 5;pack $w.left.viewport.content.filters.controls -fill x
+    ttk::label $w.left.viewport.content.filters.controls.title -text "Filters (all conditions must match)"
+    ttk::combobox $w.left.viewport.content.filters.controls.variable -textvariable ::GX::DatasetCurveFit::state($w,displayFilterVar) -state readonly -width 20
+    ttk::combobox $w.left.viewport.content.filters.controls.operator -textvariable ::GX::DatasetCurveFit::state($w,filterOp) -state readonly -width 10
+    ttk::entry $w.left.viewport.content.filters.controls.value -textvariable ::GX::DatasetCurveFit::state($w,filterValue) -width 27
+    ttk::button $w.left.viewport.content.filters.controls.add -text "Add filter" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiAddFilter $w]]
+    ttk::button $w.left.viewport.content.filters.controls.remove -text "Remove selected" -command [list ::GX::DatasetCurveFit::_uiRemoveFilter $w]
+    ttk::button $w.left.viewport.content.filters.controls.load -text "Add Dataset curve" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiLoad $w]]
+    ttk::button $w.left.viewport.content.filters.controls.cancel -text "Cancel operation" -state disabled -command [list ::GX::DatasetCurveFit::_sourceCancel $w]
+    foreach item {title variable operator value add remove load cancel} {pack $w.left.viewport.content.filters.controls.$item -side left -padx 3}
+    bind $w.left.viewport.content.filters.controls.variable <<ComboboxSelected>> [list ::GX::DatasetCurveFit::_uiSelectVariable $w filterVar]
+    listbox $w.left.viewport.content.filters.list -height 1 -exportselection 0;pack $w.left.viewport.content.filters.list -fill x -padx 8
+    ttk::frame $w.left.viewport.content.settings.body -padding 5;pack $w.left.viewport.content.settings.body -fill x
+    ttk::label $w.left.viewport.content.settings.body.l_orientation -text "Fit orientation"
+    ttk::combobox $w.left.viewport.content.settings.body.orientation -textvariable ::GX::DatasetCurveFit::state($w,orientationLabel) -state readonly -values {{Y = f(X)} {X = f(Y)} {R = f(theta) (experimental)}} -width 26
+    pack $w.left.viewport.content.settings.body.l_orientation $w.left.viewport.content.settings.body.orientation -side left -padx 4
+    bind $w.left.viewport.content.settings.body.orientation <<ComboboxSelected>> [list ::GX::DatasetCurveFit::_uiBoundSetting $w orientationLabel]
     foreach {field label values width} {model Model {linear polynomial exponential power_law gaussian circular_arc quadratic_bezier cubic_bezier pchip smoothing_spline fourier parametric_polynomial parametric_spline} 19 scope {Fit points} {all selected} 10 domain {Output domain} {source range} 12} {
-        ttk::label $w.settings.l_$field -text $label
-        ttk::combobox $w.settings.$field -textvariable ::GX::DatasetCurveFit::state($w,$field) -values $values -state readonly -width $width
-        pack $w.settings.l_$field $w.settings.$field -side left -padx 3
+        ttk::label $w.left.viewport.content.settings.body.l_$field -text $label
+        ttk::combobox $w.left.viewport.content.settings.body.$field -textvariable ::GX::DatasetCurveFit::state($w,$field) -values $values -state readonly -width $width
+        pack $w.left.viewport.content.settings.body.l_$field $w.left.viewport.content.settings.body.$field -side left -padx 3
     }
-    bind $w.settings.model <<ComboboxSelected>> [list ::GX::DatasetCurveFit::_uiModel $w]
-    bind $w.settings.domain <<ComboboxSelected>> [list ::GX::DatasetCurveFit::_uiDomainFields $w]
-    ttk::button $w.settings.parametric -text "Parametric settings…" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_parametricSettings $w]]
-    pack $w.settings.parametric -side left -padx 4
-    ttk::button $w.settings.polar -text "Radial settings…" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_polarSettings $w]]
-    pack $w.settings.polar -side left -padx 4
-    ttk::frame $w.parameters -padding 5;pack $w.parameters -fill x
+    foreach field {model scope domain} {
+        bind $w.left.viewport.content.settings.body.$field <<ComboboxSelected>> [list ::GX::DatasetCurveFit::_uiBoundSetting $w $field]
+    }
+    ttk::button $w.left.viewport.content.settings.body.parametric -text "Parametric settings…" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_parametricSettings $w]]
+    pack $w.left.viewport.content.settings.body.parametric -side left -padx 4
+    ttk::button $w.left.viewport.content.settings.body.polar -text "Radial settings…" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_polarSettings $w]]
+    pack $w.left.viewport.content.settings.body.polar -side left -padx 4
+    ttk::frame $w.left.viewport.content.settings.parameters -padding 5;pack $w.left.viewport.content.settings.parameters -fill x
     foreach {field label width} {degree Degree 6 initial {Initial parameters} 18 period {Fourier period (blank = auto)} 15 smoothing {Smoothing lambda} 10 min {X / t min} 9 max {X / t max} 9 samples Samples 6} {
-        ttk::label $w.parameters.l_$field -text $label
-        ttk::entry $w.parameters.$field -textvariable ::GX::DatasetCurveFit::state($w,$field) -width $width
-        pack $w.parameters.l_$field $w.parameters.$field -side left -padx 3
+        ttk::label $w.left.viewport.content.settings.parameters.l_$field -text $label
+        ttk::entry $w.left.viewport.content.settings.parameters.$field -textvariable ::GX::DatasetCurveFit::state($w,$field) -width $width
+        foreach event {<Return> <FocusOut>} {bind $w.left.viewport.content.settings.parameters.$field $event [list ::GX::DatasetCurveFit::_uiBoundSetting $w $field]}
+        pack $w.left.viewport.content.settings.parameters.l_$field $w.left.viewport.content.settings.parameters.$field -side left -padx 3
     }
     ttk::frame $w.actions -padding 5;pack $w.actions -fill x
     ttk::button $w.actions.clear -text "Clear point selection" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiClear $w]]
@@ -1687,74 +1756,75 @@ proc ::GX::DatasetCurveFit::open {{context {}}} {
     ttk::button $w.actions.export -text "Export accepted fit CSV" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiExport $w]]
     foreach item {clear preview accept publish export} {pack $w.actions.$item -side left -padx 4}
     foreach item {preview accept publish export} {$w.actions.$item configure -state disabled}
-    ttk::frame $w.selection -padding 5;pack $w.selection -fill x
-    ttk::label $w.selection.l_mode -text "Rectangle mode"
-    ttk::combobox $w.selection.mode -textvariable ::GX::DatasetCurveFit::state($w,rectMode) -values {Replace Add Subtract} -state readonly -width 10
-    ttk::button $w.selection.remove -text "Remove last rectangle" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiRemoveLastRect $w]]
-    ttk::button $w.selection.zoomin -text "Zoom in" -command [list ::GX::DatasetCurveFit::_zoom $w 0.7]
-    ttk::button $w.selection.zoomout -text "Zoom out" -command [list ::GX::DatasetCurveFit::_zoom $w 1.4]
-    ttk::button $w.selection.reset -text "Fit view" -command [list ::GX::DatasetCurveFit::_resetView $w]
-    ttk::label $w.selection.help -text "Shift-drag adds; Alt-drag subtracts. Middle-drag pans; wheel zooms."
-    foreach item {l_mode mode remove zoomin zoomout reset help} {pack $w.selection.$item -side left -padx 4}
-    ttk::frame $w.presentation -padding 5;pack $w.presentation -fill x
-    ttk::button $w.presentation.settings -text "Grid / background / aspect…" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_viewSettings $w]]
-    pack $w.presentation.settings -side left -padx 4
-    ttk::checkbutton $w.presentation.residuals -text "Show residual panel" -variable ::GX::DatasetCurveFit::state($w,showResiduals) -command [list ::GX::DatasetCurveFit::_residualPanel $w]
-    pack $w.presentation.residuals -side left -padx 4
-    ttk::scale $w.presentation.split -from .3 -to .9 -orient horizontal -variable ::GX::DatasetCurveFit::state($w,residualFraction) -command [list ::GX::DatasetCurveFit::_residualResize $w]
-    pack $w.presentation.split -side left -padx 4
-    ttk::label $w.presentation.coordinates -textvariable ::GX::DatasetCurveFit::state($w,coordinates)
-    pack $w.presentation.coordinates -side left -padx 8
-    ttk::frame $w.accepted -padding 5;pack $w.accepted -fill x
-    ttk::label $w.accepted.title -text "Accepted fits"
-    listbox $w.fits -height 2 -exportselection 0;pack $w.accepted.title -side left -padx 4
-    ttk::button $w.accepted.visibility -text "Show / Hide" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiFitAction $w visibility]]
-    ttk::button $w.accepted.delete -text "Delete fit" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiFitAction $w delete]]
-    ttk::button $w.accepted.publish -text "Publish selected fit as Dataset…" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiPublishAccepted $w]]
-    pack $w.accepted.visibility $w.accepted.delete $w.accepted.publish -side left -padx 4
-    pack $w.fits -fill x -padx 8
+    ttk::frame $w.left.viewport.content.selection.body -padding 5;pack $w.left.viewport.content.selection.body -fill x
+    ttk::label $w.left.viewport.content.selection.body.l_mode -text "Rectangle mode"
+    ttk::combobox $w.left.viewport.content.selection.body.mode -textvariable ::GX::DatasetCurveFit::state($w,rectMode) -values {Replace Add Subtract} -state readonly -width 10
+    ttk::button $w.left.viewport.content.selection.body.remove -text "Remove last rectangle" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiRemoveLastRect $w]]
+    ttk::button $w.left.viewport.content.selection.body.zoomin -text "Zoom in" -command [list ::GX::DatasetCurveFit::_zoom $w 0.7]
+    ttk::button $w.left.viewport.content.selection.body.zoomout -text "Zoom out" -command [list ::GX::DatasetCurveFit::_zoom $w 1.4]
+    ttk::button $w.left.viewport.content.selection.body.reset -text "Fit view" -command [list ::GX::DatasetCurveFit::_resetView $w]
+    ttk::label $w.left.viewport.content.selection.body.help -text "Shift-drag adds; Alt-drag subtracts. Middle-drag pans; wheel zooms."
+    foreach item {l_mode mode remove zoomin zoomout reset help} {pack $w.left.viewport.content.selection.body.$item -side left -padx 4}
+    ttk::frame $w.left.viewport.content.presentation.body -padding 5;pack $w.left.viewport.content.presentation.body -fill x
+    ttk::button $w.left.viewport.content.presentation.body.settings -text "Grid / background / aspect…" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_viewSettings $w]]
+    pack $w.left.viewport.content.presentation.body.settings -side left -padx 4
+    ttk::checkbutton $w.left.viewport.content.presentation.body.residuals -text "Show residual panel" -variable ::GX::DatasetCurveFit::state($w,showResiduals) -command [list ::GX::DatasetCurveFit::_residualPanel $w]
+    pack $w.left.viewport.content.presentation.body.residuals -side left -padx 4
+    ttk::scale $w.left.viewport.content.presentation.body.split -from .3 -to .9 -orient horizontal -variable ::GX::DatasetCurveFit::state($w,residualFraction) -command [list ::GX::DatasetCurveFit::_residualResize $w]
+    pack $w.left.viewport.content.presentation.body.split -side left -padx 4
+    ttk::label $w.left.viewport.content.presentation.body.coordinates -textvariable ::GX::DatasetCurveFit::state($w,coordinates)
+    pack $w.left.viewport.content.presentation.body.coordinates -side left -padx 8
+    ttk::frame $w.left.viewport.content.accepted.actions -padding 5;pack $w.left.viewport.content.accepted.actions -fill x
+    ttk::label $w.left.viewport.content.accepted.actions.title -text "Accepted fits"
+    listbox $w.left.viewport.content.accepted.list -height 2 -exportselection 0;pack $w.left.viewport.content.accepted.actions.title -side left -padx 4
+    ttk::button $w.left.viewport.content.accepted.actions.visibility -text "Show / Hide" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiFitAction $w visibility]]
+    ttk::button $w.left.viewport.content.accepted.actions.delete -text "Delete fit" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiFitAction $w delete]]
+    ttk::button $w.left.viewport.content.accepted.actions.publish -text "Publish selected fit as Dataset…" -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_uiPublishAccepted $w]]
+    pack $w.left.viewport.content.accepted.actions.visibility $w.left.viewport.content.accepted.actions.delete $w.left.viewport.content.accepted.actions.publish -side left -padx 4
+    pack $w.left.viewport.content.accepted.list -fill x -padx 8
     _workspaceGui $w
-    canvas $w.canvas -background white -height 400;pack $w.canvas -fill both -expand 1 -padx 8 -pady 4
-    ttk::label $w.result -textvariable ::GX::DatasetCurveFit::state($w,report) -justify left -wraplength 1240;pack $w.result -fill x -padx 8
-    ttk::treeview $w.residuals -columns {row x observed fitted residual} -show headings -height 3
+    canvas $w.right.plot.canvas -background white -height 400;pack $w.right.plot.canvas -fill both -expand 1 -padx 8 -pady 4
+    ttk::label $w.right.report.result -textvariable ::GX::DatasetCurveFit::state($w,report) -justify left -wraplength 1240;pack $w.right.report.result -fill x -padx 8
+    ttk::treeview $w.right.residuals.table -columns {row x observed fitted residual} -show headings -height 3
     foreach {column heading width} {row {Dataset row} 100 x X 140 observed {Observed Y} 140 fitted {Fitted Y} 140 residual {Residual (observed - fit)} 210} {
-        $w.residuals heading $column -text $heading
-        $w.residuals column $column -width $width -stretch 1
+        $w.right.residuals.table heading $column -text $heading
+        $w.right.residuals.table column $column -width $width -stretch 1
     }
-    pack $w.residuals -fill x -padx 8
+    pack $w.right.residuals.table -fill x -padx 8
     set state($w,residualStart) 0;set state($w,residualStatus) "Exact residual data is retained when this panel is hidden."
-    ttk::frame $w.residualPager
+    ttk::frame $w.right.residuals.pager
     foreach {key text step} {previous Previous -200 next Next 200 first First -100000000000 last Last 100000000000} {
-        ttk::button $w.residualPager.$key -text $text -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_residualPageUi $w $step]]
-        pack $w.residualPager.$key -side left -padx 4
+        ttk::button $w.right.residuals.pager.$key -text $text -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_residualPageUi $w $step]]
+        pack $w.right.residuals.pager.$key -side left -padx 4
     }
-    ttk::label $w.residualPager.status -textvariable ::GX::DatasetCurveFit::state($w,residualStatus);pack $w.residualPager.status -side left -padx 6
-    pack $w.residualPager -after $w.residuals -side bottom -fill x -padx 8
-    ttk::label $w.status -textvariable ::GX::DatasetCurveFit::state($w,status) -anchor w;pack $w.status -fill x -padx 8 -pady 4
-    # Reserve diagnostics before allocating the expanding plot; otherwise a
-    # remote screen clamp can leave report/status and residual paging unmapped.
-    pack $w.status $w.residuals $w.residualPager $w.result -before $w.canvas -side bottom -fill x -padx 8
-    bind $w.canvas <ButtonPress-1> [list ::GX::DatasetCurveFit::_mouseDown $w %x %y %s]
-    bind $w.canvas <Motion> [list ::GX::DatasetCurveFit::_coordinates $w %x %y]
-    bind $w.canvas <B1-Motion> [list ::GX::DatasetCurveFit::_mouseMove $w %x %y]
-    bind $w.canvas <ButtonRelease-1> [list ::GX::DatasetCurveFit::_mouseUp $w %x %y %s]
-    bind $w.canvas <ButtonPress-2> [list ::GX::DatasetCurveFit::_panDown $w %x %y]
-    bind $w.canvas <B2-Motion> [list ::GX::DatasetCurveFit::_panMove $w %x %y]
-    bind $w.canvas <ButtonRelease-2> [list ::GX::DatasetCurveFit::_panUp $w]
-    bind $w.canvas <MouseWheel> [list ::GX::DatasetCurveFit::_wheel $w %D %x %y]
-    bind $w.canvas <Button-4> [list ::GX::DatasetCurveFit::_zoom $w 0.85 %x %y]
-    bind $w.canvas <Button-5> [list ::GX::DatasetCurveFit::_zoom $w 1.18 %x %y]
-    bind $w.canvas <Configure> [list ::GX::DatasetCurveFit::redraw $w]
+    ttk::label $w.right.residuals.pager.status -textvariable ::GX::DatasetCurveFit::state($w,residualStatus);pack $w.right.residuals.pager.status -side left -padx 6
+    pack $w.right.residuals.pager -after $w.right.residuals.table -side bottom -fill x -padx 8
+    ttk::label $w.footer.status -textvariable ::GX::DatasetCurveFit::state($w,status) -anchor w;pack $w.footer.status -fill x -padx 8 -pady 4
+    # Diagnostics have their own actual Tk parents, outside the plot viewport.
+    bind $w.right.plot.canvas <ButtonPress-1> [list ::GX::DatasetCurveFit::_mouseDown $w %x %y %s]
+    bind $w.right.plot.canvas <Motion> [list ::GX::DatasetCurveFit::_coordinates $w %x %y]
+    bind $w.right.plot.canvas <B1-Motion> [list ::GX::DatasetCurveFit::_mouseMove $w %x %y]
+    bind $w.right.plot.canvas <ButtonRelease-1> [list ::GX::DatasetCurveFit::_mouseUp $w %x %y %s]
+    bind $w.right.plot.canvas <ButtonPress-2> [list ::GX::DatasetCurveFit::_panDown $w %x %y]
+    bind $w.right.plot.canvas <B2-Motion> [list ::GX::DatasetCurveFit::_panMove $w %x %y]
+    bind $w.right.plot.canvas <ButtonRelease-2> [list ::GX::DatasetCurveFit::_panUp $w]
+    bind $w.right.plot.canvas <MouseWheel> [list ::GX::DatasetCurveFit::_wheel $w %D %x %y]
+    bind $w.right.plot.canvas <Button-4> [list ::GX::DatasetCurveFit::_zoom $w 0.85 %x %y]
+    bind $w.right.plot.canvas <Button-5> [list ::GX::DatasetCurveFit::_zoom $w 1.18 %x %y]
+    bind $w.right.plot.canvas <Configure> [list ::GX::DatasetCurveFit::redraw $w]
     foreach frame {source samples filter settings parameters actions selection presentation accepted workspace.actions residualPager} {
-        bind $w.$frame <Configure> [list ::GX::native2DToolbarLayout $w.$frame %w]
+        set widget [_widget $w $frame]
+        bind $widget <Configure> [list ::GX::native2DToolbarLayout $widget %w]
     }
     _layout $w
     if {$state($w,dataset) ne ""} {_uiSafe $w [list ::GX::DatasetCurveFit::_uiDataset $w]}
     _uiModelFields $w
     _uiDomainFields $w
     if {$state($w,sessionToken) ne ""} {_uiSafe $w [list ::GX::DatasetCurveFit::_restoreState $w $requestedDataset]}
+    _historyAttach $w
     if {$requestedWorkspace eq "new"} {_saveState $w}
     set state($w,catalogSubscription) [::GX::datasetCatalogSubscribe [list ::GX::DatasetCurveFit::_workspaceCatalog $w]]
+    ::GX::sessionWorkspaceViewerTitle $w {Dataset Curve Fit} [list ::GX::DatasetCurveFit::_currentWorkspace $w] [list set ::GX::DatasetCurveFit::state($w,workspaceName)]
     return $w
 }
 proc ::GX::DatasetCurveFit::viewerDispatch {action scene} {
@@ -1775,10 +1845,12 @@ proc ::GX::DatasetCurveFit::fitPrimitive {points family unit} {
     if {![::GX::unitTclCompatible $unit m]} {error "Retained geometric conversion requires declared compatible length units"}
     if {[llength $points]<3||[llength $points]>65536} {error "Retained fit input requires 3..65536 complete points; choose an explicit range for larger sources"}
     set model [expr {$family in {circle arc}?"circular_arc":$family}]
-    set report [_runNumeric $model 2 {} $points $points {parameter 0 1 257} [dict create orientation parametric]]
+    set report [_runNumeric $model 2 {} $points $points {parameter 0 1 257} [dict create orientation parametric translation_u {mode off delta 0} translation_v {mode off delta 0}]]
     _native;set scene [::GX::Native2D::core scene]
     try {set definition [::GX::Native2D::core interaction_from_fit $scene $family [split [dict get $report parameters] ,]]} finally {::GX::Native2D::core destroy $scene}
     return [dict create definition $definition quality [dict remove $report fitted residual] working_unit $unit method scientific_fit numeric_api NUMERIC_API_v1 model $model approximation 1]
 }
 
 source [file join [file dirname [info script]] curve_fit_layout.tcl]
+source [file join [file dirname [info script]] curve_fit_settings.tcl]
+source [file join [file dirname [info script]] curve_fit_history.tcl]

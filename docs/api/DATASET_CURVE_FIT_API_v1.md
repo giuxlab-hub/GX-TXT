@@ -44,3 +44,31 @@ See [viewer manual](../../plugins/modules/viewer.dataset_curve_fit/MANUAL.md), [
 ## Exact source science in dev-052
 
 The additive GUI workspace retains per-source descriptors and accepted model/resource identity. Exact filtered/selected input streams independently of display extrema. Orientation X=f(Y) swaps mathematical dependent/independent bindings while retaining physical output X/Y; R=f(theta) records shared polar frame and native/Numerical conventions. Ordered parametric polynomial/natural/periodic cubic supports row/path/user parameterization and explicit topology. No accepted curve is refitted on restore. Shared model APIs provide bounded exact projection/residual pages and model-owned resource lifetime. The manual describes batch acceptance, source reversal, source removal and explicit publication of historical accepted results.
+
+## Integrated dev096 candidate additions
+
+The optional `translation_u` and `translation_v` fit options are dictionaries
+with `mode` (`auto`, `manual`, `off`) and `delta`. An omitted option retains
+legacy OFF semantics. The GUI explicitly supplies its per-source configuration,
+whose factory mode is AUTO. Numerical API owns positive-translation resolution;
+the Viewer records its effective constants and applies the inverse once to
+physical geometry and residuals.
+
+Preview and accepted provenance contain `translation`, including original and
+transformed bounds, variable/axis identity, units, margin, resolved delta,
+forward/inverse conventions and `inverse_applied=1`. `physical_formula` is the
+same physical expression rendered as one line for portable metadata. Explicit
+Dataset publication writes `curve_fit.translation` and
+`curve_fit.physical_formula`; accepted CSV sidecars retain both as well. The
+exported coordinates are physical values, not translated fitting coordinates.
+
+Changing model, orientation, fit scope, output domain, numerical parameters,
+translation, parametric or radial settings invalidates the stored unpublished
+Preview. Previously accepted geometry remains independent. Invalidation and
+configuration participate in the shared CORE History checkpoint, so reopen or
+Redo cannot re-enable an incompatible Preview. Bound form edits recover the
+displayed checkpoint before branch confirmation and apply the captured user
+choice only after confirmation. Numeric field commits precede plot gestures.
+The GUI adapter uses `SCIENTIFIC_RECIPE_API_v1`; it introduces no separate
+History format or persistence service. See the manual for scoped panel/shortcut
+configuration and protected History clearing.

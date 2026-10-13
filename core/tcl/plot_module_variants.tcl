@@ -697,6 +697,7 @@ proc ::GX::plotVariantWriteRuntime_before_graph_workflow {moduleId graphId varia
             foreach field {family_variable_id secondary_variable_id ordering_variable_id style_color style_line_style} {
                 putKV $fd $field [expr {[dict exists $item $field] ? [dict get $item $field] : ""}]
             }
+            putKV $fd source_row_ordinals [datasetPublicationV2DictDefault $item source_row_ordinals {}]
             set filters [expr {[dict exists $item row_filters] ? [dict get $item row_filters] : {}}]
             putKV $fd filter_count [llength $filters]
             set j 0

@@ -28,7 +28,7 @@ proc ::GX::datasetPageBuildViews {} {
     if {[winfo exists $f.views]} return
     ttk::notebook $f.views
     grid $f.views -row 0 -column 0 -columnspan 2 -sticky nsew -padx 6 -pady 4
-    foreach {key title} {variables Variables metadata Metadata notes Notes temporal {Temporal Sets} preview Preview help {Variables Help}} {
+    foreach {key title} {variables Variables metadata Metadata technical {Technical Details / Provenance} notes Notes temporal {Temporal Sets} preview Preview help {Variables Help}} {
         ttk::frame $f.views.$key
         $f.views add $f.views.$key -text $title
     }
@@ -66,6 +66,16 @@ proc ::GX::datasetPageBuildViews {} {
     pack $f.metadata.scroll -side right -fill y
     pack $f.metadata.table -fill both -expand 1
     pack $f.metadata -in $f.views.metadata -fill both -expand 1
+
+    ttk::treeview $f.views.technical.table -columns {key value} -show headings
+    foreach {key label width} {key {CORE inspection field (read-only)} 240 value Value 540} {
+        $f.views.technical.table heading $key -text $label
+        $f.views.technical.table column $key -width $width -stretch 1
+    }
+    ttk::scrollbar $f.views.technical.scroll -command [list $f.views.technical.table yview]
+    $f.views.technical.table configure -yscrollcommand [list $f.views.technical.scroll set]
+    pack $f.views.technical.scroll -side right -fill y
+    pack $f.views.technical.table -fill both -expand 1
 
     ttk::frame $f.notes
     ttk::button $f.notes.edit -text "Edit Notes..." -command ::GX::datasetNotesOpenSelected
@@ -114,6 +124,55 @@ proc ::GX::datasetPageMoveActive {} {
     lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] mode id
     if {$mode eq "imported"} {datasetBrowserMoveDialog $id}
 }
+proc ::GX::datasetPageVariablesDraft {id} {
+    set variables [datasetVariableSchemaV3 $id];set result {};set index 0
+    foreach variable $variables {
+        incr index
+        foreach key {enabled canonical unit canonical_unit to_canonical from_canonical display_label semantic_role instrument_id instrument_channel value_kind value_format decimal_separator time_reference time_origin} {
+            if {[info exists ::GX::inspectVar($index,$key)]} {dict set variable $key $::GX::inspectVar($index,$key)}
+        }
+        lappend result $variable
+    }
+    return $result
+}
+proc ::GX::datasetPageExportCurrent {format} {
+    lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] mode id
+    if {$mode ne "imported" || $id eq {}} {error {Activate a canonical Dataset before exporting its current view}}
+    set token [interactiveDocumentSessionToken]
+    set section [lindex [split [.top.nb.channels.views select] .] end]
+    set request {};set draft 0
+    if {$section in {notes metadata} && [dict exists $::GX::datasetPageEditors $section]} {set draft 1}
+    if {$section eq "variables" && [datasetPageVariablesDraft $id] ne [datasetVariableSchemaV3 $id]} {set draft 1}
+    if {$draft} {
+        set choice [tk_messageBox -parent . -type yesnocancel -default cancel -title {Export Dataset view} -message "Dataset $id — $section\nYes: export the displayed draft, without saving it.\nNo: export saved canonical content.\nCancel: create no file."]
+        if {$choice eq "cancel"} return
+        if {$choice eq "yes"} {
+            dict set request source draft
+            switch $section {
+                notes {dict set request notes [.top.nb.channels.notesEditor.editor.t get 1.0 end-1c]}
+                metadata {
+                    dict set request metadata $::GX::datasetMetadataEditorData
+                    dict set request pending_metadata [dict create key $::GX::datasetMetadataEditorKey value [.top.nb.channels.metadataEditor.edit.value get 1.0 end-1c]]
+                }
+                variables {dict set request variables [datasetPageVariablesDraft $id]}
+            }
+        }
+    }
+    set document [datasetInspectionSectionDocument $id $section $request]
+    set extension [expr {$format eq "text" ? ".txt" : ".pdf"}]
+    set path [workspaceSaveFile export_dir -title "Export Dataset $id — $section" -initialfile "[sanitize $id]-$section$extension" -defaultextension $extension -filetypes [list [list [string toupper [string range $extension 1 end]] [list $extension]]]]
+    if {$path eq {}} return
+    if {$token ne [interactiveDocumentSessionToken] || $::GX::variableDatasetChoice ne [datasetInspectionImportedChoice $id]} {error {Session or active Dataset changed during export; reopen the action}}
+    set normalized [file normalize $path];set session [file normalize $::GX::currentSession]
+    if {[string match $session/* $normalized]} {error {Choose an external destination outside the scientific Session}}
+    set settings [dict create page $::GX::cfg(print_page) orientation $::GX::cfg(print_orientation) margin_mm $::GX::cfg(print_margin_mm)]
+    filePublicationTextDocument $path [dict get $document text] [expr {$format eq "text" ? "text" : "pdf"}] $settings
+    if {$format eq "print"} {
+        set previous $::GX::cfg(print_output_pdf);set ::GX::cfg(print_output_pdf) $path
+        try {printPdf} finally {set ::GX::cfg(print_output_pdf) $previous}
+    }
+    setStatus "Exported Dataset $id — $section: $path (no Dataset changes)" 100
+}
 
 proc ::GX::datasetPageRenderSections {mode datasetId} {
     set f .top.nb.channels
@@ -124,6 +183,7 @@ proc ::GX::datasetPageRenderSections {mode datasetId} {
     $f.bar.actionsMenu entryconfigure 0 -state [expr {$mode in {imported pending single}?"normal":"disabled"}]
     for {set i 1} {$i<9} {incr i} {$f.bar.actionsMenu entryconfigure $i -state [expr {$imported?"normal":"disabled"}]}
     $f.metadata.table delete [$f.metadata.table children {}]
+    $f.views.technical.table delete [$f.views.technical.table children {}]
     $f.temporalSets.table delete [$f.temporalSets.table children {}]
     pack forget $f.metadata.head.verify
     set note {Activate an imported Dataset using its browser glyph or context menu.}
@@ -132,11 +192,14 @@ proc ::GX::datasetPageRenderSections {mode datasetId} {
             $f.metadata.head.verify configure -command [list ::GX::datasetPageVerifyRawSource $datasetId]
             pack $f.metadata.head.verify -side right -padx 4 -pady 4
         }
-        set details [sessionInspectionDataset $datasetId]
-        dict for {key value} [datasetMetadataRead $::GX::currentSession $datasetId] {dict set details $key $value}
+        set details [datasetMetadataRead $::GX::currentSession $datasetId]
         dict for {key value} $details {
-            if {[llength $value]>1} {set value [join $value {, }]}
             $f.metadata.table insert {} end -values [list $key $value]
+        }
+        if {$details eq {}} {$f.metadata.table insert {} end -values [list {No user metadata} {}]}
+        dict for {key value} [sessionInspectionDataset $datasetId] {
+            if {[_datasetMetadataReserved $key]} continue
+            $f.views.technical.table insert {} end -values [list $key $value]
         }
         set note [datasetUserNotes $datasetId]
         foreach item [temporalSetList $datasetId] {
@@ -165,11 +228,16 @@ proc ::GX::launchGui_before_import_queue {} {
 
 # Editors own a fixed Session/Dataset identity until Save or Cancel. A refresh
 # can update consultation panes but may never retarget a live draft.
-namespace eval ::GX {variable datasetPageEditors {}}
+namespace eval ::GX {variable datasetPageEditors {};variable datasetPageEditorBaselines {}}
 proc ::GX::datasetPageEditorBegin {section id} {
     variable datasetPageEditors
     if {[dict exists $datasetPageEditors $section]} {error {Finish or cancel the existing editor first.}}
     dict set datasetPageEditors $section [list [interactiveDocumentSessionToken] $::GX::currentSession $id]
+    switch $section {
+        metadata {dict set ::GX::datasetPageEditorBaselines $section [datasetMetadataRead $::GX::currentSession $id]}
+        notes {dict set ::GX::datasetPageEditorBaselines $section [datasetUserNotes $id]}
+        temporal {dict set ::GX::datasetPageEditorBaselines $section {}}
+    }
 }
 proc ::GX::datasetPageEditorRequire {section} {
     variable datasetPageEditors
@@ -180,13 +248,70 @@ proc ::GX::datasetPageEditorRequire {section} {
 }
 proc ::GX::datasetPageCanSwitch {choice} {
     variable datasetPageEditors
-    if {$choice eq $::GX::variableDatasetChoice || ![dict size $datasetPageEditors]} {return 1}
-    setStatus {Save or Cancel the open Dataset editor before activating another Dataset.} 100
-    return 0
+    if {![dict size $datasetPageEditors]} {return 1}
+    lassign [datasetInspectionParseChoice $choice] targetMode target
+    set dirty {};set previous {}
+    dict for {section binding} $datasetPageEditors {
+        lassign $binding token session id
+        if {$targetMode eq "imported" && $target eq $id} continue
+        set previous $id
+        if {[datasetPageEditorDirty $section]} {lappend dirty $section}
+    }
+    if {$previous eq {}} {return 1}
+    if {$dirty ne {} && [tk_messageBox -parent . -type okcancel -default cancel -icon warning -title {Discard changes and switch Dataset} \
+        -message "Dataset $previous has unsaved [join $dirty { / }] changes.\nDiscard changes and switch to $choice?\nCancel keeps every draft and Dataset $previous active."] ne "ok"} {
+        set ::GX::variableDatasetChoice [datasetInspectionImportedChoice $previous]
+        set ::GX::csvPreviewDatasetChoice $::GX::variableDatasetChoice
+        return 0
+    }
+    # End ownership before assigning the new existing active choice. Consultation
+    # refresh and Preview cancellation remain on their established lifecycle.
+    foreach section [dict keys $datasetPageEditors] {datasetPageEditorEnd $section}
+    return 1
+}
+proc ::GX::datasetPageMetadataEqual {left right} {
+    if {[dict size $left]!=[dict size $right]} {return 0}
+    dict for {key value} $left {if {![dict exists $right $key] || [dict get $right $key] ne $value} {return 0}}
+    return 1
+}
+proc ::GX::datasetPageTemporalDraft {} {
+    set draft {}
+    foreach key {EditingId EditingType VarDisplay ParentDisplay Basis Label WindowSize Step Partial DurationUnit SegmentUnit SegmentLabel SegmentStart SegmentEnd Segments} {
+        if {[info exists ::GX::temporalSetGui$key]} {dict set draft $key [set ::GX::temporalSetGui$key]}
+    }
+    return $draft
+}
+proc ::GX::datasetPageEditorDirty {section} {
+    set baseline [dict get $::GX::datasetPageEditorBaselines $section]
+    switch $section {
+        notes {return [expr {[.top.nb.channels.notesEditor.editor.t get 1.0 end-1c] ne $baseline}]}
+        metadata {
+            if {![datasetPageMetadataEqual $baseline $::GX::datasetMetadataEditorData]} {return 1}
+            set key [string trim $::GX::datasetMetadataEditorKey]
+            set value [.top.nb.channels.metadataEditor.edit.value get 1.0 end-1c]
+            if {$key ne {}} {
+                if {![dict exists $::GX::datasetMetadataEditorData $key] || [dict get $::GX::datasetMetadataEditorData $key] ne $value} {return 1}
+            } elseif {$value ne {}} {return 1}
+            set bulk .top.nb.channels.metadataEditor.bulk.text
+            if {[winfo exists $bulk]} {
+                set text [$bulk get 1.0 end-1c]
+                if {[string trim $text] ne {}} {
+                    if {[catch {datasetMetadataParseText $text} parsed] || ![datasetPageMetadataEqual $baseline [dict merge $baseline $parsed]]} {return 1}
+                }
+            }
+            return 0
+        }
+        temporal {
+            if {![winfo exists .top.nb.channels.temporal.body.editor]} {return 0}
+            return [expr {[datasetPageTemporalDraft] ne $baseline}]
+        }
+        default {error {Dataset editor has no semantic dirty-state adapter}}
+    }
 }
 proc ::GX::datasetPageEditorEnd {section} {
     variable datasetPageEditors
     dict unset datasetPageEditors $section
+    dict unset ::GX::datasetPageEditorBaselines $section
     set f .top.nb.channels
     switch $section {
         metadata {destroy $f.metadataEditor;pack $f.metadata -in $f.views.metadata -fill both -expand 1;raise $f.metadata}
@@ -207,11 +332,7 @@ proc ::GX::datasetPageNotesSave {} {
 
 proc ::GX::datasetPageSelectionChanged {} {
     variable datasetPageEditors
-    if {[dict size $datasetPageEditors]} {
-        lassign [lindex [dict values $datasetPageEditors] 0] token session id
-        set ::GX::variableDatasetChoice [datasetInspectionImportedChoice $id]
-        setStatus {Save or Cancel the open Dataset editor before activating another Dataset.} 100
-    }
+    datasetPageCanSwitch $::GX::variableDatasetChoice
     refreshNativeVariablesGui
 }
 

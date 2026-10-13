@@ -46,16 +46,7 @@ proc ::GX::CurveWorkbench::_constraintTitle {kind} {
     return [dict get {fixed Fix distance {Distance / Length} angle Angle parallel Parallel perpendicular Perpendicular coincident Coincident horizontal Horizontal vertical Vertical equal_length {Equal Length} equal_radius {Equal Radius} tangent Tangent concentric Concentric collinear Collinear midpoint Midpoint point_on_line {Point on Line} point_on_curve {Point on Curve} symmetry Symmetry radius Radius diameter Diameter lock_x {X Dimension} lock_y {Y Dimension} horizontal_distance {Horizontal Distance} vertical_distance {Vertical Distance} point_line_distance {Point-Line Distance} line_distance {Parallel Line Distance} axis_angle {Axis Angle} curvature {Curvature / G2}} $kind]
 }
 proc ::GX::CurveWorkbench::_shortcutNormalize {value} {
-    set value [string trim $value]
-    if {$value eq {}} {return {}}
-    set parts [split $value +];set key [lindex $parts end];set mods [lrange $parts 0 end-1]
-    foreach modifier $mods {if {$modifier ni {Ctrl Shift}} {error {Use Ctrl and/or Shift; Alt and platform combinations are reserved.}}}
-    if {[regexp {^[A-Z]$} $key]} {lappend mods Shift;set key [string tolower $key]}
-    if {![regexp {^([a-z0-9]|Delete|F([2-9]|1[0-2]))$} $key]} {error {Use one letter/digit, Delete or F2–F12. Enter, Escape, Space, Tab and editing/navigation keys are reserved.}}
-    set result {};foreach modifier {Ctrl Shift} {if {$modifier in $mods} {lappend result $modifier}}
-    lappend result $key;set result [join $result +]
-    if {$result in {Ctrl+a Ctrl+c Ctrl+v Ctrl+x Ctrl+Shift+a Ctrl+Shift+c Ctrl+Shift+v Ctrl+Shift+x}} {error {That shortcut is reserved for standard text/clipboard operations.}}
-    return $result
+    return [::GX::viewerShortcutNormalize $value]
 }
 
 proc ::GX::CurveWorkbench::_shortcutCommands {} {
@@ -72,19 +63,9 @@ proc ::GX::CurveWorkbench::_shortcutCommands {} {
     return $result
 }
 proc ::GX::CurveWorkbench::_shortcutSettingsValidate {overrides} {
-    if {[catch {dict size $overrides}]} {error {Shortcut settings must be a command-to-key dictionary}}
-    set commands [_shortcutCommands];set used {};set result {}
-    foreach id [dict keys $overrides] {if {![dict exists $commands $id]} {error "Unknown shortcut command '$id'"}}
-    dict for {id command} $commands {
-        set value [_shortcutNormalize [::GX::datasetPublicationV2DictDefault $overrides $id [dict get $command default]]]
-        if {$value ne {} && [dict exists $used $value]} {error "Shortcut $value conflicts: [dict get $used $value] and $id. No bindings changed."}
-        if {$value ne {}} {dict set used $value $id}
-        dict set result $id $value
-    }
-    return $result
+    return [::GX::viewerShortcutsValidate viewer.curve_workbench $overrides]
 }
 proc ::GX::CurveWorkbench::_shortcutSettingsFields {} {
-    set fields {}
-    dict for {id command} [_shortcutCommands] {dict set fields $id [dict create type string label "[dict get $command label] ($id)" default [dict get $command default]]}
-    return $fields
+    return [::GX::viewerShortcutFields viewer.curve_workbench]
 }
+::GX::viewerCommandCatalogRegister viewer.curve_workbench [::GX::CurveWorkbench::_shortcutCommands] modules.curve_workbench.shortcuts

@@ -11,7 +11,7 @@ namespace eval ::GX::UiField {
     variable formStatus
 }
 proc ::GX::uiFieldApiInfo {} {
-    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldFormCreate uiMenuPopup uiMenuWorkarea}]
+    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldFormCreate uiMenuPopup uiMenuWorkarea uiMenuRowAttach}]
 }
 proc ::GX::uiFieldColor {value {withAlpha 0}} {
     set opacity 1.0

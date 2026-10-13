@@ -598,6 +598,7 @@ proc ::GX::temporalSetGuiEdit {type {id ""}} {
     ttk::button $body.editor.actions.cancel -text "Cancel" -command ::GX::temporalSetGuiShowList
     pack $body.editor.actions.save $body.editor.actions.cancel -side left -padx 5
     grid $body.editor.actions -row 20 -column 0 -columnspan 4 -sticky w -pady 10
+    dict set ::GX::datasetPageEditorBaselines temporal [datasetPageTemporalDraft]
 }
 
 proc ::GX::temporalSetGuiRenderSegments {} {

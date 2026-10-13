@@ -1,3 +1,7 @@
+# math.numeric 1.17.0
+
+Reusable reversible positive-axis translation and optional reviewed point ordering, including retained closed endpoints.
+
 # 1.16.1 — dev093
 
 Use the shared typed binary Script Bridge worker without changing scientific

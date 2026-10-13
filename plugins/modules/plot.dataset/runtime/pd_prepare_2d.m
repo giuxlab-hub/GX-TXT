@@ -29,6 +29,9 @@ function P=pd_prepare_2d(info,cfg,opts,graph,oldP)
         if(isfield(item,'secondary_variable_id')&&!isempty(strtrim(item.secondary_variable_id))),aux{end+1}=item.secondary_variable_id;endif
         if(isfield(item,'ordering_variable_id')&&!isempty(strtrim(item.ordering_variable_id))),aux{end+1}=item.ordering_variable_id;endif
         auxsets{q}=unique(aux,'stable');mode=opts.reduction_mode;
+        % Exact source adjacency cannot be inferred across decimated rows.
+        if(isfield(pres,'source_row_continuity')&&pres.source_row_continuity),mode='none';endif
+        if(isfield(item,'source_row_ordinals')&&!isempty(item.source_row_ordinals)),mode='none';endif
         if(isfield(item,'ordering_variable_id')&&!isempty(strtrim(item.ordering_variable_id))),mode='none';endif
         if(isfield(pres,'family_variable_id')&&!isempty(strtrim(pres.family_variable_id))),mode='none';endif
         if(isfield(pres,'kind')&&any(strcmp(lower(strtrim(pres.kind)),{'histogram','box_whisker'}))),mode='none';endif
@@ -50,6 +53,8 @@ function P=pd_prepare_2d(info,cfg,opts,graph,oldP)
       if(!isfield(pres.style,'line_style')||isempty(pres.style.line_style)),pres.style.line_style=G(k).style_line_style;endif
     endif
     reduction=opts.reduction_mode;
+    if(isfield(pres,'source_row_continuity')&&pres.source_row_continuity),reduction='none';endif
+    if(isfield(G,'source_row_ordinals')&&!isempty(G(k).source_row_ordinals)),reduction='none';endif
     if(isfield(G,'ordering_variable_id')&&!isempty(strtrim(G(k).ordering_variable_id))),reduction='none';endif
     if(isfield(pres,'family_variable_id')&&!isempty(strtrim(pres.family_variable_id))),reduction='none';endif
     if(isfield(pres,'kind')&&any(strcmp(lower(strtrim(pres.kind)),{'histogram','box_whisker'})))
@@ -86,6 +91,13 @@ function P=pd_prepare_2d(info,cfg,opts,graph,oldP)
     else
       d=pd_prepare_2d_series_v2(session,G(k).dataset_id,G(k).x_variable_id,G(k).y_variable_id,aux,reduction,per_series,opts.auto_reduce_threshold,opts.chunk_rows,['graph_series_v2_' G(k).series_id],x_window,G(k).row_filters);
     endif
+    if(!reused&&isfield(G,'source_row_ordinals')&&!isempty(G(k).source_row_ordinals))
+      keep=ismember(d.source_row_indices,G(k).source_row_ordinals);
+      d.filter_dropped_rows+=sum(!keep);d.valid_rows=sum(keep);d.display_rows=sum(keep);
+      d.x=d.x(keep);d.y=d.y(keep);d.source_row_indices=d.source_row_indices(keep);
+      for a=1:numel(d.aux_values),d.aux_values{a}=d.aux_values{a}(keep);endfor
+      if(isempty(d.x)),error('plot.dataset: exact source-row selection has no finite observations');endif
+    endif
     if(!reused&&isfield(G,'ordering_variable_id')&&!isempty(strtrim(G(k).ordering_variable_id)))
       order_id=G(k).ordering_variable_id;j=find(strcmp(d.aux_ids,order_id),1);
       if(isempty(j)),error('plot.dataset: ordering variable %s was not prepared',order_id);endif
@@ -111,6 +123,7 @@ function yes=family_group_batch_eligible(G,V,x_window,heterogeneous_x)
   yes=false;
   if(numel(G)<2||heterogeneous_x||(isstruct(x_window)&&isfield(x_window,'enabled')&&x_window.enabled)),return;endif
   first=G(1);
+  if(isfield(G,'source_row_ordinals')&&any(arrayfun(@(s) !isempty(s.source_row_ordinals),G))),return;endif
   if(isfield(G,'ordering_variable_id')&&!isempty(strtrim(first.ordering_variable_id))),return;endif
   if(numel(first.row_filters)!=1||!strcmp(first.row_filters{1}.predicate,'exact_equal')),return;endif
   group_id=first.row_filters{1}.filter_variable_id;dtype=first.row_filters{1}.dtype;
@@ -121,6 +134,7 @@ function yes=family_group_batch_eligible(G,V,x_window,heterogeneous_x)
     if(numel(item.row_filters)!=1||!strcmp(item.row_filters{1}.predicate,'exact_equal')||!strcmp(item.row_filters{1}.filter_variable_id,group_id)||!strcmp(item.row_filters{1}.dtype,dtype)),return;endif
     values{k}=item.row_filters{1}.value;
     pres=plotspec_series(V,item);
+    if(isfield(pres,'source_row_continuity')&&pres.source_row_continuity),return;endif
     if(!isempty(plotspec_aux_ids(pres))),return;endif
     if(isfield(pres,'kind')&&any(strcmp(lower(strtrim(pres.kind)),{'histogram','box_whisker'}))),return;endif
   endfor

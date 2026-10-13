@@ -1,7 +1,7 @@
 # GX-TXT Curve Workbench. Native2D owns planar geometry, selection and view.
 # SPDX-License-Identifier: GPL-3.0-or-later
 namespace eval ::GX::CurveWorkbench {
-    variable version 2.15.1
+    variable version 2.15.2
     variable st
     variable root [file normalize [file join [file dirname [info script]] ../../../..]]
 }

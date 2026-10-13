@@ -79,7 +79,7 @@ proc ::GX::scriptJobsDialog {} {
     ttk::frame $w.actions;pack $w.actions -side top -fill x
     foreach {name label command} {
         refresh Refresh scriptJobsRefresh cancel {Cancel selected} scriptJobsCancelSelected
-        details {Open execution details} scriptJobsOpenSelected
+        details {Open execution details} scriptJobsOpenSelected rerun {Rerun selected…} scriptJobsRerunSelected
         copy {Copy Script ID} scriptJobsCopySelected recover {Reconnect / recover} scriptJobsRecover
     } {ttk::button $w.actions.$name -text $label -command [list ::GX::$command];pack $w.actions.$name -side left -padx 4}
     set scriptJobsUi(limit) 1
@@ -161,15 +161,51 @@ proc ::GX::scriptJobsReceived {epoch response} {
         }
         set scriptJobsUi(status) "[llength $jobs] recent jobs. Full registered IDs remain available by horizontal scroll, Copy ID and execution details."
     }
+    scriptJobsActionsRefresh
     set scriptJobsUi(timer) [after 1000 ::GX::scriptJobsRefresh]
 }
 proc ::GX::scriptJobsSelection {} {
     variable scriptJobsUi
     set w .gxtxtScriptJobs
     set selected [$w.jobs selection]
+    scriptJobsActionsRefresh
     if {$selected eq {} || $selected eq $scriptJobsUi(selected) || ![info exists scriptJobsUi(records)]} return
     set scriptJobsUi(selected) $selected
     foreach job $scriptJobsUi(records) {if {[dict get $job id] eq $selected} {set scriptJobsUi(selectedState) [dict get $job state];scriptJobsPreviewLoad $job;break}}
+}
+proc ::GX::scriptJobsActionsRefresh {} {
+    set w .gxtxtScriptJobs
+    if {![winfo exists $w]} return
+    set selected [$w.jobs selection];set state {}
+    if {[info exists ::GX::scriptJobsUi(records)]} {foreach job $::GX::scriptJobsUi(records) {if {[dict get $job id] eq $selected} {set state [dict get $job state];break}}}
+    $w.actions.cancel state [expr {$state in {QUEUED PREPARING RUNNING FINALIZING} ? "!disabled" : "disabled"}]
+    $w.actions.rerun state [expr {$state in {COMPLETED FAILED CANCELLED INTERRUPTED} ? "!disabled" : "disabled"}]
+}
+proc ::GX::scriptJobsRerunSelected {} {
+    set selected [.gxtxtScriptJobs.jobs selection]
+    if {[llength $selected]!=1} return
+    if {[catch {scriptJobsRerun [scriptJobInspect [lindex $selected 0]]} message]} {tk_messageBox -parent .gxtxtScriptJobs -icon error -message $message}
+}
+proc ::GX::sessionJobsMenuStates {menu} {
+    set eligible [expr {[sessionFileExplorerRunSelected] ne {}}]
+    $menu entryconfigure 0 -state [expr {$eligible ? "normal" : "disabled"}]
+    $menu entryconfigure 2 -state [expr {$::GX::currentSession ne {} ? "normal" : "disabled"}]
+    $menu entryconfigure 3 -state [expr {$eligible ? "normal" : "disabled"}]
+}
+proc ::GX::sessionJobsRerun {} {
+    set id [sessionFileExplorerRunSelected]
+    if {$id eq {}} return
+    if {[catch {scriptJobsRerun [scriptExecutionInspectRun $::GX::currentSession $id]} message]} {tk_messageBox -parent . -icon error -message $message}
+}
+proc ::GX::scriptJobsRerun {job} {
+    if {[scriptJobField $job state] ni {COMPLETED FAILED CANCELLED INTERRUPTED}} {error {Only a terminal historical execution can be rerun}}
+    if {$::GX::currentSession eq {} || [file normalize $::GX::currentSession] ne [file normalize [dict get $job session]]} {error {Open the historical job's origin Session before reviewing a rerun}}
+    set reference [dict get $job reference]
+    if {[catch {scriptRegistryDescribe $reference} current]} {
+        scriptLibraryDialog
+        error "Historical registered Script $reference is unavailable. Select a currently valid Script in the Library; no job was submitted."
+    }
+    scriptWorkspaceRunDialog $reference $job
 }
 proc ::GX::scriptJobsPreviewLoad {job} {
     variable scriptJobsUi

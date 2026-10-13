@@ -9,6 +9,7 @@ function fp=pd_series_prep_fingerprint(session,G,aux,reduction,target,threshold,
      G.secondary_variable_id,G.ordering_variable_id,G.alignment_mode,G.manual_offset_seconds, ...
      G.x_unit,G.x_value_kind,G.x_value_format,G.x_semantic_role,G.x_time_reference,G.x_time_origin, ...
      reduction,target,threshold};
+  if(isfield(G,'source_row_ordinals')&&!isempty(G.source_row_ordinals)),p=[p {'exact_source_rows',sprintf('%.0f,',G.source_row_ordinals)}];endif
   for i=1:numel(aux),p{end+1}=aux{i};endfor
   for i=1:numel(G.row_filters)
     f=G.row_filters{i};p{end+1}=f.filter_variable_id;p{end+1}=f.predicate;p{end+1}=f.dtype;

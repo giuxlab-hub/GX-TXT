@@ -436,17 +436,21 @@ proc ::GX::_workspaceChangedResourceReferences {value prior depth resultName} {
 proc ::GX::_workspacePreflightResources {payload {prior {}}} {
     set changed {}
     _workspaceChangedResourceReferences $payload $prior 0 changed
-    dict for {sha resource} $changed {interactiveDocumentResourceInfo $resource}
+    dict for {sha resource} $changed {
+        if {[_documentResourceDisposable [dict get $resource metadata]]} {_documentResourceIdentity $resource} else {interactiveDocumentResourceInfo $resource}
+    }
 }
 
 # UI subscriptions contain widget paths only. Listing/identity continue to come
 # from the existing Document registry; an idle refresh never owns saved state.
 proc ::GX::sessionWorkspaceViewsChanged {} {
-    if {$::GX::SessionWorkspace::views eq {}||![llength [info commands winfo]]} return
+    if {![llength [info commands winfo]]} return
+    if {$::GX::SessionWorkspace::views eq {} && $::GX::SessionWorkspace::titles eq {}} return
     if {$::GX::SessionWorkspace::refreshTimer eq {}} {set ::GX::SessionWorkspace::refreshTimer [after idle ::GX::sessionWorkspaceViewsRefresh]}
 }
 proc ::GX::sessionWorkspaceViewsRefresh {} {
     set ::GX::SessionWorkspace::refreshTimer {}
+    sessionWorkspaceViewerTitlesRefresh
     # An empty Session page is a valid UI state. A Document token is meaningful
     # only while a Session is open; asking for one here used to raise at idle.
     if {$::GX::currentSession eq {}||![file isdirectory $::GX::currentSession]} {

@@ -84,3 +84,76 @@ proc ::GX::uiMenuPopup {menu x y} {
     try {tk_popup $display $px $py} finally {if {[winfo exists $display]} {$display configure -postcommand $displayPost}}
     return $display
 }
+
+# A single native menu row with an overflow cascade, retaining its final group.
+# This is transient UI layout; the original menus still own every command.
+namespace eval ::GX::UiMenuRows {variable rows {}}
+proc ::GX::uiMenuRowAttach {frame buttons {trailing 1}} {
+    if {[llength $buttons]<2 || [llength [lsort -unique $buttons]]!=[llength $buttons]} {error {A menu row requires distinct ordered menubuttons}}
+    if {![string is integer -strict $trailing] || $trailing<1 || $trailing>=[llength $buttons]} {error {Invalid retained trailing button count}}
+    foreach button $buttons {
+        if {[winfo parent $button] ne $frame || [winfo class $button] ni {Button TButton Menubutton TMenubutton}} {error {Action row requires native buttons or menubuttons belonging to its frame}}
+        if {[winfo class $button] in {Menubutton TMenubutton} && [$button cget -menu] eq {}} {error {Menubutton requires its native menu}}
+    }
+    set more $frame.overflow
+    ttk::menubutton $more -text More -menu $more.menu
+    menu $more.menu -tearoff 0 -postcommand [list ::GX::_uiMenuRowStates $frame]
+    dict set ::GX::UiMenuRows::rows $frame [dict create buttons $buttons more $more trailing $trailing hidden {} pending {} layout {}]
+    bind $frame <Configure> +[list ::GX::_uiMenuRowSchedule $frame]
+    foreach button [concat $buttons $more] {bind $button <Configure> +[list ::GX::_uiMenuRowSchedule $frame]}
+    bind $frame <Destroy> +[list ::GX::_uiMenuRowDestroy $frame %W]
+    _uiMenuRowSchedule $frame
+    return $more
+}
+proc ::GX::_uiMenuRowStates {frame} {
+    if {![dict exists $::GX::UiMenuRows::rows $frame]} return
+    set row [dict get $::GX::UiMenuRows::rows $frame];set menu [dict get $row more].menu;set index 0
+    foreach button [dict get $row hidden] {
+        $menu entryconfigure $index -label [$button cget -text] -state [expr {[$button cget -state] eq "disabled" ? "disabled" : "normal"}]
+        incr index
+    }
+}
+proc ::GX::_uiMenuRowDestroy {frame destroyed} {
+    if {$frame ne $destroyed || ![dict exists $::GX::UiMenuRows::rows $frame]} return
+    set pending [dict get $::GX::UiMenuRows::rows $frame pending]
+    if {$pending ne {}} {after cancel $pending}
+    dict unset ::GX::UiMenuRows::rows $frame
+}
+proc ::GX::_uiMenuRowSchedule {frame} {
+    if {![dict exists $::GX::UiMenuRows::rows $frame] || [dict get $::GX::UiMenuRows::rows $frame pending] ne {}} return
+    dict set ::GX::UiMenuRows::rows $frame pending [after idle [list ::GX::_uiMenuRowLayout $frame]]
+}
+proc ::GX::_uiMenuRowLayout {frame} {
+    if {![winfo exists $frame] || ![dict exists $::GX::UiMenuRows::rows $frame]} return
+    dict set ::GX::UiMenuRows::rows $frame pending {}
+    set row [dict get $::GX::UiMenuRows::rows $frame];set buttons [dict get $row buttons];set more [dict get $row more]
+    set available [expr {max(0,[winfo width $frame]-12)}];set total 0
+    foreach button $buttons {incr total [expr {[winfo reqwidth $button]+6}]}
+    set shown $buttons;set hidden {}
+    if {$total>$available} {
+        set trailing [dict get $row trailing]
+        set suffix [lrange $buttons end-[expr {$trailing-1}] end]
+        set used [expr {[winfo reqwidth $more]+6}];set shown {}
+        foreach button $suffix {incr used [expr {[winfo reqwidth $button]+6}]}
+        foreach button [lrange $buttons 0 end-$trailing] {
+            set width [expr {[winfo reqwidth $button]+6}]
+            if {$used+$width<=$available && $hidden eq {}} {lappend shown $button;incr used $width} else {lappend hidden $button}
+        }
+        lappend shown $more {*}$suffix
+    }
+    if {$shown eq [dict get $row layout]} return
+    foreach button [concat $buttons $more] {pack forget $button}
+    $more.menu delete 0 end
+    foreach button $hidden {
+        if {[winfo class $button] in {Menubutton TMenubutton}} {
+            $more.menu add cascade -label [$button cget -text] -menu [$button cget -menu]
+        } else {
+            # Invoke the original widget, which owns the current command and
+            # disabled state; no copied callback or second action registry.
+            $more.menu add command -label [$button cget -text] -command [list $button invoke]
+        }
+    }
+    foreach button $shown {pack $button -side left -padx 3}
+    dict set ::GX::UiMenuRows::rows $frame layout $shown
+    dict set ::GX::UiMenuRows::rows $frame hidden $hidden
+}

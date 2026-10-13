@@ -7,6 +7,15 @@ For current interface contracts consult the API references under [docs/api](docs
 
 ## 0.9.8.10 - development revisions
 
+### 0.9.8.10-dev-096
+
+- Sessions Jobs exposes registered job inspection and reviewed historical reruns, preserving original job logs and identities.
+- Dataset consultation can export the complete active Notes, Metadata, Variables, Technical Details or Temporal Sets section to TXT/PDF; read-only technical fields remain distinct from editable user metadata.
+- Shared CORE Viewer commands, configurable shortcuts, Workspace titles and History unify navigation and guarded recovery; Curve Viewer preserves exact source/legend identities and optional validated display caches.
+- Dataset Curve Fit provides scrollable configurable panels and reversible AUTO/manual/OFF positive input translation while retaining physical output coordinates, saved fits and cancellation recovery.
+- Interactive Curve Builder separates Family/Member filters from Full/Selected source visualization, supports optional reviewed point reordering (default OFF), and retains lightweight Workspace configuration without a History timeline.
+- CORE Numeric adds point-sequence ordering and positive translation operations. Plot Dataset 3D uses Table Stream v3 for HDF5/CSV coordinates and preserves the public PlotSpec and existing 2D behavior.
+
 ### 0.9.8.10-dev-095
 
 Independent scientific Dataset XY autoscale and explicit calibrated-aspect control;

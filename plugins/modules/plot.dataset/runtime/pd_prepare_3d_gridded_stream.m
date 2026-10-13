@@ -2,28 +2,24 @@ function [groups,stats]=pd_prepare_3d_gridded_stream(info,opts,plot_type)
 % Prepare a rectangular XYZ grid without materializing all scientific rows.
 % The complete source is validated; only a bounded display grid is retained.
 % SPDX-License-Identifier: GPL-3.0-or-later
-  cols={info.x,info.y,info.z};
-  if(!isempty(info.color)),cols{end+1}=info.color;endif
-  if(!isempty(info.family)),cols{end+1}=info.family;endif
+  cols={info.x_variable_id,info.y_variable_id,info.z_variable_id};
+  if(!isempty(info.color)),cols{end+1}=info.color_variable_id;endif
+  if(!isempty(info.family)),cols{end+1}=info.family_variable_id;endif
   raw_keys={};raw_counts=[];raw_x={};raw_y={};
   raw_map=containers.Map('KeyType','char','ValueType','int32');
   valid=0;dropped=0;family_numeric=!isempty(info.family);
   if(isempty(info.family))
     raw_keys={'__single__'};raw_counts=0;raw_x={[]};raw_y={[]};raw_map('__single__')=int32(1);
   endif
-  if(isempty(info.family)&&isempty(info.color))
-    st=gxtxt_table_stream_open_numeric_fast(info.source_path,cols,opts.chunk_rows);
-  else
-    st=gxtxt_table_stream_open(info.source_path,cols,opts.chunk_rows);
-  endif
-  total=max(1,st.total_bytes);
-  gxtxt_progress_stage('grid_scan',sprintf('Scanning %s grid axes',plot_type),'determinate',total);
+  st=gxtxt_table_stream_open_dataset(info.session,info.dataset_id,cols,opts.chunk_rows);
+  total=st.range_count;
   unwind_protect
+    gxtxt_progress_stage('grid_scan',sprintf('Scanning %s grid axes',plot_type),'determinate',total);
     while(true)
       [st,ch]=gxtxt_table_stream_next(st);
       if(ch.nrows>0)
-        x=gxtxt_table_chunk_numeric(ch,info.x);y=gxtxt_table_chunk_numeric(ch,info.y);z=gxtxt_table_chunk_numeric(ch,info.z);
-        if(!isempty(info.color)),c=gxtxt_table_chunk_numeric(ch,info.color);else c=[];endif
+        x=gxtxt_table_chunk_numeric(ch,info.x_variable_id);y=gxtxt_table_chunk_numeric(ch,info.y_variable_id);z=gxtxt_table_chunk_numeric(ch,info.z_variable_id);
+        if(!isempty(info.color)),c=gxtxt_table_chunk_numeric(ch,info.color_variable_id);else c=[];endif
         good=isfinite(x)&isfinite(y)&isfinite(z);if(!isempty(c)),good=good&isfinite(c);endif
         if(isempty(info.family))
           n=sum(good);dropped+=ch.nrows-n;valid+=n;raw_counts(1)+=n;
@@ -32,7 +28,7 @@ function [groups,stats]=pd_prepare_3d_gridded_stream(info,opts,plot_type)
             error('plot.dataset: grid axis exceeds 100000 coordinates; publish a bounded derived display Dataset');
           endif
         else
-          fam=grid_family_values(ch,info.family);gids=zeros(ch.nrows,1);
+          [fam,numeric_ok]=pd_3d_family_values(ch,info.family_variable_id);family_numeric=family_numeric&&numeric_ok;gids=zeros(ch.nrows,1);
           for i=1:ch.nrows
             if(!good(i)||isempty(strtrim(fam{i}))),dropped+=1;continue;endif
             key=strtrim(fam{i});
@@ -53,7 +49,7 @@ function [groups,stats]=pd_prepare_3d_gridded_stream(info,opts,plot_type)
         endif
         if(valid>100000000),error('plot.dataset: grid exceeds 100 million cells; publish a bounded derived display Dataset');endif
       endif
-      gxtxt_progress_update(min(ch.bytes_read,total),total,'grid_scan','Scanning XYZ grid axes');
+      gxtxt_progress_update(ch.offset-st.range_start+ch.nrows,total,'grid_scan','Scanning XYZ grid axes');
       if(ch.eof),break;endif
     endwhile
   unwind_protect_cleanup
@@ -72,7 +68,7 @@ function [groups,stats]=pd_prepare_3d_gridded_stream(info,opts,plot_type)
     gi=double(canonical(key));counts(gi)+=raw_counts(r);
     xu{gi}=unique([xu{gi};raw_x{r}]);yu{gi}=unique([yu{gi};raw_y{r}]);
   endfor
-  ng=numel(keys);groups=repmat(struct('key','','x',[],'y',[],'z',[],'c',[]),1,ng);
+  ng=numel(keys);groups=repmat(struct('key','','x',[],'y',[],'z',[],'c',[],'source_row_indices',[]),1,ng);
   seen=cell(1,ng);mapx=cell(1,ng);mapy=cell(1,ng);peak_bucket=false(1,ng);peak_absolute=false(1,ng);
   display_rows=0;total_cells=0;effective='none';
   for g=1:ng
@@ -101,27 +97,23 @@ function [groups,stats]=pd_prepare_3d_gridded_stream(info,opts,plot_type)
     seen{g}=false(ny,nx);Z=nan(numel(yi),numel(xi));C=[];
     if(!isempty(info.color)),C=nan(numel(yi),numel(xi));endif
     xgrid=xu{g}(xi);ygrid=yu{g}(yi);
-    groups(g)=struct('key',keys{g},'x',xgrid(:)','y',ygrid(:)','z',Z,'c',C);
+    groups(g)=struct('key',keys{g},'x',xgrid(:)','y',ygrid(:)','z',Z,'c',C,'source_row_indices',nan(size(Z)));
   endfor
 
-  if(isempty(info.family)&&isempty(info.color))
-    st=gxtxt_table_stream_open_numeric_fast(info.source_path,cols,opts.chunk_rows);
-  else
-    st=gxtxt_table_stream_open(info.source_path,cols,opts.chunk_rows);
-  endif
-  total=max(1,st.total_bytes);
-  gxtxt_progress_stage('grid_load',sprintf('Loading bounded %s display grid',plot_type),'determinate',total);
+  st=gxtxt_table_stream_open_dataset(info.session,info.dataset_id,cols,opts.chunk_rows);
+  total=st.range_count;
   unwind_protect
+    gxtxt_progress_stage('grid_load',sprintf('Loading bounded %s display grid',plot_type),'determinate',total);
     while(true)
       [st,ch]=gxtxt_table_stream_next(st);
       if(ch.nrows>0)
-        x=gxtxt_table_chunk_numeric(ch,info.x);y=gxtxt_table_chunk_numeric(ch,info.y);z=gxtxt_table_chunk_numeric(ch,info.z);
-        if(!isempty(info.color)),c=gxtxt_table_chunk_numeric(ch,info.color);else c=[];endif
+        x=gxtxt_table_chunk_numeric(ch,info.x_variable_id);y=gxtxt_table_chunk_numeric(ch,info.y_variable_id);z=gxtxt_table_chunk_numeric(ch,info.z_variable_id);
+        if(!isempty(info.color)),c=gxtxt_table_chunk_numeric(ch,info.color_variable_id);else c=[];endif
         good=isfinite(x)&isfinite(y)&isfinite(z);if(!isempty(c)),good=good&isfinite(c);endif
         if(isempty(info.family))
           gids=double(good);
         else
-          fam=grid_family_values(ch,info.family);gids=zeros(ch.nrows,1);
+          fam=pd_3d_family_values(ch,info.family_variable_id);gids=zeros(ch.nrows,1);
           for i=1:ch.nrows
             if(!good(i)||isempty(strtrim(fam{i}))),continue;endif
             [key,~]=pd_family_key(strtrim(fam{i}),family_numeric);
@@ -140,22 +132,23 @@ function [groups,stats]=pd_prepare_3d_gridded_stream(info,opts,plot_type)
           dx=double(mapx{gi}(ix));dy=double(mapy{gi}(iy));keep=dx>0&dy>0;
           if(any(keep))
             display_index=sub2ind(size(groups(gi).z),dy(keep),dx(keep));
-            zz=z(idx(keep));cc=[];if(!isempty(c)),cc=c(idx(keep));endif
+            zz=z(idx(keep));source_rows=ch.offset+idx(keep)-1;cc=[];if(!isempty(c)),cc=c(idx(keep));endif
             if(peak_bucket(gi))
               if(peak_absolute(gi)),score=abs(zz);else score=zz;endif
               best=accumarray(display_index,score,[numel(groups(gi).z),1],@max,-Inf);
               old=groups(gi).z(display_index);
               if(peak_absolute(gi)),old_score=abs(old);else old_score=old;endif
               choose=(score==best(display_index))&(isnan(old)|score>=old_score);
-              display_index=display_index(choose);zz=zz(choose);
+              display_index=display_index(choose);zz=zz(choose);source_rows=source_rows(choose);
               if(!isempty(cc)),cc=cc(choose);endif
             endif
             groups(gi).z(display_index)=zz;
+            groups(gi).source_row_indices(display_index)=source_rows;
             if(!isempty(cc)),groups(gi).c(display_index)=cc;endif
           endif
         endfor
       endif
-      gxtxt_progress_update(min(ch.bytes_read,total),total,'grid_load','Loading bounded XYZ display grid');
+      gxtxt_progress_update(ch.offset-st.range_start+ch.nrows,total,'grid_load','Loading bounded XYZ display grid');
       if(ch.eof),break;endif
     endwhile
   unwind_protect_cleanup
@@ -168,9 +161,6 @@ function [groups,stats]=pd_prepare_3d_gridded_stream(info,opts,plot_type)
     'requested_reduction',opts.reduction_mode,'effective_reduction',effective);
 endfunction
 
-function fam=grid_family_values(ch,name)
-  if(isempty(name)),fam=cell(ch.nrows,1);fam(:)={'__single__'};else fam=gxtxt_table_chunk_column(ch,name);endif
-endfunction
 function ok=grid_valid_row(x,y,z,c,i)
   ok=isfinite(x(i))&&isfinite(y(i))&&isfinite(z(i));
   if(ok&&!isempty(c)),ok=isfinite(c(i));endif

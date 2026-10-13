@@ -71,6 +71,16 @@ Placement sets the X11 user-position hint (USPosition), so multiwindow X servers
 
 ## dev092 native context-menu positioning and grouped forms
 
+The dev096 additive `::GX::uiMenuRowAttach frame ordered_buttons ?trailing=1?`
+keeps a native action/menu row at one height. On a narrow window or enlarged
+font it moves overflow into native `More` entries while retaining the final
+`trailing` buttons (normally Workspace; Builder retains Options and Workspace).
+Native menubuttons reuse their existing menus, live commands and accelerators.
+Ordinary Button/TButton overflow invokes the original widget, with its current
+command and disabled state; no callback copy or second action registry exists.
+Configure events coalesce and pending callbacks are cancelled on destruction.
+This is a host-only presentation operation; no new settings store is created.
+
 `::GX::uiMenuPopup menu root_x root_y` posts a native Tk Menu in the pointer
 monitor's usable rectangle. `uiMenuWorkarea widget root_x root_y` returns
 `{left top width height}`. X11 monitor selection uses `xrandr --listmonitors` and

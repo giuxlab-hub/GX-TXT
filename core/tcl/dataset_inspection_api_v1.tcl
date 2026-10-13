@@ -21,6 +21,7 @@ namespace eval ::GX {
 proc ::GX::datasetInspectionVarFields {} {
     return {enabled source_column original_header canonical unit semantic_role instrument_id instrument_channel}
 }
+source [file join [file dirname [info script]] dataset_inspection_document.tcl]
 
 proc ::GX::genericCsvBatchClearVariables {row} {
     variable genericCsvBatchVar

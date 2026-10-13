@@ -2,6 +2,15 @@
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
+The dev096 candidate adds optional `source_row_ordinals`: a sorted set of at
+most 200000 distinct exact nonnegative row integers through 2^53−1. Empty means
+unrestricted. This field persists with a series and restricts its prepared
+display after normal CORE row filters. It never derives scientific rows from
+a display proxy. `graphSeriesExpandGroups` accepts `dry_run=1` and the same
+exact row restriction to return validated observed tuple plans without creating
+series or touching a manifest. Its optional ninth host argument is a cooperative
+progress callback; the existing eight-argument Script Bridge exposes data only.
+
 Introduced in GX-TXT 0.9.7.8. This is an additive Graph Provider binding
 contract for independent series from different canonical datasets. It does
 not change Graph Provider IDs or run scientific analysis.

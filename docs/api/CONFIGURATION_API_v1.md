@@ -130,3 +130,34 @@ persistence even when they are not statically listed in `[config]`.
 Binding types (Dataset, Variable, selection, temporal set, registered script,
 analysis definition, model and unit) validate through their existing public
 authorities at commit. Discovery does not require scientific runtime data.
+
+## Generic Viewer command adapter (dev096)
+
+The existing Configuration/UI owner now supplies `viewerCommandCatalogRegister
+module commands ?configuration_id? ?module_key?`. Each stable command descriptor
+has `label`, optional `default` key, and a keyboard `scope` (default `viewer`).
+An optional `context` predicate receives the focus widget. Lightweight module
+configuration contributions register catalogs without opening their Viewer.
+`viewerCommandCatalog`, `viewerShortcutsValidate`, and `viewerShortcutFields`
+expose the same discoverable catalog and typed dictionary editor.
+
+`viewerCommandsAttach window module handlers ?guard? ?widgets?` binds runtime
+callback prefixes. Handlers have `command` and optional `enabled` predicate;
+the common guard and Session lifetime apply to mouse and keyboard alike.
+`viewerCommandMenuAdd` creates an entry and `viewerCommandMenuTrack` associates
+an existing entry. `viewerCommandMenusRefresh` updates live enablement and
+accelerators. `viewerCommandInvoke` executes only enabled commands;
+`viewerCommandsDetach` releases bindings and subscriptions (also on Destroy).
+Window scopes are independent. Entries, text, comboboxes and dialogs retain
+native editing/navigation; command keys do not invoke scientific operations
+while those controls have focus. Conflicts within a declared scope and reserved
+keys reject the complete Configuration transaction. User defaults and Session
+overrides keep the ordinary Configuration precedence and atomic persistence.
+
+Curve Workbench retains `modules.curve_workbench.shortcuts` and all established
+command IDs/defaults. Its existing catalog/editor/menu and scientific callbacks
+delegate key normalization/dispatch to CORE without resetting saved values.
+No new public API family or independent settings file is introduced: dev095
+lacks a generic Viewer command registrar, so these host operations extend the
+existing Configuration authority. The unknown-Viewer fixture demonstrates use
+without a CORE branch for any module ID.

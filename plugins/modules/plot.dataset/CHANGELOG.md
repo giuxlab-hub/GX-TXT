@@ -1,3 +1,7 @@
+# plot.dataset 3.14.0
+
+Exact selected source rows and continuity through PlotSpec/Variant rendering; backend-neutral Table Stream v3 for HDF5 3D.
+
 ## 3.13.1 / dev087
 
 Read-only prepared graph preview export via public 3D/v3 APIs, preserving scientific

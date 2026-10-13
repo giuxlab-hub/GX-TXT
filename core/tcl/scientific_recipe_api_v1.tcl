@@ -3,7 +3,7 @@
 # Nothing in a recipe is evaluated as Tcl or interpreted as a filesystem path.
 namespace eval ::GX::ScientificRecipe {variable hosts {}}
 proc ::GX::scientificRecipeApiInfo {} {
-    return [dict create api_id SCIENTIFIC_RECIPE_API_v1 api_version 1 operations {inspect validate geometry_state proposal export_python rebase} format gxtxt.scientific_recipe.v1 maximum_bytes 8388608 maximum_steps 4096 implicit_publication 0]
+    return [dict create api_id SCIENTIFIC_RECIPE_API_v1 api_version 1 operations {inspect validate geometry_state proposal export_python rebase} host_operations {scientificHistoryCreate scientificHistoryValidate scientificHistoryState scientificHistoryAppend scientificHistoryNavigate scientificHistoryBranch scientificHistoryViewerAttach scientificHistoryViewerRecord scientificHistoryViewerState scientificHistoryViewerEditable scientificHistoryViewerPrepareEdit scientificHistoryViewerChanged scientificHistoryViewerNavigate scientificHistoryViewerBrowse scientificHistoryViewerClear scientificHistoryStripFields scientificHistoryStripValidate scientificHistoryViewerStripSet scientificHistoryViewerStripToggle scientificHistoryViewerStrip scientificHistoryGroupedEntries scientificHistoryViewerDetails scientificHistoryViewerRefresh} format gxtxt.scientific_recipe.v1 maximum_bytes 8388608 maximum_steps 4096 implicit_publication 0]
 }
 proc ::GX::scientificRecipeHostRegister {owner callbacks} {
     foreach key {capture validate replay} {if {![dict exists $callbacks $key]} {error "Recipe host requires $key"}}
@@ -133,6 +133,7 @@ proc ::GX::scientificRecipeRebase {record current context} {
     }
     scientificRecipeEncode $record
     set candidate [dict replace $record base $current steps {}]
+    if {[dict exists $candidate cursor]} {dict set candidate cursor 0}
     dict set candidate retention [dict get $context retention]
     # Internal retained history can be embedded in a portable Workspace. Do
     # not introduce a document binding into records that never had one; full
@@ -142,3 +143,4 @@ proc ::GX::scientificRecipeRebase {record current context} {
     uplevel #0 [list {*}[dict get $::GX::ScientificRecipe::hosts $owner validate] $candidate]
     return $candidate
 }
+source [file join [file dirname [info script]] scientific_recipe_history.tcl]

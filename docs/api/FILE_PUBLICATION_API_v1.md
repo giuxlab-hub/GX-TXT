@@ -22,3 +22,11 @@ Curve Fit exports and Workbench exporters use this common authority. Large
 Curve Fit model JSON is streamed in bounded chunks beside the CSV; its metadata
 records a relative filename and exact CSV/model hashes. Session Datasets remain
 published through the existing Dataset Publication APIs.
+
+`filePublicationTextDocument destination text text|pdf ?options?` adds a complete
+section-document writer to the same create-only transaction. Text writes exact
+UTF-8, including Unicode and line breaks. PDF delegates pagination to the existing
+printing compositor; options are `page` (default A4), `orientation` (portrait)
+and `margin_mm` (15). The service does not replace scientific plot/figure export
+or save Dataset edits. It is host-only because the explicit external destination
+belongs to the user's GUI file-selection workflow, not a Script Job capability.

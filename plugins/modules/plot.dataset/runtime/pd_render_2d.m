@@ -61,7 +61,7 @@ function pd_render_2d(outdir,cfg,P,graph,file_name)
       draw_center=true;if(isfield(S.presentation.band,'draw_center')),draw_center=parse_bool(S.presentation.band.draw_center,true);endif;if(draw_center),hbase=draw_trace(ax,xp,yp,'line',st);endif
     elseif(strcmp(kind,'bar')),hbase=draw_bar(ax,xp,yp,S.presentation,st,S,idx,1:numel(idx),xdu,target_y,level);
     elseif(strcmp(kind,'step')),smode='post';if(isfield(S.presentation,'step_mode')&&!isempty(strtrim(S.presentation.step_mode))),smode=S.presentation.step_mode;endif;[xs,ys]=step_xy(xp,yp,smode);hbase=draw_trace(ax,xs,ys,'line',st);
-    else hbase=draw_trace(ax,xp,yp,kind,st);endif
+    else [tx,ty]=source_trace(S,xp,yp,idx);hbase=draw_trace(ax,tx,ty,kind,st);endif
 
     if(has_error(S.presentation,'x_error')||has_error(S.presentation,'y_error'))
       [xl,xu]=error_x_endpoints(S,idx,1:numel(idx),xp,xdu);[yl,yu]=error_y_endpoints(S,idx,1:numel(idx),ypr,target_y,level,yp);draw_error_whiskers(ax,xp,yp,xl,xu,yl,yu,st);
@@ -274,7 +274,7 @@ function pd_render_2d_multipanel(outdir,cfg,P,graph,file_name,V,core_axis_state,
         draw_center=true;if(isfield(S.presentation.band,'draw_center')),draw_center=parse_bool(S.presentation.band.draw_center,true);endif;if(draw_center),hbase=draw_trace(ax,xp,yp,'line',st);endif
       elseif(strcmp(kind,'bar')),hbase=draw_bar(ax,xp,yp,S.presentation,st,S,rowidx,1:numel(rowidx),xdu,target_y,level);
       elseif(strcmp(kind,'step')),smode='post';if(isfield(S.presentation,'step_mode')&&!isempty(strtrim(S.presentation.step_mode))),smode=S.presentation.step_mode;endif;[xs,ys]=step_xy(xp,yp,smode);hbase=draw_trace(ax,xs,ys,'line',st);
-      else hbase=draw_trace(ax,xp,yp,kind,st);endif
+      else [tx,ty]=source_trace(S,xp,yp,rowidx);hbase=draw_trace(ax,tx,ty,kind,st);endif
       if(has_error(S.presentation,'x_error')||has_error(S.presentation,'y_error'))
         [xl0,xu0]=error_x_endpoints(S,rowidx,1:numel(rowidx),xp,xdu);[yl0,yu0]=error_y_endpoints(S,rowidx,1:numel(rowidx),ypr,target_y,level,yp);draw_error_whiskers(ax,xp,yp,xl0,xu0,yl0,yu0,st);
       endif
@@ -1367,3 +1367,12 @@ function tf=is_auto(s),tf=isempty(strtrim(s))||strcmpi(strtrim(s),'auto');endfun
 function tf=parse_bool(s,d),if(islogical(s)),tf=s;return;endif;q=lower(strtrim(s));if(any(strcmp(q,{'1','true','yes','on'}))),tf=true;elseif(any(strcmp(q,{'0','false','no','off'}))),tf=false;else tf=d;endif;endfunction
 function v=parse_positive(s,d),v=str2double(s);if(!isfinite(v)||v<=0),v=d;endif;endfunction
 function v=parse_line_width(s,d),if(isempty(strtrim(s))||strcmpi(strtrim(s),'inherit')),v=d;else v=parse_positive(s,d);endif;endfunction
+
+function [x,y]=source_trace(S,x,y,idx)
+  if(!isfield(S.presentation,'source_row_continuity')||!S.presentation.source_row_continuity||numel(x)<2),return;endif
+  ordinals=S.data.source_row_indices(idx);
+  gaps=find(diff(ordinals)!=1);
+  for k=numel(gaps):-1:1
+    j=gaps(k);x=[x(1:j);NaN;x(j+1:end)];y=[y(1:j);NaN;y(j+1:end)];
+  endfor
+endfunction

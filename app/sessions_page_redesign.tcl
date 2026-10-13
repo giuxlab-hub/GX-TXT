@@ -119,7 +119,12 @@ proc ::GX::buildSessionFileExplorerGui {} {
     if {![winfo exists $f]} return
     $nb tab $f -text Sessions
     if {[winfo exists $f.config]} return
-    ttk::button $f.bar.jobDetails -text {Open job details} -command ::GX::sessionFileExplorerOpenRun
+    ttk::menubutton $f.bar.jobDetails -text Jobs -menu $f.bar.jobDetails.menu
+    menu $f.bar.jobDetails.menu -tearoff 0 -postcommand [list ::GX::sessionJobsMenuStates $f.bar.jobDetails.menu]
+    $f.bar.jobDetails.menu add command -label {Open selected job details…} -command ::GX::sessionFileExplorerOpenRun
+    $f.bar.jobDetails.menu add command -label {Open Script Jobs Manager…} -command ::GX::scriptJobsDialog
+    $f.bar.jobDetails.menu add command -label {Run registered script…} -command ::GX::scriptLibraryDialog
+    $f.bar.jobDetails.menu add command -label {Rerun selected job…} -command ::GX::sessionJobsRerun
     pack $f.bar.jobDetails -side left -padx 4 -before $f.bar.info
     bind $::GX::ui(sessionFileTree) <Double-1> {if {[::GX::sessionFileExplorerRunSelected] ne {}} {::GX::sessionFileExplorerOpenRun} else {::GX::sessionFileExplorerOpenSelected}}
     ttk::scrollbar $f.left.sx -orient horizontal -command [list $::GX::ui(sessionFileTree) xview]

@@ -68,6 +68,7 @@ proc ::GX::PlotDatasetAPIv3::capabilities {} {
         manual_interactive_sync interactive_sync_status independent_representation
         interactive_sources idempotent_plot_publication transient_2d_overlay
         transient_2d_curves readonly_native3d_preview_export
+        transient_independent_2d_curves
     }]]
 }
 
@@ -403,6 +404,35 @@ proc ::GX::PlotDatasetAPIv3::renderTransientCurves2D {xValues series label desti
 proc ::GX::PlotDatasetAPIv3::previewExportCommand {plotRef output} {
     ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_3D_API_v1
     return [::GX::PlotDataset3DAPIv1::previewExportCommand $plotRef $output]
+}
+
+# Independently sampled transient traces, using the same prepared 2-D renderer.
+# Each exact XY pair stays together; no alignment or source publication occurs.
+proc ::GX::PlotDatasetAPIv3::renderTransientIndependentCurves2D {series label destinationDir} {
+    if {[llength $series]<1 || [llength $series]>64} {error {Independent transient preview needs 1..64 series}}
+    if {[regexp {[\r\n\t]} $label]} {error {Preview title must be one line}}
+    file mkdir $destinationDir
+    set request [file join $destinationDir transient_independent2d.tsv];set f [open $request w]
+    fconfigure $f -encoding utf-8 -translation lf
+    set total 0
+    try {
+        puts $f $label;puts $f [llength $series]
+        foreach item $series {
+            set x [dict get $item x_values];set y [dict get $item y_values];set n [llength $x];incr total $n
+            if {$n<1 || $n!=[llength $y] || $total>200000} {error {Independent transient coordinates must match within 200000 total points}}
+            set fields [list [dict get $item label] [::GX::datasetPublicationV2DictDefault $item x_unit {}] [::GX::datasetPublicationV2DictDefault $item y_unit {}]]
+            foreach text $fields {if {[regexp {[\r\n\t]} $text]} {error {Series labels/units must be one line}}}
+            puts $f [join $fields "\t"];puts $f $n
+            foreach a $x b $y {
+                foreach value [list $a $b] {if {![string is double -strict $value] || [catch {expr {double($value)}} number] || $number!=$number || abs($number)==Inf} {error {Independent transient points must be finite}}}
+                puts $f "[format %.17g $a]\t[format %.17g $b]"
+            }
+        }
+    } finally {close $f}
+    try {_octave transient_independent2d $request $destinationDir plot.dataset.xy} finally {file delete -force $request}
+    set artifact [file join $destinationDir graph.png]
+    if {![file isfile $artifact] || [file size $artifact]<100} {error {Independent transient Plot Dataset render failed}}
+    return [dict create artifact $artifact graph_id plot.dataset.xy transient 1 series_count [llength $series]]
 }
 
 proc ::GX::PlotDatasetAPIv3::previewCompatibility {plotRef} {

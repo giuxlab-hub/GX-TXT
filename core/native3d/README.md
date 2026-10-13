@@ -196,10 +196,8 @@ selected. A Windows-only D3D11 adapter/feature-level probe exists, but D3D11
 target selection explicitly returns unsupported until its presentation path
 is implemented and validated on Windows.
 
-The API contract and legacy/scientific parity records are in
-`docs/api/NATIVE_3D_ENGINE_API_v1.md`,
-`docs/developer/NATIVE_3D_LEGACY_COMPATIBILITY.md` and
-`docs/developer/NATIVE_3D_SCIENTIFIC_PARITY.md`.
+The public API contract, compatibility requirements and scientific behavior are
+specified in the [Native 3D Engine API](../../docs/api/NATIVE_3D_ENGINE_API_v1.md).
 # dev-034 navigation cube and checkerboard background
 
 `gx3de_view_navcube_set/get` configure visibility, corner, size, margin and

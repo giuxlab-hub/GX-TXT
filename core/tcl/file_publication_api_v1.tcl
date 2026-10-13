@@ -1,7 +1,24 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Complete-file publication authority for explicit exports and their sidecars.
 proc ::GX::filePublicationApiInfo {} {
-    return [dict create api_id FILE_PUBLICATION_API_v1 api_version 1 operations publish_bundle partial_files_visible 0 policies {create_only replace}]
+    return [dict create api_id FILE_PUBLICATION_API_v1 api_version 1 operations {publish_bundle text_document} partial_files_visible 0 policies {create_only replace}]
+}
+proc ::GX::filePublicationTextDocument {destination text format {options {}}} {
+    if {$format ni {text pdf}} {error {Document export format must be text or pdf}}
+    set settings [dict merge [dict create page A4 orientation portrait margin_mm 15] $options]
+    foreach key [dict keys $settings] {if {$key ni {page orientation margin_mm}} {error {Unknown printable-document option}}}
+    return [filePublicationPublishBundle [list [dict create id document destination $destination writer [list ::GX::_filePublicationDocumentWriter $text $format $settings]]]]
+}
+proc ::GX::_filePublicationDocumentWriter {text format options channel context} {
+    if {$format eq "text"} {puts -nonewline $channel [encoding convertto utf-8 $text];return}
+    set handle [file tempfile path];close $handle
+    try {
+        set command [list [runtimeToolRequired python] [file join $::GX::scriptDir services printing gxtxt_compose_pdf.py] \
+            --output $path --text-input - --page [dict get $options page] --orientation [dict get $options orientation] --margin-mm [dict get $options margin_mm]]
+        exec {*}$command << $text
+        set input [open $path rb]
+        try {fcopy $input $channel} finally {close $input}
+    } finally {file delete -force -- $path}
 }
 proc ::GX::_filePublicationIdentity {path} {
     if {[catch {file lstat $path status}]} {return {}}

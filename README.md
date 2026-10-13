@@ -4,7 +4,7 @@ GX-TXT is a desktop scientific workbench for working with **experimental measure
 
 Within the same Session you can inspect and compare measurements, perform numerical, statistical and spectral analyses or curve fitting, run registered Python and GNU Octave scripts through the Script Bridge, and create scientific 2D/3D plots and interactive viewers. Derived results stay connected to their source Datasets, while independent modules extend the workflow through public CORE APIs.
 
-**Source version:** 0.9.8.10-dev-095  
+**Source version:** 0.9.8.10-dev-096  
 **License:** GNU GPL-3.0-or-later (see [LICENSE](LICENSE)). Third-party packages and assets retain their applicable licenses.
 
 ## Features
@@ -15,6 +15,12 @@ Within the same Session you can inspect and compare measurements, perform numeri
 - Registered Python and GNU Octave scripts using public GX-TXT API bindings
 - Configurable scientific 2D/3D plotting, Viewers and curve workspaces
 - Saved Sessions and Projects, portable exchange and modular extension points
+- Session Script Jobs with inspected job history, reviewed reruns and paged logs
+- Complete Dataset Notes, Metadata, Variables, Technical Details and Temporal Sets export to TXT/PDF
+- Shared Viewer commands, shortcuts, named Workspaces, History and optional disposable display caches
+- Curve fitting with reversible positive input translation, configurable panels and scientific provenance
+- Interactive Curve Builder with Family/Member filtering, independent Full/Selected source graphs and optional point-order review
+- Plot Dataset 3D with backend-neutral Table Stream access to HDF5 and CSV scientific data
 
 Available capabilities depend on the installed modules and their optional runtime dependencies.
 

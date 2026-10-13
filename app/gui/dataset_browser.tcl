@@ -17,13 +17,21 @@ proc ::GX::datasetBrowserBuild {} {
             open open datasetPreviewOpenCurrent {Open active Dataset}
             edit edit datasetPageContextEdit {Edit the selected Dataset section}
         } {
-            ttk::button $f.browser.tools.$key -image [native2DViewportGlyph $icon] -command [list ::GX::datasetPageAction $command]
+            ttk::button $f.browser.tools.$key -padding 1 -image [native2DViewportGlyph $icon] -command [list ::GX::datasetPageAction $command]
             pack $f.browser.tools.$key -side left -padx 3
             bind $f.browser.tools.$key <Enter> [list ::GX::native2DViewportTooltipShow %W $tip]
             bind $f.browser.tools.$key <Leave> {catch {destroy .gxViewportTip}}
         }
         pack forget $f.bar.refresh $f.bar.save
-        ttk::button $f.browser.manage -image [native2DViewportGlyph namespace] -command ::GX::datasetNamespaceManagerOpen
+        ttk::menubutton $f.browser.tools.print -padding 1 -image [native2DViewportGlyph print] -menu $f.browser.tools.print.menu
+        menu $f.browser.tools.print.menu -tearoff 0
+        foreach {format label} {print {Print current view…} text {Export current view as text…} pdf {Save current view as PDF…}} {
+            $f.browser.tools.print.menu add command -label $label -command [list ::GX::datasetPageAction datasetPageExportCurrent $format]
+        }
+        pack $f.browser.tools.print -side left -padx 3
+        bind $f.browser.tools.print <Enter> {::GX::native2DViewportTooltipShow %W {Print / Export current Dataset view}}
+        bind $f.browser.tools.print <Leave> {catch {destroy .gxViewportTip}}
+        ttk::button $f.browser.manage -padding 1 -image [native2DViewportGlyph namespace] -command ::GX::datasetNamespaceManagerOpen
         pack $f.browser.manage -in $f.browser.tools -side left -padx 3 -before $f.browser.tools.open
         bind $f.browser.manage <Enter> {::GX::native2DViewportTooltipShow %W {Manage Dataset namespaces}}
         bind $f.browser.manage <Leave> {catch {destroy .gxViewportTip}}
@@ -68,7 +76,8 @@ proc ::GX::datasetBrowserRefresh {} {
     set projection [list $single $inputPath $pending [dict get $snapshot session_token] $namespaces [dict get $snapshot datasets]]
     if {$currentSession ne {}} {
         .top.nb.channels.browser.current state !disabled
-        .top.nb.channels.browser.current configure -text "Current: [datasetNamespaceCurrentGet]"
+        lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] mode active
+        .top.nb.channels.browser.current configure -text "Current: [datasetNamespaceCurrentGet]\nActive Dataset: [expr {$mode eq {imported} ? $active : {None}}]"
     }
     # Activation changes content, not the catalog. Preserve browser rows,
     # expansion, focus and scroll until its canonical projection changes.
@@ -82,7 +91,8 @@ proc ::GX::datasetBrowserRefresh {} {
     if {$single ne {}} {$tree insert {} end -id [datasetBrowserNode single $single] -text $single -image [native2DViewportGlyph select 18] -tags single}
     if {$currentSession eq {}} {.top.nb.channels.browser.current configure -text {Current namespace…} -state disabled;return}
     .top.nb.channels.browser.current state !disabled
-    .top.nb.channels.browser.current configure -text "Current: [datasetNamespaceCurrentGet]"
+    lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] mode active
+    .top.nb.channels.browser.current configure -text "Current: [datasetNamespaceCurrentGet]\nActive Dataset: [expr {$mode eq {imported} ? $active : {None}}]"
     foreach namespace $namespaces {
         set parent {};set parts {}
         foreach part [split $namespace /] {

@@ -96,11 +96,13 @@ proc ::GX::sessionFileExplorerRunCaptions {token generation response} {
         set id [dict get $run id];set node "d:analysis/scripts/$id"
         if {![$ui(sessionFileTree) exists $node]} continue
         set name [scriptJobField $run script_name {}]
-        if {$name eq {}} {set caption "$id (metadata unavailable)"} else {
-            set caption "$name — [scriptJobField $run reference] — [scriptJobField $run state]"
+        if {$name eq {}} {set caption {Script name unavailable — Registered Script ID unavailable — Execution time unavailable}} else {
+            set caption "$name — [scriptJobField $run reference]"
             set time [scriptJobField $run started {}]
-            if {$time ne {}} {append caption " — [scriptJobTime $time]"}
-            append caption " ($id)"
+            if {$time ne {}} {append caption " — [scriptJobTime $time]"} else {
+                set submitted [scriptJobField $run submitted {}]
+                append caption " — [expr {$submitted eq {} ? {Execution time unavailable} : "Submitted [scriptJobTime $submitted]"}]"
+            }
         }
         $ui(sessionFileTree) item $node -text $caption
     }

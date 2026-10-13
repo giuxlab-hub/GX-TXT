@@ -24,7 +24,9 @@ proc ::GX::DatasetCurveFit::_polarApply {w owner values} {
     variable state
     if {$owner ne $state($w,activeSource)} {error "Active source changed; reopen radial settings"}
     _assertLoaded $w
+    if {![::GX::scientificHistoryViewerPrepareEdit $w]} return
     set state($w,polarFrame) [dict create origin [list [dict get $values ox] [dict get $values oy]] theta_zero [expr {[dict get $values zero]*acos(-1)/180}] clockwise [dict get $values clockwise] angle_unit [dict get $values unit] unwrap_policy [dict get $values policy] angle_cut [dict get $values cut]]
+    _invalidateSettings $w
     _workspaceCapture $w;_saveState $w
     $w.actions.accept configure -state disabled;$w.actions.publish configure -state disabled
     set state($w,status) "Radial fitting frame and angular branch saved. Preview again to apply; accepted geometry retains its original frame."
@@ -44,6 +46,7 @@ proc ::GX::DatasetCurveFit::_geometricMetricUnit {key} {
 proc ::GX::DatasetCurveFit::_uiFitOptions {w} {
     variable state
     set options [dict create smoothing_lambda $state($w,smoothing) period $state($w,period) orientation $state($w,orientation)]
+    foreach axis {u v} upper {U V} {dict set options translation_$axis [dict create mode $state($w,translation${upper}Mode) delta $state($w,translation${upper}Delta)]}
     if {$state($w,orientation) eq "r_of_theta"} {dict set options polar_frame $state($w,polarFrame)}
     if {$state($w,model) in {parametric_polynomial parametric_spline}} {
         dict set options topology $state($w,topology);dict set options parameterization $state($w,parameterization)
@@ -56,13 +59,13 @@ proc ::GX::DatasetCurveFit::_orientationLabels {w} {
     variable state
     set state($w,orientationLabel) [dict get {y_of_x {Y = f(X)} x_of_y {X = f(Y)} r_of_theta {R = f(theta) (experimental)} parametric {X=x(t), Y=y(t)}} $state($w,orientation)]
     if {$state($w,model) in {circular_arc quadratic_bezier cubic_bezier parametric_polynomial parametric_spline}} {
-        $w.settings.orientation configure -values {{X=x(t), Y=y(t)}}
-    } else {$w.settings.orientation configure -values {{Y = f(X)} {X = f(Y)} {R = f(theta) (experimental)}}}
+        $w.left.viewport.content.settings.body.orientation configure -values {{X=x(t), Y=y(t)}}
+    } else {$w.left.viewport.content.settings.body.orientation configure -values {{Y = f(X)} {X = f(Y)} {R = f(theta) (experimental)}}}
 }
 proc ::GX::DatasetCurveFit::_uiOrientation {w} {
     variable state
     set state($w,orientation) [dict get {{Y = f(X)} y_of_x {X = f(Y)} x_of_y {R = f(theta) (experimental)} r_of_theta {X=x(t), Y=y(t)} parametric} $state($w,orientationLabel)]
-    _uiDomainFields $w;_workspaceCapture $w;_saveState $w
+    _uiDomainFields $w;_invalidateSettings $w;_workspaceCapture $w;_saveState $w
     set state($w,status) "Fit orientation: $state($w,orientationLabel). Preview again to apply."
     _uiModelFields $w
     $w.actions.accept configure -state disabled
@@ -86,8 +89,10 @@ proc ::GX::DatasetCurveFit::_parametricApply {w owner values} {
         if {[dict get $values parameterVariable] ni [dict get [variables $state($w,dataset)] numeric]} {error "Choose a numeric Dataset parameter variable"}
     }
     if {$state($w,model) eq "parametric_polynomial"&&[dict get $values topology] eq "closed"} {error "Closed interpolation requires the periodic parametric_spline model"}
+    if {![::GX::scientificHistoryViewerPrepareEdit $w]} return
     dict set values parameterization $mode
     dict for {field value} $values {set state($w,$field) $value}
+    _invalidateSettings $w
     _workspaceCapture $w;_saveState $w
     $w.actions.accept configure -state disabled;$w.actions.publish configure -state disabled
     set state($w,status) "Parametric settings applied. Preview again to fit exact source rows."
@@ -99,10 +104,19 @@ proc ::GX::DatasetCurveFit::_swapFormulaAxes {text} {
 }
 proc ::GX::DatasetCurveFit::formula {result} {
     set text [_formulaBase $result]
-    if {[::GX::datasetPublicationV2DictDefault $result orientation y_of_x] eq "r_of_theta"} {regsub -all {\my\M} $text R text;return [regsub -all {\mx\M} $text theta]}
     set orientation [::GX::datasetPublicationV2DictDefault $result orientation y_of_x]
+    if {$orientation eq "r_of_theta"} {regsub -all {\my\M} $text R text;regsub -all {\mx\M} $text theta text}
     if {$orientation eq "x_of_y"} {set text [_swapFormulaAxes $text]}
     if {[dict get $result model] in {pchip smoothing_spline fourier}} {set text "[expr {$orientation eq "x_of_y" ? "X=f(Y)" : "Y=f(X)"}]: $text"}
+    if {[dict exists $result translation]} {
+        set mapping [dict get $result translation]
+        if {[dict get $mapping u mode] eq "off" && [dict get $mapping v mode] eq "off" && [dict get $mapping u delta]==0 && [dict get $mapping v delta]==0} {return $text}
+        set axes [expr {$orientation eq "x_of_y" ? {Y X} : ($orientation eq "r_of_theta" ? {theta R} : {X Y})}]
+        lassign $axes u v
+        set du [dict get $mapping u delta];set dv [dict get $mapping v delta]
+        if {$orientation eq "parametric"} {set rule "Physical X=X_fit−($du); Y=Y_fit−($dv)"} else {set rule "Physical $v=f($u+($du))−($dv)"}
+        set text "$rule\nFit-space model: $text\nOffsets: $u [dict get $mapping u mode] $du [dict get $mapping u unit]; $v [dict get $mapping v mode] $dv [dict get $mapping v unit]"
+    }
     return $text
 }
 proc ::GX::DatasetCurveFit::_assertSession {key} {
@@ -150,6 +164,9 @@ proc ::GX::DatasetCurveFit::loadSource {key dataset x y filters {transformManife
         set source [_replaceSource $key [dict get $display points] [dict get $display source_rows] dataset $dataset $x $y $filters]
         if {[dict get $display breaks] ne {}} {::GX::Native2D::core set_breaks $state($key,scene) $source [dict get $display breaks]}
         set state($key,sourceToken) $token;set state($key,sourceDescriptor) $descriptor
+        # The native source object is a bounded presentation sample. Report the
+        # exact finite population supplied by CORE, not that sample's length.
+        set state($key,sourcePointCount) [dict get $display finite_rows]
         set state($key,sourceTransformManifest) $transformManifest
         set state($key,sourceIdentities) [dict get $descriptor source_identities]
         _workspaceCapture $key;_workspaceRefresh $key
@@ -178,9 +195,9 @@ proc ::GX::DatasetCurveFit::_operationBegin {w} {
     set state($w,loading) 1;set state($w,sourceJob) "";set state($w,numericRun) ""
     set state($w,sourceCancelled) 0;set state($w,closeRequested) 0
     unset -nocomplain state($w,press)
-    $w.canvas delete selection_drag
+    $w.right.plot.canvas delete selection_drag
     set saved [_sourceControls $w 1]
-    $w.filter.cancel configure -state normal
+    $w.left.viewport.content.filters.controls.cancel configure -state normal
     return $saved
 }
 proc ::GX::DatasetCurveFit::_operationEnd {w saved} {
@@ -188,7 +205,7 @@ proc ::GX::DatasetCurveFit::_operationEnd {w saved} {
     set state($w,loading) 0;set state($w,sourceJob) "";set state($w,numericRun) ""
     _sourceControls $w 0 $saved
     _workspaceRefresh $w
-    $w.filter.cancel configure -state disabled
+    $w.left.viewport.content.filters.controls.cancel configure -state disabled
     if {$state($w,closeRequested)} {after idle [list ::GX::DatasetCurveFit::_closeWindow $w]}
 }
 proc ::GX::DatasetCurveFit::reverseSource {key {span {}}} {
@@ -238,7 +255,7 @@ proc ::GX::DatasetCurveFit::_uiReverseSource {w selected} {
         }
         set source [reverseSource $w $span]
     } finally {_operationEnd $w $controls}
-    set state($w,report) "";$w.residuals delete [$w.residuals children {}]
+    set state($w,report) "";$w.right.residuals.table delete [$w.right.residuals.table children {}]
     $w.actions.accept configure -state disabled;$w.actions.publish configure -state disabled
     set state($w,status) "Added $source with exact complete rows reversed through Dataset Transform; the previous source and its fits remain available."
     _saveState $w;redraw $w
@@ -257,7 +274,7 @@ proc ::GX::DatasetCurveFit::_numericProgress {w progress} {
 proc ::GX::DatasetCurveFit::_sourceControls {w disabled {saved {}}} {
     if {!$disabled} {
         foreach {widget state} $saved {if {[winfo exists $widget]} {$widget configure -state $state}}
-        $w.workspace.sources configure -selectmode extended
+        $w.left.viewport.content.sources.body.sources configure -selectmode extended
         return
     }
     set pending [list $w];set saved {}
@@ -267,7 +284,10 @@ proc ::GX::DatasetCurveFit::_sourceControls {w disabled {saved {}}} {
             lappend saved $widget $state;$widget configure -state disabled
         }
     }
-    $w.workspace.sources configure -selectmode none
+    $w.left.viewport.content.sources.body.sources configure -selectmode none
+    # Sources contains the Cancel command. Its other entries remain disabled by
+    # the shared command predicates while loading/fitting owns the live state.
+    if {[winfo exists $w.menus.sources]} {$w.menus.sources configure -state normal}
     return $saved
 }
 proc ::GX::DatasetCurveFit::_numericSource {key model degree initial scope selected domain options input} {
@@ -352,19 +372,19 @@ proc ::GX::DatasetCurveFit::_residualColumns {w report} {
     variable state
     set geometric [dict get $report parametric]
     if {[dict get $report orientation] eq "r_of_theta"} {
-        set columns {row x observed fitted residual radius theta};$w.residuals configure -columns $columns
+        set columns {row x observed fitted residual radius theta};$w.right.residuals.table configure -columns $columns
         foreach {column heading} {row {Original source row} x {Source X} observed {Source Y} fitted {Fitted radius} residual {Radial residual (observed − fitted)} radius {Observed radius} theta Theta} {
-            $w.residuals heading $column -text $heading;$w.residuals column $column -width [expr {$column eq "residual" ? 230 : 135}] -stretch 1
+            $w.right.residuals.table heading $column -text $heading;$w.right.residuals.table column $column -width [expr {$column eq "residual" ? 230 : 135}] -stretch 1
         }
         return
     }
     set columns [expr {$geometric ? {row x observed fitted residual projected_x parameter} : {row x observed fitted residual}}]
-    $w.residuals configure -columns $columns
+    $w.right.residuals.table configure -columns $columns
     set rowLabel [expr {$state($w,sourceKind) eq "dataset" ? "Dataset row" : "Sample row"}]
     set derived [expr {[::GX::datasetPublicationV2DictDefault $report orientation y_of_x] eq "x_of_y" ? "X" : "Y"}]
     foreach {column heading} [list row $rowLabel x {Source X} observed {Source Y} fitted [expr {$geometric ? "Projection Y" : "Fitted $derived"}] residual [expr {$geometric ? "Signed geometric distance" : "$derived residual (observed − fitted)"}] projected_x {Projection X} parameter {Normalized parameter}] {
         if {$column ni $columns} continue
-        $w.residuals heading $column -text $heading
-        $w.residuals column $column -width [expr {$column eq "residual" ? 210 : 135}] -stretch 1
+        $w.right.residuals.table heading $column -text $heading
+        $w.right.residuals.table column $column -width [expr {$column eq "residual" ? 210 : 135}] -stretch 1
     }
 }

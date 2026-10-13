@@ -58,6 +58,19 @@ function dataset_curve_fit_numeric()
     if(parametric),q=dx;endif
   endif
   if(numel(dx)<2),error('Output domain needs at least two distinct X values');endif
+  % Resolve each coordinate independently over every value the worker evaluates.
+  % A geometric model's parameter q is dimensionless and remains untouched.
+  modes={getenv('GXDCF_TRANSLATION_U_MODE'),getenv('GXDCF_TRANSLATION_V_MODE')};
+  manual=[str2double(getenv('GXDCF_TRANSLATION_U_DELTA')),str2double(getenv('GXDCF_TRANSLATION_V_DELTA'))];
+  for axis=1:2
+    if(isempty(modes{axis})),modes{axis}='auto';endif
+  endfor
+  u_values=[x;sx];if(!parametric),u_values=[u_values;dx];endif
+  translation_u=gxtxt_numeric_v1('positive_translation',u_values,struct('mode',modes{1},'delta',manual(1)));
+  translation_v=gxtxt_numeric_v1('positive_translation',[y;sy],struct('mode',modes{2},'delta',manual(2)));
+  du=translation_u.delta;dv=translation_v.delta;
+  x=numeric_shift(x,du);sx=numeric_shift(sx,du);y=numeric_shift(y,dv);sy=numeric_shift(sy,dv);
+  if(!parametric),dx=numeric_shift(dx,du);endif
   initial=[];
   model_state_json='';
   if(new_model)
@@ -119,7 +132,10 @@ function dataset_curve_fit_numeric()
     if(strcmp(model,'exponential'))
       callback=@(p,q) p(1)*exp(p(2)*q)+p(3);
     elseif(strcmp(model,'power_law'))
-      if(any(x<=0)||any(sx<=0)||any(dx<=0)),error('Power-law requires positive X throughout the fit and output domain');endif
+      if(any(x<=0)||any(sx<=0)||any(dx<=0))
+        axis_name='physical X';if(strcmp(orientation,'x_of_y')),axis_name='physical Y';elseif(polar_mode),axis_name='theta';endif
+        error('Power-law requires strictly positive transformed independent %s throughout training, residual evaluation and output domain',axis_name);
+      endif
       callback=@(p,q) p(1)*q.^p(2);
     elseif(strcmp(model,'gaussian'))
       callback=@(p,q) p(1)*exp(-0.5*((q-p(2))/p(3)).^2)+p(4);
@@ -132,6 +148,15 @@ function dataset_curve_fit_numeric()
     fy=numeric_evaluate(model,coefficients,dx);
     source_y=numeric_evaluate(model,coefficients,sx);
   endif
+  endif
+  % Inverse exactly once, before physical residuals, Preview, accepted geometry,
+  % CSV or Dataset publication. Model coefficients remain in documented fit-space.
+  dx=numeric_shift(dx,-du);fy=numeric_shift(fy,-dv);
+  x=numeric_shift(x,-du);sx=numeric_shift(sx,-du);y=numeric_shift(y,-dv);sy=numeric_shift(sy,-dv);
+  ty=numeric_shift(ty,-dv);source_y=numeric_shift(source_y,-dv);
+  if(parametric)
+    train_eval.x=numeric_shift(train_eval.x,-du);train_eval.y=numeric_shift(train_eval.y,-dv);
+    source_eval.x=numeric_shift(source_eval.x,-du);source_eval.y=numeric_shift(source_eval.y,-dv);
   endif
   if(parametric)
     train_metrics=train_eval;source_metrics=source_eval;
@@ -174,6 +199,14 @@ function dataset_curve_fit_numeric()
   unwind_protect
     fprintf(fid,'model\t%s\n',model);
     fprintf(fid,'orientation\t%s\n',orientation);
+    for axis=1:2
+      receipt=translation_u;axis_name='u';if(axis==2),receipt=translation_v;axis_name='v';endif
+      fprintf(fid,'translation_%s_mode\t%s\ntranslation_%s_delta\t%.17g\n',axis_name,receipt.mode,axis_name,receipt.delta);
+      fprintf(fid,'translation_%s_original_bounds\t%.17g,%.17g\n',axis_name,receipt.original_bounds);
+      fprintf(fid,'translation_%s_transformed_bounds\t%.17g,%.17g\n',axis_name,receipt.transformed_bounds);
+      fprintf(fid,'translation_%s_margin\t%.17g\n',axis_name,receipt.margin);
+    endfor
+    fprintf(fid,'translation_algorithm\tadditive_positive_v1\ntranslation_inverse_applied\t1\n');
     if(polar_mode)
       fprintf(fid,'coordinate_mode\tpolar\nindependent_axis\ttheta\nangle_unit\t%s\nunwrap_policy\t%s\n',frame.angle_unit,frame.unwrap_policy);
       fprintf(fid,'angular_min\t%.17g\nangular_max\t%.17g\ntopology\t%s\n',angular_min,angular_max,output_topology);
@@ -217,6 +250,10 @@ function dataset_curve_fit_numeric()
     dlmwrite(getenv('GXDCF_FITTED'),fitted_points,'delimiter',',','precision','%.17g');
     dlmwrite(getenv('GXDCF_RESIDUAL'),residual_rows,'delimiter',',','precision','%.17g');
   endif
+endfunction
+
+function result=numeric_shift(values,delta)
+  mapped=gxtxt_numeric_v1('array_binary','add',values,delta,struct());result=mapped.values;
 endfunction
 
 function ids=numeric_read_row_ids(path)

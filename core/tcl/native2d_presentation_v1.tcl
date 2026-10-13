@@ -136,8 +136,8 @@ proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
     foreach object $legendObjects {
         if {$row>=$limit} break
         set style [dict get $object style]
-        lappend legendLines [dict create a [list [expr {$left+10}] $y] b [list [expr {$left+35}] $y] color [dict get $style color] width [dict get $style line_width] style [dict get $style line_style]]
-        lappend texts [dict create position [list [expr {$left+42}] $y] text [dict get $object label] anchor w rotation 0 font_size $font color $textColor]
+        lappend legendLines [dict create object_id [dict get $object id] a [list [expr {$left+10}] $y] b [list [expr {$left+35}] $y] color [dict get $style color] width [dict get $style line_width] style [dict get $style line_style]]
+        lappend texts [dict create object_id [dict get $object id] position [list [expr {$left+42}] $y] text [dict get $object label] anchor w rotation 0 font_size $font color $textColor]
         incr row;set y [expr {$y+$font+5}]
     }
     if {$total>$row} {lappend texts [dict create position [list [expr {$left+42}] $y] text "+[expr {$total-$row}] more curves (see table)" anchor w rotation 0 font_size $font color $textColor]}
@@ -157,6 +157,7 @@ proc ::GX::native2DCanvasSnapshot {canvas snapshot} {
     foreach line [dict get $snapshot legend_primitives] {
         set color [uiFieldColorComposite [uiFieldColorFromRGBA [dict get $line color]] $background]
         set options [list -fill [dict get $color rgb] -width [dict get $line width] -tags legend_swatch]
+        if {[dict exists $line object_id]} {lappend options -tags [list legend_swatch native_legend legend_object_[dict get $line object_id]]}
         if {[dict get $line style]==1} {lappend options -dash {6 3}} elseif {[dict get $line style]==2} {lappend options -dash {1 3}}
         $canvas create line {*}[dict get $line a] {*}[dict get $line b] {*}$options
     }
@@ -171,8 +172,26 @@ proc ::GX::native2DCanvasSnapshot {canvas snapshot} {
     $canvas create rectangle $left $top [expr {$width-$right}] [expr {$height-$bottom}] -outline #8393A5 -tags plot_border
     foreach text [dict get $snapshot texts] {
         set rgb [dict get [uiFieldColorComposite [uiFieldColorFromRGBA [dict get $text color]] $background] rgb]
-        $canvas create text {*}[dict get $text position] -text [dict get $text text] -anchor [dict get $text anchor] -angle [dict get $text rotation] -fill $rgb -font [list Sans [expr {-round([dict get $text font_size])}]] -tags axis_label
+        set tags axis_label
+        if {[dict exists $text object_id]} {set tags [list legend_label native_legend legend_object_[dict get $text object_id]]}
+        $canvas create text {*}[dict get $text position] -text [dict get $text text] -anchor [dict get $text anchor] -angle [dict get $text rotation] -fill $rgb -font [list Sans [expr {-round([dict get $text font_size])}]] -tags $tags
     }
+}
+proc ::GX::native2DLegendHit {canvas x y} {
+    # Exact regions come from this renderer's actual Tk items, including font,
+    # resize and clipping. Identical labels never participate in identity.
+    set seen {};set x [$canvas canvasx $x];set y [$canvas canvasy $y]
+    foreach item [$canvas find withtag native_legend] {
+        foreach tag [$canvas gettags $item] {
+            if {![regexp {^legend_object_([0-9]+)$} $tag -> id] || $id in $seen} continue
+            lappend seen $id
+            set bounds [$canvas bbox $tag]
+            if {[llength $bounds]!=4} continue
+            lassign $bounds left top right bottom
+            if {$x>=$left-3 && $x<=$right+3 && $y>=$top-3 && $y<=$bottom+3} {return [dict create hit 1 object_id $id bounds $bounds]}
+        }
+    }
+    return [dict create hit 0]
 }
 proc ::GX::native2DCanvasClipItems {canvas scene items} {
     lassign [::GX::Native2D::core view $scene] width height left top right bottom bounds

@@ -4,7 +4,7 @@ proc ::GX::DatasetCurveFit::_workspaceCapture {key} {
     variable state
     if {$state($key,activeSource) eq ""} return
     set saved {}
-    foreach field {source selectionScene selectionObject accepted preview previewAccepted previewFitId rows dataset x y filters loadedBinding sourceSha sourceKind rects viewBounds model scope domain min max samples degree initial period smoothing orientation topology parameterization parameterVariable userPeriod closureTolerance polarFrame sourceToken sourceDescriptor sourceTransformManifest sourceIdentities sourceStatus sourceError savedSelection sourcePointCount} {
+    foreach field {source selectionScene selectionObject accepted preview previewAccepted previewFitId rows dataset x y filters loadedBinding sourceSha sourceKind rects viewBounds model scope domain min max samples degree initial period smoothing orientation topology parameterization parameterVariable userPeriod closureTolerance translationUMode translationUDelta translationVMode translationVDelta polarFrame sourceToken sourceDescriptor sourceTransformManifest sourceIdentities sourceStatus sourceError savedSelection sourcePointCount} {
         if {[info exists state($key,$field)]} {dict set saved $field $state($key,$field)}
     }
     # Dataset chooser edits prepare a new input; they never rewrite the source
@@ -36,14 +36,14 @@ proc ::GX::DatasetCurveFit::activateSource {key id} {
     _workspaceCapture $key
     dict for {field value} [dict get $state($key,sources) $id state] {set state($key,$field) $value}
     set state($key,activeSource) $id
-    if {[llength [info commands winfo]] && [winfo exists $key.workspace.sources]} {
+    if {[llength [info commands winfo]] && [winfo exists $key.left.viewport.content.sources.body.sources]} {
         set available [expr {$state($key,source) ne ""&&$state($key,sourceStatus) eq "ready"}]
         if {$state($key,sourceKind) eq "dataset"&&$available} {
             set state($key,schema) [variables $state($key,dataset)];_uiVariableChoices $key
         } elseif {$state($key,sourceKind) in {sample builtin_sample}} {set state($key,sample) $state($key,dataset)}
-        $key.filters delete 0 end
-        foreach filter $state($key,filters) {$key.filters insert end "[dict get $filter variable] [dict get $filter operator] [join [dict get $filter value] ,]"}
-        $key.residuals delete [$key.residuals children {}]
+        $key.left.viewport.content.filters.list delete 0 end
+        foreach filter $state($key,filters) {$key.left.viewport.content.filters.list insert end "[dict get $filter variable] [dict get $filter operator] [join [dict get $filter value] ,]"}
+        $key.right.residuals.table delete [$key.right.residuals.table children {}]
         $key.actions.preview configure -state [expr {$available ? "normal" : "disabled"}]
         $key.actions.export configure -state normal
         $key.actions.accept configure -state [expr {$available&&$state($key,preview) ne {}&&!$state($key,previewAccepted) ? "normal" : "disabled"}]
@@ -62,8 +62,8 @@ proc ::GX::DatasetCurveFit::setSourceVisible {key id visible} {
 }
 proc ::GX::DatasetCurveFit::_workspaceRefresh {key} {
     variable state
-    if {![llength [info commands winfo]] || ![winfo exists $key.workspace.sources]} return
-    set tree $key.workspace.sources
+    if {![llength [info commands winfo]] || ![winfo exists $key.left.viewport.content.sources.body.sources]} return
+    set tree $key.left.viewport.content.sources.body.sources
     foreach item [$tree children {}] {if {![dict exists $state($key,sources) $item]} {$tree delete $item}}
     dict for {id entry} $state($key,sources) {
         set r [dict get $entry state]
@@ -74,15 +74,15 @@ proc ::GX::DatasetCurveFit::_workspaceRefresh {key} {
     if {$state($key,activeSource) ne ""} {$tree focus $state($key,activeSource)}
     if {![info exists state($key,loading)]||!$state($key,loading)} {
         set enabled [expr {$state($key,activeSource) ne ""&&$state($key,sourceKind) eq "dataset"&&$state($key,sourceStatus) eq "ready" ? "normal" : "disabled"}]
-        foreach button {reverse span} {if {[winfo exists $key.workspace.actions.$button]} {$key.workspace.actions.$button configure -state $enabled}}
-        if {[winfo exists $key.workspace.actions.reload]} {$key.workspace.actions.reload configure -state [expr {$state($key,activeSource) ne "" ? "normal" : "disabled"}]}
+        foreach button {reverse span} {if {[winfo exists $key.left.viewport.content.sources.body.actions.$button]} {$key.left.viewport.content.sources.body.actions.$button configure -state $enabled}}
+        if {[winfo exists $key.left.viewport.content.sources.body.actions.reload]} {$key.left.viewport.content.sources.body.actions.reload configure -state [expr {$state($key,activeSource) ne "" ? "normal" : "disabled"}]}
     }
 }
 proc ::GX::DatasetCurveFit::_workspaceSelect {w} {
     variable state
     if {[info exists state($w,loading)]&&$state($w,loading)} return
-    set id [$w.workspace.sources focus]
-    if {$id ne "" && $id in [$w.workspace.sources selection]} {activateSource $w $id}
+    set id [$w.left.viewport.content.sources.body.sources focus]
+    if {$id ne "" && $id in [$w.left.viewport.content.sources.body.sources selection]} {activateSource $w $id}
 }
 proc ::GX::DatasetCurveFit::_workspaceCatalog {w receipt} {
     variable state
@@ -124,7 +124,7 @@ proc ::GX::DatasetCurveFit::_workspaceHealth {w} {
     _workspaceRefresh $w
 }
 proc ::GX::DatasetCurveFit::_workspaceShow {w visible} {
-    foreach id [$w.workspace.sources selection] {setSourceVisible $w $id $visible}
+    foreach id [$w.left.viewport.content.sources.body.sources selection] {setSourceVisible $w $id $visible}
     redraw $w;_saveState $w
 }
 proc ::GX::DatasetCurveFit::_unavailableSource {key entry diagnostic} {
@@ -163,7 +163,7 @@ proc ::GX::DatasetCurveFit::reloadSource {key id} {
     set replacement [dict get $state($key,sources) $created]
     dict unset state($key,sources) $created
     dict set replacement id $id;dict set replacement visible [dict get $previous visible]
-    foreach field {model scope domain min max samples degree initial period smoothing orientation topology parameterization parameterVariable userPeriod closureTolerance polarFrame viewBounds sourceStyle} {
+    foreach field {model scope domain min max samples degree initial period smoothing orientation topology parameterization parameterVariable userPeriod closureTolerance translationUMode translationUDelta translationVMode translationVDelta polarFrame viewBounds sourceStyle} {
         if {[dict exists $saved $field]} {dict set replacement state $field [dict get $saved $field]}
     }
     if {[dict exists $saved sourceStyle]} {::GX::Native2D::core object_style $state($key,scene) $state($key,source) [dict get $saved sourceStyle]}
@@ -178,7 +178,7 @@ proc ::GX::DatasetCurveFit::_workspaceReload {w} {
     if {$state($w,activeSource) eq ""} {error "Select a source curve to reload"}
     set controls [_operationBegin $w]
     try {set id [reloadSource $w $state($w,activeSource)]} finally {_operationEnd $w $controls}
-    set state($w,report) "";$w.residuals delete [$w.residuals children {}]
+    set state($w,report) "";$w.right.residuals.table delete [$w.right.residuals.table children {}]
     $w.actions.preview configure -state normal
     $w.actions.accept configure -state disabled;$w.actions.publish configure -state disabled
     _workspaceRefresh $w;_saveState $w;redraw $w
@@ -221,10 +221,10 @@ proc ::GX::DatasetCurveFit::removeSources {key ids} {
 }
 proc ::GX::DatasetCurveFit::_workspaceRemove {w} {
     variable state
-    set ids [$w.workspace.sources selection]
+    set ids [$w.left.viewport.content.sources.body.sources selection]
     if {$ids eq {}&&$state($w,activeSource) ne ""} {set ids [list $state($w,activeSource)]}
     set removed [removeSources $w $ids]
-    set state($w,report) "";$w.residuals delete [$w.residuals children {}]
+    set state($w,report) "";$w.right.residuals.table delete [$w.right.residuals.table children {}]
     $w.actions.preview configure -state [expr {$state($w,source) ne "" ? "normal" : "disabled"}]
     $w.actions.accept configure -state disabled;$w.actions.publish configure -state disabled
     _saveState $w;redraw $w
@@ -248,7 +248,7 @@ proc ::GX::DatasetCurveFit::setSourceStyle {key ids changes} {
 }
 proc ::GX::DatasetCurveFit::_workspaceStyle {w} {
     variable state
-    set ids [$w.workspace.sources selection]
+    set ids [$w.left.viewport.content.sources.body.sources selection]
     if {$ids eq {}} {set ids [list $state($w,activeSource)]}
     if {[lindex $ids 0] eq ""} {error "Load a source curve first"}
     set style [::GX::Native2D::core object_style $state($w,scene) [dict get $state($w,sources) [lindex $ids 0] state source]]
@@ -311,7 +311,7 @@ proc ::GX::DatasetCurveFit::acceptSources {key ids} {
 }
 proc ::GX::DatasetCurveFit::_workspaceBatch {w accept} {
     variable state
-    set ids [$w.workspace.sources selection]
+    set ids [$w.left.viewport.content.sources.body.sources selection]
     if {$ids eq {}} {error "Select one or more source curves in the workspace"}
     if {$accept} {set result [acceptSources $w $ids];_refreshFits $w;set state($w,status) "Accepted [llength $result] local CORE curves; publish Datasets explicitly."} else {
         set domain source
@@ -325,19 +325,19 @@ proc ::GX::DatasetCurveFit::_workspaceBatch {w accept} {
     _workspaceCapture $w;_saveState $w;redraw $w
 }
 proc ::GX::DatasetCurveFit::_workspaceGui {w} {
-    ttk::frame $w.workspace -padding 5;pack $w.workspace -fill x
-    ttk::treeview $w.workspace.sources -columns {id kind identity variables rows visible} -show headings -height 3 -selectmode extended
-    foreach {column label width} {id Curve 90 kind Kind 120 identity {Source ID} 220 variables {X / Y} 240 rows {Display points} 110 visible Status 100} {$w.workspace.sources heading $column -text $label;$w.workspace.sources column $column -width $width}
-    ttk::scrollbar $w.workspace.scroll -orient horizontal -command [list $w.workspace.sources xview]
-    $w.workspace.sources configure -xscrollcommand [list $w.workspace.scroll set]
-    pack $w.workspace.sources -fill x;pack $w.workspace.scroll -fill x
-    ttk::frame $w.workspace.actions;pack $w.workspace.actions -fill x
+    ttk::frame $w.left.viewport.content.sources.body -padding 5;pack $w.left.viewport.content.sources.body -fill x
+    ttk::treeview $w.left.viewport.content.sources.body.sources -columns {id kind identity variables rows visible} -show headings -height 3 -selectmode extended
+    foreach {column label width} {id Curve 90 kind Kind 120 identity {Source ID} 220 variables {X / Y} 240 rows {Display points} 110 visible Status 100} {$w.left.viewport.content.sources.body.sources heading $column -text $label;$w.left.viewport.content.sources.body.sources column $column -width $width}
+    ttk::scrollbar $w.left.viewport.content.sources.body.scroll -orient horizontal -command [list $w.left.viewport.content.sources.body.sources xview]
+    $w.left.viewport.content.sources.body.sources configure -xscrollcommand [list $w.left.viewport.content.sources.body.scroll set]
+    pack $w.left.viewport.content.sources.body.sources -fill x;pack $w.left.viewport.content.sources.body.scroll -fill x
+    ttk::frame $w.left.viewport.content.sources.body.actions;pack $w.left.viewport.content.sources.body.actions -fill x
     foreach {id label command} [list show Show [list _workspaceShow $w 1] hide Hide [list _workspaceShow $w 0] style "Style sources…" [list _workspaceStyle $w] remove "Remove sources" [list _workspaceRemove $w] reload "Reload active source" [list _workspaceReload $w] preview "Fit selected curves" [list _workspaceBatch $w 0] accept "Accept all selected previews" [list _workspaceBatch $w 1] reverse "Reverse whole to new source" [list _uiReverseSource $w 0] span "Reverse span to new source" [list _uiReverseSource $w 1]] {
-        ttk::button $w.workspace.actions.$id -text $label -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::[lindex $command 0] {*}[lrange $command 1 end]]]
-        if {$id in {reverse span}} {$w.workspace.actions.$id configure -state disabled}
-        pack $w.workspace.actions.$id -side left -padx 5
+        ttk::button $w.left.viewport.content.sources.body.actions.$id -text $label -command [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::[lindex $command 0] {*}[lrange $command 1 end]]]
+        if {$id in {reverse span}} {$w.left.viewport.content.sources.body.actions.$id configure -state disabled}
+        pack $w.left.viewport.content.sources.body.actions.$id -side left -padx 5
     }
-    bind $w.workspace.sources <<TreeviewSelect>> [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_workspaceSelect $w]]
+    bind $w.left.viewport.content.sources.body.sources <<TreeviewSelect>> [list ::GX::DatasetCurveFit::_uiSafe $w [list ::GX::DatasetCurveFit::_workspaceSelect $w]]
 }
 
 proc ::GX::DatasetCurveFit::_saveState {key} {
@@ -346,6 +346,14 @@ proc ::GX::DatasetCurveFit::_saveState {key} {
     if {$state($key,sessionToken) eq ""} return
     if {$state($key,activeSource) eq ""&&$state($key,records) eq {}&&$state($key,documentId) eq "" && (![info exists state($key,openingWorkspace)] || $state($key,openingWorkspace) ne "new")} return
     if {$state($key,sessionToken) ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen Curve Fit"}
+    if {[dict exists $::GX::ScientificHistory::viewers $key]} {
+        if {![::GX::scientificHistoryViewerEditable $key]} return
+        return [::GX::scientificHistoryViewerChanged $key [expr {[info exists state($key,historyDescription)] ? $state($key,historyDescription) : {Update Viewer state}}]]
+    }
+    _writePayload $key [_payload $key]
+}
+proc ::GX::DatasetCurveFit::_payload {key} {
+    variable state
     _workspaceCapture $key
     set sources {}
     dict for {id entry} $state($key,sources) {
@@ -355,6 +363,19 @@ proc ::GX::DatasetCurveFit::_saveState {key} {
             dict set source selection_state [::GX::Native2D::core selection_state [dict get $source selectionScene] [dict get $source selectionObject] 0 [llength [dict get $source rows]]]
         } else {dict set source selection_state [::GX::datasetPublicationV2DictDefault $source savedSelection {}];dict set source selected {}}
         dict set entry state [dict remove $source source selectionScene selectionObject accepted preview previewAccepted previewFitId rows rects sourceToken sourceDescriptor]
+        if {[dict get $source preview] ne {}} {
+            set preview [dict get $source preview]
+            foreach field {fitted_native residual_native} name {preview_geometry_resource preview_residual_plot_resource} {
+                if {[dict exists $preview $field] && ![dict exists $preview $name]} {
+                    if {$state($key,documentId) eq {}} {error {Numeric Preview resources need their Session Document owner}}
+                    dict set preview $name [::GX::interactiveDocumentNative2DStore $state($key,documentId) $state($key,scene) [dict get $preview $field] [dict create role $name source_curve_id $id]]
+                }
+            }
+            dict set state($key,sources) $id state preview $preview
+            if {$id eq $state($key,activeSource)} {set state($key,preview) $preview}
+            dict set entry state preview_receipt [dict remove $preview fitted_native residual_native source_id]
+            dict set entry state previewAccepted [dict get $source previewAccepted]
+        }
         lappend sources $entry
     }
     set records {};set cached {}
@@ -369,6 +390,10 @@ proc ::GX::DatasetCurveFit::_saveState {key} {
     set state($key,records) $cached
     set payload [dict create version 2 workspace_sources $sources active_source $state($key,activeSource) next_source $state($key,nextSource) next_fit $state($key,nextFit) records $records presentation [::GX::Native2D::core presentation $state($key,scene)] view_bounds $state($key,viewBounds)]
     dict set payload panel [dict create visible $state($key,showResiduals) fraction $state($key,residualFraction)]
+    return $payload
+}
+proc ::GX::DatasetCurveFit::_writePayload {key payload} {
+    variable state
     if {$state($key,documentId) eq {}} {
         set name [expr {[info exists state($key,workspaceName)] && $state($key,workspaceName) ne {} ? $state($key,workspaceName) : "Dataset Curve Fit [clock clicks]"}]
         set workspace [::GX::sessionWorkspaceCreate dataset_curve_fit $name $payload]
@@ -388,7 +413,7 @@ proc ::GX::DatasetCurveFit::_saveState {key} {
     set doc [::GX::interactiveDocumentRead $state($key,documentId)]
     set state($key,documentGeneration) [dict get $doc generation];set state($key,documentRevision) [dict get $doc revision]
     set state($key,savedPayload) [dict remove [dict get $doc payload] workspace_metadata]
-    if {[llength [info commands winfo]] && [winfo exists $key]} {wm title $key "Dataset Curve Fit — [dict get [::GX::sessionWorkspaceGet $state($key,documentId)] name]"}
+    if {[llength [info commands winfo]] && [winfo exists $key]} {::GX::sessionWorkspaceViewerTitlesRefresh}
 }
 proc ::GX::DatasetCurveFit::_restoreState {w requested} {
     variable state
@@ -417,8 +442,16 @@ proc ::GX::DatasetCurveFit::_restoreState {w requested} {
         set state($w,documentId) [dict get $document id]
         set state($w,documentRevision) [dict get $document revision];set state($w,documentGeneration) [dict get $document generation]
         set state($w,savedPayload) [dict remove [dict get $document payload] workspace_metadata]
-        set payload [dict get $document payload];set restored {}
-        foreach entry [dict get $payload workspace_sources] {
+        _applyPayload $w [dict get $document payload] $requested
+    } finally {unset -nocomplain state($w,restoringWorkspace)}
+}
+
+proc ::GX::DatasetCurveFit::_currentWorkspace {w} {variable state;return $state($w,documentId)}
+
+proc ::GX::DatasetCurveFit::_applyPayload {w payload {requested {}}} {
+    variable state
+    set restored {}
+    foreach entry [dict get $payload workspace_sources] {
             set saved [dict get $entry state];set id [dict get $entry id]
             if {[catch {
                 if {[dict get $saved sourceKind] in {sample builtin_sample}} {loadSample $w [dict get $saved dataset]} else {
@@ -433,11 +466,24 @@ proc ::GX::DatasetCurveFit::_restoreState {w requested} {
             set created $state($w,activeSource);set local [dict get $state($w,sources) $created]
             dict unset state($w,sources) $created
             dict set local id $id;dict set state($w,sources) $id $local;set state($w,activeSource) $id
-            foreach field {model scope domain min max samples degree initial period smoothing orientation topology parameterization parameterVariable userPeriod closureTolerance polarFrame viewBounds} {if {[dict exists $saved $field]} {set state($w,$field) [dict get $saved $field]}}
+            foreach field {model scope domain min max samples degree initial period smoothing orientation topology parameterization parameterVariable userPeriod closureTolerance translationUMode translationUDelta translationVMode translationVDelta polarFrame viewBounds} {if {[dict exists $saved $field]} {set state($w,$field) [dict get $saved $field]}}
+            foreach axis {U V} {if {![dict exists $saved translation${axis}Mode]} {set state($w,translation${axis}Mode) off;set state($w,translation${axis}Delta) 0}}
             if {[dict exists $saved sourceStyle]} {::GX::Native2D::core object_style $state($w,scene) $state($w,source) [dict get $saved sourceStyle]}
             if {[dict exists $saved selection_state]} {
                 _restoreSelectionDescriptor $w [dict get $saved selection_state]
             } else {foreach index [dict get $saved selected] {selectPoint $w $index add}}
+            if {[dict exists $saved preview_receipt]} {
+                set preview [dict get $saved preview_receipt]
+                foreach name {preview_geometry_resource preview_residual_plot_resource} field {fitted_native residual_native} {
+                    if {[dict exists $preview $name]} {
+                        set native [::GX::interactiveDocumentNative2DRestore [dict get $preview $name] $state($w,scene)]
+                        ::GX::Native2D::core object_style $state($w,scene) $native {visible 0 selectable 0}
+                        dict set preview $field $native
+                    }
+                }
+                dict set preview source_id $state($w,source)
+                set state($w,preview) $preview;set state($w,previewAccepted) [dict get $saved previewAccepted]
+            }
             _workspaceCapture $w;setSourceVisible $w $id [dict get $entry visible]
             lappend restored $id
         }
@@ -456,7 +502,7 @@ proc ::GX::DatasetCurveFit::_restoreState {w requested} {
         }
         set state($w,activeSource) ""
         if {$active ne ""&&[dict exists $state($w,sources) $active]} {activateSource $w $active}
-        set state($w,nextSource) [dict get $payload next_source];set state($w,documentId) [dict get $document id]
+        set state($w,nextSource) [dict get $payload next_source]
         set state($w,nextFit) [::GX::datasetPublicationV2DictDefault $payload next_fit [llength $state($w,records)]]
         set state($w,viewBounds) [dict get $payload view_bounds]
         ::GX::Native2D::core presentation $state($w,scene) [dict get $payload presentation]
@@ -465,7 +511,5 @@ proc ::GX::DatasetCurveFit::_restoreState {w requested} {
         set unavailable 0
         foreach entry [dict values $state($w,sources)] {if {[dict get $entry state sourceStatus] ne "ready"} {incr unavailable}}
         set state($w,status) "Restored [llength $restored] source entries and [llength $state($w,records)] accepted local fits. $unavailable unavailable sources require explicit reload."
-    } finally {unset -nocomplain state($w,restoringWorkspace)}
-}
 
-proc ::GX::DatasetCurveFit::_currentWorkspace {w} {variable state;return $state($w,documentId)}
+}

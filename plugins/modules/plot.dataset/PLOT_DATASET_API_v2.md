@@ -1,5 +1,19 @@
 # PLOT_DATASET_API_v2 — declarative scientific PlotSpec
 
+## Exact selected rows and source continuity
+
+The optional `source_row_ordinals` series field contains unique zero-based
+canonical row identities. Graph Series remains its scientific authority; both
+base and Variant runtime configuration carry the same exact list. Preparation
+retains those measured rows without resampling and includes the list in cache
+identity. Omitting the field retains the existing complete-source behavior.
+
+The optional boolean `source_row_continuity` is PlotSpec presentation state.
+When enabled, a line breaks between nonconsecutive canonical rows, including
+gaps left by selection or nonfinite filtering. It survives Graph Series/PlotSpec
+reconciliation, editor reopening and rendering. It does not alter canonical
+values, source-row identities or the chosen fitting input.
+
 ## Purpose
 
 `PLOT_DATASET_API_v2` is the high-level public CORE rendering facade hosted by the protected

@@ -290,6 +290,8 @@ proc ::GX::PlotDatasetAPIv2::_validateSeries {s index} {
     if {[dict exists $s row_filters]} {
         if {[catch {::GX::graphSeriesNormalizeFilters $ds [dict get $s row_filters]} err]} {_error "series '[dict get $s id]' row_filters: $err"}
     }
+    if {[dict exists $s source_row_ordinals]} {::GX::graphSeriesNormalizeRowOrdinals [dict get $s source_row_ordinals]}
+    if {[dict exists $s source_row_continuity]} {_bool [dict get $s source_row_continuity] source_row_continuity}
     if {[dict exists $s family_label_prefix] && [regexp {[\r\n]} [dict get $s family_label_prefix]]} {_error "series '[dict get $s id]' family_label_prefix must be single-line"}
     set axis [string tolower [string trim [dict get $s axis]]]
     if {$axis ni {left right}} {_error "series '[dict get $s id]' axis must be left or right"}
@@ -633,7 +635,7 @@ proc ::GX::PlotDatasetAPIv2::saveSpec {plotRef spec} {
             set i 0
             foreach s $series {
                 incr i; set sec "$psec.series.$i"; puts $fd "\n\[$sec\]"
-                foreach f {id dataset_id x_variable_id y_variable_id family_variable_id secondary_variable_id ordering_variable_id family_label_prefix axis label enabled kind order step_mode bar_width bar_baseline histogram_bins histogram_normalization box_whisker_iqr box_show_outliers} {
+                foreach f {id dataset_id x_variable_id y_variable_id family_variable_id secondary_variable_id ordering_variable_id family_label_prefix source_row_ordinals source_row_continuity axis label enabled kind order step_mode bar_width bar_baseline histogram_bins histogram_normalization box_whisker_iqr box_show_outliers} {
                     if {[dict exists $s $f]} {::GX::putKV $fd $f [dict get $s $f]}
                 }
                 set st [expr {[dict exists $s style] ? [dict get $s style] : [dict create]}]
@@ -828,7 +830,7 @@ proc ::GX::PlotDatasetAPIv2::loadSpec {plotRef {deriveIfMissing 1}} {
         set n [::GX::descriptorValue $d $psec series_count 0]
         for {set i 1} {$i <= $n} {incr i} {
             set sec "$psec.series.$i"; set s [dict create]
-            foreach f {id dataset_id x_variable_id y_variable_id family_variable_id secondary_variable_id ordering_variable_id family_label_prefix axis label enabled kind order step_mode bar_width bar_baseline histogram_bins histogram_normalization box_whisker_iqr box_show_outliers} {
+            foreach f {id dataset_id x_variable_id y_variable_id family_variable_id secondary_variable_id ordering_variable_id family_label_prefix source_row_ordinals source_row_continuity axis label enabled kind order step_mode bar_width bar_baseline histogram_bins histogram_normalization box_whisker_iqr box_show_outliers} {
                 set marker [::GX::descriptorValue $d $sec $f "__PLOT_DATASET_MISSING__"]
                 if {$marker ne "__PLOT_DATASET_MISSING__"} {dict set s $f $marker}
             }
@@ -920,7 +922,7 @@ proc ::GX::PlotDatasetAPIv2::applySpec {plotRef spec} {
             set core [dict create dataset_id [dict get $s dataset_id] x_variable_id [dict get $s x_variable_id] y_variable_id [dict get $s y_variable_id] \
                 axis [dict get $s axis] label [expr {[dict exists $s label] ? [dict get $s label] : ""}] enabled [expr {[dict exists $s enabled] ? [_bool [dict get $s enabled] enabled] : 1}] \
                 order [expr {[dict exists $s order] ? [dict get $s order] : $rank}]]
-            foreach key {secondary_variable_id ordering_variable_id row_filters} {
+            foreach key {secondary_variable_id ordering_variable_id row_filters source_row_ordinals} {
                 if {[dict exists $s $key]} {dict set core $key [dict get $s $key]}
             }
             if {[dict exists $existing $sid]} {
@@ -957,27 +959,12 @@ proc ::GX::PlotDatasetAPIv2::readPlot {plotRef} {
 }
 proc ::GX::PlotDatasetAPIv2::artifacts {plotRef} {::GX::PlotDatasetAPIv1::artifacts [_normalizePlotRef $plotRef]}
 proc ::GX::PlotDatasetAPIv2::_gridRender {ref operation} {
-    set variant [dict get $ref variant_id]
-    set binding [::GX::plotVariantBindingGet plot.dataset plot.dataset.xyz $variant x]
-    if {$binding eq ""} {_error "3D plot has no X Dataset binding"}
-    set dataset [dict get $binding dataset_id]
-    set row [::GX::analysisSourceFindRow plot.dataset primary]
-    set key "plot.dataset,$row,dataset_id"
-    set hadSource [info exists ::GX::moduleAnalysisSource($key)]
-    if {$hadSource} {set previousSource $::GX::moduleAnalysisSource($key)}
-    set hadCfg [info exists ::GX::moduleCfg(plot.dataset,dataset_id)]
-    if {$hadCfg} {set previousCfg $::GX::moduleCfg(plot.dataset,dataset_id)}
-    try {
-        set ::GX::moduleAnalysisSource($key) $dataset
-        set ::GX::moduleCfg(plot.dataset,dataset_id) $dataset
-        if {$operation eq "render"} {
-            return [::GX::PlotDatasetAPIv1::render $ref]
-        }
-        return [::GX::PlotDatasetAPIv1::rerender $ref]
-    } finally {
-        if {$hadSource} {set ::GX::moduleAnalysisSource($key) $previousSource} else {catch {unset ::GX::moduleAnalysisSource($key)}}
-        if {$hadCfg} {set ::GX::moduleCfg(plot.dataset,dataset_id) $previousCfg} else {catch {unset ::GX::moduleCfg(plot.dataset,dataset_id)}}
-    }
+    # CORE's Variant serializer already projects the Variant's primary Dataset
+    # and exact bindings, preserving the base runtime. Replacing the module's
+    # primary source here makes its existing base bindings appear stale before
+    # that projection (for example a Builder XYZ publication beside a 2-D plot).
+    if {$operation eq "render"} {return [::GX::PlotDatasetAPIv1::render $ref]}
+    return [::GX::PlotDatasetAPIv1::rerender $ref]
 }
 proc ::GX::PlotDatasetAPIv2::render {plotRef} {
     set ref [_normalizePlotRef $plotRef]
@@ -1011,7 +998,7 @@ proc ::GX::PlotDatasetAPIv2::_findSeriesIndex {spec seriesId} {
     return $si
 }
 proc ::GX::PlotDatasetAPIv2::_presentationKeys {} {
-    return {kind style family_variable_id family_label_prefix step_mode bar_width bar_baseline histogram_bins histogram_normalization box_whisker_iqr box_show_outliers x_error y_error band bar_bounds}
+    return {kind style family_variable_id family_label_prefix source_row_continuity step_mode bar_width bar_baseline histogram_bins histogram_normalization box_whisker_iqr box_show_outliers x_error y_error band bar_bounds}
 }
 
 proc ::GX::PlotDatasetAPIv2::_presentationFromSeries {series} {
@@ -1038,7 +1025,7 @@ proc ::GX::PlotDatasetAPIv2::_seriesFromGeneric {generic presentation} {
         label [expr {[dict exists $generic label] ? [dict get $generic label] : ""}] \
         enabled [expr {[dict exists $generic enabled] ? [dict get $generic enabled] : 1}] \
         order [expr {[dict exists $generic order] ? [dict get $generic order] : 0}]]
-    foreach key {secondary_variable_id ordering_variable_id row_filters} {
+    foreach key {secondary_variable_id ordering_variable_id row_filters source_row_ordinals} {
         if {[dict exists $generic $key] && [dict get $generic $key] ne ""} {dict set s $key [dict get $generic $key]}
     }
     dict for {key value} $presentation { dict set s $key $value }

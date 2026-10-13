@@ -1,5 +1,30 @@
 # Curve Viewer
 
+The dev096 candidate groups actions in Sources, Curves, View, Export and Edit,
+with the existing CORE Workspace menu last. All commands have stable configurable
+CORE shortcut slots. Undo/Redo default to Ctrl+Z/Ctrl+Y; text editing retains its
+normal keys. Central Modules configuration and local Configuration use the same
+typed schema and User/Session scope. Automatic legend labels prefer real family
+values, carry no invented units and distinguish colliding automatic names.
+Manual labels may repeat; legend clicks resolve by Native2D object identity.
+Right-click a legend item for its presentation label/style/show/hide/view/remove.
+Scientific Dataset values, binding IDs and filtered publication stay canonical.
+
+The compact Description/History strip uses CORE Scientific Recipe operations.
+Undo/Redo commit the current cursor; historical browsing is read-only and retains
+future steps. Restart here explicitly confirms discarding later local steps.
+Workspace Clear History offers Cancel, reset or a protected external backup.
+History records logical source collection, bindings, style and view changes;
+redraw/progress/hover do not record steps. Selection is saved with meaningful
+changes or explicit Save, rather than as an independent scientific operation.
+
+Workspace display buffers are optional owned resources validated against source
+identity, request/reduction, schema, Namespace, SHA and generation. Warm reopen
+does not repeat exact source preparation. Invalid/missing buffers rebuild through
+bounded, cancellable Curve Source jobs. Exact Preview/publication opens canonical
+rows on demand. Cancelled opening preserves the saved Workspace; reopen to finish.
+The OS title always comes from the authoritative active Workspace record.
+
 Curve Viewer displays Dataset curves without editing or fitting them. Open it
 from Viewers, choose **Add curve…**, select the Dataset's exact public ID and
 X/Y variables, then add it. Repeating Add keeps existing curves. The browser

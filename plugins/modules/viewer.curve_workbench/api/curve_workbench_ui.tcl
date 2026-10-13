@@ -57,6 +57,7 @@ proc ::GX::CurveWorkbench::open {{context {}}} {
     } elseif {$st($w,document) ne {}} {_parameterRecalculate $w [_parameterBind $w]}
     if {$sketch ne {}} {_datasetImport $w $sketch}
     if {[dict exists $context planar_document]} {_planarIntake $w [dict get $context planar_document] [dict get $context planar_mode]} else {_planarControls $w}
+    ::GX::sessionWorkspaceViewerTitle $w {Curve Workbench · planar 2-D} [list set ::GX::CurveWorkbench::st($w,document)] [list set ::GX::CurveWorkbench::st($w,workspaceName)]
     return $w
 }
 

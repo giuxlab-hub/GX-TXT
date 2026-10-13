@@ -3,6 +3,7 @@ function info=pd_runtime_info(cfg)
 % 2D scientific bindings are resolved exclusively through Graph Series API v1.
 % SPDX-License-Identifier: GPL-3.0-or-later
   info=struct();
+  info.session=strtrim(gxtxt_ini_get(cfg,'runtime.session',''));
   info.source_path=strtrim(gxtxt_ini_get(cfg,'analysis_source.primary.path',''));
   if(isempty(info.source_path)),info.source_path=strtrim(gxtxt_ini_get(cfg,'dataset.path',''));endif
   info.dataset_id=strtrim(gxtxt_ini_get(cfg,'analysis_source.primary.dataset_id',''));
@@ -19,6 +20,11 @@ function info=pd_runtime_info(cfg)
   info.family=pd_binding(cfg,'family');info.color=pd_binding(cfg,'color');
   info.x_meta=pd_meta(cfg,info.x);info.y_meta=pd_meta(cfg,info.y);info.z_meta=pd_meta(cfg,info.z);
   info.family_meta=pd_meta(cfg,info.family);info.color_meta=pd_meta(cfg,info.color);
+  for role={'x','y','z','family','color'}
+    name=role{1};meta=info.([name '_meta']);id='';
+    if(isfield(meta,'variable_id')),id=meta.variable_id;endif
+    info.([name '_variable_id'])=id;
+  endfor
 endfunction
 
 function v=pd_binding(cfg,role)

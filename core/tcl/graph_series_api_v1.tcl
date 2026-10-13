@@ -138,7 +138,7 @@ proc ::GX::graphSeriesCheckFilterBindings {fields} {
 
 # Pure validation/normalization used by the editor before any provider-owned
 # extension state or Graph Series state is committed.
-proc ::GX::graphSeriesValidate {moduleId graphId seriesId fields {variantId ""}} {
+proc ::GX::graphSeriesValidate {moduleId graphId seriesId fields {variantId ""} {mergeExisting 1}} {
     variable graphSeries
     if {[lsearch -exact [moduleGraphIds $moduleId] $graphId] < 0} { error "Unknown graph provider ID: $moduleId/$graphId" }
     if {![regexp {^[A-Za-z_][A-Za-z0-9_.-]*$} $seriesId]} { error "Invalid graph series ID" }
@@ -146,19 +146,20 @@ proc ::GX::graphSeriesValidate {moduleId graphId seriesId fields {variantId ""}}
         if {![dict exists $fields $key]} { error "Graph series requires $key" }
     }
     dict for {key value} $fields {
-        if {$key ni {dataset_id x_variable_id y_variable_id family_variable_id secondary_variable_id ordering_variable_id axis label enabled order alignment_mode manual_offset_seconds row_filters style_color style_line_style}} { error "Unknown graph series field: $key" }
+        if {$key ni {dataset_id x_variable_id y_variable_id family_variable_id secondary_variable_id ordering_variable_id axis label enabled order alignment_mode manual_offset_seconds row_filters source_row_ordinals style_color style_line_style}} { error "Unknown graph series field: $key" }
         if {[regexp {[
 ]} $value]} { error "Graph series fields must be single-line" }
     }
     if {[dict get $fields axis] ni {left right}} { error "axis must be left or right" }
     set key [graphSeriesKey $moduleId $graphId $seriesId $variantId]
-    if {[info exists graphSeries($key)]} { set fields [dict merge $graphSeries($key) $fields] }
+    if {$mergeExisting && [info exists graphSeries($key)]} { set fields [dict merge $graphSeries($key) $fields] }
     if {![dict exists $fields label]} { dict set fields label "" }
     if {![dict exists $fields style_color]} {dict set fields style_color ""}
     if {![dict exists $fields style_line_style]} {dict set fields style_line_style ""}
     if {[dict get $fields style_color] ne "" && ![regexp {^#[0-9A-Fa-f]{6}$} [dict get $fields style_color]]} {error "Graph series style_color must be #RRGGBB"}
     if {[dict get $fields style_line_style] ni {{} solid dashed dotted dashdot}} {error "Graph series style_line_style is invalid"}
     if {![dict exists $fields row_filters]} {dict set fields row_filters {}}
+    if {[dict exists $fields source_row_ordinals]} {dict set fields source_row_ordinals [graphSeriesNormalizeRowOrdinals [dict get $fields source_row_ordinals]]}
     if {![dict exists $fields enabled]} { dict set fields enabled 1 }
     if {[dict get $fields enabled] ni {0 1}} { error "enabled must be 0 or 1" }
     if {![dict exists $fields order]} { dict set fields order 0 }
@@ -368,9 +369,19 @@ proc ::GX::graphSeriesFilterRowMatch {filter value} {
     return 0
 }
 
-proc ::GX::graphSeriesExpandGroups {moduleId graphId datasetId xVariableId yVariableId groupVariableId {options {}} {variantId ""}} {
+proc ::GX::graphSeriesNormalizeRowOrdinals {rows} {
+    if {[llength $rows]>200000} {error {Graph Series explicit row selection exceeds 200000 rows}}
+    set seen {}
+    foreach row $rows {
+        if {![string is entier -strict $row] || $row<0 || $row>9007199254740991} {error {Graph Series needs exact nonnegative row ordinals within its Octave index range}}
+        if {[dict exists $seen $row]} {error {Graph Series row selection contains duplicate ordinals}}
+        dict set seen $row 1
+    }
+    return [lsort -integer $rows]
+}
+proc ::GX::graphSeriesExpandGroups {moduleId graphId datasetId xVariableId yVariableId groupVariableId {options {}} {variantId ""} {progress {}}} {
     if {[catch {dict size $options}]} {error "Graph Series family options must be a dictionary"}
-    set defaults [dict create chunk_rows 4096 max_members 1000 series_prefix family label_template {{member}} member_order {} label_variable_id {} category_variable_id {} family_values {} category_values {} category_behavior Filter row_filters {} ordering_variable_id {}]
+    set defaults [dict create chunk_rows 4096 max_members 1000 series_prefix family label_template {{member}} member_order {} label_variable_id {} category_variable_id {} family_values {} category_values {} category_behavior Filter row_filters {} ordering_variable_id {} dry_run 0 source_row_ordinals {}]
     dict for {key value} $options {
         if {![dict exists $defaults $key]} {error "unknown Graph Series family option: $key"}
         dict set defaults $key $value
@@ -384,6 +395,8 @@ proc ::GX::graphSeriesExpandGroups {moduleId graphId datasetId xVariableId yVari
     set group [datasetVariableV3ById $datasetId $groupVariableId]
     set baseFilters [graphSeriesNormalizeFilters $datasetId [dict get $defaults row_filters]]
     set dtype [dict get $group dtype]
+    set wanted {}
+    foreach row [graphSeriesNormalizeRowOrdinals [dict get $defaults source_row_ordinals]] {dict set wanted $row 1}
     set selectedFamilies {}
     foreach requested [dict get $defaults family_values] {lappend selectedFamilies [graphSeriesCanonicalMember $dtype $requested]}
     foreach id [list $xVariableId $yVariableId] {datasetVariableById $datasetId $id}
@@ -414,6 +427,7 @@ proc ::GX::graphSeriesExpandGroups {moduleId graphId datasetId xVariableId yVari
             if {$categoryId ne ""} {set categoryValues [dict get $chunk values $categoryId]}
             set count [dict get $chunk nrows]
             for {set i 0} {$i < $count} {incr i} {
+                if {$wanted ne {} && ![dict exists $wanted [expr {[dict get $chunk offset]+$i}]]} continue
                 set eligible 1
                 foreach filter $baseFilters {
                     set value [lindex [dict get $chunk values [dict get $filter filter_variable_id]] $i]
@@ -433,6 +447,7 @@ proc ::GX::graphSeriesExpandGroups {moduleId graphId datasetId xVariableId yVari
                     error "Graph Series family label changes within member $member / $category"
                 }
             }
+            if {$progress ne {}} {curveSourceCooperativeBoundary $progress [dict create stage group_rows completed_rows [expr {[dict get $chunk offset]+$count}] total_rows -1]}
             if {[dict get $chunk eof]} {break}
         }
     } finally {tableStreamClose $stream}
@@ -456,7 +471,7 @@ proc ::GX::graphSeriesExpandGroups {moduleId graphId datasetId xVariableId yVari
         lassign $identity member category
         set seriesId [format "%s_%04d" $prefix [incr index]]
         set key [graphSeriesKey $moduleId $graphId $seriesId $variantId]
-        if {[info exists ::GX::graphSeries($key)]} {error "family series ID already exists: $seriesId"}
+        if {![dict get $defaults dry_run] && [info exists ::GX::graphSeries($key)]} {error "family series ID already exists: $seriesId"}
         set label [string map [list {{member}} $member {{label}} [dict get $labels $identity] {{category}} $category] [dict get $defaults label_template]]
         set filter [dict create filter_variable_id $groupVariableId predicate exact_equal value $member]
         set filters [concat $baseFilters [list $filter]]
@@ -470,6 +485,7 @@ proc ::GX::graphSeriesExpandGroups {moduleId graphId datasetId xVariableId yVari
             }
         }
         set fields [dict create dataset_id $datasetId x_variable_id $xVariableId y_variable_id $yVariableId family_variable_id $groupVariableId secondary_variable_id $categoryId ordering_variable_id [dict get $defaults ordering_variable_id] axis left enabled 1 order [incr nextOrder] label $label row_filters $filters]
+        if {$wanted ne {}} {dict set fields source_row_ordinals [dict keys $wanted]}
         if {$behavior eq "Style category"} {
             set palette {#1f77b4 #ff7f0e #2ca02c #d62728 #9467bd #8c564b #e377c2 #7f7f7f #bcbd22 #17becf}
             set styles {solid dashed dotted dashdot}
@@ -477,7 +493,12 @@ proc ::GX::graphSeriesExpandGroups {moduleId graphId datasetId xVariableId yVari
             dict set fields style_color [lindex $palette [expr {$categoryIndex % [llength $palette]}]]
             dict set fields style_line_style [lindex $styles [expr {($categoryIndex / [llength $palette]) % [llength $styles]}]]
         }
-        lappend records [list $seriesId [graphSeriesValidate $moduleId $graphId $seriesId $fields $variantId] $member $category]
+        lappend records [list $seriesId [graphSeriesValidate $moduleId $graphId $seriesId $fields $variantId [expr {![dict get $defaults dry_run]}]] $member $category]
+    }
+    if {[dict get $defaults dry_run]} {
+        set planned {}
+        foreach record $records {lassign $record seriesId fields member category;lappend planned [dict merge $fields [dict create series_id $seriesId member_value $member category_value $category]]}
+        return $planned
     }
     set created {}
     try {
@@ -518,7 +539,7 @@ proc ::GX::loadManifestV2_before_level_scale {path} {
     for {set i 1} {$i <= $n} {incr i} {
         set prefix "graph_series.$i."
         set fields [dict create]
-        foreach field {module_id graph_id variant_id series_id dataset_id x_variable_id y_variable_id family_variable_id secondary_variable_id ordering_variable_id axis label enabled order alignment_mode manual_offset_seconds row_filters style_color style_line_style} {
+        foreach field {module_id graph_id variant_id series_id dataset_id x_variable_id y_variable_id family_variable_id secondary_variable_id ordering_variable_id axis label enabled order alignment_mode manual_offset_seconds row_filters source_row_ordinals style_color style_line_style} {
             if {[dict exists $d $prefix$field]} { dict set fields $field [dict get $d $prefix$field] }
         }
         foreach key {module_id graph_id series_id} {
@@ -568,6 +589,7 @@ proc ::GX::writeStandardRuntimeConfig_before_level_scale {moduleId} {
         foreach field {family_variable_id secondary_variable_id ordering_variable_id} {
             putKV $fd $field [expr {[dict exists $item $field] ? [dict get $item $field] : ""}]
         }
+        putKV $fd source_row_ordinals [datasetPublicationV2DictDefault $item source_row_ordinals {}]
         set filters [dict get $item row_filters]
         putKV $fd filter_count [llength $filters]
         set j 0

@@ -1,6 +1,20 @@
 # Curve Source API v1
 
 CORE owns Dataset-backed X/Y curve identity, exact access and display reduction.
+
+The dev096 candidate adds host-only `curveSourceDisplayCacheStore document token
+record_id` and `curveSourceDisplayCacheRestore session document cache record_id
+request scene`. Curve Source owns the prepared-display policy and complete
+source-row/break receipt; Interactive Document resources own immutable UTF-8
+receipts and portable float64 little-endian Native2D buffers. Restore verifies
+owner generation, blob size/SHA, version/encoding, exact request, scientific
+source/schema identity and Namespace before restoring a display object. The
+return contains display/descriptor/native identity and `scientific_authority=0`.
+It grants no exact publication or source token. Missing/stale/corrupt buffers
+must rebuild through normal Curve Source services; incompatible scientific
+sources remain unavailable in historical browsing. No GUI handle is persisted.
+These host operations are intentionally unbridged; scripts retain exact public
+Dataset/Curve Source streams and their existing safe destination contracts.
 The API uses logical Dataset/Variable IDs and public Canonical Dataset, Table
 Stream, Schema, Dataset Transform and Native2D APIs. No consumer selects a
 physical CSV/HDF5 reader. Loading or displaying a source never publishes a Dataset.
@@ -24,6 +38,12 @@ is implicitly published.
 
 `curveSourceDescribe token` returns logical identity, scientific source/schema
 fingerprints, row count, request and selected variable descriptors.
+Host-only `curveSourceDatasetIdentity session dataset_id` exposes the same
+existing identity calculation without opening a display token. The Session
+must be current. Result fields are `dataset_id`, `sha256`, `schema_identity`;
+the schema fingerprint excludes presentation-only labels/descriptions and
+retains scientific units/coordinate semantics. It grants no resource or exact
+stream authority. The Script Bridge remains unchanged.
 `curveSourceDisplay token` returns bounded points, exact zero-based source-row
 mapping, finite-source count/full bounds, reduction status and streaming
 diagnostics. Native C stores extrema of X and Y in ordered row buckets, retaining
