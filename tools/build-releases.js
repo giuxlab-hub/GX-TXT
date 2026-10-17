@@ -66,7 +66,7 @@ const translations = {
     footer: 'Developed by'
   },
   it: {
-    title: 'GX-TXT — Novità delle release | dalla dev-095 alla dev-102',
+    title: 'GX-TXT — Novità delle release | dalla dev-' + data.coverage.first + ' alla dev-' + data.coverage.last,
     description: 'Le tappe dello sviluppo pubblico di GX-TXT: Dataset scientifici, statistica, Curve Digitizer, Workspace, Worksheet, simulazioni e curve replicate.',
     heroTag: 'GX-TXT / CRONOLOGIA PUBBLICA DELLO SVILUPPO',
     heading: 'Come si è evoluto il framework scientifico.',

@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0c131d">
-  <title>GX-TXT development highlights | dev-095 to dev-104</title>
-  <meta name="description" content="The development of GX-TXT through 10 public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.">
+  <title>GX-TXT development highlights | dev-095 to dev-106</title>
+  <meta name="description" content="The development of GX-TXT through 11 public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.">
   <meta name="author" content="Giux-Lab">
   <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/releases/">
   <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/releases/">
@@ -17,8 +17,8 @@
   <link rel="stylesheet" href="../assets/releases.css">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="GX-TXT / Giux-Lab">
-  <meta property="og:title" content="GX-TXT development highlights | dev-095 to dev-104">
-  <meta property="og:description" content="The development of GX-TXT through 10 public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.">
+  <meta property="og:title" content="GX-TXT development highlights | dev-095 to dev-106">
+  <meta property="og:description" content="The development of GX-TXT through 11 public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.">
   <meta property="og:url" content="https://giuxlab-hub.github.io/GX-TXT/releases/">
 </head>
 
@@ -50,15 +50,15 @@
       <h1 id="releases-title">How the scientific workbench evolved.</h1>
       <p class="lead">A curated record of the features that mattered most in each published source version, from the first clean GitHub snapshot to the current milestone covered here.</p>
       <div class="buttons">
-        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/blob/d99268348aa55b62f3a1e21ec3672f04504a740d/CHANGELOG.md">Read complete CHANGELOG ↗</a>
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/blob/db10ef525670944f031bcb33b8d9968d6bcac312/CHANGELOG.md">Read complete CHANGELOG ↗</a>
         <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT">View project source ↗</a>
       </div>
     </div>
     <div class="release-stat" aria-label="COVERED SOURCE HISTORY">
       <div class="release-stat-head">GX-TXT / 0.9.8.10</div>
-      <div class="release-stat-number">10</div>
+      <div class="release-stat-number">11</div>
       <div class="release-stat-label">PUBLIC REVISIONS</div>
-      <div class="release-stat-row"><span>COVERED SOURCE HISTORY</span><strong>dev-095 → dev-104</strong></div>
+      <div class="release-stat-row"><span>COVERED SOURCE HISTORY</span><strong>dev-095 → dev-106</strong></div>
       <div class="release-stat-row"><span>PRIMARY REFERENCE</span><strong>Versioned CHANGELOG</strong></div>
     </div>
   </section>
@@ -66,6 +66,7 @@
     <div class="wrap">
       <nav class="release-jump" aria-label="Go to a release">
         <span>Go to a release</span>
+<a href="#dev-106" aria-label="GX-TXT 0.9.8.10-dev-106">dev-106</a>
 <a href="#dev-104" aria-label="GX-TXT 0.9.8.10-dev-104">dev-104</a>
 <a href="#dev-103" aria-label="GX-TXT 0.9.8.10-dev-103">dev-103</a>
 <a href="#dev-102" aria-label="GX-TXT 0.9.8.10-dev-102">dev-102</a>
@@ -78,13 +79,36 @@
 <a href="#dev-095" aria-label="GX-TXT 0.9.8.10-dev-095">dev-095</a>
       </nav>
       <ol class="release-timeline">
+<li class="release-entry" id="dev-106">
+  <div class="release-marker" aria-hidden="true"><span>106</span></div>
+  <article class="release-panel release-featured">
+<div class="release-head">
+  <div><div class="release-version">0.9.8.10-dev-106</div>
+  <h2>Scientific Viewers, document sources and managed script debugging</h2></div>
+  <span class="release-current">LATEST IN THIS TIMELINE</span>
+</div>
+    <p class="release-intro">GX-TXT extends the shared scientific workspace with dedicated Signal, Statistical and HTML Viewers, richer source-document workflows and managed debugging for Python and GNU Octave. The release follows dev-104 directly; dev-105 was skipped.</p>
+    <h3 class="release-group-label">Selected changes</h3>
+    <ul class="release-bullets"><li>Official Signal Analysis, Statistical Analysis and HTML Viewers use public CORE services; scientific operations and GUI display retain separate authorities.</li>
+<li>Markdown, HTML and structured XML can be opened with bounded source-preserving document presentation. Script execution, forms and external assets are not enabled by the HTML viewer.</li>
+<li>Python and GNU Octave Script Workspaces gain shared source services, structural import, precise dirty/Undo/Redo behavior and managed debugging with stack inspection and source-revision checks.</li>
+<li>Results inspection separates selectable items and independent Program output, stderr and diagnostics, with explicit source export and canonical Dataset publication.</li></ul>
+    <div class="release-scope"><span>Scientific scope</span><p>Debian scientific/GUI verification is bounded, not a Windows acceptance. Advanced debugging/breakpoint combinations remain incompletely tested; source coloring is lexical, and minimal HTML rendering omits images, CSS layout, scripts and forms.</p></div>
+<div class="release-actions">
+<a href="https://github.com/giuxlab-hub/GX-TXT/commit/db10ef525670944f031bcb33b8d9968d6bcac312">View exact Git commit ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/db10ef525670944f031bcb33b8d9968d6bcac312/CHANGELOG.md">CHANGELOG at this revision ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/db10ef525670944f031bcb33b8d9968d6bcac312/docs/api/SOURCE_SURFACE_API_v1.md">Relevant public documentation ↗</a>
+</div>
+  </article>
+</li>
+
 <li class="release-entry" id="dev-104">
   <div class="release-marker" aria-hidden="true"><span>104</span></div>
-  <article class="release-panel release-featured">
+  <article class="release-panel">
 <div class="release-head">
   <div><div class="release-version">0.9.8.10-dev-104</div>
   <h2>Viewer Interface Builder, organized Projects and scientific Print/PDF</h2></div>
-  <span class="release-current">LATEST IN THIS TIMELINE</span>
+
 </div>
     <p class="release-intro">GX-TXT adds a public, visual way to design Viewer interfaces and reorganizes how scientific Projects and Sessions are navigated, while building a print-ready document workflow around canonical source data.</p>
     <h3 class="release-group-label">Selected changes</h3>
@@ -315,7 +339,7 @@
 
 <footer><div class="wrap">
 <div><p><strong>GX-TXT</strong> — Developed by <a href="https://giux-lab.it/" rel="author">Giux-Lab</a>.</p>
-<p>Open source · GNU GPL-3.0-or-later · 10 releases</p></div>
+<p>Open source · GNU GPL-3.0-or-later · 11 releases</p></div>
 <div class="links">
 <a href="../">Overview</a>
 <a href="../#guides">Guides</a>

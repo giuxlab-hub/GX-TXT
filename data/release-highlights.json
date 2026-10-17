@@ -4,10 +4,37 @@
   "sourceRepository": "https://github.com/giuxlab-hub/GX-TXT",
   "coverage": {
     "first": "095",
-    "last": "104",
-    "count": 10
+    "last": "106",
+    "count": 11
   },
   "releases": [
+    {
+      "id": "106",
+      "sha": "db10ef525670944f031bcb33b8d9968d6bcac312",
+      "en": {
+        "title": "Scientific Viewers, document sources and managed script debugging",
+        "intro": "GX-TXT extends the shared scientific workspace with dedicated Signal, Statistical and HTML Viewers, richer source-document workflows and managed debugging for Python and GNU Octave. The release follows dev-104 directly; dev-105 was skipped.",
+        "highlights": [
+          "Official Signal Analysis, Statistical Analysis and HTML Viewers use public CORE services; scientific operations and GUI display retain separate authorities.",
+          "Markdown, HTML and structured XML can be opened with bounded source-preserving document presentation. Script execution, forms and external assets are not enabled by the HTML viewer.",
+          "Python and GNU Octave Script Workspaces gain shared source services, structural import, precise dirty/Undo/Redo behavior and managed debugging with stack inspection and source-revision checks.",
+          "Results inspection separates selectable items and independent Program output, stderr and diagnostics, with explicit source export and canonical Dataset publication."
+        ],
+        "caveat": "Debian scientific/GUI verification is bounded, not a Windows acceptance. Advanced debugging/breakpoint combinations remain incompletely tested; source coloring is lexical, and minimal HTML rendering omits images, CSS layout, scripts and forms."
+      },
+      "it": {
+        "title": "Viewer scientifici, documenti e debug gestito degli script",
+        "intro": "GX-TXT estende l’ambiente scientifico con Viewer dedicati ai segnali, alla statistica e ai documenti HTML, nuove funzioni per i sorgenti e un debugger gestito per Python e GNU Octave. La dev-106 segue direttamente la dev-104: la dev-105 è stata saltata.",
+        "highlights": [
+          "I Viewer ufficiali Signal Analysis, Statistical Analysis e HTML usano servizi CORE pubblici, mantenendo separate l’esecuzione scientifica e la presentazione GUI.",
+          "Markdown, HTML e XML strutturato sono consultabili con una visualizzazione delimitata che conserva i byte originali. Il Viewer HTML non esegue script, form o risorse esterne.",
+          "I Workspace Python e GNU Octave aggiungono servizi condivisi per il codice, importazione strutturata, stato delle modifiche e Undo/Redo accurati, oltre al debug gestito con stack e controllo della revisione del sorgente.",
+          "La consultazione dei Results usa selezioni indipendenti e distingue output del programma, stderr e diagnostica, con esportazione esplicita e pubblicazione come Dataset canonico."
+        ],
+        "caveat": "La verifica scientifica/GUI riguarda il contesto Debian collaudato, non Windows. Restano incompleti alcuni scenari avanzati di debugger/breakpoint; la colorazione è lessicale e il renderer HTML minimale non mostra immagini o layout CSS e non esegue script o form."
+      },
+      "doc": "docs/api/SOURCE_SURFACE_API_v1.md"
+    },
     {
       "id": "104",
       "sha": "d99268348aa55b62f3a1e21ec3672f04504a740d",
