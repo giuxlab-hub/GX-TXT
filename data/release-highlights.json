@@ -1,0 +1,214 @@
+{
+  "schema": "gxtxt.pages.release-highlights/1",
+  "sourceFile": "CHANGELOG.md",
+  "sourceRepository": "https://github.com/giuxlab-hub/GX-TXT",
+  "coverage": {
+    "first": "095",
+    "last": "102",
+    "count": 8
+  },
+  "releases": [
+    {
+      "id": "102",
+      "sha": "93d326af356ce1bc9237e93d0ebff8c0f87f75ee",
+      "en": {
+        "title": "Replicate / Consensus Curves and Worksheet 2.1",
+        "intro": "GX-TXT adds a dedicated Viewer and a public scientific API for comparing related curves, while the scientific Worksheet becomes more capable as an interactive, scriptable workspace.",
+        "highlights": [
+          "Replicate Curve Analysis 16.0 brings repeatability, calibration-sensitivity and hierarchical studies to shared Numeric and Statistical Result Semantics services, with explicit source and physical-frame identities.",
+          "The Replicate / Consensus Curves Viewer presents aligned and original traces, publishes canonical results and creates Plot v4 Graph Variants without replacing the underlying observations.",
+          "Scientific Worksheet 2.1 gains guided Dataset binding, fill, merge, cell styles and sizes, bounded Filter Views and managed Python Script Jobs with reviewed Apply.",
+          "Native Preview visibility becomes a lightweight operation; a public Viewer GUI manifest coordinates existing toolbar, inspector, Workspace and History services."
+        ],
+        "caveat": "Shared-factor covariance-aware estimators and confidence/prediction intervals are not available; physical curve correspondence must be justified."
+      },
+      "it": {
+        "title": "Curve replicate e consenso, Worksheet 2.1",
+        "intro": "GX-TXT introduce un Viewer e un'API scientifica pubblica per confrontare curve correlate, mentre lo Scientific Worksheet diventa uno spazio di lavoro più completo, interattivo e programmabile.",
+        "highlights": [
+          "Replicate Curve Analysis 16.0 gestisce studi di ripetibilità, sensibilità alla calibrazione e modelli gerarchici usando i servizi Numeric e le regole statistiche CORE, con identità delle sorgenti e sistemi di riferimento fisici espliciti.",
+          "Il Viewer Replicate / Consensus Curves mostra tracce originali e allineate, pubblica risultati come Dataset canonici e crea Graph Variant di Plot v4, senza sostituire le osservazioni.",
+          "Scientific Worksheet 2.1 aggiunge associazione guidata ai Dataset, riempimento, celle unite, stili e dimensioni, Filter Views limitate e Script Job Python con applicazione controllata.",
+          "La visibilità delle curve in Preview diventa un'operazione leggera; il manifesto pubblico per i Viewer coordina barre dei comandi, inspector, Workspace e History esistenti."
+        ],
+        "caveat": "Non sono disponibili stimatori della covarianza a fattori condivisi né intervalli di confidenza/previsione; la corrispondenza fisica delle curve deve essere giustificata."
+      },
+      "doc": "plugins/modules/viewer.replicate_curve_analysis/MANUAL.md"
+    },
+    {
+      "id": "101",
+      "sha": "ab559c310a52db9bbad1d05bfc483b45ed0f3284",
+      "en": {
+        "title": "Managed scientific execution and planar FEM",
+        "intro": "Local scientific tools become part of the supervised Session workflow. GX-TXT can coordinate supported solver runs, retain their outputs, and connect new simulation results to the same Dataset and plotting authorities.",
+        "highlights": [
+          "Trusted scientific providers reuse Script Jobs for execution, status, cancellation, logs and controlled publication; authorized Scientific I/O preserves original source identities.",
+          "Electromagnetics Studio integrates Gmsh/GetDP for linear planar static 2D problems, publishing exact nodes, triangular cells and fields for native visualization.",
+          "Mathematics Explorer and updated Numeric expression operations support bounded, unit-aware functions and numerical root/extremum searches; native raster and 3D appearance workflows expand."
+        ],
+        "caveat": "This version is limited to supported local providers and planar static FEM; CAM is design-only. The independent Replicate scientific service was not yet supplied in dev-101."
+      },
+      "it": {
+        "title": "Esecuzione scientifica gestita e FEM planare",
+        "intro": "Gli strumenti scientifici locali entrano nel flusso di lavoro supervisionato delle Session. GX-TXT può coordinare i calcoli dei solver supportati, conservarne gli output e collegare i risultati della simulazione ai Dataset e ai grafici.",
+        "highlights": [
+          "I provider scientifici registrati riutilizzano Script Jobs per esecuzione, avanzamento, annullamento, log e pubblicazione controllata; Scientific I/O conserva l'identità delle sorgenti.",
+          "Electromagnetics Studio integra Gmsh/GetDP per problemi statici lineari 2D planari, pubblicando nodi, celle triangolari e campi esatti per la visualizzazione nativa.",
+          "Mathematics Explorer e le nuove operazioni Numeric introducono funzioni limitate con unità fisiche e ricerche numeriche di radici/estremi; si ampliano inoltre gli strumenti nativi per immagini e grafica 3D."
+        ],
+        "caveat": "Questa versione copre provider locali e FEM statico planare; il CAM è soltanto progettato. Il servizio scientifico Replicate indipendente non era ancora disponibile nella dev-101."
+      },
+      "doc": "docs/guides/SCIENTIFIC_STUDIO_WORKFLOWS.md"
+    },
+    {
+      "id": "100",
+      "sha": "dcf22b0864dafd34753e1aa8ae42470721e62108",
+      "en": {
+        "title": "A scientific Worksheet and Plot Dataset v4",
+        "intro": "GX-TXT gains a scientific spreadsheet-style working environment, designed around canonical Dataset identities rather than disconnected copies of measurement tables.",
+        "highlights": [
+          "Scientific Worksheet 2.0 combines typed cells, formulas, units, named ranges, persistent Workbooks and canonical result publication.",
+          "The Native2D virtual grid supports interactive large-sheet presentation while keeping scientific source and view representations distinct.",
+          "Plot Dataset v4 introduces additive native 2D/3D rendering and editable Worksheet charts with retained Graph/Clone identities and view-scoped axis presentation."
+        ],
+        "caveat": "Large grid updates still use bounded whole-viewport painting; the release does not claim a dirty-tile rendering engine."
+      },
+      "it": {
+        "title": "Scientific Worksheet e Plot Dataset v4",
+        "intro": "GX-TXT acquisisce un ambiente di lavoro simile a un foglio di calcolo scientifico, costruito sulle identità dei Dataset canonici e non su copie scollegate delle tabelle sperimentali.",
+        "highlights": [
+          "Scientific Worksheet 2.0 riunisce celle tipizzate, formule, unità, intervalli con nome, Workbook persistenti e pubblicazione di risultati canonici.",
+          "La griglia virtuale Native2D gestisce fogli estesi in modo interattivo, mantenendo distinti i dati scientifici completi e le rappresentazioni per la visualizzazione.",
+          "Plot Dataset v4 aggiunge grafici nativi 2D/3D, grafici modificabili nello Worksheet con identità Graph/Clone conservate e presentazione degli assi per ciascuna vista."
+        ],
+        "caveat": "L'aggiornamento delle griglie grandi utilizza ancora il ridisegno limitato dell'area visibile; non viene dichiarato un motore di ridisegno per singole tile."
+      },
+      "doc": "docs/guides/NATIVE_WORKSHEET_CHARTS_AND_GRAPHS.md"
+    },
+    {
+      "id": "099",
+      "sha": "5de04f5e6bd4cf87fc712fe1e561d66f8cd5521e",
+      "en": {
+        "title": "Shared Viewer controls and manuals where you work",
+        "intro": "The framework becomes more coherent to navigate: Viewers, Workspaces, module management and technical documentation follow shared interaction rules.",
+        "highlights": [
+          "Independent searchable Viewer user manuals open through the shared documentation renderer without replacing global Help.",
+          "Workspace actions consistently protect unsaved changes with Save, Discard and Cancel, while Plugin Manager updates retain active Jobs and native resources.",
+          "Viewers can request a single standard Analysis through the existing queue; guided Signal controls reuse declared operation schemas."
+        ],
+        "caveat": "Session opening retains its established authority; this release does not claim a general performance redesign."
+      },
+      "it": {
+        "title": "Comandi comuni e manuali direttamente nei Viewer",
+        "intro": "La navigazione del framework diventa più coerente: Viewer, Workspace, gestione dei moduli e documentazione tecnica seguono regole di interazione condivise.",
+        "highlights": [
+          "Ogni Viewer può aprire un manuale indipendente e ricercabile tramite il sistema documentale comune, senza sostituire l'Help generale.",
+          "Le azioni dei Workspace proteggono le modifiche con Salva, Scarta e Annulla; il Plugin Manager conserva Job e risorse native attive durante gli aggiornamenti.",
+          "I Viewer possono richiedere una singola analisi standard tramite la coda esistente; i controlli guidati dei segnali riutilizzano gli schemi delle operazioni dichiarate."
+        ],
+        "caveat": "L'apertura delle Session conserva la propria autorità: questa release non dichiara una riprogettazione generale delle prestazioni."
+      },
+      "doc": "docs/guides/WORKSPACE_AND_VIEWER_CONTROLS.md"
+    },
+    {
+      "id": "098",
+      "sha": "c84faff8a87dad6cb82eba8f8ebff4387996c12c",
+      "en": {
+        "title": "Curve Digitizer and scientific data preview",
+        "intro": "Extracted datasheet curves and scientific source previews move closer to the same traceable data workflow, with explicit calibration and uncertainty handling.",
+        "highlights": [
+          "Curve Digitizer 2.0.3 works with calibrated image-derived points, published uncertainty interfaces and support for explicitly zero pixel-localization uncertainty.",
+          "Dataset Preview adds typed filters, scientific curve grouping and exact integer comparisons while preserving source-row identities and units.",
+          "Scientific Image Inspector becomes an optional image-oriented Viewer; raster source/processing visibility and curve quality diagnostics share the Preview environment."
+        ],
+        "caveat": "Image resolution alone does not establish physical measurement uncertainty; calibration and localization assumptions remain explicit."
+      },
+      "it": {
+        "title": "Curve Digitizer e anteprima dei dati scientifici",
+        "intro": "Le curve estratte dai datasheet e l'anteprima delle sorgenti scientifiche entrano in un flusso di analisi tracciabile, con gestione esplicita di calibrazione e incertezza.",
+        "highlights": [
+          "Curve Digitizer 2.0.3 lavora su punti ricavati da immagini calibrate, API pubbliche per l'incertezza e la possibilità di dichiarare incertezza nulla nella localizzazione dei pixel.",
+          "Dataset Preview introduce filtri tipizzati, raggruppamento scientifico delle curve e confronti esatti tra interi, conservando identità delle righe e unità.",
+          "Scientific Image Inspector diventa un Viewer opzionale; in Preview convivono immagine originale, elaborazioni e diagnostica della qualità delle curve."
+        ],
+        "caveat": "La risoluzione dell'immagine non determina da sola l'incertezza fisica della misura: calibrazione e localizzazione rimangono dichiarazioni esplicite."
+      },
+      "doc": "plugins/modules/viewer.curve_digitizer/MANUAL.md"
+    },
+    {
+      "id": "097",
+      "sha": "edf2f324f5e3ada8fa2fb8c7a5e2a7dc8f6915ea",
+      "en": {
+        "title": "Shared statistical meaning and richer numerical fitting",
+        "intro": "New numerical services help scientific modules agree on the interpretation of results, covariance, units and provenance rather than producing isolated, inconsistent outputs.",
+        "highlights": [
+          "CORE statistical-result semantics record dimensional and covariance qualifications, supported interpretations and explicitly unavailable estimators.",
+          "Scientific fitting expands to correlated observations/GLS, bootstrap and profile inference, complex and surface models, plus spline alternatives.",
+          "Typed Script Bridge transport preserves exact integers and numerical shapes; public coordinate/unit operations and reproducible tutorials improve cross-module workflows."
+        ],
+        "caveat": "Available estimators depend on method applicability and declared scientific assumptions; not every statistical interval is supported."
+      },
+      "it": {
+        "title": "Semantica statistica comune e fitting più completo",
+        "intro": "Nuovi servizi numerici consentono ai moduli scientifici di condividere l'interpretazione di risultati, covarianze, unità e provenienza, evitando elaborazioni scollegate.",
+        "highlights": [
+          "Le regole CORE per i risultati statistici dichiarano dimensionalità, condizioni di applicabilità, covarianza e stimatori eventualmente non disponibili.",
+          "Il fitting scientifico si amplia a osservazioni correlate/GLS, bootstrap, inferenza tramite profili, modelli complessi e superfici, oltre a diversi metodi spline.",
+          "Il trasporto tipizzato nello Script Bridge conserva interi esatti e forme degli array; operazioni comuni per unità/coordinate e nuovi tutorial migliorano i flussi tra moduli."
+        ],
+        "caveat": "Gli stimatori disponibili dipendono dal metodo e dalle ipotesi dichiarate; non tutti gli intervalli statistici sono supportati."
+      },
+      "doc": "docs/guides/INTEGRATED_dev097.md"
+    },
+    {
+      "id": "096",
+      "sha": "3130c8bcb70a1be46795ee6127f1160e5fc11587",
+      "en": {
+        "title": "Viewer Workspaces and inspectable scientific Jobs",
+        "intro": "Session workflows become easier to inspect, repeat and document, while Plot Dataset and fitting gain more consistent interaction and three-dimensional data access.",
+        "highlights": [
+          "Session Script Jobs provide inspected historical runs, reviewed reruns and readable paged logs without changing earlier Job identities.",
+          "Viewer commands, keyboard shortcuts, saved Workspaces and History become shared controls; Dataset sections can be exported to TXT/PDF.",
+          "Dataset Curve Fit adds reversible positive-input translation, and Plot Dataset 3D reads scientific coordinates through Table Stream v3 for CSV/HDF5 sources."
+        ],
+        "caveat": "Scientific Dataset values and original run identities remain separate from view configuration and reversible plotting transformations."
+      },
+      "it": {
+        "title": "Workspace dei Viewer e Job scientifici consultabili",
+        "intro": "I flussi delle Session diventano più semplici da ispezionare, ripetere e documentare, mentre Plot Dataset e fitting acquisiscono controlli più coerenti e accesso ai dati 3D.",
+        "highlights": [
+          "Script Jobs permette di ispezionare esecuzioni precedenti, ripeterle in modo controllato e consultare log leggibili e paginati senza modificare le identità dei Job originali.",
+          "Comandi dei Viewer, scorciatoie, Workspace salvati e History diventano controlli condivisi; le sezioni dei Dataset si possono esportare in TXT/PDF.",
+          "Dataset Curve Fit introduce la traslazione reversibile degli ingressi positivi; Plot Dataset 3D legge coordinate scientifiche da CSV/HDF5 tramite Table Stream v3."
+        ],
+        "caveat": "I valori dei Dataset e le identità delle esecuzioni originali rimangono distinti dalla configurazione della vista e dalle trasformazioni reversibili per il grafico."
+      },
+      "doc": "plugins/modules/math.numeric/NUMERIC_API_v1.md"
+    },
+    {
+      "id": "095",
+      "sha": "5f8b17d3d8b16c4b1aaa24881c0f843e22d2a382",
+      "en": {
+        "title": "A public starting point for traceable scientific work",
+        "intro": "The first clean public source snapshot on this GitHub repository makes scientific plotting and Script Job inspection more explicit.",
+        "highlights": [
+          "Scientific XY plots gain independent axis autoscaling and an explicitly calibrated aspect setting.",
+          "Fitting can recompute changed selections without losing the source measurements and earlier accepted workflows.",
+          "Script Jobs use readable names, immutable run identities and detailed paged logs with copy/save/follow controls."
+        ],
+        "caveat": "This is the first public snapshot in the current repository history, not the beginning of GX-TXT development."
+      },
+      "it": {
+        "title": "Il punto di partenza pubblico dei flussi scientifici tracciabili",
+        "intro": "La prima copia pubblica ripulita su questo repository GitHub rende più espliciti i grafici scientifici e la consultazione dei Job.",
+        "highlights": [
+          "I grafici XY acquisiscono l'autoscala indipendente degli assi e un'impostazione esplicita delle proporzioni calibrate.",
+          "Il fitting può ricalcolare le selezioni modificate senza perdere le misure originali e i flussi già accettati.",
+          "Script Jobs presenta nomi leggibili, identità immutabili delle esecuzioni e log dettagliati, paginati, copiabili, salvabili e seguibili."
+        ],
+        "caveat": "È la prima copia pubblica dell'attuale storia Git: lo sviluppo di GX-TXT era iniziato prima."
+      },
+      "doc": "README.md"
+    }
+  ]
+}

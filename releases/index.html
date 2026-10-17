@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0c131d">
+  <title>GX-TXT development highlights | dev-095 to dev-102</title>
+  <meta name="description" content="The development of GX-TXT through eight public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.">
+  <meta name="author" content="Giux-Lab">
+  <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/releases/">
+  <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/releases/">
+  <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/releases/">
+  <link rel="alternate" hreflang="x-default" href="https://giuxlab-hub.github.io/GX-TXT/releases/">
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="stylesheet" href="../assets/style.css">
+  <link rel="stylesheet" href="../assets/releases.css">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="GX-TXT / Giux-Lab">
+  <meta property="og:title" content="GX-TXT development highlights | dev-095 to dev-102">
+  <meta property="og:description" content="The development of GX-TXT through eight public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.">
+  <meta property="og:url" content="https://giuxlab-hub.github.io/GX-TXT/releases/">
+</head>
+
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header>
+    <div class="wrap header">
+      <a class="brand" href="../" aria-label="GX-TXT">
+        <span class="logo" aria-hidden="true">GX</span>
+        <span><strong>GX-TXT</strong><small>Scientific workbench</small></span>
+      </a>
+      <nav aria-label="Main navigation">
+<a href="../#workflow">Workflow</a>
+<a href="../#resources">Resources</a>
+<a href="../#guides">Guides</a>
+<a href="./" aria-current="page">Releases</a>
+<a href="https://giux-lab.it/" rel="author">Giux-Lab ↗</a>
+      </nav>
+      <div class="lang" aria-label="Language selection">
+        <a href="./" hreflang="en" lang="en" aria-current="page">EN</a><span aria-hidden="true">/</span><a href="../it/releases/" hreflang="it" lang="it">IT</a>
+      </div>
+    </div>
+  </header>
+
+<main id="main">
+  <section class="wrap release-hero" aria-labelledby="releases-title">
+    <div class="release-hero-copy">
+      <div class="tag">GX-TXT / PUBLIC DEVELOPMENT HISTORY</div>
+      <h1 id="releases-title">How the scientific workbench evolved.</h1>
+      <p class="lead">A curated record of the features that mattered most in each published source version, from the first clean GitHub snapshot to the current milestone covered here.</p>
+      <div class="buttons">
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/blob/93d326af356ce1bc9237e93d0ebff8c0f87f75ee/CHANGELOG.md">Read complete CHANGELOG ↗</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT">View project source ↗</a>
+      </div>
+    </div>
+    <div class="release-stat" aria-label="COVERED SOURCE HISTORY">
+      <div class="release-stat-head">GX-TXT / 0.9.8.10</div>
+      <div class="release-stat-number">08</div>
+      <div class="release-stat-label">PUBLIC REVISIONS</div>
+      <div class="release-stat-row"><span>COVERED SOURCE HISTORY</span><strong>dev-095 → dev-102</strong></div>
+      <div class="release-stat-row"><span>PRIMARY REFERENCE</span><strong>Versioned CHANGELOG</strong></div>
+    </div>
+  </section>
+  <section class="section release-section" aria-label="Go to a release">
+    <div class="wrap">
+      <nav class="release-jump" aria-label="Go to a release">
+        <span>Go to a release</span>
+<a href="#dev-102" aria-label="GX-TXT 0.9.8.10-dev-102">dev-102</a>
+<a href="#dev-101" aria-label="GX-TXT 0.9.8.10-dev-101">dev-101</a>
+<a href="#dev-100" aria-label="GX-TXT 0.9.8.10-dev-100">dev-100</a>
+<a href="#dev-099" aria-label="GX-TXT 0.9.8.10-dev-099">dev-099</a>
+<a href="#dev-098" aria-label="GX-TXT 0.9.8.10-dev-098">dev-098</a>
+<a href="#dev-097" aria-label="GX-TXT 0.9.8.10-dev-097">dev-097</a>
+<a href="#dev-096" aria-label="GX-TXT 0.9.8.10-dev-096">dev-096</a>
+<a href="#dev-095" aria-label="GX-TXT 0.9.8.10-dev-095">dev-095</a>
+      </nav>
+      <ol class="release-timeline">
+<li class="release-entry" id="dev-102">
+  <div class="release-marker" aria-hidden="true"><span>102</span></div>
+  <article class="release-panel release-featured">
+<div class="release-head">
+  <div><div class="release-version">0.9.8.10-dev-102</div>
+  <h2>Replicate / Consensus Curves and Worksheet 2.1</h2></div>
+  <span class="release-current">LATEST IN THIS TIMELINE</span>
+</div>
+    <p class="release-intro">GX-TXT adds a dedicated Viewer and a public scientific API for comparing related curves, while the scientific Worksheet becomes more capable as an interactive, scriptable workspace.</p>
+    <h3 class="release-group-label">Selected changes</h3>
+    <ul class="release-bullets"><li>Replicate Curve Analysis 16.0 brings repeatability, calibration-sensitivity and hierarchical studies to shared Numeric and Statistical Result Semantics services, with explicit source and physical-frame identities.</li>
+<li>The Replicate / Consensus Curves Viewer presents aligned and original traces, publishes canonical results and creates Plot v4 Graph Variants without replacing the underlying observations.</li>
+<li>Scientific Worksheet 2.1 gains guided Dataset binding, fill, merge, cell styles and sizes, bounded Filter Views and managed Python Script Jobs with reviewed Apply.</li>
+<li>Native Preview visibility becomes a lightweight operation; a public Viewer GUI manifest coordinates existing toolbar, inspector, Workspace and History services.</li></ul>
+    <div class="release-scope"><span>Scientific scope</span><p>Shared-factor covariance-aware estimators and confidence/prediction intervals are not available; physical curve correspondence must be justified.</p></div>
+<div class="release-actions">
+<a href="https://github.com/giuxlab-hub/GX-TXT/commit/93d326af356ce1bc9237e93d0ebff8c0f87f75ee">View exact Git commit ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/93d326af356ce1bc9237e93d0ebff8c0f87f75ee/CHANGELOG.md">CHANGELOG at this revision ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/93d326af356ce1bc9237e93d0ebff8c0f87f75ee/plugins/modules/viewer.replicate_curve_analysis/MANUAL.md">Relevant public documentation ↗</a>
+</div>
+  </article>
+</li>
+
+<li class="release-entry" id="dev-101">
+  <div class="release-marker" aria-hidden="true"><span>101</span></div>
+  <article class="release-panel">
+<div class="release-head">
+  <div><div class="release-version">0.9.8.10-dev-101</div>
+  <h2>Managed scientific execution and planar FEM</h2></div>
+
+</div>
+    <p class="release-intro">Local scientific tools become part of the supervised Session workflow. GX-TXT can coordinate supported solver runs, retain their outputs, and connect new simulation results to the same Dataset and plotting authorities.</p>
+    <h3 class="release-group-label">Selected changes</h3>
+    <ul class="release-bullets"><li>Trusted scientific providers reuse Script Jobs for execution, status, cancellation, logs and controlled publication; authorized Scientific I/O preserves original source identities.</li>
+<li>Electromagnetics Studio integrates Gmsh/GetDP for linear planar static 2D problems, publishing exact nodes, triangular cells and fields for native visualization.</li>
+<li>Mathematics Explorer and updated Numeric expression operations support bounded, unit-aware functions and numerical root/extremum searches; native raster and 3D appearance workflows expand.</li></ul>
+    <div class="release-scope"><span>Scientific scope</span><p>This version is limited to supported local providers and planar static FEM; CAM is design-only. The independent Replicate scientific service was not yet supplied in dev-101.</p></div>
+<div class="release-actions">
+<a href="https://github.com/giuxlab-hub/GX-TXT/commit/ab559c310a52db9bbad1d05bfc483b45ed0f3284">View exact Git commit ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/ab559c310a52db9bbad1d05bfc483b45ed0f3284/CHANGELOG.md">CHANGELOG at this revision ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/ab559c310a52db9bbad1d05bfc483b45ed0f3284/docs/guides/SCIENTIFIC_STUDIO_WORKFLOWS.md">Relevant public documentation ↗</a>
+</div>
+  </article>
+</li>
+
+<li class="release-entry" id="dev-100">
+  <div class="release-marker" aria-hidden="true"><span>100</span></div>
+  <article class="release-panel">
+<div class="release-head">
+  <div><div class="release-version">0.9.8.10-dev-100</div>
+  <h2>A scientific Worksheet and Plot Dataset v4</h2></div>
+
+</div>
+    <p class="release-intro">GX-TXT gains a scientific spreadsheet-style working environment, designed around canonical Dataset identities rather than disconnected copies of measurement tables.</p>
+    <h3 class="release-group-label">Selected changes</h3>
+    <ul class="release-bullets"><li>Scientific Worksheet 2.0 combines typed cells, formulas, units, named ranges, persistent Workbooks and canonical result publication.</li>
+<li>The Native2D virtual grid supports interactive large-sheet presentation while keeping scientific source and view representations distinct.</li>
+<li>Plot Dataset v4 introduces additive native 2D/3D rendering and editable Worksheet charts with retained Graph/Clone identities and view-scoped axis presentation.</li></ul>
+    <div class="release-scope"><span>Scientific scope</span><p>Large grid updates still use bounded whole-viewport painting; the release does not claim a dirty-tile rendering engine.</p></div>
+<div class="release-actions">
+<a href="https://github.com/giuxlab-hub/GX-TXT/commit/dcf22b0864dafd34753e1aa8ae42470721e62108">View exact Git commit ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/dcf22b0864dafd34753e1aa8ae42470721e62108/CHANGELOG.md">CHANGELOG at this revision ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/dcf22b0864dafd34753e1aa8ae42470721e62108/docs/guides/NATIVE_WORKSHEET_CHARTS_AND_GRAPHS.md">Relevant public documentation ↗</a>
+</div>
+  </article>
+</li>
+
+<li class="release-entry" id="dev-099">
+  <div class="release-marker" aria-hidden="true"><span>099</span></div>
+  <article class="release-panel">
+<div class="release-head">
+  <div><div class="release-version">0.9.8.10-dev-099</div>
+  <h2>Shared Viewer controls and manuals where you work</h2></div>
+
+</div>
+    <p class="release-intro">The framework becomes more coherent to navigate: Viewers, Workspaces, module management and technical documentation follow shared interaction rules.</p>
+    <h3 class="release-group-label">Selected changes</h3>
+    <ul class="release-bullets"><li>Independent searchable Viewer user manuals open through the shared documentation renderer without replacing global Help.</li>
+<li>Workspace actions consistently protect unsaved changes with Save, Discard and Cancel, while Plugin Manager updates retain active Jobs and native resources.</li>
+<li>Viewers can request a single standard Analysis through the existing queue; guided Signal controls reuse declared operation schemas.</li></ul>
+    <div class="release-scope"><span>Scientific scope</span><p>Session opening retains its established authority; this release does not claim a general performance redesign.</p></div>
+<div class="release-actions">
+<a href="https://github.com/giuxlab-hub/GX-TXT/commit/5de04f5e6bd4cf87fc712fe1e561d66f8cd5521e">View exact Git commit ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/5de04f5e6bd4cf87fc712fe1e561d66f8cd5521e/CHANGELOG.md">CHANGELOG at this revision ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/5de04f5e6bd4cf87fc712fe1e561d66f8cd5521e/docs/guides/WORKSPACE_AND_VIEWER_CONTROLS.md">Relevant public documentation ↗</a>
+</div>
+  </article>
+</li>
+
+<li class="release-entry" id="dev-098">
+  <div class="release-marker" aria-hidden="true"><span>098</span></div>
+  <article class="release-panel">
+<div class="release-head">
+  <div><div class="release-version">0.9.8.10-dev-098</div>
+  <h2>Curve Digitizer and scientific data preview</h2></div>
+
+</div>
+    <p class="release-intro">Extracted datasheet curves and scientific source previews move closer to the same traceable data workflow, with explicit calibration and uncertainty handling.</p>
+    <h3 class="release-group-label">Selected changes</h3>
+    <ul class="release-bullets"><li>Curve Digitizer 2.0.3 works with calibrated image-derived points, published uncertainty interfaces and support for explicitly zero pixel-localization uncertainty.</li>
+<li>Dataset Preview adds typed filters, scientific curve grouping and exact integer comparisons while preserving source-row identities and units.</li>
+<li>Scientific Image Inspector becomes an optional image-oriented Viewer; raster source/processing visibility and curve quality diagnostics share the Preview environment.</li></ul>
+    <div class="release-scope"><span>Scientific scope</span><p>Image resolution alone does not establish physical measurement uncertainty; calibration and localization assumptions remain explicit.</p></div>
+<div class="release-actions">
+<a href="https://github.com/giuxlab-hub/GX-TXT/commit/c84faff8a87dad6cb82eba8f8ebff4387996c12c">View exact Git commit ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/c84faff8a87dad6cb82eba8f8ebff4387996c12c/CHANGELOG.md">CHANGELOG at this revision ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/c84faff8a87dad6cb82eba8f8ebff4387996c12c/plugins/modules/viewer.curve_digitizer/MANUAL.md">Relevant public documentation ↗</a>
+</div>
+  </article>
+</li>
+
+<li class="release-entry" id="dev-097">
+  <div class="release-marker" aria-hidden="true"><span>097</span></div>
+  <article class="release-panel">
+<div class="release-head">
+  <div><div class="release-version">0.9.8.10-dev-097</div>
+  <h2>Shared statistical meaning and richer numerical fitting</h2></div>
+
+</div>
+    <p class="release-intro">New numerical services help scientific modules agree on the interpretation of results, covariance, units and provenance rather than producing isolated, inconsistent outputs.</p>
+    <h3 class="release-group-label">Selected changes</h3>
+    <ul class="release-bullets"><li>CORE statistical-result semantics record dimensional and covariance qualifications, supported interpretations and explicitly unavailable estimators.</li>
+<li>Scientific fitting expands to correlated observations/GLS, bootstrap and profile inference, complex and surface models, plus spline alternatives.</li>
+<li>Typed Script Bridge transport preserves exact integers and numerical shapes; public coordinate/unit operations and reproducible tutorials improve cross-module workflows.</li></ul>
+    <div class="release-scope"><span>Scientific scope</span><p>Available estimators depend on method applicability and declared scientific assumptions; not every statistical interval is supported.</p></div>
+<div class="release-actions">
+<a href="https://github.com/giuxlab-hub/GX-TXT/commit/edf2f324f5e3ada8fa2fb8c7a5e2a7dc8f6915ea">View exact Git commit ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/edf2f324f5e3ada8fa2fb8c7a5e2a7dc8f6915ea/CHANGELOG.md">CHANGELOG at this revision ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/edf2f324f5e3ada8fa2fb8c7a5e2a7dc8f6915ea/docs/guides/INTEGRATED_dev097.md">Relevant public documentation ↗</a>
+</div>
+  </article>
+</li>
+
+<li class="release-entry" id="dev-096">
+  <div class="release-marker" aria-hidden="true"><span>096</span></div>
+  <article class="release-panel">
+<div class="release-head">
+  <div><div class="release-version">0.9.8.10-dev-096</div>
+  <h2>Viewer Workspaces and inspectable scientific Jobs</h2></div>
+
+</div>
+    <p class="release-intro">Session workflows become easier to inspect, repeat and document, while Plot Dataset and fitting gain more consistent interaction and three-dimensional data access.</p>
+    <h3 class="release-group-label">Selected changes</h3>
+    <ul class="release-bullets"><li>Session Script Jobs provide inspected historical runs, reviewed reruns and readable paged logs without changing earlier Job identities.</li>
+<li>Viewer commands, keyboard shortcuts, saved Workspaces and History become shared controls; Dataset sections can be exported to TXT/PDF.</li>
+<li>Dataset Curve Fit adds reversible positive-input translation, and Plot Dataset 3D reads scientific coordinates through Table Stream v3 for CSV/HDF5 sources.</li></ul>
+    <div class="release-scope"><span>Scientific scope</span><p>Scientific Dataset values and original run identities remain separate from view configuration and reversible plotting transformations.</p></div>
+<div class="release-actions">
+<a href="https://github.com/giuxlab-hub/GX-TXT/commit/3130c8bcb70a1be46795ee6127f1160e5fc11587">View exact Git commit ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/3130c8bcb70a1be46795ee6127f1160e5fc11587/CHANGELOG.md">CHANGELOG at this revision ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/3130c8bcb70a1be46795ee6127f1160e5fc11587/plugins/modules/math.numeric/NUMERIC_API_v1.md">Relevant public documentation ↗</a>
+</div>
+  </article>
+</li>
+
+<li class="release-entry" id="dev-095">
+  <div class="release-marker" aria-hidden="true"><span>095</span></div>
+  <article class="release-panel">
+<div class="release-head">
+  <div><div class="release-version">0.9.8.10-dev-095</div>
+  <h2>A public starting point for traceable scientific work</h2></div>
+
+</div>
+    <p class="release-intro">The first clean public source snapshot on this GitHub repository makes scientific plotting and Script Job inspection more explicit.</p>
+    <h3 class="release-group-label">Selected changes</h3>
+    <ul class="release-bullets"><li>Scientific XY plots gain independent axis autoscaling and an explicitly calibrated aspect setting.</li>
+<li>Fitting can recompute changed selections without losing the source measurements and earlier accepted workflows.</li>
+<li>Script Jobs use readable names, immutable run identities and detailed paged logs with copy/save/follow controls.</li></ul>
+    <div class="release-scope"><span>Scientific scope</span><p>This is the first public snapshot in the current repository history, not the beginning of GX-TXT development.</p></div>
+<div class="release-actions">
+<a href="https://github.com/giuxlab-hub/GX-TXT/commit/5f8b17d3d8b16c4b1aaa24881c0f843e22d2a382">View exact Git commit ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/5f8b17d3d8b16c4b1aaa24881c0f843e22d2a382/CHANGELOG.md">CHANGELOG at this revision ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/5f8b17d3d8b16c4b1aaa24881c0f843e22d2a382/README.md">Relevant public documentation ↗</a>
+</div>
+  </article>
+</li>
+      </ol>
+    </div>
+  </section>
+  <section class="section">
+    <div class="wrap release-note">
+      <div class="tag">GX-TXT / Versioned CHANGELOG</div>
+      <h2>Release highlights, not a substitute for the documentation.</h2>
+      <p>These summaries are selected from the public GX-TXT CHANGELOG. They describe what was introduced or changed in each source snapshot—not a claim of complete platform coverage, numerical certification or availability of every optional scientific method. For the full contract, consult the corresponding API/manual and source commit.</p>
+      <a href="https://github.com/giuxlab-hub/GX-TXT/tree/main/docs/api">Browse public API contracts ↗</a>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">
+<div><p><strong>GX-TXT</strong> — Developed by <a href="https://giux-lab.it/" rel="author">Giux-Lab</a>.</p>
+<p>Open source · GNU GPL-3.0-or-later · 8 releases</p></div>
+<div class="links">
+<a href="../">Overview</a>
+<a href="../#guides">Guides</a>
+<a href="https://gxtxt.giux-lab.it/">Handbook</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT">Resources</a>
+<a href="../it/releases/" hreflang="it" lang="it">IT</a>
+</div></div></footer>
+</body>
+</html>
