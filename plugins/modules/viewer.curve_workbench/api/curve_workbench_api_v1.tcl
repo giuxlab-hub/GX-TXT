@@ -1264,7 +1264,7 @@ proc ::GX::CurveWorkbench::_sourceOpen {w} {
     variable st
     set d $w.source
     if {[winfo exists $d]} {raise $d;return}
-    toplevel $d;wm title $d "Add curve to workspace";wm geometry $d 750x640;wm transient $d $w
+    ::GX::uiFieldDialogCreate $d $w {Add curve to workspace} 750x640
     set labels [_sourceDatasetLabels $w]
     foreach {key value} {dataset "" datasetLabel "" xLabel "" yLabel "" filterLabel "(all rows)" filterValue "" familyLabel "(single curve / none)" orderLabel "(source row order)"} {set st($w,source.$key) $value}
     if {[info exists st($w,preferredDataset)] && $st($w,preferredDataset) ne ""} {
@@ -1304,6 +1304,7 @@ proc ::GX::CurveWorkbench::_sourceOpen {w} {
     bind $d <Escape> [list ::GX::CurveWorkbench::_sourceClose $w]
     wm protocol $d WM_DELETE_WINDOW [list ::GX::CurveWorkbench::_sourceClose $w]
     _sourceDataset $w
+    ::GX::uiFieldDialogPresent $d $d.dataset
 }
 proc ::GX::CurveWorkbench::_sidebarLayout {w {width {}}} {
     if {![winfo exists $w.leftScroll.viewport]} return

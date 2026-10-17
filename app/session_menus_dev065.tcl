@@ -21,7 +21,7 @@ proc ::GX::launchGui {} {
     ttk::label .top.sessionbar.loadedSession -textvariable ::GX::ui(sessionPath) -anchor w
     pack .top.sessionbar.loadedSession -side left -padx {12 3}
     sessionActionGuiRefresh
-    .top.nb.sessionfiles.navigation configure -values {{Session files} {Session scripts} Workspaces {Configuration / Manifest} {Session Parameters} Experiment Instrumentation}
+    .top.nb.sessionfiles.navigation configure -values {{Session files} {Session scripts} Workspaces {Configuration / Manifest} {Session Parameters} Experiment Instrumentation {Preview Cache}}
     # Remove the notebook entry only after the established panel and Session
     # content host exist. Forget does not destroy/recreate the Experiment UI.
     .top.nb forget .top.nb.exp

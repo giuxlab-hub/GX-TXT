@@ -40,6 +40,12 @@ for _name, _arguments in {
 
 
 def invoke(host, operation, args):
+    if operation == 'remote_attach' and len(args)==2:
+        result=host.as_dict(host.call('::GX::datasetRemoteAttach',host.session,*args));result['dataset_ids']=host.as_list(result['dataset_ids']);return host.normalize(result)
+    if operation == 'remote_sessions' and len(args)==1:
+        return host.as_list(host.call('::GX::datasetRemoteSessions',*args))
+    if operation == 'import_local' and len(args)==2:
+        return host.normalize(host.as_dict(host.call('::GX::datasetRemoteImport',host.session,*args)))
     if operation == 'read_hyperslab':
         if len(args) != 4 or not isinstance(args[1], str):
             raise BridgeError('GXTXT:ScriptBridge:InvalidArguments', 'read_hyperslab requires Dataset ID, Variable ID, starts and counts')
@@ -119,3 +125,6 @@ def invoke(host, operation, args):
         return result
     finally:
         host.call("::GX::datasetAccessClose", handle)
+
+for name, fields in {'remote_attach':['node_id','remote_session_id'], 'remote_sessions':['node_id'], 'import_local':['dataset_id','new_dataset_id']}.items():
+    REGISTRATION['operations'][name]={'name':name,'summary':'Canonical remote locator '+name,'arguments':[{'name':field,'kind':'stable ID','required':True} for field in fields],'argument_convention':', '.join(fields),'result_contract':'Canonical catalog or publication receipt'}

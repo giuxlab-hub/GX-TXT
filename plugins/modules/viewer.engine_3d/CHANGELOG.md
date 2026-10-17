@@ -1,3 +1,7 @@
+## 0.1.6
+
+Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
+
 ## 0.1.5 — dev097
 
 - Canonical CORE native loader and removal of duplicated packaged native implementation.

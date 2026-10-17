@@ -2,7 +2,6 @@
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
-Introduced in 0.9.7.10 and extended backward-compatibly in 0.9.7.78.
 Viewer Provider is distinct from Graph Provider: a Graph Provider offers static
 plots/axes, while a Viewer Provider exposes an interactive or otherwise
 backend-owned scientific view. CORE does not prescribe a graphics toolkit.
@@ -28,9 +27,7 @@ capabilities=multilayer;camera;clipping;opacity;scalar;vector
 
 `activation_api` is optional. When present it must name one of the same
 module's declared `[public_apis]` IDs. It tells CORE how to lazily activate the
-module-owned backend when Open or Rerender is requested. Providers created
-before 0.9.7.78 may omit the field and keep the original process-local backend
-registration behavior.
+module-owned backend when Open or Rerender is requested. Providers may omit the field and use process-local backend registration.
 
 `backend_script` is an alternative for a plugin-private Tk or other Tcl viewer
 that does not expose a public API solely for activation. CORE lazily sources a
@@ -40,10 +37,9 @@ backend. The file must register the declared backend through
 set. CORE rejects absolute paths, parent traversal, missing files and symlinks.
 Existing `activation_api` providers keep their behavior.
 
-Viewer IDs are stable within a module. The provider appears in the separate
-Viewers tab only while its module is enabled.
+Viewer IDs are stable within a module. The provider appears in the Viewers catalog while it is installed and its presentation flag is enabled.
 
-## Lazy backend activation (0.9.7.78)
+## Lazy backend activation
 
 Provider discovery is intentionally headless. Calls such as:
 
@@ -116,7 +112,7 @@ source identity, visibility/opacity and optional scalar presentation. Dataset
 bindings use stable Dataset/variable IDs. Artifact paths are Session-relative,
 symlink-free and SHA-256 verified before dispatch.
 
-In dev-032, additive scene fields preserve the generic Native 3D Engine
+Scene fields preserve the generic Native 3D Engine
 presentation state: `background_rgb`, `background_bottom_rgb`,
 `background_gradient`, `lighting`, `lighting_ambient`, `lighting_diffuse`,
 `lighting_specular`, `lighting_direction`, `lighting_color`,
@@ -166,7 +162,7 @@ A renderer integrates with:
 ```
 
 `viewerBackendRegister` remains process-local. `viewerBackendEnsure` is the
-0.9.7.78 lifecycle helper that performs optional lazy activation and returns the
+lifecycle helper that performs optional lazy activation and returns the
 registered command prefix. `viewerOpen` and `viewerRerender` both use it.
 
 The callback receives action (`open` or `rerender`) and a resolved scene
@@ -183,7 +179,7 @@ source it wants to preserve in the Session.
 `rerender` means "refresh from authoritative/persistent state as appropriate to
 the provider". It must not silently destroy authoritative user work.
 
-## Scientific scenes in 0.9.8.10-dev
+## Scientific scenes
 
 The existing v1 API now accepts `scene_mode=automatic|scientific` in
 `viewerSceneSet`. Scientific mode opens a renderer without a base file. The
@@ -259,7 +255,7 @@ replays these presentation fields after reopening or explicit Sync.
 
 ## Persistence and runtime
 
-The dev-032 `viewer.engine_3d` scene accepts lightweight
+The `viewer.engine_3d` scene accepts lightweight
 `timeline_definitions`, `active_timeline_id`, and `field_definitions` in the
 same Viewer Provider scene record. Each timeline has an ID, unit, ordered
 sample times, playback rate/mode/range and current time, with named tracks
@@ -283,7 +279,7 @@ Standard module runtime configuration contains `viewer_runtime` sections for
 enabled providers.
 
 This presentation persistence is separate from authoritative interactive
-scientific state. CORE 0.9.7.78 provides Interactive Document API v1 for such
+scientific state. CORE provides Interactive Document API v1 for such
 state. Module Reset/runtime-cache cleanup must not delete Interactive Documents.
 
 No automatic conversion from Graph Provider plots occurs. A module can expose
@@ -291,7 +287,7 @@ both static plots and Viewer Providers.
 
 ## Compatibility
 
-The 0.9.7.78 extension is additive:
+Activation metadata is optional:
 
 - `activation_api` is optional;
 - existing `viewerScene`, `viewerLayer`, `viewerAttribute` and Manifest Format 2
@@ -300,7 +296,7 @@ The 0.9.7.78 extension is additive:
   work without `activation_api`;
 - headless discovery does not activate desktop code.
 
-## Dev088 physical camera fields
+## Physical camera fields
 
 Scene descriptors add `orthographic_height` (positive physical world height;0 preserves
 legacy camera-distance behavior), `near_clip`, `far_clip`, and `navigation_cube_visible`.
@@ -308,9 +304,9 @@ Clip distances default to0/0 (legacy automatic policy); explicit distances must 
 `color_array` for existing native point/cell direct RGB/RGBA mappings. Scene persistence
 retains these fields. Reference rendering uses an explicit plane-aligned camera and
 calibration; ordinary Viewer camera semantics remain. The complete workflow uses the
-modern `viewer.engine_3d`; historical `viewer.native_3d` is deprecated, not removed.
+modern `viewer.engine_3d`; `viewer.native_3d` remains available as a deprecated provider.
 
-## dev089 additive orientation presentation
+## Orientation presentation
 
 Viewer Scene's boolean `orientation_indicator_visible` defaults to 0 and follows
 the existing scene validation/persistence path. Native3D renders it in a separate
@@ -318,3 +314,11 @@ transparent viewport layer, independent of world-axis settings. Numerical XYZ
 sets it to 1 with `axes_world=0`; modern scientific Plots retains its calibrated
 axes/colorbar policy. Existing scene APIs carry the field; no parallel scene
 registry or new scientific scripting operation is needed.
+
+## Catalog presentation and enablement
+
+Each `[viewer.ID]` descriptor can supply `short_title`, `semantic_group`, `group_title`, and `icon=icons/NAME.png`. Bundled providers have distinct scientific SVG masters and sharp 192-pixel PNG artwork; the normal catalog displays at least 64-pixel images, with native higher-resolution artwork for scaling. Icons must be safe module-relative PNGs; traversal, symlinks, missing files and files over 2 MiB are refused. External descriptors without artwork use the framework fallback and existing name/category defaults.
+
+`viewerProviderCatalog` reads installed descriptors without activating desktop backends. `viewerProviderDefinition module viewer ?include_disabled?` includes presentation metadata and `enabled`. `viewerProviderEnabled` and `viewerProviderSetEnabled module viewer boolean` use the existing account-local Configuration authority. Config → Modules has separate Services and Viewers tabs. Disabling a Viewer removes its launcher and refuses subsequent Open/Rerender; active Workspaces and essential scientific services remain available. Enabling checks installed dependencies. This is a presentation flag, separate from Analysis Run selection and module service state. In particular, Python/Octave script editors remain available when their Analysis Run checkbox is off; opening an editor does not select it for scientific execution. It survives restart through Configuration's atomic writer.
+
+The catalog groups short titled icon buttons by scientific purpose, offers search, keyboard focus/Enter, readable tooltips, scrolling and responsive columns. Provider IDs remain stable technical identities and are available in tooltips and management details. These GUI operations are host-only; provider discovery and scientific API activation retain their existing public contracts.

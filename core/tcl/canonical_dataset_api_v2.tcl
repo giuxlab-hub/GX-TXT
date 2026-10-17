@@ -86,6 +86,7 @@ proc ::GX::datasetAccessOpen {session datasetId} {
     if {[datasetField $datasetId id ""] eq ""} { error "Unknown dataset: $datasetId" }
     set provider [datasetProviderFor $datasetId]
     if {![info exists datasetStorageProviderCommand($provider)]} { error "Dataset storage provider '$provider' is unavailable" }
+    if {$provider eq "remote"} {return [datasetRemoteAccessOpen $session $datasetId]}
     set path [datasetResolvePath $session $datasetId]
     if {$path eq "" || ![file isfile $path]} { error "Dataset $datasetId has no readable storage object" }
     set context [dict create session $session dataset_id $datasetId path $path]
@@ -102,6 +103,7 @@ proc ::GX::datasetAccessOpen {session datasetId} {
 proc ::GX::datasetAccessCapabilities {handle} {
     variable datasetAccessHandle
     datasetAccessRequireHandle $handle
+    if {$datasetAccessHandle($handle,provider) eq "remote"} {return [dict get $datasetAccessHandle($handle,metadata) capabilities]}
     return [datasetStorageProviderCapabilities $datasetAccessHandle($handle,provider)]
 }
 
@@ -252,6 +254,7 @@ proc ::GX::datasetBinaryBlockFromValues {dtype shape values} {
 
 proc ::GX::datasetAccessVariableIsImplicit {handle variable} {
     variable datasetAccessHandle
+    if {$datasetAccessHandle($handle,provider) eq "remote"} {return 0}
     set representationImplicit [expr {[info exists datasetAccessHandle($handle,is_representation)] && $datasetAccessHandle($handle,is_representation)}]
     return [expr {[dict get $variable axis_kind] eq "uniform" && ($representationImplicit || [datasetStorageVariableLocator $datasetAccessHandle($handle,dataset_id) [dict get $variable variable_id]] eq "")}]
 }
@@ -935,3 +938,4 @@ proc ::GX::hdf5StorageProvider {operation token args} {
 
 ::GX::datasetStorageProviderRegister csv ::GX::csvStorageProvider [dict create read_full 1 read_selected_variables 1 row_range_read 1 random_access 0 chunk_read 1 hyperslab_read 0 multidimensional 0 groups 0 implicit_axis 1]
 ::GX::datasetStorageProviderRegister hdf5 ::GX::hdf5StorageProvider [dict create read_full 1 read_selected_variables 1 row_range_read 1 random_access 1 chunk_read 1 hyperslab_read 1 multidimensional 1 groups 1 implicit_axis 1 typed_binary_read 1 managed_binary_read 1]
+source [file join [file dirname [info script]] canonical_dataset_remote.tcl]

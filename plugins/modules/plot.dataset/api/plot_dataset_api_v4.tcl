@@ -293,7 +293,7 @@ proc ::GX::PlotDatasetAPIv4::widgetCreate {path spec {context {}}} {
     variable widgets;_ready
     if {[dict exists $widgets $path]} {error {Native Plot widget identity already exists}}
     set model [modelFromSpec $spec $context];set token [::gx::native2d::plot_v4 create $model]
-    try {::gx::native2d::surface $path;dict set widgets $path [dict create token $token spec $spec context $context session_token [::GX::interactiveDocumentSessionToken] source_checks [_modelChecks $model] source_dirty 0 source_subscription [::GX::datasetCatalogSubscribe [list ::GX::PlotDatasetAPIv4::_sourceChanged $path]]]} on error {m o} {::gx::native2d::plot_v4 destroy $token;return -options $o $m}
+    try {::gx::native2d::surface $path;dict set widgets $path [dict create token $token spec $spec context $context session_token [::GX::interactiveDocumentSessionToken] source_checks [_modelChecks $model $context] source_dirty 0 source_subscription [::GX::datasetCatalogSubscribe [list ::GX::PlotDatasetAPIv4::_sourceChanged $path]]]} on error {m o} {::gx::native2d::plot_v4 destroy $token;return -options $o $m}
     bind $path <Configure> [list ::GX::PlotDatasetAPIv4::_schedule $path]
     bind $path <Destroy> [list ::GX::PlotDatasetAPIv4::widgetDestroy $path]
     bind $path <Button-4> [list ::GX::PlotDatasetAPIv4::_wheel $path 1.25 %x %y]
@@ -310,13 +310,21 @@ proc ::GX::PlotDatasetAPIv4::_widget {path {validate 1}} {variable widgets;if {!
         foreach watch [_get $check watches {}] {lassign $watch file stamp;if {[_fileStamp $file] ne $stamp} {set dirty 1;break}}
     }
     if {!$dirty} {return $record}
+    set updated {}
     foreach check [_get $record source_checks {}] {
         set id [dict get $check dataset_id]
         set current [list [::GX::datasetViewerStamp $id [::GX::datasetResolvePath $::GX::currentSession $id]] [::GX::datasetRevisionToken $id]]
-        if {$current ne [dict get $check stamp]} {set valid [::GX::curveSourceValidateSnapshot $::GX::currentSession [dict get $check descriptor]];error "Native Plot source or presentation revision changed ($id, [dict get $valid status]); reconfigure explicitly. The previous valid frame is preserved."}
+        if {$current ne [dict get $check stamp]} {
+            if {[dict exists $check representation_source] && [dict get $check representation_source] eq [::GX::datasetViewerScientificIdentity $id]} {
+                # An explicit retained view keeps its controls/camera when only
+                # disposable Preview preferences change. Science still guards it.
+                dict set check stamp $current
+            } else {set valid [::GX::curveSourceValidateSnapshot $::GX::currentSession [dict get $check descriptor]];error "Native Plot source or presentation revision changed ($id, [dict get $valid status]); reconfigure explicitly. The previous valid frame is preserved."}
+        }
+        lappend updated $check
     }
     set checks {}
-    foreach check [dict get $record source_checks] {
+    foreach check $updated {
         set watches {};foreach watch [dict get $check watches] {set file [lindex $watch 0];lappend watches [list $file [_fileStamp $file]]}
         dict set check watches $watches;lappend checks $check
     }
@@ -325,7 +333,7 @@ proc ::GX::PlotDatasetAPIv4::_widget {path {validate 1}} {variable widgets;if {!
 proc ::GX::PlotDatasetAPIv4::_schedule {path} {variable widgets;if {![dict exists $widgets $path]} return;if {[dict exists $widgets $path pending]} {after cancel [dict get $widgets $path pending]};dict set widgets $path pending [after idle [list ::GX::PlotDatasetAPIv4::_drawSafe $path]]}
 proc ::GX::PlotDatasetAPIv4::_drawSafe {path} {variable widgets;if {![dict exists $widgets $path]||![winfo exists $path]} return;catch {dict unset widgets $path pending};if {[catch {widgetDraw $path} message]} {dict set widgets $path last_error $message}}
 proc ::GX::PlotDatasetAPIv4::widgetDraw {path} {set record [_widget $path];set result [::gx::native2d::plot_v4 draw [dict get $record token] [winfo width $path] [winfo height $path]];$path draw [dict get $result primitives];return [dict get $result receipt]}
-proc ::GX::PlotDatasetAPIv4::widgetConfigure {path spec {context {}}} {variable widgets;set record [_widget $path 0];set model [modelFromSpec $spec $context];::gx::native2d::plot_v4 configure [dict get $record token] $model;dict set widgets $path spec $spec;dict set widgets $path context $context;dict set widgets $path source_checks [_modelChecks $model];dict set widgets $path source_dirty 0;dict set widgets $path session_token [::GX::interactiveDocumentSessionToken];_schedule $path;return $path}
+proc ::GX::PlotDatasetAPIv4::widgetConfigure {path spec {context {}}} {variable widgets;set record [_widget $path 0];set model [modelFromSpec $spec $context];::gx::native2d::plot_v4 configure [dict get $record token] $model;dict set widgets $path spec $spec;dict set widgets $path context $context;dict set widgets $path source_checks [_modelChecks $model $context];dict set widgets $path source_dirty 0;dict set widgets $path session_token [::GX::interactiveDocumentSessionToken];_schedule $path;return $path}
 proc ::GX::PlotDatasetAPIv4::widgetHit {path x y} {::gx::native2d::plot_v4 hit [dict get [_widget $path] token] $x $y}
 proc ::GX::PlotDatasetAPIv4::widgetEdit {path spec} {widgetConfigure $path $spec [dict get [_widget $path] context]}
 proc ::GX::PlotDatasetAPIv4::widgetView {path operation args} {set token [dict get [_widget $path] token];if {$operation eq {restore}} {if {[llength $args]!=1} {error {Expected receipt axes as restored view state}};::gx::native2d::plot_v4 restore $token [lindex $args 0]} elseif {$operation eq {fit}} {::gx::native2d::plot_v4 fit $token} else {::gx::native2d::plot_v4 view $token [lindex $args 0] $operation {*}[lrange $args 1 end]};_schedule $path}
@@ -457,7 +465,7 @@ proc ::GX::PlotDatasetAPIv4::_exactPresentationBounds {token context xtarget yta
 proc ::GX::PlotDatasetAPIv4::_barWidth {series scale input} {::gx::native2d::plot_v4 distribution [dict merge $input [dict create kind bar_width bar_width [_get $series bar_width .8] x_scale $scale]]}
 proc ::GX::PlotDatasetAPIv4::readPlot {ref} {_ready;set result [::GX::PlotDatasetAPIv1::readPlot $ref];dict set result plotspec [loadSpec $ref];return $result}
 
-proc ::GX::PlotDatasetAPIv4::_modelChecks {model} {
+proc ::GX::PlotDatasetAPIv4::_modelChecks {model {context {}}} {
     set checks {};set seen {}
     foreach panel [dict get $model panels] {foreach series [dict get $panel series] {
         set descriptors [_get $series source_descriptors {}];if {[dict exists $series source_descriptor]} {lappend descriptors [dict get $series source_descriptor]}
@@ -467,7 +475,9 @@ proc ::GX::PlotDatasetAPIv4::_modelChecks {model} {
             set stamp [list [::GX::datasetViewerStamp $id [::GX::datasetResolvePath $::GX::currentSession $id]] [::GX::datasetRevisionToken $id]]
             set watches {}
             foreach path [list [::GX::datasetResolvePath $::GX::currentSession $id] [::GX::datasetRegistryPath $::GX::currentSession] [lindex [::GX::_datasetMetadataPath $::GX::currentSession $id] 1]] {lappend watches [list $path [_fileStamp $path]]}
-            lappend checks [dict create dataset_id $id descriptor $descriptor stamp $stamp watches $watches]
+            set check [dict create dataset_id $id descriptor $descriptor stamp $stamp watches $watches]
+            if {[_get $context retain_presentation 0]} {dict set check representation_source [::GX::datasetViewerScientificIdentity $id]}
+            lappend checks $check
         }}
     }}
     return $checks

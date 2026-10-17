@@ -1,6 +1,6 @@
 # Scientific Execution API
 
-`SCIENTIFIC_EXECUTION_API_v1` is the CORE facade for registered local scientific solver providers. Tcl clients use `::GX::scientificExecution*`; Python and Octave clients use the matching Script Bridge operations. It reuses `SCRIPT_JOB_API_v1`, its durable SQLite journal, guardian, admission policy, owned process tree, Resource Management and publication recovery. It creates no second queue or scheduler. The transient Parallel Execution API remains a separate worker service.
+`SCIENTIFIC_EXECUTION_API_v1` is the CORE facade for registered local and remote scientific solver providers. Tcl clients use `::GX::scientificExecution*`; Python and Octave clients use the matching Script Bridge operations. It reuses `SCRIPT_JOB_API_v1`, its durable SQLite journal, guardian, admission policy, owned process tree, Resource Management and publication recovery. It creates no second queue or scheduler. The transient Parallel Execution API remains a separate worker service.
 
 ## Provider and client contracts
 
@@ -34,6 +34,27 @@ Observations use descriptor identity, size, nanosecond modification/change times
 
 ## Security and limitations
 
-These APIs enforce the declared boundary for compliant clients. GX-TXT's in-process Tcl/Python plugins share OS privileges: this is **not an OS sandbox against hostile code**. Trusted providers can execute native solver code and must be reviewed. Provider-specific parsers, safe arguments and bounded resources remain required. Only local execution is implemented; no SSH, remote scheduler, cloud or optical transport adapter is claimed.
+These APIs enforce the declared boundary for compliant clients. GX-TXT's in-process Tcl/Python plugins share OS privileges: this is **not an OS sandbox against hostile code**. Trusted providers can execute native solver code and must be reviewed. Provider-specific parsers, safe arguments and bounded resources remain required. Remote execution uses an authenticated HTTPS compute agent over the same node-local Supervisor. No remote scheduler, shell-command submission or cloud-provider adapter is implied.
 
 The bounded RC provider accepts the documented 1 kΩ/1 µF netlist with a fixed safe grammar and controlled transient options. It does not accept arbitrary ngspice control commands, includes or shell expressions and is not a circuit CAD editor. Electromagnetics uses its own registered domain provider and importer over this same execution authority.
+
+## Compute nodes and destination
+
+`scientificExecutionNodeRegister node_id descriptor` stores an account-local Configuration descriptor containing `endpoint` (HTTPS), `ca_file`, `client_cert`, `client_key`, logical `session_id`, and optional `enabled`. Use Configuration → Execution for registration, capability testing and destination selection. Credential files remain outside scientific Sessions; the key must be private to its owner. Registration is host-only because it configures credentials. `NodeList` returns a redacted list; `NodeInspect node_id` reports actual Linux architecture, cores, registered providers, tool availability and Supervisor policy. Python/Octave expose `node_list`, `node_inspect`, and `destination`.
+
+`scientificExecutionDestination ?local|auto|node_id?` persists the destination. An explicit `Prepare` option `node_id` overrides it; `remote_session_id` can select another granted logical Session. Auto chooses an enabled reachable node advertising the requested available provider, otherwise local. A remote preparation retains the local Session lifetime, input SHA and optional Document revision guards. Inputs use bounded SHA-verified managed-resource staging; identical scoped inputs reuse a verified resource. The remote host validates its own registered provider and runtime. Remote preparations retain their nonce receipt until explicit Discard so retries return the same durable Job rather than submitting twice.
+
+Remote IDs have the opaque form `remote/node_id/session_id/job_id`. Existing Status, Reconnect, Cancel, Log, Outputs, ReadOutput, ReadRecords, ImportResults and FreezeResource route through this reference. Generic Script Job describe/inspect/log/cancel/wait also accept it. ImportResults publishes on the authoritative node. FreezeResource captures an immutable output in an explicitly selected local Document. Source generation checks and read limits remain in force. A disconnected endpoint reports `GX REMOTE UNAVAILABLE`; it never fabricates FAILED or silently reexecutes locally. Reconnection uses the same original Supervisor identity. An uncertain admission journal entry refuses duplicate execution and requires operator reconciliation.
+
+## Debian compute-agent operation
+
+Run the installed `core/python/gxtxt_compute_node.py --config CONFIG.json` with the configured Python runtime. The administrator-owned JSON contains `node_id`, `bind`, `port`, `state_root`, `server_cert`, `server_key`, `ca_file`, `sessions` mapping logical IDs to node-local Session directories, and `clients` mapping certificate common names to objects with a `sessions` grant list. Use a dedicated account and private state/configuration. TLS verifies the server CA and hostname and requires a client certificate trusted by the node CA. Certificate identity must also have an explicit grant; knowing a Session ID is insufficient.
+
+The request protocol allows only enumerated CORE operations and logical identities. It accepts no source programs, executable names, shell commands or arbitrary file paths. Framed control data is at most 2 MiB and a message at most 32 MiB; scientific arrays and resources use independently SHA-verified raw binary blocks. Input resources are at most 8 MiB, upload blocks at most 1 MiB, with at most 16 active stages and ten-minute abandoned-stage expiry. The agent owns only transport grants, receipts and preparation references. Existing Supervisor policy owns admission, concurrency, process trees, logs and durable Jobs; existing Publication owns scientific adoption.
+
+Keep the compute agent and its managed workers on the same immutable installed
+framework tree. Restart the agent after replacing that tree. A retained interpreter
+from different source bytes can correctly refuse Preview preparation because its
+expected renderer/source key differs; restart and request the current representation
+rather than bypassing that guard. Durable scientific Jobs remain attached to their
+Supervisor identity across the agent restart.

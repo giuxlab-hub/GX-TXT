@@ -2,11 +2,13 @@
 namespace eval ::GX { variable configurationUi }
 
 proc ::GX::buildConfigurationPage {} {
+    scientificExecutionNodesInit
+    datasetPreviewCacheInit
     variable configurationUi
     set f .top.nb.configuration
     ttk::notebook $f.sections
     pack $f.sections -fill both -expand 1 -padx 8 -pady 8
-    foreach group {Storage Runtime Computation Libraries Scripts Viewers Modules} {
+    foreach group {Storage Runtime Computation Execution Libraries Scripts Viewers Modules} {
         set name [string tolower $group]
         ttk::frame $f.sections.$name
         $f.sections add $f.sections.$name -text $group
@@ -15,10 +17,11 @@ proc ::GX::buildConfigurationPage {} {
     set row [dict create]
     dict for {id field} [configurationFields] {
         if {[string match {viewers.native3d.*} $id]} continue
+        if {[string match {viewers.launcher.*} $id] || [string match execution.* $id]} continue
         set configurationUi($id) [configurationGet $id]
         if {[dict exists $field module_id]} continue
         set group [dict get $field group]
-        if {$group ni {Storage Runtime Computation Libraries Scripts Viewers Modules}} continue
+        if {$group ni {Storage Runtime Computation Execution Libraries Scripts Viewers Modules}} continue
         set section $f.sections.[string tolower $group]
         set i [expr {[dict exists $row $group] ? [dict get $row $group] : 0}]
         dict set row $group [expr {$i + 1}]
@@ -112,6 +115,7 @@ proc ::GX::buildConfigurationPage {} {
     grid $panel.native3dCheck -row 7 -column 0 -columnspan 2 -sticky w -padx 8 -pady 7
     grid $panel.native3dStatus -row 7 -column 2 -columnspan 2 -sticky ew -padx 8 -pady 7
     configurationModulesBuild $f.sections.modules [expr {[dict exists $row Modules] ? [dict get $row Modules] : 0}]
+    scientificExecutionNodeManagerBuild $f.sections.execution
     cacheStoragePanelBuild $f.sections
     ttk::frame $f.actions
     ttk::button $f.actions.save -text "Save user defaults" -command ::GX::configurationGuiSave
@@ -239,6 +243,7 @@ proc ::GX::configurationGuiSave {} {
     if {[catch {
         dict for {id field} [configurationFields] {
             if {[dict get $field scope] in {framework runtime session}} continue
+            if {[string match {viewers.launcher.*} $id] || [string match execution.* $id]} {dict set candidate $id [configurationGet $id];continue}
             if {[dict exists $field module_id]} continue
             set value [configurationGet $id]
             if {[info exists configurationUi($id)]} {set value $configurationUi($id)}

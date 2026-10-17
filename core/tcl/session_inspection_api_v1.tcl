@@ -195,6 +195,12 @@ proc ::GX::sessionInspectionDatasetLocation {datasetId {session ""}} {
     return [dict create dataset_id $datasetId path $path relative_path $relative expected_sha256 [string tolower $expected] size_bytes [file size $path] format [dict get $record format] contract [datasetPublicationV2DictDefault $record kind {}] integrity not_checked]
 }
 proc ::GX::sessionInspectionDatasetPayload {datasetId {session ""}} {
+    set session [_sessionInspectionRequire $session]
+    loadDatasetRegistry $session
+    if {[datasetField $datasetId storage_provider {}] eq "remote"} {
+        set origin [datasetRemoteVerify $datasetId]
+        return [dict create dataset_id $datasetId path {} relative_path {} sha256 [dict get $origin sha256] format [datasetField $datasetId format] contract [datasetField $datasetId kind] remote_source $origin]
+    }
     set result [sessionInspectionDatasetLocation $datasetId $session]
     if {![string equal -nocase [sha256File [dict get $result path]] [dict get $result expected_sha256]]} {error "Dataset '$datasetId' payload SHA-256 mismatch."}
     return [dict create dataset_id $datasetId path [dict get $result path] relative_path [dict get $result relative_path] sha256 [dict get $result expected_sha256] format [dict get $result format] contract [dict get $result contract]]

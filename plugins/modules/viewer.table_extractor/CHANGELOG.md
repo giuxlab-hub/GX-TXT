@@ -1,4 +1,8 @@
-## 1.0.1
+## 1.0.2
+
+Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
+
+## 1.0.10
 
 - Resolve Session context and source payload through public Session Inspection with SHA verification.
 

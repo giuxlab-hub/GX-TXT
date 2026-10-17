@@ -61,8 +61,18 @@ proc ::GX::datasetBrowserBuild {} {
         set ui(datasetBrowserCatalogToken) $token
     }
 }
-proc ::GX::datasetBrowserRefresh {} {
+proc ::GX::datasetBrowserActiveRefresh {} {
+    variable currentSession
+    if {![winfo exists .top.nb.channels.browser.current]} return
     datasetPreviewUpdateOpenButton
+    if {$currentSession ne {}} {
+        .top.nb.channels.browser.current state !disabled
+        lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] mode active
+        .top.nb.channels.browser.current configure -text "Current: [datasetNamespaceCurrentGet]\nActive Dataset: [expr {$mode eq {imported} ? $active : {None}}]"
+    }
+ }
+proc ::GX::datasetBrowserRefresh {} {
+    datasetBrowserActiveRefresh
     variable currentSession
     variable ui
     set tree .top.nb.channels.browser.tree
@@ -74,11 +84,6 @@ proc ::GX::datasetBrowserRefresh {} {
     set inputPath [expr {[info exists ::GX::cfg(input_csv)]?$::GX::cfg(input_csv):{}}]
     set single [expr {[file isfile $inputPath]?[datasetInspectionSingleChoice]:{}}]
     set projection [list $single $inputPath $pending [dict get $snapshot session_token] $namespaces [dict get $snapshot datasets]]
-    if {$currentSession ne {}} {
-        .top.nb.channels.browser.current state !disabled
-        lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] mode active
-        .top.nb.channels.browser.current configure -text "Current: [datasetNamespaceCurrentGet]\nActive Dataset: [expr {$mode eq {imported} ? $active : {None}}]"
-    }
     # Activation changes content, not the catalog. Preserve browser rows,
     # expansion, focus and scroll until its canonical projection changes.
     if {[info exists ui(datasetBrowserProjection)]&&$ui(datasetBrowserProjection) eq $projection} return

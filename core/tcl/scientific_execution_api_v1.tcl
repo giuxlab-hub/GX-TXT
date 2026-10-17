@@ -2,7 +2,7 @@
 # A typed provider facade over the existing durable Script Job authority.
 namespace eval ::GX::ScientificExecution {variable providers {};variable prepared {};variable serial 0}
 proc ::GX::scientificExecutionApiInfo {} {
-    return [dict create api_id SCIENTIFIC_EXECUTION_API_v1 api_version 1 authority SCRIPT_JOB_API_v1 backend local operations {discover describe prepare discard submit status log cancel outputs read_output read_records freeze_resource import_results reconnect} security_boundary cooperating_trusted_provider_not_OS_sandbox persistence existing_Job_journal]
+    return [dict create api_id SCIENTIFIC_EXECUTION_API_v1 api_version 1 authority SCRIPT_JOB_API_v1 backend {local remote} operations {node_list node_inspect destination discover describe prepare discard submit status log cancel outputs read_output read_records freeze_resource import_results reconnect} security_boundary cooperating_trusted_provider_not_OS_sandbox persistence existing_Job_journal]
 }
 proc ::GX::scientificExecutionRegister {id descriptor} {
     variable ::GX::ScientificExecution::providers
@@ -53,6 +53,10 @@ proc ::GX::_scientificExecutionParameters {schema parameters} {
 }
 proc ::GX::scientificExecutionPrepare {provider parameters {resources {}} {options {}}} {
     variable ::GX::ScientificExecution::providers;variable ::GX::ScientificExecution::prepared;variable ::GX::ScientificExecution::serial
+    set destination [datasetPublicationV2DictDefault $options node_id [scientificExecutionDestination]]
+    if {$destination eq "auto"} {set destination local;dict for {node descriptor} [scientificExecutionNodes] {if {![dict get $descriptor enabled] || [catch {set capabilities [scientificExecutionNodeInspect $node]}]} continue;foreach available [dict get $capabilities providers] {if {[dict get $available provider_id] eq $provider && [dict get $available available]} {set destination $node;break}};if {$destination ne "local"} break}}
+    if {$destination ne "local"} {return [scientificExecutionRemotePrepare $destination $provider $parameters $resources $options]}
+    set options [dict remove $options node_id remote_session_id]
     scientificExecutionDescribe $provider
     set d [dict get $providers $provider]
     set session [_interactiveDocumentRequireSession]
@@ -89,12 +93,14 @@ proc ::GX::scientificExecutionPrepare {provider parameters {resources {}} {optio
     return $token
 }
 proc ::GX::scientificExecutionDiscard {token} {
+    if {[string match remote-prepare#* $token]} {set p [dict get $::GX::ScientificExecution::remotePrepared $token];if {![dict exists $p receipt]} {scientificExecutionRemoteCall [dict get $p node] [dict get $p session] scientific.discard [dict get $p token]};dict unset ::GX::ScientificExecution::remotePrepared $token;return [dict create discarded 1]}
     variable ::GX::ScientificExecution::prepared
     if {![dict exists $prepared $token]} {error {Unknown scientific preparation}}
     dict unset prepared $token
     return [dict create discarded 1]
 }
 proc ::GX::scientificExecutionSubmit {token} {
+    if {[string match remote-prepare#* $token]} {return [scientificExecutionRemoteSubmit $token]}
     variable ::GX::ScientificExecution::prepared
     if {![dict exists $prepared $token]} {error {Unknown or consumed scientific preparation}}
     set p [dict get $prepared $token]
@@ -133,6 +139,7 @@ proc ::GX::_scientificExecutionJob {id} {
     return $job
 }
 proc ::GX::scientificExecutionStatus {id} {
+    if {[scientificExecutionRemoteId $id]} {return [scientificExecutionRemoteJob $id status]}
     set job [_scientificExecutionJob $id]
     set status [dict create job_id $id provider_id [dict get $job scientific_request provider_id] state [dict get $job state]]
     foreach key {created started finished error cancel cpu_seconds peak_rss_bytes peak_processes peak_threads peak_rss_bytes process_identities temporary_bytes resource_cleanup resource_id policy usage queue_reason pid pid_start} {if {[dict exists $job $key]} {dict set status $key [dict get $job $key]}}
@@ -144,8 +151,9 @@ proc ::GX::scientificExecutionStatus {id} {
     return $status
 }
 proc ::GX::scientificExecutionReconnect {id} {scientificExecutionStatus $id}
-proc ::GX::scientificExecutionCancel {id} {_scientificExecutionJob $id;scriptJobCancel $id;return [scientificExecutionStatus $id]}
+proc ::GX::scientificExecutionCancel {id} {if {[scientificExecutionRemoteId $id]} {return [scientificExecutionRemoteJob $id cancel]};_scientificExecutionJob $id;scriptJobCancel $id;return [scientificExecutionStatus $id]}
 proc ::GX::scientificExecutionLog {id {offset 0} {count 65536} {previousReceipt {}}} {
+    if {[scientificExecutionRemoteId $id]} {return [scientificExecutionRemoteJob $id log $offset $count $previousReceipt]}
     _scientificExecutionJob $id
     if {$previousReceipt ne {}&&![regexp {^[0-9]+:[0-9]+:[0-9]+:[0-9]+$} $previousReceipt]} {error {Invalid prior log generation token}}
     set page [dict remove [scriptJobLogRead $id $offset $count] path]
@@ -166,6 +174,7 @@ proc ::GX::scientificExecutionLog {id {offset 0} {count 65536} {previousReceipt 
     return $page
 }
 proc ::GX::_scientificExecutionOutput {id operation {token {}} {offset 0} {count 65536} {generation {}}} {
+    if {[scientificExecutionRemoteId $id]} {set public [dict get {list outputs read read_output read_records read_records freeze freeze_output} $operation];if {$public eq "outputs"} {return [scientificExecutionRemoteJob $id $public]};return [scientificExecutionRemoteJob $id $public $token $offset $count $generation]}
     set job [_scientificExecutionJob $id]
     set command [list [runtimeToolRequired python] -B [file join $::GX::scriptDir core python gxtxt_scientific_execution.py] [dict get $job output_dir] $id $operation $token $offset $count $generation]
     set rc [catch {exec {*}$command} response]
@@ -176,6 +185,11 @@ proc ::GX::scientificExecutionOutputs {id} {_scientificExecutionOutput $id list}
 proc ::GX::scientificExecutionReadOutput {id token {offset 0} {count 65536} {generation {}}} {_scientificExecutionOutput $id read $token $offset $count $generation}
 proc ::GX::scientificExecutionReadRecords {id token {offset 0} {count 65536} {generation {}}} {_scientificExecutionOutput $id read_records $token $offset $count $generation}
 proc ::GX::scientificExecutionFreezeResource {id token document} {
+    if {[scientificExecutionRemoteId $id]} {
+        set output [_scientificExecutionOutput $id freeze $token 0 16777216]
+        if {![dict exists $output sha256] || ![dict get $output complete]} {error {Remote output is not a complete immutable capture}}
+        return [managedResourceWrite $document [dict create format [dict get $output format] source_job_id $id source_output_token $token source_generation [dict get $output source_generation] source_sha256 [dict get $output sha256] scientific_authority 1] [binary decode base64 [dict get $output bytes_base64]]]
+    }
     set job [_scientificExecutionJob $id]
     if {[dict get $job state] ni {COMPLETED FAILED CANCELLED INTERRUPTED}} {error {Freeze a terminal Job output; live values remain provisional}}
     interactiveDocumentRead $document
@@ -184,6 +198,7 @@ proc ::GX::scientificExecutionFreezeResource {id token document} {
     return [managedResourceWrite $document [dict create format [dict get $output format] origin scientific_job source_job_id $id source_output_token $token source_generation [dict get $output source_generation] source_sha256 [dict get $output sha256] scientific_authority 1] [binary decode base64 [dict get $output bytes_base64]]]
 }
 proc ::GX::scientificExecutionImportResults {id token request} {
+    if {[scientificExecutionRemoteId $id]} {return [scientificExecutionRemoteJob $id import_results $token $request]}
     variable ::GX::ScientificExecution::providers
     set job [_scientificExecutionJob $id]
     if {[dict get $job state] ne {COMPLETED}} {error {Only a completed scientific Job may be imported}}
@@ -227,4 +242,5 @@ proc ::GX::_scientificRcImport {jobId outputToken bytes request} {
     } on error {message options} {catch {datasetPublicationV2Abort $writer};return -options $options $message}
 }
 
+source [file join [file dirname [info script]] scientific_execution_remote.tcl]
 ::GX::scientificExecutionRegisterBuiltins

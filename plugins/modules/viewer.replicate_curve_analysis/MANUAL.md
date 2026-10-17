@@ -3,8 +3,14 @@
 Open **Viewers → Replicate / Consensus Curves**. Opening performs no analysis and
 does not enable the optional legacy Replicate Analysis. The Viewer uses the same
 public Numeric replicate/statistical engine as the retained Analysis interface.
-The deposited dev101 contained that Numeric engine and legacy Analysis, but no
-independently callable Replicate service; dev102 adds its public orchestration.
+The public scientific service orchestrates the registered Numeric and Statistics
+providers through managed Jobs.
+
+The top toolbar provides Add source, Analyze/Cancel, Undo/Redo, Fit, Zoom and Save.
+Sources, Study, Edit and View menus share the same commands and shortcuts.
+The left inspector scrolls; drag its splitter to give the live canvas more space.
+Workspace and Description/History use the common CORE lifecycle. Source dialogs
+provide Cancel and Escape; F1 opens this guide.
 
 Declare a study ID, method, design, common physical frame and units. Confirm the
 frame only after verifying the physical alignment. Matching unit strings do not

@@ -160,14 +160,14 @@ proc ::GX::scientificDatasetFilterApply {w arrayName prefix vid type all} {
     destroy $w
     scientificDatasetFilterLabels $arrayName $prefix
 }
-proc ::GX::scientificDatasetPreviewFiltered {id x y output requests} {
+proc ::GX::scientificDatasetPreviewFiltered {id x y output requests {options {}}} {
     set context [datasetCoordinateRead $::GX::currentSession $id]
     set scene {};set rows 0;set reduced 0;set traces {};set displayed 0;set nativeSeries {}
     try {
         foreach filters $requests {
             set request [dict create dataset_id $id x_variable_id $x y_variable_id $y display_budget 4096 filters $filters]
             set config [datasetPreviewConfigurationRead $id]
-            set ordering [datasetPublicationV2DictDefault $config ordering {}]
+            set ordering [datasetPublicationV2DictDefault $options ordering [datasetPublicationV2DictDefault $config ordering {}]]
             if {$ordering eq {} && ![catch {set manifest [datasetPreviewCurveManifest $id]}] && $manifest ne {}} {set ordering [dict get $manifest columns point_order]}
             if {$ordering ne {}} {dict set request order_variable_id $ordering}
             set source [curveSourceOpen $::GX::currentSession $request]

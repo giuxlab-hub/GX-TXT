@@ -63,14 +63,15 @@ proc ::GX::ReplicateViewer::change {w payload description} {
 }
 proc ::GX::ReplicateViewer::current {w} {variable state;return $state($w,id)}
 proc ::GX::ReplicateViewer::dirty {w} {variable state;return [expr {[capture $w] ne $state($w,saved)}]}
-proc ::GX::ReplicateViewer::prepare {w} {guard $w;return 1}
+proc ::GX::ReplicateViewer::prepare {w action} {variable state;guard $w;if {$state($w,busy) && $action ne "query"} {error {Cancel or finish the current study before switching Workspace}};return 1}
 proc ::GX::ReplicateViewer::discard {w} {destroy $w}
-proc ::GX::ReplicateViewer::close {w} {::GX::sessionWorkspaceViewerAction replicate_consensus [callbacks $w] $w close}
+proc ::GX::ReplicateViewer::close {w} {safe $w closeWorkspace}
+proc ::GX::ReplicateViewer::closeWorkspace {w} {::GX::sessionWorkspaceViewerAction replicate_consensus [callbacks $w] $w close}
 proc ::GX::ReplicateViewer::callbacks {w} {return [dict create current [list [namespace current]::current $w] save [list [namespace current]::save $w] open [list [namespace current]::open] close [list [namespace current]::close $w] dirty [list [namespace current]::dirty $w] prepare [list [namespace current]::prepare $w] discard [list [namespace current]::discard $w]]}
 proc ::GX::ReplicateViewer::save {w} {
     variable state;guard $w
     set payload [capture $w];dict set payload history [::GX::scientificHistoryViewerRecord $w]
-    if {$state($w,id) eq {}} {set item [::GX::sessionWorkspaceCreate replicate_consensus {Replicate study} $payload]} else {set item [::GX::sessionWorkspaceUpdate $state($w,id) $payload]}
+    if {$state($w,id) eq {}} {set item [::GX::sessionWorkspaceCreate replicate_consensus [::GX::sessionWorkspaceAvailableName $state($w,workspaceName)] $payload]} else {set item [::GX::sessionWorkspaceUpdate $state($w,id) $payload]}
     set state($w,id) [dict get $item workspace_id];set state($w,generation) [dict get $item generation];set state($w,revision) [dict get $item revision]
     set state($w,saved) [capture $w]
     $w.footer.status configure -text {Workspace saved; scientific sources remain unchanged}
@@ -86,36 +87,46 @@ proc ::GX::ReplicateViewer::open {{context {}}} {
     set payload [dict create format gxtxt.replicate_viewer.v1 request $request hidden {}]
     set id [::GX::datasetPublicationV2DictDefault $context workspace_id {}]
     if {$id ni {{} new}} {set item [::GX::sessionWorkspaceGet $id];set payload [dict get $item payload];set state($w,id) $id;set state($w,generation) [dict get $item generation];set state($w,revision) [dict get $item revision]}
+    set state($w,workspaceName) [::GX::datasetPublicationV2DictDefault $context workspace_name {Replicate study}]
     set state($w,payload) $payload;set state($w,saved) [dict remove $payload history];set state($w,busy) 0
-    set commands [dict create sources {label {Add source} default Ctrl+o} analyze {label Analyze default F5} cancel {label Cancel} publish {label {Publish results}} graph {label {Publish Graph}} save {label Save default Ctrl+s} undo {label Undo default Ctrl+z} redo {label Redo default Ctrl+y} fit {label Fit} edit_source {label {Edit selected source}} remove_source {label {Remove selected source}}]
+    set commands [dict create sources {label {Add source…} default Ctrl+o} analyze {label Analyze default F5} cancel {label Cancel} publish {label {Publish results}} graph {label {Publish Graph}} save {label Save default Ctrl+s} undo {label Undo default Ctrl+z} redo {label Redo default Ctrl+y} fit {label {Fit all}} edit_source {label {Edit selected source…}} remove_source {label {Remove selected source}} zoom_in {label {Zoom in}} zoom_out {label {Zoom out}}]
     ::GX::viewerCommandCatalogRegister viewer.replicate_curve_analysis $commands
     set handlers {}
-    foreach {id method args} {sources sourceDialog {} analyze analyze {} cancel cancel {} publish publish {} graph publishGraph {} save save {} undo navigate undo redo navigate redo fit fit {} edit_source editSource {} remove_source removeSource {}} {dict set handlers $id [dict create command [list [namespace current]::safe $w $method {*}$args] enabled [list [namespace current]::enabled $w $id]]}
+    foreach {id method args} {sources sourceDialog {} analyze analyze {} cancel cancel {} publish publish {} graph publishGraph {} save save {} undo navigate undo redo navigate redo fit fit {} edit_source editSource {} remove_source removeSource {} zoom_in zoom 1.25 zoom_out zoom 0.8} {dict set handlers $id [dict create command [list [namespace current]::safe $w $method {*}$args] enabled [list [namespace current]::enabled $w $id]]}
     set manifest [dict create schema gxtxt.viewer_gui_manifest.v1 viewer_id viewer.replicate_curve_analysis provider_id replicate_consensus window $w title {Replicate / Consensus Curves} handlers $handlers guard [list [namespace current]::guard $w] workspace [callbacks $w] history [dict create capture [list [namespace current]::capture $w] restore [list [namespace current]::restore $w] commit [list [namespace current]::historyCommit $w] guard [list [namespace current]::guard $w]]]
     if {[dict exists $payload history]} {dict set manifest history_record [dict get $payload history]}
     dict set manifest canvas {api_id PLOT_DATASET_API_v4}
+    dict set manifest toolbar_actions {sources analyze cancel undo redo fit zoom_in zoom_out save}
+    dict set manifest menus [list [dict create label Sources actions {sources edit_source remove_source}] [dict create label Study actions {analyze cancel - publish graph}] [dict create label Edit actions {undo redo}] [dict create label View actions {fit zoom_in zoom_out}]]
+    dict set manifest context_actions {edit_source remove_source - fit zoom_in zoom_out - analyze publish graph save}
+    dict set manifest inspector_width 330
     set slots [::GX::viewerGuiCompose $manifest]
     set p [dict get $slots inspector]
+    set study [::GX::uiFieldViewerSection $p study {Scientific study}]
+    set frame [::GX::uiFieldViewerSection $p frameSection {Physical reference frame}]
+    set sources [::GX::uiFieldViewerSection $p sourceSection {Source observations}]
     ttk::label $p.heading -text {Scientific study};pack $p.heading -anchor w
+    pack forget $p.heading
     foreach {key label values} {method Method {yx xy_path} design {Study design} {repeatability calibration_sensitivity hierarchical}} {
         set input($w,$key) [dict get $payload request $key]
         ttk::label $p.l$key -text $label;ttk::combobox $p.$key -state readonly -values $values -textvariable [namespace current]::input($w,$key)
-        pack $p.l$key $p.$key -fill x -pady 3
+        pack $p.l$key $p.$key -in $study -fill x -pady 3
+        ::GX::uiFieldSelectorWithinViewer $p.$key $w
     }
     foreach {key label default} {analysis_id {Unique analysis ID} {} frame {Common physical frame ID} {} x_unit {X reference unit} mm y_unit {Y reference unit} mm} {
         set value $default
         if {$key eq "analysis_id"} {set value [dict get $payload request analysis_id]} elseif {$key eq "frame"} {set value [dict get $payload request reference_frame id]} else {set value [dict get $payload request reference_frame $key]}
-        set input($w,$key) $value;ttk::label $p.l$key -text $label;ttk::entry $p.$key -textvariable [namespace current]::input($w,$key);pack $p.l$key $p.$key -fill x -pady 2
+        set input($w,$key) $value;ttk::label $p.l$key -text $label;ttk::entry $p.$key -textvariable [namespace current]::input($w,$key);pack $p.l$key $p.$key -in [expr {$key eq "analysis_id"?$study:$frame}] -fill x -pady 2
     }
     set input($w,verified) [expr {[dict get $payload request reference_frame declaration] eq "explicit_user_verified"}]
-    ttk::checkbutton $p.verified -text {I verified a common physical frame} -variable [namespace current]::input($w,verified);pack $p.verified -anchor w -pady 5
-    listbox $p.sources -height 8 -exportselection 0;pack $p.sources -fill x
-    bind $p.sources <<ListboxSelect>> [list ::GX::viewerCommandToolbarRefresh $w]
-    ttk::button $p.remove -text {Remove selected source} -command [list [namespace current]::safe $w removeSource];pack $p.remove -fill x
+    ttk::checkbutton $p.verified -text {I verified a common physical frame} -variable [namespace current]::input($w,verified);pack $p.verified -in $frame -anchor w -pady 5
+    listbox $p.sources -height 6 -exportselection 0;pack $p.sources -in $sources -fill x
+    ::GX::viewerGuiSelectionAttach $w $p.sources
+    ::GX::viewerGuiContextMount $w $p.sources
+    ttk::button $p.remove -text {Remove selected source} -command [list ::GX::viewerCommandInvoke $w remove_source];pack $p.remove -in $sources -fill x -pady 3
     ttk::label $p.assumptions -wraplength 250 -text {XY paths require an explicit common start landmark, direction and normalized physical source arc-length correspondence. Shared calibrations are sensitivity studies. Missing uncertainty is not zero.};pack $p.assumptions -fill x -pady 6
     text $p.report -height 10 -width 28 -wrap word -state disabled;pack $p.report -fill x
-    menu $w.context -tearoff 0;foreach id {fit analyze publish graph save} {::GX::viewerCommandMenuAdd $w $w.context $id}
-    bind $w.body.canvas <Button-3> [list ::GX::uiMenuPopup $w.context %X %Y]
+    $w.footer.status configure -text {Add exact source observations, verify their physical frame, then Analyze. Wheel: zoom · Middle drag: pan · Double click: fit}
     wm protocol $w WM_DELETE_WINDOW [list [namespace current]::close $w]
     bind $w <Destroy> +[list [namespace current]::destroyed $w %W]
     refresh $w
@@ -124,6 +135,7 @@ proc ::GX::ReplicateViewer::open {{context {}}} {
 proc ::GX::ReplicateViewer::enabled {w action} {
     variable state
     if {$action eq "cancel"} {return $state($w,busy)}
+    if {$action in {fit zoom_in zoom_out}} {return [winfo exists $w.body.canvas.plot]}
     if {$state($w,busy)} {return [expr {$action in {fit save}}]}
     if {$action in {edit_source remove_source}} {return [expr {[$w.body.inspector.scroll.content.sources curselection] ne {}}]}
     if {$action eq "publish"} {return [expr {[info exists state($w,ticket)] && [dict exists $state($w,payload) result] || [info exists state($w,ticket)] && [dict exists $state($w,payload) result_resource]}]}
@@ -140,19 +152,21 @@ proc ::GX::ReplicateViewer::refresh {w} {
         catch {destroy $w.body.canvas.plot}
         catch {destroy $w.body.inspector.scroll.content.visibility}
     }
-    ::GX::viewerCommandToolbarRefresh $w
+    ::GX::viewerGuiActionsRefresh $w
 }
 proc ::GX::ReplicateViewer::sourceDialog {w} {
     variable state;if {$state($w,busy)} {error {Cancel or finish the current study before editing sources}};unset -nocomplain state($w,editingSource)
     variable state;variable input
-    set d $w.source;catch {destroy $d};toplevel $d;wm title $d {Add exact scientific observation};wm transient $d $w
+    set d $w.source
+    if {[winfo exists $d]} {::GX::uiFieldDialogClose $d}
+    ::GX::uiFieldDialogCreate $d $w {Add exact scientific observation}
     set ids {};foreach item [dict get [::GX::datasetCatalogSnapshot] datasets] {set id [dict get $item dataset_id];if {![catch {set schema [::GX::tableStreamCompatibleSchema $::GX::currentSession $id]}] && [llength $schema]>=2} {lappend ids $id}}
     if {$ids eq {}} {destroy $d;error {No compatible canonical table source is available}}
     set n [expr {[llength [dict get $state($w,payload) request traces]]+1}]
     foreach {key label default} [list dataset_id Dataset [lindex $ids 0] x_variable_id {X Variable} {} y_variable_id {Y Variable} {} curve_variable_id {Curve identity Variable (optional)} {} order_variable_id {Point-order Variable (XY required)} {} physical_feature_id {Physical feature ID} feature_1 curve_key {Curve key} curve_1 observation_id {Independent observation ID} observation_$n point_set_id {Original point-set ID} points_$n calibration_realization_id {Calibration realization ID} calibration_$n source_group_id {Independent source group ID} source_1 topology Topology open landmark_id {Corresponding physical start landmark} start direction Direction forward phase_index {Closed start landmark source index (0-based)} 0] {
         set input($w,source_$key) $default
         ttk::label $d.l$key -text $label
-        if {$key in {dataset_id x_variable_id y_variable_id curve_variable_id order_variable_id topology direction}} {ttk::combobox $d.$key -state readonly -textvariable [namespace current]::input($w,source_$key)} else {ttk::entry $d.$key -textvariable [namespace current]::input($w,source_$key)}
+        if {$key in {dataset_id x_variable_id y_variable_id curve_variable_id order_variable_id topology direction}} {ttk::combobox $d.$key -state readonly -textvariable [namespace current]::input($w,source_$key);::GX::uiFieldSelectorWithinViewer $d.$key $d} else {ttk::entry $d.$key -textvariable [namespace current]::input($w,source_$key)}
         grid $d.l$key -row $n -column 0 -sticky w -padx 6 -pady 2;grid $d.$key -row $n -column 1 -sticky ew -padx 6 -pady 2;incr n
     }
     $d.dataset_id configure -values $ids;$d.topology configure -values {open closed};$d.direction configure -values {forward reverse}
@@ -160,10 +174,24 @@ proc ::GX::ReplicateViewer::sourceDialog {w} {
     ttk::button $d.add -text {Add observation} -command [list [namespace current]::safe $w sourceAccept];grid $d.add -row $n -column 0 -columnspan 2 -sticky ew -pady 8
     grid columnconfigure $d 1 -weight 1
     sourceVariables $w
+    ttk::button $d.cancel -text Cancel -command [list ::GX::uiFieldDialogClose $d]
+    grid $d.cancel -row [expr {$n+1}] -column 0 -columnspan 2 -pady 5
+    ::GX::uiFieldDialogPresent $d $d.dataset_id
 }
-proc ::GX::ReplicateViewer::sourceVariables {w} {variable input;set variables [lmap v [::GX::tableStreamCompatibleSchema $::GX::currentSession $input($w,source_dataset_id)] {dict get $v variable_id}];foreach key {x_variable_id y_variable_id curve_variable_id order_variable_id} {$w.source.$key configure -values [linsert $variables 0 {}]};set input($w,source_x_variable_id) [lindex $variables 0];set input($w,source_y_variable_id) [lindex $variables 1]}
+proc ::GX::ReplicateViewer::sourceVariables {w} {
+    variable input
+    set schema [::GX::tableStreamCompatibleSchema $::GX::currentSession $input($w,source_dataset_id)]
+    set variables [lmap v $schema {dict get $v variable_id}]
+    foreach key {x_variable_id y_variable_id curve_variable_id order_variable_id} {$w.source.$key configure -values [linsert $variables 0 {}]}
+    set input($w,source_x_variable_id) [lindex $variables 0];set input($w,source_y_variable_id) [lindex $variables 1]
+    foreach variable $schema {
+        set role [dict get $variable semantic_role]
+        if {$role eq "independent"} {set input($w,source_x_variable_id) [dict get $variable variable_id]}
+        if {$role eq "measured"} {set input($w,source_y_variable_id) [dict get $variable variable_id]}
+    }
+}
 proc ::GX::ReplicateViewer::sourceAccept {w} {variable state;variable input;if {$state($w,busy)} {error {Cancel or finish the current study before editing sources}};if {$input($w,frame) eq {}} {error {Declare the common physical frame before adding a source}};set trace {};foreach key {dataset_id x_variable_id y_variable_id curve_variable_id order_variable_id physical_feature_id curve_key observation_id point_set_id calibration_realization_id source_group_id topology landmark_id direction phase_index} {if {$input($w,source_$key) ne {}} {dict set trace $key $input($w,source_$key)}};dict set trace frame_id $input($w,frame);set payload $state($w,payload);set traces [dict get $payload request traces];if {[info exists state($w,editingSource)]} {set traces [lreplace $traces $state($w,editingSource) $state($w,editingSource) $trace]} else {lappend traces $trace};dict set payload request traces $traces;change $w $payload {Add scientific source observation};destroy $w.source}
-proc ::GX::ReplicateViewer::removeSource {w} {variable state;if {$state($w,busy)} {error {Cancel or finish the current study before editing sources}};set selected [$w.body.inspector.scroll.content.sources curselection];if {$selected eq {}} return;set payload $state($w,payload);dict set payload request traces [lreplace [dict get $payload request traces] $selected $selected];change $w $payload {Remove selected source}}
+proc ::GX::ReplicateViewer::removeSource {w} {variable state;if {$state($w,busy)} {error {Cancel or finish the current study before editing sources}};set selected [lindex [$w.body.inspector.scroll.content.sources curselection] 0];if {$selected eq {}} return;set payload $state($w,payload);dict set payload request traces [lreplace [dict get $payload request traces] $selected $selected];change $w $payload {Remove selected source}}
 proc ::GX::ReplicateViewer::analyze {w} {
     variable state;variable input
     set request [dict get $state($w,payload) request]
@@ -191,6 +219,7 @@ proc ::GX::ReplicateViewer::poll {w} {
 proc ::GX::ReplicateViewer::cancel {w} {variable state;if {[info exists state($w,ticket)]} {::GX::Replicate::cancel $state($w,ticket)}}
 proc ::GX::ReplicateViewer::navigate {w direction} {::GX::scientificHistoryViewerNavigate $w $direction}
 proc ::GX::ReplicateViewer::fit {w} {if {[winfo exists $w.body.canvas.plot]} {::GX::PlotDatasetAPIv4::widgetView $w.body.canvas.plot fit;rememberView $w}}
+proc ::GX::ReplicateViewer::zoom {w factor} {::GX::PlotDatasetAPIv4::widgetView $w.body.canvas.plot zoom main $factor .5 .5;rememberView $w}
 proc ::GX::ReplicateViewer::draw {w result} {
     set columns [dict get $result columns];set points {};set bounds {Inf Inf -Inf -Inf}
     foreach x [dict get $columns x_mean] y [dict get $columns y_mean] {lappend points [list $x $y];foreach index {0 1 2 3} value [list $x $y $x $y] {lset bounds $index [expr {$index<2?min([lindex $bounds $index],$value):max([lindex $bounds $index],$value)}]}}
@@ -204,9 +233,30 @@ proc ::GX::ReplicateViewer::draw {w result} {
         set full {Inf Inf -Inf -Inf}
         foreach point $points {lassign $point x y;foreach i {0 1 2 3} value [list $x $y $x $y] {lset full $i [expr {$i<2?min([lindex $full $i],$value):max([lindex $full $i],$value)}]}}
         set palette {#C84427 #238B45 #8849A3 #A67513 #008B8B}
-        lappend allSeries [dict create id trace_$key label "[dict get $identity observation_id] / [dict get $identity calibration_realization_id]" axis left kind line style [dict create color [lindex $palette [expr {$index%5}]] line_width 1 marker none] points $points source_rows $sourceRows breaks {} full_bounds $full source_descriptor [dict get $trace descriptor] row_count [llength $points]]
+        lappend allSeries [dict create id trace_$key label "[dict get $identity observation_id] · original" axis left kind line style [dict create color [lindex $palette [expr {$index%5}]] line_width 1 marker none] points $points source_rows $sourceRows breaks {} full_bounds $full source_descriptor [dict get $trace descriptor] row_count [llength $points]]
         incr index
     }
+    # Aligned coordinates are explicitly derived samples, never original row
+    # picks. Dispersion limits are sample spread, not confidence intervals.
+    dict for {key points} [::GX::datasetPublicationV2DictDefault $result aligned_traces {}] {
+        set full {Inf Inf -Inf -Inf}
+        foreach point $points {lassign $point x y;foreach i {0 1 2 3} value [list $x $y $x $y] {lset full $i [expr {$i<2?min([lindex $full $i],$value):max([lindex $full $i],$value)}]}}
+        lappend allSeries [dict create id aligned_$key label "Observation [expr {$key+1}] · aligned" axis left kind line style {color #7295AA line_width 1 marker none} points $points source_rows [lrepeat [llength $points] -1] breaks {} full_bounds $full row_count [llength $points]]
+        if {![dict exists $::GX::ReplicateViewer::state($w,payload) visibility_initialized]} {dict set ::GX::ReplicateViewer::state($w,payload) hidden aligned_$key 1}
+    }
+    foreach {name sign} {spread_lower -1 spread_upper 1} {
+        set points {};set full {Inf Inf -Inf -Inf}
+        foreach x [dict get $columns x_mean] y [dict get $columns y_mean] spread [dict get $columns y_std] {
+            if {![string is double -strict $spread] || [catch {expr {abs($spread)<Inf}} finite] || !$finite} {set points {};break}
+            set y [expr {$y+$sign*$spread}];lappend points [list $x $y]
+            foreach i {0 1 2 3} value [list $x $y $x $y] {lset full $i [expr {$i<2?min([lindex $full $i],$value):max([lindex $full $i],$value)}]}
+        }
+        if {$points ne {}} {
+            lappend allSeries [dict create id $name label [expr {$sign<0?"Mean − sample SD":"Mean + sample SD"}] axis left kind line style {color #AA7650 line_width 1 marker none} points $points source_rows [lrepeat [llength $points] -1] breaks {} full_bounds $full row_count [llength $points]]
+            if {![dict exists $::GX::ReplicateViewer::state($w,payload) visibility_initialized]} {dict set ::GX::ReplicateViewer::state($w,payload) hidden $name 1}
+        }
+    }
+    dict set ::GX::ReplicateViewer::state($w,payload) visibility_initialized 1
     set model [dict create title {Replicate / Consensus} panels [list [dict create id main axes $axes series $allSeries annotations {}]] native_presentation [dict create schema GXTXT_NATIVE_GRAPH_PRESENTATION_v1 graphics {} axes {} panels {} layout {} legend {placement inside}]]
     set p $w.body.inspector.scroll.content
     if {![winfo exists $p.visibility]} {ttk::labelframe $p.visibility -text {Retained curve visibility};pack $p.visibility -fill x -pady 4}
@@ -218,14 +268,21 @@ proc ::GX::ReplicateViewer::draw {w result} {
         pack $p.visibility.s$i -anchor w
     }
     set path $w.body.canvas.plot
-    if {[winfo exists $path]} {::GX::PlotDatasetAPIv4::widgetConfigure $path $model {prepared_model 1}} else {::GX::PlotDatasetAPIv4::widgetCreate $path $model {prepared_model 1};pack $path -fill both -expand 1;bind $path <Button-3> [list ::GX::uiMenuPopup $w.context %X %Y]}
+    if {[winfo exists $path]} {::GX::PlotDatasetAPIv4::widgetConfigure $path $model {prepared_model 1}} else {::GX::PlotDatasetAPIv4::widgetCreate $path $model {prepared_model 1};pack $path -fill both -expand 1;::GX::viewerGuiContextMount $w $path}
     bind $path <Button-1> [list [namespace current]::pick $w %x %y]
     bind $path <ButtonRelease-2> +[list [namespace current]::rememberView $w]
     bind $path <ButtonRelease-4> +[list [namespace current]::rememberView $w]
     bind $path <ButtonRelease-5> +[list [namespace current]::rememberView $w]
     if {[dict exists $::GX::ReplicateViewer::state($w,payload) view_axes]} {::GX::PlotDatasetAPIv4::widgetView $path restore [dict get $::GX::ReplicateViewer::state($w,payload) view_axes]}
     dict for {id ignored} [dict get $::GX::ReplicateViewer::state($w,payload) hidden] {::GX::PlotDatasetAPIv4::widgetVisibility $path main $id 0}
-    set p $w.body.inspector.scroll.content.report;$p configure -state normal;$p delete 1.0 end;$p insert end [dict get $result qualifications];$p configure -state disabled
+    set p $w.body.inspector.scroll.content.report;$p configure -state normal;$p delete 1.0 end;set qualifications [dict get $result qualifications]
+    $p insert end "Study: [dict get $result analysis_id]\n"
+    foreach {key label} {design {Study design} independent_observations {Declared independent observations} shared_calibration_covariance {Shared calibration covariance} confidence_interval {Confidence interval} prediction_interval {Prediction interval} localization_uncertainty {Localization uncertainty} calibration_uncertainty {Calibration uncertainty} topology {Correspondence}} {
+        if {[dict exists $qualifications $key]} {$p insert end "$label: [string map {_ { }} [dict get $qualifications $key]]\n"}
+    }
+    $p insert end "Sample spread is descriptive; missing uncertainty does not imply zero.\n"
+    $p configure -state disabled
+    $w.footer.status configure -text "Study [dict get $result analysis_id] · [llength [dict get $columns x_mean]] consensus points · original sources retained"
 }
 proc ::GX::ReplicateViewer::publish {w} {variable state;set result [::GX::Replicate::publish $state($w,ticket)];dict set state($w,payload) published_dataset [dict get $result dataset_id];$w.footer.status configure -text "Published canonical study Dataset: [dict get $result dataset_id]";return $result}
 proc ::GX::ReplicateViewer::publishGraph {w} {

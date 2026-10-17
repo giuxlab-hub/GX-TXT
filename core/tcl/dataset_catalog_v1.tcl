@@ -55,6 +55,9 @@ proc ::GX::datasetCatalogObserve {session {kind changed} {renames {}}} {
             catch {uplevel #0 [list {*}[dict get $spec callback] $receipt]}
         }
     } finally {set datasetCatalogNotifying 0}
+    # Preview is advisory derived work after commit. Its preparation runs in
+    # the existing Supervisor and cannot roll back a scientific publication.
+    if {[llength [info commands ::GX::datasetPreviewCachePublished]]} {catch {datasetPreviewCachePublished $session $receipt}}
 }
 proc ::GX::datasetCatalogRevision {{session ""}} {
     variable currentSession; variable datasetCatalogCounter

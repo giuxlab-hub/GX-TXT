@@ -77,6 +77,8 @@ def is_transient(rel: PurePosixPath) -> bool:
     # previously opened Session; export only the Session's real analysis PNGs.
     if rel.parts[:2] == ("report", "previews"):
         return True
+    if rel.parts[:2] == ("cache", "dataset_previews"):
+        return True
     name = rel.name
     return any(rx.fullmatch(name) for rx in TRANSIENT_NAME_PATTERNS)
 

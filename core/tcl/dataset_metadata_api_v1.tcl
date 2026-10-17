@@ -157,6 +157,7 @@ proc ::GX::_datasetMetadataReadAll {session datasetId} {
 # every catalog row; it is not a cache or a second metadata authority.
 proc ::GX::_datasetMetadataReadRegistered {session datasetId} {
     if {[datasetField $datasetId id {}] ne $datasetId} {error "Unknown Dataset '$datasetId'"}
+    if {[datasetField $datasetId storage_provider {}] eq "remote"} {return [datasetField $datasetId remote_metadata_values {}]}
     lassign [_datasetMetadataPath $session $datasetId] rel path
     if {![file isfile $path]} { return [dict create] }
     set parsed [parseIni $path]

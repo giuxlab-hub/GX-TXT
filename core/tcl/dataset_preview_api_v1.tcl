@@ -566,7 +566,19 @@ proc ::GX::datasetPreviewRenderImported {w datasetId} {
 
         set artifact [dict create]
         if {!$moduleHasArtifact} {
-            set artifact [datasetPreviewMediaArtifact $path $mediaType $format $contract $previewDir]
+            set key [datasetPreviewCacheKey $datasetId]
+            set cached [datasetPreviewCacheRead $datasetId $key]
+            if {$cached ne {} && [dict exists $cached media_artifact]} {
+                set artifact [dict get $cached media_artifact]
+                # Descriptor normalization retains its established temporary-root
+                # contract; copy only the small verified derivative, never source.
+                set target [file join $previewDir [file tail [dict get $artifact path]]]
+                file copy -force [dict get $artifact path] $target
+                dict set artifact path $target
+            } elseif {$mediaClass in {image pdf audio}} {
+                datasetPreviewCacheRequest $datasetId {} ::GX::_datasetPreviewMediaReady
+                $w insert end "\nPreparing a persistent media Preview asynchronously…\n"
+            } else {set artifact [datasetPreviewMediaArtifact $path $mediaType $format $contract $previewDir]}
         }
         if {[dict size $artifact]} {
             set pd [previewDescriptorNormalize [dict create preview_kind artifact preview_artifact $artifact] $previewDir]
@@ -929,4 +941,11 @@ proc ::GX::ensureVariablesForCurrentInput {} {
     variable cfg
     if {[info exists cfg(input_csv)] && [datasetPreviewUnsafeTextInput $cfg(input_csv)]} { return }
     return [::GX::ensureVariablesForCurrentInput_before_binary_guard_v1]
+}
+
+proc ::GX::_datasetPreviewMediaReady {response} {
+    if {[dict get $response status] eq "ready" && [llength [info commands ::winfo]] && [winfo exists .top.nb.preview.txt]} {
+        unset -nocomplain ::GX::ui(previewSignature)
+        after idle ::GX::refreshCsvPreview
+    }
 }

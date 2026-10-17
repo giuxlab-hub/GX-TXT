@@ -3,7 +3,7 @@
 SPDX-License-Identifier: GPL-3.0-or-later
 
 Canonical Dataset API v2 is the CORE-owned, backend-neutral read contract for
-GX-TXT 0.9.7.23. It extends Canonical Dataset API v1 without replacing the
+GX-TXT. It extends Canonical Dataset API v1 without replacing the
 existing registry, Dataset ID, path resolution, or scientific contract.
 
 ## Identity and ownership
@@ -20,7 +20,7 @@ Variable Schema v3 fields.
 
 ## Public Tcl operations
 
-Dev097 adds managed, bounded reads from the same canonical provider:
+Managed, bounded reads are available from the same canonical provider:
 `datasetAccessReadRangeResource handle variable_ids start count`,
 `datasetAccessReadHyperslabResource handle variable_id starts counts`, and
 `datasetAccessReleaseResource handle resource_id`. Query `managed_binary_read`
@@ -141,11 +141,11 @@ number. Consumers must not reconstruct or reinterpret the original text. See
 - Existing CSV consumers may keep using Canonical Dataset API v1, Analysis
   Source paths, Table Stream v2, and Dataset Variable Schema v2.
 - New consumers use the same v2 access calls for CSV and HDF5.
-- This phase does not materialize HDF5 as CSV for old consumers.
+- The API does not materialize HDF5 as CSV for old consumers.
 - Publication, writing, indexed CSV, mmap, NetCDF, Zarr, plot loading, FFT,
   audio, extraction, Spectrogram and CFD remain outside this API version.
 
-## Typed binary numeric reads (GX-TXT 0.9.7.37)
+## Typed binary numeric reads
 
 Providers advertising `typed_binary_read=1` may return compatible numeric
 ranges and hyperslabs as contiguous binary blocks. The public block dictionary
@@ -199,3 +199,11 @@ when no numeric cell is missing. Integer/boolean blanks remain errors without
 a nullable storage contract. Canonical Tcl tokens, Worksheet missing-value
 distinctions and source files remain unchanged. Table Stream exposes the same
 mask in its column records; standalone Octave uses `chunk.missing_masks`.
+
+## Remote canonical storage
+
+`datasetRemoteSessions node_id` discovers only authorized logical Sessions. `datasetRemoteAttach local_session node_id remote_session_id` transactionally projects remote catalog entries into the existing canonical registry. IDs and Variable Schema remain unchanged; a conflicting ID belonging to another authority is refused. Locator fields `remote_node_id`, `remote_session_id`, and `remote_revision` select storage, not scientific identity. Projection preserves public metadata, coordinate context, units, shapes, source SHA and original provider information; physical paths and credentials are not exposed.
+
+Normal Dataset handles, Table Stream, Worksheet and Plot consumers use the remote provider. Metadata and each read verify the authoritative source revision and SHA. Ranges and hyperslabs are bounded to 65,536 elements per request; full implicit download is disabled. Numeric wire blocks preserve dtype, signedness, endianness, shape, exact int64/uint64 values and missing float cells. Strings use bounded UTF-8 blocks. Network failure leaves the registry identity available but refuses the read. Refresh the remote catalog after a legitimate source replacement; old handles refuse changed revisions.
+
+`datasetRemoteImport local_session dataset_id new_dataset_id` explicitly publishes a complete local HDF5 copy under a new ID, retaining remote lineage. It streams bounded slices through existing Publication, verifies the source before and after, and aborts on failure. First-dimension planes larger than 65,536 elements require an explicit smaller-slab materializer rather than an implicit oversized transfer. Python/Octave operations are `remote_sessions(node_id)`, `remote_attach(node_id, remote_session_id)` and `import_local(dataset_id, new_dataset_id)`.

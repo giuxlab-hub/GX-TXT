@@ -37,7 +37,12 @@ proc ::GX::Replicate::preflight {request} {
         dict set trace source_revision [::GX::datasetRevisionToken $id $session]
         if {[dict exists $trace curve_variable_id]} {
             set filters [::GX::datasetPublicationV2DictDefault $trace filters {}]
-            lappend filters [dict create filter_variable_id [dict get $trace curve_variable_id] predicate exact_equal value [dict get $trace curve_key]]
+            set curveFilter [lindex [::GX::graphSeriesNormalizeFilters $id [list [dict create filter_variable_id [dict get $trace curve_variable_id] predicate exact_equal value [dict get $trace curve_key]]]] 0]
+            set filters [lsort -unique [::GX::graphSeriesNormalizeFilters $id $filters]]
+            # Preparation can validate an already normalized recipe again.
+            # Duplicating this binding changes its identity and rejects the
+            # completed GUI Job even though the scientific inputs are identical.
+            if {$curveFilter ni $filters} {lappend filters $curveFilter}
             dict set trace filters [::GX::graphSeriesNormalizeFilters $id $filters]
         }
         if {[dict get $request method] eq "xy_path"} {
@@ -104,7 +109,7 @@ proc ::GX::Replicate::_publish {ticket} {
 }
 proc ::GX::Replicate::_writeProduct {id columns units metadata sources {types {}}} {
     set first [lindex [dict keys $columns] 0]
-    set plan [::GX::datasetPublicationV2Prepare $::GX::currentSession curve.replicate_analysis [dict create dataset_id $id contract table.generic storage auto dataset_namespace "[::GX::datasetNamespaceForModule curve.replicate_analysis]/studies/[dict get $metadata replicate.study analysis_id]" structured_metadata $metadata source_dataset_ids $sources producer_version 16.0 expected_rows [llength [dict get $columns $first]]]]
+    set plan [::GX::datasetPublicationV2Prepare $::GX::currentSession curve.replicate_analysis [dict create dataset_id $id contract table.generic storage auto dataset_namespace "[::GX::datasetNamespaceForModule curve.replicate_analysis]/studies/[dict get $metadata replicate.study analysis_id]" structured_metadata $metadata source_dataset_ids $sources producer_version [::GX::moduleField curve.replicate_analysis version] expected_rows [llength [dict get $columns $first]]]]
     set writer [::GX::datasetPublicationV2OpenWriter $plan]
     try {
         ::GX::datasetPublicationV2DeclareDimension $writer row 0 {extendible 1}

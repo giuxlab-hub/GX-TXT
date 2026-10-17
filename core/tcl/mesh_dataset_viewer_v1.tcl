@@ -18,7 +18,7 @@ proc ::GX::meshDatasetViewerOpen {id {previewWidget {}} {request {}}} {
     set state($w,image) {};set state($w,busy) 0;set state($w,pending) {};set state($w,ready) 0
     # Same presentation defaults used by Viewer Provider. These dictionaries
     # exist only in this window; no provider registration or activation required.
-    set state($w,layer) [dict create kind geometry source_mode artifact absolute_path [dict get $payload path] resource_path [dict get $payload path] format [dict get $payload format] sha256 [dict get $payload sha256] visible 1 opacity 1 colormap viridis scalar_range {} scalar_array {} vector_array {} radius_array {} opacity_array {} tube_radius 0 isovalues {} volume_transfer {} volume_sample_distance .05 layer_order 0 representation surface base_color {0.65;0.78;0.93} line_width 1 point_size 4 backface_culling 0 scalar_coloring 0 local_transform {}]
+    set state($w,layer) [meshDatasetLayer $payload]
     ttk::frame $w.bar;pack $w.bar -fill x
     foreach {label preset} {Fit fit_scene Iso isometric Front front Back back Left left Right right Top top Bottom bottom} {
         ttk::button $w.bar.$preset -text $label -command [list ::GX::meshDatasetPreset $w $preset]
@@ -301,4 +301,31 @@ proc ::GX::meshDatasetPreviewResize {} {
     if {[info exists state($w,previewRenderSize)] && $size eq $state($w,previewRenderSize)} return
     if {[info exists state($w,drawJob)]} {after cancel $state($w,drawJob)}
     set state($w,drawJob) [after 150 [list ::GX::meshDatasetRender $w]]
+}
+
+# Same standard layer contract for live consultation and managed preparation.
+proc ::GX::meshDatasetLayer {payload} {
+    return [dict create kind geometry source_mode artifact absolute_path [dict get $payload path] resource_path [dict get $payload path] format [dict get $payload format] sha256 [dict get $payload sha256] visible 1 opacity 1 colormap viridis scalar_range {} scalar_array {} vector_array {} radius_array {} opacity_array {} tube_radius 0 isovalues {} volume_transfer {} volume_sample_distance .05 layer_order 0 representation surface base_color {0.65;0.78;0.93} line_width 1 point_size 4 backface_culling 0 scalar_coloring 0 local_transform {}]
+}
+proc ::GX::meshDatasetPreviewArtifact {id directory} {
+    if {![info exists ::GX::PreviewCache::worker] || !$::GX::PreviewCache::worker} {error {Native3D standard preparation belongs in a managed Preview Job}}
+    set payload [sessionInspectionDatasetPayload $id]
+    if {[string tolower [dict get $payload format]] ni {stl obj step stp vtp vtu vti}} {return {}}
+    set command [list [auto_execok tclsh] [file join $::GX::scriptDir core native3d renderer_worker.tcl] [file join $::GX::scriptDir core native3d bin libgx3de_viewer_tcl.so] readonly]
+    set policy [native3dGraphicsPolicy];dict set policy execution Software
+    if {[auto_execok prlimit] ne {}} {set command [concat [list prlimit --as=[expr {[dict get $policy worker_address_space_budget_mib]*1024*1024}] --] $command]}
+    set command [concat [list env LIBGL_ALWAYS_INDIRECT=0 LIBGL_ALWAYS_SOFTWARE=1 MESA_LOADER_DRIVER_OVERRIDE=llvmpipe] $command]
+    set channel [open [concat [list |] $command [list 2>[file join $directory native3d-worker.log]]] r+]
+    fconfigure $channel -buffering line -encoding utf-8 -translation lf
+    try {
+        if {[gets $channel ready]<0 || $ready ne "GX3DE_VIEWER_WORKER_READY"} {error {Native3D preparation worker did not initialize}}
+        set png [file join $directory native3d-standard.png]
+        set scene [dict create layers [dict create data [meshDatasetLayer $payload]] view [dict replace [viewerSceneDefaults] axes_world 1] graphics_policy $policy cache_root [file join $directory native3d-derived] session_namespace $::GX::currentSession]
+        puts $channel [list render $scene $png 800 500 preview];flush $channel
+        if {[gets $channel response]<0 || [lindex $response 0] ne "ok"} {error "Native3D preparation failed: $response"}
+        if {![file isfile $png] || [file size $png]>2097152} {error {Native3D standard frame is unavailable or exceeds its 2 MiB bound}}
+        puts $channel close;flush $channel;gets $channel closed
+        file delete -force [file join $directory native3d-derived]
+        return [dict create path $png media_type image/png label {Native3D standard view — open Dataset for live camera and resize}]
+    } finally {catch {close $channel}}
 }

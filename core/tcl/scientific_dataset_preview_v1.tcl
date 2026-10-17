@@ -23,7 +23,7 @@ proc ::GX::scientificDatasetPreviewAxisSelected {axis} {
     }
     scientificDatasetPreviewControls $id [scientificDatasetAxes $id]
 }
-proc ::GX::scientificDatasetPreviewControls {id axes} {
+proc ::GX::scientificDatasetPreviewControls {id axes {preparedDimensions @discover}} {
     variable ui
     set bar .top.nb.preview.mapping
     if {![winfo exists $bar]} {
@@ -60,7 +60,7 @@ proc ::GX::scientificDatasetPreviewControls {id axes} {
         set ui(previewMap,label,$key) [expr {$ui(previewMap,$key) eq {} ? {} : [scientificDatasetPreviewVariableLabel $id $ui(previewMap,$key)]}]
         dict set axes $key $ui(previewMap,$key)
     }
-    scientificDatasetFilterControls $bar.filters $id ::GX::ui previewMap $reset
+    scientificDatasetFilterControls $bar.filters $id ::GX::ui previewMap $reset {} 0 $preparedDimensions
     if {$ui(previewMap,dimensions) eq {}} {grid remove $bar.filters} else {grid $bar.filters}
     set ui(previewMap,status) [scientificDatasetFilterMode $ui(previewMap,dimensions) $ui(previewMap,filters) $ui(previewMap,separate)]
     return $axes
@@ -79,18 +79,23 @@ proc ::GX::scientificDatasetArrayPreview {id output} {
     foreach value $values {if {![catch {expr {abs($value)<Inf}} finite]&&$finite} {set lo [expr {min($lo,$value)}];set hi [expr {max($hi,$value)}]}}
     if {$lo eq "Inf"} {error {Array plane has no finite values.}}
     set nx [lindex $counts end];set ny [lindex $counts end-1]
-    set small [image create photo -width $nx -height $ny];set large [image create photo]
+    # The same nearest-cell palette is encoded without Tk so managed Preview
+    # preparation can run on a compute node with no GUI interpreter.
+    set scale [expr {max(1,min(8,int(640.0/$nx),int(420.0/$ny)))}]
+    set pixels {};set row {};set column 0
+    foreach value $values {
+        set color b8b8b8
+        if {![catch {expr {abs($value)<Inf}} finite]&&$finite} {set t [expr {$hi==$lo?.5:double($value-$lo)/($hi-$lo)}];set color [format %02x%02x%02x [expr {int(255*$t)}] [expr {int(180*(1-abs(2*$t-1)))}] [expr {int(255*(1-$t))}]]}
+        append row [string repeat [binary decode hex $color] $scale]
+        if {[incr column]==$nx} {append pixels [string repeat $row $scale];set row {};set column 0}
+    }
+    set encoder [datasetPreviewTool magick]
+    if {$encoder eq {}} {error {Configured PNG encoder is unavailable}}
+    set stream [file tempfile temporary];close $stream
     try {
-        set row {};set y 0
-        foreach value $values {
-            set color #b8b8b8
-            if {![catch {expr {abs($value)<Inf}} finite]&&$finite} {set t [expr {$hi==$lo?.5:($value-$lo)/($hi-$lo)}];set color [format #%02x%02x%02x [expr {int(255*$t)}] [expr {int(180*(1-abs(2*$t-1)))}] [expr {int(255*(1-$t))}]]}
-            lappend row $color
-            if {[llength $row]==$nx} {$small put [list $row] -to 0 $y;incr y;set row {}}
-        }
-        set scale [expr {max(1,min(8,int(640.0/$nx),int(420.0/$ny)))}]
-        $large copy $small -zoom $scale $scale;$large write $output -format png
-    } finally {image delete $small $large}
+        resourceLifecycleWriteBytes $temporary [encoding convertto ascii "P6\n[expr {$nx*$scale}] [expr {$ny*$scale}]\n255\n"]$pixels
+        exec $encoder $temporary PNG:$output
+    } finally {file delete -force $temporary}
     return "[dict get $v canonical] ([dict get $v unit]); exact storage plane starts $starts, counts $counts. Range $lo to $hi. Gray = nonfinite; nearest-cell display, no interpolation. Coordinate IDs: [dict get $v coordinate_variable_ids]. Open Dataset for coordinate axes and explicit planes."
 }
 

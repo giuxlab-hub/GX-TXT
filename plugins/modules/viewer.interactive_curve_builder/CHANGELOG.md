@@ -1,3 +1,7 @@
+## 1.2.1
+
+Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
+
 # viewer.interactive_curve_builder 1.1.0
 
 Independent Family/Member filters and graph scope, optional reviewed ordering OFF by default, simple middle-row Options/Workspace without History.

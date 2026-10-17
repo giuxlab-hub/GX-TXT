@@ -33,14 +33,14 @@ Script Bridge `DATASET_PREVIEW_API_v1/page` takes Dataset ID and an options
 struct, returns the same bounded model, and never exposes a provider path.
 Preview is read-only. A displayed page is not the input for fit-all or publication.
 
-The dev087 GUI adds optional Z and read-only XYZ scatter beside existing X/Y Render.
+The GUI provides optional Z and read-only XYZ scatter beside existing X/Y Render.
 It consumes the same canonical schema/Table Stream and shared Native3D consultation
 host. The paged table API and its 1000-row bounds remain unchanged. XYZ limits and
 source-row reduction receipts are documented in DATASET_VIEWER_API_v1 and the
 shared Native3D preview guide; no scientific Dataset is created by activation.
 
 
-## Dev087 manual-acceptance scientific figure correction
+## Native graphical consultation
 
 `native3DPreviewAcquire` retains its existing shared DatasetViewer host/worker and
 RAM frame. Plots' eligibility control is a placed canvas child, with no layout row;
@@ -76,3 +76,25 @@ Ticks/grid/font layout follows Native3D's scientific presentation rather than Oc
 pixel layout. Logarithmic/reversed axes still require a nonlinear calibrated coordinate
 mapping contract and are rejected, never labeled as linear. Other providers/base graphs
 need an exact prepared-scene identity API. Transparent figure backgrounds remain unsupported.
+
+## Persistent Session Preview cache
+
+After a successful canonical catalog commit, CORE schedules standard Preview preparation through the existing Script Job Supervisor. Publication success is independent of preparation success. Native2D prepared Plot models, Digitalizer raster/Quality summaries and supported image/PDF/audio derivatives are disposable representations. Unsupported graphical contracts retain an honest descriptive/table Preview. Existing Native3D consultation remains the owner of supported interactive XYZ and prepared 3D scenes.
+
+`datasetPreviewCacheRequest dataset_id ?options? ?callback?` returns a source-bound key and prepares outside Tk. Callback receipts report preparing with the genuine Supervisor state, then ready/error, key, Job ID and cache hit. `datasetPreviewCacheStatus key`, `datasetPreviewCacheCancel key`, `datasetPreviewCacheRead dataset_id key ?allow_stale?`, `datasetPreviewCacheInventory session`, and `datasetPreviewCacheClear session ?keys?` inspect/manage the same owner. `datasetPreviewCacheGenerate` is the worker operation, not a GUI-thread reader. Python/Octave expose `cache_generate`, `cache_inventory`, and `cache_clear`; widget lifecycle operations are host-only.
+
+Entries live only under `Session/cache/dataset_previews/SHA256`. Keys bind canonical identity/content/schema, coordinate/calibration metadata, source revision, rendering code and exact render options. Representation and derived artifacts carry SHA checks. Symlink entries are refused. Missing, stale or damaged entries are regenerated; an explicitly restored stale custom view is visibly labelled previous render. Configurable preparation policy and a default 64 MiB Session budget apply. Clearing/eviction never deletes canonical payloads, Graphs, Workspaces or original images. This subtree is hidden from ordinary Session Files and omitted from portable exports.
+
+Sessions → Preview Cache shows Dataset, representation, generation date, source/render key, size, status and errors and offers refresh, regenerate, clear selected/all and policy. Standard automated previews and explicit custom Render have separate keys. Successful custom Render persists its exact options and cache key through Dataset Preview Configuration. Controls restore on reopen; changing axes, filters, grouping, calibration or ordering keeps the previous successful frame until explicit Render. Failed/cancelled preparation preserves that frame. Source changes are labelled stale rather than current.
+
+The Digitalizer chart is a resizable retained Plot Dataset native viewport. Visibility changes affect existing XY objects and raster overlay primitives, retain camera/zoom/pan, and start no reader or Job. Visibility preferences are saved after a short idle period. Expensive scientific reads, raster decoding and Quality preparation run in managed Jobs. Session lifetime, generation and source guards reject stale completions; asynchronous status polling does not block Tk. Processed-image choices require verified identity-preserving raster lineage and retain the original source alongside the chosen derivative.
+
+Array-only Datasets use a bounded exact storage plane (at most 128×128 original
+cells, with earlier dimensions fixed at zero). Its nearest-cell PNG retains the
+original finite value range; gray denotes nonfinite values. It is an overview,
+not a coordinate interpolation or replacement Dataset. Image, PDF and audio
+preparation uses the existing configured codecs. Supported mesh formats use the
+same Native3D layer contract and installed read-only renderer as live consultation;
+the disposable standard frame uses Software policy. Open Dataset retains the
+interactive camera, navigation and resize. Missing codecs/native support report
+the actual limitation without changing publication success or source bytes.

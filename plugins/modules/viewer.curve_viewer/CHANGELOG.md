@@ -1,3 +1,7 @@
+## 0.4.1
+
+Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
+
 # viewer.curve_viewer changelog
 
 ## 0.4.0

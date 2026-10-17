@@ -1,4 +1,4 @@
-# CORE local Script Job API v1
+# CORE Script Job API v1
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -213,3 +213,7 @@ against the immutable invocation and verified source snapshot, exposing
 uses owned, bounded, non-symlink files in the exact Session run directory. It
 works on archived Sessions without consulting today's Script Registry. A corrupt
 or missing completed receipt produces diagnostics and an invalid status.
+
+## Remote registered scientific Jobs
+
+Scientific Execution can return an opaque remote Job ID. `scriptJobDescribe`, `scriptJobInspect`, `scriptJobLogRead`, `scriptJobCancel`, and `scriptJobWait` route that ID to its original node-local Supervisor through the configured authenticated agent. They preserve source Session and durable Job identity. A remote wait observes that Supervisor and does not create a client-side admission lease. Transport unavailability is distinct from terminal scientific failure. Local submit/list/history/resource-policy behavior remains account-local; remote transport does not add a scheduler or merge unrelated node journals into the local history.

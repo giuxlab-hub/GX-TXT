@@ -1,6 +1,6 @@
 # Viewer GUI Integration Manifest v1
 
-Introduced in GX-TXT 0.9.8.10-dev-102. This public **host-only** Tcl API composes
+This public **host-only** Tcl API composes
 existing GUI authorities. It has no Script Bridge widget API, second registry,
 scientific state, renderer, command model, execution scheduler or Workspace format.
 Discover with `::GX::viewerGuiHostApiInfo` and require through the existing
@@ -24,7 +24,8 @@ Required manifest fields:
 | handlers | Existing Viewer command IDs → `command`, optional `enabled`/`applicable` callbacks |
 
 Optional fields are `geometry`, `guard`, `workspace`, `history`, `history_record`,
-`canvas`, and `canvas_mount`. Unknown fields fail. `canvas` declares `api_id` from
+`canvas`, `canvas_mount`, `inspector_width`, `toolbar_actions`, `menus` and
+`context_actions`. Unknown fields fail. `canvas` declares `api_id` from
 `PLOT_DATASET_API_v4`, `NATIVE2D_VIEWPORT_HOST_v1`, or
 `NATIVE_3D_GUI_HOST_API_v1`. This declaration chooses an owner, not a new renderer.
 The Plot module is activated through public module activation. Other owners are
@@ -32,6 +33,21 @@ mounted by their existing host callback via `canvas_mount canvasSlot`; a declara
 alone does not instantiate a scientific scene. Workspace and History callbacks
 use their existing host contracts unchanged. Saved History may be supplied via
 `history_record`. No job runs as a consequence of composition.
+
+`menus` is an ordered list of `{label English-title actions {command-id - ...}}`
+descriptors; `-` separates groups. `toolbar_actions` and `context_actions` select
+registered commands. All menu/toolbar/shortcut enablement uses Viewer Commands.
+`viewerGuiContextMount window widget` attaches the composed context menu to a
+scientific host created after composition. `viewerGuiSelectionAttach window
+widget ?event?` refreshes both menus and toolbar when the consumer's native
+selection changes; `viewerGuiActionsRefresh window` handles domain state changes.
+`inspector_width` is the initial splitter position (200–600 pixels); users can
+drag the normal pane sash without rebuilding scientific geometry.
+
+Dialog composition uses UI Field's `uiFieldDialogCreate`,
+`uiFieldDialogPresent` and `uiFieldDialogClose`. Focus and optional grabs wait
+for actual mapping and release on Unmap. This is GUI-only lifecycle state and
+does not add a persistent authority or Script Bridge widget protocol.
 
 | Responsibility | Sole existing owner / additive extension |
 | --- | --- |

@@ -37,23 +37,26 @@ proc ::GX::viewerProviderIds {moduleId} {
     }
     return $out
 }
-proc ::GX::viewerProviderDefinition {moduleId viewerId} {
+proc ::GX::viewerProviderDefinition {moduleId viewerId {includeDisabled 0}} {
     variable moduleCatalog
     if {[lsearch -exact [viewerProviderIds $moduleId] $viewerId] < 0} {error "Unknown Viewer Provider $moduleId/$viewerId"}
-    if {![moduleIsEnabled $moduleId]} {return {}}
+    if {!$includeDisabled && ![viewerProviderEnabled $moduleId $viewerId]} {return {}}
     set d $moduleCatalog($moduleId,dict)
     set out [dict create module_id $moduleId viewer_id $viewerId]
-    foreach f {name backend activation_api backend_script supported_primitives artifact_formats capabilities} {
+    foreach f {name backend activation_api backend_script supported_primitives artifact_formats capabilities short_title semantic_group group_title icon} {
         dict set out $f [descriptorValue $d "viewer.$viewerId" $f ""]
     }
+    foreach {field fallback} [list short_title [dict get $out name] semantic_group other group_title {Other Viewers}] {if {[dict get $out $field] eq {}} {dict set out $field $fallback}}
+    dict set out enabled [viewerProviderEnabled $moduleId $viewerId]
+    dict set out icon_path [viewerProviderIconPath $moduleId [dict get $out icon]]
+    dict set out availability_reason [expr {[dict get $out enabled]?"Available":"Presentation disabled"}]
     return $out
 }
 proc ::GX::viewerProviderList {} {
     variable moduleOrder
     set out {}
     foreach module $moduleOrder {
-        if {![moduleIsEnabled $module]} continue
-        foreach id [viewerProviderIds $module] {lappend out [viewerProviderDefinition $module $id]}
+        foreach id [viewerProviderIds $module] {if {[viewerProviderEnabled $module $id]} {lappend out [viewerProviderDefinition $module $id]}}
     }
     return $out
 }
@@ -649,6 +652,7 @@ proc ::GX::viewerBackendEnsure {moduleId viewerId} {
     return $viewerBackend($backend)
 }
 proc ::GX::viewerOpen {moduleId viewerId {context {}}} {
+    if {![viewerProviderEnabled $moduleId $viewerId]} {error {This Viewer is disabled in Configuration → Modules → Viewers. Existing Workspaces and scientific services are preserved.}}
     if {[catch {dict size $context}]} { error "Viewer open context must be a dictionary" }
     set command [viewerBackendEnsure $moduleId $viewerId]
     set scene [viewerSceneResolve $moduleId $viewerId]
@@ -659,6 +663,7 @@ proc ::GX::viewerOpen {moduleId viewerId {context {}}} {
     return $result
 }
 proc ::GX::viewerRerender {moduleId viewerId} {
+    if {![viewerProviderEnabled $moduleId $viewerId]} {error {Viewer presentation is disabled}}
     set command [viewerBackendEnsure $moduleId $viewerId]
     set scene [viewerSceneResolve $moduleId $viewerId]
     return [{*}$command rerender $scene]
@@ -761,54 +766,6 @@ proc ::GX::defaults_before_plot_variant {} {
 }
 
 # Generic Viewer tab. Providers own their renderer and optional richer UI.
-proc ::GX::viewerGuiBuild {notebook} {
-    variable ui
-    set frame $notebook.viewers
-    ttk::frame $frame
-    $notebook add $frame -text Viewers
-    grid columnconfigure $frame 0 -weight 1
-    grid rowconfigure $frame 1 -weight 1
-    ttk::label $frame.note -text "Viewer Providers are independent of PNG Graph Providers. Scene resources, layers, camera and clipping are stored with the session." -wraplength 900 -justify left
-    grid $frame.note -row 0 -column 0 -sticky ew -padx 8 -pady 8
-    ttk::treeview $frame.list -columns {module viewer backend layers} -show headings -selectmode browse
-    foreach {col label width} {module Module 170 viewer Viewer 250 backend Backend 160 layers Layers 70} {
-        $frame.list heading $col -text $label
-        $frame.list column $col -width $width -stretch 1
-    }
-    grid $frame.list -row 1 -column 0 -sticky nsew -padx 8 -pady 4
-    ttk::frame $frame.actions
-    ttk::button $frame.actions.refresh -text Refresh -command ::GX::viewerGuiRefresh
-    ttk::button $frame.actions.open -text "Open viewer" -command [list ::GX::viewerGuiDispatch open]
-    ttk::button $frame.actions.render -text Rerender -command [list ::GX::viewerGuiDispatch rerender]
-    pack $frame.actions.refresh $frame.actions.open $frame.actions.render -side left -padx 4
-    grid $frame.actions -row 2 -column 0 -sticky w -padx 8 -pady 8
-    set ui(viewerList) $frame.list
-    bind $notebook <<NotebookTabChanged>> +::GX::viewerGuiRefresh
-    viewerGuiRefresh
-}
-proc ::GX::viewerGuiRefresh {} {
-    variable ui
-    if {![info exists ui(viewerList)] || ![winfo exists $ui(viewerList)]} return
-    set tree $ui(viewerList)
-    foreach item [$tree children {}] {$tree delete $item}
-    foreach provider [viewerProviderList] {
-        set module [dict get $provider module_id]
-        set viewer [dict get $provider viewer_id]
-        $tree insert {} end -values [list $module $viewer [dict get $provider backend] [llength [viewerLayerIds $module $viewer]]]
-    }
-}
-proc ::GX::viewerGuiDispatch {action} {
-    variable ui
-    if {![info exists ui(viewerList)] || ![winfo exists $ui(viewerList)]} return
-    set tree $ui(viewerList)
-    set selected [$tree selection]
-    if {![llength $selected]} {tk_messageBox -icon info -message "Select a Viewer Provider.";return}
-    set row [$tree item [lindex $selected 0] -values]
-    set module [lindex $row 0];set viewer [lindex $row 1]
-    if {[catch {
-        if {$action eq "open"} {viewerOpen $module $viewer} else {viewerRerender $module $viewer}
-    } err]} {tk_messageBox -icon error -message $err}
-}
 proc ::GX::launchGui_before_plot_variant {} {
     ::GX::launchGui_before_viewer_provider
     if {[winfo exists .top.nb]} {viewerGuiBuild .top.nb}

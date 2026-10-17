@@ -1,3 +1,7 @@
+## 1.4.1
+
+Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
+
 # Changelog
 
 ## 1.4.0 — dev097

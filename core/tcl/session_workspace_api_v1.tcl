@@ -3,7 +3,7 @@
 # registry. Its ID, generation, transaction and resource lifetime remain CORE's.
 namespace eval ::GX::SessionWorkspace {variable providers {};variable views {};variable refreshTimer {}}
 proc ::GX::sessionWorkspaceApiInfo {} {
-    return [dict create api_id SESSION_WORKSPACE_API_v1 api_version 1 operations {list get create update rename delete validate note_read note_write preview_set export import resource_copy_tree} managed_destinations 1]
+    return [dict create api_id SESSION_WORKSPACE_API_v1 api_version 1 operations {list get available_name create update rename delete validate note_read note_write preview_set export import resource_copy_tree} managed_destinations 1]
 }
 proc ::GX::sessionWorkspaceProviderRegister {provider descriptor} {
     variable ::GX::SessionWorkspace::providers
@@ -67,6 +67,16 @@ proc ::GX::_workspaceName {name {except {}}} {
     set name [string trim $name];_interactiveDocumentValidateSingleLine $name {Workspace name}
     if {$name eq {}||[string length $name]>160} {error {Workspace name must contain 1..160 characters}}
     foreach item [sessionWorkspaceList] {if {[dict get $item workspace_id] ne $except&&[dict get $item name] eq $name} {error "Workspace name '$name' already exists"}}
+    return $name
+}
+# Suggested presentation names use the same canonical Workspace inventory.
+proc ::GX::sessionWorkspaceAvailableName {preferred} {
+    set preferred [string trim $preferred]
+    _interactiveDocumentValidateSingleLine $preferred {Workspace name}
+    if {$preferred eq {} || [string length $preferred]>150} {error {Preferred Workspace name must contain 1..150 characters}}
+    set used [lmap item [sessionWorkspaceList] {dict get $item name}]
+    set name $preferred;set index 1
+    while {$name in $used} {set name "$preferred [incr index]"}
     return $name
 }
 proc ::GX::sessionWorkspaceCreate {provider name payload} {

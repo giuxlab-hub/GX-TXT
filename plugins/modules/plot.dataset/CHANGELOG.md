@@ -1,4 +1,8 @@
-## 0.9.8.10-dev-097
+## 4.2.1
+
+Support explicitly retained presentation dependencies while preserving strict scientific source, schema and calibration guards.
+
+## dev097 integration checkpoint191
 
 Reuse the existing family grouping renderer in stacked panels, including right Y
 axes and explicit styles. Preserve exact source rows and prevent cross-family

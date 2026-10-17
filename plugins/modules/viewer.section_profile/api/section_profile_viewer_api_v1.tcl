@@ -789,7 +789,7 @@ proc ::GX::SectionProfile::_widget {} {
     ttk::label $w.output.status -textvariable ::GX::SectionProfile::state(status)
     pack $w.output.idlabel $w.output.id $w.output.publish $w.output.status -side left -padx 6
     pack $w.output -fill x -padx 8 -pady 8
-    bind $w <Destroy> {if {%W eq ".gxtxt_section_profile"} {::GX::SectionProfile::_unsubscribeNative; ::GX::SectionProfile::_set window ""}}
+    bind $w <Destroy> [list ::GX::SectionProfile::_destroyed $w %W]
     _subscribeNative
     return $w
 }
@@ -807,3 +807,9 @@ proc ::GX::SectionProfile::viewerDispatch {action scene} {
 }
 
 ::GX::viewerBackendRegister section_profile_tk ::GX::SectionProfile::viewerDispatch
+
+proc ::GX::SectionProfile::_destroyed {owner actual} {
+    if {$actual ne $owner} return
+    _unsubscribeNative
+    _set window {}
+}

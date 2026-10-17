@@ -109,7 +109,7 @@
 # Full release history: CHANGELOG.md
 
 namespace eval ::GX {
-    variable version "0.9.8.10-dev-102"
+    variable version "0.9.8.10-dev-103"
     variable scriptDir [file dirname [file normalize [info script]]]
     variable cfg
     variable ch
@@ -193,6 +193,8 @@ source [file join $::GX::scriptDir core tcl axis_config_extension_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl level_scale_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl interactive_document_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl viewer_provider_api_v1.tcl]
+source [file join $::GX::scriptDir core tcl viewer_provider_catalog.tcl]
+source [file join $::GX::scriptDir app gui viewer_catalog.tcl]
 source [file join $::GX::scriptDir core tcl plot_module_variants.tcl]
 source [file join $::GX::scriptDir core tcl graph_workflow_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl session_action_provider_api_v1.tcl]
@@ -318,6 +320,7 @@ proc ::GX::main {} {
 source [file join $::GX::scriptDir core tcl dataset_viewer_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_dataset_coordinates_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_dataset_filters_v1.tcl]
+source [file join $::GX::scriptDir core tcl dataset_preview_cache.tcl]
 source [file join $::GX::scriptDir core tcl dataset_scientific_profile_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_dataset_series_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_dataset_preview_v1.tcl]
@@ -326,6 +329,9 @@ source [file join $::GX::scriptDir core tcl mesh_dataset_viewer_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_compact_preview_v1.tcl]
 
 source [file join $::GX::scriptDir app gui dataset_preview_sync.tcl]
+source [file join $::GX::scriptDir app gui dataset_preview_live.tcl]
+source [file join $::GX::scriptDir app gui session_preview_cache_page.tcl]
+source [file join $::GX::scriptDir app gui compute_nodes.tcl]
 
 source [file join $::GX::scriptDir core tcl geometry_exchange_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_planar_workflow_v1.tcl]

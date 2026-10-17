@@ -11,7 +11,7 @@ namespace eval ::GX::UiField {
     variable formStatus
 }
 proc ::GX::uiFieldApiInfo {} {
-    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldFormCreate uiFieldFormSectionEnabled uiFieldViewerShellCreate uiFieldSelectorWithinViewer uiFieldSelectorPost uiFieldSelectorClose uiMenuPopup uiMenuWorkarea uiMenuRowAttach}]
+    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldDialogCreate uiFieldDialogPresent uiFieldDialogClose uiFieldFocusWhenMapped uiFieldViewerSection uiFieldFormCreate uiFieldFormSectionEnabled uiFieldViewerShellCreate uiFieldSelectorWithinViewer uiFieldSelectorPost uiFieldSelectorClose uiMenuPopup uiMenuWorkarea uiMenuRowAttach}]
 }
 
 # Viewer-bounded choice projection. The combobox remains the value/variable
@@ -94,7 +94,10 @@ proc ::GX::uiFieldSelectorPost {widget viewer} {
     if {$selected<0} {set selected 0}
     $panel.options selection set $selected;$panel.options activate $selected;$panel.options see $selected
     place $panel -x $px -y $py -width $pw -height $ph
-    raise $panel;focus $panel.options;grab $panel
+    raise $panel
+    # Geometry management is deferred by Tk. Never acquire a grab until the
+    # actual panel is mapped; a parent can be minimized/closed in the meantime.
+    uiFieldFocusWhenMapped $panel $panel.options 1
     bind $panel <Button-1> [list ::GX::_uiFieldSelectorClick $widget $viewer %x %y]
     bind $panel.options <ButtonRelease-1> "[list ::GX::uiFieldSelectorClose $widget $viewer 1];break"
     bind $panel.options <Return> "[list ::GX::uiFieldSelectorClose $widget $viewer 1];break"

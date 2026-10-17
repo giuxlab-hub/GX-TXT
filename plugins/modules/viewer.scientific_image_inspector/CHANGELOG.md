@@ -1,3 +1,7 @@
+## 0.4.2
+
+Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
+
 ## 0.4.1 — Complete user manual and consistent plugin release metadata
 
 - Rewrote `MANUAL.md` as a complete, workflow-oriented English reference (installation, image modes, interface/menu map, every Basic preset and parameter, Advanced catalog, preview transactions, ROI context actions, Native2D annotation tools, Figure Studio, image/color analysis, History, Workspace persistence, canonical Dataset publication, manifests, troubleshooting, scientific integrity and practical tutorials). Removed obsolete Operations-menu directions, global sidebar-save claims, duplicate numbering and misleading descriptions of incomplete features.

@@ -112,10 +112,10 @@ The optional Curve Source progress callback does not make that earlier planning
 stage asynchronous; cancellation takes effect at subsequent cooperative counting
 or display boundaries. See the technical report for this unresolved latency limit.
 
-Dev072 lifecycle correction: widget destruction precedes per-window state clearing,
+Widget destruction precedes per-window state clearing,
 so Tk listvariable traces cannot recreate selector state after Close.
 
-## dev073 Preview host and explicit filters
+## Preview host and explicit filters
 
 See `../DATASET_PREVIEW_CONTROLS_dev073.md`. The active inspection choice remains
 the only Dataset selection authority. Session token, identity, schema/payload and
@@ -145,9 +145,9 @@ On the tested NVD9/Nouveau backend, Auto policy in the small Preview uses the
 existing Mesa Software renderer for readable colored cube targets. This is scoped
 to the embedded Preview. Explicit Hardware/Software choices and the full Viewer
 retain their configured policy. The Native3D kernel binary and all public ABI
-remain identical to dev072; no replacement cube, renderer or rotation math.
+retain their established ABI; no replacement cube, renderer or rotation math.
 
-## dev087 numerical XYZ
+## Numerical XYZ
 
 The existing `meshDatasetViewerOpen id ?previewWidget? ?request?` accepts an additive
 CORE compact-host request. Plots and numerical XYZ share this worker/state/cache,
@@ -156,10 +156,10 @@ rank-one nontext canonical IDs. Table Stream v3 reads at most 100000 original ro
 2048 per chunk; at most 12000 finite triples retain one-based source-row IDs in VTP.
 No implicit topology, interpolation, data conversion or publication occurs. Last
 2D content is retained, and remains controlled by 2D Render. Family-filtered XYZ is
-currently diagnosed rather than silently stripped. See the dev087 guide.
+currently diagnosed rather than silently stripped. See the numerical XYZ guide.
 
 
-## Dev087 manual-acceptance scientific figure correction
+## Native scientific figure consultation
 
 `native3DPreviewAcquire` retains its existing shared DatasetViewer host/worker and
 RAM frame. Plots' eligibility control is a placed canvas child, with no layout row;
@@ -196,7 +196,7 @@ pixel layout. Logarithmic/reversed axes still require a nonlinear calibrated coo
 mapping contract and are rejected, never labeled as linear. Other providers/base graphs
 need an exact prepared-scene identity API. Transparent figure backgrounds remain unsupported.
 
-## dev089 canonical selector display
+## Canonical selector display
 
 Numerical axis selectors display canonical name, optional unit and supplemental
 stable Variable ID, resolved by `datasetVariableById` from the current public
@@ -211,7 +211,7 @@ a camera orientation cue, not an interaction pivot or scientific origin. The
 world-origin triad is disabled for this view; scientific coordinates, bounds,
 units, camera navigation and the retained 2D preview remain unchanged.
 
-## dev095 independent scientific axes
+## Independent scientific axes
 
 Scientific consultation explicitly selects Native2D `aspect auto`; calibrated
 Native geometry defaults remain unchanged. The standalone Viewer exposes an
@@ -257,7 +257,7 @@ signature triggers regeneration after a policy edit. The source selector labels
 identify source units explicitly; displayed units appear with the rendered axes.
 
 
-## dev097 direct XYZ coordinate policy
+## Direct XYZ coordinate policy
 
 Direct numerical XYZ reads `DATASET_METADATA_API_v1` once for its verified source.
 Its temporary VTP contains displayed units; retained canonical triples and original
@@ -278,3 +278,9 @@ HMS readers return seconds regardless of the declared source h/min/s unit. The
 shared XY and XYZ consumers convert only their presentation buffers through the
 public elapsed-time API before using source-frame coordinate settings. Retained
 numeric samples remain seconds, including repeated reprojection.
+
+## Retained scientific representation dependencies
+
+Host-side `datasetViewerScientificIdentity dataset_id` returns the rendering dependency projection: canonical ID/content SHA, Variable Schema, public scientific metadata, stored coordinate context and source storage revision/stat identity. User Preview controls and visibility preferences are excluded. Preview Cache and explicitly retained Plot widgets use this same projection, so saving presentation choices preserves the current frame while scientific changes still invalidate it. This helper is host-side; scripts use the stronger canonical Dataset revision contract and normal bounded readers.
+
+When Preview is selected, Dataset activation defers rebuilding hidden Variables/Metadata/Notes editors. Selecting those pages refreshes them through their existing owner, preserving the current Dataset choice and draft-switch checks. Scientific preparation and status polling remain asynchronous; callbacks show the actual managed Job state and reject old Session/generation completions.

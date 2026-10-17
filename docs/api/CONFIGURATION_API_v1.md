@@ -134,7 +134,7 @@ authorities at commit. Discovery does not require scientific runtime data.
 ## Generic Viewer command adapter
 
 The existing Configuration/UI owner now supplies `viewerCommandCatalogRegister
-module commands ?configuration_id? ?module_key?`. Each stable command descriptor
+catalog_id commands ?configuration_id? ?module_key? ?owner_module?`. Each stable command descriptor
 has `label`, optional `default` key, and a keyboard `scope` (default `viewer`).
 An optional `context` predicate receives the focus widget. Lightweight module
 configuration contributions register catalogs without opening their Viewer.
@@ -184,3 +184,15 @@ Scripts as **Show Script Workspace in Analysis**. Saving changes refreshes the
 optional **Scripts (CORE)** Analysis panel. Its identity, default and saved value
 remain unchanged. It neither disables Python/Octave modules nor changes Script
 Bridge, Job execution, or the separate main Modules-page surface controls.
+
+A module with multiple Viewer command catalogs can declare a distinct logical `catalog_id` and its actual installed `owner_module`. Shortcut IDs/scopes remain distinct; authenticated command callbacks run under the real module identity. The optional owner defaults to the catalog ID for existing consumers. Surface Fit uses its separate catalog with `owner_module=viewer.dataset_curve_fit`; this does not create a synthetic module or weaken Metadata/Publication actor checks. Toolbar mounting honors the requested command order while retaining the same command IDs and enablement predicates.
+
+Configuration → Execution stores compute-node descriptors and destination selection through the same User fields. Configuration → Modules separates Services from Viewer presentation management. Provider flags persist independently from Analysis Run membership; disabling presentation preserves required scientific services and active Workspaces. Sessions → Preview Cache manages only disposable derived representations; its policy uses ordinary Configuration fields.
+
+Viewer command catalogs may use a logical catalog identity distinct from the
+installed module that owns their callbacks. `viewerCommandCatalogRegister
+catalog_id commands ?configuration_id? ?module_key? ?owner_module?` records that
+explicit installed owner for Configuration registration and authenticated command
+invocation. Omitting the owner retains the catalog identity as owner. This keeps
+multiple catalogs/shortcut fields for one module within the same existing command
+authority, including Surface Fitter. It does not register another module.

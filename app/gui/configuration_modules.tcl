@@ -80,6 +80,14 @@ proc ::GX::configurationModulesBuild {parent row} {
     pack $w.actions -fill x -pady 6
     configurationSubscribe ::GX::configurationEditorChanged
     configurationModulesReload
+    grid remove $w
+    ttk::notebook $parent.kinds
+    ttk::frame $parent.kinds.services;ttk::frame $parent.kinds.viewers
+    $parent.kinds add $parent.kinds.services -text {Analysis, Acquisition & Services}
+    $parent.kinds add $parent.kinds.viewers -text Viewers
+    grid $parent.kinds -row $row -column 0 -columnspan 4 -sticky nsew
+    pack $w -in $parent.kinds.services -fill both -expand 1
+    viewerManagerBuild $parent.kinds.viewers
 }
 proc ::GX::configurationModulesReload {} {
     set ::GX::ConfigurationModules::catalog {}
@@ -98,6 +106,7 @@ proc ::GX::configurationModulesRefresh {} {
     set ordinal 0;set restore "";set first ""
     if {$catalog eq {}} {set catalog [configurationInstalledPlugins]}
     foreach record $catalog {
+        if {[dict get $record type] eq "module" && [moduleField [dict get $record id] kind {}] eq "viewer"} continue
         if {$match ne "" && [string first $match [string tolower "[dict get $record id] [dict get $record name] [dict get $record type] [dict get $record state] [dict get $record health]"]]<0} continue
         set iid plugin[incr ordinal]
         dict set records $iid $record

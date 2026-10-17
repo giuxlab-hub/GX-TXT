@@ -27,11 +27,15 @@ proc ::GX::datasetAuthorityEnlist {path} {
     datasetAuthorityRequest ENLIST [file normalize $path]
 }
 proc ::GX::datasetAuthorityRecord {} {
+    # One sorted scan preserves the exact canonical ordering while avoiding
+    # a complete array scan for every Dataset during read/commit guards.
+    set registered {};foreach id [datasetRegistryIds] {dict set registered $id 1}
     set records {}
-    foreach id [datasetRegistryIds] {
-        set fields {}
-        foreach key [lsort [array names ::GX::datasetRegistry "$id,*"]] {dict set fields $key $::GX::datasetRegistry($key)}
-        dict set records $id $fields
+    foreach key [lsort [array names ::GX::datasetRegistry]] {
+        set comma [string first , $key]
+        if {$comma<0} continue
+        set id [string range $key 0 [expr {$comma-1}]]
+        if {[dict exists $registered $id]} {dict set records $id $key $::GX::datasetRegistry($key)}
     }
     return $records
 }

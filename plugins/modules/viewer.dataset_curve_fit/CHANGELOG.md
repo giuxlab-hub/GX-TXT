@@ -1,3 +1,9 @@
+## 0.46.1
+
+Surface command catalogs retain their distinct shortcut namespace while using the actual installed module identity for authenticated callbacks.
+
+Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
+
 ## 0.45.0
 
 Adopt shared Workspace manager/menu state, unregistered New drafts and guarded Save/Discard/Cancel. Suspend field FocusOut commits during lifecycle review; explicit Save reuses the scientific field owner exactly once. Preserve fitting engines, source identities, accepted results and existing History. Document the independent manual window.

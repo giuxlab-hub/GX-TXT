@@ -45,6 +45,7 @@ proc ::GX::_datasetCoordinateVariable {variable settings} {
 }
 proc ::GX::_datasetCoordinateStored {session id} {
     variable ::GX::DatasetCoordinates::key
+    if {[datasetField $id storage_provider {}] eq "remote"} {return [datasetField $id remote_coordinate_context {}]}
     set metadata [_datasetMetadataReadAll $session $id]
     if {![dict exists $metadata $key]} {return {}}
     set value [dict get $metadata $key]

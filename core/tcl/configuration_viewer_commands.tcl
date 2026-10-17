@@ -26,9 +26,11 @@ proc ::GX::viewerShortcutNormalize {value} {
     return $normalized
 }
 
-proc ::GX::viewerCommandCatalogRegister {module commands {configurationId {}} {moduleKey shortcuts}} {
+proc ::GX::viewerCommandCatalogRegister {module commands {configurationId {}} {moduleKey shortcuts} {ownerModule {}}} {
     variable ::GX::ViewerCommands::catalogs
     if {![regexp {^[a-z][a-zA-Z0-9_.-]*$} $module] || [catch {dict size $commands}] || $commands eq {}} {error {Invalid Viewer command catalog}}
+    if {$ownerModule ne {} && [moduleField $ownerModule descriptor {}] eq {}} {error "Viewer command owner '$ownerModule' is not installed"}
+    if {$ownerModule eq {}} {set ownerModule $module}
     if {$configurationId eq {}} {set configurationId module.$module.configuration.$moduleKey}
     set normalized {}
     dict for {id descriptor} $commands {
@@ -38,11 +40,11 @@ proc ::GX::viewerCommandCatalogRegister {module commands {configurationId {}} {m
         dict set normalized $id $descriptor
     }
     set previous [datasetPublicationV2DictDefault $catalogs $module {}]
-    dict set catalogs $module [dict create commands $normalized field $configurationId]
+    dict set catalogs $module [dict create commands $normalized field $configurationId owner_module $ownerModule]
     try {
         viewerShortcutsValidate $module {}
         configurationRegister $configurationId [dict create group Modules label {Command shortcuts} type string default {} scope module \
-            module_id $module module_key $moduleKey module_type string scopes {user session} application immediate \
+            module_id $ownerModule module_key $moduleKey module_type string scopes {user session} application immediate \
             validator [list ::GX::viewerShortcutsValidate $module] structured_fields [list ::GX::viewerShortcutFields $module] \
             description {Scoped Viewer command keys; empty disables a key. Changes update menus and bindings together.}]
     } on error {message options} {
@@ -88,7 +90,7 @@ proc ::GX::viewerCommandsAttach {window module handlers {guard {}} {widgets {}}}
     set bindings [viewerShortcutsValidate $module [dict get [configurationResolve $field] effective]]
     set tag GXViewerCommands$window
     set token {};catch {set token [interactiveDocumentSessionToken]}
-    dict set windows $window [dict create module $module handlers $handlers guard $guard widgets $widgets bindings $bindings \
+    dict set windows $window [dict create module $module owner_module [dict get $::GX::ViewerCommands::catalogs $module owner_module] handlers $handlers guard $guard widgets $widgets bindings $bindings \
         tag $tag menus {} session_token $token subscription [configurationSubscribe [list ::GX::_viewerCommandsChanged $window]]]
     bind $tag <KeyPress> [format {if {[::GX::viewerCommandKey %s %%W %%K %%s]} {break}} [list $window]]
     bind $window <Destroy> +[list ::GX::_viewerCommandsDestroyed $window %W]
@@ -151,8 +153,11 @@ proc ::GX::viewerCommandToolbarCreate {window frame {commandIds {}}} {
     set module [dict get $::GX::ViewerCommands::windows $window module]
     if {![winfo exists $frame]} {ttk::frame $frame}
     set buttons {};set i 0
-    dict for {id descriptor} [viewerCommandCatalog $module] {
-        if {$commandIds ne {} && $id ni $commandIds} continue
+    set catalog [viewerCommandCatalog $module]
+    set order [expr {$commandIds eq {}?[dict keys $catalog]:$commandIds}]
+    foreach id $order {
+        if {![dict exists $catalog $id]} {error "Unknown toolbar command '$id'"}
+        set descriptor [dict get $catalog $id]
         set widget $frame.command[incr i]
         set label [datasetPublicationV2DictDefault $descriptor toolbar_label [dict get $descriptor label]]
         ttk::button $widget -text $label -command [list ::GX::viewerCommandInvoke $window $id]
@@ -187,7 +192,7 @@ proc ::GX::viewerCommandToolbarRefresh {window} {
 proc ::GX::viewerCommandInvoke {window id} {
     if {![viewerCommandApplicable $window $id] || ![viewerCommandEnabled $window $id]} {return 0}
     set adapter [dict get $::GX::ViewerCommands::windows $window]
-    _datasetPrivateWithModule [dict get $adapter module] [list uplevel #0 [dict get $adapter handlers $id command]]
+    _datasetPrivateWithModule [dict get $adapter owner_module] [list uplevel #0 [dict get $adapter handlers $id command]]
     return 1
 }
 proc ::GX::viewerCommandKey {window widget key state} {

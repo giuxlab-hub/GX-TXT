@@ -60,17 +60,22 @@ proc ::GX::sessionConfigRefresh {} {
 proc ::GX::sessionPageSelect {{section {}}} {
     set f .top.nb.sessionfiles
     if {![winfo exists $f.navigation]} return
-    if {$section eq {}} {set section [lindex {files scripts workspaces config parameters experiment instrumentation} [$f.navigation current]]}
+    if {$section eq {}} {set section [lindex {files scripts workspaces config parameters experiment instrumentation preview_cache} [$f.navigation current]]}
     if {$section eq {}} {set section files}
-    set index [lsearch -exact {files scripts workspaces config parameters experiment instrumentation} $section];if {$index>=0} {$f.navigation current $index}
+    set index [lsearch -exact {files scripts workspaces config parameters experiment instrumentation preview_cache} $section];if {$index>=0} {$f.navigation current $index}
     if {[winfo exists .top.nb.exp]} {grid remove .top.nb.exp}
     if {[winfo exists .top.nb.instr]} {grid remove .top.nb.instr}
     # Keep the established widget identities and operation references; mapping
     # one section into the shared area never replaces Session state.
-    foreach child {left right scripts scriptInfo config workspaceArea parameters} {
+    foreach child {left right scripts scriptInfo config workspaceArea parameters previewCache} {
         if {[winfo exists $f.$child]} {grid remove $f.$child}
     }
     switch $section {
+        preview_cache {
+            set panel [sessionPreviewCacheBuild $f]
+            grid $panel -in $f.content -row 0 -column 0 -columnspan 2 -sticky nsew
+            sessionPreviewCacheAction refresh
+        }
         instrumentation {
             if {[winfo exists .top.nb.instr]} {
                 grid .top.nb.instr -in $f.content -row 0 -column 0 -columnspan 2 -sticky nsew

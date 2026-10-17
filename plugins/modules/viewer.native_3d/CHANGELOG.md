@@ -1,3 +1,7 @@
+## 0.9.8
+
+Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
+
 # Native 3D Viewer changes
 
 ## 0.9.6

@@ -1,3 +1,7 @@
+## 2.0.4
+
+Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
+
 ## 2.0.2 — zero localization and public Numeric execution
 
 - Allow explicitly declared zero pixel-localization uncertainty, independently of nonnegative declared calibration uncertainty; never replace zero by an artificial epsilon or infer uncertainty from resolution.

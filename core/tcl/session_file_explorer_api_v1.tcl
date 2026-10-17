@@ -27,6 +27,7 @@ proc ::GX::sessionFileExplorerScan {{dir ""}} {
     variable currentSession
     if {$currentSession eq "" || ![file isdirectory $currentSession]} { return {} }
     if {$dir eq ""} { set dir $currentSession }
+    if {[file normalize $dir] eq [file normalize [file join $currentSession cache dataset_previews]]} {return {}}
     sessionFileExplorerRelative $dir
     # Never follow a directory link out of the Session during recursion.
     if {[file type $dir] eq "link"} {return {}}

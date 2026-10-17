@@ -1,3 +1,7 @@
+## 2.21.1
+
+Use shared CORE dialog lifecycle for source selection and declare native-resolution scientific catalog artwork.
+
 ## 2.20.0
 
 Admit registered proportional homogeneous coordinate frames of any physical

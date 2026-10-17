@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Existing activated inspection choice is the only selection authority.
 proc ::GX::datasetPageTabChanged {} {
+    if {[info exists ::GX::ui(datasetPageDeferred)] && [.top.nb.channels.views select] ne ".top.nb.channels.views.preview"} {refreshNativeVariablesGui}
     datasetPageEditState
     # Notebook unmapping retains the one active preview and its viewing state.
     # Refresh validates identity even while hidden, but only generates when shown.
@@ -59,6 +60,7 @@ proc ::GX::datasetPreviewStamp {} {
     return [list $token $choice $path $stat [array get ::GX::cfg]]
 }
 proc ::GX::datasetPreviewStop {} {
+    if {[llength [info commands ::GX::datasetPreviewLiveRelease]]} {datasetPreviewLiveRelease}
     variable ui
     variable ::GX::DatasetViewer::previewJob
     if {![info exists ui(previewEpoch)]} {set ui(previewEpoch) 0}
@@ -110,6 +112,9 @@ proc ::GX::datasetPreviewClear {} {
     refreshCsvPreview
 }
 proc ::GX::datasetPreviewRender {} {
+    lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] mode id
+    unset -nocomplain ::GX::ui(previewCleared)
+    if {$mode eq "imported" && [datasetPreviewLiveEligible $id]} {datasetPreviewLiveActivate $id 1;return}
     unset -nocomplain ::GX::ui(previewCleared) ::GX::ui(previewSignature)
     refreshCsvPreview
 }
@@ -152,6 +157,10 @@ proc ::GX::refreshCsvPreview {} {
     variable ui
     if {![info exists ui(preview)] || ![winfo exists $ui(preview)]} return
     datasetPageEditState
+    lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] liveMode liveId
+    set cleared [expr {[info exists ui(previewCleared)] && $ui(previewCleared) eq [list [dict get [datasetCatalogSnapshot] session_token] $::GX::variableDatasetChoice]}]
+    if {!$cleared && $liveMode eq "imported" && [datasetPreviewLiveEligible $liveId] && [datasetPreviewVisible]} {datasetBrowserActiveRefresh;datasetPreviewLiveActivate $liveId;return}
+    if {[dict size $::GX::PreviewLive::active]} {datasetPreviewLiveRelease}
     datasetBrowserRefresh
     # Responsive scientific reads service Tk events. Keep a reentrant refresh
     # from starting another build for the same in-flight identity.

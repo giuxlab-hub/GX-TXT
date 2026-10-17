@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gxtxt_script_bridge_server import BridgeError
 COMMANDS={
+ 'node_list':('::GX::scientificExecutionNodeList',[]),
+ 'node_inspect':('::GX::scientificExecutionNodeInspect',['node_id']),
+ 'destination':('::GX::scientificExecutionDestination',['destination']),
  'discover':('::GX::scientificExecutionDiscover',[]),
  'describe':('::GX::scientificExecutionDescribe',['provider_id']),
  'prepare':('::GX::scientificExecutionPrepare',['provider_id','parameters','resources','options']),
@@ -42,6 +45,15 @@ def invoke(host,operation,args):
   raise BridgeError('GXTXT:ScriptBridge:InvalidArguments','Invalid scientific execution operation arguments')
  host.call('::GX::scientificExecutionRegisterBuiltins')
  raw=host.call(COMMANDS[operation][0],*args)
+ if operation=='node_list':return [host.normalize(host.as_dict(v)) for v in host.as_list(raw)]
+ if operation=='node_inspect':
+  result=host.as_dict(raw)
+  providers=[]
+  for value in host.as_list(result.get('providers',())):
+   provider=host.as_dict(value);provider['tools']={str(k):bool(int(v)) for k,v in host.as_dict(provider['tools']).items()};provider['available']=bool(int(provider['available']));providers.append(provider)
+  result['providers']=providers;result['policy']=host.as_dict(result['policy']);result['cores']=int(result['cores'])
+  return host.normalize(result)
+ if operation=='destination':return str(raw)
  if operation=='discover':return [str(v) for v in host.as_list(raw)]
  if operation=='prepare':return str(raw)
  return host.normalize(receipt(host,raw))

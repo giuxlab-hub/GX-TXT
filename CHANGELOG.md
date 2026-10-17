@@ -7,6 +7,16 @@ For current interface contracts consult the API references under [docs/api](docs
 
 ## 0.9.8.10 - development revisions
 
+### 0.9.8.10-dev-103
+
+- Extend CORE Scientific Execution to supervised local, automatic and explicitly selected remote compute-node providers. The authenticated Debian HTTPS agent uses verified mutual TLS, scoped logical Session grants and the existing Script Job supervisor; it never accepts arbitrary remote shell commands.
+- Add SHA-verified bounded resource staging, durable replay/idempotency protection, remote cancellation/status/log observation and explicit verified result adoption. Public canonical remote Dataset handles support typed range/hyperslab reads while keeping full source identities and an opt-in local import.
+- Make standard Dataset Preview preparation asynchronous, with genuine progress/cancellation and retained source/Session revision guards. Reuse calibrated native Plot/Native2D visibility, and store disposable SHA-verified representations in the existing Preview Cache. Changed controls retain the last successful frame until explicit Render.
+- Introduce grouped Viewer catalog tiles with distinct scientific icons, high-DPI artwork, stored viewer-presentation enablement and dependency refusal, independently of Analysis Run membership.
+- Refine the shared GUI host for Replicate/Consensus and Curve Workbench: reusable source dialogs, mapped selectors, guarded focus/grab handling, resizing, Workspace/History and native original/consensus plot views. Preserve original experimental sources while exposing reproducible descriptive curve comparisons.
+- Update the scientific module/plugin package set and public APIs, preserving accepted original Sessions, immutable scientific datasets, old distribution history and the existing Python/Octave/Native3D interfaces.
+- Scope limits: remote execution verified on separate Linux processes using localhost mTLS, not an independent physical compute node. Async Preview preparation of large source images/curves remains explicitly time-consuming. Advanced shared-factor covariance confidence/prediction intervals and earlier historical verification debts remain unavailable or unfinished.
+
 ### 0.9.8.10-dev-102
 
 - Preserve compatible automatic same-owner Dataset Publication replacement providers, including empty auto aliases; explicit conflicting owner or capability grants remain explicit failures without implicit deletion.

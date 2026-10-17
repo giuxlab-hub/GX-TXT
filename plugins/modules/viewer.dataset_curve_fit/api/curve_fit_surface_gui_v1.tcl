@@ -4,7 +4,7 @@ set ::GX::DatasetCurveFit::surfaceCommands {}
 foreach {id label key} {save {Save Workspace} Ctrl+s close Close {} preview {Preview fit} F5 accept {Accept fit} F6 cancel {Cancel operation} {} undo Undo Ctrl+z redo Redo Ctrl+Shift+z add_parameter {Add parameter} {} query {Evaluate exact XY pair} {} export {Export model…} {} recipe {Export rerun recipe…} {} publish {Publish sampled grid} {} plot {Open published grid in3D} {}} {
     dict set ::GX::DatasetCurveFit::surfaceCommands $id [dict create label $label default $key]
 }
-::GX::viewerCommandCatalogRegister viewer.dataset_curve_fit.surface $::GX::DatasetCurveFit::surfaceCommands modules.dataset_surface_fit.shortcuts
+::GX::viewerCommandCatalogRegister viewer.dataset_curve_fit.surface $::GX::DatasetCurveFit::surfaceCommands modules.dataset_surface_fit.shortcuts surface_shortcuts viewer.dataset_curve_fit
 proc ::GX::DatasetCurveFit::surfaceViewerDispatch {action scene} {
     if {$action ni {open rerender}} {error {Unsupported surface Viewer action}}
     return [openSurface [::GX::datasetPublicationV2DictDefault $scene open_context {}]]

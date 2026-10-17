@@ -1,3 +1,7 @@
+## 1.0.4
+
+Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
+
 ## 1.0.3 — dev-070
 
 Share PDF canvas and Poppler rendering with CORE integrated consultation; preserve OCR workflows.

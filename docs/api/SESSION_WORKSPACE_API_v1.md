@@ -47,8 +47,7 @@ asynchronous view refresh does not call the Session-required Interactive
 Document API until a Session exists.
 
 See [MANAGED_RESOURCE_API_v1](MANAGED_RESOURCE_API_v1.md) and
-[NOTE_DOCUMENT_API_v1](NOTE_DOCUMENT_API_v1.md). Genuine Python/Octave fixtures:
-`validation/dev056/bridge.py`, `bridge.m`, executed by `bridge.tcl`.
+[NOTE_DOCUMENT_API_v1](NOTE_DOCUMENT_API_v1.md). The same operations are available through both Script Bridge languages.
 
 <a id="integrated-dev-065-extension"></a>
 ## Parameters and retained networks
@@ -148,3 +147,5 @@ The Script binding uses `sessionWorkspaceResourceCopyTreeUtf8` to encode the
 result before it crosses Tcl/Python. This preserves original text even when Tcl
 also caches a list representation; Python tuple conversion must not normalize
 scientific text. The public Script result is an ordinary Unicode string.
+
+`sessionWorkspaceAvailableName preferred` suggests the first unused display name from the same Workspace inventory, appending a numeric suffix when necessary. Python/Octave expose `available_name(preferred)`. This does not reserve an identity: `Create` still validates uniqueness atomically. Viewers use it for unnamed draft Save and honor an explicit `workspace_name` supplied by the shared New workflow.

@@ -88,6 +88,7 @@ proc ::GX::scientificDatasetPreview {datasetId xId yId output {member {}}} {
 }
 
 proc ::GX::datasetViewerStamp {id path} {
+    if {[datasetField $id storage_provider {}] eq "remote"} {return [list remote [datasetField $id remote_node_id] [datasetField $id remote_session_id] [datasetField $id remote_revision] [datasetVariableSchemaV3 $id]]}
     file stat $path stat
     return [list [sessionInspectionDataset $id] [datasetVariableSchemaV3 $id] $stat(size) $stat(mtime) $stat(ctime) $stat(ino)]
 }
@@ -505,3 +506,14 @@ proc ::GX::openSessionPath {path} {
     tailcall openSessionPath_before_dataset_edit_guard $path
 }
 source [file join [file dirname [info script]] dataset_digitizer_preview_v1.tcl]
+
+# Render dependencies exclude user Preview controls, retaining scientific source,
+# schema, calibration and public metadata. Host-side retained presentation only.
+proc ::GX::datasetViewerScientificIdentity {id} {
+    set storage [datasetProviderFor $id];set location {}
+    if {$storage eq "remote"} {set location [list [datasetField $id remote_node_id] [datasetField $id remote_session_id] [datasetField $id remote_revision]]} else {
+        set path [datasetResolvePath $::GX::currentSession $id]
+        if {[file isfile $path]} {file stat $path st;set location [list $st(size) $st(mtime) $st(ctime) $st(ino)]}
+    }
+    return [list $id [datasetField $id canonical_sha256 [datasetField $id sha256]] [datasetVariableSchemaV3 $id] [datasetMetadataRead $::GX::currentSession $id] [_datasetCoordinateStored $::GX::currentSession $id] $location]
+}

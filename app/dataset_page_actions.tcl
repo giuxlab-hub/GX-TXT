@@ -9,6 +9,17 @@ proc ::GX::datasetNotesOpenSelected {} {
 }
 
 proc ::GX::refreshNativeVariablesGui {} {
+    # Preparing Preview never rebuilds hidden schema/metadata editors. The
+    # existing tab owner refreshes their projection when they become visible.
+    if {[winfo exists .top.nb.channels.views] && [.top.nb.channels.views select] eq ".top.nb.channels.views.preview"} {
+        lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] mode id
+        if {$mode eq "imported" && [datasetPreviewLiveEligible $id]} {
+            set ::GX::ui(datasetPageDeferred) [list [interactiveDocumentSessionToken] $::GX::variableDatasetChoice]
+            refreshCsvPreview
+            return
+        }
+    }
+    unset -nocomplain ::GX::ui(datasetPageDeferred)
     ::GX::refreshNativeVariablesGui_before_dataset_page_actions
     set f .top.nb.channels
     if {![winfo exists $f.bar]} return

@@ -56,10 +56,10 @@ and input reachable. This is a Tcl GUI factory service; Script Bridge exposes
 typed data normalization, rather than widget paths.
 
 
-## TASK-9 dev-052 final behavior
+## Inspector scrolling
 
 `uiFieldScrollSee viewport content widget` scrolls any shared canvas sidebar/form to reveal a focused nested widget, using root-coordinate differences that also work with geometry-managed children. `uiFieldFormSee` delegates to it. Curve Workbench uses a true canvas-child content frame with a persistent vertical scrollbar and focus scrolling for point tables, numeric editors and composition. `uiFieldControlsLayout` uses actual required widths to maximize groups per row and keeps each label/input pair together; it has no arbitrary six-group limit.
-## Remote window placement (dev-066)
+## Window placement
 
 `uiFieldWindowFit window ?width height?` is a host/UI-only helper. Explicit sizes
 start at +20+20; mapped windows are clamped to the screen with 40 pixels of
@@ -73,9 +73,9 @@ Script Bridge operations.
 
 Placement sets the X11 user-position hint (USPosition), so multiwindow X servers honor the position as well as the size. Viewers with explicit initial dimensions call the helper before mapping; ordinary mapped windows use the global hook.
 
-## dev092 native context-menu positioning and grouped forms
+## Native context menus and grouped forms
 
-The dev096 additive `::GX::uiMenuRowAttach frame ordered_buttons ?trailing=1?`
+The `::GX::uiMenuRowAttach frame ordered_buttons ?trailing=1?`
 keeps a native action/menu row at one height. On a narrow window or enlarged
 font it moves overflow into native `More` entries while retaining the final
 `trailing` buttons (normally Workspace; Builder retains Options and Workspace).
@@ -110,7 +110,7 @@ height, existing vertical scrolling and visible errors on invalid input. The
 shared grid form groups all 35 existing options into six pages, retaining Apply,
 field Reset, Reset grid, alpha/color and unit/precision behavior.
 
-## dev097 focused text editing
+## Focused text editing
 
 Host-only `uiTextEditingAttach window widgets` attaches standard editor bindings
 to specified native Text/Entry controls. `uiTextEdit window operation` and
@@ -127,3 +127,20 @@ entry, installs no global binding, and releases widget bindtags on destruction.
 The existing Viewer shortcut configuration reserves standard text chords and
 excludes text controls; editor bindings do not add a second shortcut registry.
 These native widget helpers are host-only, not Script Job operations.
+
+## Viewer regions and dialog lifecycle
+
+`uiFieldViewerShellCreate window title ?geometry? ?inspectorWidth?` creates a
+resizable scientific canvas beside a scrollable inspector with a native sash,
+adaptive toolbar and bottom status/History region. `uiFieldViewerSection parent
+id title` creates a consistently padded inspector section.
+
+`uiFieldDialogCreate dialog parent title ?geometry?` creates a withdrawn transient
+dialog; populate domain controls, then call `uiFieldDialogPresent dialog ?focus?
+?modal?`. `uiFieldFocusWhenMapped container target ?modal?` defers focus and grab
+until both widgets are viewable. Unmapping releases the owned grab; closing or
+destroying before mapping safely retires the request. `uiFieldDialogClose dialog`
+releases the owned grab, destroys the dialog and restores its parent's focus.
+These are host-only operations; domain validation remains with the consumer.
+
+Shared dialogs without explicit dimensions size to their negotiated content request after mapping, then clamp placement to the screen. The global work-area mapper does not leave them frozen at Tk's provisional size. Explicit caller dimensions remain supported. Focus/grab acquisition checks both owner and target visibility; unmapping releases only that dialog's owned grab.

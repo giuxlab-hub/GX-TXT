@@ -35,6 +35,7 @@ proc ::GX::datasetPreviewConfigurationRead {id} {
     return $saved
 }
 proc ::GX::scientificDatasetFilterPersist {arrayName prefix} {
+    if {$prefix eq "previewMap" && [llength [info commands ::GX::datasetPreviewLiveSettingsChanged]]} {datasetPreviewLiveSettingsChanged}
     upvar #0 $arrayName state
     set filters [dict remove $state($prefix,filters) @hidden_filters]
     dict set filters @predicates [datasetPublicationV2DictDefault $filters @predicates {}]
@@ -42,9 +43,9 @@ proc ::GX::scientificDatasetFilterPersist {arrayName prefix} {
     foreach axis {x y z} {if {[info exists state($prefix,$axis)]} {dict set config $axis $state($prefix,$axis)}}
     _datasetFrameworkMetadataUpdate $::GX::currentSession $state($prefix,dataset) [dict create dataset_preview $config]
 }
-proc ::GX::scientificDatasetFilterControls {parent id arrayName prefix {reset 0} {manualFamily {}} {semanticOnly 0}} {
+proc ::GX::scientificDatasetFilterControls {parent id arrayName prefix {reset 0} {manualFamily {}} {semanticOnly 0} {preparedDimensions @discover}} {
     upvar #0 $arrayName state
-    set dims [scientificDatasetFilterDimensions $id 100000 1024 $manualFamily $semanticOnly]
+    if {$preparedDimensions eq "@discover"} {set dims [scientificDatasetFilterDimensions $id 100000 1024 $manualFamily $semanticOnly]} else {set dims $preparedDimensions}
     set saved [datasetPreviewConfigurationRead $id]
     set state($prefix,dataset) $id
     set priorTypes [expr {[info exists state($prefix,filterTypes)]?$state($prefix,filterTypes):{}}]
@@ -101,7 +102,7 @@ proc ::GX::scientificDatasetFilterControls {parent id arrayName prefix {reset 0}
     set state($prefix,filterTypes) $types
     if {$state($prefix,ordering) ni $ids} {set state($prefix,ordering) {}}
     set state($prefix,dimensions) $dims
-    if {$saved ne {} && [datasetPublicationV2DictDefault $saved schema_identity {}] ne [_datasetScientificProfileIdentity $id]} {scientificDatasetFilterPersist $arrayName $prefix}
+    if {$preparedDimensions eq "@discover" && $saved ne {} && [datasetPublicationV2DictDefault $saved schema_identity {}] ne [_datasetScientificProfileIdentity $id]} {scientificDatasetFilterPersist $arrayName $prefix}
     foreach child [winfo children $parent] {if {[winfo toplevel $child] ne $child} {destroy $child}}
     ttk::button $parent.configure -text {Configure filters / grouping…} -command [list ::GX::scientificDatasetFilterConfigure $parent $arrayName $prefix]
     grid $parent.configure -row 0 -column 0 -sticky w -padx 3
