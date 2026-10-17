@@ -7,6 +7,10 @@ Within the same Session you can inspect and compare measurements, perform numeri
 **Source version:** 0.9.8.10-dev-099  
 **License:** GNU GPL-3.0-or-later (see [LICENSE](LICENSE)). Third-party packages and assets retain their applicable licenses.
 
+**Project website:** [GX-TXT on GitHub Pages](https://giuxlab-hub.github.io/GX-TXT/) · [Italian version](https://giuxlab-hub.github.io/GX-TXT/it/).
+**Official developer website:** [Giux-Lab](https://giux-lab.it/).
+**Online documentation:** [GX-TXT handbook](https://gxtxt.giux-lab.it/).
+
 ## Features
 
 - Acquisition and import of tabular, instrument, audio, image, document and geometric data
