@@ -127,7 +127,7 @@ proc ::GX::_native2DRasterPresent {canvas} {
 
 proc ::GX::native2DCanvasPreview {scene document mode {options {}}} {
     if {$mode ni {current fit}} {error {Preview mode must be current or fit}}
-    foreach key [dict keys $options] {if {$key ni {width height padding background grid axes reference_images dimensions constraints annotations point_budget output_format output_file}} {error "Unknown preview option '$key'"}}
+    foreach key [dict keys $options] {if {$key ni {width height padding background grid axes reference_images dimensions constraints annotations point_budget output_format output_file include_construction_reference}} {error "Unknown preview option '$key'"}}
     set saved [::GX::Native2D::core view_state $scene]
     set feedback [datasetPublicationV2DictDefault $::GX::Native2DRaster::feedback $scene {}]
     set visibility {}
@@ -153,7 +153,7 @@ proc ::GX::native2DCanvasPreview {scene document mode {options {}}} {
         fconfigure $channel -encoding utf-8 -translation lf
         puts $channel "size\t$width\t$height\t$background\t[list $left $top [expr {$width-$right}] [expr {$height-$bottom}]]"
         if {[datasetPublicationV2DictDefault $options reference_images 1]} {foreach row [_native2DImageRows $scene] {puts $channel $row}}
-        set snapshot [native2DPresentationSnapshot $scene [dict create point_budget [datasetPublicationV2DictDefault $options point_budget 4096] include_construction_reference 1]]
+        set snapshot [native2DPresentationSnapshot $scene [dict create point_budget [datasetPublicationV2DictDefault $options point_budget 4096] include_construction_reference [datasetPublicationV2DictDefault $options include_construction_reference 1]]]
         foreach primitive [dict get $snapshot grid_primitives] {
             set axes [expr {[dict get $primitive classification]==2}]
             if {![datasetPublicationV2DictDefault $options [expr {$axes?"axes":"grid"}] 1]} continue
@@ -175,7 +175,7 @@ proc ::GX::native2DCanvasPreview {scene document mode {options {}}} {
         }
         set readable [uiFieldColorToRGBA [uiFieldColorReadableText [uiFieldColorFromRGBA $background]]]
         if {[datasetPublicationV2DictDefault $options annotations 0]} {
-            foreach text [dict get $snapshot texts] {puts $channel "label\t$readable\t[dict get $text position]\t[binary encode base64 -maxlen 0 [encoding convertto utf-8 [dict get $text text]]]"}
+            foreach text [dict get $snapshot texts] {puts $channel "label\t$readable\t[dict get $text position]\t[binary encode base64 -maxlen 0 [encoding convertto utf-8 [dict get $text text]]]\t[dict get $text anchor]\t[dict get $text font_size]"}
         }
         foreach relationship [::GX::Native2D::core constraint_list $scene] {
             if {[dict get $relationship disabled]} continue

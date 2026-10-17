@@ -65,6 +65,7 @@ proc ::GX::scientificDatasetViewerNext {w} {
     set state($w,loading) [list $y $filters]
     set request [dict create dataset_id $state($w,id) x_variable_id [lindex $state($w,plottedRequest) 0] y_variable_id $y display_budget 4096]
     dict set request filters $filters
+    if {[info exists state($w,ordering)] && $state($w,ordering) ne {}} {dict set request order_variable_id $state($w,ordering)}
     set state($w,source) [curveSourceOpen $::GX::currentSession $request [list ::GX::scientificDatasetOpeningProgress $w $state($w,epoch)]]
     set state($w,job) [curveSourceDisplayAsync $state($w,source) [list ::GX::scientificDatasetViewerReady $w] [list ::GX::scientificDatasetViewerProgress $w]]
 }
@@ -85,7 +86,7 @@ proc ::GX::scientificDatasetViewerReady {w receipt} {
             scientificDatasetCoordinateAddTrace $state($w,scene) $display [llength $state($w,series)]
         }
         lassign $state($w,loading) y filters
-        set member [join [lmap filter $filters {format {%s=%s} [dict get $filter filter_variable_id] [join [dict get $filter values] {, }]}] {; }]
+        set member [join $filters {; }]
         lappend state($w,series) [dict create y $y member $member filters $filters display $display]
         curveSourceClose $state($w,source);set state($w,source) {}
         scientificDatasetViewerCoordinateLegend $w

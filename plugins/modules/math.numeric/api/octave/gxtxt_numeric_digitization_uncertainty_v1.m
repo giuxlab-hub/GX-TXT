@@ -21,7 +21,7 @@ function out=propagate(lin,spec)
   local=zeros(2*n,2);shared=zeros(2*n,m);sigma=zeros(n,2);pixel_sigma=zeros(n,2);blocks=zeros(n,3);
   if(strcmp(mode,'pixel_calibration'))
     distribution=option(spec,'pixel_distribution','');scale=real_values(option(spec,'pixel_scale',[]));cal=real_values(option(spec,'calibration_standard_uncertainty',[]));
-    if(numel(scale)!=2||any(scale(:)<=0)||numel(cal)!=m||any(cal(:)<0)||isfield(spec,'override_standard_uncertainty')),fail('Declare two positive pixel scales and aligned nonnegative calibration standard uncertainties');endif
+    if(numel(scale)!=2||any(scale(:)<0)||numel(cal)!=m||any(cal(:)<0)||isfield(spec,'override_standard_uncertainty')),fail('Declare two nonnegative pixel-localization scales and aligned nonnegative calibration standard uncertainties');endif
     if(strcmp(distribution,'rectangular_full_width')),pixel=scale(:)/sqrt(12);
     elseif(strcmp(distribution,'normal_standard_uncertainty')),pixel=scale(:);
     else,fail('Pixel size is not sigma: declare rectangular full width or normal standard uncertainty');endif
@@ -48,8 +48,13 @@ function out=propagate(lin,spec)
     distribution='declared_independent_physical_standard_uncertainty';
     declaration=struct('mode',mode,'pixel_distribution',distribution,'override_standard_uncertainty',values,'rationale',rationale);
   else,fail('Choose pixel_calibration or explicit physical_override');endif
-  if(any(!isfinite(sigma(:)))||any(sigma(:)<=0)||any(!isfinite(blocks(:)))||any(!isfinite(local(:)))||any(!isfinite(shared(:)))),fail('Propagated physical standard uncertainty must be finite and positive');endif
-  correlation=(blocks(:,2)./sigma(:,1))./sigma(:,2);
+  if(any(!isfinite(sigma(:)))||any(sigma(:)<0)||any(!isfinite(blocks(:)))||any(!isfinite(local(:)))||any(!isfinite(shared(:)))),fail('Propagated physical standard uncertainty must be finite and nonnegative');endif
+  % Zero marginal variance is legitimate; Pearson correlation is undefined
+  % there. Exclude undefined pairs from the correlation summary, without epsilon.
+  correlation=zeros(n,1);
+  defined=(sigma(:,1)>0 & sigma(:,2)>0);
+  if(any(blocks(!defined,2)!=0)),fail('Zero-variance coordinates cannot have nonzero XY covariance');endif
+  correlation(defined)=blocks(defined,2)./sigma(defined,1)./sigma(defined,2);
   out=struct('schema','gxtxt.digitization_uncertainty.v1','numeric_api','NUMERIC_API_v1','operation','digitization_uncertainty',...
     'coordinates',xy,'coordinate_units',{units},'point_count',n,'calibration_ids',{ids},'calibration_units',{calunits},...
     'standard_uncertainty',sigma,'independent_standard_uncertainty',pixel_sigma,'covariance_blocks',blocks,...

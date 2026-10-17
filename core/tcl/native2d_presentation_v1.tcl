@@ -1,5 +1,54 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Renderer-neutral CORE object/scene presentation adapters.
+proc ::GX::native2DAxisPlan {lower upper pixels {font 14}} {
+    foreach value [list $lower $upper $pixels] {if {![string is double -strict $value] || ![expr {abs($value)<Inf}]} {error {Axis limits and size must be finite}}}
+    if {$upper<=$lower || $pixels<=0} {error {Axis planner needs an increasing range and positive size}}
+    set range [expr {$upper-$lower}]
+    if {![expr {$range<Inf}]} {error {Axis range exceeds finite presentation capacity}}
+    set target [expr {max(1,min(30,int($pixels/max(45,5*$font))))}]
+    for {set attempt 0} {$attempt<8} {incr attempt} {
+        set raw [expr {$range/$target}]
+        set power [expr {pow(10.0,floor(log10($raw)))}]
+        if {$power==0} {set power $raw}
+        set step [expr {10*$power}]
+        foreach factor {1 2 2.5 5 10} {if {$factor*$power>=$raw*(1-1e-14)} {set step [expr {$factor*$power}];break}}
+        set first [expr {entier(ceil($lower/$step))}];set last [expr {entier(floor($upper/$step))}]
+        set digits [expr {max(0,min(16,int(ceil(-log10($step)))+1))}]
+        set ticks {};set labels {};set widest 1
+        set previous {}
+        for {set i $first} {$i<=$last && [llength $ticks]<64} {incr i} {
+            set value [expr {$i*$step}]
+            if {$value<$lower || $value>$upper} continue
+            if {$previous ne {} && $value==$previous} continue
+            set previous $value
+            if {abs($value)<$step*1e-12} {set value 0.0}
+            if {$value==0} {set label 0
+            } elseif {abs($value)>=1e7 || abs($value)<1e-4 || $digits>=15} {set label [format %.16g $value]
+            } else {set label [format %.*f $digits $value];if {[string first . $label]>=0} {set label [string trimright [string trimright $label 0] .]}}
+            if {$label in $labels} {set label [format %.17g $value]}
+            lappend labels $label;set widest [expr {max($widest,[string length $label])}]
+            lappend ticks [dict create value $value label $label]
+        }
+        set needed [expr {($widest*.62*$font+12)*max(1,[llength $ticks]-1)}]
+        if {$needed<=$pixels || $target<=1} break
+        set target [expr {max(1,int($target*$pixels/$needed))}]
+    }
+    return [dict create lower $lower upper $upper step $step ticks $ticks]
+}
+proc ::GX::native2DAxisPlans {scene {font 14}} {
+    lassign [::GX::Native2D::core view $scene] width height left top right bottom bounds
+    lassign $bounds x0 y0 x1 y1
+    return [dict create x [native2DAxisPlan $x0 $x1 [expr {$width-$left-$right}] $font] y [native2DAxisPlan $y0 $y1 [expr {$height-$top-$bottom}] $font]]
+}
+proc ::GX::native2DAxisLabelMargin {scene {font 14}} {
+    set plans [native2DAxisPlans $scene $font];set width 60
+    foreach tick [dict get $plans y ticks] {
+        set label [dict get $tick label]
+        if {[llength [info commands font]]} {set size [font measure [list Sans [expr {-$font}]] $label]} else {set size [expr {[string length $label]*$font*.62}]}
+        set width [expr {max($width,$size+20)}]
+    }
+    return [expr {ceil($width)}]
+}
 proc ::GX::native2DCanvasDrawGizmo {canvas scene background {tags {}}} {
     foreach primitive [::GX::Native2D::core render_gizmo $scene] {
         set color [uiFieldColorComposite [uiFieldColorFromRGBA [dict get $primitive color]] $background]
@@ -121,17 +170,38 @@ proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
     set view [::GX::Native2D::core view $scene]
     lassign $view width height left top right bottom bounds
     lassign $bounds x0 y0 x1 y1
-    set texts {}
-    for {set i 0} {$i<=5} {incr i} {
-        set x [expr {$x0+($x1-$x0)*$i/5.0}];set y [expr {$y0+($y1-$y0)*$i/5.0}]
-        if {$x==0} {set x 0};if {$y==0} {set y 0}
-        lassign [::GX::Native2D::core device $scene [list $x $y0]] px unused
-        lassign [::GX::Native2D::core device $scene [list $x0 $y]] unused py
-        set xt [format %.5g $x];set yt [format %.5g $y]
-        if {[dict exists $options x_tick_labels]} {set xt [lindex [dict get $options x_tick_labels] $i]}
-        if {[dict exists $options y_tick_labels]} {set yt [lindex [dict get $options y_tick_labels] $i]}
-        lappend texts [dict create position [list $px [expr {$height-$bottom+14}]] text $xt anchor n rotation 0 font_size $font color $textColor]
-        lappend texts [dict create position [list [expr {$left-7}] $py] text $yt anchor e rotation 0 font_size $font color $textColor]
+    set texts {};set plans [native2DAxisPlans $scene $font]
+    # Construction references retain their authored grid. Scientific axes use
+    # the same numeric positions for both labels and grid primitives.
+    if {!$includeReference && ![dict exists $options x_tick_labels] && ![dict exists $options y_tick_labels]} {set gridLines {}}
+    foreach axis {x y} {
+        set ticks [dict get $plans $axis ticks]
+        if {[dict exists $options ${axis}_tick_labels]} {
+            set ticks {};set i 0
+            foreach label [dict get $options ${axis}_tick_labels] {
+                set value [expr {$axis eq "x"?$x0+($x1-$x0)*$i/5.0:$y0+($y1-$y0)*$i/5.0}]
+                lappend ticks [dict create value $value label $label];incr i
+            }
+        }
+        foreach tick $ticks {
+            set value [dict get $tick value]
+            if {$axis eq "x"} {
+                lassign [::GX::Native2D::core device $scene [list $value $y0]] px unused
+                set a [list $px $top];set b [list $px [expr {$height-$bottom}]]
+                set position [list $px [expr {$height-$bottom+14}]];set anchor n
+                set half [expr {[string length [dict get $tick label]]*$font*.31+4}]
+                if {$px-$half<2} {set anchor nw}
+                if {$px+$half>$width-2} {set anchor ne}
+            } else {
+                lassign [::GX::Native2D::core device $scene [list $x0 $value]] unused py
+                set a [list $left $py];set b [list [expr {$width-$right}] $py]
+                set position [list [expr {$left-7}] $py];set anchor e
+            }
+            lappend texts [dict create axis $axis value $value position $position text [dict get $tick label] anchor $anchor rotation 0 font_size $font color $textColor]
+            if {!$includeReference && ![dict exists $options x_tick_labels] && ![dict exists $options y_tick_labels] && [dict get $grid visible]} {
+                lappend gridLines [dict create axis $axis value $value a $a b $b classification 1 color [dict get $grid major_color] width [dict get $grid major_width] style [dict get $grid major_style]]
+            }
+        }
     }
     foreach {key position anchor rotation} [list x_label [list [expr {($left+$width-$right)/2}] [expr {$height-12}]] s 0 y_label [list 14 [expr {($top+$height-$bottom)/2}]] center 90 title [list [expr {$width/2}] 5] n 0] {
         set text [datasetPublicationV2DictDefault $options $key ""]
@@ -151,7 +221,7 @@ proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
         incr row;set y [expr {$y+$font+5}]
     }
     if {$total>$row} {lappend texts [dict create position [list [expr {$left+42}] $y] text "+[expr {$total-$row}] more curves (see table)" anchor w rotation 0 font_size $font color $textColor]}
-    return [dict create api_id NATIVE2D_PRESENTATION_SNAPSHOT_v1 api_version 1 presentation $presentation view $view point_budget $budget include_construction_reference $includeReference excluded_object_ids $excluded objects $objects grid_primitives $gridLines legend_primitives $legendLines texts $texts legend $legend]
+    return [dict create api_id NATIVE2D_PRESENTATION_SNAPSHOT_v1 api_version 1 presentation $presentation view $view axis_plans $plans point_budget $budget include_construction_reference $includeReference excluded_object_ids $excluded objects $objects grid_primitives $gridLines legend_primitives $legendLines texts $texts legend $legend]
 }
 proc ::GX::native2DCanvasSnapshot {canvas snapshot} {
     set background [uiFieldColorComposite [uiFieldColorFromRGBA [dict get $snapshot presentation background]] #FFFFFF]

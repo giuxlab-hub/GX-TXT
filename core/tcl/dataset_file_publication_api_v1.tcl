@@ -173,7 +173,10 @@ proc ::GX::datasetFilePublicationPublish {session moduleId request} {
         set fields [datasetFilePublicationRegistryFields $producer $request $target $sha $storageKind $sourceIds]
         if {$delegated} {lappend fields last_editor_module $moduleId}
         datasetFilePublicationCommitRegistry $session $datasetId $fields
-        if {$metadata ne ""} {datasetMetadataWrite $session $datasetId $metadata}
+        if {$metadata ne ""} {
+            datasetMetadataWrite $session $datasetId $metadata
+            _datasetMetadataOriginRecord $session $datasetId module:$producer [dict keys $metadata]
+        }
         _datasetFrameworkMetadataUpdate $session $datasetId [dict create dataset_namespace $namespace]
     } on error {failure options} {
         catch {file delete -force -- $staged}

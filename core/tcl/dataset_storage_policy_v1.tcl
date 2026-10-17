@@ -65,6 +65,12 @@ proc ::GX::datasetPublicationV2SelectProvider {request required preferred {hints
  return [dict create provider [dict get $s provider] reason "[dict get $s reason]; size policy v2: $sizeReason" diagnostics $s]
 }
 proc ::GX::datasetStorageSha256Text {session value} {set root [file join [file normalize $session] cache dataset_materializations]; file mkdir $root; set tmp [file join $root ".identity.[pid].[clock clicks].tmp"]; set f [open $tmp w]; fconfigure $f -encoding utf-8 -translation lf; puts -nonewline $f $value; close $f; try {return [sha256File $tmp]} finally {catch {file delete -force -- $tmp}}}
+proc ::GX::datasetStorageSha256Bytes {session bytes} {
+    set root [file join [file normalize $session] cache dataset_materializations];file mkdir $root
+    set path [file join $root .binary-identity.[pid].[clock clicks].tmp]
+    set f [open $path {WRONLY CREAT EXCL}]
+    try {fconfigure $f -translation binary -encoding binary;puts -nonewline $f $bytes;close $f;set f {};return [sha256File $path]} finally {if {$f ne {}} {close $f};file delete -force $path}
+}
 proc ::GX::datasetStorageSchemaIdentity {session id} {variable currentSession; set currentSession [file normalize $session]; loadDatasetRegistry $currentSession; set lines [list "dataset_id=$id" "schema_api=[datasetField $id variable_schema_api_version 3]"]; set fields {variable_id canonical unit semantic_role value_kind dtype rank shape dimension_ids coordinate_variable_ids coordinate_role axis_kind axis_origin axis_step axis_count component_ids group_id}; foreach v [datasetVariableSchemaV3 $id] {foreach f $fields {lappend lines "$f=[dict get $v $f]"}; lappend lines --}; return [datasetStorageSha256Text $session [join $lines "\n"]]}
 proc ::GX::datasetStorageTableDescription {session id {target ""}} {
  variable currentSession; set currentSession [file normalize $session]; loadDatasetRegistry $currentSession; if {[datasetField $id id ""] eq ""} {error "Unknown dataset: $id"}; set vars [datasetVariableSchemaV3 $id]; if {![llength $vars]} {error "Dataset $id has no variables"}; set dim ""; set count -1; set ids {}

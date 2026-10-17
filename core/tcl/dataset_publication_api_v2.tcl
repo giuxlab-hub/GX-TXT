@@ -701,6 +701,7 @@ proc ::GX::_datasetPublicationV2Commit {writer sha integritySeconds providerResu
         foreach variableId $datasetPublicationWriter($writer,variable_ids) {lappend statisticalSchema $datasetPublicationWriter($writer,variable,$variableId)}
         set publicationMetadata [::GX::StatisticsV1::sealPublicationBindings [datasetPublicationV2DictDefault $definition structured_metadata {}] $statisticalSchema $sha]
         datasetMetadataWrite $session $datasetId [_scientificPublicationMetadata $session $datasetId $publicationMetadata [datasetPublicationV2DictDefault $definition source_dataset_ids {}] [expr {$datasetPublicationPlan($plan,operation) eq "replacing"}]]
+        _datasetMetadataOriginRecord $session $datasetId module:$datasetPublicationPlan($plan,module_id) [dict keys $publicationMetadata]
         _datasetFrameworkMetadataUpdate $session $datasetId [dict create dataset_namespace [dict get $definition dataset_namespace]]
         datasetAuthorityFault after_metadata
     } on error {failure options} {

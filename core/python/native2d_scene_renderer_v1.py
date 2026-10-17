@@ -12,9 +12,28 @@ import io
 import sys
 from functools import lru_cache
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 Image.MAX_IMAGE_PIXELS = 64_000_000
+
+def axis_label(canvas, row):
+    x, y = map(float, row[2].split())
+    text = base64.b64decode(row[3]).decode('utf-8')
+    if len(row) < 6:
+        ImageDraw.Draw(canvas).text((x,y), text, fill=rgba(row[1]))
+        return
+    size = max(6, min(96, round(float(row[5]))))
+    font = None
+    for name in ('DejaVuSans.ttf', 'arial.ttf'):
+        try:
+            font = ImageFont.truetype(name, size)
+            break
+        except OSError:
+            continue
+    if font is None:
+        font = ImageFont.load_default()
+    anchor = {'n': 'mt', 'ne': 'rt', 'nw': 'lt', 'e': 'rm', 'w': 'lm', 's': 'mb', 'center': 'mm'}.get(row[4], 'lt')
+    ImageDraw.Draw(canvas).text((x,y), text, font=font, anchor=anchor, fill=rgba(row[1]))
 
 
 def rgba(text):
@@ -111,7 +130,7 @@ def render_text(plan, output):
     canvas.alpha_composite(layer)
     for row in rows[1:]:
         if row[0] == "label":
-            x,y=map(float,row[2].split());ImageDraw.Draw(canvas).text((x,y),base64.b64decode(row[3]).decode("utf-8"),fill=rgba(row[1]))
+            axis_label(canvas, row)
     canvas.save(output, "PNG", optimize=False, compress_level=6)
 
 

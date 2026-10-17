@@ -7,6 +7,14 @@ For current interface contracts consult the API references under [docs/api](docs
 
 ## 0.9.8.10 - development revisions
 
+### 0.9.8.10-dev-098
+
+- Extend Dataset Preview with generic typed Variable Schema v3 filters and independent scientific curve grouping, exact signed/unsigned integer comparisons, restored Session configuration and producer-aware editable User metadata.
+- Use source-accurate finite scientific axis bounds and adaptive numerical tick placement while retaining original Dataset coordinates and point identity.
+- Integrate Curve Digitalizer 2.0.3 with published calibration/uncertainty interfaces, verified source raster points, complete factor-consistency checks and shared Numeric 1.60.1 zero-localization handling.
+- Extend shared Digitalizer Preview for visibility, original and processed raster selection, Quality diagnostics and stable Family/Curve/Calibration distinctions. Add optional Scientific Image Inspector 0.4.1.
+- Retire the superseded `viewer.curve_trace_assistant` and `analysis.digitization_quality` module packages. Their functionality is available through the integrated scientific and CORE interfaces.
+
 ### 0.9.8.10-dev-097
 
 - Extend public CORE statistical-result semantics across analysis modules, Numeric operations, fitting, scientific viewers and registered Python/Octave consumers, with explicit units, assumptions, applicability and unavailable-result states.

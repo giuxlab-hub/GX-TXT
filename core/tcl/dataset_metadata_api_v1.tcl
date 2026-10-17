@@ -260,7 +260,13 @@ proc ::GX::datasetMetadataWrite {session datasetId metadata} {
     set before [_datasetMetadataReadAll $session $datasetId]
     ::GX::StatisticsV1::validateMetadataReplacement [_datasetMetadataFilter $before 0] $normalized
     set private [_datasetMetadataFilter $before 1]
-    return [_datasetMetadataWriteAll $session $datasetId [dict merge $normalized $private]]
+    set path [_datasetMetadataWriteAll $session $datasetId [dict merge $normalized $private]]
+    if {$::GX::DatasetPrivate::activeContext ne {}} {
+        set changed {}
+        dict for {key value} $normalized {if {![dict exists $before $key] || [dict get $before $key] ne $value} {lappend changed $key}}
+        if {$changed ne {}} {_datasetMetadataOriginRecord $session $datasetId module:[dict get $::GX::DatasetPrivate::activeContext module_id] $changed}
+    }
+    return $path
 }
 
 proc ::GX::datasetMetadataUpdate {session datasetId updates} {
@@ -292,7 +298,7 @@ proc ::GX::datasetMetadataEditorRender {} {
     $tree delete [$tree children {}]
     foreach key [lsort -dictionary [dict keys $datasetMetadataEditorData]] {
         set value [dict get $datasetMetadataEditorData $key]
-        set display [string map [list "\n" " ↵ " "\r" ""] $value]
+        set display [datasetMetadataBoundedValue $value]
         $tree insert {} end -values [list $key $display]
     }
 }
@@ -393,7 +399,7 @@ proc ::GX::datasetMetadataEditorSave {} {
     variable currentSession
     variable datasetMetadataEditorDataset
     variable datasetMetadataEditorData
-    if {[catch {datasetPageEditorRequire metadata;datasetMetadataWrite $currentSession $datasetMetadataEditorDataset $datasetMetadataEditorData} err]} {
+    if {[catch {datasetPageEditorRequire metadata;_datasetMetadataUserSave $currentSession $datasetMetadataEditorDataset $datasetMetadataEditorData} err]} {
         tk_messageBox -parent .top.nb.channels.metadataEditor -icon error -type ok -title "Dataset metadata" -message $err
         return 0
     }
@@ -407,7 +413,7 @@ proc ::GX::datasetMetadataEditorOpen {datasetId} {
     variable datasetMetadataEditorDataset
     variable datasetMetadataEditorData
     variable datasetMetadataEditorKey
-    if {[catch {set metadata [datasetMetadataRead $currentSession $datasetId]} err]} {
+    if {[catch {set metadata [datasetMetadataUserFields $currentSession $datasetId]} err]} {
         tk_messageBox -parent .top -icon error -type ok -title "Dataset metadata" -message $err
         return
     }
@@ -426,7 +432,7 @@ proc ::GX::datasetMetadataEditorOpen {datasetId} {
     .top.nb.channels.views select .top.nb.channels.views.metadata
     grid columnconfigure $w 0 -weight 1
     grid rowconfigure $w 1 -weight 1
-    ttk::label $w.heading -text "Dataset: $datasetId    Generic namespaced metadata" -anchor w
+    ttk::label $w.heading -text "Dataset: $datasetId    User metadata (producer and unclassified fields remain read-only)" -anchor w
     grid $w.heading -row 0 -column 0 -sticky ew -padx 10 -pady 8
 
     ttk::frame $w.table
@@ -536,3 +542,4 @@ proc ::GX::datasetMetadataOpenSelectedFromGui {} {
     if {$mode ne "imported" || $datasetId eq ""} return
     datasetMetadataEditorOpen $datasetId
 }
+source [file join [file dirname [info script]] dataset_metadata_origins_v1.tcl]

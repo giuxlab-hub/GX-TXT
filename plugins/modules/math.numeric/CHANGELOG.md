@@ -1,3 +1,12 @@
+## 1.60.1
+
+Accept exact zero pixel localization and propagated zero marginal variance in
+digitization uncertainty. Omit undefined zero-variance Pearson pairs from
+correlation summaries; require exact zero cross-covariance on a zero marginal.
+Preserve physical zero without an artificial positive epsilon. Focused dev098
+public Numeric, covariance, Statistical Semantics, GLS/ODR and Script evidence
+is recorded in docs/reports/DEV098_INTEGRATION_AND_EVIDENCE.md.
+
 ## 1.60.0
 
 Correct live Tcl profile catalog metadata and transport infinite original

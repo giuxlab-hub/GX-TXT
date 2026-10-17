@@ -193,11 +193,7 @@ proc ::GX::datasetPageRenderSections {mode datasetId} {
             $f.metadata.head.verify configure -command [list ::GX::datasetPageVerifyRawSource $datasetId]
             pack $f.metadata.head.verify -side right -padx 4 -pady 4
         }
-        set details [datasetMetadataRead $::GX::currentSession $datasetId]
-        dict for {key value} $details {
-            $f.metadata.table insert {} end -values [list $key $value]
-        }
-        if {$details eq {}} {$f.metadata.table insert {} end -values [list {No user metadata} {}]}
+        datasetMetadataPageRefresh $datasetId
         dict for {key value} [sessionInspectionDataset $datasetId] {
             if {[_datasetMetadataReserved $key]} continue
             $f.views.technical.table insert {} end -values [list $key $value]
@@ -235,7 +231,7 @@ proc ::GX::datasetPageEditorBegin {section id} {
     if {[dict exists $datasetPageEditors $section]} {error {Finish or cancel the existing editor first.}}
     dict set datasetPageEditors $section [list [interactiveDocumentSessionToken] $::GX::currentSession $id]
     switch $section {
-        metadata {dict set ::GX::datasetPageEditorBaselines $section [datasetMetadataRead $::GX::currentSession $id]}
+        metadata {dict set ::GX::datasetPageEditorBaselines $section [datasetMetadataUserFields $::GX::currentSession $id]}
         notes {dict set ::GX::datasetPageEditorBaselines $section [datasetUserNotes $id]}
         temporal {dict set ::GX::datasetPageEditorBaselines $section {}}
     }

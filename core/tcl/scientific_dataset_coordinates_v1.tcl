@@ -19,8 +19,51 @@ proc ::GX::scientificDatasetCoordinateDisplay {context x y display} {
     }
     set shown {};foreach a [lindex $converted 0] b [lindex $converted 1] {lappend shown [list $a $b]}
     dict set display canonical_points $points;dict set display points $shown
+    if {[dict exists $display full_bounds]} {
+        set exact [datasetPublicationV2DictDefault $display canonical_full_bounds [dict get $display full_bounds]]
+        dict set display canonical_full_bounds $exact
+        set next $exact
+        foreach lo {0 1} hi {2 3} vid [list $x $y] {
+            set values [list [lindex $exact $lo] [lindex $exact $hi]]
+            if {[dict exists $context variables $vid]} {set values [dict get [datasetCoordinateSnapshotValues $context $vid $values {mode canonical}] values]}
+            set values [lsort -real $values];lset next $lo [lindex $values 0];lset next $hi [lindex $values end]
+        }
+        dict set display full_bounds $next
+    }
     dict set display coordinate_presentation [dict create schema gxtxt.scientific_coordinate_presentation.v1 context $context variable_ids [list $x $y] display_units $units view_factors $factors canonical_view_pivots $pivots calibration_applied 0 source_values_modified 0]
     return $display
+}
+proc ::GX::scientificDatasetFitBounds {scene displays {margin .03}} {
+    # full_bounds is accumulated from every finite canonical source pair by
+    # Curve Source, independently of display reduction. Never fit the LOD alone.
+    set bounds {}
+    foreach display $displays {
+        if {![dict exists $display full_bounds]} {error {Exact source bounds are required for automatic scientific fit}}
+        lassign [dict get $display full_bounds] x0 y0 x1 y1
+        if {$bounds eq {}} {set bounds [list $x0 $y0 $x1 $y1]} else {
+            lassign $bounds a b c d
+            set bounds [list [expr {min($a,$x0)}] [expr {min($b,$y0)}] [expr {max($c,$x1)}] [expr {max($d,$y1)}]]
+        }
+    }
+    if {$bounds eq {}} {error {No finite source bounds}}
+    set expanded $bounds
+    foreach lo {0 1} hi {2 3} {
+        set a [lindex $bounds $lo];set b [lindex $bounds $hi]
+        set pad [expr {$a==$b?max(abs($a)*.03,1e-12):($b-$a)*$margin}]
+        lset expanded $lo [expr {$a-$pad}];lset expanded $hi [expr {$b+$pad}]
+    }
+    set view [::GX::Native2D::core view_requested $scene];lset view 6 $expanded
+    ::GX::Native2D::core view $scene $view
+    set plans [native2DAxisPlans $scene]
+    foreach lo {0 1} hi {2 3} axis {x y} {
+        set step [dict get $plans $axis step]
+        set a [lindex $expanded $lo];set b [lindex $expanded $hi]
+        lset expanded $lo [expr {min($a,floor($a/$step)*$step)}]
+        lset expanded $hi [expr {max($b,ceil($b/$step)*$step)}]
+    }
+    lset view 6 $expanded;::GX::Native2D::core view $scene $view
+    _scientificDatasetGrid $scene
+    return [dict create source_bounds $bounds view_bounds [lindex [::GX::Native2D::core view $scene] 6] bounds_authority curve_source_full_finite_pass]
 }
 proc ::GX::scientificDatasetCoordinateView {scene presentation} {
     set context [dict get $presentation context];set view [::GX::Native2D::core view_requested $scene]
@@ -74,7 +117,7 @@ proc ::GX::scientificDatasetViewerCoordinateRefresh {w} {
             dict set series display $display;lappend updated $series
         }
         if {$scene eq {}} {return}
-        ::GX::Native2D::core fit $scene
+        scientificDatasetFitBounds $scene [lmap series $updated {dict get $series display}]
         set presentation [scientificDatasetCoordinateView $scene [dict get [lindex $updated 0] display coordinate_presentation]]
     } on error {message options} {if {$scene ne {}} {::GX::Native2D::core destroy $scene};return -options $options $message}
     if {$state($w,scene) ne {}} {::GX::Native2D::core destroy $state($w,scene)}

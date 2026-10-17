@@ -48,6 +48,9 @@ proc ::GX::scientificDatasetAxes {id} {
     }
     set x {};set y {}
     if {[llength $axes]==1} {set x [lindex $axes 0];if {[llength $values]==1} {set y [lindex $values 0]}}
+    if {![catch {set manifest [datasetPreviewCurveManifest $id]}] && $manifest ne {}} {
+        set x [dict get $manifest columns x];set y [dict get $manifest columns y]
+    }
     return [dict create numeric $numeric x $x y $y]
 }
 proc ::GX::scientificDatasetDisplayScene {display} {
@@ -63,16 +66,14 @@ proc ::GX::scientificDatasetDisplayScene {display} {
         ::GX::Native2D::core grid $scene {visible 1 enabled 1}
         # Independent scientific dimensions must not inherit calibrated geometry.
         ::GX::Native2D::core aspect $scene auto
-        ::GX::Native2D::core fit $scene
+        if {[dict exists $display full_bounds]} {scientificDatasetFitBounds $scene [list $display]} else {::GX::Native2D::core fit $scene}
         _scientificDatasetGrid $scene
         return $scene
     } on error {message options} {::GX::Native2D::core destroy $scene;return -options $options $message}
 }
 proc ::GX::_scientificDatasetGrid {scene} {
-    lassign [lindex [::GX::Native2D::core view $scene] 6] x0 y0 x1 y1
-    # Presentation grid follows the Native viewport, instead of one grid line
-    # per Hz on wide scientific axes. This does not change fit or source values.
-    ::GX::Native2D::core grid $scene [dict create origin [list $x0 $y0] spacing_x [expr {($x1-$x0)/5}] spacing_y [expr {($y1-$y0)/5}] major_interval 1]
+    set plans [native2DAxisPlans $scene]
+    ::GX::Native2D::core grid $scene [dict create origin {0 0} spacing_x [dict get $plans x step] spacing_y [dict get $plans y step] major_interval 1]
 }
 proc ::GX::scientificDatasetPreview {datasetId xId yId output {member {}}} {
     set filters {}
@@ -262,17 +263,10 @@ proc ::GX::scientificDatasetViewerDraw {w} {
     if {$width<120||$height<100} return
     set view [::GX::Native2D::core view_requested $s];lset view 0 $width;lset view 1 $height;lset view 2 85;lset view 3 20;lset view 4 25;lset view 5 50
     ::GX::Native2D::core view $s $view
+    lset view 2 [expr {min($width/3.0,max(85,[native2DAxisLabelMargin $s]))}]
+    ::GX::Native2D::core view $s $view
     _scientificDatasetGrid $s
-    $c delete all;native2DCanvasGrid $s $c
-    foreach id [::GX::Native2D::core ids $s] {native2DCanvasDrawObject $c [native2DPresentationObjectSnapshot $s $id] #ffffff}
-    native2DCanvasViewportClip $c $s
-    lassign [lindex [::GX::Native2D::core view $s] 6] x0 y0 x1 y1
-    for {set i 0} {$i<=5} {incr i} {
-        set x [expr {$x0+($x1-$x0)*$i/5.0}];set y [expr {$y0+($y1-$y0)*$i/5.0}]
-        lassign [::GX::Native2D::core device $s [list $x $y]] px py
-        $c create text $px [expr {$height-28}] -text [format %.5g $x] -fill #23344a
-        $c create text 80 $py -anchor e -text [format %.5g $y] -fill #23344a
-    }
+    native2DCanvasSnapshot $c [native2DPresentationSnapshot $s]
 }
 proc ::GX::scientificDatasetViewerFit {w} {
     variable ::GX::DatasetViewer::state
@@ -281,7 +275,7 @@ proc ::GX::scientificDatasetViewerFit {w} {
     if {![info exists state($w,plottedRequest)] || $state($w,plottedRequest) ne $selection} {scientificDatasetViewerPlot $w;return}
     if {$state($w,job) ne {}} return
     if {$state($w,scene) ne {}} {
-        ::GX::Native2D::core fit $state($w,scene)
+        scientificDatasetFitBounds $state($w,scene) [lmap series $state($w,series) {dict get $series display}]
         if {[llength $state($w,series)]} {
             set presentation [scientificDatasetCoordinateView $state($w,scene) [dict get [lindex $state($w,series) 0] display coordinate_presentation]]
             set state($w,status) [scientificDatasetCoordinateNotice $presentation]
@@ -422,6 +416,7 @@ proc ::GX::datasetConsultationOpen {id info} {
 # descriptors; scientific PNGs use the same Curve Source + Native authority.
 rename ::GX::datasetInspectionRenderPreview ::GX::datasetInspectionRenderPreview_before_core_viewers
 proc ::GX::datasetInspectionRenderPreview {w choice} {
+    datasetDigitizerPreviewClear
     datasetPreviewUpdateOpenButton
     set expected [datasetPreviewStamp]
     set epoch $::GX::ui(previewEpoch)
@@ -444,6 +439,7 @@ proc ::GX::datasetInspectionRenderPreview {w choice} {
     $w configure -state normal;$w delete 1.0 end
     $w insert end "Dataset: $id — [dict get $info contract]\nCanonical scientific data; display-only preview.\n\n"
     set axes [scientificDatasetPreviewControls $id [scientificDatasetAxes $id]]
+    if {[catch {datasetDigitizerPreviewRender $w $id} reason]} {$w insert end "Source raster preview unavailable: $reason\n"}
     set f [file tempfile planePath];close $f
     try {set plane [scientificDatasetArrayPreview $id $planePath]
         if {$plane ne {}} {
@@ -471,6 +467,7 @@ proc ::GX::datasetInspectionRenderPreview {w choice} {
             $w insert end "Independent axes — X view: [format %.8g $x0] .. [format %.8g $x1]; Y view: [format %.8g $y0] .. [format %.8g $y1]. [dict get $receipt displayed_points] drawn points.\n"
         } on error {message options} {if {$epoch==$::GX::ui(previewEpoch) && $expected eq [datasetPreviewStamp]} {$w insert end "Scientific preview unavailable: $message\n"}} finally {file delete -force $path}
     }
+    if {[catch {datasetDigitizerPreviewFinish $w $id} reason]} {$w insert end "Original image unavailable: $reason\n"}
     $w configure -state disabled
     return 1
 }
@@ -503,3 +500,4 @@ proc ::GX::openSessionPath {path} {
     if {[info exists ::GX::datasetPageEditors]&&[dict size $::GX::datasetPageEditors]} {error {Save or Cancel the open Dataset editor before switching Sessions. Draft input remains in its section.}}
     tailcall openSessionPath_before_dataset_edit_guard $path
 }
+source [file join [file dirname [info script]] dataset_digitizer_preview_v1.tcl]

@@ -9,8 +9,6 @@ namespace eval ::GX::CurveDigitizerCompanion {
     variable documentFormatVersion 1.0
 }
 
-source [file join [file dirname [info script]] curve_digitizer_uncertainty_v1.tcl]
-
 proc ::GX::CurveDigitizerCompanion::_requireSession {} {
     return [::GX::sessionInspectionCurrentSession]
 }
@@ -205,3 +203,6 @@ proc ::GX::CurveDigitizerCompanion::commitPixelPoints {documentId curveId expect
         }
     }
 }
+
+# Additive public retained statistical/GLS consumer boundary from dev097.
+source [file join [file dirname [info script]] curve_digitizer_core_consumers.tcl]

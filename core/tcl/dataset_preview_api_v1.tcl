@@ -309,7 +309,7 @@ proc ::GX::datasetPreviewTool {name} {
     return $p
 }
 
-proc ::GX::datasetPreviewImageArtifact {path previewDir} {
+proc ::GX::datasetPreviewImageArtifact {path previewDir {preserveGeometry 0}} {
     if {![previewSetting image_inline]} { return [dict create] }
     if {[file size $path] > [previewSetting image_max_source_bytes]} { return [dict create] }
     set mode [previewSetting image_thumbnailer]
@@ -318,7 +318,8 @@ proc ::GX::datasetPreviewImageArtifact {path previewDir} {
     set magick [datasetPreviewTool magick]
     if {$mode in {auto magick} && $magick ne ""} {
         set geometry "[previewSetting image_width_px]x[previewSetting image_height_px]>"
-        if {![catch {exec $magick $path -auto-orient -thumbnail $geometry $out 2>@1}] && [file isfile $out]} {
+        set orientation [expr {$preserveGeometry?{}:{-auto-orient}}]
+        if {![catch {exec $magick $path {*}$orientation -thumbnail $geometry $out 2>@1}] && [file isfile $out]} {
             return [dict create path $out media_type image/png label "Image preview"]
         }
     }

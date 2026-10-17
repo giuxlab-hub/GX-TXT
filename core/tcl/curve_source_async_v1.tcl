@@ -16,6 +16,7 @@ proc ::GX::curveSourceCooperativeBoundary {progress receipt} {
 proc ::GX::curveSourceDisplayAsync {source completed {progress ""}} {
     variable ::GX::CurveSource::jobs;variable ::GX::CurveSource::jobSerial
     set record [_curveSourceRequire $source];set request [dict get $record request]
+    if {[dict get $record row_count]==1 && [dict get $record display] eq {}} {curveSourceDisplay $source;set record [_curveSourceRequire $source]}
     native2DEnsure
     set scene "";set stream ""
     try {

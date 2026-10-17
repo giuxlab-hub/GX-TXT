@@ -119,7 +119,7 @@ proc ::GX::curveSourceOpen {session request {progress {}}} {
         set start [dict get $request start]
         set count [dict get $request count]
         if {$count<0} {set count [expr {$total-$start}]}
-        if {$count<2} {error "Curve Source range needs at least two rows"}
+        if {$count<1} {error "Curve Source range needs at least one row"}
         dict set request count $count
         tableStreamClose $stream;set stream ""
         set sourceId "curve-source:[datasetStorageSha256Text $session [list $identities [dict remove $request display_budget]]]"
@@ -216,6 +216,25 @@ proc ::GX::curveSourceDisplay {token} {
     variable ::GX::CurveSource::records
     set record [_curveSourceRequire $token]
     if {[dict get $record display] ne {}} {return [dict get $record display]}
+    if {[dict get $record row_count]==1} {
+        set request [dict get $record request]
+        set ids [list [dict get $request x_variable_id] [dict get $request y_variable_id]]
+        set lineage [dict get $record lineage_variable]
+        if {$lineage ne {}} {lappend ids $lineage}
+        set stream [curveSourceOpenStream $token $ids 1 {numeric_transport values}]
+        try {
+            set chunk [tableStreamNext $stream];set point {}
+            foreach id [lrange $ids 0 1] {
+                set value [lindex [dict get $chunk values $id] 0]
+                if {![string is double -strict $value] || ![expr {abs($value)<Inf}]} {error {The selected source point is nonfinite}}
+                lappend point $value
+            }
+            set row [expr {$lineage eq {}?[dict get $request start]:[lindex [dict get $chunk values $lineage] 0]}]
+            set result [dict create points [list $point] source_rows [list $row] breaks {} full_bounds [concat $point $point] finite_rows 1 display_rows 1 row_count 1 reduced 0 source_id [dict get $record source_id] display_is_scientific_data 0 diagnostics [tableStreamDiagnostics $stream]]
+            dict set records($token) display $result
+            return $result
+        } finally {curveSourceCloseStream $token $stream}
+    }
     native2DEnsure
     set request [dict get $record request];set scene [::GX::Native2D::core scene];set stream ""
     try {

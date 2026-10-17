@@ -17,6 +17,7 @@ proc ::GX::scientificDatasetPreviewAxisSelected {axis} {
     foreach variableId [dict get [scientificDatasetAxes $id] numeric] {
         if {[$widget get] eq [scientificDatasetPreviewVariableLabel $id $variableId]} {
             set ui(previewMap,$axis) $variableId
+            scientificDatasetFilterPersist ::GX::ui previewMap
             return
         }
     }
@@ -50,8 +51,10 @@ proc ::GX::scientificDatasetPreviewControls {id axes} {
     set identity [list [dict get [datasetCatalogSnapshot] session_token] $id]
     set reset [expr {![info exists ui(previewMap,id)] || $ui(previewMap,id) ne $identity}]
     if {$reset} {set ui(previewMap,id) $identity}
+    set saved [datasetPreviewConfigurationRead $id]
     foreach key {x y z} {
         if {$reset || ![info exists ui(previewMap,$key)] || $ui(previewMap,$key) ni [dict get $axes numeric]} {set ui(previewMap,$key) [datasetPublicationV2DictDefault $axes $key {}]}
+        if {$reset && [dict exists $saved $key] && [dict get $saved $key] in [dict get $axes numeric]} {set ui(previewMap,$key) [dict get $saved $key]}
         set labels [lmap variableId [dict get $axes numeric] {scientificDatasetPreviewVariableLabel $id $variableId}]
         $bar.axes.$key configure -values $labels
         set ui(previewMap,label,$key) [expr {$ui(previewMap,$key) eq {} ? {} : [scientificDatasetPreviewVariableLabel $id $ui(previewMap,$key)]}]

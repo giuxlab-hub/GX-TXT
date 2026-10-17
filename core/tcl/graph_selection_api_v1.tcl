@@ -26,8 +26,8 @@ proc ::GX::GraphSelectionAPIv1::_matchesFilter {value filter} {
     set predicate [dict get $filter predicate]
     set dtype [_field $filter dtype float64]
     if {$dtype ne "string"} {
-        set value [_number $value]
-        if {$value eq ""} { return [expr {$predicate eq "is_nonfinite"}] }
+        # Typed canonicalization preserves int64/uint64 identities above 2^53.
+        if {[catch {set value [::GX::graphSeriesCanonicalMember $dtype $value]}]} {return [expr {$predicate eq "is_nonfinite"}]}
     }
     switch -- $predicate {
         is_finite { return 1 }

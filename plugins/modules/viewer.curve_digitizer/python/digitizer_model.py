@@ -92,7 +92,7 @@ class Calibration:
             raise CalibrationError(f"Unknown calibration corner: {name}")
         self.pixels[name] = (float(pixel_x), float(pixel_y))
 
-    def linear_system(self) -> tuple[np.ndarray, np.ndarray]:
+    def matrix(self) -> tuple[np.ndarray, float]:
         if not self.is_complete():
             raise CalibrationError("All four calibration points are required.")
         src = np.asarray([self.pixels[n] for n in CORNER_ORDER], dtype=float)
@@ -105,10 +105,6 @@ class Calibration:
             rows.append([0, 0, 0, x, y, 1, -v*x, -v*y]); rhs.append(v)
         a = np.asarray(rows, dtype=float)
         b = np.asarray(rhs, dtype=float)
-        return a, b
-
-    def matrix(self) -> tuple[np.ndarray, float]:
-        a, b = self.linear_system()
         if np.linalg.matrix_rank(a) < 8:
             raise CalibrationError("Degenerate calibration points.")
         cond = float(np.linalg.cond(a))
@@ -135,18 +131,24 @@ class Calibration:
         return self.transform_with_matrix(H, pixel_x, pixel_y)
 
     def corner_derivatives(self, H: np.ndarray) -> np.ndarray:
-        """Sensitivity of the existing eight homography coefficients to corners.
+        """Differentiate A*h=b at the existing calibration (dev097 method).
 
-        Differentiate A h = b at the actual calibration; no alternative solve
-        or uncertainty model is introduced. Columns follow CORNER_ORDER x,y.
+        The columns are corner x,y in CORNER_ORDER. We differentiate rather
+        than solving a second calibration with a different pixel convention.
         """
-        a, _ = self.linear_system()
-        rhs = np.zeros((8, 8), dtype=float)
+        src = np.asarray([self.pixels[n] for n in CORNER_ORDER],dtype=float)
+        dst = np.asarray([CORNER_DESTINATIONS[n] for n in CORNER_ORDER],dtype=float)
+        rows = []
+        for (x,y),(u,v) in zip(src,dst):
+            rows.append([x,y,1,0,0,0,-u*x,-u*y])
+            rows.append([0,0,0,x,y,1,-v*x,-v*y])
+        A=np.asarray(rows,dtype=float)
+        rhs=np.zeros((8,8),dtype=float)
         for i, name in enumerate(CORNER_ORDER):
-            u, v = CORNER_DESTINATIONS[name]
-            rhs[2*i, 2*i:2*i+2] = -(H[0, :2] - u*H[2, :2])
-            rhs[2*i+1, 2*i:2*i+2] = -(H[1, :2] - v*H[2, :2])
-        return np.linalg.solve(a, rhs)
+            u,v=CORNER_DESTINATIONS[name]
+            rhs[2*i,2*i:2*i+2] = -(H[0,:2]-u*H[2,:2])
+            rhs[2*i+1,2*i:2*i+2] = -(H[1,:2]-v*H[2,:2])
+        return np.linalg.solve(A,rhs)
 
     def reprojection_rms(self) -> float:
         H, _ = self.matrix()
@@ -179,10 +181,12 @@ class DigitizedPoint:
     pixel_y: float = 0.0
     calibrated_x: float | None = None
     calibrated_y: float | None = None
+    origin: str = "manual"  # provenance of the original point selection
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
+            "origin": self.origin,
             "manual_click_pixel": {"x": self.manual_pixel_x, "y": self.manual_pixel_y},
             "pixel": {"x": self.pixel_x, "y": self.pixel_y},
             "calibrated": {"x": self.calibrated_x, "y": self.calibrated_y},
@@ -195,6 +199,7 @@ class DigitizedPoint:
         calibrated = data.get("calibrated", {})
         return cls(
             id=str(data.get("id", str(uuid.uuid4()))),
+            origin=str(data.get("origin", "manual")),
             manual_pixel_x=float(manual.get("x", pixel.get("x", 0.0))),
             manual_pixel_y=float(manual.get("y", pixel.get("y", 0.0))),
             pixel_x=float(pixel.get("x", 0.0)),
@@ -255,6 +260,77 @@ class Project:
     snap_enabled: bool = False
     snap_radius: int = 3
 
+    def auto_calibrate_full_image(self, width: int, height: int, *, y_down: bool = False) -> None:
+        """Calibrate every image pixel using the same four-corner homography.
+
+        Pixel centres run from (0, 0) to (width - 1, height - 1).
+        With y_down=False, increasing Y goes towards the top of the image,
+        as in a Cartesian plot. With y_down=True, calibrated coordinates
+        follow the native top-left-origin image pixel convention.
+        """
+        width, height = int(width), int(height)
+        if width < 2 or height < 2:
+            raise CalibrationError("Full-image calibration requires an image at least 2 x 2 pixels.")
+        self.image_width, self.image_height = width, height
+        self.x_axis.minimum, self.x_axis.maximum = 0.0, float(width - 1)
+        self.x_axis.unit, self.x_axis.scale = "px", "linear"
+        self.y_axis.minimum = float(height - 1) if y_down else 0.0
+        self.y_axis.maximum = 0.0 if y_down else float(height - 1)
+        self.y_axis.unit, self.y_axis.scale = "px", "linear"
+        self.calibration.clear()
+        for name, (x, y) in {
+            "bottom_left": (0, height - 1),
+            "bottom_right": (width - 1, height - 1),
+            "top_left": (0, 0),
+            "top_right": (width - 1, 0),
+        }.items():
+            self.calibration.set_corner(name, float(x), float(y))
+        if not self.calibration_ready():
+            raise CalibrationError("Unable to calibrate the complete image.")
+        self.recalculate_all_points()
+
+    def is_full_image_calibration(self, width: int, height: int) -> bool:
+        """Reject conversion of a manually perspective-calibrated graph."""
+        if not self.calibration.is_complete() or width < 2 or height < 2:
+            return False
+        corners = {
+            "bottom_left": (0, height - 1),
+            "bottom_right": (width - 1, height - 1),
+            "top_left": (0, 0),
+            "top_right": (width - 1, 0),
+        }
+        return all(math.dist(self.calibration.pixels[name], pos) < 1e-5
+                   for name, pos in corners.items())
+
+    def scale_full_image(self, width: int, height: int, pixel_length: float,
+                         real_length: float, unit: str) -> float:
+        """Uniform pixel-to-physical scaling using the full-frame calibration.
+
+        Pixel origin remains (left, bottom) for Cartesian Y and (left, top)
+        for image-oriented Y. Uses pixel-centre distances (W-1, H-1).
+        """
+        if not self.is_full_image_calibration(width, height):
+            raise CalibrationError("First use Auto-calibrate full image; manual projective calibration is not suitable for uniform image scaling.")
+        if not all(math.isfinite(float(v)) and float(v) > 0 for v in (pixel_length, real_length)):
+            raise CalibrationError("Scale bar length and real-world length must be finite and positive.")
+        if pixel_length < 3:
+            raise CalibrationError("The scale bar must span at least three source pixels.")
+        unit = unit.strip()
+        if not unit or unit.lower() in ("px", "pixel", "pixels"):
+            raise CalibrationError("Choose a physical length unit, not pixels.")
+        if self.x_axis.scale != "linear" or self.y_axis.scale != "linear":
+            raise CalibrationError("Image scale calibration requires linear axes.")
+        factor = float(real_length) / float(pixel_length)
+        if not math.isfinite((width-1)*factor) or not math.isfinite((height-1)*factor):
+            raise CalibrationError("The resulting physical dimensions are not finite.")
+        y_down = self.y_axis.minimum > self.y_axis.maximum
+        self.x_axis.minimum, self.x_axis.maximum = 0.0, (width-1)*factor
+        self.y_axis.minimum = (height-1)*factor if y_down else 0.0
+        self.y_axis.maximum = 0.0 if y_down else (height-1)*factor
+        self.x_axis.unit = self.y_axis.unit = unit
+        self.recalculate_all_points()
+        return factor
+
     def calibration_ready(self) -> bool:
         if not self.calibration.is_complete():
             return False
@@ -269,54 +345,54 @@ class Project:
         return self.x_axis.from_unit(u), self.y_axis.from_unit(v)
 
     def calibration_linearization(self, pixels: Any) -> dict[str, Any]:
-        """Exact mapping and analytic sensitivities at captured physical points.
+        """Analytic physical Jacobians; dev097 science, current 2.0 model.
 
-        Covariance and distribution interpretation belong to Numeric/CORE.
-        Rows interleave X,Y; shared columns are eight corner coordinates then
-        X minimum/maximum and Y minimum/maximum, preserving existing axis units.
+        Outputs physical rows (N,2), local (2N,2) and shared (2N,12).
+        Shared 12 inputs are eight raster corners and four axis end-values.
+        This does not by itself estimate any uncertainty: operator supplies it.
         """
-        points = np.asarray(pixels)
-        if points.dtype.kind not in "iuf" or points.ndim != 2 or points.shape[1] != 2 or not 1 <= points.shape[0] <= 4096:
-            raise CalibrationError("Linearization requires one to4096 original pixel pairs.")
-        if points.dtype.kind in "iu" and (np.any(points > 2**53) or np.any(points < -2**53)):
-            raise CalibrationError("Pixel integers require an exact binary64 conversion.")
-        points = points.astype(float)
-        if not np.isfinite(points).all():
-            raise CalibrationError("Original pixel coordinates must be finite.")
-        self.x_axis.validate(); self.y_axis.validate()
-        H, condition = self.calibration.matrix()
-        corner_jacobian = self.calibration.corner_derivatives(H)
-        coordinates = np.empty_like(points)
-        local = np.zeros((2*len(points), 2))
-        shared = np.zeros((2*len(points), 12))
-        for i, (px, py) in enumerate(points):
-            uv = np.asarray(self.calibration.transform_with_matrix(H, px, py))
-            denominator = float(H[2] @ [px, py, 1.0])
-            point_jacobian = (H[:2, :2] - uv[:, None]*H[2, :2])/denominator
-            parameter_jacobian = np.zeros((2, 8))
-            parameter_jacobian[0, :3] = np.asarray([px, py, 1])/denominator
-            parameter_jacobian[1, 3:6] = np.asarray([px, py, 1])/denominator
-            parameter_jacobian[:, 6:] = -uv[:, None]*np.asarray([px, py])/denominator
-            for axis, definition in enumerate((self.x_axis, self.y_axis)):
-                value = definition.from_unit(float(uv[axis])); coordinates[i, axis] = value
-                if definition.scale == "linear":
-                    scale = definition.maximum - definition.minimum
-                    endpoints = (1-uv[axis], uv[axis])
+        points=np.asarray(pixels)
+        if points.dtype.kind not in 'iuf' or points.ndim!=2 or points.shape[1]!=2 or not 1<=points.shape[0]<=4096:
+            raise CalibrationError('Linearization requires 1..4096 numeric raster point pairs.')
+        if points.dtype.kind in 'iu' and (np.any(points>2**53) or np.any(points < -2**53)):
+            raise CalibrationError('Pixel integers cannot lose binary64 precision.')
+        points=points.astype(float)
+        if not np.isfinite(points).all():raise CalibrationError('Pixel coordinates must be finite.')
+        self.x_axis.validate();self.y_axis.validate()
+        H,condition=self.calibration.matrix()
+        derivative=self.calibration.corner_derivatives(H)
+        coord=np.empty_like(points)
+        local=np.zeros((2*len(points),2))
+        shared=np.zeros((2*len(points),12))
+        for i,(px,py) in enumerate(points):
+            uv=np.asarray(self.calibration.transform_with_matrix(H,px,py))
+            denom=float(H[2]@[px,py,1.])
+            xyjac=(H[:2,:2]-uv[:,None]*H[2,:2])/denom
+            hjac=np.zeros((2,8))
+            hjac[0,:3]=np.array([px,py,1])/denom
+            hjac[1,3:6]=np.array([px,py,1])/denom
+            hjac[:,6:] = -uv[:,None]*np.array([px,py])/denom
+            for axis,definition in enumerate((self.x_axis,self.y_axis)):
+                value=definition.from_unit(float(uv[axis]))
+                coord[i,axis]=value
+                if definition.scale=='linear':
+                    scale=definition.maximum-definition.minimum
+                    ends=(1-uv[axis],uv[axis])
                 else:
-                    scale = value*(math.log(definition.maximum)-math.log(definition.minimum))
-                    endpoints = (value*(1-uv[axis])/definition.minimum, value*uv[axis]/definition.maximum)
-                local[2*i+axis] = scale*point_jacobian[axis]
-                shared[2*i+axis, :8] = scale*(parameter_jacobian[axis] @ corner_jacobian)
-                shared[2*i+axis, 8+2*axis:10+2*axis] = endpoints
-        if not all(np.isfinite(array).all() for array in (coordinates, local, shared)):
-            raise CalibrationError("Calibration mapping or derivative is not finite.")
-        return dict(schema="gxtxt.digitization_linearization.v1", coordinates=coordinates,
-                    point_jacobian=local, calibration_jacobian=shared,
-                    coordinate_units=[self.x_axis.unit or "1", self.y_axis.unit or "1"],
-                    calibration_ids=[f"{name}_{axis}" for name in CORNER_ORDER for axis in ("x", "y")]+["x_minimum", "x_maximum", "y_minimum", "y_maximum"],
-                    calibration_units=["pixel"]*8+[self.x_axis.unit or "1"]*2+[self.y_axis.unit or "1"]*2,
-                    mapping="four_point_homography_then_declared_axis_scale",
-                    jacobian_method="analytic_implicit_calibration_system", condition_number=condition)
+                    scale=value*(math.log(definition.maximum)-math.log(definition.minimum))
+                    ends=(value*(1-uv[axis])/definition.minimum,value*uv[axis]/definition.maximum)
+                local[2*i+axis]=scale*xyjac[axis]
+                shared[2*i+axis,:8]=scale*(hjac[axis]@derivative)
+                shared[2*i+axis,8+2*axis:10+2*axis]=ends
+        if not all(np.isfinite(arr).all() for arr in (coord,local,shared)):
+            raise CalibrationError('Non-finite calibration Jacobians.')
+        return dict(schema='gxtxt.digitization_linearization.v1',coordinates=coord,
+            point_jacobian=local,calibration_jacobian=shared,
+            coordinate_units=[self.x_axis.unit or '1',self.y_axis.unit or '1'],
+            calibration_ids=[f'{name}_{axis}' for name in CORNER_ORDER for axis in ('x','y')]+['x_minimum','x_maximum','y_minimum','y_maximum'],
+            calibration_units=['pixel']*8+[self.x_axis.unit or '1']*2+[self.y_axis.unit or '1']*2,
+            mapping='four_point_homography_then_declared_axis_scale',
+            jacobian_method='analytic_implicit_calibration_system',condition_number=condition)
 
     def update_point_calibration(self, point: DigitizedPoint) -> None:
         try:

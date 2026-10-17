@@ -1,86 +1,83 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Explicit uncertainty declaration and review through the host's public owners."""
+"""Explicit uncertainty declaration for current Curve Digitalizer v2.0.
+
+The GUI declares scientific assumptions; numerical interpretation and validity
+belong to uncertainty_engine, and nothing here modifies the source image.
+"""
 import copy
-import math
 import tkinter as tk
 from tkinter import ttk, messagebox
-
+from uncertainty_engine import checked_spec, review_fingerprint
 
 class UncertaintyDialog(tk.Toplevel):
     def __init__(self, app):
         super().__init__(app.root)
-        self.app = app
-        self.title("Pixel and calibration uncertainty")
+        self.app=app
+        self.title('Pixel and calibration uncertainty')
         self.transient(app.root)
-        spec = app.config.get("uncertainty", {"mode": "none"})
-        self.variables = {}
-        fields = [
-            ("mode", "Error model", spec.get("mode", "none"), ("none", "pixel_calibration", "physical_override")),
-            ("pixel_distribution", "Pixel scale meaning", spec.get("pixel_distribution", "rectangular_full_width"), ("rectangular_full_width", "normal_standard_uncertainty")),
-            ("pixel_scale", "Pixel X/Y full widths or standard uncertainties", spec.get("pixel_scale", [1, 1]), None),
-            ("calibration_standard_uncertainty", "Corner and axis-endpoint standard uncertainties", spec.get("calibration_standard_uncertainty", [0] * 12), None),
-            ("override_standard_uncertainty", f"Independent physical X/Y sigma ({app.project.x_axis.unit or '1'}, {app.project.y_axis.unit or '1'})", spec.get("override_standard_uncertainty", [1, 1]), None),
-            ("rationale", "Evidence / reason for this declaration", spec.get("rationale", ""), None),
+        self.geometry('790x510')
+        self.minsize(660,420)
+        cfg=app.serialize_configuration()
+        spec=cfg.get('uncertainty') or {'mode':'none'}
+        fields=[
+            ('mode','Error model',spec.get('mode','none'),('none','pixel_calibration','physical_override')),
+            ('pixel_distribution','Pixel scale meaning',spec.get('pixel_distribution','rectangular_full_width'),('rectangular_full_width','normal_standard_uncertainty')),
+            ('pixel_scale','Pixel X/Y widths or standard uncertainties',spec.get('pixel_scale',[]),None),
+            ('calibration_standard_uncertainty','8 corner + 4 axis-endpoint standard uncertainties',spec.get('calibration_standard_uncertainty',[]),None),
+            ('override_standard_uncertainty','Physical X/Y standard uncertainties',spec.get('override_standard_uncertainty',[]),None),
+            ('rationale','Evidence / reason for declared uncertainty',spec.get('rationale',''),None),
         ]
-        for row, (key, label, value, choices) in enumerate(fields):
-            variable = tk.StringVar(value=" ".join(map(str, value)) if isinstance(value, list) else value)
-            self.variables[key] = variable
-            ttk.Label(self, text=label).grid(row=row, column=0, sticky="w", padx=8, pady=4)
-            widget = ttk.Combobox(self, textvariable=variable, values=choices, state="readonly") if choices else ttk.Entry(self, textvariable=variable, width=58)
-            widget.grid(row=row, column=1, sticky="ew", padx=8, pady=4)
-        ttk.Label(self, wraplength=760, text="Calibration order: bottom-left X/Y, bottom-right X/Y, top-left X/Y, top-right X/Y (pixels), then X minimum/maximum and Y minimum/maximum (axis units). Zero holds a calibration input fixed. A physical override replaces the pixel/calibration error model. Pixel size alone is not a measured standard uncertainty.").grid(row=6, column=0, columnspan=2, padx=8, pady=8)
-        ttk.Button(self, text="Save declaration and review", command=self.apply).grid(row=7, column=0, columnspan=2, pady=6)
-        self.report = tk.Text(self, width=100, height=18, wrap="word", state="disabled")
-        self.report.grid(row=8, column=0, columnspan=2, sticky="nsew", padx=8, pady=8)
-        ttk.Button(self, text="Close", command=self.destroy).grid(row=9, column=0, columnspan=2, pady=6)
-        actions = ttk.Frame(self)
-        actions.grid(row=10, column=0, columnspan=2, pady=6)
-        for axis in ("x", "y"):
-            ttk.Button(actions, text=f"Publish {axis.upper()} covariance from published Dataset", command=lambda a=axis: self.publish_covariance(a)).pack(side="left", padx=5)
-        self.columnconfigure(1, weight=1)
-        self.rowconfigure(8, weight=1)
+        self.values={}
+        for row,(key,label,value,options) in enumerate(fields):
+            v=tk.StringVar(value=' '.join(map(str,value)) if isinstance(value,list) else value)
+            self.values[key]=v
+            ttk.Label(self,text=label).grid(row=row,column=0,sticky='w',padx=7,pady=5)
+            w=ttk.Combobox(self,textvariable=v,values=options,state='readonly') if options else ttk.Entry(self,textvariable=v,width=46)
+            w.grid(row=row,column=1,sticky='ew',padx=7,pady=5)
+        ttk.Label(self,wraplength=760,justify='left',text=(
+            'Corner input order: BL X/Y, BR X/Y, TL X/Y, TR X/Y (pixels); '
+            'then X minimum/maximum and Y minimum/maximum (physical units). '
+            'Zero pixel-localization uncertainty is valid when explicitly justified. '
+            'Pixel width is NOT a standard uncertainty unless a distribution is justified. '
+            'For SEM scale bars, nonzero corner sigmas do not describe physical bar-length uncertainty.'))\
+            .grid(row=6,column=0,columnspan=2,padx=8,pady=7,sticky='ew')
+        ttk.Button(self,text='Apply and save declaration',command=self.apply).grid(row=7,column=0,columnspan=2,pady=8)
+        self.status=tk.StringVar(value='No implicit uncertainty is introduced by digitization quality metrics.')
+        ttk.Label(self,textvariable=self.status,wraplength=720,justify='left').grid(row=8,column=0,columnspan=2,padx=8,sticky='w')
+        ttk.Button(self,text='Close',command=self.destroy).grid(row=9,column=0,columnspan=2,pady=10)
+        self.columnconfigure(1,weight=1)
 
     def declaration(self):
-        values = {key: variable.get().strip() for key, variable in self.variables.items()}
-        mode = values["mode"]
-        if mode == "none":
-            return {"mode": "none"}
-        if not values["rationale"] or len(values["rationale"]) > 2048:
-            raise ValueError("Provide a reason or calibration evidence (up to 2048 characters).")
-        spec = dict(mode=mode, rationale=values["rationale"])
-        fields = [("override_standard_uncertainty", 2)] if mode == "physical_override" else [("pixel_scale", 2), ("calibration_standard_uncertainty", 12)]
-        for key, count in fields:
-            numbers = [float(x) for x in values[key].replace(",", " ").split()]
-            if len(numbers) != count or any(not math.isfinite(x) or x < 0 or (key != "calibration_standard_uncertainty" and x == 0) for x in numbers):
-                raise ValueError(f"{key}: supply {count} finite {'nonnegative' if key == 'calibration_standard_uncertainty' else 'positive'} values.")
-            spec[key] = numbers
-        if mode == "pixel_calibration":
-            spec["pixel_distribution"] = values["pixel_distribution"]
-        return spec
-
-    def publish_covariance(self, axis):
-        try:
-            dataset = self.app.output_dataset_id.get().strip()
-            result = self.app.rpc.call("PUBLISH_COVARIANCE", dataset, dataset + ".covariance_" + axis, axis)
-            self.report.configure(state="normal")
-            self.report.insert("end", "\n\n" + result)
-            self.report.configure(state="disabled")
-        except Exception as exc:
-            messagebox.showerror("Covariance publication", str(exc), parent=self)
+        def parse(name,count):
+            try: a=[float(v) for v in self.values[name].get().replace(',',' ').split()]
+            except ValueError: raise ValueError(f'{name}: enter {count} numbers.')
+            if len(a)!=count: raise ValueError(f'{name}: enter exactly {count} numbers.')
+            return a
+        mode=self.values['mode'].get()
+        if mode=='none':return {'mode':'none'}
+        spec={'mode':mode,'rationale':self.values['rationale'].get().strip()}
+        if mode=='physical_override':
+            spec['override_standard_uncertainty']=parse('override_standard_uncertainty',2)
+        elif mode=='pixel_calibration':
+            spec['pixel_distribution']=self.values['pixel_distribution'].get()
+            spec['pixel_scale']=parse('pixel_scale',2)
+            spec['calibration_standard_uncertainty']=parse('calibration_standard_uncertainty',12)
+        return checked_spec(spec,scale_bar=bool(self.app.config.get('scale_reference')))
 
     def apply(self):
         try:
-            spec = self.declaration()
-            if not self.app.commit_axes(False):
-                return
+            spec=self.declaration()
+            if not self.app.commit_axes(False):return
+            # Lock assumptions to the current scientific calibration and
+            # original point identities. A later edit forces re-review.
+            if spec['mode']!='none':
+                spec['review_fingerprint']=review_fingerprint(self.app.serialize_configuration())
             self.app.snapshot()
-            self.app.config["uncertainty"] = copy.deepcopy(spec)
+            self.app.config['uncertainty']=copy.deepcopy(spec)
             if not self.app.persist():
-                return
-            report = "Uncertainty publication is disabled." if spec["mode"] == "none" else self.app.rpc.call("UNCERTAINTY_REVIEW", self.app.current_doc_id, self.app.document_sha[self.app.current_doc_id])
-            self.report.configure(state="normal")
-            self.report.delete("1.0", "end")
-            self.report.insert("1.0", report)
-            self.report.configure(state="disabled")
-        except Exception as exc:
-            messagebox.showerror("Uncertainty review", str(exc), parent=self)
+                self.status.set('Unable to persist declaration.');return
+            self.status.set('Saved explicitly in this digitizer configuration. '
+                            'Publication applies the declaration separately to each selected calibration.' if spec['mode']!='none'
+                            else 'Uncertainty publication disabled; no sigmas will be invented.')
+        except (ValueError,TypeError) as exc:
+            messagebox.showerror('Uncertainty declaration',str(exc),parent=self)
