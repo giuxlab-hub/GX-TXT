@@ -4,10 +4,37 @@
   "sourceRepository": "https://github.com/giuxlab-hub/GX-TXT",
   "coverage": {
     "first": "095",
-    "last": "103",
-    "count": 9
+    "last": "104",
+    "count": 10
   },
   "releases": [
+    {
+      "id": "104",
+      "sha": "d99268348aa55b62f3a1e21ec3672f04504a740d",
+      "en": {
+        "title": "Viewer Interface Builder, organized Projects and scientific Print/PDF",
+        "intro": "GX-TXT adds a public, visual way to design Viewer interfaces and reorganizes how scientific Projects and Sessions are navigated, while building a print-ready document workflow around canonical source data.",
+        "highlights": [
+          "Viewer Interface Builder 1.0.0 offers native design and preview, public component bindings, layout/property editing, Undo/Redo and deterministic installable Viewer packages that preserve handwritten scientific handlers.",
+          "Project organization gains logical Session groups, hierarchical navigation and guarded drag/drop or keyboard Cut/Paste, while keeping scientific Dataset and Workspace identities intact.",
+          "The main scientific Print/PDF studio composes genuine pages, original PDF/image/text resources, exact typed Dataset tables, Graphs and annotations with source-aware verification.",
+          "CUPS printer discovery and capabilities are asynchronous and cancellable; printing requires explicit reviewed submission and stale sources or layouts are refused."
+        ],
+        "caveat": "Physical printer completion was not verified—an accepted/spooled status is not a printed-page result. Some legacy Help paths remain untested; Native3D design components and automatic Replicate domain callbacks are outside the Builder scope. Acceptance took place on Debian Xorg, not Windows."
+      },
+      "it": {
+        "title": "Viewer Interface Builder, organizzazione dei Project e stampa scientifica",
+        "intro": "GX-TXT introduce un modo visuale e pubblico per progettare le interfacce dei Viewer, migliora la navigazione tra Project e Session e sviluppa un flusso di stampa e PDF basato sulle sorgenti scientifiche canoniche.",
+        "highlights": [
+          "Viewer Interface Builder 1.0.0 offre Designer e Preview nativi, componenti con API pubbliche, modifica di layout/proprietà, Undo/Redo e pacchetti Viewer installabili generati in modo deterministico, conservando gli handler scientifici scritti a mano.",
+          "L’organizzazione dei Project aggiunge gruppi logici di Session, navigazione gerarchica e spostamenti drag/drop o Taglia/Incolla con controlli di revisione, preservando identità dei Dataset e dei Workspace.",
+          "Lo studio Print/PDF compone pagine reali, PDF/immagini/testi originali, tabelle Dataset con tipi esatti, grafici e annotazioni con verifiche sulle sorgenti.",
+          "La ricerca delle stampanti e delle funzioni CUPS è asincrona e annullabile; l’invio esplicito ricontrolla la validità delle sorgenti e del layout."
+        ],
+        "caveat": "Una coda di stampa che accetta il lavoro non prova la stampa fisica. Alcuni percorsi Help non sono stati testati; componenti di progettazione Native3D e callback scientifici Replicate non vengono creati automaticamente. I test GUI sono stati eseguiti su Debian Xorg, non su Windows."
+      },
+      "doc": "docs/api/VIEWER_GUI_DESIGN_v1.md"
+    },
     {
       "id": "103",
       "sha": "e07376e0a62e0eecf1737da33c87bbbb41273f4b",

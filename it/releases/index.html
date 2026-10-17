@@ -50,15 +50,15 @@
       <h1 id="releases-title">Come si è evoluto il framework scientifico.</h1>
       <p class="lead">Una selezione delle novità più significative di ogni versione pubblicata, dalla prima copia ripulita su GitHub fino all’ultima release coperta da questa pagina.</p>
       <div class="buttons">
-        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/blob/e07376e0a62e0eecf1737da33c87bbbb41273f4b/CHANGELOG.md">Consulta il CHANGELOG completo ↗</a>
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/blob/d99268348aa55b62f3a1e21ec3672f04504a740d/CHANGELOG.md">Consulta il CHANGELOG completo ↗</a>
         <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT">Vai ai sorgenti ↗</a>
       </div>
     </div>
     <div class="release-stat" aria-label="VERSIONI DOCUMENTATE">
       <div class="release-stat-head">GX-TXT / 0.9.8.10</div>
-      <div class="release-stat-number">09</div>
+      <div class="release-stat-number">10</div>
       <div class="release-stat-label">REVISIONI PUBBLICHE</div>
-      <div class="release-stat-row"><span>VERSIONI DOCUMENTATE</span><strong>dev-095 → dev-103</strong></div>
+      <div class="release-stat-row"><span>VERSIONI DOCUMENTATE</span><strong>dev-095 → dev-104</strong></div>
       <div class="release-stat-row"><span>FONTE PRINCIPALE</span><strong>CHANGELOG delle versioni</strong></div>
     </div>
   </section>
@@ -66,6 +66,7 @@
     <div class="wrap">
       <nav class="release-jump" aria-label="Vai a una release">
         <span>Vai a una release</span>
+<a href="#dev-104" aria-label="GX-TXT 0.9.8.10-dev-104">dev-104</a>
 <a href="#dev-103" aria-label="GX-TXT 0.9.8.10-dev-103">dev-103</a>
 <a href="#dev-102" aria-label="GX-TXT 0.9.8.10-dev-102">dev-102</a>
 <a href="#dev-101" aria-label="GX-TXT 0.9.8.10-dev-101">dev-101</a>
@@ -77,13 +78,36 @@
 <a href="#dev-095" aria-label="GX-TXT 0.9.8.10-dev-095">dev-095</a>
       </nav>
       <ol class="release-timeline">
+<li class="release-entry" id="dev-104">
+  <div class="release-marker" aria-hidden="true"><span>104</span></div>
+  <article class="release-panel release-featured">
+<div class="release-head">
+  <div><div class="release-version">0.9.8.10-dev-104</div>
+  <h2>Viewer Interface Builder, organizzazione dei Project e stampa scientifica</h2></div>
+  <span class="release-current">ULTIMA VERSIONE DI QUESTA CRONOLOGIA</span>
+</div>
+    <p class="release-intro">GX-TXT introduce un modo visuale e pubblico per progettare le interfacce dei Viewer, migliora la navigazione tra Project e Session e sviluppa un flusso di stampa e PDF basato sulle sorgenti scientifiche canoniche.</p>
+    <h3 class="release-group-label">Novità principali</h3>
+    <ul class="release-bullets"><li>Viewer Interface Builder 1.0.0 offre Designer e Preview nativi, componenti con API pubbliche, modifica di layout/proprietà, Undo/Redo e pacchetti Viewer installabili generati in modo deterministico, conservando gli handler scientifici scritti a mano.</li>
+<li>L’organizzazione dei Project aggiunge gruppi logici di Session, navigazione gerarchica e spostamenti drag/drop o Taglia/Incolla con controlli di revisione, preservando identità dei Dataset e dei Workspace.</li>
+<li>Lo studio Print/PDF compone pagine reali, PDF/immagini/testi originali, tabelle Dataset con tipi esatti, grafici e annotazioni con verifiche sulle sorgenti.</li>
+<li>La ricerca delle stampanti e delle funzioni CUPS è asincrona e annullabile; l’invio esplicito ricontrolla la validità delle sorgenti e del layout.</li></ul>
+    <div class="release-scope"><span>Ambito scientifico</span><p>Una coda di stampa che accetta il lavoro non prova la stampa fisica. Alcuni percorsi Help non sono stati testati; componenti di progettazione Native3D e callback scientifici Replicate non vengono creati automaticamente. I test GUI sono stati eseguiti su Debian Xorg, non su Windows.</p></div>
+<div class="release-actions">
+<a href="https://github.com/giuxlab-hub/GX-TXT/commit/d99268348aa55b62f3a1e21ec3672f04504a740d">Apri il commit esatto ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/d99268348aa55b62f3a1e21ec3672f04504a740d/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/d99268348aa55b62f3a1e21ec3672f04504a740d/docs/api/VIEWER_GUI_DESIGN_v1.md">Documentazione pubblica pertinente ↗</a>
+</div>
+  </article>
+</li>
+
 <li class="release-entry" id="dev-103">
   <div class="release-marker" aria-hidden="true"><span>103</span></div>
-  <article class="release-panel release-featured">
+  <article class="release-panel">
 <div class="release-head">
   <div><div class="release-version">0.9.8.10-dev-103</div>
   <h2>Nodi di calcolo remoti e ambiente scientifico più reattivo</h2></div>
-  <span class="release-current">ULTIMA VERSIONE DI QUESTA CRONOLOGIA</span>
+
 </div>
     <p class="release-intro">GX-TXT estende l&#39;esecuzione scientifica gestita e i servizi Dataset oltre il processo locale, migliorando la preparazione di Preview, la ricerca dei Viewer e la coerenza dei Workspace interattivi.</p>
     <h3 class="release-group-label">Novità principali</h3>
@@ -291,7 +315,7 @@
 
 <footer><div class="wrap">
 <div><p><strong>GX-TXT</strong> — Sviluppato da <a href="https://giux-lab.it/" rel="author">Giux-Lab</a>.</p>
-<p>Open source · GNU GPL-3.0-or-later · 9 release</p></div>
+<p>Open source · GNU GPL-3.0-or-later · 10 release</p></div>
 <div class="links">
 <a href="../">Panoramica</a>
 <a href="../#guides">Guide</a>
