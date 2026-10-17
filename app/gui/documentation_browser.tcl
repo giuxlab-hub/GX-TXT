@@ -112,6 +112,15 @@ proc ::GX::documentationBrowserOpenModule {id} {
     }
     documentationBrowserShow core:analysis
 }
+proc ::GX::documentationBrowserOpenApi {api} {
+    documentationBrowserPopulate
+    set id api:$api
+    if {![dict exists $::GX::documentationBrowserEntries $id]} {error "Public API guide is unavailable: $api"}
+    .top.nb select .top.nb.help
+    documentationBrowserShow $id
+    raise .
+    return $id
+}
 
 proc ::GX::buildHelpPage {} {
     variable documentationBrowserUi

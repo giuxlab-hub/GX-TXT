@@ -31,9 +31,14 @@ proc ::GX::configurationInstalledPlugins {} {
     return $result
 }
 proc ::GX::configurationModulesBuild {parent row} {
-    set w $parent.browser
+    ttk::notebook $parent.kinds
+    ttk::frame $parent.kinds.services;ttk::frame $parent.kinds.viewers
+    $parent.kinds add $parent.kinds.services -text {Analysis, Acquisition & Services}
+    $parent.kinds add $parent.kinds.viewers -text Viewers
+    grid $parent.kinds -row $row -column 0 -columnspan 4 -sticky nsew
+    set w $parent.kinds.services.browser
     ttk::frame $w
-    grid $w -row $row -column 0 -columnspan 4 -sticky nsew -padx 8 -pady 8
+    pack $w -fill both -expand 1 -padx 8 -pady 8
     grid rowconfigure $parent $row -weight 1
     grid columnconfigure $w 0 -weight 1
     ttk::frame $w.search
@@ -80,13 +85,6 @@ proc ::GX::configurationModulesBuild {parent row} {
     pack $w.actions -fill x -pady 6
     configurationSubscribe ::GX::configurationEditorChanged
     configurationModulesReload
-    grid remove $w
-    ttk::notebook $parent.kinds
-    ttk::frame $parent.kinds.services;ttk::frame $parent.kinds.viewers
-    $parent.kinds add $parent.kinds.services -text {Analysis, Acquisition & Services}
-    $parent.kinds add $parent.kinds.viewers -text Viewers
-    grid $parent.kinds -row $row -column 0 -columnspan 4 -sticky nsew
-    pack $w -in $parent.kinds.services -fill both -expand 1
     viewerManagerBuild $parent.kinds.viewers
 }
 proc ::GX::configurationModulesReload {} {
@@ -98,7 +96,7 @@ proc ::GX::configurationModulesRefresh {} {
     variable ::GX::ConfigurationModules::query
     variable ::GX::ConfigurationModules::selected
     variable ::GX::ConfigurationModules::catalog
-    set tree .top.nb.configuration.sections.modules.browser.split.list.tree
+    set tree .top.nb.configuration.sections.modules.kinds.services.browser.split.list.tree
     if {![winfo exists $tree]} return
     set records [dict create]
     $tree delete [$tree children {}]
@@ -121,7 +119,7 @@ proc ::GX::configurationModulesRefresh {} {
 proc ::GX::configurationModulesSelect {} {
     variable ::GX::ConfigurationModules::records
     variable ::GX::ConfigurationModules::selected
-    set base .top.nb.configuration.sections.modules.browser
+    set base .top.nb.configuration.sections.modules.kinds.services.browser
     set tree $base.split.list.tree
     set parent $base.split.detail.viewport.content
     foreach child [winfo children $parent] {

@@ -1,5 +1,20 @@
 # CORE Script Job API v1
 
+Dev104 auxiliary GUI requests extend the existing nonblocking
+`scriptJobAsync command payload callback ?options?` transport. Options are
+timeout_ms, max_bytes, process_group, ui_lifetime and label; old callers keep
+their existing defaults. `scriptJobRequestCancel request ?reason?` cancels only
+the transport-owned child/group, escalates TERM to KILL after 500 ms and delivers
+one terminal response. Workers opting into process_group must establish their
+own group before spawning descendants. Output is read in bounded chunks.
+UI-lifetime requests are killed on application shutdown; durable scientific
+Jobs retain the independent supervisor lifecycle described below.
+
+Cancellation retains the owned group identity through escalation even if its
+leader closes stdout early, preventing detached descendants from surviving.
+Responses distinguish timeout, cancelled, closed and output_limit. This
+transport does not add a scientific scheduler or make a GUI request a durable Job.
+
 SPDX-License-Identifier: GPL-3.0-or-later
 
 Registered Python and GNU Octave scripts launched from Run or Analysis execute

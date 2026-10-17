@@ -862,3 +862,17 @@ proc ::GX::selectedGraphPaths_annotation_base {} {
     }
     return $out
 }
+proc ::GX::graphBrowserCatalog {} {
+    variable ui;variable currentSession
+    set result {}
+    if {$currentSession eq {} || ![info exists ui(graphTree)] || ![winfo exists $ui(graphTree)]} {return $result}
+    set root [file normalize $currentSession]
+    foreach row [$ui(graphTree) children {}] {
+        if {![info exists ui(graphPath,$row)]} continue
+        set path [file normalize $ui(graphPath,$row)]
+        if {![string match $root/analysis/* $path] || ![file isfile $path]} continue
+        set reference {};catch {set reference [graphResourceRefForPath $path]}
+        lappend result [dict create path $path relative_path [string range $path [expr {[string length $root]+1}] end] title [graphDisplayTitle $path] reference $reference]
+    }
+    return $result
+}

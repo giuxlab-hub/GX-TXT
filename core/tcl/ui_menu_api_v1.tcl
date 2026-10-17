@@ -88,6 +88,16 @@ proc ::GX::uiMenuPopup {menu x y} {
 # A single native menu row with an overflow cascade, retaining its final group.
 # This is transient UI layout; the original menus still own every command.
 namespace eval ::GX::UiMenuRows {variable rows {}}
+proc ::GX::uiMenuRowAppend {frame button} {
+    if {![dict exists $::GX::UiMenuRows::rows $frame]} return
+    if {![winfo exists $button] || [winfo parent $button] ne $frame || [winfo class $button] ni {Button TButton Menubutton TMenubutton}} {error {Appended action must belong to its native menu row}}
+    set buttons [dict get $::GX::UiMenuRows::rows $frame buttons]
+    set index [lsearch -exact $buttons $button]
+    if {$index>=0} {set buttons [lreplace $buttons $index $index]}
+    lappend buttons $button
+    dict set ::GX::UiMenuRows::rows $frame buttons $buttons
+    _uiMenuRowSchedule $frame
+}
 proc ::GX::uiMenuRowAttach {frame buttons {trailing 1}} {
     if {[llength $buttons]<2 || [llength [lsort -unique $buttons]]!=[llength $buttons]} {error {A menu row requires distinct ordered menubuttons}}
     if {![string is integer -strict $trailing] || $trailing<1 || $trailing>=[llength $buttons]} {error {Invalid retained trailing button count}}

@@ -55,6 +55,12 @@ Preview uses it for paging/goto controls so narrow windows keep the Go button
 and input reachable. This is a Tcl GUI factory service; Script Bridge exposes
 typed data normalization, rather than widget paths.
 
+`uiFieldControlsAppend frame widget` appends a native control owned by that
+frame to the shared grid layout, including later layouts supplied with an
+explicit child list. It preserves existing child order and puts appended
+controls last. The transient registration is removed with its frame. It does
+not own the appended control's actions, menu or scientific state.
+
 
 ## Inspector scrolling
 
@@ -70,6 +76,11 @@ override-redirect menus/tooltips. Reflow and scrolling remain owned by each UI;
 this helper never changes scientific view state or data. These helpers are not
 Script Bridge operations.
 
+Gridded toplevels (`wm grid` nonempty) retain their native geometry owner.
+Tk interprets their `wm geometry` and minimum-size dimensions as grid units,
+so the pixel mapper does not resize them. This includes Tk's standard error
+Details dialog. See the [Tk window-manager contract](https://www.tcl-lang.org/man/tcl8.5/TkCmd/wm.htm).
+
 
 Placement sets the X11 user-position hint (USPosition), so multiwindow X servers honor the position as well as the size. Viewers with explicit initial dimensions call the helper before mapping; ordinary mapped windows use the global hook.
 
@@ -84,6 +95,11 @@ Ordinary Button/TButton overflow invokes the original widget, with its current
 command and disabled state; no callback copy or second action registry exists.
 Configure events coalesce and pending callbacks are cancelled on destruction.
 This is a host-only presentation operation; no new settings store is created.
+
+`uiMenuRowAppend frame button` appends or moves one existing native action to
+the end of a row already registered by `uiMenuRowAttach`, preserving its
+overflow owner and original commands. It validates native parent ownership.
+For grid-managed rows use `uiFieldControlsAppend` instead.
 
 `::GX::uiMenuPopup menu root_x root_y` posts a native Tk Menu in the pointer
 monitor's usable rectangle. `uiMenuWorkarea widget root_x root_y` returns

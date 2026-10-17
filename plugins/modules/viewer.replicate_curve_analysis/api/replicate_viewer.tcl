@@ -109,23 +109,23 @@ proc ::GX::ReplicateViewer::open {{context {}}} {
     pack forget $p.heading
     foreach {key label values} {method Method {yx xy_path} design {Study design} {repeatability calibration_sensitivity hierarchical}} {
         set input($w,$key) [dict get $payload request $key]
-        ttk::label $p.l$key -text $label;ttk::combobox $p.$key -state readonly -values $values -textvariable [namespace current]::input($w,$key)
+        ::GX::uiFieldComponentCreate $p.l$key label [dict create text $label wraplength 0] {} {};::GX::uiFieldComponentCreate $p.$key combobox [dict create choices $values] [namespace current]::input($w,$key) {}
         pack $p.l$key $p.$key -in $study -fill x -pady 3
         ::GX::uiFieldSelectorWithinViewer $p.$key $w
     }
     foreach {key label default} {analysis_id {Unique analysis ID} {} frame {Common physical frame ID} {} x_unit {X reference unit} mm y_unit {Y reference unit} mm} {
         set value $default
         if {$key eq "analysis_id"} {set value [dict get $payload request analysis_id]} elseif {$key eq "frame"} {set value [dict get $payload request reference_frame id]} else {set value [dict get $payload request reference_frame $key]}
-        set input($w,$key) $value;ttk::label $p.l$key -text $label;ttk::entry $p.$key -textvariable [namespace current]::input($w,$key);pack $p.l$key $p.$key -in [expr {$key eq "analysis_id"?$study:$frame}] -fill x -pady 2
+        set input($w,$key) $value;::GX::uiFieldComponentCreate $p.l$key label [dict create text $label wraplength 0] {} {};::GX::uiFieldComponentCreate $p.$key entry {} [namespace current]::input($w,$key) {};pack $p.l$key $p.$key -in [expr {$key eq "analysis_id"?$study:$frame}] -fill x -pady 2
     }
     set input($w,verified) [expr {[dict get $payload request reference_frame declaration] eq "explicit_user_verified"}]
-    ttk::checkbutton $p.verified -text {I verified a common physical frame} -variable [namespace current]::input($w,verified);pack $p.verified -in $frame -anchor w -pady 5
-    listbox $p.sources -height 6 -exportselection 0;pack $p.sources -in $sources -fill x
+    ::GX::uiFieldComponentCreate $p.verified checkbutton {label {I verified a common physical frame}} [namespace current]::input($w,verified) {};pack $p.verified -in $frame -anchor w -pady 5
+    ::GX::uiFieldComponentCreate $p.sources list {height 6} {} {};pack $p.sources -in $sources -fill x
     ::GX::viewerGuiSelectionAttach $w $p.sources
     ::GX::viewerGuiContextMount $w $p.sources
-    ttk::button $p.remove -text {Remove selected source} -command [list ::GX::viewerCommandInvoke $w remove_source];pack $p.remove -in $sources -fill x -pady 3
-    ttk::label $p.assumptions -wraplength 250 -text {XY paths require an explicit common start landmark, direction and normalized physical source arc-length correspondence. Shared calibrations are sensitivity studies. Missing uncertainty is not zero.};pack $p.assumptions -fill x -pady 6
-    text $p.report -height 10 -width 28 -wrap word -state disabled;pack $p.report -fill x
+    ::GX::uiFieldComponentCreate $p.remove action {label {Remove selected source}} {} [list ::GX::viewerCommandInvoke $w remove_source];pack $p.remove -in $sources -fill x -pady 3
+    ::GX::uiFieldComponentCreate $p.assumptions label {wraplength 250 text {XY paths require an explicit common start landmark, direction and normalized physical source arc-length correspondence. Shared calibrations are sensitivity studies. Missing uncertainty is not zero.}} {} {};pack $p.assumptions -fill x -pady 6
+    ::GX::uiFieldComponentCreate $p.report log {height 10 width 28} {} {};pack $p.report -fill x
     $w.footer.status configure -text {Add exact source observations, verify their physical frame, then Analyze. Wheel: zoom · Middle drag: pan · Double click: fit}
     wm protocol $w WM_DELETE_WINDOW [list [namespace current]::close $w]
     bind $w <Destroy> +[list [namespace current]::destroyed $w %W]
@@ -153,6 +153,7 @@ proc ::GX::ReplicateViewer::refresh {w} {
         catch {destroy $w.body.inspector.scroll.content.visibility}
     }
     ::GX::viewerGuiActionsRefresh $w
+    publishGui $w
 }
 proc ::GX::ReplicateViewer::sourceDialog {w} {
     variable state;if {$state($w,busy)} {error {Cancel or finish the current study before editing sources}};unset -nocomplain state($w,editingSource)
@@ -258,6 +259,7 @@ proc ::GX::ReplicateViewer::draw {w result} {
     }
     dict set ::GX::ReplicateViewer::state($w,payload) visibility_initialized 1
     set model [dict create title {Replicate / Consensus} panels [list [dict create id main axes $axes series $allSeries annotations {}]] native_presentation [dict create schema GXTXT_NATIVE_GRAPH_PRESENTATION_v1 graphics {} axes {} panels {} layout {} legend {placement inside}]]
+    set ::GX::ReplicateViewer::state($w,view_model) $model
     set p $w.body.inspector.scroll.content
     if {![winfo exists $p.visibility]} {ttk::labelframe $p.visibility -text {Retained curve visibility};pack $p.visibility -fill x -pady 4}
     foreach child [winfo children $p.visibility] {destroy $child}
@@ -331,4 +333,83 @@ proc ::GX::ReplicateViewer::editSource {w} {
     set index [lindex $selected 0];set trace [lindex [dict get $state($w,payload) request traces] $index]
     sourceDialog $w;set state($w,editingSource) $index
     dict for {key value} $trace {if {[info exists input($w,source_$key)]} {set input($w,source_$key) $value}}
+}
+
+# Explicit read-only generic GUI declaration. Scientific callbacks, Jobs and
+# Workspace payloads remain under this Viewer and its existing CORE owners.
+proc ::GX::ReplicateViewer::publishGui {w} {
+    variable state;variable input
+    set shell [dict get $::GX::ViewerGui::shells $w];set manifest [dict get $shell manifest]
+    set design [::GX::viewerGuiDesignNew {Replicate / Consensus Curves}]
+    dict set design module_id viewer.replicate_curve_analysis;dict set design provider_id replicate_consensus
+    dict set design version 1.2.0;dict set design shell inspector_width 330;dict set design shell status [$w.footer.status cget -text]
+    dict set design origin [dict create module viewer.replicate_curve_analysis provider replicate_consensus scope main_viewer_interface]
+    set components {};set widgets {};set values {};set handlers {};set bindings {}
+    dict for {id descriptor} [::GX::viewerCommandCatalog viewer.replicate_curve_analysis] {
+        dict set handlers $id [dict create arguments {window action} effect [expr {$id in {fit zoom_in zoom_out undo redo} ? {presentation} : {mutating}}] label [dict get $descriptor label] default [::GX::datasetPublicationV2DictDefault $descriptor default {}] available [::GX::viewerCommandEnabled $w $id]]
+    }
+    lappend components [dict create id commands type command_toolbar parent toolbar properties [dict create actions [dict get $manifest toolbar_actions]] layout {}]
+    dict set widgets commands $w.toolbar
+    set n 0
+    foreach menu [dict get $manifest menus] {incr n;set id menu_$n;lappend components [dict create id $id type menu parent menubar properties $menu layout {}];dict set widgets $id $w.menus.actions$n}
+    lappend components [dict create id context_commands type context_menu parent canvas properties [dict create actions [dict get $manifest context_actions]] layout {}]
+    dict set widgets context_commands $w.context
+    set p $w.body.inspector.scroll.content
+    foreach {id actual title} {study study {Scientific study} physical_frame frameSection {Physical reference frame} observations sourceSection {Source observations}} {
+        lappend components [dict create id $id type section parent inspector properties [dict create title $title padding 8] layout {manager pack fill x pady 5}]
+        dict set widgets $id $p.$actual
+    }
+    foreach {key title type parent choices} {
+        method Method combobox study {yx xy_path}
+        design {Study design} combobox study {repeatability calibration_sensitivity hierarchical}
+        analysis_id {Unique analysis ID} entry study {}
+        frame {Common physical frame ID} entry physical_frame {}
+        x_unit {X reference unit} entry physical_frame {}
+        y_unit {Y reference unit} entry physical_frame {}
+    } {
+        set padding [expr {$type eq {combobox} ? 3 : 2}]
+        lappend components [dict create id label_$key type label parent $parent properties [dict create text $title wraplength 0] layout [dict create manager pack fill x pady $padding]]
+        set properties [dict create default $input($w,$key)];if {$choices ne {}} {dict set properties choices $choices}
+        lappend components [dict create id value_$key type $type parent $parent properties $properties layout [dict create manager pack fill x pady $padding]]
+        dict set widgets label_$key $p.l$key;dict set widgets value_$key $p.$key
+        dict set values value_$key $input($w,$key)
+    }
+    foreach {id type parent properties layout widget} [list \
+        verified checkbutton physical_frame [dict create label {I verified a common physical frame} default $input($w,verified)] {manager pack anchor w pady 5} $p.verified \
+        source_list list observations [dict create items [$p.sources get 0 end] height 6] {manager pack fill x} $p.sources \
+        remove_source action observations {label {Remove selected source} action remove_source} {manager pack fill x pady 3} $p.remove \
+        assumptions label inspector [dict create text [$p.assumptions cget -text] wraplength 250] {manager pack fill x pady 6} $p.assumptions \
+        result_report log inspector [dict create text [$p.report get 1.0 end-1c] height 10 width 28] {manager pack fill x} $p.report \
+        scientific_view plot canvas {empty_style blank} {manager pack fill both expand 1} $w.body.canvas \
+        history history footer {} {} $w.footer.historyStrip \
+        workspace workspace footer {} {} $w.menus.workspace \
+        help help footer {} {} $w.menus] {
+        lappend components [dict create id $id type $type parent $parent properties $properties layout $layout]
+        dict set widgets $id $widget
+    }
+    dict set values verified $input($w,verified);dict set values source_list [$p.sources curselection]
+    if {[winfo exists $p.visibility]} {
+        lappend components [dict create id visibility type section parent inspector properties {title {Retained curve visibility} padding 0} layout {manager pack fill x pady 4}]
+        dict set widgets visibility $p.visibility;set i 0
+        foreach series [dict get [lindex [dict get $state($w,view_model) panels] 0] series] {
+            incr i;set id visible_$i;set key [dict get $series id]
+            set properties [dict create label [dict get $series label] default $input($w,visible,$key) plot_visibility [dict create component scientific_view panel main series $key]]
+            lappend components [dict create id $id type checkbutton parent visibility properties $properties layout {manager pack anchor w}]
+            dict set widgets $id $p.visibility.s$i;dict set values $id $input($w,visible,$key)
+        }
+        set model $state($w,view_model)
+        set visibility {};foreach series [dict get [lindex [dict get $model panels] 0] series] {dict set visibility main [dict get $series id] [expr {![dict exists $state($w,payload) hidden [dict get $series id]]}]}
+        set binding [dict create kind plot spec $model context {prepared_model 1} visibility $visibility]
+        set receipt [::GX::PlotDatasetAPIv4::widgetReceipt $w.body.canvas.plot]
+        if {[dict exists $receipt axes]} {dict set binding view_axes [dict get $receipt axes]}
+        dict set bindings scientific_view $binding
+    }
+    dict set design components $components;dict set design handlers $handlers
+    foreach component $components {set cap [dict get [::GX::viewerGuiComponentCapabilities] [dict get $component type]];dict set design requirements [dict get $cap api_id] [dict get $cap api_version]}
+    set boundaries [list [dict create classification domain_handler owner viewer.replicate_curve_analysis scope {Source observation editor, Analyze, Publish and Save remain domain callback contracts; importing the generic interface does not execute or duplicate them.}]]
+    return [::GX::viewerGuiDesignPublish $w $design $widgets $values $bindings $boundaries]
+}
+proc ::GX::ReplicateViewer::describeGui {} {
+    if {![winfo exists .replicate_consensus]} {return [dict create status OPEN_REQUIRED reason {Open the original Replicate Viewer for an explicit read-only declaration of its current visible interface.}]}
+    return [dict merge [publishGui .replicate_consensus] [dict create status DECLARED_MAIN_INTERFACE]]
 }

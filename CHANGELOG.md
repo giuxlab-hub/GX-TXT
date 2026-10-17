@@ -7,6 +7,15 @@ For current interface contracts consult the API references under [docs/api](docs
 
 ## 0.9.8.10 - development revisions
 
+### 0.9.8.10-dev-104
+
+- Repair shared Module/Viewer catalog, Help and Session History lifecycle while preserving existing canonical scientific data.
+- Add Viewer Interface Builder 1.0.0 with native design and preview, public UI/command bindings, reversible layout edits, portable inert project files and deterministic Viewer packages retaining handwritten scientific handlers.
+- Extend Project and Session organization with logical groups, hierarchical search, guarded drag/drop and Cut/Paste; retain original scientific Datasets and Workspace identities.
+- Redesign scientific Print/PDF with same-document page previews, canonical typed Dataset tables, original images/plots/annotations and managed PDF verification.
+- Introduce asynchronous cancellable CUPS discovery and guarded print submission; accepted/spooled is not proof of physical print completion.
+- Scope limits: local Debian GUI acceptance; unavailable independent Native3D design component, some untested legacy Help paths, and Replicate domain callbacks that remain explicitly unbound.
+
 ### 0.9.8.10-dev-103
 
 - Extend CORE Scientific Execution to supervised local, automatic and explicitly selected remote compute-node providers. The authenticated Debian HTTPS agent uses verified mutual TLS, scoped logical Session grants and the existing Script Job supervisor; it never accepts arbitrary remote shell commands.

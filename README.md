@@ -4,7 +4,7 @@ GX-TXT is a desktop scientific workbench for working with **experimental measure
 
 Within the same Session you can inspect and compare measurements, perform numerical, statistical and spectral analyses or curve fitting, run registered Python and GNU Octave scripts through the Script Bridge, and create scientific 2D/3D plots and interactive viewers. Derived results stay connected to their source Datasets, while independent modules extend the workflow through public CORE APIs.
 
-**Source version:** 0.9.8.10-dev-103  
+**Source version:** 0.9.8.10-dev-104  
 **License:** GNU GPL-3.0-or-later (see [LICENSE](LICENSE)). Third-party packages and assets retain their applicable licenses.
 
 **Project website:** [GX-TXT on GitHub Pages](https://giuxlab-hub.github.io/GX-TXT/) · [Italian version](https://giuxlab-hub.github.io/GX-TXT/it/).
@@ -51,6 +51,9 @@ Within the same Session you can inspect and compare measurements, perform numeri
 - Background Dataset Preview preparation with progress/cancellation, retained visibility, exact source guards and disposable SHA-verified cache; modified settings require explicit Render
 - A grouped Viewer catalog with distinct scientific SVG/PNG artwork, persisted enablement and dependency checks independent of Analysis membership
 - Reusable Viewer GUI host and source-dialog ownership shared with Curve Workbench and Replicate, including guarded History, Workspace, focus and mapped popups
+- Viewer Interface Builder: native UI design, preview, reversible edits and deterministic installable Viewer packages with independent handwritten scientific handlers
+- Project groups and hierarchical Session navigation with authority-guarded move, drag/drop and source preservation
+- Scientific Print/PDF studio with exact Dataset tables, native graph/annotation composition and managed CUPS discovery/submission
 - Managed registered local scientific solver Jobs and authorized scientific source I/O with Session-bound publication, cancellation and complete retained provenance
 - Planar static electromagnetic FEM using Gmsh/GetDP and native 2D/3D field plotting with exact mesh and source identities
 - Fitter panel configuration, shared documentation browsing and bounded unit-aware mathematical functions through public Numeric operations
@@ -60,7 +63,7 @@ Within the same Session you can inspect and compare measurements, perform numeri
 
 Available capabilities depend on the installed modules and their optional runtime dependencies.
 
-For current scientific workflows and controls, start with [Scientific Studio workflows](docs/guides/SCIENTIFIC_STUDIO_WORKFLOWS.md), [Scientific Execution and compute nodes](docs/api/SCIENTIFIC_EXECUTION_API_v1.md), [Dataset Preview](docs/api/DATASET_PREVIEW_API_v1.md), [Replicate / Consensus Curves](plugins/modules/viewer.replicate_curve_analysis/MANUAL.md), [Replicate scientific API](docs/api/CURVE_REPLICATE_ANALYSIS_API_v1.md), [Worksheet 2.1 public extensions](docs/api/SCIENTIFIC_WORKSHEET_DEV102.md), [Viewer GUI Integration Manifest](docs/api/VIEWER_GUI_HOST_API_v1.md), [Plot Dataset v4 API](docs/api/PLOT_DATASET_API_v4.md) and [public tutorials](docs/guides/tutorials_dev097/index.html).
+For current scientific workflows and controls, start with [Viewer Interface Builder](docs/api/VIEWER_GUI_DESIGN_v1.md), [Project organization](docs/api/PROJECT_ORGANIZATION_v1.md), [Scientific Print/PDF](docs/api/PRINT_DOCUMENT_API_v1.md), [Scientific Studio workflows](docs/guides/SCIENTIFIC_STUDIO_WORKFLOWS.md), [Scientific Execution and compute nodes](docs/api/SCIENTIFIC_EXECUTION_API_v1.md), [Dataset Preview](docs/api/DATASET_PREVIEW_API_v1.md), [Replicate / Consensus Curves](plugins/modules/viewer.replicate_curve_analysis/MANUAL.md), [Replicate scientific API](docs/api/CURVE_REPLICATE_ANALYSIS_API_v1.md), [Worksheet 2.1 public extensions](docs/api/SCIENTIFIC_WORKSHEET_DEV102.md), [Viewer GUI Integration Manifest](docs/api/VIEWER_GUI_HOST_API_v1.md), [Plot Dataset v4 API](docs/api/PLOT_DATASET_API_v4.md) and [public tutorials](docs/guides/tutorials_dev097/index.html).
 
 ## Getting started
 

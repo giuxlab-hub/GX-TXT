@@ -6,6 +6,7 @@ import argparse
 from pathlib import Path
 import math
 import sys
+import json
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -81,8 +82,14 @@ def main():
     ap.add_argument('--title',default='')
     ap.add_argument('--captions',type=int,default=1)
     ap.add_argument('--text-input', help='UTF-8 document path, or - for stdin; separate from plot images')
+    ap.add_argument('--recipe-json', help='CORE-frozen typed mixed print document; never a source thumbnail list')
     ap.add_argument('images',nargs='*')
     a=ap.parse_args()
+    if a.recipe_json:
+        if a.images or a.text_input: raise SystemExit('Choose a frozen recipe or a legacy input, not both')
+        from gxtxt_print_document import compose
+        receipt=compose(json.loads(Path(a.recipe_json).read_text(encoding='utf-8')),a.output)
+        print(json.dumps(receipt,ensure_ascii=False));return
     if a.rows<1 or a.cols<1: raise SystemExit('rows/cols devono essere >=1')
     w,h=PAGES_MM[a.page]
     if a.orientation=='landscape': w,h=h,w

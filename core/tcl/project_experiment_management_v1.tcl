@@ -10,7 +10,7 @@ proc ::GX::_projectTransactionHost {action args} {
 proc ::GX::_projectAtomic {paths script {moves {}}} {
     variable projectTransactionDepth
     if {$projectTransactionDepth} {return [uplevel 1 $script]}
-    set saved {};foreach a {projectCatalog projectMembership cfg} {dict set saved $a [array get ::GX::$a]}
+    set saved {};foreach a {projectCatalog projectMembership projectOrganization cfg} {dict set saved $a [array get ::GX::$a]}
     set arguments [lsort -unique [concat [list [projectRegistryPath]] $paths]]
     if {$moves ne {}} {lappend arguments --move {*}$moves}
     _projectTransactionHost begin {*}$arguments
@@ -110,6 +110,169 @@ proc ::GX::projectExperimentRename {eid name} {
     }
     if {$::GX::currentSession eq $session} {set ::GX::cfg(experiment_name) $name;updateSessionUi;projectRefreshExperimentUi}
     return $eid
+}
+
+# Project registry organization, not Dataset namespaces or filesystem paths.
+# All writes use the existing journal, lock and registry. Group membership is
+# registry-authoritative; only cross-Project moves update the Session link.
+proc ::GX::projectOrganizationApiInfo {} {
+    return [dict create api_id PROJECT_API_v1 api_version 1 schema gxtxt.project_organization.v1 \
+        operations {projectNamespaceList projectNamespaceCreate projectNamespaceRename projectNamespaceDelete projectNamespaceAssign projectSessionNamespaceList projectSessionNamespaceCreate projectSessionNamespaceRename projectSessionNamespaceDelete projectSessionNamespaceAssign projectOrganizationCatalog projectOrganizationCapture projectOrganizationMove} \
+        identity stable generation_guard required_for_drag physical_relocation 0 owner PROJECT_EXPERIMENT_MANAGEMENT_API_v1]
+}
+proc ::GX::projectOrganizationGeneration {} {projectEnsureRegistryLoaded;return $::GX::projectOrganization(generation)}
+proc ::GX::projectNamespaceList {} {projectEnsureRegistryLoaded;return $::GX::projectOrganization(namespaces)}
+proc ::GX::projectSessionNamespaceList {project} {
+    if {![projectExists $project]} {error {Unknown Project.}}
+    return [projectField $project session_namespaces {}]
+}
+proc ::GX::_projectOrganizationName {name definitions {except {}}} {
+    set name [string trim $name]
+    if {$name eq {} || [string length $name]>160 || [regexp {[\r\n\x00-\x1f]} $name]} {error {Enter a single-line namespace name of 1–160 characters.}}
+    if {[string tolower $name] in {{ungrouped} {ungrouped projects} {default / unassigned}}} {error {That name is reserved for a built-in destination.}}
+    dict for {id value} $definitions {
+        if {$id ne $except && [string equal -nocase $value $name]} {error {A namespace with that name already exists in this parent.}}
+    }
+    return $name
+}
+proc ::GX::_projectOrganizationTransaction {expected script {paths {}}} {
+    return [_projectAtomic $paths {
+        projectLoadRegistry
+        if {$expected ne {} && $expected ne [projectOrganizationGeneration]} {error {Organization changed; refresh and select the source again.}}
+        set result [uplevel 1 $script]
+        incr ::GX::projectOrganization(generation)
+        projectSaveRegistry
+        set result
+    }]
+}
+proc ::GX::_projectOrganizationNamespaceWrite {kind parent id operation name expected} {
+    return [_projectOrganizationTransaction $expected {
+        if {$kind eq {project}} {set definitions [projectNamespaceList]} else {
+            if {$parent eq [projectDefaultId]} {error {Default / Unassigned has no named Session namespaces.}}
+            set definitions [projectSessionNamespaceList $parent]
+        }
+        if {$operation ne {create} && ![dict exists $definitions $id]} {error {Unknown namespace.}}
+        switch $operation {
+            create {
+                set name [_projectOrganizationName $name $definitions]
+                set id [format %s-%s-%s [expr {$kind eq {project} ? {pns} : {sns}}] [pid] [clock microseconds]]
+                dict set definitions $id $name
+            }
+            rename {dict set definitions $id [_projectOrganizationName $name $definitions $id]}
+            delete {
+                dict unset definitions $id
+                if {$kind eq {project}} {
+                    foreach p [projectIds] {if {[projectField $p namespace_id {}] eq $id} {set ::GX::projectCatalog($p,namespace_id) {}}}
+                } else {
+                    foreach rec [projectListExperiments $parent] {
+                        set eid [dict get $rec experiment_id]
+                        if {[dict get $rec session_namespace] eq $id} {set ::GX::projectMembership($eid,session_namespace) {}}
+                    }
+                }
+            }
+            default {error {Unknown namespace operation.}}
+        }
+        if {$kind eq {project}} {set ::GX::projectOrganization(namespaces) $definitions} else {set ::GX::projectCatalog($parent,session_namespaces) $definitions}
+        set id
+    }]
+}
+proc ::GX::projectNamespaceCreate {name {expected {}}} {return [_projectOrganizationNamespaceWrite project {} {} create $name $expected]}
+proc ::GX::projectNamespaceRename {id name {expected {}}} {return [_projectOrganizationNamespaceWrite project {} $id rename $name $expected]}
+proc ::GX::projectNamespaceDelete {id {expected {}}} {return [_projectOrganizationNamespaceWrite project {} $id delete {} $expected]}
+proc ::GX::projectSessionNamespaceCreate {parent name {expected {}}} {return [_projectOrganizationNamespaceWrite session $parent {} create $name $expected]}
+proc ::GX::projectSessionNamespaceRename {parent id name {expected {}}} {return [_projectOrganizationNamespaceWrite session $parent $id rename $name $expected]}
+proc ::GX::projectSessionNamespaceDelete {parent id {expected {}}} {return [_projectOrganizationNamespaceWrite session $parent $id delete {} $expected]}
+proc ::GX::projectNamespaceAssign {project namespace {expected {}}} {
+    return [_projectOrganizationTransaction $expected {
+        if {![projectExists $project]} {error {Unknown Project.}}
+        if {$project eq [projectDefaultId]} {error {Default / Unassigned cannot be grouped.}}
+        if {$namespace ne {} && ![dict exists [projectNamespaceList] $namespace]} {error {Unknown Project namespace.}}
+        set ::GX::projectCatalog($project,namespace_id) $namespace
+        set project
+    }]
+}
+proc ::GX::projectSessionNamespaceAssign {eid destination namespace {expectedProject {}} {expectedGeneration {}}} {
+    # Capture the preimage path before acquiring the original transaction lock;
+    # refuse a concurrently replaced identity rather than journal another path.
+    set session [projectExperimentResolve $eid]
+    return [_projectOrganizationTransaction $expectedGeneration {
+        if {![projectExists $destination]} {error {Unknown destination Project.}}
+        if {$namespace ne {} && ![dict exists [projectSessionNamespaceList $destination] $namespace]} {error {Unknown destination Session namespace.}}
+        if {[projectExperimentResolve $eid] ne $session} {error {Session identity changed; refresh the source.}}
+        if {$expectedProject ne {} && [projectMembershipField $eid project_id] ne $expectedProject} {error {Experiment membership changed; select the source again.}}
+        projectExperimentReassign $eid $destination $expectedProject
+        set ::GX::projectMembership($eid,session_namespace) $namespace
+        set eid
+    } [list [file join $session metadata manifest.ini]]]
+}
+proc ::GX::projectOrganizationCapture {node} {
+    set capture [dict create schema gxtxt.project_organization_drag.v1 generation [projectOrganizationGeneration] node $node]
+    if {[string match ex:* $node]} {
+        set eid [string range $node 3 end]
+        if {[projectMembershipField $eid experiment_id {}] eq {}} {error {Unknown Experiment.}}
+        dict set capture kind experiment;dict set capture id $eid
+        dict set capture project [projectMembershipField $eid project_id]
+        dict set capture namespace [projectMembershipField $eid session_namespace {}]
+    } elseif {[projectExists $node]} {
+        if {$node eq [projectDefaultId]} {error {Default / Unassigned is protected and cannot be moved.}}
+        dict set capture kind project;dict set capture id $node
+        dict set capture namespace [projectField $node namespace_id {}]
+    } else {error {Select a Project or Experiment to move.}}
+    return $capture
+}
+proc ::GX::projectOrganizationMove {capture target} {
+    if {[dict get $capture schema] ne {gxtxt.project_organization_drag.v1}} {error {Invalid organization drag.}}
+    if {[dict get $capture kind] eq {project}} {
+        if {![string match pn:* $target]} {error {Drop a Project onto a Project namespace.}}
+        return [projectNamespaceAssign [dict get $capture id] [string range $target 3 end] [dict get $capture generation]]
+    }
+    if {[regexp {^sn:([^:]+):(.*)$} $target -> project namespace]} {
+    } elseif {[projectExists $target]} {set project $target;set namespace {}} else {error {Drop an Experiment onto a Project or its Session namespace.}}
+    return [projectSessionNamespaceAssign [dict get $capture id] $project $namespace [dict get $capture project] [dict get $capture generation]]
+}
+proc ::GX::projectOrganizationCatalog {{query {}}} {
+    if {!$::GX::projectTransactionDepth && [file exists [_projectJournal]]} {error {An organization writer is active; retry after it commits or recovers.}}
+    projectEnsureRegistryLoaded
+    set query [string tolower [string trim $query]];set rows {};set parents {};set all {}
+    dict set all pn: [dict create parent {} kind project_namespace name {Ungrouped Projects} id {} project {}]
+    dict for {id name} [projectNamespaceList] {dict set all pn:$id [dict create parent {} kind project_namespace name $name id $id project {}]}
+    foreach project [projectIds] {
+        set ns [projectField $project namespace_id {}]
+        if {![dict exists $all pn:$ns]} {set ns {}}
+        set parent [expr {$project eq [projectDefaultId] ? {} : "pn:$ns"}]
+        dict set all $project [dict create parent $parent kind project name [projectField $project name] id $project project $project tags [projectField $project tags] description [projectField $project description]]
+        dict set all sn:$project: [dict create parent $project kind session_namespace name Ungrouped id {} project $project]
+        dict for {id name} [projectSessionNamespaceList $project] {dict set all sn:$project:$id [dict create parent $project kind session_namespace name $name id $id project $project]}
+    }
+    # Single registry scan. This query never opens a Session or scientific file.
+    foreach key [array names ::GX::projectMembership *,experiment_id] {
+        set eid $::GX::projectMembership($key);set p [projectMembershipField $eid project_id]
+        if {![dict exists $all $p]} continue
+        set ns [projectMembershipField $eid session_namespace {}]
+        if {![dict exists $all sn:$p:$ns]} {set ns {}}
+        dict set all ex:$eid [dict create parent sn:$p:$ns kind experiment name [projectMembershipField $eid experiment_name] id $eid project $p]
+    }
+    set counts {}
+    dict for {node row} $all {
+        if {[dict get $row kind] eq {project} && [dict get $row parent] ne {}} {dict incr counts [dict get $row parent]}
+        if {[dict get $row kind] eq {experiment}} {dict incr counts [dict get $row project];dict incr counts [dict get $row parent]}
+    }
+    dict for {node row} $all {dict set all $node count [datasetPublicationV2DictDefault $counts $node 0]}
+    if {$query eq {}} {return [dict create generation [projectOrganizationGeneration] rows $all]}
+    dict for {node row} $all {
+        set haystack [string tolower [dict values $row]]
+        if {[string first $query $haystack]<0} continue
+        dict set rows $node $row
+        # Include descendants of a matching container and all ancestry.
+        dict set parents $node 1
+    }
+    dict for {node row} $all {
+        set chain {};set p $node
+        while {$p ne {}} {lappend chain $p;set p [dict get $all $p parent]}
+        set keep 0;foreach p $chain {if {[dict exists $parents $p]} {set keep 1;break}}
+        if {$keep} {foreach p $chain {dict set rows $p [dict get $all $p]}}
+    }
+    return [dict create generation [projectOrganizationGeneration] rows $rows]
 }
 # Existing public detach contracts become a nondestructive reassignment to Default.
 proc ::GX::projectDetachExperiment {experimentId} {return [projectExperimentReassign $experimentId [projectEnsureDefault]]}
@@ -322,6 +485,7 @@ proc ::GX::resourceLifecycleDeleteProject {id} {
     _projectAtomic $paths {
         foreach record $records {projectExperimentReassign [dict get $record experiment_id] [projectEnsureDefault]}
         foreach key [array names ::GX::projectCatalog "$id,*"] {unset ::GX::projectCatalog($key)}
+        incr ::GX::projectOrganization(generation)
         projectSaveRegistry
         set metadata [lindex $paths 0];if {[file exists $metadata]} {file delete -- $metadata}
     }

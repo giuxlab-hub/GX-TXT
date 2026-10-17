@@ -1,12 +1,32 @@
-# Projects and Experiment inspection
+# Projects and Session organization
 
-Choose a Project on the left. Its full name and Experiment count appear on the right.
-Click an Experiment name/row: the entire row highlights, says Selected, and the Export
-summary names its target. The Open Session marker is independent of selection. Use
-Tab to focus a row, ↑/↓ to navigate, Enter to open, or the individual row buttons.
-Scroll long lists; names wrap. Rename keeps the stable ID, creator and directory.
-Move to Default changes membership without moving bytes. To return to a named Project,
-Open the Session, select that Project, and click Move open Session here.
+The left navigator groups Projects in Project namespaces and Sessions in
+Project-local Session namespaces. Ungrouped Projects and each Project's
+Ungrouped group preserve older entries. Default / Unassigned remains protected.
+These groups organize membership; moving a Session keeps its directory,
+Datasets, Graphs, Workspaces and scientific identity.
+
+Use the Logical namespace editor to create a Project namespace, or select a
+Project and choose Session namespace. Select a named group to Rename or Remove
+it. Removing a group returns its members to Ungrouped. Names must be unique
+within their parent; an equal name in another Project is a separate group.
+
+Drag a Project onto a Project namespace. Drag a Session onto a Project or one
+of its Session groups. The highlighted destination and inline message identify
+the actual drop target. Hover expands a target; holding at an edge scrolls the
+list. Invalid or stale moves are refused without changing membership.
+
+For the keyboard alternative, select a Project or Session and press Ctrl+X,
+search/select the destination, then press Ctrl+V. Escape cancels. Cut, Paste
+and Cancel are also available in the toolbar and context menu. Moving to a
+bare Project chooses its Ungrouped destination. No automatic Undo is promised;
+an inverse move is another guarded operation.
+
+Search names, stable IDs, tags and descriptions. Results retain their ancestor
+path. Sort A–Z, expand/collapse with the arrows, and use Enter to open the
+selected Session. Your selected group, expansion and scroll state are retained.
+Choose Identity / breadcrumb from the context menu for a group's stable ID.
+Selecting a Session shows a quick summary; Info opens scientific details.
 
 Import Experiment into this Project does not need an existing Experiment selection.
 Choose a valid Portable ZIP and unused destination name. Export selected Experiment

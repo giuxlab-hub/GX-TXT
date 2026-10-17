@@ -4,6 +4,7 @@
 from __future__ import annotations
 import argparse, configparser, contextlib, fcntl, hashlib, json, os, signal, sqlite3
 import subprocess, sys, time, uuid, io, stat
+import tempfile
 from pathlib import Path
 # FUTURE WINDOWS PORTING REQUIREMENT (implementation intentionally deferred):
 # LOCAL platform-independent CORE service, never remote job dispatch. Tk is not
@@ -540,6 +541,62 @@ def serve(root):
                 c.execute('ROLLBACK');raise
             if empty:break
         time.sleep(.25)
+def request_process_group():
+    """Own a bounded auxiliary request group before starting any subprocess.
+
+    Tcl Script Job request cancellation may signal this group and its leader.
+    Durable scientific Jobs keep their existing supervisor lifecycle.
+    """
+    if os.name == 'posix' and os.getpgrp() != os.getpid():
+        os.setsid()
+
+
+class AuxiliaryRequestError(RuntimeError):
+    def __init__(self, category, message):
+        super().__init__(message)
+        self.category = category
+
+
+def auxiliary_request_run(command, *, timeout_seconds=3, max_bytes=1048576, environment=None):
+    """One bounded subprocess inside an explicitly owned auxiliary worker.
+
+    Reuses the durable supervisor's identity, descendant and reaping primitives.
+    The caller must establish its private request group before calling this.
+    No scientific Job state or admission policy is introduced here.
+    """
+    if os.getpgrp() != os.getpid():
+        raise RuntimeError('Auxiliary subprocess requires its own worker group')
+    if not 0.05 <= timeout_seconds <= 300 or not 1024 <= max_bytes <= 16777216:
+        raise ValueError('Invalid bounded auxiliary subprocess limits')
+    enable_subreaper()
+    record = dict(run_id='auxiliary', job_root='', process_identities={})
+    with tempfile.TemporaryFile() as output:
+        child = subprocess.Popen(command, stdin=subprocess.DEVNULL, stdout=output,
+                                 stderr=subprocess.STDOUT, env=environment)
+        record['pid_start'] = process_identity(child.pid)
+        started = time.monotonic()
+        try:
+            while child.poll() is None:
+                record['process_identities'].update({str(pid):row[2] for pid,row in process_tree(os.getpid()).items() if pid != os.getpid() and row[6] != 'Z'})
+                if output.tell() > max_bytes:
+                    raise AuxiliaryRequestError('output_limit', 'Auxiliary command exceeded its output limit')
+                if time.monotonic() - started >= timeout_seconds:
+                    raise AuxiliaryRequestError('timeout', 'Auxiliary command timed out')
+                time.sleep(.025)
+            if output.tell() > max_bytes:
+                raise AuxiliaryRequestError('output_limit', 'Auxiliary command exceeded its output limit')
+            output.seek(0)
+            text = output.read(max_bytes + 1).decode('utf-8', errors='replace')
+            return dict(returncode=child.returncode, output=text, elapsed_ms=round((time.monotonic()-started)*1000))
+        finally:
+            # Include adopted descendants even when their original parent exited
+            # before the next sample. The request worker is their subreaper.
+            record['process_identities'].update({str(pid):row[2] for pid,row in process_tree(os.getpid()).items() if pid != os.getpid()})
+            drain_tree(record, child.pid, timeout=.35)
+            with contextlib.suppress(subprocess.TimeoutExpired): child.wait(timeout=.1)
+            reap_adopted(record)
+
+
 def tcl_result(value):
     import tkinter
     if isinstance(value,dict):return tkinter._join(tuple(x for k,v in value.items() for x in (k,tcl_result(v))))

@@ -1,0 +1,141 @@
+{
+  "api_requirements": {
+    "DOCUMENTATION_BROWSER_API_v1": 1,
+    "NATIVE2D_VIEWPORT_HOST_v1": 1,
+    "SCIENTIFIC_RECIPE_API_v1": 1,
+    "SESSION_WORKSPACE_API_v1": 1,
+    "UI_FIELD_API_v1": 1,
+    "VIEWER_GUI_HOST_API_v1": 1
+  },
+  "component_owners": {
+    "dataset": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#dataset",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "source",
+      "type": "dataset_selector"
+    },
+    "fit": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#fit",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "toolbar",
+      "type": "action"
+    },
+    "help_controls": {
+      "api_id": "DOCUMENTATION_BROWSER_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#help_controls",
+      "owner": "app/gui/documentation_module_window.tcl",
+      "parent": "footer",
+      "type": "help"
+    },
+    "history_controls": {
+      "api_id": "SCIENTIFIC_RECIPE_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#history_controls",
+      "owner": "core/tcl/scientific_recipe_history.tcl",
+      "parent": "footer",
+      "type": "history"
+    },
+    "load": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#load",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "toolbar",
+      "type": "action"
+    },
+    "source": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#source",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "inspector",
+      "type": "section"
+    },
+    "workspace_controls": {
+      "api_id": "SESSION_WORKSPACE_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#workspace_controls",
+      "owner": "core/tcl/session_workspace_api_v1.tcl",
+      "parent": "footer",
+      "type": "workspace"
+    },
+    "x_variable": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#x_variable",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "source",
+      "type": "field"
+    },
+    "xy": {
+      "api_id": "NATIVE2D_VIEWPORT_HOST_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#xy",
+      "owner": "core/tcl/native2d_viewport_curve_source.tcl",
+      "parent": "canvas",
+      "type": "native2d"
+    },
+    "y_variable": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#y_variable",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "source",
+      "type": "field"
+    },
+    "zoom_in": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#zoom_in",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "toolbar",
+      "type": "action"
+    },
+    "zoom_out": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#zoom_out",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "toolbar",
+      "type": "action"
+    }
+  },
+  "handlers": {
+    "fit": {
+      "arguments": [
+        "window",
+        "action"
+      ],
+      "effect": "unbound"
+    },
+    "load": {
+      "arguments": [
+        "window",
+        "action"
+      ],
+      "effect": "unbound"
+    },
+    "zoom_in": {
+      "arguments": [
+        "window",
+        "action"
+      ],
+      "effect": "unbound"
+    },
+    "zoom_out": {
+      "arguments": [
+        "window",
+        "action"
+      ],
+      "effect": "unbound"
+    }
+  },
+  "module_id": "viewer.dev104_demo_b",
+  "provider_id": "dev104_demo_b",
+  "schema": "gxtxt.viewer_handler_contracts.v1"
+}

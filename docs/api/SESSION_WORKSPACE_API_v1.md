@@ -149,3 +149,9 @@ also caches a list representation; Python tuple conversion must not normalize
 scientific text. The public Script result is an ordinary Unicode string.
 
 `sessionWorkspaceAvailableName preferred` suggests the first unused display name from the same Workspace inventory, appending a numeric suffix when necessary. Python/Octave expose `available_name(preferred)`. This does not reserve an identity: `Create` still validates uniqueness atomically. Viewers use it for unnamed draft Save and honor an explicit `workspace_name` supplied by the shared New workflow.
+
+Dev104 designed Viewer providers may declare `viewer_provider` in their existing
+Workspace descriptor. For modules of kind `viewer`, Workspace availability then
+uses that registered Viewer's presentation policy, independently of Analysis/Run
+selection. Other providers retain module enablement. Disabling the declared
+Viewer policy prevents Workspace access; it does not change scientific modules.

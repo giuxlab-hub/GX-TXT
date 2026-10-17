@@ -3,7 +3,7 @@
 # plotting model, scientific selection engine, renderer or worker is introduced.
 proc ::GX::native2DViewportCurveCreate {parent session request {options {}}} {
     variable ::GX::ViewportHost::hosts
-    foreach key [dict keys $options] {if {$key ni {selected completed progress color title}} {error "Unknown embedded curve option '$key'"}}
+    foreach key [dict keys $options] {if {$key ni {selected completed progress color title view_changed}} {error "Unknown embedded curve option '$key'"}}
     if {[file normalize $session] ne [file normalize $::GX::currentSession]} {error {Embedded curve requires the current scientific Session}}
     set canvas [expr {$parent eq "." ? ".curve" : "$parent.curve"}]
     if {![winfo exists $parent]||[winfo exists $canvas]} {error {Embedded curve parent is unavailable or its curve child already exists}}
@@ -15,7 +15,7 @@ proc ::GX::native2DViewportCurveCreate {parent session request {options {}}} {
         canvas $canvas -highlightthickness 0 -background white -width 640 -height 420
         native2DViewportHostCreate $parent $canvas $scene [list ::GX::_native2DViewportCurveSchedule $canvas]
         set attached 1
-        dict set hosts $canvas curve [dict create token $token scene $scene descriptor $descriptor options $options status loading job {} object {} pending {} pan {} closing 0]
+        dict set hosts $canvas curve [dict create token $token scene $scene descriptor $descriptor options $options status loading job {} object {} pending {} pan {} closing 0 metrics {display_requests 1 paints 0 navigation 0 last_paint_us 0 last_input_to_frame_us 0 coalesced_navigation 0}]
         bind $canvas <Configure> +[list ::GX::_native2DViewportCurveSchedule $canvas]
         bind $canvas <Button-1> [list ::GX::native2DViewportCurveHit $canvas %x %y 1]
         bind $canvas <Button-4> [list ::GX::native2DViewportCurveNavigate $canvas zoom 1.2 %x %y]
@@ -43,7 +43,7 @@ proc ::GX::_native2DViewportCurveRequire {canvas} {
 }
 proc ::GX::native2DViewportCurveDescribe {canvas} {
     set record [_native2DViewportCurveRequire $canvas]
-    set result [dict create api_id NATIVE2D_VIEWPORT_HOST_v1 host_kind curve_source source [dict get $record descriptor] status [dict get $record status] display_is_scientific_data 0]
+    set result [dict create api_id NATIVE2D_VIEWPORT_HOST_v1 host_kind curve_source source [dict get $record descriptor] status [dict get $record status] display_is_scientific_data 0 metrics [dict get $record metrics]]
     if {[dict exists $record display]} {dict set result display [dict get $record display];dict set result view [::GX::Native2D::core view [dict get $record scene]]}
     return $result
 }
@@ -87,6 +87,7 @@ proc ::GX::_native2DViewportCurveDraw {canvas} {
     dict set hosts $canvas curve pending {}
     if {[catch {set record [_native2DViewportCurveRequire $canvas]} message]} {_native2DViewportCurveCatalog $canvas {};return}
     if {[dict get $record status] ne "ready"||[winfo width $canvas]<160||[winfo height $canvas]<120} return
+    set paintStarted [clock microseconds]
     set scene [dict get $record scene];set view [::GX::Native2D::core view_requested $scene]
     lset view 0 [winfo width $canvas];lset view 1 [winfo height $canvas];set view [lreplace $view 2 5 85 32 28 58]
     ::GX::Native2D::core view $scene $view
@@ -97,12 +98,20 @@ proc ::GX::_native2DViewportCurveDraw {canvas} {
         dict set labels ${axis}_label $label
     }
     native2DCanvasSnapshot $canvas [native2DPresentationSnapshot $scene [dict merge $labels [dict create title [datasetPublicationV2DictDefault [dict get $record options] title {}] point_budget 65536]]]
+    dict set hosts $canvas curve metrics paints [expr {1+[dict get $hosts $canvas curve metrics paints]}]
+    dict set hosts $canvas curve metrics last_paint_us [expr {[clock microseconds]-$paintStarted}]
+    if {[dict exists $hosts $canvas curve input_started_us]} {
+        dict set hosts $canvas curve metrics last_input_to_frame_us [expr {[clock microseconds]-[dict get $hosts $canvas curve input_started_us]}]
+        dict set hosts $canvas curve metrics coalesced_navigation [dict get $hosts $canvas curve pending_navigation]
+        dict unset hosts $canvas curve input_started_us;dict unset hosts $canvas curve pending_navigation
+    }
 }
 proc ::GX::_native2DViewportCurveWheel {canvas delta x y} {native2DViewportCurveNavigate $canvas zoom [expr {pow(1.2,$delta/120.)}] $x $y}
 proc ::GX::native2DViewportCurveNavigate {canvas action args} {
     variable ::GX::ViewportHost::hosts
     set record [_native2DViewportCurveRequire $canvas]
     if {[dict get $record status] ne "ready"} return
+    set inputStarted [clock microseconds]
     set scene [dict get $record scene]
     switch $action {
         fit {::GX::Native2D::core fit_bounds $scene [dict get $record display full_bounds]}
@@ -112,6 +121,11 @@ proc ::GX::native2DViewportCurveNavigate {canvas action args} {
         pan_end {dict set hosts $canvas curve pan {};return}
         default {error {Unknown embedded curve navigation action}}
     }
+    dict set hosts $canvas curve metrics navigation [expr {1+[dict get $hosts $canvas curve metrics navigation]}]
+    if {![dict exists $hosts $canvas curve input_started_us]} {dict set hosts $canvas curve input_started_us $inputStarted;dict set hosts $canvas curve pending_navigation 0}
+    dict set hosts $canvas curve pending_navigation [expr {1+[dict get $hosts $canvas curve pending_navigation]}]
+    set callback [datasetPublicationV2DictDefault [dict get $record options] view_changed {}]
+    if {$callback ne {}} {uplevel #0 [list {*}$callback $canvas [dict create operation $action arguments $args size [list [winfo width $canvas] [winfo height $canvas]]]]}
     _native2DViewportCurveSchedule $canvas
 }
 proc ::GX::native2DViewportCurveHit {canvas x y {notify 0}} {

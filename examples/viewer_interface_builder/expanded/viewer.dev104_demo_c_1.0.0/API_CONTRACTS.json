@@ -1,0 +1,145 @@
+{
+  "api_requirements": {
+    "CONFIGURATION_API_v1": 1,
+    "DOCUMENTATION_BROWSER_API_v1": 1,
+    "NATIVE2D_VIEWPORT_HOST_v1": 1,
+    "SCIENTIFIC_RECIPE_API_v1": 1,
+    "SESSION_WORKSPACE_API_v1": 1,
+    "UI_FIELD_API_v1": 1,
+    "VIEWER_GUI_HOST_API_v1": 1
+  },
+  "component_owners": {
+    "diagnostics": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#diagnostics",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "tabs",
+      "type": "tab"
+    },
+    "file_menu": {
+      "api_id": "CONFIGURATION_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#file_menu",
+      "owner": "core/tcl/configuration_viewer_commands.tcl",
+      "parent": "menubar",
+      "type": "menu"
+    },
+    "help_controls": {
+      "api_id": "DOCUMENTATION_BROWSER_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#help_controls",
+      "owner": "app/gui/documentation_module_window.tcl",
+      "parent": "footer",
+      "type": "help"
+    },
+    "history_controls": {
+      "api_id": "SCIENTIFIC_RECIPE_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#history_controls",
+      "owner": "core/tcl/scientific_recipe_history.tcl",
+      "parent": "footer",
+      "type": "history"
+    },
+    "inputs": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#inputs",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "tabs",
+      "type": "tab"
+    },
+    "inspect": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#inspect",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "toolbar",
+      "type": "action"
+    },
+    "layers": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#layers",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "inspector",
+      "type": "section"
+    },
+    "message": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#message",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "diagnostics",
+      "type": "label"
+    },
+    "note": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#note",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "settings",
+      "type": "field"
+    },
+    "settings": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#settings",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "inspector",
+      "type": "section"
+    },
+    "status": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#status",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "footer",
+      "type": "status"
+    },
+    "tabs": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#tabs",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "inspector",
+      "type": "tabs"
+    },
+    "view": {
+      "api_id": "NATIVE2D_VIEWPORT_HOST_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#view",
+      "owner": "core/tcl/native2d_viewport_curve_source.tcl",
+      "parent": "canvas",
+      "type": "native2d"
+    },
+    "visible": {
+      "api_id": "UI_FIELD_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#visible",
+      "owner": "core/tcl/ui_field_viewer_regions_v1.tcl",
+      "parent": "layers",
+      "type": "toggle"
+    },
+    "workspace_controls": {
+      "api_id": "SESSION_WORKSPACE_API_v1",
+      "api_version": 1,
+      "manifest": "gui/design.tcldict#workspace_controls",
+      "owner": "core/tcl/session_workspace_api_v1.tcl",
+      "parent": "footer",
+      "type": "workspace"
+    }
+  },
+  "handlers": {
+    "inspect": {
+      "arguments": [
+        "window",
+        "action"
+      ],
+      "effect": "unbound"
+    }
+  },
+  "module_id": "viewer.dev104_demo_c",
+  "provider_id": "dev104_demo_c",
+  "schema": "gxtxt.viewer_handler_contracts.v1"
+}

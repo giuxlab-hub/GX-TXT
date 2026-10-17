@@ -12,6 +12,8 @@ import re
 import shutil
 import sys
 import tempfile
+import subprocess
+import os
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 
@@ -556,6 +558,187 @@ def public_api_files(data: dict) -> dict[str, bytes]:
     return result
 
 
+def write_module_zip(payload: dict[str, bytes], module_id: str, version: str, output: Path) -> tuple[Path, str]:
+    """Shared deterministic standard-package writer for every Builder profile."""
+    output = output.resolve(); output.mkdir(parents=True, exist_ok=True)
+    zip_path = output / f"{module_id}_{version}.zip"
+    if zip_path.exists() or zip_path.with_suffix('.zip.sha256').exists():
+        raise FileExistsError(f'refusing to overwrite {zip_path}')
+    payload = dict(payload)
+    payload.pop('SHA256SUMS.txt', None)
+    payload['SHA256SUMS.txt'] = ''.join(f'{digest(payload[name])}  {name}\n' for name in sorted(payload)).encode()
+    with tempfile.NamedTemporaryFile(dir=output, prefix='.viewer-package-', delete=False) as temporary_file:
+        temporary = Path(temporary_file.name)
+    try:
+        with ZipFile(temporary, 'w', compression=ZIP_DEFLATED, compresslevel=9) as archive:
+            for name in sorted(payload):
+                if name.startswith('/') or '..' in Path(name).parts:
+                    raise ValueError('Invalid module asset path')
+                info = ZipInfo(name, date_time=(2020, 1, 1, 0, 0, 0))
+                info.compress_type = ZIP_DEFLATED; info.external_attr = 0o100644 << 16
+                archive.writestr(info, payload[name], compress_type=ZIP_DEFLATED, compresslevel=9)
+        # No partial package is installable; link promotion also refuses races.
+        os.link(temporary, zip_path)
+    finally:
+        temporary.unlink(missing_ok=True)
+    zip_sha = digest(zip_path.read_bytes())
+    zip_path.with_suffix('.zip.sha256').write_text(f'{zip_sha}  {zip_path.name}\n', encoding='utf-8')
+    return zip_path, zip_sha
+
+
+def build_viewer(project_path: Path, source_directory: Path, output: Path) -> tuple[Path, str]:
+    """Viewer profile: CORE validates layout; this owner packages ordinary modules.
+
+    Generated assets may change. Existing handwritten handlers are never replaced.
+    No GUI constructors or scientific implementation are generated here.
+    """
+    import tkinter
+    framework = Path(__file__).resolve().parents[4]
+    with tempfile.TemporaryDirectory(prefix='gxtxt-viewer-schema-') as scratch:
+        environment = dict(os.environ)
+        for name in ('XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME', 'XDG_STATE_HOME',
+                     'GXTXT_INSTALLATION_ROOT', 'GXTXT_RESOURCE_ROOT', 'GXTXT_RESOURCE_STORAGE', 'GXTXT_JOB_ROOT'):
+            environment[name] = str(Path(scratch) / name)
+        validated = subprocess.check_output(
+            ['tclsh', str(framework / 'core/tcl/viewer_design_validate.tcl'),
+             str(framework), str(project_path.resolve()), 'describe'], text=True, timeout=30, env=environment)
+    interpreter = tkinter.Tcl()
+    def dictionary(value):
+        words = interpreter.splitlist(value)
+        if len(words) % 2: raise ValueError('Invalid inert Viewer dictionary')
+        return dict(zip(words[::2], words[1::2]))
+    response = dictionary(validated)
+    validated = response['design']
+    capabilities = {key: dictionary(value) for key, value in dictionary(response['capabilities']).items()}
+    design = dictionary(validated)
+    module_id, provider, version = design['module_id'], design['provider_id'], design['version']
+    title = single(design['title'], 'Viewer title')
+    target = output.resolve() / f'{module_id}_{version}.zip'
+    if target.exists() or target.with_suffix('.zip.sha256').exists():
+        raise FileExistsError(f'refusing to overwrite {target}')
+    components = [dictionary(c) for c in interpreter.splitlist(design['components'])]
+    contracts = {key: dictionary(value) for key, value in dictionary(design['handlers']).items()}
+    for contract in contracts.values(): contract['arguments'] = list(interpreter.splitlist(contract['arguments']))
+    source_directory = source_directory.resolve()
+    if source_directory.is_relative_to(framework / 'plugins'):
+        raise ValueError('Generate into a separate source project, preserving installed modules')
+    source_directory.mkdir(parents=True, exist_ok=True)
+    slug = module_id.replace('.', '_'); namespace = '::GX::Generated_' + slug
+    backend = slug + '_gui'; workspace = slug + '_' + provider + '_interface_state'
+    api = r'''# Generated interface connector. Edit handlers.tcl for science.
+# SPDX-License-Identifier: GPL-3.0-or-later
+if {![llength [info commands ::GX::viewerGuiDesignCompose]]} {error {This Viewer requires the dev104 CORE Viewer design capability.}}
+namespace eval @NS@ {variable root [file dirname [file dirname [info script]]]}
+namespace eval @NS@::Handlers {}
+if {![info exists @NS@::handlersLoaded]} {
+    source [file join [set @NS@::root] generated handler_defaults.tcl]
+    source [file join [set @NS@::root] handlers.tcl]
+    set @NS@::handlersLoaded 1
+}
+proc @NS@::design {} {return [::GX::viewerGuiDesignRead [file join [set @NS@::root] gui design.tcldict]]}
+proc @NS@::handlers {} {
+    set result {}
+    dict for {id contract} [dict get [design] handlers] {dict set result $id [dict create command [list @NS@::Handlers::$id] enabled [list @NS@::Handlers::enabled]]}
+    return $result
+}
+proc @NS@::open {{context {}}} {
+    set window .@SLUG@
+    if {[winfo exists $window]} {
+        set id [::GX::datasetPublicationV2DictDefault $context workspace_id {}]
+        if {$id eq {}} {raise $window;return $window}
+        if {[dict exists $::GX::SessionWorkspace::adapters $window] && ![::GX::sessionWorkspaceHostPrepare [dict get $::GX::SessionWorkspace::adapters $window] opening]} {return $window}
+        destroy $window
+    }
+    ::GX::viewerGuiDesignCompose [design] $window @MODULE@ @PROVIDER@ runtime [handlers] $context
+    return $window
+}
+proc @NS@::workspaceOpen {context} {return [::GX::viewerGuiDesignWorkspaceOpen @MODULE@ @PROVIDER@ [design] runtime [handlers] $context]}
+proc @NS@::dispatch {operation scene} {return [open [::GX::datasetPublicationV2DictDefault $scene open_context {}]]}
+::GX::viewerBackendRegister @BACKEND@ @NS@::dispatch
+'''
+    for key, value in {'@NS@': namespace, '@SLUG@': slug, '@MODULE@': module_id,
+                       '@PROVIDER@': provider, '@BACKEND@': backend}.items():
+        api = api.replace(key, value)
+    descriptor_text = ini_section('meta', dict(api_version=1, id=module_id, kind='viewer',
+        group='Viewers', name=title, version=version, selectable=1, default_enabled=1,
+        core=0, runner='service', order=900, depends='plot.dataset',
+        description='Declarative Viewer interface using public CORE owners.'))
+    descriptor_text += ini_section('viewers', dict(api_version=1, ids=provider))
+    descriptor_text += ini_section('viewer.' + provider, dict(name=title, backend=backend,
+        activation_api='GENERATED_VIEWER_API_v1', gui_design='gui/design.tcldict', gui_handler_command=namespace+'::handlers',
+        capabilities='declarative_gui;viewer_commands;gui_roundtrip', semantic_group='development',
+        group_title='Designed Viewers', short_title=title))
+    descriptor_text += ini_section('public_apis', dict(ids='GENERATED_VIEWER_API_v1'))
+    descriptor_text += ini_section('public_api.GENERATED_VIEWER_API_v1', dict(api_version=1,
+        name='Generated Viewer connector', entrypoint='api/viewer.tcl', namespace=namespace,
+        capabilities='viewer_backend;viewer_gui_manifest'))
+    descriptor_text += ini_section('documentation', dict(api_version=1, guide='MANUAL.md',
+        api_refs='VIEWER_GUI_HOST_API_v1;UI_FIELD_API_v1;SCRIPT_JOB_API_v1'))
+    if any(c['type'] == 'workspace' for c in components):
+        descriptor_text += ini_section('workspaces', dict(api_version=1, ids=workspace))
+        descriptor_text += ini_section('workspace.' + workspace, dict(entrypoint='api/viewer.tcl',
+            viewer_provider=provider,
+            type='Designed Viewer state', schema='gxtxt.viewer_interface_state.v1', version=1,
+            accepted_versions=1, validate='::GX::viewerGuiDesignStateValidate', open=namespace+'::workspaceOpen'))
+    defaults = '# Generated unbound defaults; handwritten handlers override these.\n'
+    defaults += f'proc {namespace}::Handlers::enabled {{window action}} {{return 1}}\n'
+    for action in sorted(contracts):
+        defaults += f'proc {namespace}::Handlers::{action} {{window action}} {{return {{status not_connected}}}}\n'
+    generated = {
+        'generated/handler_defaults.tcl': defaults.encode(),
+        'gui/design.tcldict': validated.strip().encode('utf-8') + b'\n',
+        'api/viewer.tcl': api.encode('utf-8'),
+        'module.ini': descriptor_text.encode('utf-8'),
+        'plugin-package.ini': ini_section('package', dict(api_version=1, id=module_id,
+            name=title, version=version, type='module', framework_min='0.9.8.10-dev-104', framework_max='')).encode(),
+        'API_CONTRACTS.json': (json.dumps(dict(schema='gxtxt.viewer_handler_contracts.v1',
+            module_id=module_id, provider_id=provider, handlers=contracts,
+            api_requirements={key: int(value) for key, value in dictionary(design['requirements']).items()},
+            component_owners={c['id']: dict(type=c['type'], parent=c['parent'],
+                api_id=capabilities[c['type']]['api_id'], api_version=int(capabilities[c['type']]['api_version']),
+                owner=capabilities[c['type']]['owner'], manifest='gui/design.tcldict#'+c['id']) for c in components}),
+            indent=2, sort_keys=True) + '\n').encode(),
+        'MANUAL.md': (f'# {title}\n\nThis Viewer is composed by the public CORE Viewer GUI Host.\n'
+            'Unbound actions report not_connected and do not start scientific Jobs.\n'
+            'Help displays this installed module’s manual and metadata.\n\n'
+            '## Developer handlers\n\nEdit handlers.tcl. Each declared handler receives (window, action).\n'
+            'Read component values with ::GX::viewerGuiDesignValues. Use the public\n'
+            'Source/Plot setters, Script Job and Dataset publication services for domain work.\n'
+            'Keep scientific operations inside explicit handlers, never at file top level.\n'
+            'Regeneration preserves handlers.tcl byte for byte.\n').encode('utf-8'),
+        'LICENSE': b'Generated interface assets: GPL-3.0-or-later.\nHandwritten handlers retain their own notices.\n',
+    }
+    handlers = source_directory / 'handlers.tcl'
+    if handlers.is_symlink(): raise ValueError('A handwritten handler source must be an ordinary file')
+    if handlers.exists() and handlers.stat().st_size > 8 * 1024 * 1024:
+        raise ValueError('Handwritten handlers exceed the 8 MiB source bound')
+    if not handlers.exists():
+        body = '# Handwritten scientific hooks; preserved on regeneration.\n'
+        body += f'namespace eval {namespace}::Handlers {{}}\n'
+        for action in sorted(contracts):
+            body += f'proc {namespace}::Handlers::{action} {{window action}} {{\n    return {{status not_connected}}\n}}\n'
+        handlers.write_text(body, encoding='utf-8')
+    preserved = digest(handlers.read_bytes()); changes = []
+    for name, body in generated.items():
+        path = source_directory / name
+        if path.is_symlink(): raise ValueError('Generated assets cannot be symbolic links')
+        old = digest(path.read_bytes()) if path.exists() else None
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if old != digest(body):
+            with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as temp:
+                temp.write(body); temporary = Path(temp.name)
+            temporary.replace(path)
+            changes.append(dict(path=name, before=old, after=digest(body)))
+    if digest(handlers.read_bytes()) != preserved: raise RuntimeError('Handwritten handlers changed')
+    payload = {name: (source_directory / name).read_bytes() for name in generated}
+    payload['handlers.tcl'] = handlers.read_bytes()
+    report = dict(schema='gxtxt.viewer_generation.v1', generated_changes=changes,
+        handwritten_handlers_sha256=preserved, handwritten_handlers_overwritten=False,
+        gui_owner='VIEWER_GUI_HOST_API_v1', source_directory=str(source_directory))
+    (source_directory / 'generation-report.json').write_text(json.dumps(report, indent=2) + '\n')
+    return write_module_zip(payload, module_id, version, output)
+
+
 def build(project_path: Path, output: Path) -> tuple[Path, str]:
     data, source_files = validate(project_path)
     output = output.resolve()
@@ -582,15 +765,7 @@ def build(project_path: Path, output: Path) -> tuple[Path, str]:
     portable["source_sha256"] = digest(source_files[0][2])
     payload["builder-project.json"] = (json.dumps(portable, ensure_ascii=False, indent=2, sort_keys=True) + "\n").encode("utf-8")
     payload["SHA256SUMS.txt"] = "".join(f"{digest(payload[name])}  {name}\n" for name in sorted(payload)).encode()
-    with ZipFile(zip_path, "w", compression=ZIP_DEFLATED, compresslevel=9) as archive:
-        for name in sorted(payload):
-            info = ZipInfo(name, date_time=(2020, 1, 1, 0, 0, 0))
-            info.compress_type = ZIP_DEFLATED
-            info.external_attr = 0o100644 << 16
-            archive.writestr(info, payload[name], compress_type=ZIP_DEFLATED, compresslevel=9)
-    zip_sha = digest(zip_path.read_bytes())
-    zip_path.with_suffix(".zip.sha256").write_text(f"{zip_sha}  {zip_path.name}\n", encoding="utf-8")
-    return zip_path, zip_sha
+    return write_module_zip(payload, data['id'], data['version'], output)
 
 
 def gui(*, on_ready=None) -> None:
@@ -998,10 +1173,17 @@ def main() -> int:
         if name == "build":
             command.add_argument("output", type=Path)
     sub.add_parser("gui")
+    viewer = sub.add_parser('viewer-build', help='Package a CORE-validated Viewer design')
+    viewer.add_argument('project', type=Path)
+    viewer.add_argument('source_directory', type=Path)
+    viewer.add_argument('output', type=Path)
     args = parser.parse_args()
     try:
         if args.command == "gui":
             gui()
+        elif args.command == 'viewer-build':
+            path, sha = build_viewer(args.project, args.source_directory, args.output)
+            print(f'BUILT {path} SHA-256 {sha}')
         elif args.command == "validate":
             data, files = validate(args.project)
             print(f"VALID {data['id']} {data['language']} SHA-256 {digest(files[0][2])}")

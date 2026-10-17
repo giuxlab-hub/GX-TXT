@@ -1,5 +1,20 @@
 # Script Module Builder
 
+## Viewer interface profile (1.3.0)
+
+The standard Viewer Interface Builder uses this tool's `viewer-build PROJECT
+SOURCE_DIRECTORY OUTPUT_DIRECTORY` CLI. PROJECT is an inert CORE Viewer design,
+validated by the actual framework owner. SOURCE_DIRECTORY holds generated assets
+plus independent `handlers.tcl`; OUTPUT_DIRECTORY receives a new ordinary
+installable Viewer module ZIP and checksum. The tool emits a public API source
+map, exact handler contracts and a generated-asset change report. Handwritten
+handlers are preserved byte-for-byte. Existing ZIP/checksum destinations are
+refused. The package uses public CORE constructors; scientific callbacks require
+explicit action invocation. See [the public design contract](../../../docs/api/VIEWER_GUI_DESIGN_v1.md).
+
+The existing Python/Octave A/B/W project formats and exact research-source
+packaging retain their behavior.
+
 Create or open a Builder project in the Modules-page tool. Choose an authoritative `.m` or `.py` script, set module identity and declare normal Analysis Sources, variable bindings, configuration fields, required APIs and outputs. **Validate**, then **Build ZIP**. Install the ZIP with normal Plugin Install.
 
 Python and Octave scripts may declare their Analysis Sources with the same single-line `GX-TXT-ANALYSIS-SOURCES-V1` JSON comment described in `core/SCRIPT_ANALYSIS_SOURCES_API_v1.md`. **New from script…** and **New from registered…** discover that comment without executing the research code. The visible source table shows the IDs, labels, required flags, accepted Dataset contracts and purposes. You can review the rows before saving. If project source settings differ from the script, choose **Use script declaration** or **Keep manual source settings** explicitly; a manual decision is tied to the exact declaration fingerprint and must be reviewed if the script declaration changes. The generated module uses the ordinary Analysis Source Map and normal Dataset selectors.

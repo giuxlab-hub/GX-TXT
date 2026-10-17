@@ -29,3 +29,11 @@ See [Instrumentation](instrumentation.md) for Library and snapshot behavior.
 Since dev082, Configuration / Manifest includes a full Session-private Storage Profiles
 manager. Since dev083, every Session has a named or Default Project; Projects adds
 stable row actions and lossless Portable import/export. See Storage Profiles and Projects help.
+
+## Session groups in Projects
+
+A Project may have named Session namespaces. Use Projects to drag a Session into
+a group, or Cut it, select/search a destination and Paste. Moving between
+Projects chooses Ungrouped unless a destination group is selected. These are
+organizational groups; scientific Variable namespaces and Session directories
+retain their identities. See [Projects](projects.md).

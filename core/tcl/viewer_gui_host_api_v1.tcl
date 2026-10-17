@@ -2,16 +2,20 @@
 # Host-only integration manifest. Existing public owners retain every widget,
 # command, renderer, Workspace, History, source and scientific execution state.
 proc ::GX::viewerGuiHostApiInfo {} {
-    return [dict create api_id VIEWER_GUI_HOST_API_v1 api_version 1 host_only 1 schema gxtxt.viewer_gui_manifest.v1 operations {viewerGuiManifestValidate viewerGuiCompose viewerGuiActionsMount viewerGuiMenuMount viewerGuiContextMount viewerGuiSelectionAttach viewerGuiActionsRefresh} owners [dict create regions UI_FIELD_API_v1 actions CONFIGURATION_API_v1 workspace SESSION_WORKSPACE_API_v1 history SCIENTIFIC_RECIPE_API_v1 help DOCUMENTATION_BROWSER_API_v1 canvas {NATIVE2D_VIEWPORT_HOST_v1 NATIVE_3D_GUI_HOST_API_v1 PLOT_DATASET_API_v4}]]
+    return [dict create api_id VIEWER_GUI_HOST_API_v1 api_version 1 host_only 1 schema gxtxt.viewer_gui_manifest.v1 operations {viewerGuiManifestValidate viewerGuiCompose viewerGuiActionsMount viewerGuiMenuMount viewerGuiContextMount viewerGuiSelectionAttach viewerGuiActionsRefresh} design_schema gxtxt.viewer_design.v1 design_operations {viewerGuiComponentCapabilities viewerGuiDesignNew viewerGuiDesignValidate viewerGuiDesignRead viewerGuiDesignSave viewerGuiDesignModelCreate viewerGuiDesignModelEdit viewerGuiDesignModelNavigate viewerGuiDesignCompose viewerGuiDesignImport viewerGuiManifestDescribe viewerGuiDesignHandlerBindings viewerGuiDesignGenerate viewerGuiDesignHandlerSource viewerGuiDesignValues viewerGuiDesignValueSet viewerGuiDesignTableSet viewerGuiDesignSourceSet viewerGuiDesignPlotSet viewerGuiRuntimeInspect viewerGuiDesignPublish viewerGuiPublishedWindows viewerGuiCompare viewerGuiScientificBindingSummary} laboratory_operations {viewerGuiMonitorStart viewerGuiMonitorCancel viewerGuiTraceSubscribe viewerGuiTraceUnsubscribe viewerGuiRecordingStart viewerGuiRecordingStop viewerGuiScenarioValidate viewerGuiReplayStart viewerGuiReplayCancel viewerGuiTestPlan viewerGuiTestsStart viewerGuiDiagnosticExport viewerGuiTestFixtureValidate} owners [dict create regions UI_FIELD_API_v1 actions CONFIGURATION_API_v1 workspace SESSION_WORKSPACE_API_v1 history SCIENTIFIC_RECIPE_API_v1 help DOCUMENTATION_BROWSER_API_v1 canvas {NATIVE2D_VIEWPORT_HOST_v1 NATIVE_3D_GUI_HOST_API_v1 PLOT_DATASET_API_v4}]]
 }
 proc ::GX::viewerGuiManifestValidate {manifest} {
     foreach field {schema viewer_id provider_id window title handlers} {if {![dict exists $manifest $field]} {error "Viewer GUI manifest requires '$field'"}}
     if {[dict get $manifest schema] ne "gxtxt.viewer_gui_manifest.v1"} {error {Unsupported Viewer GUI manifest version}}
-    foreach field [dict keys $manifest] {if {$field ni {schema viewer_id provider_id window title handlers guard workspace history history_record canvas canvas_mount geometry inspector_width toolbar_actions menus context_actions}} {error "Unknown Viewer GUI manifest field '$field'"}}
+    foreach field [dict keys $manifest] {if {$field ni {schema viewer_id provider_id window title handlers guard workspace history history_record canvas canvas_mount geometry inspector_width toolbar_actions toolbar_mode help menus context_actions command_catalog}} {error "Unknown Viewer GUI manifest field '$field'"}}
+    if {[datasetPublicationV2DictDefault $manifest toolbar_mode actions] ni {actions declarative}} {error {Unknown Viewer toolbar mode.}}
+    if {![string is boolean -strict [datasetPublicationV2DictDefault $manifest help 1]]} {error {Viewer Help policy must be boolean.}}
     set module [dict get $manifest viewer_id]
     if {[moduleField $module descriptor {}] eq {} || [moduleField $module kind {}] ne "viewer"} {error {Manifest must refer to a registered Viewer module}}
     viewerProviderDefinition $module [dict get $manifest provider_id]
-    set catalog [viewerCommandCatalog $module]
+    set commandCatalog [datasetPublicationV2DictDefault $manifest command_catalog $module]
+    set catalog [viewerCommandCatalog $commandCatalog]
+    if {[dict get $::GX::ViewerCommands::catalogs $commandCatalog owner_module] ne $module} {error {Viewer command catalog has a different module owner.}}
     dict for {id handler} [dict get $manifest handlers] {
         if {![dict exists $catalog $id] || ![dict exists $handler command]} {error "Unregistered Viewer command '$id'"}
     }
@@ -36,8 +40,8 @@ proc ::GX::viewerGuiCompose {manifest} {
     set window [dict get $manifest window];set module [dict get $manifest viewer_id];set provider [dict get $manifest provider_id]
     set slots [uiFieldViewerShellCreate $window [dict get $manifest title] [datasetPublicationV2DictDefault $manifest geometry 1100x720] [datasetPublicationV2DictDefault $manifest inspector_width 320]]
     try {
-        viewerCommandsAttach $window $module [dict get $manifest handlers] [datasetPublicationV2DictDefault $manifest guard {}]
-        viewerGuiActionsMount $window [dict get $slots toolbar] [datasetPublicationV2DictDefault $manifest toolbar_actions {}]
+        viewerCommandsAttach $window [datasetPublicationV2DictDefault $manifest command_catalog $module] [dict get $manifest handlers] [datasetPublicationV2DictDefault $manifest guard {}]
+        if {[datasetPublicationV2DictDefault $manifest toolbar_mode actions] eq {actions}} {viewerGuiActionsMount $window [dict get $slots toolbar] [datasetPublicationV2DictDefault $manifest toolbar_actions {}]}
         set index 0
         foreach descriptor [datasetPublicationV2DictDefault $manifest menus {}] {
             set menu $window.menus.actions[incr index]
@@ -58,13 +62,16 @@ proc ::GX::viewerGuiCompose {manifest} {
             scientificHistoryViewerAttach $window $module [dict get $manifest history] [datasetPublicationV2DictDefault $manifest history_record {}]
             scientificHistoryViewerStrip $window [dict get $slots footer] [dict get $slots status]
         }
-        documentationBrowserAttachViewerHelp $module $provider $window
+        if {[datasetPublicationV2DictDefault $manifest help 1]} {documentationBrowserAttachViewerHelp $module $provider $window}
         if {[dict exists $manifest canvas]} {
             set api [dict get $manifest canvas api_id]
             if {$api eq "PLOT_DATASET_API_v4"} {modulePublicApiActivate plot.dataset $api}
             dict set slots canvas_api $api
         }
         if {[dict exists $manifest canvas_mount]} {uplevel #0 [list {*}[dict get $manifest canvas_mount] [dict get $slots canvas]]}
+        dict set ::GX::ViewerGui::manifests [list $module $provider] [dict remove $manifest history_record]
+        dict set ::GX::ViewerGui::shells $window [dict create manifest [dict remove $manifest history_record] slots $slots]
+        bind $window <Destroy> +[list ::GX::_viewerGuiHostDisposed $window %W]
     } on error {message options} {destroy $window;return -options $options $message}
     return $slots
 }
@@ -88,3 +95,6 @@ proc ::GX::viewerGuiActionsRefresh {window} {
     viewerCommandToolbarRefresh $window
     viewerCommandMenusRefresh $window
 }
+
+source [file join [file dirname [info script]] viewer_gui_design_v1.tcl]
+source [file join [file dirname [info script]] viewer_gui_laboratory_v1.tcl]

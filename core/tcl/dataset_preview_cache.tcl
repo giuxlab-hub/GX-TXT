@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Disposable representations owned by Dataset Preview. Dataset Authority,
 # Configuration, Resource Management and Script Jobs keep their existing roles.
-namespace eval ::GX::PreviewCache {variable tasks {};variable remoteVerified {};variable outcomes {};variable renderer {};variable worker 0;variable hits 0;variable misses 0}
+namespace eval ::GX::PreviewCache {variable tasks {};variable remoteVerified {};variable outcomes {};variable renderer {};variable worker 0;variable hits 0;variable misses 0;variable watches {};variable watchSerial 0;variable watchCalling 0}
 proc ::GX::datasetPreviewCacheInit {} {
     foreach {id type default label} {preview.cache_enabled boolean 1 {Prepare Dataset previews after publication} preview.cache_mib integer 64 {Session Preview cache limit (MiB)}} {
         if {![dict exists [configurationFields] $id]} {configurationRegister $id [dict create group Viewers label $label type $type default $default scope user]}
@@ -161,7 +161,7 @@ proc ::GX::datasetPreviewCacheRequest {id {options {}} {callback {}}} {
         } elseif {$callback ne {}} {after idle [list {*}$callback [dict create status ready key $key cache_hit 1]]}
         return $key
     }
-    if {[dict exists $tasks $key]} {if {$callback ne {}} {set callbacks [dict get $tasks $key callbacks];lappend callbacks $callback;dict set tasks $key callbacks $callbacks};return $key}
+    if {[dict exists $tasks $key]} {if {!$::GX::PreviewCache::watchCalling} {dict set tasks $key legacy_joined 1};if {$callback ne {}} {set callbacks [dict get $tasks $key callbacks];lappend callbacks $callback;dict set tasks $key callbacks $callbacks};return $key}
     incr misses
     dict unset ::GX::PreviewCache::outcomes $key
     set script {import gxtxt
@@ -174,7 +174,7 @@ gxtxt.gxtxt_api_call('DATASET_PREVIEW_API_v1','cache_generate',[p['dataset_id'],
         set f [open [dict get $registered source_path] r];try {set existing [read $f]} finally {close $f}
         if {$existing ne $script} {error {Reserved Preview script differs; inspect it before preparing previews}}
     }
-    dict set tasks $key [dict create session $session id $id options $options callbacks [expr {$callback eq {}?{}:[list $callback]}] job_id {}]
+    dict set tasks $key [dict create session $session id $id options $options callbacks [expr {$callback eq {}?{}:[list $callback]}] job_id {} creator [expr {$::GX::PreviewCache::watchCalling ? {watch} : {legacy}}] legacy_joined [expr {!$::GX::PreviewCache::watchCalling}]]
     scriptJobSubmit session:$name [dict create dataset_id $id options $options expected_key $key] [dict create session $session] [list ::GX::_datasetPreviewCacheSubmitted $key]
     return $key
 }
@@ -191,7 +191,7 @@ proc ::GX::_datasetPreviewCacheSubmitted {key response} {
     if {![dict exists $tasks $key]} return
     if {![dict get $response ok]} {_datasetPreviewCacheFinish $key [dict create status error message [dict get $response error]];return}
     dict set tasks $key job_id [dict get $response result id]
-    if {[dict exists $tasks $key cancelled]} {scriptJobCancel [dict get $response result id]}
+    if {[dict exists $tasks $key cancelled]} {_datasetPreviewCacheCancelJob [dict get $response result id]}
     after 150 [list ::GX::_datasetPreviewCachePoll $key]
 }
 proc ::GX::_datasetPreviewCachePoll {key} {
@@ -235,7 +235,34 @@ proc ::GX::datasetPreviewCacheStatus {key} {
 }
 proc ::GX::datasetPreviewCacheCancel {key} {
     variable ::GX::PreviewCache::tasks
-    if {[dict exists $tasks $key]} {set job [dict get $tasks $key job_id];if {$job ne {}} {scriptJobCancel $job};dict set tasks $key cancelled 1;dict set tasks $key callbacks {}}
+    if {[dict exists $tasks $key]} {set job [dict get $tasks $key job_id];if {$job ne {}} {_datasetPreviewCacheCancelJob $job};dict set tasks $key cancelled 1;dict set tasks $key callbacks {}}
+}
+proc ::GX::_datasetPreviewCacheCancelJob {job} {
+    if {[llength [info commands winfo]]} {scriptJobAsync [scriptJobCommand cancel $job] {} {} {timeout_ms 5000 max_bytes 1048576 label {Dataset Preview cancellation}}} else {scriptJobCancel $job}
+}
+proc ::GX::datasetPreviewCacheSubscribe {id options callback} {
+    set ticket preview-watch-[incr ::GX::PreviewCache::watchSerial]
+    set prior $::GX::PreviewCache::watchCalling;set ::GX::PreviewCache::watchCalling 1
+    try {set key [datasetPreviewCacheRequest $id $options [list ::GX::_datasetPreviewCacheSubscriptionDone $ticket]]} finally {set ::GX::PreviewCache::watchCalling $prior}
+    dict set ::GX::PreviewCache::watches $ticket [dict create key $key callback $callback session [interactiveDocumentSessionToken]]
+    return [dict create ticket $ticket key $key]
+}
+proc ::GX::_datasetPreviewCacheSubscriptionDone {ticket response} {
+    if {![dict exists $::GX::PreviewCache::watches $ticket]} return
+    set watch [dict get $::GX::PreviewCache::watches $ticket]
+    if {[dict get $response status] ne {preparing}} {dict unset ::GX::PreviewCache::watches $ticket}
+    if {[catch {interactiveDocumentSessionToken} current] || [dict get $watch session] ne $current} return
+    if {[dict get $watch callback] ne {}} {uplevel #0 [list {*}[dict get $watch callback] $response]}
+}
+proc ::GX::datasetPreviewCacheUnsubscribe {ticket} {
+    if {![dict exists $::GX::PreviewCache::watches $ticket]} {return 0}
+    set key [dict get $::GX::PreviewCache::watches $ticket key];dict unset ::GX::PreviewCache::watches $ticket
+    dict for {other watch} $::GX::PreviewCache::watches {if {[dict get $watch key] eq $key} {return 1}}
+    if {[dict exists $::GX::PreviewCache::tasks $key]} {
+        set task [dict get $::GX::PreviewCache::tasks $key]
+        if {[datasetPublicationV2DictDefault $task creator legacy] eq {watch} && ![datasetPublicationV2DictDefault $task legacy_joined 1]} {datasetPreviewCacheCancel $key}
+    }
+    return 1
 }
 proc ::GX::datasetPreviewCachePublished {session receipt} {
     variable ::GX::PreviewCache::worker

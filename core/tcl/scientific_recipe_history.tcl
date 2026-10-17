@@ -214,10 +214,15 @@ proc ::GX::scientificHistoryStripValidate {values} {
     return $result
 }
 proc ::GX::scientificHistoryViewerStripSet {window values} {
-    set adapter [_scientificHistoryGuard $window]
+    # Choosing a presentation mode does not restore or edit scientific state.
+    # A retained window may still display its own History after a Session
+    # switch, or while its owner is busy. Never persist into the new Session.
+    set adapter [dict get $::GX::ScientificHistory::viewers $window]
     set settings [scientificHistoryStripValidate [dict merge [dict get $adapter strip_settings] $values]]
     set id [dict get $adapter strip_configuration]
-    if {$id ne {}} {configurationCommit [list [dict create id $id scope session value $settings session_token [_configurationSessionToken]]]} else {_scientificHistoryStripApply $window $settings}
+    if {$id ne {} && $::GX::currentSession ne {} && [dict get $adapter token] eq [interactiveDocumentSessionToken]} {
+        configurationCommit [list [dict create id $id scope session value $settings session_token [_configurationSessionToken]]]
+    } else {_scientificHistoryStripApply $window $settings}
 }
 proc ::GX::scientificHistoryViewerStripToggle {window} {
     set settings [dict get $::GX::ScientificHistory::viewers $window strip_settings]

@@ -167,19 +167,95 @@ proc ::GX::documentationBrowserManualSearch {w} {
     set state($w,status) "Found: $query"
 }
 proc ::GX::documentationBrowserAttachViewerHelp {module viewer window} {
+    if {[llength [info commands ::GX::viewerGuiWindowHelpRequested]] && ![viewerGuiWindowHelpRequested $window]} {return}
     if {![llength [info commands winfo]] || [llength $window]!=1 || ![winfo exists $window] || [winfo toplevel $window] ne $window || [winfo class $window] ne {Toplevel}} return
+    if {$module eq {viewer.curve_digitizer}} return
     # Respect an existing plugin-local Help/F1 adapter. The generic dispatcher
     # only attaches to a normal Tk Viewer window returned by the public owner.
     set binding [bind $window <F1>]
     if {$binding ne {} && ![string match *documentationBrowserOpenModule* $binding]} return
     if {![catch {documentationBrowserModuleManual $module}]} {set available normal} else {set available disabled}
-    set menu [$window cget -menu]
-    if {$menu eq {}} {set menu $window.gxManualMenu;menu $menu -tearoff 0;$window configure -menu $menu}
-    set help $window.gxManualHelp
-    if {![winfo exists $help]} {
-        menu $help -tearoff 0
-        $menu add cascade -label Help -menu $help
-        $help add command -label {User Manual…} -accelerator F1 -state $available -command [list ::GX::documentationBrowserOpenModuleWindow $module $window]
+    set menu [$window cget -menu];set help {};set row {}
+    # Legacy Viewers often use a row of native menubuttons instead of a Tk
+    # window menubar. Attach to that row, preserving its original menu owners.
+    if {$menu eq {} || $menu eq "$window.gxManualMenu"} {
+        set best 0
+        foreach frame [winfo children $window] {
+            if {[winfo class $frame] ni {Frame TFrame}} continue
+            set count 0
+            foreach button [winfo children $frame] {
+                if {[winfo class $button] in {Menubutton TMenubutton} && [winfo manager $button] ne {}} {incr count}
+            }
+            if {$count>$best} {set row $frame;set best $count}
+        }
+        if {$row eq {}} {
+            # A legacy Viewer may expose only action buttons in its main row.
+            # Keep Help in that horizontal row rather than inventing a menubar.
+            foreach frame [winfo children $window] {
+                if {[winfo class $frame] ni {Frame TFrame} || ![regexp {(toolbar|actions|buttons|head|tools|bar)$} [file tail $frame]]} continue
+                set count 0
+                foreach button [winfo children $frame] {
+                    if {[winfo class $button] ni {Button TButton}} continue
+                    set manager [winfo manager $button]
+                    if {($manager eq {pack} && [dict get [pack info $button] -side] in {left right}) || ($manager eq {grid} && [dict get [grid info $button] -row]==0)} {incr count}
+                }
+                if {$count>$best} {set row $frame;set best $count}
+            }
+        }
     }
+    if {$row ne {}} {
+        foreach button [winfo children $row] {
+            if {[winfo class $button] in {Menubutton TMenubutton} && [string equal -nocase [$button cget -text] Help]} {
+                set help [$button cget -menu];set helpButton $button;break
+            }
+        }
+        if {$help eq {}} {
+            set helpButton $row.gxHelp
+            set help $helpButton.menu
+            ttk::menubutton $helpButton -text Help -menu $help
+            menu $help -tearoff 0
+        }
+        if {[grid slaves $row] ne {}} {
+            uiFieldControlsAppend $row $helpButton
+        } else {
+            pack forget $helpButton
+            pack $helpButton -side left -padx 3
+            uiMenuRowAppend $row $helpButton
+        }
+        if {$menu eq "$window.gxManualMenu"} {$window configure -menu {};destroy $menu}
+    } else {
+        if {$menu eq {}} {set menu $window.gxManualMenu;menu $menu -tearoff 0;$window configure -menu $menu}
+        set end [$menu index end]
+        if {$end ne {none}} {for {set index 0} {$index<=$end} {incr index} {
+            if {[$menu type $index] eq {cascade} && [string equal -nocase [$menu entrycget $index -label] Help]} {
+                set help [$menu entrycget $index -menu]
+                if {$index!=$end} {_uiMenuCopyEntry $menu $index $menu;$menu delete $index}
+                break
+            }
+        }}
+        if {$help eq {}} {
+            set help $window.gxManualHelp
+            menu $help -tearoff 0
+            $menu add cascade -label Help -menu $help
+        }
+    }
+    set manual 0;set about 0;set end [$help index end]
+    if {$end ne {none}} {for {set index 0} {$index<=$end} {incr index} {
+        if {[$help type $index] ni {command cascade}} continue
+        set label [$help entrycget $index -label]
+        if {[regexp -nocase {user manual} $label]} {set manual 1}
+        if {[regexp -nocase {^about} $label]} {set about 1}
+    }}
+    if {!$manual} {$help add command -label {User Manual…} -accelerator F1 -state $available -command [list ::GX::documentationBrowserOpenModuleWindow $module $window]}
+    if {!$about} {$help add command -label {About Module…} -command [list ::GX::documentationBrowserAboutModule $module $viewer $window]}
     bind $window <F1> [list ::GX::documentationBrowserOpenModuleWindow $module $window]
+}
+
+proc ::GX::documentationBrowserAboutModule {module viewer parent} {
+    set descriptor [moduleField $module descriptor {}]
+    if {$descriptor eq {}} {error {The module is no longer installed}}
+    set data [parseIni $descriptor]
+    set text "[descriptorValue $data meta name $module]\nModule: $module\nViewer: $viewer\nVersion: [descriptorValue $data meta version {}]\n\n[descriptorValue $data meta description {}]"
+    foreach field {author license} {set value [descriptorValue $data meta $field {}];if {$value ne {}} {append text "\n[string totitle $field]: $value"}}
+    tk_messageBox -parent $parent -title {About Module} -icon info -message $text
 }

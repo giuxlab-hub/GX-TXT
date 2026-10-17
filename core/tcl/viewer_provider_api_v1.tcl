@@ -43,7 +43,7 @@ proc ::GX::viewerProviderDefinition {moduleId viewerId {includeDisabled 0}} {
     if {!$includeDisabled && ![viewerProviderEnabled $moduleId $viewerId]} {return {}}
     set d $moduleCatalog($moduleId,dict)
     set out [dict create module_id $moduleId viewer_id $viewerId]
-    foreach f {name backend activation_api backend_script supported_primitives artifact_formats capabilities short_title semantic_group group_title icon} {
+    foreach f {name backend activation_api backend_script supported_primitives artifact_formats capabilities short_title semantic_group group_title icon gui_design gui_design_command gui_handler_command} {
         dict set out $f [descriptorValue $d "viewer.$viewerId" $f ""]
     }
     foreach {field fallback} [list short_title [dict get $out name] semantic_group other group_title {Other Viewers}] {if {[dict get $out $field] eq {}} {dict set out $field $fallback}}

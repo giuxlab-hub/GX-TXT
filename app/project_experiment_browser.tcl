@@ -87,7 +87,9 @@ proc ::GX::projectGuiShowSelected_browser083 {} {
     } else {
         $f.title configure -text "Project: [projectField $id name]"
         $f.subtitle configure -text "[llength [projectListExperiments $id]] Experiments • Import adds an external Session here; no Experiment selection required."
-        foreach exp [lsort -command ::GX::projectExperimentNameCompare [projectListExperiments $id]] {
+        # The unified Tk tree is the scalable navigator. Keep a bounded set of
+        # legacy action cards; all Sessions remain searchable in that tree.
+        foreach exp [lrange [lsort -command ::GX::projectExperimentNameCompare [projectListExperiments $id]] 0 49] {
             set eid [dict get $exp experiment_id];lappend ::GX::projectGuiOrder $eid
             set row $f.experiments.content.r$eid;set ::GX::projectGuiRows($eid) $row
             ttk::frame $row -padding 7 -takefocus 1
@@ -99,7 +101,7 @@ proc ::GX::projectGuiShowSelected_browser083 {} {
                 open {↗ Open} {Open this Session through its normal controller}
                 rename {✎ Rename} {Change display name; preserve directory, creator and stable ID}
                 info {ⓘ Info} {Read scientific facts and Markdown without changing the open Session}
-                move {Move to Project…} {Choose another Project without opening or relocating this Session}
+                move {Cut to move…} {Select a destination in the organization tree, then Paste}
                 detach {↪ Move to Default} {Change Project membership; keep scientific bytes and directory}
                 delete {✕ Delete} {Delete the complete Session after confirmation; retain a recovery copy}
             } {
@@ -130,7 +132,26 @@ proc ::GX::projectGuiShowSelected_browser083 {} {
     projectBrowserBindWheel $f.experiments.content;projectBrowserResize [winfo width $f.experiments]
     after idle ::GX::projectBrowserScroll
 }
-proc ::GX::projectGuiShowSelected {} {projectGuiShowSelected_browser083}
+proc ::GX::projectGuiShowSelected {} {projectGuiShowSelected_browser083;projectOrganizationGuiSelection}
+proc ::GX::projectGuiOrganizationSummary {eid} {
+    set parent .top.nb.projects.body.right.experiments.content
+    if {![winfo exists $parent]} return
+    destroyChildren $parent
+    set ::GX::projectGuiInfo $eid
+    ttk::label $parent.title -text [projectBrowserExperimentName $eid] -font TkHeadingFont -wraplength 600
+    set project [projectMembershipField $eid project_id]
+    set path [projectMembershipField $eid session_path]
+    ttk::label $parent.summary -text "Project: [projectField $project name]\nSession: $path\n\nOpen this Session, or choose Info for scientific inventory and documents." -wraplength 650 -justify left
+    ttk::frame $parent.actions
+    foreach {action label} {open {Open Session} info {Info / scientific details} move {Cut to move…}} {
+        ttk::button $parent.actions.$action -text $label -command [list ::GX::projectGuiRowAction $eid $action]
+        pack $parent.actions.$action -side left -padx 4
+    }
+    pack $parent.title $parent.summary -anchor nw -padx 12 -pady 10
+    pack $parent.actions -anchor nw -padx 12 -pady 8
+    .top.nb.projects.body.right.actions.export configure -state normal
+    projectBrowserResize [winfo width .top.nb.projects.body.right.experiments]
+}
 proc ::GX::projectGuiRowAction {eid action} {
     projectGuiChooseExperiment $eid
     set code [catch {
@@ -138,7 +159,7 @@ proc ::GX::projectGuiRowAction {eid action} {
             open {openSessionPath [projectExperimentResolve $eid];.top.nb select .top.nb.sessionfiles}
             rename {projectGuiRenameDialog $eid;return}
             info {projectGuiInfoShow $eid;return}
-            move {projectGuiMoveDialog $eid;return}
+            move {projectOrganizationGuiMoveExperiment $eid;return}
             detach {
                 set prior [projectMembershipField $eid project_id]
                 if {$prior eq [projectDefaultId]} return
@@ -468,6 +489,7 @@ proc ::GX::projectGuiBuild {} {
     bind $f.experiments <MouseWheel> {::GX::projectBrowserWheel %D}
     set ::GX::projectBrowserSashInitialized 0
     bind .top.nb.projects.body <Configure> {::GX::projectBrowserInitialSplit %w}
+    projectOrganizationGuiBuild
     projectGuiRefresh
 }
 proc ::GX::projectBrowserInitialSplit {width} {

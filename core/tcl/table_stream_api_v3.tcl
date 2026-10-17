@@ -222,14 +222,14 @@ proc ::GX::tableStreamNext {stream} {
         set itemCount [dict get $item count]
         if {$actual < 0} { set actual $itemCount } elseif {$itemCount != $actual} { set tableStreamState($stream,status) failed; error "Canonical provider returned inconsistent table column lengths" }
         if {![tableStreamDtypeCompatible [dict get $variable dtype] [dict get $item dtype]]} { set tableStreamState($stream,status) failed; error "Canonical provider dtype does not match Schema v3 for $variableId" }
-        if {[dict exists $item binary_resource]} {
+        if {$tableStreamState($stream,numeric_transport) ne {values} && [dict exists $item binary_resource]} {
             set resource [dict get $item binary_resource]
             datasetBinaryResourceValidate $resource $itemCount
             dict set values $variableId $resource
             lappend columns [dict merge $variable [dict create binary_resource $resource transport managed_binary count $itemCount]]
             incr tableStreamState($stream,resource_columns_returned)
             incr tableStreamState($stream,resource_bytes_returned) [dict get $resource byte_count]
-        } elseif {[dict exists $item binary_block]} {
+        } elseif {$tableStreamState($stream,numeric_transport) ne {values} && [dict exists $item binary_block]} {
             set block [dict get $item binary_block]
             datasetBinaryValidateBlock $block $itemCount
             dict set values $variableId $block
@@ -238,6 +238,7 @@ proc ::GX::tableStreamNext {stream} {
             incr tableStreamState($stream,binary_bytes_returned) [dict get $block byte_count]
         } else {
             set itemValues [dict get $item values]
+            if {[llength $itemValues]!=$itemCount} {set tableStreamState($stream,status) failed;error {Canonical values transport returned an inconsistent column length.}}
             dict set values $variableId $itemValues
             lappend columns [dict merge $variable [dict create values $itemValues transport values count $itemCount]]
             incr tableStreamState($stream,value_columns_returned)

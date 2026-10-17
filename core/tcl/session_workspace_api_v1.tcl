@@ -22,6 +22,8 @@ proc ::GX::sessionWorkspaceProviderDiscover {module} {
         source $file
         set descriptor [dict create module_id $module]
         foreach field {type schema version validate open} {dict set descriptor $field [descriptorValue $data $section $field {}]}
+        set viewer [descriptorValue $data $section viewer_provider {}]
+        if {$viewer ne {}} {dict set descriptor viewer_provider $viewer}
         set versions [descriptorValue $data $section accepted_versions {}]
         if {$versions ne {}} {dict set descriptor accepted_versions [splitList $versions]}
         sessionWorkspaceProviderRegister $provider $descriptor
@@ -32,7 +34,13 @@ proc ::GX::_workspaceProvider {provider} {
     if {![dict exists $providers $provider]} {error "Workspace provider '$provider' is unavailable"}
     set descriptor [dict get $providers $provider]
     set module [dict get $descriptor module_id]
-    if {[moduleField $module descriptor {}] eq {} || ![moduleIsEnabled $module]} {error "Workspace provider '$provider' is not installed or enabled"}
+    if {[moduleField $module descriptor {}] eq {}} {error "Workspace provider '$provider' is not installed"}
+    set enabled [moduleIsEnabled $module]
+    if {[moduleField $module kind {}] eq {viewer} && [dict exists $descriptor viewer_provider]} {
+        set viewer [dict get $descriptor viewer_provider]
+        set enabled [expr {$viewer in [viewerProviderIds $module] && [viewerProviderEnabled $module $viewer]}]
+    }
+    if {!$enabled} {error "Workspace provider '$provider' is not enabled"}
     return $descriptor
 }
 proc ::GX::_workspaceValidatePayload {provider payload version {deep 0}} {

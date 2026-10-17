@@ -14,6 +14,8 @@ proc ::GX::projectPortableExport {projectId archive} {
     file mkdir [file join $stage source];file mkdir [file join $stage sessions]
     try {
         set data {};dict for {key value} [projectGet $projectId] {dict set data project.$key $value}
+        set ns [projectField $projectId namespace_id {}]
+        if {$ns ne {} && [dict exists [projectNamespaceList] $ns]} {dict set data project.namespace_name [dict get [projectNamespaceList] $ns]}
         dict set data project.carrier_installation [installationIdentityCurrent]
         set i 0
         foreach record [projectListExperiments $projectId] {
@@ -37,6 +39,15 @@ proc ::GX::projectPortableImport {archive {name {}}} {
         set package [_projectPortableHost extract [file normalize $archive] $scratch]
         set data [parseIni [file join $scratch source transfer.ini]]
         set source [dict get $data project.id]
+        set groupDefinitions [datasetPublicationV2DictDefault $data project.session_namespaces {}]
+        if {[catch {dict size $groupDefinitions}] || [dict size $groupDefinitions]>10000} {error {Invalid portable Session namespace definitions.}}
+        set groupMap {};set importedGroups {};set ordinal 0
+        dict for {old label} $groupDefinitions {
+            if {$old eq {} || [string length $old]>200} {error {Invalid portable Session namespace identity.}}
+            set label [_projectOrganizationName $label $importedGroups]
+            set fresh sns-import-[pid]-[clock microseconds]-[incr ordinal]
+            dict set groupMap $old $fresh;dict set importedGroups $fresh $label
+        }
         if {[string trim $name] eq {}} {set name [dict get $data project.name]}
         set name [string trim $name];if {$name eq {}} {error {Enter a Project name.}}
         set id [projectGenerateId];while {$id eq $source} {set id [projectGenerateId]};set destination [projectDefaultStoragePath $id]
@@ -83,7 +94,10 @@ proc ::GX::projectPortableImport {archive {name {}}} {
             foreach {field value} [list api_version 1 project_id $id experiment_id $eid imported_project_id $source imported_experiment_id $old] {dict set sd project_link.$field $value}
             dict set sd experiment.project $name
             _projectIniWrite $mf $sd
-            dict set mappings $eid [dict create source_experiment_id $old session_path $final experiment_name [dict get $data experiment.$i.experiment_name]]
+            set group [datasetPublicationV2DictDefault $data experiment.$i.session_namespace {}]
+            if {$group ne {} && ![dict exists $groupMap $group]} {error {Portable Experiment refers to an undeclared Session namespace.}}
+            if {$group ne {}} {set group [dict get $groupMap $group]}
+            dict set mappings $eid [dict create source_experiment_id $old session_path $final experiment_name [dict get $data experiment.$i.experiment_name] session_namespace $group]
             dict set diagnostics $eid [dict get $r diagnostics]
         }
         # The existing journal owns registry preimages and the single directory move.
@@ -97,7 +111,22 @@ proc ::GX::projectPortableImport {archive {name {}}} {
             dict for {eid rec} $mappings {if {[projectMembershipField $eid experiment_id {}] ne {}} {error {Concurrent Experiment identifier collision.}}}
             foreach field {description tags author created_at} {set projectCatalog($id,$field) [datasetPublicationV2DictDefault $data project.$field {}]}
             foreach {key value} [list id $id name $name storage_path $destination updated_at [projectTimestamp] origin $origin] {set projectCatalog($id,$key) $value}
-            dict for {eid rec} $mappings {projectAssociateExperiment $id $eid [dict get $rec session_path] [dict get $rec experiment_name]}
+            set projectCatalog($id,session_namespaces) $importedGroups
+            set label [datasetPublicationV2DictDefault $data project.namespace_name {}]
+            if {$label ne {}} {
+                # Imported groups get fresh identities, even when names match.
+                set label [_projectOrganizationName $label {}]
+                set proposed $label;set suffix 1
+                while {[catch {_projectOrganizationName $proposed [projectNamespaceList]}]} {set proposed "[string range $label 0 130] (imported [incr suffix])"}
+                set ns pns-import-[pid]-[clock microseconds]
+                dict set ::GX::projectOrganization(namespaces) $ns $proposed
+                set projectCatalog($id,namespace_id) $ns
+            }
+            dict for {eid rec} $mappings {
+                projectAssociateExperiment $id $eid [dict get $rec session_path] [dict get $rec experiment_name]
+                set ::GX::projectMembership($eid,session_namespace) [dict get $rec session_namespace]
+            }
+            incr ::GX::projectOrganization(generation)
             file rename -- $stage $destination
             projectWriteMetadata $id;projectSaveRegistry
         } [list $stage $destination]

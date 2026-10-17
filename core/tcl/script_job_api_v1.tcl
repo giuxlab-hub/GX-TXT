@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # CORE local durable Job API. UI callbacks use nonblocking fileevents only.
-namespace eval ::GX {variable scriptJobRequests {};variable scriptJobCounter 0}
+namespace eval ::GX {variable scriptJobRequests {};variable scriptJobCounter 0;variable scriptJobShutdownHook 0}
 proc ::GX::scriptJobApiInfo {} {
-    return [dict create api_name SCRIPT_JOB_API_v1 api_version 1 scope {local remote_references} authority core operations {submit wait list describe inspect log_read inspect_run run_log_read run_summaries cancel recover configure view_list history_hide history_restore history_candidates workspace_save workspace_open workspace_rename workspace_delete view_remember} persistence durable gui_lifetime independent presentation_scope user_configuration]
+    return [dict create api_name SCRIPT_JOB_API_v1 api_version 1 scope {local remote_references} authority core operations {submit wait list describe inspect log_read inspect_run run_log_read run_summaries cancel recover configure view_list history_hide history_restore history_candidates workspace_save workspace_open workspace_rename workspace_delete view_remember} persistence durable gui_lifetime independent presentation_scope user_configuration auxiliary_operations {scriptJobAsync scriptJobRequestCancel} auxiliary_limits {timeout_ms max_bytes process_group ui_lifetime label}]
 }
 proc ::GX::scriptJobRoot {} {
     if {[info exists ::env(GXTXT_JOB_ROOT)]} {return [file normalize $::env(GXTXT_JOB_ROOT)]}
@@ -17,14 +17,27 @@ proc ::GX::scriptJobCall {operation args} {
     if {!$ok} {error [dict get $response error]}
     return [dict get $response result]
 }
-proc ::GX::scriptJobAsync {command payload callback} {
+proc ::GX::scriptJobAsync {command payload callback {options {}}} {
     variable scriptJobRequests;variable scriptJobCounter
+    foreach key [dict keys $options] {if {$key ni {timeout_ms max_bytes process_group ui_lifetime label}} {error {Unknown managed request option.}}}
+    set options [dict merge {timeout_ms 0 max_bytes 0 process_group 0 ui_lifetime 0 label {Managed request}} $options]
+    foreach key {timeout_ms max_bytes} {if {![string is integer -strict [dict get $options $key]] || [dict get $options $key]<0} {error {Managed request limits must be nonnegative integers.}}}
+    foreach key {process_group ui_lifetime} {if {![string is boolean -strict [dict get $options $key]]} {error {Managed request lifetime options must be boolean.}}}
+    if {[dict get $options process_group] && [auto_execok kill] eq {}} {error {Owned process-group cancellation is unavailable on this host.}}
     set request job-request-[incr scriptJobCounter]
     set pipe [open [list | {*}$command 2>@1] r+]
-    fconfigure $pipe -blocking 0 -buffering none -encoding utf-8 -translation lf
-    puts -nonewline $pipe $payload
-    chan close $pipe write
-    dict set scriptJobRequests $request [dict create pipe $pipe callback $callback data {}]
+    try {
+        fconfigure $pipe -blocking 0 -buffering none -encoding utf-8 -translation lf
+        puts -nonewline $pipe $payload
+        chan close $pipe write
+    } on error {message context} {catch {close $pipe};return -options $context $message}
+    dict set scriptJobRequests $request [dict create pipe $pipe callback $callback data {} options $options pids [pid $pipe] started_ms [clock milliseconds] timer {} kill_timer {} cancelled {}]
+    set timeout [dict get $options timeout_ms]
+    if {$timeout>0} {dict set scriptJobRequests $request timer [after $timeout [list ::GX::scriptJobRequestCancel $request timeout]]}
+    if {[dict get $options ui_lifetime] && !$::GX::scriptJobShutdownHook && [llength [info commands winfo]] && [winfo exists .]} {
+        bind . <Destroy> +[list ::GX::scriptJobRequestsShutdown %W]
+        set ::GX::scriptJobShutdownHook 1
+    }
     fileevent $pipe readable [list ::GX::scriptJobReadable $request]
     return $request
 }
@@ -32,14 +45,59 @@ proc ::GX::scriptJobReadable {request} {
     variable scriptJobRequests
     if {![dict exists $scriptJobRequests $request]} return
     set entry [dict get $scriptJobRequests $request];set pipe [dict get $entry pipe]
-    dict append entry data [read $pipe]
+    dict append entry data [read $pipe 65536]
+    set maximum [dict get $entry options max_bytes]
+    if {$maximum>0 && [string bytelength [dict get $entry data]]>$maximum} {
+        dict set entry data [string range [dict get $entry data] 0 [expr {max(0,$maximum/8-1)}]]
+        dict set scriptJobRequests $request $entry
+        scriptJobRequestCancel $request output_limit
+        set entry [dict get $scriptJobRequests $request]
+    }
     dict set scriptJobRequests $request $entry
     if {![eof $pipe]} return
+    # A worker can exit before a descendant that redirected its stdout. Keep
+    # the group identity until the escalation has run, even after pipe EOF.
+    if {[dict get $entry cancelled] ne {} && ![dict exists $entry escalated]} {
+        fileevent $pipe readable {}
+        dict set scriptJobRequests $request eof 1
+        return
+    }
     fileevent $pipe readable {};catch {close $pipe}
+    foreach key {timer kill_timer} {if {[dict get $entry $key] ne {}} {after cancel [dict get $entry $key]}}
     dict unset scriptJobRequests $request
     set response [string trim [dict get $entry data]]
+    if {[dict get $entry cancelled] ne {}} {set response [dict create ok 0 error "[dict get $entry options label]: [dict get $entry cancelled]" error_type [dict get $entry cancelled]]}
     if {[catch {dict get $response ok}]} {set response [dict create ok 0 error $response]}
-    uplevel #0 [list {*}[dict get $entry callback] $response]
+    if {[dict get $entry callback] ne {}} {uplevel #0 [list {*}[dict get $entry callback] $response]}
+}
+proc ::GX::_scriptJobRequestSignal {request signal} {
+    if {![dict exists $::GX::scriptJobRequests $request]} return
+    set entry [dict get $::GX::scriptJobRequests $request]
+    set kill [auto_execok kill];if {$kill eq {}} return
+    foreach child [dict get $entry pids] {
+        if {![string is integer -strict $child] || $child<=1} continue
+        if {[dict get $entry options process_group]} {catch {exec {*}$kill -$signal -- -$child 2>/dev/null}}
+        catch {exec {*}$kill -$signal -- $child 2>/dev/null}
+    }
+}
+proc ::GX::scriptJobRequestCancel {request {reason cancelled}} {
+    variable scriptJobRequests
+    if {$reason ni {cancelled timeout output_limit closed}} {error {Unknown managed request cancellation reason.}}
+    if {![dict exists $scriptJobRequests $request] || [dict get $scriptJobRequests $request cancelled] ne {}} {return 0}
+    dict set scriptJobRequests $request cancelled $reason
+    _scriptJobRequestSignal $request TERM
+    dict set scriptJobRequests $request kill_timer [after 500 [list ::GX::_scriptJobRequestEscalate $request]]
+    return 1
+}
+proc ::GX::_scriptJobRequestEscalate {request} {
+    if {![dict exists $::GX::scriptJobRequests $request]} return
+    _scriptJobRequestSignal $request KILL
+    dict set ::GX::scriptJobRequests $request escalated 1
+    if {[dict exists $::GX::scriptJobRequests $request eof]} {scriptJobReadable $request}
+}
+proc ::GX::scriptJobRequestsShutdown {actual} {
+    if {$actual ne {.}} return
+    dict for {request entry} $::GX::scriptJobRequests {if {[dict get $entry options ui_lifetime]} {_scriptJobRequestSignal $request KILL}}
 }
 proc ::GX::scriptJobSubmit {reference parameters {options {}} {callback {}}} {
     set session [dict get [dict merge [dict create session $::GX::currentSession] $options] session]

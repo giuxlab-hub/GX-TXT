@@ -1,3 +1,10 @@
+# 1.3.0
+
+- Add a Viewer profile consumed by the standard Viewer Interface Builder.
+- Validate inert design projects through the installed public CORE schema.
+- Preserve handwritten handlers and report generated-asset changes.
+- Share deterministic, atomic package promotion with existing profiles.
+
 # 1.2.0
 
 - Generate a safe minimal public duplication policy for Python/Octave profiles A/B/W.

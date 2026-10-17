@@ -9,9 +9,10 @@ namespace eval ::GX::UiField {
     variable forms {}
     variable formValues
     variable formStatus
+    variable controlsTrailing {}
 }
 proc ::GX::uiFieldApiInfo {} {
-    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldDialogCreate uiFieldDialogPresent uiFieldDialogClose uiFieldFocusWhenMapped uiFieldViewerSection uiFieldFormCreate uiFieldFormSectionEnabled uiFieldViewerShellCreate uiFieldSelectorWithinViewer uiFieldSelectorPost uiFieldSelectorClose uiMenuPopup uiMenuWorkarea uiMenuRowAttach}]
+    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldDialogCreate uiFieldDialogPresent uiFieldDialogClose uiFieldFocusWhenMapped uiFieldViewerSection uiFieldFormCreate uiFieldFormSectionEnabled uiFieldViewerShellCreate uiFieldSelectorWithinViewer uiFieldSelectorPost uiFieldSelectorClose uiMenuPopup uiMenuWorkarea uiMenuRowAttach uiMenuRowAppend uiFieldControlsAppend uiFieldComponentCapabilities uiFieldComponentCreate uiFieldComponentRead uiFieldComponentLayout uiFieldScrollableCreate uiFieldViewerRegionsSet uiFieldDatasetChoices}]
 }
 
 # Viewer-bounded choice projection. The combobox remains the value/variable
@@ -31,7 +32,10 @@ proc ::GX::uiFieldSelectorWithinViewer {widget viewer} {
     bind $widget <Destroy> +[list ::GX::_uiFieldSelectorDestroyed $widget $viewer %W]
     return $widget
 }
-proc ::GX::_uiFieldSelectorPanel {widget viewer} {return $viewer.gxSelector_[binary encode hex [encoding convertto utf-8 $widget]]}
+proc ::GX::_uiFieldSelectorPanel {widget viewer} {
+    set prefix [expr {$viewer eq {.} ? {} : $viewer}]
+    return $prefix.gxSelector_[binary encode hex [encoding convertto utf-8 $widget]]
+}
 proc ::GX::_uiFieldSelectorDestroyed {widget viewer destroyed} {
     if {$widget eq $destroyed} {
         catch {destroy [_uiFieldSelectorPanel $widget $viewer]}
@@ -65,6 +69,9 @@ proc ::GX::uiFieldSelectorPost {widget viewer} {
     if {![winfo exists $widget] || ![winfo viewable $viewer] || [$widget instate disabled]} return
     set panel [_uiFieldSelectorPanel $widget $viewer]
     if {[winfo exists $panel]} {uiFieldSelectorClose $widget $viewer;return}
+    set prepare [$widget cget -postcommand]
+    if {$prepare ne {}} {uplevel #0 $prepare}
+    if {![winfo exists $widget]} return
     set values [$widget cget -values]
     if {$values eq {}} return
     update idletasks
@@ -517,11 +524,21 @@ proc ::GX::writeStandardRuntimeConfig {id} {
 # displays, which do not expose the remote OS working-area API to Tk.
 proc ::GX::uiFieldWindowFit {window {width {}} {height {}}} {
     if {![winfo exists $window]||[wm overrideredirect $window]||[winfo class $window] eq "ComboboxPopdown"} return
+    # Tk text/error dialogs may own character-grid geometry. wm geometry and
+    # minsize then use grid units, so applying pixel bounds makes them enormous.
+    # Preserve that native size contract; the ordinary mapper is pixel-only.
+    if {[wm grid $window] ne {}} return
     set availableWidth [expr {max(240,[winfo screenwidth $window]-40)}]
     set availableHeight [expr {max(180,[winfo screenheight $window]-100)}]
     if {$width eq {}} {
         set width [winfo width $window];set height [winfo height $window]
-        set x [winfo x $window];set y [winfo y $window]
+        # wm geometry locates the outer window. winfo x/y locate Tk's client,
+        # including native-menu/decoration offsets, and caused repeated fits
+        # and Preview rebuilds to walk down/right across the desktop.
+        if {[regexp {^[0-9]+x[0-9]+([+-])([0-9]+)([+-])([0-9]+)$} [wm geometry $window] -> xs xv ys yv]} {
+            set x [expr {$xs eq {+} ? $xv : [winfo screenwidth $window]-$width-$xv}]
+            set y [expr {$ys eq {+} ? $yv : [winfo screenheight $window]-$height-$yv}]
+        } else {set x [winfo x $window];set y [winfo y $window]}
     } else {set x 20;set y 20}
     # USPosition prevents forwarded multiwindow servers from auto-placing a
     # correctly sized client below the remote working area.
@@ -637,6 +654,14 @@ proc ::GX::uiFieldComboboxPopupDamage {popup} {
 }
 proc ::GX::uiFieldControlsLayout {frame width {children {}}} {
     if {$children eq {}} {set children [winfo children $frame]}
+    if {[dict exists $::GX::UiField::controlsTrailing $frame]} {
+        foreach child [dict get $::GX::UiField::controlsTrailing $frame] {
+            if {![winfo exists $child]} continue
+            set at [lsearch -exact $children $child]
+            if {$at>=0} {set children [lreplace $children $at $at]}
+            lappend children $child
+        }
+    }
     foreach child $children {pack forget $child}
     # Keep each label next to its input when wrapping. Treating them as
     # unrelated cells split labels from fields at larger fonts/narrow widths.
@@ -683,6 +708,20 @@ proc ::GX::uiFieldControlsLayout {frame width {children {}}} {
     }
     set height 0;dict for {row pixels} $heights {incr height $pixels}
     return [dict create columns $columns rows [dict size $heights] height $height]
+}
+proc ::GX::uiFieldControlsAppend {frame widget} {
+    if {![winfo exists $widget] || [winfo parent $widget] ne $frame} {error {Appended control must belong to its layout container}}
+    set children [datasetPublicationV2DictDefault $::GX::UiField::controlsTrailing $frame {}]
+    if {$widget ni $children} {
+        dict lappend ::GX::UiField::controlsTrailing $frame $widget
+        if {$children eq {}} {bind $frame <Destroy> +[list ::GX::_uiFieldControlsDestroyed $frame %W]}
+    }
+    set visible {}
+    foreach child [winfo children $frame] {if {[winfo manager $child] ne {}} {lappend visible $child}}
+    uiFieldControlsLayout $frame [winfo width $frame] $visible
+}
+proc ::GX::_uiFieldControlsDestroyed {frame actual} {
+    if {$frame eq $actual && [dict exists $::GX::UiField::controlsTrailing $frame]} {dict unset ::GX::UiField::controlsTrailing $frame}
 }
 namespace eval ::GX::UiField {variable tableLayoutAfter {}}
 proc ::GX::uiFieldInspectionColumnsFit {tree} {

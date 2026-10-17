@@ -9,6 +9,7 @@ namespace eval ::GX {
     variable projectApiVersion 1
     variable projectCatalog
     variable projectMembership
+    variable projectOrganization
     variable projectRegistryLoaded 0
     variable projectIdCounter 0
     variable experimentIdCounter 0
@@ -59,6 +60,9 @@ proc ::GX::projectLoadRegistry {} {
     variable projectCatalog
     variable projectMembership
     variable projectRegistryLoaded
+    variable projectOrganization
+    array unset projectOrganization *
+    array set projectOrganization {generation 0 namespaces {}}
     array unset projectCatalog *
     array unset projectMembership *
     set path [projectRegistryPath]
@@ -72,6 +76,8 @@ proc ::GX::projectLoadRegistry {} {
             set projectCatalog($id,$field) [dict get $d $key]
         } elseif {[regexp {^experiment\.([^.]+)\.([^.]*)$} $key -> id field]} {
             set projectMembership($id,$field) [dict get $d $key]
+        } elseif {[regexp {^organization\.(generation|namespaces)$} $key -> field]} {
+            set projectOrganization($field) [dict get $d $key]
         }
     }
     set projectRegistryLoaded 1
@@ -98,6 +104,7 @@ proc ::GX::projectSaveRegistry {} {
     variable projectMembership
     variable projectApiVersion
     variable projectRegistryLoaded
+    variable projectOrganization
     projectEnsureRegistryLoaded
     set path [projectRegistryPath]
     file mkdir [file dirname $path]
@@ -110,9 +117,12 @@ proc ::GX::projectSaveRegistry {} {
     putKV $fd api_version $projectApiVersion
     set ids [projectIdsLoaded]
     putKV $fd project_count [llength $ids]
+    puts $fd "\n\[organization\]"
+    putKV $fd schema gxtxt.project_organization.v1
+    foreach field {generation namespaces} {putKV $fd $field $projectOrganization($field)}
     foreach id $ids {
         puts $fd "\n\[project.$id\]"
-        foreach field {id name description tags author storage_path created_at updated_at origin} {
+        foreach field {id name description tags author storage_path created_at updated_at origin namespace_id session_namespaces} {
             putKV $fd $field [expr {[info exists projectCatalog($id,$field)] ? $projectCatalog($id,$field) : ""}]
         }
     }
@@ -123,7 +133,7 @@ proc ::GX::projectSaveRegistry {} {
     }
     foreach eid [lsort -dictionary $eids] {
         puts $fd "\n\[experiment.$eid\]"
-        foreach field {experiment_id project_id session_path experiment_name associated_at updated_at} {
+        foreach field {experiment_id project_id session_path experiment_name associated_at updated_at session_namespace} {
             putKV $fd $field [expr {[info exists projectMembership($eid,$field)] ? $projectMembership($eid,$field) : ""}]
         }
     }
@@ -149,7 +159,7 @@ proc ::GX::projectExists {id} {
 proc ::GX::projectGet {id} {
     if {![projectExists $id]} { error "Unknown Project '$id'." }
     set out [dict create]
-    foreach field {id name description tags author storage_path created_at updated_at origin} {
+    foreach field {id name description tags author storage_path created_at updated_at origin namespace_id session_namespaces} {
         dict set out $field [projectField $id $field ""]
     }
     return $out
@@ -171,6 +181,7 @@ proc ::GX::projectCreate {name {description ""} {tags ""} {author ""}} {
         set projectCatalog($id,$field) $value
     }
     set projectCatalog($id,origin) [_originCreate project]
+    incr ::GX::projectOrganization(generation)
     projectSaveRegistry
     projectWriteMetadata $id
     }
@@ -226,11 +237,16 @@ proc ::GX::projectUpdate {id fields} {
     foreach {field value} $fields {
         if {$field ni {name description tags author}} { error "Project field '$field' is not editable." }
         if {$field eq "name" && [string trim $value] eq ""} { error "Project name must not be empty." }
+    }
+    _projectAtomic [list [file join [projectStoragePath $id] project.ini]] {
+    foreach {field value} $fields {
         set projectCatalog($id,$field) $value
     }
+    incr ::GX::projectOrganization(generation)
     set projectCatalog($id,updated_at) [projectTimestamp]
     projectSaveRegistry
     projectWriteMetadata $id
+    }
     return [projectGet $id]
 }
 
@@ -247,6 +263,10 @@ proc ::GX::projectAssociateExperiment {projectId experimentId sessionPath experi
     set experimentId [string trim $experimentId]
     if {$experimentId eq ""} { error "Experiment identity must not be empty." }
     set now [projectTimestamp]
+    if {[projectMembershipField $experimentId project_id {}] ne $projectId} {
+        set projectMembership($experimentId,session_namespace) {}
+        incr ::GX::projectOrganization(generation)
+    }
     set previousAssociated [projectMembershipField $experimentId associated_at ""]
     if {$previousAssociated eq ""} { set previousAssociated $now }
     set normalizedPath ""
@@ -278,7 +298,7 @@ proc ::GX::projectListExperiments {projectId} {
     }
     foreach eid [lsort -dictionary -unique $ids] {
         set d [dict create]
-        foreach field {experiment_id project_id session_path experiment_name associated_at updated_at} {
+        foreach field {experiment_id project_id session_path experiment_name associated_at updated_at session_namespace} {
             dict set d $field [projectMembershipField $eid $field ""]
         }
         lappend out $d

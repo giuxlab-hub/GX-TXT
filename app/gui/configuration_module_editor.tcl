@@ -197,11 +197,11 @@ proc ::GX::configurationEditorRefresh {} {
 }
 proc ::GX::configurationModulesPending {} {
     set result {}
-    set parent .top.nb.configuration.sections.modules.browser.split.detail.viewport.content.editor
+    set parent .top.nb.configuration.sections.modules.kinds.services.browser.split.detail.viewport.content.editor
     return [configurationModuleEditorPending $parent user]
 }
 proc ::GX::configurationModulesSaved {} {
-    configurationModuleEditorAccept .top.nb.configuration.sections.modules.browser.split.detail.viewport.content.editor user
+    configurationModuleEditorAccept .top.nb.configuration.sections.modules.kinds.services.browser.split.detail.viewport.content.editor user
     configurationEditorChanged {}
 }
 

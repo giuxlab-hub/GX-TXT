@@ -782,16 +782,7 @@ proc ::GX::selectedGraphPaths {} {
     if {$annotationPrintOverrideActive} { return $annotationPrintOverridePaths }
     return [::GX::selectedGraphPaths_annotation_base]
 }
-proc ::GX::composePdf {} {
-    variable annotationPrintOverrideActive; variable annotationPrintOverridePaths
-    set base [::GX::selectedGraphPaths_annotation_base]
-    set annotationPrintOverridePaths {}
-    foreach p $base {
-        if {[catch {lappend annotationPrintOverridePaths [annotationOutputForPrint $p]} err]} { tk_messageBox -icon error -title "Annotated print" -message $err; return 0 }
-    }
-    set annotationPrintOverrideActive 1
-    try { return [::GX::composePdf_annotation_base] } finally { set annotationPrintOverrideActive 0; set annotationPrintOverridePaths {} }
-}
+proc ::GX::composePdf {} {return [::GX::composePdf_annotation_base]}
 
 # Manifest Format 2 references annotation documents; object payload remains in JSON.
 proc ::GX::manifestStringV2_v070_graph_provider_base {} {

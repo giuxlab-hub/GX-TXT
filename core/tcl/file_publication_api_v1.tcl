@@ -92,3 +92,14 @@ proc ::GX::filePublicationPublishBundle {artifacts {policy create_only}} {
     foreach artifact $prepared {if {[dict get $artifact backup] ne ""} {file delete -- [dict get $artifact backup]}}
     return [dict create api_id FILE_PUBLICATION_API_v1 status published files $receipts]
 }
+
+# Explicit host export of a verified derived document through this authority.
+proc ::GX::filePublicationCopy {source destination expected {policy create_only}} {
+    if {![file isfile $source] || [file type $source] ne {file} || [sha256File $source] ne $expected} {error {Export source changed before publication.}}
+    return [filePublicationPublishBundle [list [dict create id document destination $destination writer [list ::GX::_filePublicationCopyWriter $source $expected]]] $policy]
+}
+proc ::GX::_filePublicationCopyWriter {source expected channel context} {
+    set input [open $source rb]
+    try {fcopy $input $channel} finally {close $input}
+    if {[sha256File $source] ne $expected} {error {Export source changed while publishing.}}
+}

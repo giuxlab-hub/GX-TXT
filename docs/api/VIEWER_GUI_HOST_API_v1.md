@@ -69,3 +69,22 @@ Tab restores normal traversal. Opening does not select a History action. It uses
 no global ttk private popdown modifications. Destroy releases bindings/grab.
 Debian local X11 acceptance is recorded; Windows, remote X11 and alternate DPI/
 theme combinations require their own platform acceptance and are not claimed PASS.
+
+Description/History strip selection is a presentation operation. It can display
+the retained window's timeline while the scientific owner is busy or its Session
+has changed. A stale window updates only its local strip; it cannot write strip
+preferences into another Session. Undo/Redo, History navigation, restoration,
+branching and scientific changes retain the existing Session and owner guards.
+
+Shared Documentation Browser Help attachment reuses an existing Help menu and
+keeps it last in the existing native menubar or legacy menubutton row. It adds
+missing Manual/About actions without another full-width row. About reads the
+current installed descriptor. Frozen Digitalizer attachment is unchanged, and
+legacy module-local Help adapters retain their existing ownership.
+
+Dev104 adds optional `command_catalog` (a logical catalog with the same installed
+owner), `toolbar_mode` (`actions` or `declarative`) and boolean `help` (default
+true). Declarative mode mounts only deliberately selected components. Existing
+consumers retain their defaults. The additive design/component facade, inert
+project format, generation and finite laboratory are documented in
+[Viewer GUI design](VIEWER_GUI_DESIGN_v1.md).

@@ -1,6 +1,6 @@
 # GX-TXT Architecture
 
-**Reference source:** GX-TXT 0.9.8.10-dev-103  
+**Reference source:** GX-TXT 0.9.8.10-dev-104  
 **Framework license:** GPL-3.0-or-later
 
 GX-TXT is a modular desktop framework for scientific acquisition, Dataset management, numerical analysis, scripting and visualization. It is not a CFD solver, data-acquisition instrument or generic execution service.
