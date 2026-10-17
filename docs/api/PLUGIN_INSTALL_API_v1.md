@@ -1,4 +1,4 @@
-# Plugin Install API v1 — GX-TXT v0.9.3
+# Plugin Install API v1
 
 ## Purpose
 
@@ -64,7 +64,7 @@ The API accepts:
 ZIP entries are checked before extraction. Absolute paths, drive-rooted paths,
 `..` traversal and symbolic links are rejected.
 
-Current development packages place `plugin-package.ini`, the normal descriptor,
+Portable packages place `plugin-package.ini`, the normal descriptor,
 and payload files directly at the ZIP root. The installer still accepts a single
 enclosing directory for older packages, but new packages use the root layout.
 
@@ -84,7 +84,7 @@ enclosing directory for older packages, but new packages use the root layout.
 - requires a Plugin-Install-API-managed plugin with the same ID;
 - requires a version newer than the installed version;
 - performs a staged replacement;
-- rolls back the old directory if live discovery fails.
+- restores the exact previous package and registry if discovery, registry commit or certified activation fails.
 
 `auto` mode installs an absent plugin or updates an existing managed plugin;
 downgrades are rejected.
@@ -132,6 +132,19 @@ continues to accept standalone packages and bundles. Updating requires a managed
 selection; removal additionally excludes CORE and ALWAYS modules. The normal
 Configuration browser retains installed-plugin inspection and documentation.
 
+The live **Filter plugins** field matches actual ID, name, type, version and
+bundle text without changing the registry. Reset or Escape clears the filter.
+A row that remains visible keeps its selection; a hidden row clears selection
+and disables Update/Uninstall. Installed and active implementation versions are
+separate columns. Select a row to inspect its complete activation status below
+the table; horizontal scrolling and window resizing expose all columns.
+
+**Configuration → Modules → Default plugin package directory** is a User
+preference shared by Install, Update and bundle package choosers. Browse selects
+an existing directory; typing a missing/inaccessible directory safely falls back
+to the user's home directory (then current directory if needed). Saving this
+preference never changes installation targets or framework package storage.
+
 The main **Modules** page selects membership in Analysis. It has no plugin
 administration actions. CORE is a distribution/protection class independent from
 runtime enablement; the quick Plot, Script Octave and Script Python controls
@@ -153,7 +166,7 @@ Plugin runtime code is still subject to the normal GX-TXT execution model; the
 Install API does not grant additional runtime privileges.
 
 
-## v0.9.3.2 package sets
+## Package sets
 
 For one ZIP containing several independent Plugin Install API packages, use
 **Plugin Bundle API v1** (`PLUGIN_BUNDLE_API_v1.md`). The bundle layer does not
@@ -163,3 +176,62 @@ replace this installer: every live member commit is still performed by
 ## Bundled module policy
 
 Bundled modules are updated by GX-TXT framework releases. Plugin Install API manages installable external plugins and modules and intentionally does not overwrite bundled or unmanaged same-ID modules.
+
+
+## Runtime activation and safe updates
+
+The host-only `pluginRuntimeInfo plugin_id` reports `installed_version`,
+`active_version`, `status` and explanatory `reason`. Update receipts contain the
+same fields. The Manager distinguishes **Updated and active**, **Updated —
+restart required**, and **Update failed**. A new or never-loaded implementation
+uses its normal lazy loader immediately. A loaded Tcl implementation without a
+certified lifecycle remains active and requires a framework restart; another
+entrypoint cannot silently mix the newly installed code with the old runtime.
+Its previous package is retained outside descriptor discovery while pending.
+
+An active Analysis computation, any durable active Script Job, a loaded native
+library from the affected plugin, or a live framework child worker prevents
+replacement. The operation reports failure and explains what must finish or be
+closed. No native library is hot-unloaded and no worker or scientific Job is
+cancelled by an update. The durable Job owner's complete active lifecycle is
+used, independently of table pagination or hidden terminal entries.
+
+A pure Tcl provider can opt into its own certified process-local lifecycle while
+its public API is activated under CORE's existing module context:
+
+```tcl
+::GX::pluginLifecycleRegister $module_id ::MyModule::lifecycle
+```
+
+The command prefix accepts these host operations:
+
+- `prepare_update`: returns a dictionary containing boolean `safe` and optional
+  English `reason`. `safe=1` certifies that this provider has no live editor,
+  dirty document, native library, worker, callback or scientific operation that
+  would be invalidated by rebinding. It must not alter scientific state.
+- `activate target_root installed_version`: the provider performs its explicit
+  safe removal/rebinding and registers its current API/backend implementation.
+  CORE does not guess namespaces, blanket-source entrypoints, or unload code.
+- `rollback restored_root previous_version`: restores the previous implementation
+  if a transactional activation fails. It must preserve existing scientific and
+  Interactive Document state and remain usable after a partial activation error.
+
+Registration is allowed only for the module's current activation identity.
+This is a trusted already-loaded provider extension, not a package install
+script, a package-declared arbitrary command, or a Script Bridge operation.
+Process-local UI/code lifetime has no independent Python/Octave execution
+meaning, so these lifecycle operations are host-only.
+
+When a certified provider reports an open editor (`safe=0`), the Manager reports
+the installed and still-active versions separately. After its normal Close,
+the next Open rechecks the same lifecycle and activates only when it certifies
+quiescence. An unsuccessful deferred activation retains restart-required status
+with its exact reason and attempts provider-owned rollback; no false activation
+success is reported. Hidden old-package backups preserve assets for pending
+runtime recovery; scientific resources remain owned by their existing Session
+and Managed Resource authorities.
+
+Bundle members use the same installer and exact registry transaction. Loaded
+members defer rebinding until the entire bundle commits; rollback never leaves
+a newly activated first member behind after a later member fails. Reopening a
+quiescent certified provider can activate the committed implementation.

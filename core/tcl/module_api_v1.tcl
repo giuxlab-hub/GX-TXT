@@ -3803,25 +3803,28 @@ proc ::GX::appendProgressRuntimeJob {runtime moduleId runId operation} {
 
 # Rebuild the two standard_octave queues with injected framework-owned job
 # identity.  Existing two-element queue items remain accepted by runNextAnalysis.
-proc ::GX::buildStandardAnalysisQueue_before_plot_variant {} {
+proc ::GX::buildStandardAnalysisQueue_before_plot_variant {{target ""}} {
     variable moduleOrder
     variable cfg
     variable scriptDir
     set q {}
-    foreach id $moduleOrder {
+    # A targeted invocation prepares only its owner. Building the global queue
+    # and filtering it afterwards would already have rewritten other runtimes.
+    set owners [expr {$target eq "" ? $moduleOrder : [list $target]}]
+    foreach id $owners {
         if {[moduleField $id kind ""] ne "analysis"} continue
         if {[moduleField $id runner ""] eq "script_module"} {
-            if {![moduleIsEnabled $id] || ![moduleRunIsSelected $id]} continue
+            if {![moduleIsEnabled $id] || ($target eq "" && ![moduleRunIsSelected $id])} continue
             lappend q [scriptModuleBuildQueueItem $id]
             continue
         }
         if {$id eq "analysis.python_script" && [moduleField $id runner ""] eq "script_execution"} {
-            if {![moduleIsEnabled $id] || ![moduleRunIsSelected $id]} continue
+            if {![moduleIsEnabled $id] || ($target eq "" && ![moduleRunIsSelected $id])} continue
             lappend q [scriptAnalysisBuildQueueItem $id]
             continue
         }
         if {[moduleField $id runner ""] ne "standard_octave"} continue
-        if {![moduleIsEnabled $id] || ![moduleRunIsSelected $id]} continue
+        if {![moduleIsEnabled $id] || ($target eq "" && ![moduleRunIsSelected $id])} continue
         if {[moduleField $id ui_replaced_by_core 0] && (![info exists ::GX::cliMode] || !$::GX::cliMode)} continue
         if {$id eq "analysis.octave_script" && $::GX::moduleCfg($id,source_mode) eq "registered_script"} {
             lappend q [scriptAnalysisBuildQueueItem $id]
@@ -3937,7 +3940,9 @@ proc ::GX::runNextAnalysis_before_parallel_octave_binding_v1 {} {
             catch {unset ui(graphPreviewLoadSig)}; catch {unset ui(graphPreviewFitW)}; catch {unset ui(graphPreviewFitH)}
         }
         catch {refreshResults}; catch {refreshGraphs}; catch {refreshOpenGraphWindow}; catch {refreshAnalysisStatus}
-        if {[llength [info commands tk_messageBox]]} { tk_messageBox -icon info -title "GX-TXT" -message "$analysisOperation completed." }
+        if {$analysisOperation eq "Targeted analysis"} {
+            moduleAnalysisFinish COMPLETED {}
+        } elseif {[llength [info commands tk_messageBox]]} { tk_messageBox -icon info -title "GX-TXT" -message "$analysisOperation completed." }
         return
     }
     set item [lindex $analysisQueue 0]; set analysisQueue [lrange $analysisQueue 1 end]
@@ -3949,6 +3954,15 @@ proc ::GX::runNextAnalysis_before_parallel_octave_binding_v1 {} {
     analysisLog "=== $label ==="; analysisLog "Server command: $cmd"
     if {[info exists ui(analysisLogFile)] && $ui(analysisLogFile) ne ""} { puts $ui(analysisLogFile) "=== $label ===\n$cmd" }
     set pipeline [concat | $cmd [list 2>@1]]
+    set ::GX::analysisOwnedGroup 0
+    if {[info exists ::GX::targetedAnalysisActive] && $::GX::targetedAnalysisActive ne {} && $::tcl_platform(platform) eq "unix"} {
+        # One owned process group lets the existing Cancel terminate the runner
+        # and its Octave descendants together, including computation without IO.
+        set setsid [auto_execok setsid]
+        if {$setsid eq {}} {moduleAnalysisFinish FAILED {Owned process-group cancellation is unavailable};error {setsid is required for targeted Analysis cancellation}}
+        set pipeline [concat | [list {*}$setsid --wait] $cmd [list 2>@1]]
+        set ::GX::analysisOwnedGroup 1
+    }
     if {[catch {
         set analysisPipe [open $pipeline r]; set analysisPids [pid $analysisPipe]
         fconfigure $analysisPipe -blocking 0 -buffering line -encoding utf-8
@@ -3956,6 +3970,7 @@ proc ::GX::runNextAnalysis_before_parallel_octave_binding_v1 {} {
         progressUiFallbackStart $label $moduleId
     } err]} {
         analysisLog "START ERROR: $err"
+        if {[info exists ::GX::targetedAnalysisActive] && $::GX::targetedAnalysisActive ne {}} {moduleAnalysisFinish FAILED $err}
         stopAnalysis 0
     }
 }
@@ -3966,6 +3981,11 @@ proc ::GX::onAnalysisReadable_before_parallel_octave_binding_v1 {p} {
     variable analysisTotal
     variable ui
     if {$p ne $analysisPipe} return
+    if {[info exists ::GX::targetedAnalysisActive] && $::GX::targetedAnalysisActive ne {} && ![moduleAnalysisScopeValid 0]} {
+        moduleAnalysisFinish FAILED {Session or source identity changed during the invocation}
+        stopAnalysis 0
+        return
+    }
     while {[gets $p line] >= 0} {
         set ev [progressParseLine $line]
         if {[dict size $ev] > 0} {
@@ -3986,8 +4006,16 @@ proc ::GX::onAnalysisReadable_before_parallel_octave_binding_v1 {p} {
         if {[info exists ui(analysisLogFile)] && $ui(analysisLogFile) ne ""} { puts $ui(analysisLogFile) $line }
     }
     if {[eof $p]} {
+        if {[info exists ::GX::targetedAnalysisActive] && $::GX::targetedAnalysisActive ne {} && ![moduleAnalysisScopeValid]} {
+            moduleAnalysisFinish FAILED {Scientific source identity changed during invocation}
+            stopAnalysis 0
+            return
+        }
         fileevent $p readable {}
         set ok 1; set errtxt ""
+        # EOF is already observed. Collect the actual child exit status; Tcl
+        # otherwise discards CHILDSTATUS when closing a nonblocking pipeline.
+        fconfigure $p -blocking 1
         if {[catch {close $p} err]} { set ok 0; set errtxt $err }
         if {[info exists ui(analysisCurrentModuleId)] &&
             ([moduleField $ui(analysisCurrentModuleId) runner ""] eq "script_module" ||
@@ -4007,6 +4035,7 @@ proc ::GX::onAnalysisReadable_before_parallel_octave_binding_v1 {p} {
         }
         set analysisPipe ""
         if {!$ok} {
+            if {[info exists ::GX::targetedAnalysisActive] && $::GX::targetedAnalysisActive ne {}} {moduleAnalysisFinish FAILED $errtxt}
             set ev [dict create state failed mode indeterminate stage process message "Module process failed" \
                 module_id [expr {[info exists ui(analysisCurrentModuleId)] ? $ui(analysisCurrentModuleId) : ""}] \
                 run_id [expr {[info exists ui(analysisCurrentRunId)] ? $ui(analysisCurrentRunId) : ""}]]
@@ -4028,8 +4057,9 @@ proc ::GX::onAnalysisReadable_before_parallel_octave_binding_v1 {p} {
             return
         }
         variable analysisOperation
-        if {$analysisOperation eq "Selective analysis" && [info exists ui(analysisCurrentModuleId)] && $ui(analysisCurrentModuleId) ne ""} {
+        if {$analysisOperation in {"Selective analysis" "Targeted analysis"} && [info exists ui(analysisCurrentModuleId)] && $ui(analysisCurrentModuleId) ne ""} {
             if {[catch {set pubs [datasetPublicationProcessModule $ui(analysisCurrentModuleId)]} perr]} {
+                if {$analysisOperation eq "Targeted analysis"} {moduleAnalysisFinish FAILED $perr}
                 analysisLog "DATASET PUBLICATION ERROR: $perr"
                 if {[info exists ui(analysisLogFile)] && $ui(analysisLogFile) ne ""} { catch {puts $ui(analysisLogFile) "DATASET PUBLICATION ERROR: $perr"} }
                 if {[info exists ui(startButton)]} {$ui(startButton) configure -state normal}
@@ -4050,6 +4080,7 @@ proc ::GX::onAnalysisReadable_before_parallel_octave_binding_v1 {p} {
 }
 
 proc ::GX::stopAnalysis_before_parallel_octave_binding_v1 {{message 1}} {
+    if {[info exists ::GX::targetedAnalysisActive] && $::GX::targetedAnalysisActive ne {}} {moduleAnalysisFinish CANCELLED {Invocation cancelled}}
     set r [::GX::stopAnalysis_v077 $message]
     progressUiStopAnimation
     if {$message} { progressUiReset "Analysis interrupted" }

@@ -1,6 +1,7 @@
 # GX-TXT Help / Documentation Browser.
 # SPDX-License-Identifier: GPL-3.0-or-later
 namespace eval ::GX { variable documentationBrowserUi }
+source [file join [file dirname [info script]] documentation_module_window.tcl]
 
 proc ::GX::documentationBrowserPopulate {} {
     variable documentationBrowserUi

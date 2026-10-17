@@ -425,6 +425,7 @@ proc ::GX::DatasetCurveFit::_writePayload {key payload} {
     set doc [::GX::interactiveDocumentRead $state($key,documentId)]
     set state($key,documentGeneration) [dict get $doc generation];set state($key,documentRevision) [dict get $doc revision]
     set state($key,savedPayload) [dict remove [dict get $doc payload] workspace_metadata]
+    if {[llength [info commands winfo]] && [winfo exists $key]} {set state($key,hostBaseline) [_workspaceFingerprint $key]}
     if {[llength [info commands winfo]] && [winfo exists $key]} {::GX::sessionWorkspaceViewerTitlesRefresh}
 }
 proc ::GX::DatasetCurveFit::_restoreState {w requested} {
@@ -541,4 +542,51 @@ proc ::GX::DatasetCurveFit::_applyPayload {w payload {requested {}}} {
         foreach entry [dict values $state($w,sources)] {if {[dict get $entry state sourceStatus] ne "ready"} {incr unavailable}}
         set state($w,status) "Restored [llength $restored] source entries and [llength $state($w,records)] accepted local fits. $unavailable unavailable sources require explicit reload."
 
+}
+
+# Host lifecycle inspection reads editor fields only. It must not call _payload:
+# that scientific persistence path may create managed Preview resources.
+proc ::GX::DatasetCurveFit::_workspaceFingerprint {w} {
+    variable state
+    set values {}
+    foreach field {activeSource sources records nextSource nextFit viewBounds showResiduals residualFraction residualAxis model degree initial period smoothing topology parameterization parameterVariable userPeriod closureTolerance orientation scope domain min max samples noiseModel covarianceSettings confidence bootstrapSettings profileSettings influenceDiagnostics predictionBand predictionSigma predictionWeights measurementKind measurementVariable measurementIndependentVariable measurementMissing solverSettings smoothingSettings knotSettings componentRecipe regionRecipe formulaRecipe rationalRecipe rationalExtrapolation implicitRecipe implicitBranch complexRecipe complexData registeredModel translationUMode translationUDelta translationVMode translationVDelta polarFrame} {
+        if {[info exists state($w,$field)]} {dict set values $field $state($w,$field)}
+    }
+    return $values
+}
+proc ::GX::DatasetCurveFit::_workspaceDirty {w} {
+    variable state
+    _assertSession $w
+    if {$state($w,documentId) eq {}} {return 1}
+    return [expr {![info exists state($w,hostBaseline)] || $state($w,hostBaseline) ne [_workspaceFingerprint $w]}]
+}
+proc ::GX::DatasetCurveFit::_workspacePrepare {w action} {
+    _assertSession $w
+    if {![_historyGuard $w]} {error {Finish or cancel the active Fitter operation first.}}
+}
+proc ::GX::DatasetCurveFit::_workspaceCallbacks {w} {
+    return [dict create current [list ::GX::DatasetCurveFit::_currentWorkspace $w] save [list ::GX::DatasetCurveFit::_workspaceSave $w] close [list ::GX::DatasetCurveFit::_closeWindow $w] open ::GX::DatasetCurveFit::open dirty [list ::GX::DatasetCurveFit::_workspaceDirty $w] prepare [list ::GX::DatasetCurveFit::_workspacePrepare $w] discard [list ::GX::DatasetCurveFit::_closeWindow $w 0] review [list ::GX::DatasetCurveFit::_workspaceReview $w]]
+}
+
+proc ::GX::DatasetCurveFit::_workspaceFocusedField {w} {
+    foreach field {degree initial period smoothing min max samples} {
+        if {[focus] eq "$w.left.viewport.content.settings.parameters.$field"} {return $field}
+    }
+    return {}
+}
+proc ::GX::DatasetCurveFit::_workspaceReview {w reviewing} {
+    variable state
+    set state($w,hostReview) $reviewing
+    if {$reviewing} {set state($w,hostReviewField) [_workspaceFocusedField $w]} else {unset -nocomplain state($w,hostReviewField)}
+}
+proc ::GX::DatasetCurveFit::_workspaceSave {w} {
+    variable state
+    set field [expr {[info exists state($w,hostReviewField)] ? $state($w,hostReviewField) : [_workspaceFocusedField $w]}]
+    if {$field ne {}} {
+        set was [expr {[info exists state($w,hostReview)] ? $state($w,hostReview) : 0}]
+        set state($w,hostReview) 0
+        # The existing field owner validates, invalidates the old Preview and
+        # saves its one scientific History step. Do not invoke Save a second time.
+        try {_uiBoundSetting $w $field} finally {if {[winfo exists $w]} {set state($w,hostReview) $was}}
+    } else {_saveState $w}
 }

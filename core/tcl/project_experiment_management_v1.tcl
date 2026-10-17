@@ -77,9 +77,14 @@ proc ::GX::projectExperimentResolve {eid} {
     if {[datasetPublicationV2DictDefault $data project_link.project_id {}] ne [projectMembershipField $eid project_id {}]} {error {Recorded Project membership disagrees with the Session Manifest.}}
     return $path
 }
-proc ::GX::projectExperimentReassign {eid projectId} {
+proc ::GX::projectExperimentReassign {eid projectId {expectedProject {}}} {
     if {![projectExists $projectId]} {error "Unknown Project '$projectId'."}
     set session [projectExperimentResolve $eid];set manifest [file join $session metadata manifest.ini]
+    set priorProject [projectMembershipField $eid project_id]
+    # Dialogs capture stable identity, not a row number. Reject a stale source
+    # rather than moving an Experiment that changed membership after selection.
+    if {$expectedProject ne {} && $priorProject ne $expectedProject} {error {Experiment membership changed. Reopen Move to Project.}}
+    if {$priorProject eq $projectId} {return $projectId}
     _projectAtomic [list $manifest] {
         set data [parseIni $manifest]
         dict set data project_link.project_id $projectId

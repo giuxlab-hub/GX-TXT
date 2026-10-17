@@ -118,7 +118,7 @@ proc ::GX::projectGuiBuild {} {
     ttk::button $f.toolbar.new -text "Create" -command {::GX::projectMetadataDialog new}
     ttk::button $f.toolbar.edit -text "Edit" -command ::GX::projectGuiEditSelected
     ttk::button $f.toolbar.delete -text "Delete Project..." -command ::GX::resourceLifecycleProjectDeleteSelected
-    ttk::button $f.toolbar.select -text "Open / Select" -command ::GX::projectGuiAssociateSelected
+    ttk::button $f.toolbar.select -text "Move open Session here" -command ::GX::projectGuiAssociateSelected
     ttk::button $f.toolbar.newSession -text "New Session in Project..." -command ::GX::projectGuiNewSession
     ttk::button $f.toolbar.refresh -text "Refresh" -command ::GX::projectGuiRefresh
     pack $f.toolbar.new $f.toolbar.edit $f.toolbar.delete $f.toolbar.select $f.toolbar.newSession $f.toolbar.refresh -side left -padx 3 -pady 4

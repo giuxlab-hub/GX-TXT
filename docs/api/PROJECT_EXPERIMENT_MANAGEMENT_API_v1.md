@@ -1,4 +1,4 @@
-# Project Experiment management v1 (dev083)
+# Project Experiment management v1
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -10,14 +10,13 @@ root; every existing member retains its recorded path.
 
 `projectExperimentResolve eid` checks membership, authoritative Manifest IDs, complete
 Session shape and Resource Lifecycle protections. Actions always use the stable eid:
-`projectExperimentRename eid name`, `projectExperimentReassign eid projectId`,
+`projectExperimentRename eid name`, `projectExperimentReassign eid projectId ?expectedProject?`,
 `projectExperimentDelete eid`, `projectExportExperiment eid archive`,
 `projectImportExperiment projectId archive destination`.
-`projectDetachExperiment eid` and `projectDetachCurrentExperiment` now mean
-reassignment to Default, preserving bytes and legacy text; this semantic change is
-intentional and authorized. Ordinary association never moves a Session directory.
+`projectDetachExperiment eid` and `projectDetachCurrentExperiment` mean
+reassignment to Default, preserving bytes and legacy text. Ordinary association never moves a Session directory. The optional expected source Project rejects stale membership; an already-current destination is a no-op.
 
-New Sessions obtain Default membership at authoritative persistence. Legacy Sessions
+Sessions created without a named Project obtain Default membership at authoritative persistence. Legacy Sessions
 are associated only as encountered, with additive project_link fields, preserving
 historical experiment.project text and legacy_project. Missing foreign Project links
 are retained as previous_project_id and assigned locally to Default. No disk crawl or
@@ -71,11 +70,11 @@ Original Format1 Session navigation/Default association remains supported withou
 forced format conversion. Destructive deletion retains the existing Resource Lifecycle
 Format2 safety gate; save an old Session normally before using that deletion route.
 
-## dev084 inspection ownership and browser
+## Inspection ownership and browser
 
-The unchanged `projectExperimentInspect` / `projectExperimentDocumentRead` public
-contracts now live with the CORE Project/Session services, usable without Tk. Inspect
-adds `datasets` records with availability and uses the guarded Inspection location
+The `projectExperimentInspect` / `projectExperimentDocumentRead` public
+contracts live with the CORE Project/Session services, usable without Tk. Inspection returns
+`datasets` records with availability and uses the guarded Inspection location
 reader to avoid hashing large payloads during a GUI click. Counts/provenance/scripts
 and source_module use evidence remain available; availability never claims integrity.
 Normal scientific readers and Portable transport still verify canonical hashes.
@@ -98,7 +97,13 @@ recovery path. Portable completion explains missing modules, package/installed v
 and unresolved external sources in human-readable lines; successful import with missing
 providers preserves science and asks the user to resolve providers before running.
 
-## Complete Project transfer (dev085)
+## Complete Project transfer
 
-[Project Portable API v1](PROJECT_PORTABLE_API_v1.md) adds whole-Project transport
+[Project Portable API v1](PROJECT_PORTABLE_API_v1.md) provides whole-Project transport
 using these existing membership, provenance and journal authorities.
+
+## Explicit browser reassignment
+
+Creating a Project and selecting a Project for browsing do not change any Experiment membership. **Move open Session here** deliberately changes the open Experiment. For a selected Experiment, **Move to Project…** lists every other available Project, including Default / Unassigned. Names are accompanied by stable IDs, so duplicate names remain distinguishable. The operation does not open the selected Session or move its directory. Rows already in Default omit the redundant **Move to Default** action.
+
+Move commits only after the operator presses **Move**. Cancel/Escape leaves membership unchanged. The dialog rejects a changed source membership, moved Session path or current-Session switch and retains a visible error for correction or cancellation. An unavailable destination or transaction failure preserves the old membership and Manifest through the same public transaction owner; scientific Dataset bytes and identities are not edited by reassignment.

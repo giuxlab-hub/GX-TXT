@@ -109,7 +109,7 @@
 # Full release history: CHANGELOG.md
 
 namespace eval ::GX {
-    variable version "0.9.8.10-dev-098"
+    variable version "0.9.8.10-dev-099"
     variable scriptDir [file dirname [file normalize [info script]]]
     variable cfg
     variable ch
@@ -247,6 +247,7 @@ source [file join $::GX::scriptDir core tcl script_source_declaration_api_v1.tcl
 source [file join $::GX::scriptDir app gui documentation_browser.tcl]
 source [file join $::GX::scriptDir app sessions_page_redesign.tcl]
 source [file join $::GX::scriptDir app run_page_redesign.tcl]
+source [file join $::GX::scriptDir core tcl single_analysis_module_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl graph_resource_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl portable_resource_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl dataset_catalog_v1.tcl]

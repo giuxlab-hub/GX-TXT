@@ -73,8 +73,8 @@ Adding the new binding creates another source curve. It preserves accepted fits 
 Dataset display loading reports bounded source progress and keeps the event
 loop active. **Cancel load** or Escape cancels the pending load, releases its
 stream/native resources and preserves existing curves. Source-changing controls
-are disabled during this operation and restored afterward. Closing during a load
-first cancels it, then saves and closes the existing workspace.
+are disabled during this operation and restored afterward. Finish the load or use Cancel load before switching or closing its Workspace.
+The shared Workspace host refuses a transition while this operation is active.
 
 ## Select fit points and navigate
 
@@ -156,8 +156,8 @@ Dataset display loading and exact Numeric staging yield at bounded CORE chunk
 boundaries. Numerical fitting uses the public Parallel Execution coordinator's
 file events and isolated worker environment. **Cancel operation** or **Escape**
 cancels these phases; the previous preview, accepted curves and source remain
-available. Closing during a job requests cancellation, then saves and closes
-after cleanup. Source/model/selection controls are held during the job.
+available. Cancel an active operation and wait for cleanup before closing or
+switching Workspaces. Source/model/selection controls are held during the job.
 
 **Reverse whole to new source** adds a local Dataset-backed source with complete
 rows reversed. **Reverse span to new source** uses selected endpoint identities
@@ -1228,3 +1228,13 @@ knots, degree and endpoint conditions. Both orientations use original Dataset
 coordinates and retain separate construction and source-evaluation meaning.
 See the [knot workflow](../../../docs/api/FITTER_KNOT_MODELS_v1.md) for limits,
 explicit extrapolation, saved recipes, Script access and unavailable inference.
+
+## Shared Workspace manager
+
+**Workspace → Session Workspaces…** opens the common manager scoped to Fitter. Session → Workspaces uses the same controls with provider and name/type filters. New opens a named unsaved draft; Save persists it through the existing Document authority. Existing scientific edits retain their History/autosave behavior. Remaining unsaved field changes are reviewed before New, Open, Duplicate, Close or Delete: Save commits them, Discard abandons only the uncommitted draft, and Cancel keeps editing. Rename changes only the Workspace name.
+
+Select a saved Workspace for Notes, a managed Preview, Duplicate, Export or Delete. Import and Duplicate use independent names and remap nested owned resources. Delete confirms removal of the selected Document, notes, History and managed resources; source and published Datasets stay intact. Stale Session/generation/revision commands fail clearly. Finish or cancel active scientific work before switching or closing. See the [shared Workspace controls and API](../../../docs/api/SESSION_WORKSPACE_API_v1.md).
+
+## User Manual
+
+**Help → User Manual…** or **F1** opens this Viewer's own nonmodal rendered manual window. Find, scrolling, links and Back/Forward are independent from another Viewer's manual. Repeated F1 raises this manual; closing it preserves the scientific Session and Workspace. The main GX-TXT Help page remains available separately.

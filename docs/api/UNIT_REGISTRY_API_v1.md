@@ -273,3 +273,29 @@ Canonical symbol `1` is explicitly registered by CORE as an intrinsic
 dimensionless unit. Unit Selector, definition/list, compatible conversion and
 Python/Octave bindings share that same registration. It is distinct from an
 undeclared empty unit and does not permit conversion to a dimensioned quantity.
+
+## Homogeneous Euclidean coordinate frames
+
+`::GX::unitRegistryHomogeneousCoordinatePlan source target` validates a common
+proportional coordinate frame. It reuses the registered dimension, intrinsic
+scale and algebraic affine authorities. Known compatible non-length units such
+as V/V, kg/kg and (m/s)/(m/s) are admitted. Explicit mV→V has scale0.001;
+cm→mm has scale10. Incompatible dimensions, unknown/semantic/opaque bases,
+nonlinear relations, nonzero affine origins and nonpositive scales are refused.
+Identity conversion alone does not prove a valid Euclidean metric.
+
+The `gxtxt.homogeneous_coordinate_plan.v1` record contains `source_unit`,
+`target_unit`, `dimension_key`, finite positive `scale`, zero `offset` and a
+`physical_length` boolean. Python and Octave discover the same
+`homogeneous_coordinate_plan` operation on `UNIT_REGISTRY_API_v1` with two unit
+arguments. This is admission/planning only; canonical values are not modified.
+Existing bounded `convert_values` or explicit Dataset Transform operations apply
+conversions. The existing physical `unitRegistryConvertCoordinates` contract
+remains length-only for consumers that require real spatial dimensions.
+
+Curve Workbench uses the plan for primitive/common working units and whole-frame
+conversion. Mixed V/mA or kg/(m/s) scientific axes remain legitimate independent
+coordinates but cannot become a Euclidean CAD metric. Formal measurements retain
+their coordinate units: distance in V, area in V², and compound area in `(m/s)^2`.
+These labels do not claim that a physical exporter accepts a non-length plane or
+that every formal derived-unit expression has a registered conversion.

@@ -250,7 +250,8 @@ proc ::GX::configurationRegisterBuiltins {} {
         computation.max_workers Computation {Maximum workers} integer $threads user \
         libraries.scientific_root Libraries {GX-TXT Library Root} path [file join [expr {[info exists ::env(XDG_DATA_HOME)] ? $::env(XDG_DATA_HOME) : [file join $home .local share]}] gxtxt_pipeline scientific_libraries] user \
         scripts.user_root Scripts {User script library} path [file join $home gxtxt scripts] user \
-        features.script_workspace Modules {Show Script Workspace} boolean 0 user \
+        features.script_workspace Scripts {Show Script Workspace in Analysis} boolean 0 user \
+        plugins.package_chooser_directory Modules {Default plugin package directory} path {} user \
         viewers.text Viewers {Text / CSV viewer} command auto user \
         viewers.image Viewers {Image viewer} command auto user \
         viewers.pdf Viewers {PDF viewer} command auto user \

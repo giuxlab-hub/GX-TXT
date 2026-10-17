@@ -29,6 +29,18 @@ _OPERATIONS["statistical_contract"] = {
     "result_contract": "Numeric operation and CORE model identity; no calculation or interpretation copy",
     "unit_behavior": "Actual units and availability are supplied by the public CORE API"}
 
+_OPERATIONS['operation_schema'] = {
+    'operation_kind':'metadata', 'name':'operation_schema',
+    'summary':'Read the provider validator typed operation schema',
+    'arguments':[{'name':'signal_operation','kind':'string','required':True}],
+    'result_contract':'typed fields, defaults, units and conditional requirements'}
+_OPERATIONS['validate_operation'] = {
+    'operation_kind':'validation', 'name':'validate_operation',
+    'summary':'Validate typed admission without numerical calculation',
+    'arguments':[{'name':name,'kind':'typed operand' if name != 'operation' else 'string','required':True}
+                 for name in ('operation','a','b','c','options')],
+    'result_contract':'validation facts; final data-dependent checks remain in the numerical owner'}
+
 REGISTRATION = {"api_id": "SIGNAL_API_v1", "api_version": 1, "provider_kind": "module", "provider_id": "math.signal", "documentation_ref": "plugins/modules/math.signal/SIGNAL_API_v1.md", "operations": _OPERATIONS}
 
 def _adapt(host, raw, types):
@@ -62,6 +74,32 @@ def _adapt(host, raw, types):
 def invoke(host, operation, args):
     if operation not in _OPERATIONS:
         raise BridgeError("GXTXT:ScriptBridge:UnknownOperation", operation)
+    if operation == 'operation_schema':
+        if len(args)!=1 or not isinstance(args[0],str):
+            raise BridgeError('GXTXT:ScriptBridge:InvalidArguments','operation_schema requires an operation ID')
+        host.call('::GX::modulePublicApiActivate','math.signal','SIGNAL_API_v1')
+        raw=host.as_dict(host.call('::GX::SignalAPIv1::operationSchema',args[0]))
+        fields=[]
+        for name,value in host.as_dict(raw['fields']).items():
+            field=host.as_dict(value)
+            field={str(k):str(v) for k,v in field.items() if k!='ui_field'}
+            field['required']=field['required']=='1'
+            if 'choices' in field:field['choices']=host.as_list(field['choices'])
+            fields.append(field)
+        constraints={}
+        for key,value in host.as_dict(raw['constraints']).items():
+            if str(key) in ('cutoff_length_by_band','cutoff_unit_by_domain','discrete_cutoff_range'):
+                constraints[str(key)]={str(k):str(v) for k,v in host.as_dict(value).items()}
+            else:constraints[str(key)]=host.as_list(value)
+        return {'api_id':'SIGNAL_API_v1','schema_version':int(raw['schema_version']),
+                'operation':str(raw['operation']),'fields':fields,
+                'validation_owner':str(raw['validation_owner']),
+                'constraints':constraints}
+    if operation == 'validate_operation':
+        if len(args)!=5 or not isinstance(args[0],str):
+            raise BridgeError('GXTXT:ScriptBridge:InvalidArguments','validate_operation requires operation,a,b,c,options')
+        from gxtxt_scientific_binary_v1 import call,native
+        return call(host,'gxtxt_signal_v1',['contract',args[0]]+[native(v) for v in args[1:]])
     if operation == "statistical_contract":
         if len(args) != 1 or not isinstance(args[0], str):
             raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "statistical_contract requires one Signal operation string")

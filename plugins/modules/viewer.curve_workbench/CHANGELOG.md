@@ -1,3 +1,10 @@
+## 2.20.0
+
+Admit registered proportional homogeneous coordinate frames of any physical
+dimension through the shared Unit Registry. Preserve conservative mixed/affine
+rejection and physical Native3D length contracts. Use explicit reviewed whole-
+Workspace conversions, formal area units and the same retained geometry engine.
+
 # viewer.curve_workbench
 
 ## 2.19.0

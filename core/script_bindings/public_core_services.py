@@ -101,6 +101,7 @@ SERVICES = {
         "read": ("Read public documentation", [_arg("document_id", "string")], "UTF-8 text", "::GX::documentationBrowserRead", "string"),
     }),
     "MODULE_API_v1": (1, "module", "docs/api/MODULE_API_v1.md", {
+        "analysis_capabilities": ("Discover targeted Standard Analysis admission without submitting to a detached queue", [_arg("module_id", "string")], "capability struct", "::GX::moduleAnalysisCapabilities", "dict"),
         "operational_class": ("Read operational module class independently of package protection", [_arg("module_id", "string")], "operational class", "::GX::moduleOperationalClass", "string"),
         "operational_info": ("Inspect availability, analysis eligibility and package protection", [_arg("module_id", "string")], "typed module classification", "::GX::moduleOperationalInfo", "module_info"),
         "public_api_ids": ("Discover module-declared public API IDs", [_arg("module_id", "string")], "cell of API IDs", "::GX::modulePublicApiIds", "list"),

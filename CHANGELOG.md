@@ -7,6 +7,16 @@ For current interface contracts consult the API references under [docs/api](docs
 
 ## 0.9.8.10 - development revisions
 
+### 0.9.8.10-dev-099
+
+- Make Project membership changes explicit: Project selection does not implicitly relocate the active Session, and a dedicated Move action targets the open Session.
+- Improve Plugin Manager filtering, installation/activation receipts and persistent package-directory configuration without unloading active jobs, workers or native resources.
+- Reuse the existing Analysis queue for explicitly requested single Standard Analysis modules from Viewers; registered Signal actions retain the established durable Script Job supervision. Shared Signal operation schemas drive typed guided controls and conditional validation.
+- Consolidate Session Workspace and Viewer Workspace actions and protected dirty review into the public Workspace authority, preserving records and operator Save/Discard/Cancel semantics.
+- Extend Curve Workbench to a common declared proportional physical dimension on both axes while retaining distinct Native3D physical-length requirements and dimensional error guards.
+- Add independent searchable Viewer user manuals using the existing documentation renderer and safe navigation, without replacing the global Help page.
+- Preserve the existing Session opening authority; no unsupported claim of an unrelated Session-open performance redesign.
+
 ### 0.9.8.10-dev-098
 
 - Extend Dataset Preview with generic typed Variable Schema v3 filters and independent scientific curve grouping, exact signed/unsigned integer comparisons, restored Session configuration and producer-aware editable User metadata.

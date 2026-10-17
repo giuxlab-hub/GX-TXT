@@ -1,6 +1,6 @@
 # SIGNAL_API_v1
 
-Provider: `math.signal` 1.3.0. API ID/version: `SIGNAL_API_v1`/1. This service supplies reusable signal and LTI mathematics for imported or measured data. It produces values and diagnostics; Dataset publication belongs to the existing GX-TXT Publication API. GNU Octave 9.4 and installed signal/control packages are the current backend. Operations are serial and create no worker pool.
+Provider: `math.signal`. API identity: `SIGNAL_API_v1`/1. This service supplies reusable signal and LTI mathematics for imported or measured data. It produces values and diagnostics; Dataset publication belongs to the existing GX-TXT Publication API. GNU Octave and the installed signal/control packages provide the backend. Operations are serial and create no worker pool.
 
 ## Public bindings and discovery
 
@@ -85,22 +85,21 @@ call's inputs and unit/result expectations without parsing implementation
 code. The existing `call(family, action, a, b, c, options)` contract is
 unchanged.
 
-## Local bulk scientific transport
+## Scoped binary transport
 
 The public v1 API and complete default results are retained. Large arrays use
 scoped binary buffers and a per-job Octave context through the existing provider
 bindings. The public Script Bridge and Dataset API contracts specify shape, dtype,
 resource limits, optional Signal uniform grids/result projection and output bindings.
 
-## dev097 descriptive signal summary
+## Descriptive signal summary
 
 `quality.basic` delegates to public `NUMERIC_API_v1.signal_summary`. Existing
 `rms`, `peak`, `peak_to_peak`, `crest_factor`, `dc_real` and `dc_imaginary` fields
 retain their identities. `n`, `input_kind` and `method` identify the supplied
 population and calculation. RMS and peak use complex magnitudes; peak-to-peak
 is the range of the real component. DC is split into real and imaginary means.
-An all-zero input now returns its valid zero RMS and DC, with NaN crest factor,
-instead of rejecting the entire result. No sampling standard error is inferred.
+An all-zero input returns its valid zero RMS and DC, with NaN crest factor. No sampling standard error is inferred.
 
 Capture the returned facts with the public CORE statistical API:
 `from_numeric('math.numeric.signal_summary','signal_summary',raw,{y_unit:unit})`.
@@ -109,9 +108,8 @@ availability, reports and publication metadata; `numeric_fields` exposes each
 legacy field with its canonical quantity. Other Signal statistical families use their own registered contracts described
 below.
 
-`quality.snr` now delegates to Numeric `signal_snr`; `quality.spectrum` and
-`quality.harmonics` delegate to `signal_spectrum_quality`. Historical result keys
-and Signal error identifiers remain. Harmonics now also returns the complete
+`quality.snr` delegates to Numeric `signal_snr`; `quality.spectrum` and
+`quality.harmonics` delegate to `signal_spectrum_quality`. Result keys and Signal error identifiers remain stable. Harmonics returns the complete
 quality receipt needed for shared interpretation. Existing raw-bin power fields
 keep their numerical convention; use CORE's definitions instead of labeling them
 physical mean-square power. The two SNR methods have separate registered models.
@@ -122,8 +120,7 @@ and squared response units. ENOB is a conditional ideal-quantizer convention.
 Numeric `event_period` and `pulse_timing`. Existing crossing extraction, result
 keys and complete-width selection remain. Results add actual event/interval
 counts and the estimator method. Repeated detected times are retained, including
-zero intervals. A single reference interval now has NaN sample jitter instead of
-the former misleading zero; the mean period, width and duty remain available.
+zero intervals. A single reference interval has undefined (NaN) sample jitter; the mean period, width and duty remain available.
 Capture through CORE `from_numeric` using the matching Numeric model/operation
 and actual `x_unit=s`. Frequency is reciprocal mean period, duty is ratio of
 means, and neither quantity establishes a sampling confidence interval.
@@ -140,19 +137,19 @@ second sequence remains honored for all three actions; an empty second sequence
 selects autocorrelation. The result adds bounded count/peak/method facts for
 CORE capture with model/operation `math.numeric.signal_correlation` /
 `signal_correlation`, and actual first/second signal units `x_unit`/`y_unit`.
-`delay_seconds` remains omitted without `sample_rate`. Rates must now be finite
+`delay_seconds` remains omitted without `sample_rate`. Rates must be finite
 as well as positive. Coefficient normalization is stable for extreme finite
 scales; it remains uncentered. CORE does not present the legacy first-lag value
 of an all-zero correlation as a resolved delay. Spectral estimators use the per-bin contracts below.
 
-`spectral.window_metrics` now delegates to Numeric `window_metrics`, retaining
+`spectral.window_metrics` delegates to Numeric `window_metrics`, retaining
 its three existing result keys and adding coefficient count, sample rate and
 method facts. CORE capture uses `x_unit=1` for dimensionless window weights.
 Coherent gain retains its sign; power gain uses denominator N, and ENBW is in
 hertz. Scale-stable ENBW remains available when squared gain is outside binary64.
 The other spectral actions use the per-bin contracts below.
 
-## dev097 spectral estimates and CORE discovery
+## Spectral estimates and CORE discovery
 
 All seven spectral estimators delegate to public Numeric `signal_*` operations
 and retain their existing vector fields. Native Welch semantics are explicit,
@@ -160,7 +157,7 @@ with caller compatibility state restored. Paired spectra share one computation
 and grid, including mixed real/complex pairs. Periodogram removes no mean; Welch
 removes the global mean over the used segment span. Existing Signal defaults,
 conjugation `Y*conj(X)` and density/transfer identities are preserved. Zero-energy
-windows now reject explicitly; zero ratio denominators remain undefined.
+windows reject explicitly; zero ratio denominators remain undefined.
 
 Script Bridge operation `statistical_contract('spectral.frf_h1')` returns the
 actual `numerical_operation`, `model_id` and `semantics_api`; the same discovery
@@ -180,3 +177,57 @@ units and availability. First/second signal units are `x_unit`/`y_unit`; the
 frequency coordinate always has Hz units. Full spectral arrays remain on the
 scientific binary channel. See the Numeric and CORE API pages for estimator,
 normalization, segment and publication contracts.
+
+## Typed per-operation schema and guided fields
+
+`::GX::SignalAPIv1::operationSchema operation_id` returns a versioned provider
+contract with actual operands, required/unused roles, scalar/array/model types,
+option choices, defaults or explicit default expressions, limits, scientific
+units, backend error identities and conditional constraints. `operationMetadata`
+includes this schema for numerical operations. Discovery uses the same
+`api/operation_fields_v1.tsv` consumed by the provider's basic validator. It does
+not infer requirements from an external Viewer operation table.
+
+For filter design, the contract declares one cutoff for low/high pass and two
+increasing cutoffs for band-pass/stop. Discrete cutoffs are fractions of Nyquist
+strictly between zero and one; analog cutoffs are positive rad/s. Ripple is
+required only by the applicable prototypes. FIR window designs are discrete,
+and high-pass/stop orders are even. Other fields identify source-dependent
+window/state lengths and actual sample-rate/time units. Unused protocol operands
+remain explicit empty roles and are omitted from generated forms.
+
+`validateOperation operation_id a b c ?options?` performs side-effect-free typed
+admission and the shared design conditions without calculating a signal. The
+operation's numerical owner still performs final model, conditioning, grid and
+data-dependent scientific checks. A valid preflight does not claim that every
+possible scientific failure has been excluded.
+
+`operationFormCreate parent operation_id` creates an embeddable English ttk form
+using `UI_FIELD_API_v1`. The caller packs/grids the returned frame. Band/domain
+changes update conditional guidance; **Validate inputs** invokes the provider
+validator. Numeric arrays use Tcl lists; a model uses the public typed struct
+node. `operationFormRequest parent` returns the four typed operands/options for
+the unchanged public call. Form values are transient; the owning Viewer retains
+its own approved Session/Workspace persistence authority.
+
+Python/Octave Script Bridge exposes `operation_schema(operation_id)` and
+`validate_operation(operation_id,a,b,c,options)`. Scientific operations continue
+to use their existing `family.action` IDs and typed binary transport.
+
+## Managed asynchronous individual operations
+
+A registered Python or Octave script may call one public Signal operation through
+the existing Script Bridge. Submit that script with `SCRIPT_JOB_API_v1`; its
+existing durable supervisor owns the Job ID, status, resource limits, process
+descendants, cancellation, logs and publication recovery. No separate Signal
+scheduler or submit/status database is required.
+
+In the application, the Script Jobs window remains responsive during a long
+operation. Select the exact running execution and choose **Jobs → Cancel running
+jobs**. A script error or invalid Signal request produces a failed Job, never a
+false completed numerical result. Script execution captures the originating
+Session; changing the application Session does not redirect publication. Use
+public Canonical Dataset/managed binary inputs and the Dataset Publication API
+for derived outputs. LOD display samples are not a substitute for calculation
+inputs. A cancelled Job cannot promise a numerical result; inspect its actual
+terminal receipt and publication recovery status.

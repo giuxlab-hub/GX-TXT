@@ -1,6 +1,6 @@
 # Curve Viewer
 
-The dev096 candidate groups actions in Sources, Curves, View, Export and Edit,
+The Viewer groups actions in Sources, Curves, View, Export and Edit,
 with the existing CORE Workspace menu last. All commands have stable configurable
 CORE shortcut slots. Undo/Redo default to Ctrl+Z/Ctrl+Y; text editing retains its
 normal keys. Central Modules configuration and local Configuration use the same
@@ -45,7 +45,7 @@ native direction marker. **Grid / view…** opens the common Native2D grid,
 background, aspect and experimental polar settings. These affect presentation,
 never source coordinates. Polar pointer readout uses the shared CORE frame.
 
-**Save view** and closing retain source requests/fingerprints, visibility/style,
+**Save view** retains source requests/fingerprints, visibility/style,
 direction markers, view and presentation in an Interactive Document. Reopening
 reads sources again and rejects changed scientific bindings. Display-name and
 axis-label catalog updates refresh without reloading scientific data.
@@ -96,3 +96,13 @@ another Workspace using the same Dataset. Legacy views remain available and can
 be promoted with the same ID. All scientific requests/fingerprints, styles,
 visibility, grid/view and family bindings persist. Notes/previews/portable backup
 use the common CORE manager. Deleting a view preserves its source Datasets.
+
+## Shared Workspace manager
+
+Use **Workspace → Session Workspaces…** for the common provider-scoped manager. The same controls appear in Session → Workspaces. Filter by name, type or actual provider; select a Workspace for preview, notes and available actions. New creates a named unsaved draft; Save commits it through the existing Document authority. Scientific edits retain the existing History/autosave behavior. New/Open/Duplicate/Close/Delete review remaining unsaved changes with Save, Discard or Cancel. Rename changes only the name and never silently saves an editor draft. Default unavailable actions are disabled.
+
+Duplicate and Import create independent names and managed-resource owners. Export includes notes and nested resources. Delete confirms removal of the Workspace, notes, History and owned resources while preserving original and published Datasets. A stale Session, revision or deleted owner cannot be overwritten. Finish or cancel active source work before switching Workspaces. See the [shared Workspace controls and API](../../../docs/api/SESSION_WORKSPACE_API_v1.md).
+
+## User Manual
+
+**Help → User Manual…** or **F1** opens this Viewer's own nonmodal rendered manual window. Find, scrolling, links and Back/Forward operate independently from other Viewer manuals. Repeated F1 raises this manual; closing it leaves the scientific Workspace unchanged. The main GX-TXT Help page remains available separately.

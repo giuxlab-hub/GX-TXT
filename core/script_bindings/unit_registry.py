@@ -22,6 +22,7 @@ REGISTRATION = {
         "conversion_plan": {"name": "conversion_plan", "summary": "Read the effective explicit unit conversion definition", "argument_convention": "source unit, target unit", "result_convention": "conversion descriptor"},
         "affine_plan": {"name": "affine_plan", "summary": "Classify the declared forward or inverse conversion algebraically", "argument_convention": "source, target, optional source_override, optional direction", "result_convention": "conversion descriptor with affine flag and finite scale/offset when established"},
         "differential_ratio_plan": {"name":"differential_ratio_plan", "summary":"CORE unit plan for differential numerator/denominator, including affine offset cancellation", "argument_convention":"numerator unit, denominator unit, optional output unit", "result_convention":"versioned value/unavailable plan; finite scale only when established"},
+        "homogeneous_coordinate_plan": {"name":"homogeneous_coordinate_plan", "summary":"Validate a common proportional Euclidean coordinate frame of any known physical dimension", "argument_convention":"source unit, target unit", "result_convention":"versioned homogeneous plan with exact scale; rejects unknown, opaque and affine origins"},
         "formula_program": {"name": "formula_program", "summary": "Read the Unit Registry parsed formula program", "argument_convention": "formula", "result_convention": "versioned arithmetic tree"},
     },
 }
@@ -33,6 +34,7 @@ _ARGUMENTS = {
     "conversion_plan": [("source", "unit symbol"), ("target", "unit symbol"), ("source_override", "optional variable conversion struct")],
     "affine_plan": [("source", "unit symbol"), ("target", "unit symbol"), ("source_override", "optional variable conversion struct"), ("direction", "optional forward/inverse")],
     "differential_ratio_plan": [("numerator", "unit symbol"), ("denominator", "unit symbol"), ("target", "optional output unit")],
+    "homogeneous_coordinate_plan": [("source", "unit symbol"), ("target", "unit symbol")],
     "formula_program": [("formula", "registered formula grammar string")],
 }
 for _name, _fields in _ARGUMENTS.items():
@@ -75,6 +77,14 @@ def _convert(host, values, source, target):
 
 
 def invoke(host, operation, args):
+    if operation == "homogeneous_coordinate_plan" and len(args) == 2:
+        plan = host.as_dict(host.call("::GX::unitRegistryHomogeneousCoordinatePlan", *args))
+        for name in ("schema", "source_unit", "target_unit", "dimension_key"):
+            plan[name] = str(host.tcl.call("format", "%s%s", plan[name], ""))
+        plan["scale"] = float(plan["scale"])
+        plan["offset"] = float(plan["offset"])
+        plan["physical_length"] = bool(int(plan["physical_length"]))
+        return plan
     if operation == "formula_program" and len(args) == 1:
         return decode_program(host, host.call("::GX::unitFormulaProgram", args[0]))
     if operation == "list" and not args:

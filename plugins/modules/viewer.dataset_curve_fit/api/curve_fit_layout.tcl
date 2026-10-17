@@ -118,12 +118,12 @@ proc ::GX::DatasetCurveFit::_layout {w} {
     pack $w.menus.history -side left -padx 3
     ttk::menubutton $w.menus.workspace -text Workspace -menu $w.menus.workspace.menu
     menu $w.menus.workspace.menu -tearoff 0
-    ::GX::sessionWorkspaceViewerMenu $w.menus.workspace.menu dataset_curve_fit [dict create current [list ::GX::DatasetCurveFit::_currentWorkspace $w] save [list ::GX::DatasetCurveFit::_saveState $w] close [list ::GX::DatasetCurveFit::_closeWindow $w] open ::GX::DatasetCurveFit::open] $w
+    ::GX::sessionWorkspaceViewerMenu $w.menus.workspace.menu dataset_curve_fit [::GX::DatasetCurveFit::_workspaceCallbacks $w] $w
     $w.menus.workspace.menu add separator
     set index 0
     foreach id {workspace_new workspace_open save workspace_duplicate workspace_rename workspace_manager workspace_close workspace_delete} {::GX::viewerCommandMenuTrack $w $w.menus.workspace.menu $index $id;incr index}
     ::GX::viewerCommandMenuAdd $w $w.menus.workspace.menu workspace_clear_history
-    $w.menus.workspace.menu configure -postcommand [list ::GX::viewerCommandMenusRefresh $w]
+    $w.menus.workspace.menu configure -postcommand "[list ::GX::viewerCommandMenusRefresh $w];[list ::GX::sessionWorkspaceViewerMenuRefresh $w.menus.workspace.menu]"
     pack $w.menus.workspace -side left -padx 3
     ::GX::uiMenuRowAttach $w.menus [pack slaves $w.menus]
     pack $w.footer -side bottom -fill x

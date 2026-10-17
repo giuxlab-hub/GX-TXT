@@ -18,11 +18,13 @@ proc ::GX::modulePublicApiIds {moduleId} {
 }
 proc ::GX::modulePublicApiActivate {moduleId apiId} {
     variable modulePublicApiActivated
+    pluginRuntimeTryPending $moduleId
     set key "$moduleId,$apiId"
     if {[info exists modulePublicApiActivated($key)]} {
         if {$modulePublicApiActivated($key) eq "loading"} { error "Recursive public API activation for $moduleId/$apiId." }
         return $modulePublicApiActivated($key)
     }
+    pluginRuntimeGuardNewLoad $moduleId
     set descriptor [moduleField $moduleId descriptor ""]
     if {$descriptor eq "" || ![file isfile $descriptor]} { error "Module '$moduleId' has no readable descriptor." }
     set d [parseIni $descriptor]
@@ -38,6 +40,7 @@ proc ::GX::modulePublicApiActivate {moduleId apiId} {
         return -options $opts "Public API '$moduleId/$apiId' activation failed: $err"
     }
     set modulePublicApiActivated($key) $entry
+    pluginRuntimeNoteLoaded $moduleId
     return $entry
 }
 # plot.dataset multi-panel: activate provider-owned Graph configuration controls through the public extension hook.

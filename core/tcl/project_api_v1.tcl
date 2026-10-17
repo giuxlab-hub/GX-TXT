@@ -400,12 +400,8 @@ proc ::GX::projectMetadataDialogCommit_before_projects_gui_v1 {w mode id} {
             tk_messageBox -parent $w -icon error -title "Project" -message $err
             return
         }
-        if {$::GX::currentSession ne "" && [file isdirectory $::GX::currentSession]} {
-            if {[catch {projectAssociateCurrentExperiment $id} err]} {
-                tk_messageBox -parent $w -icon error -title "Project" -message $err
-                return
-            }
-        }
+        # Creating an organization record never changes an existing Experiment.
+        # Membership is changed only by an explicit move/association command.
     } else {
         if {[catch {projectUpdate $id [list name $name description $description tags $ui(projectDialogTags) author $ui(projectDialogAuthor)]} err]} {
             tk_messageBox -parent $w -icon error -title "Project" -message $err

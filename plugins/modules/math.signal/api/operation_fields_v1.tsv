@@ -1,0 +1,376 @@
+# Provider-owned typed fields consumed by both discovery and the scientific validator.
+# operation|field|label|type|required|default|unit|min|max|choices|shape|conditions|error
+convolution.linear|a|Signal|array|1||signal||||vector||InvalidOperand
+convolution.linear|b|Kernel|array|1||kernel||||vector||InvalidOperand
+convolution.linear|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+convolution.circular|a|Signal|array|1||signal||||vector||InvalidOperand
+convolution.circular|b|Kernel|array|1||kernel||||vector||InvalidOperand
+convolution.circular|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+convolution.circular|options.length|Circular length|integer|0|max(numel(a),numel(b))|1|1|||||InvalidLength
+convolution.deconvolve|a|Signal|array|1||signal||||vector||InvalidOperand
+convolution.deconvolve|b|Kernel|array|1||kernel||||vector||InvalidOperand
+convolution.deconvolve|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+convolution.deconvolve|options.relative_floor|Relative spectral floor|number|0|1e-10|1|0|||||InvalidTolerance
+convolution.deconvolve|options.regularization|Regularization|number|0|0|1|0|||||InvalidTolerance
+correlation.auto|a|First signal|array|1||signal||||vector||InvalidOperand
+correlation.auto|b|Second signal (empty selects auto-correlation)|array|0||signal||||vector||InvalidOperand
+correlation.auto|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+correlation.auto|options.normalization|Normalization|choice|0|none|1|||none;biased;unbiased;coefficient|||InvalidPolicy
+correlation.auto|options.sample_rate|Sample rate|number|0||Hz|>0|||||InvalidSampleRate
+correlation.cross|a|First signal|array|1||signal||||vector||InvalidOperand
+correlation.cross|b|Second signal (empty selects auto-correlation)|array|0||signal||||vector||InvalidOperand
+correlation.cross|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+correlation.cross|options.normalization|Normalization|choice|0|none|1|||none;biased;unbiased;coefficient|||InvalidPolicy
+correlation.cross|options.sample_rate|Sample rate|number|0||Hz|>0|||||InvalidSampleRate
+correlation.delay|a|First signal|array|1||signal||||vector||InvalidOperand
+correlation.delay|b|Second signal (empty selects auto-correlation)|array|0||signal||||vector||InvalidOperand
+correlation.delay|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+correlation.delay|options.normalization|Normalization|choice|0|none|1|||none;biased;unbiased;coefficient|||InvalidPolicy
+correlation.delay|options.sample_rate|Sample rate|number|0||Hz|>0|||||InvalidSampleRate
+filter.inspect|a|Filter model|struct|1||1||||numerator and optional denominator, or SOS matrix with six columns||InvalidModel
+filter.inspect|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+filter.inspect|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+filter.causal|a|Filter model|struct|1||1||||numerator and optional denominator, or SOS matrix with six columns||InvalidModel
+filter.causal|b|Samples|array|1||signal||||vector||InvalidOperand
+filter.causal|c|Initial state|array|0||signal||||causal model order; SOS rows by 2; forbidden for zero_phase||InvalidOperand
+filter.zero_phase|a|Filter model|struct|1||1||||numerator and optional denominator, or SOS matrix with six columns||InvalidModel
+filter.zero_phase|b|Samples|array|1||signal||||vector||InvalidOperand
+filter.zero_phase|c|Initial state|array|0||signal||||causal model order; SOS rows by 2; forbidden for zero_phase||InvalidOperand
+filter.sos|a|Filter model|struct|1||1||||numerator and optional denominator, or SOS matrix with six columns||InvalidModel
+filter.sos|b|Samples|array|1||signal||||vector||InvalidOperand
+filter.sos|c|Initial state|array|0||signal||||causal model order; SOS rows by 2; forbidden for zero_phase||InvalidOperand
+design.butterworth|a|Filter order|integer|1||1|1|||||InvalidOrder
+design.butterworth|b|Cutoff|array|1||Nyquist fraction for discrete; rad/s for analog|>0|||one edge for low/high; two increasing edges for bandpass/stop; discrete edges <1||InvalidCutoff
+design.butterworth|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+design.butterworth|options.band|Band|choice|0|low|1|||low;high;bandpass;stop|||InvalidBand
+design.butterworth|options.domain|Domain|choice|0|discrete|1|||discrete;analog|||InvalidModel
+design.chebyshev1|a|Filter order|integer|1||1|1|||||InvalidOrder
+design.chebyshev1|b|Cutoff|array|1||Nyquist fraction for discrete; rad/s for analog|>0|||one edge for low/high; two increasing edges for bandpass/stop; discrete edges <1||InvalidCutoff
+design.chebyshev1|c|Passband ripple|number|1||dB||||||InvalidOperand
+design.chebyshev1|options.band|Band|choice|0|low|1|||low;high;bandpass;stop|||InvalidBand
+design.chebyshev1|options.domain|Domain|choice|0|discrete|1|||discrete;analog|||InvalidModel
+design.chebyshev2|a|Filter order|integer|1||1|1|||||InvalidOrder
+design.chebyshev2|b|Cutoff|array|1||Nyquist fraction for discrete; rad/s for analog|>0|||one edge for low/high; two increasing edges for bandpass/stop; discrete edges <1||InvalidCutoff
+design.chebyshev2|c|Stopband attenuation|number|1||dB||||||InvalidOperand
+design.chebyshev2|options.band|Band|choice|0|low|1|||low;high;bandpass;stop|||InvalidBand
+design.chebyshev2|options.domain|Domain|choice|0|discrete|1|||discrete;analog|||InvalidModel
+design.elliptic|a|Filter order|integer|1||1|1|||||InvalidOrder
+design.elliptic|b|Cutoff|array|1||Nyquist fraction for discrete; rad/s for analog|>0|||one edge for low/high; two increasing edges for bandpass/stop; discrete edges <1||InvalidCutoff
+design.elliptic|c|Passband ripple|number|1||dB||||||InvalidOperand
+design.elliptic|options.band|Band|choice|0|low|1|||low;high;bandpass;stop|||InvalidBand
+design.elliptic|options.domain|Domain|choice|0|discrete|1|||discrete;analog|||InvalidModel
+design.elliptic|options.stopband_db|Stopband attenuation|number|0|40|dB||||||InvalidArguments
+design.fir_window|a|Filter order|integer|1||1|1|||||InvalidOrder
+design.fir_window|b|Cutoff|array|1||Nyquist fraction for discrete; rad/s for analog|>0|||one edge for low/high; two increasing edges for bandpass/stop; discrete edges <1||InvalidCutoff
+design.fir_window|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+design.fir_window|options.band|Band|choice|0|low|1|||low;high;bandpass;stop|||InvalidBand
+design.fir_window|options.domain|Domain|choice|0|discrete|1|||discrete;analog|||InvalidModel
+design.fir_window|options.window|Window|choice|0|hamming|1|||hamming;hann;blackman|discrete domain only; high/stop require even order||InvalidWindow
+multirate.decimate|a|Signal|array|1||signal||||vector||InvalidOperand
+multirate.decimate|b|Resampling factor|integer|1||1|1|||||InvalidFactor
+multirate.decimate|c|Unused protocol operand|empty|0||1||||unused||InvalidFactor
+multirate.decimate|options.sample_rate|Input sample rate|number|0||Hz|>0|||||InvalidSampleRate
+multirate.decimate|options.start_time|Start time|number|0|0|s||||||InvalidArguments
+multirate.decimate|options.input_time|Input time|array|0||s||||uniform increasing vector matching a||InvalidGrid
+multirate.interpolate|a|Signal|array|1||signal||||vector||InvalidOperand
+multirate.interpolate|b|Resampling factor|integer|1||1|1|||||InvalidFactor
+multirate.interpolate|c|Unused protocol operand|empty|0||1||||unused||InvalidFactor
+multirate.interpolate|options.sample_rate|Input sample rate|number|0||Hz|>0|||||InvalidSampleRate
+multirate.interpolate|options.start_time|Start time|number|0|0|s||||||InvalidArguments
+multirate.interpolate|options.input_time|Input time|array|0||s||||uniform increasing vector matching a||InvalidGrid
+multirate.rational|a|Signal|array|1||signal||||vector||InvalidOperand
+multirate.rational|b|Resampling factor|integer|1||1|1|||||InvalidFactor
+multirate.rational|c|Denominator factor|integer|1||1|1|||||InvalidFactor
+multirate.rational|options.sample_rate|Input sample rate|number|0||Hz|>0|||||InvalidSampleRate
+multirate.rational|options.start_time|Start time|number|0|0|s||||||InvalidArguments
+multirate.rational|options.input_time|Input time|array|0||s||||uniform increasing vector matching a||InvalidGrid
+lti.inspect|a|LTI model|struct|1||1||||kind tf/zpk/ss; domain continuous/discrete; discrete requires positive sample_period||InvalidModel
+lti.inspect|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.inspect|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.tf|a|LTI model|struct|1||1||||kind tf/zpk/ss; domain continuous/discrete; discrete requires positive sample_period||InvalidModel
+lti.tf|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.tf|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.zpk|a|LTI model|struct|1||1||||kind tf/zpk/ss; domain continuous/discrete; discrete requires positive sample_period||InvalidModel
+lti.zpk|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.zpk|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.ss|a|LTI model|struct|1||1||||kind tf/zpk/ss; domain continuous/discrete; discrete requires positive sample_period||InvalidModel
+lti.ss|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.ss|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.zoh|a|LTI model|struct|1||1||||kind tf/zpk/ss; domain continuous/discrete; discrete requires positive sample_period||InvalidModel
+lti.zoh|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.zoh|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.zoh|options.sample_period|Output sample period|number|1||s|>0|||||InvalidSampleRate
+lti.tustin|a|LTI model|struct|1||1||||kind tf/zpk/ss; domain continuous/discrete; discrete requires positive sample_period||InvalidModel
+lti.tustin|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.tustin|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.tustin|options.sample_period|Output sample period|number|1||s|>0|||||InvalidSampleRate
+response.evaluate|a|LTI model|struct|1||1||||TF/ZPK/SS model||InvalidModel
+response.evaluate|b|Evaluation axis|array|1||complex evaluation coordinate||||vector; time must increase; frequency must be nonnegative||InvalidGrid
+response.evaluate|c|Unused protocol operand|empty|0||1||||unused||DimensionMismatch
+response.frequency|a|LTI model|struct|1||1||||TF/ZPK/SS model||InvalidModel
+response.frequency|b|Evaluation axis|array|1||Hz||||vector; time must increase; frequency must be nonnegative||InvalidGrid
+response.frequency|c|Unused protocol operand|empty|0||1||||unused||DimensionMismatch
+response.impulse|a|LTI model|struct|1||1||||TF/ZPK/SS model||InvalidModel
+response.impulse|b|Evaluation axis|array|1||s||||vector; time must increase; frequency must be nonnegative||InvalidGrid
+response.impulse|c|Unused protocol operand|empty|0||1||||unused||DimensionMismatch
+response.step|a|LTI model|struct|1||1||||TF/ZPK/SS model||InvalidModel
+response.step|b|Evaluation axis|array|1||s||||vector; time must increase; frequency must be nonnegative||InvalidGrid
+response.step|c|Unused protocol operand|empty|0||1||||unused||DimensionMismatch
+response.input|a|LTI model|struct|1||1||||TF/ZPK/SS model||InvalidModel
+response.input|b|Evaluation axis|array|1||s||||vector; time must increase; frequency must be nonnegative||InvalidGrid
+response.input|c|Input signal|array|1||signal||||matches time axis or MIMO input dimensions||DimensionMismatch
+response.input|options.initial_state|Initial state|array|0||1||||model state vector||InvalidArguments
+spectral.periodogram|a|Signal|array|1||signal||||vector||InvalidOperand
+spectral.periodogram|b|Unused protocol operand|empty|0||1||||unused||DimensionMismatch
+spectral.periodogram|c|Unused protocol operand|empty|0||1||||unused||InvalidSampleRate
+spectral.periodogram|options.window|Window coefficients|array|0|backend default|1||||periodogram: full signal-length vector; Welch: scalar integer >3 or real vector||InvalidArguments
+spectral.periodogram|options.overlap|Overlap fraction|number|0|.5|1|0|0.95||||InvalidPolicy
+spectral.periodogram|options.nfft|FFT length|integer|0|backend default|1|1|||positive for periodogram; Welch expands to window length||InvalidLength
+spectral.welch|a|Signal|array|1||signal||||vector||InvalidOperand
+spectral.welch|b|Unused protocol operand|empty|0||1||||unused||DimensionMismatch
+spectral.welch|c|Unused protocol operand|empty|0||1||||unused||InvalidSampleRate
+spectral.welch|options.window|Window coefficients|array|0|backend default|1||||periodogram: full signal-length vector; Welch: scalar integer >3 or real vector||InvalidArguments
+spectral.welch|options.overlap|Overlap fraction|number|0|.5|1|0|0.95||||InvalidPolicy
+spectral.welch|options.nfft|FFT length|integer|0|backend default|1|0|||positive for periodogram; Welch expands to window length||InvalidLength
+spectral.cross_psd|a|Signal|array|1||signal||||vector||InvalidOperand
+spectral.cross_psd|b|Second signal|array|1||signal||||same length as a||DimensionMismatch
+spectral.cross_psd|c|Unused protocol operand|empty|0||1||||unused||InvalidSampleRate
+spectral.cross_psd|options.window|Window coefficients|array|0|backend default|1||||periodogram: full signal-length vector; Welch: scalar integer >3 or real vector||InvalidArguments
+spectral.cross_psd|options.overlap|Overlap fraction|number|0|.5|1|0|0.95||||InvalidPolicy
+spectral.cross_psd|options.nfft|FFT length|integer|0|backend default|1|0|||positive for periodogram; Welch expands to window length||InvalidLength
+spectral.coherence|a|Signal|array|1||signal||||vector||InvalidOperand
+spectral.coherence|b|Second signal|array|1||signal||||same length as a||DimensionMismatch
+spectral.coherence|c|Unused protocol operand|empty|0||1||||unused||InvalidSampleRate
+spectral.coherence|options.window|Window coefficients|array|0|backend default|1||||periodogram: full signal-length vector; Welch: scalar integer >3 or real vector||InvalidArguments
+spectral.coherence|options.overlap|Overlap fraction|number|0|.5|1|0|0.95||||InvalidPolicy
+spectral.coherence|options.nfft|FFT length|integer|0|backend default|1|0|||positive for periodogram; Welch expands to window length||InvalidLength
+spectral.frf_h1|a|Signal|array|1||signal||||vector||InvalidOperand
+spectral.frf_h1|b|Second signal|array|1||signal||||same length as a||DimensionMismatch
+spectral.frf_h1|c|Unused protocol operand|empty|0||1||||unused||InvalidSampleRate
+spectral.frf_h1|options.window|Window coefficients|array|0|backend default|1||||periodogram: full signal-length vector; Welch: scalar integer >3 or real vector||InvalidArguments
+spectral.frf_h1|options.overlap|Overlap fraction|number|0|.5|1|0|0.95||||InvalidPolicy
+spectral.frf_h1|options.nfft|FFT length|integer|0|backend default|1|0|||positive for periodogram; Welch expands to window length||InvalidLength
+spectral.frf_h2|a|Signal|array|1||signal||||vector||InvalidOperand
+spectral.frf_h2|b|Second signal|array|1||signal||||same length as a||DimensionMismatch
+spectral.frf_h2|c|Unused protocol operand|empty|0||1||||unused||InvalidSampleRate
+spectral.frf_h2|options.window|Window coefficients|array|0|backend default|1||||periodogram: full signal-length vector; Welch: scalar integer >3 or real vector||InvalidArguments
+spectral.frf_h2|options.overlap|Overlap fraction|number|0|.5|1|0|0.95||||InvalidPolicy
+spectral.frf_h2|options.nfft|FFT length|integer|0|backend default|1|0|||positive for periodogram; Welch expands to window length||InvalidLength
+stft.forward|a|Signal|array|1||signal||||vector||InvalidOperand
+stft.forward|b|Window|array|1||1||||vector||InvalidWindow
+stft.forward|c|Hop|integer|1||1|1|||not larger than window length||InvalidHop
+stft.forward|options.nfft|FFT length|integer|0|numel(b)|1|1|||at least window length||InvalidLength
+stft.forward|options.sample_rate|Sample rate|number|0||Hz|>0|||||InvalidSampleRate
+stft.forward|options.pad|Pad endpoints|boolean|0|false|1||||||InvalidArguments
+stft.inverse|a|STFT coefficients|array|1||signal||||matrix with nfft rows||InvalidOperand
+stft.inverse|b|Window|array|1||1||||vector||InvalidWindow
+stft.inverse|c|Hop|integer|1||1|1|||not larger than window length||InvalidHop
+stft.inverse|options.nfft|FFT length|integer|0|numel(b)|1|1|||at least window length||InvalidLength
+stft.inverse|options.sample_rate|Sample rate|number|0||Hz|>0|||||InvalidSampleRate
+stft.inverse|options.pad_left|Left trim|integer|0|0|1|0|||||InvalidLength
+stft.inverse|options.original_length|Retained length|integer|0|reconstructed length - pad_left|1|1|||||InvalidLength
+quality.basic|a|Signal|array|1||signal||||vector||InvalidOperand
+quality.basic|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+quality.basic|c|Unused protocol operand|empty|0||1||||unused||InvalidSampleRate
+quality.snr|a|Signal|array|1||signal||||vector||InvalidOperand
+quality.snr|b|Noise (empty selects mean-subtracted SNR)|array|0||signal||||same length as a||InvalidOperand
+quality.snr|c|Unused protocol operand|empty|0||1||||unused||InvalidSampleRate
+quality.harmonics|a|Signal|array|1||signal||||vector||InvalidOperand
+quality.harmonics|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+quality.harmonics|c|Sample rate|number|1||Hz|>0|||||InvalidSampleRate
+quality.harmonics|options.fundamental_hz|Fundamental frequency|number|0||Hz|>0|||coherent FFT bin||NoncoherentSampling
+events.crossings|a|Time|array|1||s||||real increasing vector||InvalidGrid
+events.crossings|b|Signal|array|1||signal||||matching real vector||InvalidGrid
+events.crossings|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+events.crossings|options.threshold|Threshold|number|0|0|signal||||||InvalidArguments
+events.crossings|options.direction|Crossing direction|choice|0|rising|1|||rising;falling;both|||InvalidPolicy
+events.crossings|options.hysteresis|Hysteresis|number|0|0|signal|0|||||InvalidThreshold
+events.period|a|Time|array|1||s||||real increasing vector||InvalidGrid
+events.period|b|Signal|array|1||signal||||matching real vector||InvalidGrid
+events.period|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+events.period|options.threshold|Threshold|number|0|0|signal||||||InvalidArguments
+events.period|options.direction|Crossing direction|choice|0|rising|1|||rising;falling;both|||InvalidPolicy
+events.period|options.hysteresis|Hysteresis|number|0|0|signal|0|||||InvalidThreshold
+events.delay|a|Time|array|1||s||||real increasing vector||InvalidGrid
+events.delay|b|Signal|array|1||signal||||matching real vector||InvalidGrid
+events.delay|c|Second signal|array|1||signal||||same length as time||InvalidOperand
+events.delay|options.threshold|Threshold|number|0|0|signal||||||InvalidArguments
+events.delay|options.direction|Crossing direction|choice|0|rising|1|||rising;falling;both|||InvalidPolicy
+events.delay|options.hysteresis|Hysteresis|number|0|0|signal|0|||||InvalidThreshold
+analytic.signal|a|Real signal|array|1||signal||||real vector||DimensionMismatch
+analytic.signal|b|Unused protocol operand|empty|0||1||||unused||InvalidSampleRate
+analytic.signal|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+analytic.envelope|a|Real signal|array|1||signal||||real vector||DimensionMismatch
+analytic.envelope|b|Unused protocol operand|empty|0||1||||unused||InvalidSampleRate
+analytic.envelope|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+analytic.phase|a|Real signal|array|1||signal||||real vector||DimensionMismatch
+analytic.phase|b|Unused protocol operand|empty|0||1||||unused||InvalidSampleRate
+analytic.phase|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+analytic.instantaneous_frequency|a|Real signal|array|1||signal||||real vector||DimensionMismatch
+analytic.instantaneous_frequency|b|Sample rate|number|1||Hz|>0|||||InvalidSampleRate
+analytic.instantaneous_frequency|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+frequency_metric.gain|a|Unused protocol operand|empty|0||1||||unused||InvalidGrid
+frequency_metric.gain|b|Complex response|array|1||response||||vector matching frequency||InvalidOperand
+frequency_metric.gain|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+frequency_metric.group_delay|a|Frequency|array|1||Hz||||increasing real vector; positive for phase_delay||InvalidGrid
+frequency_metric.group_delay|b|Complex response|array|1||response||||vector matching frequency||InvalidOperand
+frequency_metric.group_delay|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+frequency_metric.phase_delay|a|Frequency|array|1||Hz||||increasing real vector; positive for phase_delay||InvalidGrid
+frequency_metric.phase_delay|b|Complex response|array|1||response||||vector matching frequency||InvalidOperand
+frequency_metric.phase_delay|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+frequency_metric.peak|a|Frequency|array|1||Hz||||increasing real vector; positive for phase_delay||InvalidGrid
+frequency_metric.peak|b|Complex response|array|1||response||||vector matching frequency||InvalidOperand
+frequency_metric.peak|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+frequency_metric.resonance|a|Frequency|array|1||Hz||||increasing real vector; positive for phase_delay||InvalidGrid
+frequency_metric.resonance|b|Complex response|array|1||response||||vector matching frequency||InvalidOperand
+frequency_metric.resonance|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+frequency_metric.bandwidth|a|Frequency|array|1||Hz||||increasing real vector; positive for phase_delay||InvalidGrid
+frequency_metric.bandwidth|b|Complex response|array|1||response||||vector matching frequency||InvalidOperand
+frequency_metric.bandwidth|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+frequency_metric.q|a|Frequency|array|1||Hz||||increasing real vector; positive for phase_delay||InvalidGrid
+frequency_metric.q|b|Complex response|array|1||response||||vector matching frequency||InvalidOperand
+frequency_metric.q|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+frequency_metric.margins|a|Frequency|array|1||Hz||||increasing real vector; positive for phase_delay||InvalidGrid
+frequency_metric.margins|b|Complex response|array|1||response||||vector matching frequency||InvalidOperand
+frequency_metric.margins|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+time_metric.step|a|Time|array|1||s||||real increasing vector of at least two samples||InvalidGrid
+time_metric.step|b|Signal|array|1||signal||||matching real vector||InvalidGrid
+time_metric.step|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+time_metric.step|options.baseline|Baseline|number|0|b(1)|signal||||||InvalidArguments
+time_metric.step|options.final|Final value|number|0|b(end)|signal||||||InvalidArguments
+time_metric.step|options.lower_fraction|Lower crossing fraction|number|0|.1|1|0|1||||InvalidThreshold
+time_metric.step|options.upper_fraction|Upper crossing fraction|number|0|.9|1|0|1||greater than lower_fraction||InvalidThreshold
+time_metric.step|options.settling_fraction|Settling fraction|number|0|.02|1|>0|||||InvalidThreshold
+time_metric.slew|a|Time|array|1||s||||real increasing vector of at least two samples||InvalidGrid
+time_metric.slew|b|Signal|array|1||signal||||matching real vector||InvalidGrid
+time_metric.slew|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+time_metric.pulse|a|Time|array|1||s||||real increasing vector of at least two samples||InvalidGrid
+time_metric.pulse|b|Signal|array|1||signal||||matching real vector||InvalidGrid
+time_metric.pulse|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+time_metric.pulse|options.threshold|Threshold|number|0|(max(b)+min(b))/2|signal||||||InvalidArguments
+design.bessel|a|Filter order|integer|1||1|1|||||InvalidOrder
+design.bessel|b|Cutoff|array|1||Nyquist fraction for discrete; rad/s for analog|>0|||one edge for low/high; two increasing edges for bandpass/stop; discrete edges <1||InvalidCutoff
+design.bessel|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+design.bessel|options.band|Band|choice|0|low|1|||low;high;bandpass;stop|||InvalidBand
+design.bessel|options.domain|Domain|choice|0|discrete|1|||discrete;analog|||InvalidModel
+design.estimate_order|a|Passband edge|array|1||Nyquist fraction||||scalar or ordered pair||InvalidOperand
+design.estimate_order|b|Stopband edge|array|1||Nyquist fraction||||scalar or ordered pair||InvalidOperand
+design.estimate_order|c|Passband ripple|number|1||dB|>0|||||InvalidTolerance
+design.estimate_order|options.stopband_db|Stopband attenuation|number|0|40|dB|>0|||greater than c||InvalidTolerance
+design.estimate_order|options.prototype|Prototype|choice|0|butterworth|1|||butterworth;chebyshev1;chebyshev2;elliptic|||InvalidModel
+lti.foh|a|LTI model|struct|1||1||||kind tf/zpk/ss; domain continuous/discrete; discrete requires positive sample_period||InvalidModel
+lti.foh|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.foh|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.foh|options.sample_period|Output sample period|number|1||s|>0|||||InvalidSampleRate
+lti.prewarp|a|LTI model|struct|1||1||||kind tf/zpk/ss; domain continuous/discrete; discrete requires positive sample_period||InvalidModel
+lti.prewarp|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.prewarp|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.prewarp|options.sample_period|Output sample period|number|1||s|>0|||||InvalidSampleRate
+lti.prewarp|options.prewarp_hz|Prewarp frequency|number|1||Hz|>0|||||InvalidFrequency
+lti.matched|a|LTI model|struct|1||1||||kind tf/zpk/ss; domain continuous/discrete; discrete requires positive sample_period||InvalidModel
+lti.matched|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.matched|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+lti.matched|options.sample_period|Output sample period|number|1||s|>0|||||InvalidSampleRate
+cepstrum.real|a|Signal|array|1||1||||vector||InvalidOperand
+cepstrum.real|b|Unused protocol operand|empty|0||1||||unused||InvalidWindow
+cepstrum.real|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+cepstrum.real|options.magnitude_floor|Magnitude floor|number|0|eps|1|>0|||||InvalidFloor
+cepstrum.complex|a|Signal|array|1||1||||vector||InvalidOperand
+cepstrum.complex|b|Unused protocol operand|empty|0||1||||unused||InvalidWindow
+cepstrum.complex|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+cepstrum.complex|options.magnitude_floor|Magnitude floor|number|0|eps|1|>0|||||InvalidFloor
+cepstrum.inverse|a|Cepstrum|array|1||1||||vector||InvalidOperand
+cepstrum.inverse|b|Unused protocol operand|empty|0||1||||unused||InvalidWindow
+cepstrum.inverse|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+cepstrum.lifter|a|Cepstrum|array|1||1||||vector||InvalidOperand
+cepstrum.lifter|b|Quefrency bounds|array|1||samples|0|||two increasing bounds||InvalidWindow
+cepstrum.lifter|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+wavelet.dwt|a|Signal|array|1||1||||vector||InvalidOperand
+wavelet.dwt|b|Unused protocol operand|empty|0||1||||unused||InvalidScale
+wavelet.dwt|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+wavelet.dwt|options.wavelet|Wavelet|choice|0|haar|1|||haar;db1;db2;sym2|||UnknownWavelet
+wavelet.inverse_dwt|a|Coefficients|array|1||1||||vector||InvalidOperand
+wavelet.inverse_dwt|b|Detail coefficients|array|1||1||||same length as a||InvalidScale
+wavelet.inverse_dwt|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+wavelet.inverse_dwt|options.wavelet|Wavelet|choice|0|haar|1|||haar;db1;db2;sym2|||UnknownWavelet
+wavelet.cwt|a|Signal|array|1||1||||vector||InvalidOperand
+wavelet.cwt|b|Scales|array|1||1|>0|||positive scale vector||InvalidScale
+wavelet.cwt|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+wavelet.cwt|options.wavelet|Wavelet|choice|1||1|||morlet;mexican_hat|explicit continuous wavelet; the discrete default is inapplicable||UnknownWavelet
+wavelet.cwt|options.sample_rate|Sample rate|number|0|1|Hz|>0|||||InvalidSampleRate
+wavelet.scalogram|a|Coefficients|array|1||1||||matrix||InvalidOperand
+wavelet.scalogram|b|Scales|array|1||1|>0|||positive scale vector||InvalidScale
+wavelet.scalogram|c|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+wavelet.scalogram|options.sample_rate|Sample rate|number|0|1|Hz|>0|||||InvalidSampleRate
+generate.sine|a|Time|array|1||s||||real increasing vector of at least two samples||InvalidGrid
+generate.sine|b|Frequency|array|1||Hz||||vector for multi_tone; scalar otherwise||InvalidOperand
+generate.sine|c|Unused protocol operand|empty|0||1||||unused||InvalidFrequency
+generate.sine|options.amplitude|Amplitude|number|0|1|signal||||||InvalidArguments
+generate.sine|options.phase_rad|Phase|number|0|0|rad||||||InvalidArguments
+generate.multi_tone|a|Time|array|1||s||||real increasing vector of at least two samples||InvalidGrid
+generate.multi_tone|b|Frequency|array|1||Hz||||vector for multi_tone; scalar otherwise||InvalidOperand
+generate.multi_tone|c|Unused protocol operand|empty|0||1||||unused||InvalidFrequency
+generate.multi_tone|options.amplitude|Amplitude|number|0|1|signal||||||InvalidArguments
+generate.multi_tone|options.phase_rad|Phase|number|0|0|rad||||||InvalidArguments
+generate.multi_tone|options.amplitudes|Tone amplitudes|array|0|ones(numel(b),1)|signal||||same length as b||DimensionMismatch
+generate.chirp|a|Time|array|1||s||||real increasing vector of at least two samples||InvalidGrid
+generate.chirp|b|Frequency|array|1||Hz||||vector for multi_tone; scalar otherwise||InvalidOperand
+generate.chirp|c|Final frequency|number|1||Hz||||||InvalidFrequency
+generate.chirp|options.amplitude|Amplitude|number|0|1|signal||||||InvalidArguments
+generate.chirp|options.phase_rad|Phase|number|0|0|rad||||||InvalidArguments
+generate.square|a|Time|array|1||s||||real increasing vector of at least two samples||InvalidGrid
+generate.square|b|Frequency|array|1||Hz||||vector for multi_tone; scalar otherwise||InvalidOperand
+generate.square|c|Unused protocol operand|empty|0||1||||unused||InvalidFrequency
+generate.square|options.amplitude|Amplitude|number|0|1|signal||||||InvalidArguments
+generate.square|options.phase_rad|Phase|number|0|0|rad||||||InvalidArguments
+generate.square|options.duty|Duty fraction|number|0|.5|1|>0|<1||||InvalidDuty
+generate.pulse|a|Time|array|1||s||||real increasing vector of at least two samples||InvalidGrid
+generate.pulse|b|Frequency|array|1||Hz||||vector for multi_tone; scalar otherwise||InvalidOperand
+generate.pulse|c|Unused protocol operand|empty|0||1||||unused||InvalidFrequency
+generate.pulse|options.amplitude|Amplitude|number|0|1|signal||||||InvalidArguments
+generate.pulse|options.phase_rad|Phase|number|0|0|rad||||||InvalidArguments
+generate.pulse|options.duty|Duty fraction|number|0|.5|1|>0|<1||||InvalidDuty
+generate.impulse|a|Time|array|1||s||||real increasing vector of at least two samples||InvalidGrid
+generate.impulse|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+generate.impulse|c|Unused protocol operand|empty|0||1||||unused||InvalidFrequency
+generate.impulse|options.amplitude|Amplitude|number|0|1|signal||||||InvalidArguments
+generate.impulse|options.phase_rad|Phase|number|0|0|rad||||||InvalidArguments
+generate.impulse|options.index|Impulse index|integer|0|1|1|1|||not larger than numel(a)||InvalidIndex
+generate.white_noise|a|Time|array|1||s||||real increasing vector of at least two samples||InvalidGrid
+generate.white_noise|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+generate.white_noise|c|Unused protocol operand|empty|0||1||||unused||InvalidFrequency
+generate.white_noise|options.amplitude|Amplitude|number|0|1|signal||||||InvalidArguments
+generate.white_noise|options.phase_rad|Phase|number|0|0|rad||||||InvalidArguments
+generate.white_noise|options.seed|Random seed|integer|1||1|0|||||SeedRequired
+generate.colored_noise|a|Time|array|1||s||||real increasing vector of at least two samples||InvalidGrid
+generate.colored_noise|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+generate.colored_noise|c|Unused protocol operand|empty|0||1||||unused||InvalidFrequency
+generate.colored_noise|options.amplitude|Amplitude|number|0|1|signal||||||InvalidArguments
+generate.colored_noise|options.phase_rad|Phase|number|0|0|rad||||||InvalidArguments
+generate.colored_noise|options.seed|Random seed|integer|1||1|0|||||SeedRequired
+generate.colored_noise|options.spectral_exponent|Spectral exponent|number|0|1|1||||||InvalidArguments
+generate.am|a|Time|array|1||s||||real increasing vector of at least two samples||InvalidGrid
+generate.am|b|Carrier frequency|array|1||Hz||||vector for multi_tone; scalar otherwise||InvalidOperand
+generate.am|c|Modulation frequency|number|1||Hz||||||InvalidFrequency
+generate.am|options.amplitude|Amplitude|number|0|1|signal||||||InvalidArguments
+generate.am|options.phase_rad|Phase|number|0|0|rad||||||InvalidArguments
+generate.am|options.depth|Modulation depth|number|0|.5|1||||||InvalidArguments
+generate.fm|a|Time|array|1||s||||real increasing vector of at least two samples||InvalidGrid
+generate.fm|b|Carrier frequency|array|1||Hz||||vector for multi_tone; scalar otherwise||InvalidOperand
+generate.fm|c|Modulation frequency|number|1||Hz|>0|||||InvalidFrequency
+generate.fm|options.amplitude|Amplitude|number|0|1|signal||||||InvalidArguments
+generate.fm|options.phase_rad|Phase|number|0|0|rad||||||InvalidArguments
+generate.fm|options.frequency_deviation|Frequency deviation|number|0|1|Hz||||||InvalidArguments
+quality.spectrum|a|Signal|array|1||signal||||vector||InvalidOperand
+quality.spectrum|b|Unused protocol operand|empty|0||1||||unused||InvalidOperand
+quality.spectrum|c|Sample rate|number|1||Hz|>0|||||InvalidSampleRate
+quality.spectrum|options.fundamental_hz|Fundamental frequency|number|0||Hz|>0|||coherent FFT bin||NoncoherentSampling
+spectral.asd|a|Signal|array|1||signal||||vector||InvalidOperand
+spectral.asd|b|Unused protocol operand|empty|0||1||||unused||DimensionMismatch
+spectral.asd|c|Unused protocol operand|empty|0||1||||unused||InvalidSampleRate
+spectral.asd|options.window|Window coefficients|array|0|backend default|1||||periodogram: full signal-length vector; Welch: scalar integer >3 or real vector||InvalidArguments
+spectral.asd|options.overlap|Overlap fraction|number|0|.5|1|0|0.95||||InvalidPolicy
+spectral.asd|options.nfft|FFT length|integer|0|backend default|1|0|||positive for periodogram; Welch expands to window length||InvalidLength
+spectral.window_metrics|a|Window coefficients|array|1||1||||vector||InvalidOperand
+spectral.window_metrics|b|Unused protocol operand|empty|0||1||||unused||DimensionMismatch
+spectral.window_metrics|c|Unused protocol operand|empty|0||1||||unused||InvalidSampleRate

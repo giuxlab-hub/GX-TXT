@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 source [file normalize [file join [file dirname [info script]] .. .. .. .. core tcl scientific_provider_transport_v1.tcl]]
 namespace eval ::GX::SignalAPIv1 {variable lastTypes [dict create]}
+source [file join [file dirname [info script]] operation_schema_v1.tcl]
 proc ::GX::SignalAPIv1::capabilities {} {
     set d [::GX::parseIni [::GX::moduleField math.signal descriptor ""]]
     return [::GX::splitList [::GX::descriptorValue $d public_api.SIGNAL_API_v1 capabilities ""]]
@@ -20,7 +21,7 @@ proc ::GX::SignalAPIv1::operationMetadata {id} {
     if {$id eq "statistical_contract"} {return [dict create id $id api_id SIGNAL_API_v1 api_version 1 operation_kind metadata summary {Resolve the registered CORE statistical contract for a Signal operation} operands signal_operation input_shapes text result_shapes bounded_dictionary units {CORE-owned} complex_behavior {preserved by the selected estimator} errors {UnknownOperation}]}
     set path [file join [file dirname [::GX::moduleField math.signal descriptor ""]] api operations_v1.tsv]
     set fd [open $path r]
-    try {while {[gets $fd line]>=0} {if {[lindex [split $line |] 0] eq $id} {set familyContract [_familyMetadata [lindex [split $id .] 0]]; return [dict merge [dict create id $id summary [lindex [split $line |] 1] api_id SIGNAL_API_v1 api_version 1] $familyContract [::GX::ScientificTransportv1::operationHelp signal $id $familyContract]]}}} finally {close $fd}
+    try {while {[gets $fd line]>=0} {if {[lindex [split $line |] 0] eq $id} {set familyContract [_familyMetadata [lindex [split $id .] 0]]; return [dict merge [dict create id $id summary [lindex [split $line |] 1] api_id SIGNAL_API_v1 api_version 1] $familyContract [::GX::ScientificTransportv1::operationHelp signal $id $familyContract] [dict create operation_schema [operationSchema $id]] ]}}} finally {close $fd}
     return -code error -errorcode {GXTXT SCIENTIFIC UnknownOperation} "unknown operation $id"
 }
 proc ::GX::SignalAPIv1::_familyMetadata {family} {

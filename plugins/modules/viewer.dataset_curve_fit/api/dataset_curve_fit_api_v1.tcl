@@ -4,7 +4,7 @@
 namespace eval ::GX::DatasetCurveFit {
     variable state
     variable serial 0
-    variable version "0.44.0"
+    variable version "0.45.0"
     variable root [file normalize [file join [file dirname [info script]] ../../../..]]
 }
 
@@ -2250,13 +2250,14 @@ proc ::GX::DatasetCurveFit::_resetView {w} {
 proc ::GX::DatasetCurveFit::_wheel {w delta x y} {
     if {$delta > 0} {_zoom $w 0.85 $x $y} elseif {$delta < 0} {_zoom $w 1.18 $x $y}
 }
-proc ::GX::DatasetCurveFit::_closeWindow {w} {
+proc ::GX::DatasetCurveFit::_closeWindow {w {saveChanges 1}} {
     variable state
+    if {!$saveChanges} {set state($w,hostReview) 1}
     if {[info exists state($w,loading)]&&$state($w,loading)} {set state($w,closeRequested) 1;_sourceCancel $w;return}
     # A stale Viewer cannot write or collect resources in another Session.
     # Its already persisted Workspace remains with its original owner; release
     # only this window's live handles when closing after a Session switch.
-    if {![catch {_assertSession $w}]} {
+    if {$saveChanges && ![catch {_assertSession $w}]} {
         if {[catch {
             _saveState $w
             if {$state($w,documentId) ne ""} {::GX::interactiveDocumentResourceCollect $state($w,documentId)}
@@ -2286,7 +2287,9 @@ proc ::GX::DatasetCurveFit::open {{context {}}} {
     }
     if {[winfo exists $w] && $requestedWorkspace ne {} && $requestedWorkspace ne $state($w,documentId)} {
         if {[info exists state($w,loading)] && $state($w,loading)} {error {Cancel the active source operation before switching Workspaces}}
-        _closeWindow $w
+        set host [::GX::_workspaceHostContext dataset_curve_fit [_workspaceCallbacks $w] $w]
+        if {![::GX::sessionWorkspaceHostPrepare $host opening]} {return $w}
+        _closeWindow $w 0
         if {[winfo exists $w]} {error {Workspace could not close safely}}
     }
     if {[winfo exists $w]} {
@@ -2310,7 +2313,7 @@ proc ::GX::DatasetCurveFit::open {{context {}}} {
     toplevel $w;wm title $w "Dataset Curve Fit"
     _layoutPrepare $w
     ::GX::uiFieldWindowFit $w 1420 980
-    wm protocol $w WM_DELETE_WINDOW [list ::GX::DatasetCurveFit::_closeWindow $w]
+    wm protocol $w WM_DELETE_WINDOW [list ::GX::sessionWorkspaceViewerAction dataset_curve_fit [_workspaceCallbacks $w] $w close]
     bind $w <Escape> [list ::GX::DatasetCurveFit::_sourceCancel $w]
     ttk::frame $w.left.viewport.content.source.body -padding 5;pack $w.left.viewport.content.source.body -fill x
     foreach {field label width} {dataset Dataset 24 x X 18 y Y 18} {
@@ -2476,7 +2479,8 @@ proc ::GX::DatasetCurveFit::open {{context {}}} {
     _uiDomainFields $w
     if {$state($w,sessionToken) ne ""} {_uiSafe $w [list ::GX::DatasetCurveFit::_restoreState $w $requestedDataset]}
     _historyAttach $w
-    if {$requestedWorkspace eq "new"} {_saveState $w}
+    set state($w,hostBaseline) [_workspaceFingerprint $w]
+    # A named empty draft is registered only by explicit Save or a real edit.
     set state($w,catalogSubscription) [::GX::datasetCatalogSubscribe [list ::GX::DatasetCurveFit::_workspaceCatalog $w]]
     ::GX::sessionWorkspaceViewerTitle $w {Dataset Curve Fit} [list ::GX::DatasetCurveFit::_currentWorkspace $w] [list set ::GX::DatasetCurveFit::state($w,workspaceName)]
     return $w

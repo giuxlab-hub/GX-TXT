@@ -36,6 +36,7 @@ proc ::GX::CurveViewer::_enabled {w id} {
 }
 proc ::GX::CurveViewer::_invoke {w id} {
     variable st
+    if {$id eq "save"} {return [::GX::sessionWorkspaceViewerAction curve_viewer [_workspaceCallbacks $w] $w save]}
     if {$id in {undo redo previous next latest branch}} {return [::GX::scientificHistoryViewerNavigate $w $id]}
     if {$id eq "timeline"} {return [::GX::scientificHistoryViewerStripSet $w {mode History visible 1}]}
     if {$id eq "strip"} {return [::GX::scientificHistoryViewerStripToggle $w]}
@@ -45,7 +46,7 @@ proc ::GX::CurveViewer::_invoke {w id} {
     if {$id eq "cancel"} {return [_sourceCancel $w]}
     if {$id eq "label"} {return [_labelDialog $w [lindex [$w.sources selection] 0]]}
     if {[string match workspace_* $id]} {
-        set callbacks [dict create current [list ::GX::CurveViewer::_currentWorkspace $w] save [list ::GX::CurveViewer::_save $w] close [list ::GX::CurveViewer::_close $w] open ::GX::CurveViewer::open]
+        set callbacks [_workspaceCallbacks $w]
         return [::GX::sessionWorkspaceViewerAction curve_viewer $callbacks $w [string range $id 10 end]]
     }
     if {$id eq "publish"} {return [_safe $w [list ::GX::CurveViewer::_publish $w]]}
@@ -68,7 +69,7 @@ proc ::GX::CurveViewer::_menus {w} {
     foreach id {workspace_new workspace_open save workspace_duplicate workspace_rename workspace_manager workspace_close workspace_delete} {::GX::viewerCommandMenuTrack $w $w.toolbar.workspace.menu $index $id;incr index}
     $w.toolbar.workspace.menu add separator
     ::GX::viewerCommandMenuAdd $w $w.toolbar.workspace.menu clear_history
-    $w.toolbar.workspace.menu configure -postcommand [list ::GX::viewerCommandMenusRefresh $w]
+    $w.toolbar.workspace.menu configure -postcommand "[list ::GX::viewerCommandMenusRefresh $w];[list ::GX::sessionWorkspaceViewerMenuRefresh $w.toolbar.workspace.menu]"
     pack $w.toolbar.workspace -side left -padx 3
     ::GX::uiMenuRowAttach $w.toolbar [pack slaves $w.toolbar]
 }
@@ -256,4 +257,20 @@ proc ::GX::CurveViewer::_labelApply {w id values} {
     if {![::GX::scientificHistoryViewerPrepareEdit $w]} return
     dict set st($w,records) $id presentation_label [dict get $values label]
     _refresh $w;_redraw $w;_save $w "Change display label: $id"
+}
+
+# Optional shared-host callbacks; the existing scientific History remains the
+# autosave owner. Querying dirty state must not commit a draft or replay a scene.
+proc ::GX::CurveViewer::_workspaceCallbacks {w} {
+    return [dict create current [list ::GX::CurveViewer::_currentWorkspace $w] save [list ::GX::CurveViewer::_save $w] close [list ::GX::CurveViewer::_close $w] open ::GX::CurveViewer::open dirty [list ::GX::CurveViewer::_workspaceDirty $w] prepare [list ::GX::CurveViewer::_workspacePrepare $w] discard [list ::GX::CurveViewer::_close $w 0]]
+}
+proc ::GX::CurveViewer::_workspacePrepare {w action} {
+    _scope $w
+    if {![_ready $w]} {error {Finish or cancel the active Curve Viewer source operation first.}}
+}
+proc ::GX::CurveViewer::_workspaceDirty {w} {
+    variable st
+    _scope $w
+    if {$st($w,document) eq {}} {return 1}
+    return [expr {[_payload $w 0] ne [dict remove $st($w,savedPayload) scientific_history]}]
 }

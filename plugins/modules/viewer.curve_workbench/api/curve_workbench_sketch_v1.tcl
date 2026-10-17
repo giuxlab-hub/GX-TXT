@@ -11,7 +11,7 @@ proc ::GX::CurveWorkbench::_sketchSamples {w native} {
 }
 proc ::GX::CurveWorkbench::_sketchOpen {w {edit 0}} {
     variable st
-    set fields [dict create name {type string label {Geometry name}} family [dict create type choice label {Primitive family} values {point path construction_line polyline rectangle circle arc ellipse quadratic_bezier cubic_bezier spline}] closed {type boolean label {Close retained Line/path}} controls {type string label {Controls: {X Y} pairs in working units}} working_unit [dict create type choice label {Working unit} values {mm cm m km um nm in ft}] radius_x {type number label {Circle/arc radius or ellipse X radius}} radius_y {type number label {Ellipse Y radius}} rotation {type number label {Local rotation (degrees)}} angle_start {type number label {Arc start (degrees)}} angle_sweep {type number label {Arc signed sweep (degrees)}} samples {type integer min 1 max 65536 label {Complete parameter sampling count}}]
+    set fields [dict create name {type string label {Geometry name}} family [dict create type choice label {Primitive family} values {point path construction_line polyline rectangle circle arc ellipse quadratic_bezier cubic_bezier spline}] closed {type boolean label {Close retained Line/path}} controls {type string label {Controls: {X Y} pairs in working units}} working_unit {type string required 1 label {Common working unit (for example V, kg or m/s)}} radius_x {type number label {Circle/arc radius or ellipse X radius}} radius_y {type number label {Ellipse Y radius}} rotation {type number label {Local rotation (degrees)}} angle_start {type number label {Arc start (degrees)}} angle_sweep {type number label {Arc signed sweep (degrees)}} samples {type integer min 1 max 65536 label {Complete parameter sampling count}}]
     set initial [dict create name {Native circle} family circle closed 0 controls {{0 0}} working_unit mm radius_x 2 radius_y 1 rotation 0 angle_start 0 angle_sweep 90 samples 257]
     set id {}
     if {$edit} {
@@ -60,7 +60,7 @@ proc ::GX::CurveWorkbench::_sketchApply {w token id values} {
         try {
             set record [_newRecord $w $name [_sketchSamples $w $native] {} x y {} {} {} {} {} [list [dict create operation create_primitive family [dict get $definition family]]]]
             dict set record working_unit [dict get $values working_unit]
-            ::GX::unitRegistryConversionPlan [dict get $values working_unit] [dict get $values working_unit]
+            ::GX::unitRegistryHomogeneousCoordinatePlan [dict get $values working_unit] [dict get $values working_unit]
             set id [dict get $record id];set before [_snapshotIds $w [list $id]]
             _addRecord $w $record $native
         } on error {message options} {::GX::Native2D::core delete $st($w,scene) $native;return -options $options $message}

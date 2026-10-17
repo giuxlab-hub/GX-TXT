@@ -172,7 +172,7 @@ proc ::GX::CurveWorkbench::_createCommit {w} {
     set before [_snapshotIds $w [lsort -unique $parents]];set oldUndo $st($w,undo);set oldRedo $st($w,redo);set native {};set joined 0
     _toolPreviewClear $w
     try {
-        ::GX::unitRegistryConversionPlan $unit $unit
+        ::GX::unitRegistryHomogeneousCoordinatePlan $unit $unit
         if {$parents ne {}&&[_cadUnits $w [lsort -unique $parents]] ne $unit} {error {Construction attachment requires the same declared working units. Normalize the workspace through Unit Registry before joining geometry.}}
         set symmetry {}
         if {[info exists st($w,symmetryEnabled)]&&$st($w,symmetryEnabled)} {

@@ -600,10 +600,12 @@ proc ::GX::viewerBackendScriptPath {moduleId relative} {
 }
 proc ::GX::viewerBackendEnsure {moduleId viewerId} {
     variable viewerBackend
+    pluginRuntimeTryPending $moduleId
     set provider [viewerProviderDefinition $moduleId $viewerId]
     if {$provider eq ""} { error "Viewer Provider module is disabled" }
     set backend [dict get $provider backend]
-    if {[info exists viewerBackend($backend)]} { return $viewerBackend($backend) }
+    if {[info exists viewerBackend($backend)]} {pluginRuntimeNoteLoaded $moduleId; return $viewerBackend($backend) }
+    pluginRuntimeGuardNewLoad $moduleId
     set activationApi [string trim [dict get $provider activation_api]]
     set backendScript [string trim [dict get $provider backend_script]]
     if {$activationApi ne ""} {
@@ -628,6 +630,7 @@ proc ::GX::viewerBackendEnsure {moduleId viewerId} {
         }
         error "Viewer backend $backend is unavailable"
     }
+    pluginRuntimeNoteLoaded $moduleId
     return $viewerBackend($backend)
 }
 proc ::GX::viewerOpen {moduleId viewerId {context {}}} {
@@ -636,7 +639,9 @@ proc ::GX::viewerOpen {moduleId viewerId {context {}}} {
     set scene [viewerSceneResolve $moduleId $viewerId]
     dict set scene open_context $context
     dict set scene dataset_private_context [_datasetPrivateModuleContext $moduleId]
-    return [_datasetPrivateWithModule $moduleId $command open $scene]
+    set result [_datasetPrivateWithModule $moduleId $command open $scene]
+    if {[llength [info commands documentationBrowserAttachViewerHelp]]} {documentationBrowserAttachViewerHelp $moduleId $viewerId $result}
+    return $result
 }
 proc ::GX::viewerRerender {moduleId viewerId} {
     set command [viewerBackendEnsure $moduleId $viewerId]

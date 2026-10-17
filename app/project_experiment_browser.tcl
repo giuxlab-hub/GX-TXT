@@ -99,9 +99,11 @@ proc ::GX::projectGuiShowSelected_browser083 {} {
                 open {↗ Open} {Open this Session through its normal controller}
                 rename {✎ Rename} {Change display name; preserve directory, creator and stable ID}
                 info {ⓘ Info} {Read scientific facts and Markdown without changing the open Session}
+                move {Move to Project…} {Choose another Project without opening or relocating this Session}
                 detach {↪ Move to Default} {Change Project membership; keep scientific bytes and directory}
                 delete {✕ Delete} {Delete the complete Session after confirmation; retain a recovery copy}
             } {
+                if {$action eq {detach} && $id eq [projectDefaultId]} continue
                 ttk::button $row.actions.$action -text $label -command [list ::GX::projectGuiRowAction $eid $action]
                 pack $row.actions.$action -side left -padx 2 -pady 3
                 bind $row.actions.$action <Enter> [list ::GX::plotsToolbarTipSchedule $row.actions.$action $tip]
@@ -136,7 +138,12 @@ proc ::GX::projectGuiRowAction {eid action} {
             open {openSessionPath [projectExperimentResolve $eid];.top.nb select .top.nb.sessionfiles}
             rename {projectGuiRenameDialog $eid;return}
             info {projectGuiInfoShow $eid;return}
-            detach {projectExperimentReassign $eid [projectEnsureDefault]}
+            move {projectGuiMoveDialog $eid;return}
+            detach {
+                set prior [projectMembershipField $eid project_id]
+                if {$prior eq [projectDefaultId]} return
+                projectExperimentReassign $eid [projectEnsureDefault] $prior
+            }
             delete {
                 set path [projectExperimentResolve $eid]
                 set info [resourceLifecycleSessionInspect $path]
@@ -150,6 +157,43 @@ proc ::GX::projectGuiRowAction {eid action} {
     if {$code==2} {return}
     projectGuiRefresh
     if {$action eq {delete} && [info exists deleted]} {workflowNotice {Session deleted — recovery retained} "The Session was removed from navigation. Its recovery copy is retained at:\n\n[dict get $deleted recovery_path]" info}
+}
+proc ::GX::projectGuiMoveDialog {eid} {
+    set source [projectMembershipField $eid project_id]
+    set path [projectExperimentResolve $eid]
+    set choices {};set targets {}
+    foreach id [projectIds] {
+        if {$id eq $source} continue
+        set label "[projectField $id name] ($id)"
+        lappend choices $label;dict set targets $label $id
+    }
+    set w .gxExperimentMove;catch {destroy $w};toplevel $w
+    wm title $w {Move Experiment to Project};wm transient $w .
+    set ::GX::ui(experimentMoveTarget) [lindex $choices 0]
+    ttk::label $w.about -text "Experiment: [projectBrowserExperimentName $eid]\nFrom: [projectField $source name]\nExperiment ID: $eid\n\nChoose its destination Project. The Session directory and scientific data stay unchanged." -wraplength 610 -justify left
+    ttk::label $w.label -text {Destination Project:}
+    ttk::combobox $w.target -state readonly -values $choices -textvariable ::GX::ui(experimentMoveTarget) -width 65
+    ttk::label $w.status -text {} -foreground #a02020 -wraplength 610 -justify left
+    ttk::frame $w.buttons
+    set commit [list ::GX::projectGuiMoveCommit $w $eid $source $path $::GX::currentSession $targets]
+    ttk::button $w.buttons.move -text Move -command $commit -state [expr {[llength $choices] ? {normal} : {disabled}}]
+    ttk::button $w.buttons.cancel -text Cancel -command [list destroy $w]
+    pack $w.about $w.label $w.target $w.status -fill x -padx 12 -pady 6
+    pack $w.buttons.move $w.buttons.cancel -side left -padx 5
+    pack $w.buttons -pady 10
+    bind $w <Escape> [list destroy $w];bind $w.target <Return> $commit;focus $w.target
+}
+proc ::GX::projectGuiMoveCommit {w eid source path active targets} {
+    if {![winfo exists $w]} return
+    set failed [catch {
+        if {$::GX::currentSession ne $active} {error {The current Session changed. Reopen Move to Project.}}
+        if {[projectExperimentResolve $eid] ne $path} {error {The selected Experiment location changed. Reopen Move to Project.}}
+        if {![dict exists $targets $::GX::ui(experimentMoveTarget)]} {error {Choose an available destination Project.}}
+        projectExperimentReassign $eid [dict get $targets $::GX::ui(experimentMoveTarget)] $source
+    } message]
+    if {$failed} {$w.status configure -text $message;return}
+    destroy $w;projectGuiRefresh
+    setStatus "Experiment moved: [projectBrowserExperimentName $eid]"
 }
 proc ::GX::projectGuiRenameDialog {eid} {
     projectExperimentResolve $eid

@@ -1,4 +1,4 @@
-# viewer.curve_viewer 0.2.0
+# viewer.curve_viewer 0.4.0
 
 SPDX-License-Identifier: GPL-3.0-or-later
 

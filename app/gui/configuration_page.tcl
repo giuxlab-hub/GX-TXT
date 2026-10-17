@@ -24,6 +24,12 @@ proc ::GX::buildConfigurationPage {} {
         dict set row $group [expr {$i + 1}]
         set widgetId [string map {. _ - _} $id]
         set configurationUi($id) [configurationGet $id]
+        if {$id eq "features.script_workspace"} {
+            # Preserve the existing preference; check and label stay aligned.
+            ttk::checkbutton $section.value_$widgetId -text [dict get $field label] -variable ::GX::configurationUi($id)
+            grid $section.value_$widgetId -row $i -column 0 -columnspan 2 -sticky w -padx 8 -pady 5
+            continue
+        }
         ttk::label $section.label_$widgetId -text [dict get $field label]
         if {[dict get $field type] in {boolean integer double number choice color}} {
             uiFieldCreate $section.value_$widgetId $field ::GX::configurationUi($id)
@@ -35,6 +41,10 @@ proc ::GX::buildConfigurationPage {} {
         }
         grid $section.label_$widgetId -row $i -column 0 -sticky e -padx 8 -pady 5
         grid $section.value_$widgetId -row $i -column 1 -sticky ew -padx 8 -pady 5
+        if {$id eq "plugins.package_chooser_directory"} {
+            ttk::button $section.browse_$widgetId -text Browse… -command ::GX::configurationGuiPluginDirectory
+            grid $section.browse_$widgetId -row $i -column 2 -padx 4 -pady 5
+        }
         if {[string match {runtime.*} $id]} {
             set tool [string range $id 8 end]
             ttk::button $section.detect_$widgetId -text Detect -command [list ::GX::configurationGuiDetect $tool]
@@ -110,6 +120,12 @@ proc ::GX::buildConfigurationPage {} {
     pack $f.actions.save -side left -padx 5
     pack $f.actions.status -side left -fill x -expand 1 -padx 8
     pack $f.actions -side bottom -fill x -padx 8 -pady {0 8} -before $f.sections
+}
+
+proc ::GX::configurationGuiPluginDirectory {} {
+    set initial [pluginInstallInitialDirectory $::GX::configurationUi(plugins.package_chooser_directory)]
+    set directory [tk_chooseDirectory -title {Default plugin package directory} -initialdir $initial -mustexist 1]
+    if {$directory ne {}} {set ::GX::configurationUi(plugins.package_chooser_directory) $directory}
 }
 
 proc ::GX::configurationGuiNative3DPresetChanged {name element operation} {
@@ -259,6 +275,7 @@ proc ::GX::configurationGuiSave {} {
     set configurationUi(libraries.registry_path) "Registry: [file join $configurationUi(libraries.scientific_root) registry.json]"
     if {[llength [info commands _sessionStorageProfileRuntimeRefresh]]} {_sessionStorageProfileRuntimeRefresh}
     if {[llength [info commands workspaceProfilesRefreshGui]]} {workspaceProfilesRefreshGui}
+    if {[dict get $previous features.script_workspace] ne [configurationGet features.script_workspace]} {catch {rebuildNativeAnalysisGui}}
 }
 
 # This host-only editor projects Configuration fields; it owns no preferences.

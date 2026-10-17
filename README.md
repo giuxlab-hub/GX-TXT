@@ -4,7 +4,7 @@ GX-TXT is a desktop scientific workbench for working with **experimental measure
 
 Within the same Session you can inspect and compare measurements, perform numerical, statistical and spectral analyses or curve fitting, run registered Python and GNU Octave scripts through the Script Bridge, and create scientific 2D/3D plots and interactive viewers. Derived results stay connected to their source Datasets, while independent modules extend the workflow through public CORE APIs.
 
-**Source version:** 0.9.8.10-dev-098  
+**Source version:** 0.9.8.10-dev-099  
 **License:** GNU GPL-3.0-or-later (see [LICENSE](LICENSE)). Third-party packages and assets retain their applicable licenses.
 
 ## Features
@@ -23,6 +23,9 @@ Within the same Session you can inspect and compare measurements, perform numeri
 - Reproducible public example workflows for large data, STFT, 3D terrain and residual validation
 - Typed scientific Dataset Preview predicates and independent grouping that preserve full int64 values, curve identities and metadata provenance
 - Integrated Curve Digitalizer 2.0.3 and optional Scientific Image Inspector 0.4.1, using public CORE services for calibration, uncertainty and image publication
+- Viewer-requested single-module Analysis through the existing queue and guided Signal forms backed by public operation schemas
+- Unified Session Workspace and Viewer controls with guarded Save, Discard and Cancel, independent searchable Viewer manuals and persisted package/script preferences
+- Curve Workbench support for shared proportional coordinate dimensions without changing Native3D physical length requirements
 - Session Script Jobs with inspected job history, reviewed reruns and paged logs
 - Complete Dataset Notes, Metadata, Variables, Technical Details and Temporal Sets export to TXT/PDF
 - Shared Viewer commands, shortcuts, named Workspaces, History and optional disposable display caches
@@ -32,7 +35,7 @@ Within the same Session you can inspect and compare measurements, perform numeri
 
 Available capabilities depend on the installed modules and their optional runtime dependencies.
 
-For a scientific walkthrough of the current fitting, statistics, coordinate, Session and script services, see the [dev-097 workflow guide](docs/guides/INTEGRATED_dev097.md) and [public tutorials](docs/guides/tutorials_dev097/index.html).
+For scientific workflows and current controls, see the [integrated scientific guide](docs/guides/INTEGRATED_dev097.md), [Workspace and Viewer controls](docs/guides/WORKSPACE_AND_VIEWER_CONTROLS.md) and [public tutorials](docs/guides/tutorials_dev097/index.html).
 
 ## Getting started
 

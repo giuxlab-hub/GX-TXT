@@ -1,3 +1,7 @@
+## 0.45.0
+
+Adopt shared Workspace manager/menu state, unregistered New drafts and guarded Save/Discard/Cancel. Suspend field FocusOut commits during lifecycle review; explicit Save reuses the scientific field owner exactly once. Preserve fitting engines, source identities, accepted results and existing History. Document the independent manual window.
+
 ## 0.44.0
 
 Add explicit profile-likelihood controls and retained trial inspection through

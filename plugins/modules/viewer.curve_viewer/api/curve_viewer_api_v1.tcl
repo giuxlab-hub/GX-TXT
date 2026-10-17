@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-namespace eval ::GX::CurveViewer {variable st;array set st {};variable version 0.3.0;variable sourceEpoch 0}
+namespace eval ::GX::CurveViewer {variable st;array set st {};variable version 0.4.0;variable sourceEpoch 0}
 proc ::GX::CurveViewer::_safe {w command} {
     variable st
     try {
@@ -532,13 +532,13 @@ proc ::GX::CurveViewer::_catalogChanged {w receipt} {
     }
     _refresh $w;_redraw $w
 }
-proc ::GX::CurveViewer::_payload {w} {
+proc ::GX::CurveViewer::_payload {w {captureResources 1}} {
     variable st
     _scope $w
     set records {}
     dict for {id r} $st($w,records) {
         if {[dict get $r native] ne ""} {dict set r direction [::GX::Native2D::core direction_marker $st($w,scene) [dict get $r native]]}
-        if {![dict exists $r display_cache] && [dict get $r token] ne {} && $st($w,document) ne {}} {
+        if {$captureResources && ![dict exists $r display_cache] && [dict get $r token] ne {} && $st($w,document) ne {}} {
             if {[catch {::GX::curveSourceDisplayCacheStore $st($w,document) [dict get $r token] $id} cache]} {
                 set st($w,status) "Display cache unavailable; canonical source remains active: $cache"
             } else {
@@ -586,11 +586,11 @@ proc ::GX::CurveViewer::_writePayload {w payload} {
     set st($w,savedPayload) [dict remove [dict get $doc payload] workspace_metadata]
     ::GX::sessionWorkspaceViewerTitlesRefresh
 }
-proc ::GX::CurveViewer::_close {w} {
+proc ::GX::CurveViewer::_close {w {saveChanges 1}} {
     variable st
     _sourceCancel $w
     if {[info exists st($w,configurationSubscription)]} {::GX::configurationUnsubscribe $st($w,configurationSubscription)}
-    if {![catch {set token [::GX::interactiveDocumentSessionToken]}]&&$token eq $st($w,session_token)} {_save $w}
+    if {$saveChanges && ![catch {set token [::GX::interactiveDocumentSessionToken]}]&&$token eq $st($w,session_token)} {_save $w}
     ::GX::datasetCatalogUnsubscribe $st($w,subscription)
     dict for {id r} $st($w,records) {if {[dict get $r token] ne ""} {::GX::curveSourceClose [dict get $r token]}}
     ::GX::Native2D::core destroy $st($w,scene)
@@ -606,7 +606,11 @@ proc ::GX::CurveViewer::open {{context {}}} {
         if {[dict get $workspace provider_id] ne "curve_viewer"} {error {Workspace belongs to another Viewer}}
         ::GX::sessionWorkspaceValidate $requested
     }
-    if {[winfo exists $w] && $requested ne {} && $requested ne $st($w,document)} {_close $w}
+    if {[winfo exists $w] && $requested ne {} && $requested ne $st($w,document)} {
+        set host [::GX::_workspaceHostContext curve_viewer [_workspaceCallbacks $w] $w]
+        if {![::GX::sessionWorkspaceHostPrepare $host opening]} {return $w}
+        _close $w 0
+    }
     if {[winfo exists $w]} {
         raise $w
         if {[dict exists $context dataset_id]} {set st($w,preferred) [dict get $context dataset_id]}
@@ -620,11 +624,11 @@ proc ::GX::CurveViewer::open {{context {}}} {
     set st($w,preferred) [::GX::datasetPublicationV2DictDefault $context dataset_id ""]
     set st($w,status) "Add one or more Dataset curves. Display sampling does not alter scientific data.";set st($w,pan) {};set st($w,coordinates) ""
     toplevel $w;wm title $w "Curve Viewer";wm geometry $w 1320x850;wm minsize $w 720 480
-    wm protocol $w WM_DELETE_WINDOW [list ::GX::CurveViewer::_safe $w [list ::GX::CurveViewer::_close $w]]
+    wm protocol $w WM_DELETE_WINDOW [list ::GX::sessionWorkspaceViewerAction curve_viewer [_workspaceCallbacks $w] $w close]
     ttk::frame $w.toolbar;pack $w.toolbar -fill x -padx 5 -pady 5
     ttk::menubutton $w.toolbar.workspace -text Workspace -menu $w.toolbar.workspace.menu
     menu $w.toolbar.workspace.menu -tearoff 0
-    ::GX::sessionWorkspaceViewerMenu $w.toolbar.workspace.menu curve_viewer [dict create current [list ::GX::CurveViewer::_currentWorkspace $w] save [list ::GX::CurveViewer::_save $w] close [list ::GX::CurveViewer::_close $w] open ::GX::CurveViewer::open] $w
+    ::GX::sessionWorkspaceViewerMenu $w.toolbar.workspace.menu curve_viewer [_workspaceCallbacks $w] $w
 
     foreach {key label command} [list add "Add curve…" [list _sourceOpen $w] filters "Source filters…" [list _sourceEdit $w] fit_selected "Fit selected" [list _fit $w 1] fit_all "Fit all" [list _fit $w 0] show "Show" [list _visibility $w 1] hide "Hide" [list _visibility $w 0] remove "Remove from view" [list _remove $w] preview "Dataset Preview" [list _preview $w] properties "Curve style…" [list _properties $w] presentation "Grid / view…" [list _presentation $w] export "Export…" [list _export $w] save "Save view" [list _save $w]] {
         ttk::button $w.toolbar.$key -text $label -command [list ::GX::CurveViewer::_safe $w [list ::GX::CurveViewer::[lindex $command 0] {*}[lrange $command 1 end]]]
@@ -665,7 +669,7 @@ proc ::GX::CurveViewer::open {{context {}}} {
         set st($w,savedPayload) [dict remove [dict get $doc payload] workspace_metadata]
         _restoreStart $w $payload
     }
-    if {$requested eq "new"} {_save $w}
+    # An empty named draft is not a saved Document until Save or a real edit.
     if {![info exists st($w,restoring)] || !$st($w,restoring)} {_historyAttach $w}
     ::GX::sessionWorkspaceViewerTitle $w {Curve Viewer} [list ::GX::CurveViewer::_currentWorkspace $w] [list set ::GX::CurveViewer::st($w,workspaceName)]
     return $w

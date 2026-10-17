@@ -4,7 +4,12 @@ function out=gxtxt_signal_v1(family,action,a,b,c,opts)
   if(nargin<2||!ischar(family)||!ischar(action)),error('GXTXT:Signal:InvalidArguments','family and action are required');endif
   if(nargin<3),a=[];endif;if(nargin<4),b=[];endif;if(nargin<5),c=[];endif;if(nargin<6),opts=struct();endif
   if(!isstruct(opts)),error('GXTXT:Signal:InvalidArguments','options must be a struct');endif
+  if(strcmp(family,'contract'))
+    count=gxtxt_signal_validate_v1(action,a,b,c,opts);
+    out=struct('valid',true,'field_count',count);return;
+  endif
   pkg('load','signal');family=lower(strtrim(family));action=lower(strtrim(action));
+  [~,opts]=gxtxt_signal_validate_v1([family '.' action],a,b,c,opts);
   switch(family)
     case 'convolution',out=convolution_action(action,a,b,c,opts);
     case 'correlation',out=correlation_action(action,a,b,c,opts);
@@ -115,15 +120,8 @@ function out=design_action(action,order,cutoff,ripple,opts)
     endswitch
     out=struct('order',n,'cutoff',w);return;
   endif
-  valid(order,'order');valid(cutoff,'cutoff');if(!isscalar(order)||order<1||order!=fix(order)),error('GXTXT:Signal:InvalidOrder','order must be positive integer');endif
-  band=opt(opts,'band','low');if(!any(strcmp(band,{'low','high','bandpass','stop'}))),error('GXTXT:Signal:InvalidBand','unsupported filter band');endif
-  if((any(strcmp(band,{'low','high'}))&&numel(cutoff)!=1)||(any(strcmp(band,{'bandpass','stop'}))&&numel(cutoff)!=2))
-    error('GXTXT:Signal:InvalidCutoff','low/high need one edge; bandpass/stop need two');
-  endif
-  domain=opt(opts,'domain','discrete');if(!any(strcmp(domain,{'discrete','analog'}))),error('GXTXT:Signal:InvalidModel','design domain must be discrete or analog');endif
-  if(any(cutoff(:)<=0)||(strcmp(domain,'discrete')&&any(cutoff(:)>=1))||numel(cutoff)>2||numel(cutoff)==2&&cutoff(1)>=cutoff(2))
-    error('GXTXT:Signal:InvalidCutoff','cutoff must be positive and digital cutoff below one');
-  endif
+  % Typed and conditional design admission is shared with public preflight.
+  band=opt(opts,'band','low');domain=opt(opts,'domain','discrete');
   suffix={};if(strcmp(domain,'analog')),suffix={'s'};endif
   switch(action)
     case 'butterworth',[b,a]=butter(order,cutoff,band,suffix{:});
@@ -135,8 +133,6 @@ function out=design_action(action,order,cutoff,ripple,opts)
       if(strcmp(domain,'discrete')),suffix={'z'};endif
       [b,a]=besself(order,cutoff,band,suffix{:});
     case 'fir_window'
-      if(strcmp(domain,'analog')),error('GXTXT:Signal:InvalidModel','FIR window design is discrete only');endif
-      if(any(strcmp(band,{'high','stop'}))&&mod(order,2)!=0),error('GXTXT:Signal:InvalidOrder','high-pass and band-stop FIR window design require even order');endif
       window_name=opt(opts,'window','hamming');switch(window_name)
         case 'hamming',w=hamming(order+1);case 'hann',w=hanning(order+1);case 'blackman',w=blackman(order+1);
         otherwise,error('GXTXT:Signal:InvalidWindow','unsupported FIR window');

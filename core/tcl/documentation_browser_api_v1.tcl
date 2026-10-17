@@ -8,7 +8,7 @@ namespace eval ::GX {
 }
 
 proc ::GX::documentationBrowserApiInfo {} {
-    return [dict create api_name DOCUMENTATION_BROWSER_API_v1 api_version 1 source descriptor_index]
+    return [dict create api_name DOCUMENTATION_BROWSER_API_v1 api_version 1 source descriptor_index host_operations {documentationBrowserOpenModuleWindow documentationBrowserAttachViewerHelp}]
 }
 
 proc ::GX::documentationBrowserAdd {id category title type path {owner ""} {version ""}} {

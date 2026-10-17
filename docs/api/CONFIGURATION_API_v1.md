@@ -32,7 +32,7 @@ The built-in configuration fields cover Session and Project root, temporary/cach
 
 Appearance user defaults and lifecycle are documented in [GUI Appearance](GUI_APPEARANCE_v1.md). Theme/font settings are applied once at GUI startup; popup recovery is applied immediately after Save.
 
-## Central and module-local configuration (dev094)
+## Central and module-local configuration
 
 Configuration → Modules exposes every installed Module's declared `[config]`
 fields and formally registered module-owned public fields, including disabled
@@ -131,7 +131,7 @@ Binding types (Dataset, Variable, selection, temporal set, registered script,
 analysis definition, model and unit) validate through their existing public
 authorities at commit. Discovery does not require scientific runtime data.
 
-## Generic Viewer command adapter (dev096)
+## Generic Viewer command adapter
 
 The existing Configuration/UI owner now supplies `viewerCommandCatalogRegister
 module commands ?configuration_id? ?module_key?`. Each stable command descriptor
@@ -157,12 +157,11 @@ overrides keep the ordinary Configuration precedence and atomic persistence.
 Curve Workbench retains `modules.curve_workbench.shortcuts` and all established
 command IDs/defaults. Its existing catalog/editor/menu and scientific callbacks
 delegate key normalization/dispatch to CORE without resetting saved values.
-No new public API family or independent settings file is introduced: dev095
-lacks a generic Viewer command registrar, so these host operations extend the
-existing Configuration authority. The unknown-Viewer fixture demonstrates use
+These host operations use the existing Configuration authority and its
+preference storage. The unknown-Viewer fixture demonstrates use
 without a CORE branch for any module ID.
 
-## dev097 selective presentation persistence
+## Selective presentation persistence
 
 The existing `configurationSave ?fields? ?apply=1?` defaults preserve its full-save
 behavior. A nonempty list limits persistence to those registered User/module
@@ -170,3 +169,18 @@ fields; other previously saved values remain intact and unrelated pending values
 are not committed. `apply=0` writes through the same atomic Configuration owner
 without reapplying runtime, storage or resource defaults. Runner view preferences
 use `{scripts.job_presentation} 0`; they never own or configure Job execution.
+
+
+## Plugin package chooser and Script Workspace visibility
+
+`plugins.package_chooser_directory` is a User-scoped path in Configuration →
+Modules, labelled **Default plugin package directory**. It supplies only the
+initial directory of the shared Install/Update/Bundle chooser. A missing or
+inaccessible directory falls back safely; `storage.package_dir` and actual
+managed installation targets remain independent.
+
+The existing User boolean `features.script_workspace` appears in Configuration →
+Scripts as **Show Script Workspace in Analysis**. Saving changes refreshes the
+optional **Scripts (CORE)** Analysis panel. Its identity, default and saved value
+remain unchanged. It neither disables Python/Octave modules nor changes Script
+Bridge, Job execution, or the separate main Modules-page surface controls.

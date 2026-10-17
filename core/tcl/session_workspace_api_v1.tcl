@@ -201,16 +201,18 @@ proc ::GX::noteDocumentWrite {id text} {
         if {$existed} {noteWriteUtf8 $path $before} elseif {[file exists $path]} {file delete -- $path}
         return -options $options $message
     }
+    sessionWorkspaceViewsChanged
     return [noteDocumentRead $id]
 }
 proc ::GX::noteDocumentOpen {id {mode view}} {
     set workspace [sessionWorkspaceGet $id];set text [dict get [noteDocumentRead $id] text]
-    if {$mode eq "edit"} {return [openMarkupEditor "Notes — [dict get $workspace name]" $text [list ::GX::noteDocumentWrite $id]]}
+    set token [interactiveDocumentSessionToken];set receipt [_workspaceHostReceipt $id]
+    if {$mode eq "edit"} {return [openMarkupEditor "Notes — [dict get $workspace name]" $text [list ::GX::sessionWorkspaceHostNoteSave $token $receipt $id]]}
     if {$mode ne "view"} {error {Note mode must be view or edit}}
     set window .workspaceNoteView;catch {destroy $window};toplevel $window;wm title $window "Notes — [dict get $workspace name]"
     text $window.text -wrap word -width 80 -height 25;pack $window.text -fill both -expand 1
     markupConfigurePreviewTags $window.text;markupRenderStringToWidget $window.text $text;$window.text configure -state disabled
-    ttk::button $window.edit -text Edit -command [list ::GX::noteDocumentOpen $id edit];pack $window.edit -side bottom
+    ttk::button $window.edit -text Edit -command [list ::GX::sessionWorkspaceHostNoteEdit $token $receipt $id];pack $window.edit -side bottom
     return $window
 }
 proc ::GX::sessionWorkspaceOpen {id} {
@@ -319,14 +321,16 @@ proc ::GX::sessionWorkspaceImport {resource {name {}}} {
     set path [file join [_documentResourceRoot [dict get $resource document_id]] [dict get $resource sha256].blob]
     return [_sessionWorkspaceImportPath $path $name]
 }
-proc ::GX::_sessionWorkspaceImportPath {path {name {}}} {
+proc ::GX::_sessionWorkspaceImportPath {path {name {}} {expectedProvider {}}} {
     set session [_interactiveDocumentRequireSession]
     set stage [file join $session metadata .workspace-import-[pid]-[clock clicks]]
     set created {}
     try {
         _portableResourceRun extract $path $stage
         set fields [_portableResourceFields [file join $stage workspace identity.json]]
-        set provider [dict get $fields provider_id];set descriptor [_workspaceProvider $provider]
+        set provider [dict get $fields provider_id]
+        if {$expectedProvider ne {} && $provider ne $expectedProvider} {error {Package belongs to a different provider. Use the unscoped Session Workspaces manager.}}
+        set descriptor [_workspaceProvider $provider]
         if {[dict get $fields schema] ne [dict get $descriptor schema]||[dict get $fields module_id] ne [dict get $descriptor module_id]} {error {Workspace provider/schema mismatch}}
         set payload [noteReadUtf8 [file join $stage workspace payload.utf8]]
         _workspaceValidatePayload $provider $payload [dict get $fields schema_version]
@@ -375,69 +379,6 @@ proc ::GX::_workspacePackageReferences {value depth resultName} {
     }
     if {[catch {llength $value} n]} return
     foreach item $value {if {$item ne $value} {_workspacePackageReferences $item [expr {$depth+1}] result}}
-}
-proc ::GX::sessionWorkspaceDialog {{parent .}} {
-    set window .gxSessionWorkspaces;catch {destroy $window};toplevel $window
-    wm title $window {Session Workspaces};wm transient $window $parent
-    sessionWorkspaceBuild $window
-    return $window
-}
-proc ::GX::sessionWorkspaceBuild {frame} {
-    ttk::frame $frame.workspaces;set f $frame.workspaces;pack $f -fill both -expand 1
-    ttk::treeview $f.tree -columns {name type provider preview} -show headings -height 5 -selectmode browse
-    foreach {key label width} {name Name 230 type Type 160 provider Provider 150 preview Preview 70} {$f.tree heading $key -text $label;$f.tree column $key -width $width}
-    ttk::scrollbar $f.scroll -command [list $f.tree yview];$f.tree configure -yscrollcommand [list $f.scroll set]
-    pack $f.scroll -side right -fill y;pack $f.tree -fill both -expand 1
-    ttk::frame $f.actions;pack $f.actions -fill x
-    foreach {key title action} {refresh Refresh refresh open Open open notes {View notes} notes export Export export import Import import} {
-        ttk::button $f.actions.$key -text $title -command [list ::GX::sessionWorkspaceGuiAction $f $action];pack $f.actions.$key -side left -padx 3
-    }
-    ttk::menubutton $f.actions.provider -text Actions -menu $f.actions.provider.menu
-    menu $f.actions.provider.menu -tearoff 0 -postcommand [list ::GX::sessionWorkspaceActionMenu $f $f.actions.provider.menu]
-    pack $f.actions.provider -side left -padx 3
-    ttk::label $f.preview -text {Select a workspace to inspect its preview.};pack $f.preview -fill both
-    bind $f.tree <Double-1> [list ::GX::sessionWorkspaceGuiAction $f open]
-    dict set ::GX::SessionWorkspace::views $f {}
-    bind $f.tree <<TreeviewSelect>> [list ::GX::sessionWorkspaceGuiAction $f inspect]
-    sessionWorkspaceGuiAction $f refresh
-}
-proc ::GX::sessionWorkspaceGuiAction {frame action} {
-    if {[catch {
-        if {$action eq "refresh"} {
-            $frame.tree delete [$frame.tree children {}]
-            foreach workspace [sessionWorkspaceList] {$frame.tree insert {} end -id [dict get $workspace workspace_id] -values [list [dict get $workspace name] [dict get $workspace type] [dict get $workspace provider_id] [expr {[dict get $workspace preview] eq {}?"none":"available"}]]}
-            return
-        }
-        if {$action eq "import"} {
-            set path [workspaceOpenFile session_open_dir -title {Import workspace package} -filetypes {{{GX-TXT workspace ZIP} {.zip}}}]
-            if {$path ne {}} {_sessionWorkspaceImportPath $path;sessionWorkspaceGuiAction $frame refresh};return
-        }
-        set id [$frame.tree selection];if {[llength $id]!=1} {error {Select one workspace}}
-        switch $action {
-            open {sessionWorkspaceOpen $id}
-            notes {noteDocumentOpen $id view}
-            export {
-                set workspace [sessionWorkspaceGet $id]
-                set path [workspaceSaveFile export_dir -title {Export workspace package} -initialfile "[dict get $workspace name].gxtxt-workspace.zip" -defaultextension .zip]
-                if {$path ne {}} {
-                    set resource [sessionWorkspaceExport $id]
-                    set source [file join [_documentResourceRoot $id] [dict get $resource sha256].blob]
-                    file copy -force -- $source $path
-                }
-            }
-            inspect {
-                set resource [dict get [sessionWorkspaceGet $id] preview]
-                if {$resource eq {}} {$frame.preview configure -image {} -text {No preview};return}
-                if {[dict get $resource metadata format] eq "image.png"} {
-                    interactiveDocumentResourceInfo $resource
-                    set imageName gxWorkspacePreview_[string map {. _} $frame]
-                    catch {image delete $imageName}
-                    image create photo $imageName -file [file join [_documentResourceRoot $id] [dict get $resource sha256].blob]
-                    $frame.preview configure -image $imageName -text {}
-                } else {$frame.preview configure -image {} -text {Vector scene preview available}}
-            }
-        }
-    } message options] == 1} {tk_messageBox -parent [winfo toplevel $frame] -title Workspaces -icon error -message $message}
 }
 rename ::GX::buildSessionFileExplorerGui ::GX::buildSessionFileExplorerGui_workspace056_base
 proc ::GX::buildSessionFileExplorerGui {} {
@@ -564,7 +505,7 @@ proc ::GX::sessionWorkspaceViewsRefresh {} {
         set signature [list no-session]
     } else {
         set signature [list [interactiveDocumentSessionToken]]
-        foreach workspace [sessionWorkspaceList] {lappend signature [list [dict get $workspace workspace_id] [dict get $workspace name] [dict get $workspace type] [dict get $workspace provider_id] [dict get $workspace preview]]}
+        foreach workspace [sessionWorkspaceList] {lappend signature [list [dict get $workspace workspace_id] [dict get $workspace name] [dict get $workspace type] [dict get $workspace provider_id] [dict get $workspace preview] [dict get $workspace generation] [dict get $workspace revision]]}
     }
     dict for {frame prior} $::GX::SessionWorkspace::views {
         if {![winfo exists $frame]} {dict unset ::GX::SessionWorkspace::views $frame;continue}
@@ -591,3 +532,5 @@ proc ::GX::sessionFileExplorerPopulate {} {
 }
 
 source [file join [file dirname [info script]] session_workspace_viewer_gui.tcl]
+
+source [file join [file dirname [info script]] session_workspace_gui_host.tcl]

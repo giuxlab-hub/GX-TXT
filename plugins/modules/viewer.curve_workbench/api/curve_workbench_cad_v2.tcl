@@ -295,6 +295,7 @@ proc ::GX::CurveWorkbench::_cadUnits {w ids} {
         if {[lindex $units 0] ne [lindex $units 1]||($common ne "__unset__"&&$common ne [lindex $units 0])} {error "Metric CAD operations require equal native X/Y units and equal units across targets; normalize explicitly with Dataset Transform / Unit Registry."}
         set common [lindex $units 0]
     }
+    if {$common ni {__unset__ ""}} {::GX::unitRegistryHomogeneousCoordinatePlan $common $common}
     return [expr {$common in {__unset__ ""} ? "coordinate units (unspecified)" : $common}]
 }
 proc ::GX::CurveWorkbench::_cadTransformOpen {w kind} {

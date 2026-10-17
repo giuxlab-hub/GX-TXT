@@ -1,4 +1,4 @@
-# viewer.dataset_curve_fit
+# viewer.dataset_curve_fit 0.45.0
 
 SPDX-License-Identifier: GPL-3.0-or-later
 

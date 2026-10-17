@@ -38,7 +38,7 @@ proc ::GX::CurveWorkbench::_createCount {family} {
 }
 proc ::GX::CurveWorkbench::_commitDefinition {w definition unit name operation {parents {}}} {
     variable st
-    ::GX::unitRegistryConversionPlan $unit $unit
+    ::GX::unitRegistryHomogeneousCoordinatePlan $unit $unit
     set before [_snapshotIds $w {}];set undo $st($w,undo);set redo $st($w,redo);set native {}
     try {
         set native [::GX::Native2D::core sketch_create $st($w,scene) $definition 257]
@@ -285,9 +285,10 @@ proc ::GX::CurveWorkbench::_buildConstruction {w} {
     menu $w.sketchbar.constraints.menu -tearoff 0 -postcommand [list ::GX::CurveWorkbench::_constraintMenu $w]
     ttk::menubutton $w.sketchbar.represent -text Representation -menu $w.sketchbar.represent.menu;menu $w.sketchbar.represent.menu -tearoff 0
     foreach {label callback} [list {Publish primitive as Dataset…} [list _primitivePublishOpen $w] {Reconstruct exact primitive from Dataset} [list _reconstructPrimitive $w] {Fit to retained primitive…} [list _fitPrimitiveOpen $w] {Dataset → Native editable points…} [list _convertOpen $w] {Primitive → Native sampled points…} [list _sketchSampleOpen $w] {Construction / reference role…} [list _geometryRoleOpen $w]] {$w.sketchbar.represent.menu add command -label $label -command [list ::GX::CurveWorkbench::_safe $w [lreplace $callback 0 0 ::GX::CurveWorkbench::[lindex $callback 0]]]}
-    ttk::label $w.sketchbar.unitLabel -text {CAD length unit}
-    ttk::combobox $w.sketchbar.unit -width 5 -values {mm cm m km um nm in ft} -state readonly -textvariable ::GX::CurveWorkbench::st($w,sketchUnit)
+    ttk::label $w.sketchbar.unitLabel -text {Common working unit}
+    ttk::combobox $w.sketchbar.unit -width 9 -values [_workingUnitCandidates] -state normal -textvariable ::GX::CurveWorkbench::st($w,sketchUnit)
     bind $w.sketchbar.unit <<ComboboxSelected>> [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_sketchUnitChoice $w]]
+    bind $w.sketchbar.unit <Return> [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_sketchUnitChoice $w]]
     ttk::checkbutton $w.sketchbar.snap -text {Object snap} -variable ::GX::CurveWorkbench::st($w,cadObjectSnap)
     ttk::button $w.sketchbar.finish -text Finish -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_createCommit $w]]
     foreach key {select create modify constraints represent unitLabel unit snap finish} {pack $w.sketchbar.$key -side left -padx 3}
@@ -455,10 +456,10 @@ proc ::GX::CurveWorkbench::_restoreSnapshot {w snapshot} {variable st;set st($w,
 # Its pending choice is never treated as a completed coordinate conversion.
 proc ::GX::CurveWorkbench::_sketchUnitChoice {w} {
     variable st
-    if {[dict size $st($w,curves)]==0} return
     set requested $st($w,sketchUnit)
+    if {[dict size $st($w,curves)]==0} {::GX::unitRegistryHomogeneousCoordinatePlan $requested $requested;return}
     set units [_coordinateUnits [_record $w [_active $w]]]
-    if {[lindex $units 0] ne [lindex $units 1]||[catch {::GX::unitRegistryConversionPlan [lindex $units 0] m}]} {set st($w,sketchUnit) mm;error {This control converts a common CAD length frame. Use Axis display units for independent scientific axes.}}
+    if {[lindex $units 0] ne [lindex $units 1] || [catch {::GX::unitRegistryHomogeneousCoordinatePlan [lindex $units 0] $requested}]} {set st($w,sketchUnit) [lindex $units 0];error {This control requires a common compatible Euclidean frame. Use Axis display units for independent scientific axes.}}
     set st($w,sketchUnit) [lindex $units 0]
     _unitsOpen $w
     set ::GX::UiField::formValues($w.units,target_unit) $requested

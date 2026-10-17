@@ -31,6 +31,7 @@ proc ::GX::CurveWorkbench::_measurementEvaluate {w definition} {
         dict set spec $field [dict get $record native]
         set xy [_coordinateUnits $record]
         if {[lindex $xy 0] ne [lindex $xy 1]} {error "Measurement geometry $id has incompatible X/Y units; normalize its coordinate frame first"}
+        if {[lindex $xy 0] ne {}} {::GX::unitRegistryHomogeneousCoordinatePlan [lindex $xy 0] [lindex $xy 0]}
         lappend units [lindex $xy 0]
         dict set fingerprints $id [_measurementFingerprint $w $id]
         if {[dict get $record source] ne {}} {dict set sources $id [dict create dataset_id [dict get $record source] descriptor [::GX::datasetPublicationV2DictDefault $record source_descriptor {}]]}
@@ -38,7 +39,9 @@ proc ::GX::CurveWorkbench::_measurementEvaluate {w definition} {
     if {[llength [lsort -unique $units]]>1} {error "Measurements require common declared units; normalize or explicitly declare each geometry first"}
     set receipt [::GX::Native2D::core measure $st($w,scene) $spec]
     set unit [lindex $units 0]
-    dict set receipt unit [expr {[dict get $receipt angular] ? "rad" : $unit eq {} ? {} : [dict get $receipt unit_power]==2 ? "${unit}^2" : $unit}]
+    # Compound coordinate units need grouping: (m/s)^2 is not m/s^2.
+    set squared [expr {[regexp {^[[:alnum:]_.µΩ]+$} $unit]?"${unit}^2":"($unit)^2"}]
+    dict set receipt unit [expr {[dict get $receipt angular] ? "rad" : $unit eq {} ? {} : [dict get $receipt unit_power]==2 ? $squared : $unit}]
     dict set receipt unit_declared [expr {$unit ne {}}]
     return [dict create definition $definition receipt $receipt fingerprints $fingerprints sources $sources]
 }

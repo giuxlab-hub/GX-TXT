@@ -120,11 +120,11 @@ proc ::GX::DatasetCurveFit::_commandEnabled {w id} {
 }
 proc ::GX::DatasetCurveFit::_commandInvoke {w id} {
     if {$id in {undo redo previous next latest branch}} {return [::GX::scientificHistoryViewerNavigate $w $id]}
-    if {$id eq "save"} {return [_saveState $w]}
+    if {$id eq "save"} {return [::GX::sessionWorkspaceViewerAction dataset_curve_fit [_workspaceCallbacks $w] $w save]}
     variable state
     if {$id eq "workspace_clear_history"} {return [::GX::scientificHistoryViewerClear $w $state($w,documentId)]}
     if {$id in {workspace_new workspace_open workspace_duplicate workspace_rename workspace_manager workspace_close workspace_delete}} {
-        set callbacks [dict create current [list ::GX::DatasetCurveFit::_currentWorkspace $w] save [list ::GX::DatasetCurveFit::_saveState $w] close [list ::GX::DatasetCurveFit::_closeWindow $w] open ::GX::DatasetCurveFit::open]
+        set callbacks [_workspaceCallbacks $w]
         return [::GX::sessionWorkspaceViewerAction dataset_curve_fit $callbacks $w [string range $id 10 end]]
     }
     switch $id {

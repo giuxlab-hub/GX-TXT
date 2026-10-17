@@ -1,5 +1,5 @@
 {
-  "framework_version": "0.9.8.10-dev-097",
+  "framework_version": "0.9.8.10-dev-099",
   "bridge_api_id": "OCTAVE_SCRIPT_BRIDGE_API_v1",
   "callback_contract": {
     "api_id": "SCRIPT_CALLBACK_API_v1",
@@ -28,7 +28,9 @@
     "intentionally_host_only",
     "intentionally_not_script_safe",
     "newly_bridged",
-    "not_yet_bridged"
+    "not_yet_bridged",
+    "retired_provider",
+    "unavailable_historical_registration"
   ],
   "apis": [
     {
@@ -493,7 +495,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -666,15 +668,220 @@
       }
     },
     {
+      "api_id": "CURVE_DIGITIZER_CALIBRATION_API_v1",
+      "api_version": 1,
+      "provider": "viewer.curve_digitizer",
+      "status": "not_yet_bridged",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "operation_coverage": {},
+      "public_operations": {},
+      "api_policy": {
+        "status": "not_yet_bridged",
+        "reason": "No current Script registration; public host API inspection is required"
+      }
+    },
+    {
       "api_id": "CURVE_DIGITIZER_COMPANION_API_v1",
       "api_version": 1,
       "provider": "viewer.curve_digitizer",
       "provider_kind": "module",
       "documentation_ref": "docs/api/DIGITIZATION_UNCERTAINTY_v1.md",
+      "status": "unavailable_historical_registration",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "registration_source": {
+        "path": "plugins/modules/viewer.curve_digitizer/api/script_bridge_binding.py",
+        "sha256": "589d4053884942b35909b8b68af5af560da87eb859bf8eba208258cdc2cb9f87"
+      },
+      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
+      "api_policy": {
+        "status": "unavailable_historical_registration",
+        "reason": "Historical ledger entry is not registered by the delivered independent Digitalizer package. Current uncertainty functionality is explicitly declared under CURVE_DIGITIZER_UNCERTAINTY_API_v1; no alias or automatic rebinding is provided."
+      },
+      "operation_coverage": {},
+      "public_operations": {}
+    },
+    {
+      "api_id": "CURVE_DIGITIZER_DATASET_SCHEMA_API_v1",
+      "api_version": 1,
+      "provider": "viewer.curve_digitizer",
+      "status": "not_yet_bridged",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "operation_coverage": {},
+      "public_operations": {},
+      "api_policy": {
+        "status": "not_yet_bridged",
+        "reason": "No current Script registration; public host API inspection is required"
+      }
+    },
+    {
+      "api_id": "CURVE_DIGITIZER_IMAGE_PROCESSING_API_v1",
+      "api_version": 1,
+      "provider": "viewer.curve_digitizer",
+      "provider_kind": "module",
+      "documentation_ref": "plugins/modules/viewer.curve_digitizer/IMAGE_PROCESSING_API_v1.md",
       "status": "already_script_callable",
       "operations": [
-        "publication_uncertainty",
-        "publish_covariance",
+        "has_manifest",
+        "lineage",
+        "operations",
+        "read"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "has_manifest": [
+          "Octave",
+          "Python"
+        ],
+        "lineage": [
+          "Octave",
+          "Python"
+        ],
+        "operations": [
+          "Octave",
+          "Python"
+        ],
+        "read": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "registration_source": {
+        "path": "plugins/modules/viewer.curve_digitizer/api/script_bridge_binding.py",
+        "sha256": "54bbc1e44837226dc722a662e1e80a6667d1649c5e55684f9af328b9bec18cc4"
+      },
+      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+      },
+      "operation_coverage": {
+        "has_manifest": {
+          "status": "script_callable",
+          "script_operation": "has_manifest"
+        },
+        "lineage": {
+          "status": "script_callable",
+          "script_operation": "lineage"
+        },
+        "operations": {
+          "status": "script_callable",
+          "script_operation": "operations"
+        },
+        "read": {
+          "status": "script_callable",
+          "script_operation": "read"
+        }
+      },
+      "public_operations": {
+        "has_manifest": {
+          "status": "script_callable",
+          "script_operation": "has_manifest"
+        },
+        "lineage": {
+          "status": "script_callable",
+          "script_operation": "lineage"
+        },
+        "operations": {
+          "status": "script_callable",
+          "script_operation": "operations"
+        },
+        "read": {
+          "status": "script_callable",
+          "script_operation": "read"
+        }
+      }
+    },
+    {
+      "api_id": "CURVE_DIGITIZER_QUALITY_API_v2",
+      "api_version": 2,
+      "provider": "viewer.curve_digitizer",
+      "provider_kind": "module",
+      "documentation_ref": "plugins/modules/viewer.curve_digitizer/QUALITY_API_v2.md",
+      "status": "already_script_callable",
+      "operations": [
+        "diagnostics",
+        "has_quality",
+        "issue_report"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "diagnostics": [
+          "Octave",
+          "Python"
+        ],
+        "has_quality": [
+          "Octave",
+          "Python"
+        ],
+        "issue_report": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "registration_source": {
+        "path": "plugins/modules/viewer.curve_digitizer/api/script_bridge_binding.py",
+        "sha256": "54bbc1e44837226dc722a662e1e80a6667d1649c5e55684f9af328b9bec18cc4"
+      },
+      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+      },
+      "operation_coverage": {
+        "diagnostics": {
+          "status": "script_callable",
+          "script_operation": "diagnostics"
+        },
+        "has_quality": {
+          "status": "script_callable",
+          "script_operation": "has_quality"
+        },
+        "issue_report": {
+          "status": "script_callable",
+          "script_operation": "issue_report"
+        }
+      },
+      "public_operations": {
+        "diagnostics": {
+          "status": "script_callable",
+          "script_operation": "diagnostics"
+        },
+        "has_quality": {
+          "status": "script_callable",
+          "script_operation": "has_quality"
+        },
+        "issue_report": {
+          "status": "script_callable",
+          "script_operation": "issue_report"
+        }
+      }
+    },
+    {
+      "api_id": "CURVE_DIGITIZER_UNCERTAINTY_API_v1",
+      "api_version": 1,
+      "provider": "viewer.curve_digitizer",
+      "provider_kind": "module",
+      "documentation_ref": "plugins/modules/viewer.curve_digitizer/UNCERTAINTY_API_v1.md",
+      "status": "already_script_callable",
+      "operations": [
+        "uncertainty_available",
+        "uncertainty_core_meaning",
+        "uncertainty_covariance",
+        "uncertainty_factors",
+        "uncertainty_publish_covariance",
+        "uncertainty_read",
         "uncertainty_report"
       ],
       "script_languages": [
@@ -682,11 +889,27 @@
         "Python"
       ],
       "operation_languages": {
-        "publication_uncertainty": [
+        "uncertainty_available": [
           "Octave",
           "Python"
         ],
-        "publish_covariance": [
+        "uncertainty_core_meaning": [
+          "Octave",
+          "Python"
+        ],
+        "uncertainty_covariance": [
+          "Octave",
+          "Python"
+        ],
+        "uncertainty_factors": [
+          "Octave",
+          "Python"
+        ],
+        "uncertainty_publish_covariance": [
+          "Octave",
+          "Python"
+        ],
+        "uncertainty_read": [
           "Octave",
           "Python"
         ],
@@ -697,7 +920,7 @@
       },
       "registration_source": {
         "path": "plugins/modules/viewer.curve_digitizer/api/script_bridge_binding.py",
-        "sha256": "589d4053884942b35909b8b68af5af560da87eb859bf8eba208258cdc2cb9f87"
+        "sha256": "54bbc1e44837226dc722a662e1e80a6667d1649c5e55684f9af328b9bec18cc4"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
@@ -705,13 +928,29 @@
         "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
       },
       "operation_coverage": {
-        "publication_uncertainty": {
+        "uncertainty_available": {
           "status": "script_callable",
-          "script_operation": "publication_uncertainty"
+          "script_operation": "uncertainty_available"
         },
-        "publish_covariance": {
+        "uncertainty_core_meaning": {
           "status": "script_callable",
-          "script_operation": "publish_covariance"
+          "script_operation": "uncertainty_core_meaning"
+        },
+        "uncertainty_covariance": {
+          "status": "script_callable",
+          "script_operation": "uncertainty_covariance"
+        },
+        "uncertainty_factors": {
+          "status": "script_callable",
+          "script_operation": "uncertainty_factors"
+        },
+        "uncertainty_publish_covariance": {
+          "status": "script_callable",
+          "script_operation": "uncertainty_publish_covariance"
+        },
+        "uncertainty_read": {
+          "status": "script_callable",
+          "script_operation": "uncertainty_read"
         },
         "uncertainty_report": {
           "status": "script_callable",
@@ -719,13 +958,29 @@
         }
       },
       "public_operations": {
-        "publication_uncertainty": {
+        "uncertainty_available": {
           "status": "script_callable",
-          "script_operation": "publication_uncertainty"
+          "script_operation": "uncertainty_available"
         },
-        "publish_covariance": {
+        "uncertainty_core_meaning": {
           "status": "script_callable",
-          "script_operation": "publish_covariance"
+          "script_operation": "uncertainty_core_meaning"
+        },
+        "uncertainty_covariance": {
+          "status": "script_callable",
+          "script_operation": "uncertainty_covariance"
+        },
+        "uncertainty_factors": {
+          "status": "script_callable",
+          "script_operation": "uncertainty_factors"
+        },
+        "uncertainty_publish_covariance": {
+          "status": "script_callable",
+          "script_operation": "uncertainty_publish_covariance"
+        },
+        "uncertainty_read": {
+          "status": "script_callable",
+          "script_operation": "uncertainty_read"
         },
         "uncertainty_report": {
           "status": "script_callable",
@@ -1106,15 +1361,15 @@
       "api_id": "CURVE_TRACE_ASSISTANT_API_v1",
       "api_version": 1,
       "provider": "viewer.curve_trace_assistant",
-      "status": "not_yet_bridged",
+      "status": "retired_provider",
       "operations": [],
       "script_languages": [],
       "operation_languages": {},
       "operation_coverage": {},
       "public_operations": {},
       "api_policy": {
-        "status": "not_yet_bridged",
-        "reason": "No current Script registration; public host API inspection is required"
+        "status": "retired_provider",
+        "reason": "Provider retired from the active distribution; historical API identity is not rebound."
       }
     },
     {
@@ -3421,15 +3676,15 @@
       "api_id": "DIGITIZATION_QUALITY_API_v1",
       "api_version": 1,
       "provider": "analysis.digitization_quality",
-      "status": "not_yet_bridged",
+      "status": "retired_provider",
       "operations": [],
       "script_languages": [],
       "operation_languages": {},
       "operation_coverage": {},
       "public_operations": {},
       "api_policy": {
-        "status": "not_yet_bridged",
-        "reason": "No current Script registration; public host API inspection is required"
+        "status": "retired_provider",
+        "reason": "Provider retired from the active distribution; historical API identity is not rebound."
       }
     },
     {
@@ -3499,7 +3754,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -3550,7 +3805,7 @@
       },
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
@@ -3759,7 +4014,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -3893,7 +4148,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -4102,7 +4357,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -4252,7 +4507,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -4288,7 +4543,7 @@
       },
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
@@ -4479,7 +4734,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -4599,7 +4854,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -5486,6 +5741,7 @@
       "provider": "module",
       "status": "already_script_callable",
       "operations": [
+        "analysis_capabilities",
         "operational_class",
         "operational_info",
         "public_api_ids"
@@ -5495,6 +5751,10 @@
         "Python"
       ],
       "operation_languages": {
+        "analysis_capabilities": [
+          "Octave",
+          "Python"
+        ],
         "operational_class": [
           "Octave",
           "Python"
@@ -5524,6 +5784,26 @@
         "operational_info": {
           "status": "script_callable",
           "script_operation": "operational_info"
+        },
+        "analysis_capabilities": {
+          "status": "script_callable",
+          "script_operation": "analysis_capabilities"
+        },
+        "moduleAnalysisCapabilities": {
+          "status": "script_callable",
+          "script_operation": "analysis_capabilities"
+        },
+        "moduleAnalysisSubmit": {
+          "status": "intentionally_host_only",
+          "reason": "Targets the running GUI application Standard Analysis queue and registered Viewer identity; independent scripts use durable Script Jobs rather than controlling another process queue."
+        },
+        "moduleAnalysisStatus": {
+          "status": "intentionally_host_only",
+          "reason": "Targets the running GUI application Standard Analysis queue and registered Viewer identity; independent scripts use durable Script Jobs rather than controlling another process queue."
+        },
+        "moduleAnalysisCancel": {
+          "status": "intentionally_host_only",
+          "reason": "Targets the running GUI application Standard Analysis queue and registered Viewer identity; independent scripts use durable Script Jobs rather than controlling another process queue."
         }
       },
       "public_operations": {
@@ -5542,6 +5822,26 @@
         "operational_info": {
           "status": "script_callable",
           "script_operation": "operational_info"
+        },
+        "analysis_capabilities": {
+          "status": "script_callable",
+          "script_operation": "analysis_capabilities"
+        },
+        "moduleAnalysisCapabilities": {
+          "status": "script_callable",
+          "script_operation": "analysis_capabilities"
+        },
+        "moduleAnalysisSubmit": {
+          "status": "intentionally_host_only",
+          "reason": "Targets the running GUI application Standard Analysis queue and registered Viewer identity; independent scripts use durable Script Jobs rather than controlling another process queue."
+        },
+        "moduleAnalysisStatus": {
+          "status": "intentionally_host_only",
+          "reason": "Targets the running GUI application Standard Analysis queue and registered Viewer identity; independent scripts use durable Script Jobs rather than controlling another process queue."
+        },
+        "moduleAnalysisCancel": {
+          "status": "intentionally_host_only",
+          "reason": "Targets the running GUI application Standard Analysis queue and registered Viewer identity; independent scripts use durable Script Jobs rather than controlling another process queue."
         }
       },
       "documentation_ref": "docs/api/MODULE_API_v1.md",
@@ -5552,7 +5852,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -12163,7 +12463,7 @@
       },
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
@@ -12337,7 +12637,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -12606,7 +12906,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -14019,7 +14319,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -14143,7 +14443,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -14214,7 +14514,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -14679,6 +14979,21 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
     {
+      "api_id": "SCIENTIFIC_IMAGE_INSPECTOR_API_v1",
+      "api_version": 1,
+      "provider": "viewer.scientific_image_inspector",
+      "status": "not_yet_bridged",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "operation_coverage": {},
+      "public_operations": {},
+      "api_policy": {
+        "status": "not_yet_bridged",
+        "reason": "No current Script registration; public host API inspection is required"
+      }
+    },
+    {
       "api_id": "SCIENTIFIC_RECIPE_API_v1",
       "api_version": 1,
       "provider": "scientific_recipe",
@@ -15011,7 +15326,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -15441,7 +15756,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -15467,7 +15782,7 @@
       },
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
@@ -15710,7 +16025,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -15763,7 +16078,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -16077,6 +16392,7 @@
         "multirate.decimate",
         "multirate.interpolate",
         "multirate.rational",
+        "operation_schema",
         "quality.basic",
         "quality.harmonics",
         "quality.snr",
@@ -16100,6 +16416,7 @@
         "time_metric.pulse",
         "time_metric.slew",
         "time_metric.step",
+        "validate_operation",
         "wavelet.cwt",
         "wavelet.dwt",
         "wavelet.inverse_dwt",
@@ -16342,6 +16659,10 @@
           "Octave",
           "Python"
         ],
+        "operation_schema": [
+          "Octave",
+          "Python"
+        ],
         "quality.basic": [
           "Octave",
           "Python"
@@ -16431,6 +16752,10 @@
           "Python"
         ],
         "time_metric.step": [
+          "Octave",
+          "Python"
+        ],
+        "validate_operation": [
           "Octave",
           "Python"
         ],
@@ -16791,6 +17116,14 @@
         "statistical_contract": {
           "status": "script_callable",
           "script_operation": "statistical_contract"
+        },
+        "operation_schema": {
+          "status": "script_callable",
+          "script_operation": "operation_schema"
+        },
+        "validate_operation": {
+          "status": "script_callable",
+          "script_operation": "validate_operation"
         }
       },
       "public_operations": {
@@ -17133,6 +17466,14 @@
         "statistical_contract": {
           "status": "script_callable",
           "script_operation": "statistical_contract"
+        },
+        "operation_schema": {
+          "status": "script_callable",
+          "script_operation": "operation_schema"
+        },
+        "validate_operation": {
+          "status": "script_callable",
+          "script_operation": "validate_operation"
         }
       },
       "documentation_ref": "plugins/modules/math.signal/SIGNAL_API_v1.md",
@@ -17143,7 +17484,7 @@
       "provider_kind": "module",
       "registration_source": {
         "path": "plugins/modules/math.signal/api/script_bridge_binding.py",
-        "sha256": "3a043beea86f334001edfb8290a2e0995ea47ee4beed2787d33421ca2b815430"
+        "sha256": "a7d735612d9bf9292cb942391e370ad543a137d2dc65ecde4a8c4c8aef3bc64c"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -18548,7 +18889,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -18666,6 +19007,7 @@
         "definition",
         "differential_ratio_plan",
         "formula_program",
+        "homogeneous_coordinate_plan",
         "list"
       ],
       "script_languages": [
@@ -18702,6 +19044,10 @@
           "Python"
         ],
         "formula_program": [
+          "Octave",
+          "Python"
+        ],
+        "homogeneous_coordinate_plan": [
           "Octave",
           "Python"
         ],
@@ -18766,6 +19112,14 @@
         "formula_program": {
           "status": "script_callable",
           "script_operation": "formula_program"
+        },
+        "homogeneous_coordinate_plan": {
+          "status": "script_callable",
+          "script_operation": "homogeneous_coordinate_plan"
+        },
+        "unitRegistryHomogeneousCoordinatePlan": {
+          "status": "script_callable",
+          "script_operation": "homogeneous_coordinate_plan"
         }
       },
       "documented_public_commands": [
@@ -18831,6 +19185,14 @@
         "formula_program": {
           "status": "script_callable",
           "script_operation": "formula_program"
+        },
+        "homogeneous_coordinate_plan": {
+          "status": "script_callable",
+          "script_operation": "homogeneous_coordinate_plan"
+        },
+        "unitRegistryHomogeneousCoordinatePlan": {
+          "status": "script_callable",
+          "script_operation": "homogeneous_coordinate_plan"
         }
       },
       "documentation_ref": "docs/api/UNIT_REGISTRY_API_v1.md",
@@ -18841,7 +19203,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/unit_registry.py",
-        "sha256": "91be52aae0b4c265e7a046071507f65a872d1c6b55ad6cc96c6dd5d50a252f66"
+        "sha256": "f1ef9e510cdf38e19c67df2eb793f56f7717debd8f4138675394e48901985d07"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -19115,7 +19477,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/public_core_services.py",
-        "sha256": "b323cdda376174ea5583b2cf02c3dfb7b7bf22d347edf5ceadfe62d6a671509c"
+        "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -19306,7 +19668,7 @@
     "not_yet_bridged"
   ],
   "coverage_schema": "Exact current registered Script operations and retained reviewed host policies; module declarations without direct registration are explicit and do not imply missing scientific functionality.",
-  "development_cycle": "dev097 actual provider and operation reconciliation",
+  "development_cycle": "Current actual provider and operation reconciliation",
   "native2d_aspect_policy": {
     "default": "xy_equal",
     "override": "host/module-only",
@@ -19315,29 +19677,9 @@
     "validation": "dev097 actual Python/Octave Jobs verify default/query/grid, host-only override rejection and equal-aspect round trip; native/module auto-aspect verified by actual Preview consumer evidence183/186."
   },
   "verification_scope": "Registration and source/manifest inventory; this is not a claim that every operation was invoked",
-  "api_registration_count": 60,
-  "registered_operation_count": 963,
+  "api_registration_count": 62,
+  "registered_operation_count": 978,
   "provider_manifests": [
-    {
-      "module_id": "analysis.digitization_quality",
-      "api_id": "DIGITIZATION_QUALITY_API_v1",
-      "api_version": 1,
-      "manifest": "plugins/modules/analysis.digitization_quality/module.ini",
-      "manifest_sha256": "be7da9e9215ece2e54b2c0fd547d657eb7d6d7650c14b1564b7bfcbcadb062ba",
-      "script_registered": false,
-      "operations": [],
-      "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
-      "entrypoint": "plugins/modules/analysis.digitization_quality/api/digitization_quality_api_v1.tcl",
-      "entrypoint_sha256": "596073e4fc9de5087e670345c0aebbe8ca8f1ffa73ad982bcc35fe438bb1c1ce",
-      "capabilities": [
-        "viewer_backend",
-        "calibration_diagnostics",
-        "source_integrity"
-      ],
-      "namespace": "::GX::DigitizationQuality",
-      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
-    },
     {
       "module_id": "analysis.octave_script",
       "api_id": "OCTAVE_SCRIPT_EDITOR_API_v1",
@@ -19594,7 +19936,7 @@
       "api_id": "NUMERIC_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/math.numeric/module.ini",
-      "manifest_sha256": "b20182f901e293b6eb2fa08e346b878d7152a20c4e7f264839e050ee054420f6",
+      "manifest_sha256": "4bbebd1a504fcbbda736cad0b9d764398f39852516352df8bfce7a317a3effee",
       "script_registered": true,
       "operations": [
         "array_binary",
@@ -19774,7 +20116,7 @@
       "api_id": "SIGNAL_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/math.signal/module.ini",
-      "manifest_sha256": "5eff37ccdae5bfc71b011e1a4fe12e20b29289c413ed08d7d9262100da2c6537",
+      "manifest_sha256": "172861f552b5aad031d0358a315f490bf4149ea008ffbc18b69fce9c61d265fd",
       "script_registered": true,
       "operations": [
         "analytic.envelope",
@@ -19835,6 +20177,7 @@
         "multirate.decimate",
         "multirate.interpolate",
         "multirate.rational",
+        "operation_schema",
         "quality.basic",
         "quality.harmonics",
         "quality.snr",
@@ -19858,6 +20201,7 @@
         "time_metric.pulse",
         "time_metric.slew",
         "time_metric.step",
+        "validate_operation",
         "wavelet.cwt",
         "wavelet.dwt",
         "wavelet.inverse_dwt",
@@ -20007,20 +20351,22 @@
       "api_id": "CURVE_DIGITIZER_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "39bddb0e66e11216f43f7113ea33804ca558a82916cfb4c8f661e7c448cd3578",
+      "manifest_sha256": "75171004d64de68793b23ab5bc07950ef52ed2384d442e4e82b6896bb66b378e",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
       "reason": "No current Script registration; public host API inspection is required",
       "entrypoint": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_viewer_api_v1.tcl",
-      "entrypoint_sha256": "b3979c93419d267c53c5e4c9d52043aad4aec9470cac6166263d6de8ac03196c",
+      "entrypoint_sha256": "1c12e9dbd66ce1787149fbd98187cc4980386238e74dacd5a187a336a70fa592",
       "capabilities": [
         "viewer_backend",
         "interactive_documents",
         "dataset_metadata",
         "unit_registry",
         "semantic_registry",
-        "dataset_publication_v2"
+        "dataset_publication_v2",
+        "dataset_catalog_v1",
+        "dataset_namespace_v1"
       ],
       "namespace": "::GX::CurveDigitizer",
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
@@ -20030,50 +20376,132 @@
       "api_id": "CURVE_DIGITIZER_COMPANION_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "39bddb0e66e11216f43f7113ea33804ca558a82916cfb4c8f661e7c448cd3578",
-      "script_registered": true,
-      "operations": [
-        "publication_uncertainty",
-        "publish_covariance",
-        "uncertainty_report"
-      ]
+      "manifest_sha256": "75171004d64de68793b23ab5bc07950ef52ed2384d442e4e82b6896bb66b378e",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "unavailable_historical_registration",
+      "reason": "Historical ledger entry is not registered by the delivered independent Digitalizer package. Current uncertainty functionality is explicitly declared under CURVE_DIGITIZER_UNCERTAINTY_API_v1; no alias or automatic rebinding is provided.",
+      "entrypoint": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_companion_api_v1.tcl",
+      "entrypoint_sha256": "1a7d65c93d885e7c30040b7ce8af00e44ff38905cee962e8a5b6b59dc24149c2",
+      "capabilities": [
+        "configuration_discovery",
+        "curve_context",
+        "source_integrity",
+        "pixel_point_commit",
+        "optimistic_concurrency"
+      ],
+      "namespace": "::GX::CurveDigitizerCompanion",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
-      "module_id": "viewer.curve_trace_assistant",
-      "api_id": "CURVE_TRACE_ASSISTANT_API_v1",
+      "module_id": "viewer.curve_digitizer",
+      "api_id": "CURVE_DIGITIZER_CALIBRATION_API_v1",
       "api_version": 1,
-      "manifest": "plugins/modules/viewer.curve_trace_assistant/module.ini",
-      "manifest_sha256": "e4bdf657c12fc19c9dba991330ecf00b307224f2fb0b51c37752614dd99a6df9",
+      "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
+      "manifest_sha256": "75171004d64de68793b23ab5bc07950ef52ed2384d442e4e82b6896bb66b378e",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
       "reason": "No current Script registration; public host API inspection is required",
-      "entrypoint": "plugins/modules/viewer.curve_trace_assistant/api/curve_trace_assistant_api_v1.tcl",
-      "entrypoint_sha256": "1b26af5f5a0ea2553c861cbeb681336064ed0cc5161081c58eb60f967e306061",
+      "entrypoint": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_calibration_api_v1.tcl",
+      "entrypoint_sha256": "f3edc41f9d66ce52eca70d7d4374781075d3532269814d90383be4268c066e10",
       "capabilities": [
-        "curve_digitizer_configuration",
-        "curve_context",
+        "published_dataset_calibration",
         "source_integrity",
-        "pixel_point_commit",
-        "viewer_backend",
-        "native_c",
-        "seed_guided_trace"
+        "pixel_to_scientific_transform",
+        "scientific_to_pixel_transform",
+        "batch_transform",
+        "calibration_fingerprint",
+        "uncertainty_reporting",
+        "local_jacobian",
+        "scale_bar_provenance",
+        "typed_read",
+        "multiple_calibration_realizations",
+        "per_realization_transform"
       ],
-      "namespace": "::GX::CurveTraceAssistant",
+      "namespace": "::GX::CurveDigitizerCalibration",
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "viewer.curve_digitizer",
+      "api_id": "CURVE_DIGITIZER_DATASET_SCHEMA_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
+      "manifest_sha256": "75171004d64de68793b23ab5bc07950ef52ed2384d442e4e82b6896bb66b378e",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_dataset_schema_api_v1.tcl",
+      "entrypoint_sha256": "105f14a1b6e9a728985e5edd1b8aa55b622102a66ba785caa7e8ec6ab38a2e46",
+      "capabilities": [
+        "published_dataset_roles",
+        "curve_grouping",
+        "independent_curves",
+        "numerical_curve_families",
+        "raster_point_columns",
+        "read_raster_points",
+        "legacy_read"
+      ],
+      "namespace": "::GX::CurveDigitizerDataset",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "viewer.curve_digitizer",
+      "api_id": "CURVE_DIGITIZER_IMAGE_PROCESSING_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
+      "manifest_sha256": "75171004d64de68793b23ab5bc07950ef52ed2384d442e4e82b6896bb66b378e",
+      "script_registered": true,
+      "operations": [
+        "has_manifest",
+        "lineage",
+        "operations",
+        "read"
+      ]
+    },
+    {
+      "module_id": "viewer.curve_digitizer",
+      "api_id": "CURVE_DIGITIZER_QUALITY_API_v2",
+      "api_version": 2,
+      "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
+      "manifest_sha256": "75171004d64de68793b23ab5bc07950ef52ed2384d442e4e82b6896bb66b378e",
+      "script_registered": true,
+      "operations": [
+        "diagnostics",
+        "has_quality",
+        "issue_report"
+      ]
+    },
+    {
+      "module_id": "viewer.curve_digitizer",
+      "api_id": "CURVE_DIGITIZER_UNCERTAINTY_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
+      "manifest_sha256": "75171004d64de68793b23ab5bc07950ef52ed2384d442e4e82b6896bb66b378e",
+      "script_registered": true,
+      "operations": [
+        "uncertainty_available",
+        "uncertainty_core_meaning",
+        "uncertainty_covariance",
+        "uncertainty_factors",
+        "uncertainty_publish_covariance",
+        "uncertainty_read",
+        "uncertainty_report"
+      ]
     },
     {
       "module_id": "viewer.curve_viewer",
       "api_id": "CURVE_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_viewer/module.ini",
-      "manifest_sha256": "8a330c53a62c79458712407bc58e38f235377c744879682620c20e6ad43a2af6",
+      "manifest_sha256": "90a0af07922702ad39f6d143fc18d825a38e6e32332f58f5bffef17718399e0d",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
       "reason": "No current Script registration; public host API inspection is required",
       "entrypoint": "plugins/modules/viewer.curve_viewer/api/curve_viewer_api_v1.tcl",
-      "entrypoint_sha256": "cb629e2f9ff6c695028ddaa9f2d527df85b0880326341af15276a8271cc4a250",
+      "entrypoint_sha256": "68efd9c12967f81679128821337b3600d8442ae40a198f46c79aac6b5bea586d",
       "capabilities": [
         "read_only",
         "curve_source",
@@ -20088,13 +20516,13 @@
       "api_id": "CURVE_WORKBENCH_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_workbench/module.ini",
-      "manifest_sha256": "4317a7446368b80d050ba388eb2ce7701bd85210e0439cb0fdcf6df0b1e57e4d",
+      "manifest_sha256": "fb806a7edd1556e0b797f08b5594d817e1b791d7e2a4a9c2ff6cd79a9ac6137d",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
       "reason": "No current Script registration; public host API inspection is required",
       "entrypoint": "plugins/modules/viewer.curve_workbench/api/curve_workbench_api_v1.tcl",
-      "entrypoint_sha256": "a01a9918f5fcaa4e1451f09bafc173538d91ec708f38bfbba70febdad6101de2",
+      "entrypoint_sha256": "8bce2c12339cc01d5ea404d4d3fefb62950aab4bd51f8250b0ecb1db95314cbe",
       "capabilities": [
         "explicit_scientific_axis_declaration",
         "viewer_backend",
@@ -20113,7 +20541,7 @@
       "api_id": "DATASET_CURVE_FIT_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.dataset_curve_fit/module.ini",
-      "manifest_sha256": "eab0036fd1554daa009aa1ef90604713b1fee8e4bff137471ec0bdd8caeb9eec",
+      "manifest_sha256": "560eb67cf1446da4ae11920d38d75ab521f37cdbb3ec8f22e26933bb58f84c32",
       "script_registered": true,
       "operations": [
         "dataset_suggestions",
@@ -20276,6 +20704,30 @@
         "session_inspection"
       ],
       "namespace": "::GX::PdfOcrViewer",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "viewer.scientific_image_inspector",
+      "api_id": "SCIENTIFIC_IMAGE_INSPECTOR_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.scientific_image_inspector/module.ini",
+      "manifest_sha256": "cb223df54d2d55505e399e93d8614e875387ccdabec1526cd4740e5d496c89ae",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.scientific_image_inspector/api/scientific_image_inspector_api_v1.tcl",
+      "entrypoint_sha256": "fe0eba42281ac55b1d1eba89e202cca128639f918bf49a71356880cf566c30ae",
+      "capabilities": [
+        "viewer_backend",
+        "image_inspection",
+        "operation_discovery",
+        "validated_processing",
+        "histograms",
+        "dataset_publication",
+        "manifest_lookup"
+      ],
+      "namespace": "::GX::SII",
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {

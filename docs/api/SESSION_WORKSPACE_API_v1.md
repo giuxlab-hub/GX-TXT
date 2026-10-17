@@ -71,17 +71,34 @@ Curve Viewer and Dataset Curve Fit register their existing schema/version1.0
 and2.0 documents, respectively. Legacy compatible documents are listed and
 promotable with the same ID. Both accept `workspace_id=new` plus `workspace_name`,
 or an exact existing Workspace ID. Explicit opening never chooses by Dataset.
-One top-level switches by saving and closing the previous document; sources and
-accepted fits cannot merge across Workspaces. Generation/revision/lifetime
+A top-level switches through the shared Save/Discard/Cancel review and the
+provider close/open callbacks; sources and accepted fits cannot merge across Workspaces. Generation/revision/lifetime
 checks reject stale saves. Metadata-only note/name updates are reconciled.
 
-`sessionWorkspaceViewerMenu menu provider callbacks parent` is a generic GUI
-adapter in this API. Callback prefixes `current`, `save`, `close`, and `open`
-connect a host to New/Open/Save/Duplicate/Rename/Manager/Close/Delete actions.
-Duplicate uses the official export/import path to remap managed resources;
-Delete confirms and preserves source/published Datasets. Notes, previews and
-portable packaging stay with the existing CORE manager and Document/Resource
-APIs. No additional registry or private project format is created.
+`sessionWorkspaceViewerMenu menu provider callbacks parent` connects a Viewer to the shared host. Required callback prefixes remain `current`, `save`, `close` and `open`. Optional `dirty` returns whether editor changes remain uncommitted, `prepare action` refuses an unsafe transition with a clear error, `discard` releases the window without another save, and optional `review boolean` suspends field FocusOut commits while the Save/Discard/Cancel question owns focus. These callbacks are host-only and are never transported through Script Bridge. Existing four-callback adapters retain their provider-owned lifecycle behavior.
+
+The same `sessionWorkspaceHostState` and `sessionWorkspaceHostDispatch` serve the embedded manager, top-level manager and Viewer menu. `sessionWorkspaceBuild frame ?provider? ?callbacks? ?parent?` embeds the surface. `sessionWorkspaceDialog ?parent? ?provider? ?callbacks?` opens it as a top-level. Optional provider scope restricts the visible saved Workspaces and imported package provider. Without scope, the filter discovers actual installed/enabled providers; text search matches name/type/provider. New and Save require a live compatible Viewer adapter; unsupported actions remain disabled instead of inventing a blank generic Document.
+
+The host exposes New, Open, Save, Duplicate, Rename, Close, Delete, Notes, Preview, Import, Export, Refresh and existing descriptor-owned Actions. New creates an unsaved draft through the provider's `open` callback with `workspace_id=new` and `workspace_name`; registration occurs through Save or the provider's established scientific edit/autosave path. Rename edits only the name. Duplicate uses the official export/import service, including nested managed-resource ownership remapping. Delete confirms removal of the Document, notes, scientific History and owned resources while preserving source and published Datasets.
+
+Commands and naming forms capture the Session token, host window incarnation and selected Document generation/revision. Stale, deleted or replaced identities fail before mutation. Selection refresh uses existing coalesced idle notifications and weak widget references; destroying a host unsubscribes it. No polling, saved UI registry or replacement History exists. Save/Discard/Cancel reviews occur at the transition, not when a naming form opens, so cancelling the form never saves a draft. A successful notes Save advances only that editor's exact receipt; another stale editor cannot overwrite it. Preview reads verified managed PNG resources through bounded CORE image preview and reports unavailable/corrupt resources truthfully.
+
+Curve Viewer and Dataset Curve Fit adopt the optional lifecycle callbacks. Their scientific Native2D editors and current History/autosave owners remain unchanged. Other Viewer adapters continue using the backward-compatible four-callback surface; no mass migration is claimed. Curve Workbench keeps its specialized geometry/Undo controls.
+
+Example (host-side Tcl):
+
+```tcl
+::GX::sessionWorkspaceViewerMenu $menu my_registered_provider \
+    [dict create current [list MyViewer::current $window] \
+                 save [list MyViewer::save $window] \
+                 close [list MyViewer::close $window] \
+                 open MyViewer::open \
+                 dirty [list MyViewer::dirty $window] \
+                 prepare [list MyViewer::prepare $window] \
+                 discard [list MyViewer::discard $window]] $window
+```
+
+These prefixes belong to the integrating Viewer and do not define scientific persistence. Existing `SESSION_WORKSPACE_API_v1`, `INTERACTIVE_DOCUMENT_API_v1`, managed-resource and descriptor action operations remain the authorities.
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 
 <a id="compatible-provider-schema-versions-dev094"></a>

@@ -143,7 +143,7 @@ proc ::GX::startPreparedQueue {queue operation} {
     if {[llength $queue] == 0} { return }
     set analysisQueue $queue
     set analysisOperation $operation
-    if {$currentSession ne "" && [file isdirectory [file join $currentSession metadata]]} {
+    if {$operation ne "Targeted analysis" && $currentSession ne "" && [file isdirectory [file join $currentSession metadata]]} {
         catch {writeManifest [file join $currentSession metadata manifest.ini]}
     }
     set analysisTotal [llength $analysisQueue]
@@ -155,7 +155,7 @@ proc ::GX::startPreparedQueue {queue operation} {
     if {[info exists ui(analysisStart)]} { $ui(analysisStart) configure -state disabled }
     if {[info exists ui(runAllButton)]} { $ui(runAllButton) configure -state disabled }
     if {[info exists ui(stopButton)]} { $ui(stopButton) configure -state normal }
-    analysisLog "$operation - avvio coda: $analysisTotal fasi."
+    analysisLog "$operation - queue started: $analysisTotal stages."
     runNextAnalysis
 }
 
@@ -258,9 +258,13 @@ proc ::GX::stopAnalysis_v077 {{message 1}} {
     variable runAllPending
     if {$analysisPipe ne ""} {
         fileevent $analysisPipe readable {}
+        if {[info exists ::GX::analysisOwnedGroup] && $::GX::analysisOwnedGroup} {
+            foreach p $analysisPids {catch {exec kill -TERM -- -$p}}
+        }
         foreach p $analysisPids { catch {exec kill -TERM $p} }
         catch {close $analysisPipe}
     }
+    set ::GX::analysisOwnedGroup 0
     set analysisPipe ""; set analysisPids {}; set analysisQueue {}
     if {[info exists ui(analysisLogFile)] && $ui(analysisLogFile) ne ""} { catch {close $ui(analysisLogFile)}; set ui(analysisLogFile) "" }
     set runAllPending 0

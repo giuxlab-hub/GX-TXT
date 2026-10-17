@@ -4,7 +4,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Purpose
 
-Project API v1 adds a persistent organizational entity above Experiment:
+Project API v1 provides a persistent organizational entity above Experiment:
 
 ```text
 Project
@@ -48,9 +48,9 @@ The Session path is therefore location metadata, not Experiment identity. Openin
 
 Manifest Format 2 continues to write the historical `experiment.project` field for backward compatibility. For a persistent Project it contains a display-name snapshot only; `project_link.project_id` is the authoritative identity.
 
-A pre-0.9.7.66 manifest with only `experiment.project` is **not** converted automatically into a Project. The old text is exposed as legacy project text and remains recoverable. When the user explicitly associates that Experiment with a persistent Project, GX-TXT stores the old text in `project_link.legacy_project` before setting the new Project ID.
+A legacy manifest with only `experiment.project` is **not** converted automatically into a named Project. The old text is exposed as legacy project text and remains recoverable. When the user explicitly associates that Experiment with a persistent Project, GX-TXT stores the old text in `project_link.legacy_project` before setting the new Project ID.
 
-Since dev083 detaching reassigns to Default / Unassigned and retains legacy text. It never deletes the Session, Dataset, RAW source, plot or analysis result.
+Detaching reassigns to Default / Unassigned and retains legacy text. It never deletes the Session, Dataset, RAW source, plot or analysis result.
 
 ## Public Tcl operations
 
@@ -66,6 +66,7 @@ projectField
 projectExists
 projectCreate
 projectUpdate
+projectExperimentReassign
 projectAssociateExperiment
 projectDetachExperiment
 projectListExperiments
@@ -76,20 +77,13 @@ projectCurrentDisplay
 projectSynchronizeCurrentExperiment
 ```
 
-`projectCreate` and `projectUpdate` persist metadata immediately. Current-Experiment association/detachment updates both the persistent Project membership registry and the Session manifest.
+`projectCreate` and `projectUpdate` persist Project metadata immediately. Creating a Project never assigns an existing Experiment. `projectExperimentReassign eid projectId ?expectedProject?` uses the existing organization transaction to update a selected Experiment without opening it. The optional expected source Project rejects a stale selection; an already-current destination is a no-op. Current-Experiment association/detachment updates both the persistent Project membership registry and the Session manifest.
 
-## GUI integration (Phase 1, dev077)
+## GUI integration
 
-Experiment is an internal Session section, selected alongside Session files,
-scripts, Workspaces, Configuration / Manifest and Parameters. The actual existing
-Experiment panel, four View/Edit/Save note sections, Project display, New Project
-and Edit Project controls are reused. The standalone Projects page is unchanged.
-Dataset remains its independent page.
+Experiment is a Session section alongside files, scripts, Workspaces, Configuration / Manifest and Parameters. The Projects page browses independent Project membership. Creating a Project or selecting a browser row does not move the open Experiment. **Move open Session here** is an explicit association command. Each Experiment row offers **Move to Project…** with named and Default / Unassigned destinations, without opening or relocating that Session. Default rows omit the redundant Move to Default command.
 
-The Experiment row no longer constructs Associate current Session..., Experiments...
-or Detach Session buttons. This deliberately removes GUI entry points only. Every
-operation below remains callable and supported; absence of a button is not evidence
-of dead code, deprecation or permission to delete an API.
+The Experiment section retains its View/Edit/Save notes, Project display, New Project and Edit Project controls. Additional public association/navigation operations remain available to callers even when the Experiment section has no corresponding button.
 
 | Exact command and arguments | Preserved contract / remaining purpose |
 |---|---|
@@ -97,21 +91,16 @@ of dead code, deprecation or permission to delete an API.
 | `::GX::projectDetachCurrentExperiment` | Reassign current membership to Default / Unassigned and persist the link; no Session or scientific deletion. Used by Projects detachment and programmatic callers. |
 | `::GX::projectAssociateExperiment projectId experimentId sessionPath experimentName` | Persist independent membership by stable Experiment ID. Also used by New Experiment with a fresh ID/path. |
 | `::GX::projectDetachExperiment experimentId` | Reassign a specified membership to Default / Unassigned; retained by Projects and public callers. |
-| `::GX::projectSelectDialog` / `::GX::projectSelectDialogAssociate w` | Supported host dialog/callback for selecting and associating a Project; no Experiment-row button in Phase 1. |
+| `::GX::projectSelectDialog` / `::GX::projectSelectDialogAssociate w` | Supported host dialog/callback for selecting and associating a Project; no Experiment-section button. |
 | `::GX::projectDetachCurrentExperimentDialog` | Supported nondestructive confirmation callback; GUI-detached from Experiment intentionally. |
 | `::GX::projectExperimentsDialog` | Supported host selector over the current Project's recorded Experiments; GUI-detached from Experiment intentionally. |
 | `::GX::projectOpenExperimentFromList w` | Validate a recorded Session path and open through the normal controller. Retained for dialog/programmatic callers. |
 | `::GX::projectListExperiments projectId` | Return independent membership descriptors for existing Project navigation and automation. |
 | `::GX::projectGuiOpenExperiment` / `::GX::openSessionPath path` | Existing Projects navigation and shared Session opening remain supported. |
 
-The presumed apparently-unused-API ledger could not be located in the published
-framework/tooling or project/server documentation during Phase 1. This preservation
-list belongs to this existing API manual; it is not a replacement unused-API registry.
-The exact negative search scope is recorded in the versioned technical report.
-
 ## Persistence and deletion semantics
 
-Project state is authoritative user state, not runtime/cache. Since dev083, Resource Lifecycle deletion reassigns named Project members to the protected Default Project, retaining scientific Sessions. Session deletion retains a reversible recovery tree. See [Project Experiment management](PROJECT_EXPERIMENT_MANAGEMENT_API_v1.md) and [Object Origin](OBJECT_ORIGIN_API_v1.md).
+Project state is authoritative user state, not runtime/cache. Resource Lifecycle deletion reassigns named Project members to the protected Default Project, retaining scientific Sessions. Session deletion retains a reversible recovery tree. See [Project Experiment management](PROJECT_EXPERIMENT_MANAGEMENT_API_v1.md) and [Object Origin](OBJECT_ORIGIN_API_v1.md).
 
 ## Scope
 

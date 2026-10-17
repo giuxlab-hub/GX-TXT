@@ -1,3 +1,10 @@
+# 1.4.0 — dev099
+
+- Publish typed per-operation fields, options, units, defaults and design conditions from the same provider-owned contract consumed by execution validation.
+- Add shared UI_FIELD guided forms and public Tcl/Script Bridge discovery and non-computing preflight.
+- Verify existing durable Script Job/Bridge asynchronous execution, GUI responsiveness, genuine cancellation and failure; no separate Signal scheduler is added.
+- Preserve numerical outputs and binary scientific source identities; remove release-history prose from the functional manual.
+
 # 1.3.0 — dev097
 
 - Captured-column Tcl calls resolve the registered statistical contract and preserve spectral vectors in canonical CORE resources, including complex grids and undefined ratios.

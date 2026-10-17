@@ -142,6 +142,8 @@ proc ::GX::DatasetCurveFit::_invalidateSettings {w} {
 proc ::GX::DatasetCurveFit::_uiBoundSetting {w field} {
     variable state
     if {![winfo exists $w] || [info exists state($w,restoringWorkspace)]} return
+    # Opening a lifecycle review must not commit this field through FocusOut.
+    if {[info exists state($w,hostReview)] && $state($w,hostReview)} return
     set proposed $state($w,$field)
     # Tk updates a bound variable before delivering its selection/focus event.
     # Recover the displayed checkpoint through CORE before asking to branch;

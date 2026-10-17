@@ -413,6 +413,16 @@ proc ::GX::unitRegistryConversionPlan {source target {sourceOverride {}}} {
 proc ::GX::unitSelectorCandidates {} {
     return [lsort -unique [concat [unitSelectorCandidates_before_unit_registry] [unitRegistryList]]]
 }
+proc ::GX::unitRegistryHomogeneousCoordinatePlan {source target} {
+    # Euclidean working planes need one common proportional coordinate frame,
+    # not necessarily a length. Absolute affine/opaque semantics are unsafe here.
+    set from [_unitDifferentialBasis $source];set to [_unitDifferentialBasis $target]
+    if {[dict get $from dimension_key] ne [dict get $to dimension_key]} {error {Euclidean coordinates require dimensionally homogeneous units}}
+    if {[dict get $from affine_offset]!=0 || [dict get $to affine_offset]!=0} {error {Affine units cannot define a proportional Euclidean working plane}}
+    set plan [unitRegistryAffinePlan $source $target]
+    if {![dict get $plan affine] || [dict get $plan offset]!=0 || [dict get $plan scale]<=0} {error {Working coordinates require a positive proportional unit conversion}}
+    return [dict create schema gxtxt.homogeneous_coordinate_plan.v1 source_unit $source target_unit $target dimension_key [dict get $from dimension_key] scale [dict get $plan scale] offset 0.0 physical_length [unitTclCompatible $source m]]
+}
 proc ::GX::unitRegistryConvertCoordinates {source target coordinates} {
     unitRegistryConversionPlan $source $target
     if {![unitTclCompatible $source m]||![unitTclCompatible $target m]} {error "Geometry coordinates require compatible length units"}

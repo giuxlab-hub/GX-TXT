@@ -5,7 +5,7 @@
 
 Spline instructions appear once beside live coordinates. Click an existing
 line/branch defining point to finish the current Path placement; the tool stays
-ready for another Path until Escape. Existing Workspaces without a CAD
+ready for another Path until Escape. Compatible Workspaces without a CAD
 block reopen normally. If restoration genuinely fails, the original saved
 Workspace remains protected and the status shows its cause.
 
@@ -308,11 +308,11 @@ in the gesture provenance. The setting, logical reference and resulting geometry
 persist through Save/reopen. No source Dataset is changed or implicitly published.
 
 **Working units…** converts the whole workspace coordinate frame through the
-public Unit Registry and Native2D. Select the current and target length units;
+public Unit Registry and Native2D. Enter the current and target common units;
 undeclared coordinates require the explicit assumption checkbox. Known mixed
 units reject the whole action. Normalize calibrated source coordinates with
-Dataset Transform before proportional frame conversion. Physical geometry
-size and canvas position stay unchanged; this differs from **Physical scale…**.
+Dataset Transform before proportional frame conversion. Scientific extent
+and canvas position stay unchanged; this differs from **Physical scale…**.
 Native geometry, dimensional grid/polar settings, custom pivots and mirror axes
 convert together. Axis labels and point editors show the working unit. The
 conversion is one Undo/Redo action and preserves point/row identities, selection,
@@ -529,7 +529,7 @@ The point table and canvas preserve one logical point selection. Repeated/rapid 
 
 Coordinates chooses Cartesian, polar or both; Arrangement chooses a concatenated table, long family or exact shared-X wide output. Normal publication preserves your requested public Dataset ID, validates/collision-checks it and uses CORE Dataset Transform/Publication/Schema/Metadata. Dataset-backed sources preserve complete typed auxiliary tuples, including exact uint64/text. Edited Native derivatives use immutable source-row lineage to recover the original auxiliary tuple and replace only accepted XY. Pure Native rows carry no source Dataset ID and explicitly mark unavailable auxiliaries with validity0, zero/empty placeholders. Long families preserve per-member auxiliary descriptors and presence masks. Wide output requires identical point counts and X values, with no implicit interpolation. Wide polar output is rejected because it has multiple independent Y bindings; use table/long polar for one coordinate pair.
 
-Polar output uses the shared Native frame: origin, theta-zero, CW/CCW and degrees/radians. Radius uses the working length unit, angle uses deg/rad; origin has an explicit theta_defined0 mask and a zero placeholder. Normalization covers one positive full turn without implicit unwrapping. Source Preview opens the real public Dataset ID. Missing/stale sources are visible; saved owned local geometry remains available. Source-tuple publication rejects missing/stale dependencies until you explicitly reload/restore them. No automatic geometry replacement occurs.
+Polar output uses the shared Native frame: origin, theta-zero, CW/CCW and degrees/radians. Radius uses the common working unit, angle uses deg/rad; origin has an explicit theta_defined0 mask and a zero placeholder. Normalization covers one positive full turn without implicit unwrapping. Source Preview opens the real public Dataset ID. Missing/stale sources are visible; saved owned local geometry remains available. Source-tuple publication rejects missing/stale dependencies until you explicitly reload/restore them. No automatic geometry replacement occurs.
 
 
 <a id="dev-053-cad-workspace"></a>
@@ -574,7 +574,7 @@ Fitting uses **complete explicitly selected input** (3..65536 points, one contin
 
 ### Units, history and saved work
 
-Use the unit chooser/Working units dialog and existing Unit Registry. Geometry conversions require declared compatible length units; resolve ambiguous X/Y bindings explicitly rather than guessing. Existing complete-workspace conversion rescales geometry and dimensional relationships together. Angular labels use rad. One created object, accepted fit, control edit, relationship or dimension edit is one Undo; preview/cancel produces no history spam. Publication is an explicit Session operation and does not replace the document object.
+Use the unit chooser/Working units dialog and existing Unit Registry. Euclidean geometry requires one validated common proportional unit on both axes. Compatible non-length dimensions are supported; resolve ambiguous or mixed X/Y bindings explicitly. Complete-workspace conversion rescales geometry and dimensional relationships together. Angular labels use rad. One created object, accepted fit, control edit, relationship or dimension edit is one Undo; preview/cancel produces no history spam. Publication is an explicit Session operation and does not replace the document object.
 
 Save workspace and close normally. Existing Interactive Documents/owned resources/recovery persist mixed types, definitions/transforms, constraints/dimensions, Dataset bindings, roles, names and conversion provenance. Transient tool/hover/incomplete previews are excluded. Reopen in a fresh process and continue exact parameter editing. Keyboard focus, numeric forms, Enter/Space/Esc, scroll-to-focused controls and wrapping toolbars provide alternatives to mouse input.
 
@@ -635,8 +635,8 @@ normal Undo/Redo on the restarted state.
 Saving a Workspace retains its Scientific Recipe, logical geometry/constraint IDs,
 parameters and working units. Reopening reconstructs the same current state and
 History. Older Workspaces without a complete recipe expose only the retained base
-and available operations. History already discarded by an older release cannot be
-recovered. The strip is a projection of the saved CORE recipe, not a second history
+and available operations. Discarded History cannot be recovered.
+The strip is a projection of the saved CORE recipe, not a second history
 database or a global Session Undo stack.
 
 
@@ -748,8 +748,8 @@ markers and centered labels are retained. Export is a frozen presentation captur
 when the chooser opens; reopen the chooser after changing the view.
 
 Variable-specific nonlinear normalization requires an explicit Dataset Transform.
-Unbound scientific unit declarations and some dimension/transform controls are
-not available; the supported axis and comparison surfaces are described here.
+Scientific unit declarations and dimension/transform controls retain the explicit
+ownership and coordinate policies described below.
 
 Comparisons use the target's selected axis display units for X matching; geometric
 comparisons use its X display unit on both compatible axes. Changing that display
@@ -829,6 +829,28 @@ unit or explicitly normalize the Dataset.
 Metric rotation, reflection and Euclidean dimensions require a common native
 unit on both axes. Compatible geometry may still use independent display units;
 reflection-axis points convert back to the native frame before Native2D acts.
-The toolbar's **CAD length unit** controls a common length frame; use **Axis
+The toolbar's **Common working unit** controls the common Euclidean frame; use **Axis
 display units…** for scientific X/Y choices. Exact primitive parameters identify
 local native units explicitly because their retained world transform is separate.
+
+## Common physical working units
+
+The primitive form and editable **Common working unit** control accept registered
+or CORE-validated intrinsic expressions. V/V, kg/kg and (m/s)/(m/s) planes support
+the same applicable Native2D primitives as mm/mm. **Working units…** converts a
+whole consistent frame explicitly: cm→mm multiplies coordinates by10 and mV→V by
+0.001. Known mixed source units must first be normalized explicitly with Dataset
+Transform; no implicit aspect normalization changes their scientific meaning.
+
+V/mA and kg/(m/s) remain independent scientific axes and are rejected for Euclidean
+CAD. Unknown, opaque, nonlinear and affine-origin units cannot define that metric.
+Distance and area receipts use the actual formal units, for example V and V² or
+m/s and `(m/s)^2`. Compound square labels preserve mathematical grouping and do
+not promise conversion of every formal expression. Physical Native3D/export and
+raster-calibration contracts still require length where their API mandates it.
+Source Dataset/Variable identities and bytes remain unchanged; Workspace,
+History, Undo/Redo and explicit publication retain the conversion provenance.
+
+**Help → User Manual… / F1** opens this rendered guide in an independent nonmodal
+window. Search, links, scrolling and navigation belong to this manual; other
+Viewer manuals and the main GX-TXT Help remain independent.

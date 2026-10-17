@@ -200,6 +200,8 @@ proc ::GX::pluginInstallBundle {source {mode install}} {
     pluginRegistryLoad
     set bundle ""
     set txn ""
+    set previousDefer $::GX::pluginRuntimeDeferActivation
+    set runtimeBefore [list $::GX::pluginRuntimeLoaded $::GX::pluginRuntimePending $::GX::pluginRuntimeReceipts]
     try {
         set bundle [pluginBundleOpen $source]
         set bid [dict get $bundle id]
@@ -210,6 +212,7 @@ proc ::GX::pluginInstallBundle {source {mode install}} {
         #    anything is written to a live plugin destination.
         set checks {}
         foreach pinfo $packageInfos { lappend checks [pluginBundlePreflightPackage $pinfo $mode] }
+        foreach pinfo $packageInfos {pluginRuntimePrepareUpdate [dict get $pinfo type] [dict get $pinfo id] [pluginTargetPath [dict get $pinfo type] [dict get $pinfo id]]}
 
         # 2. Stage every package as a validated package tree before committing
         #    any member. This also makes the transaction independent of an
@@ -249,6 +252,7 @@ proc ::GX::pluginInstallBundle {source {mode install}} {
         #    any error through the final refresh restores every live target and
         #    the exact pre-bundle registry.
         set results {}
+        set ::GX::pluginRuntimeDeferActivation 1
         if {[catch {
             foreach item $staged {
                 lappend results [pluginInstallPackage [dict get $item path] $mode]
@@ -268,6 +272,12 @@ proc ::GX::pluginInstallBundle {source {mode install}} {
             pluginRefreshAfterChange
         } e opts]} {
             pluginBundleRestoreTransaction $txn $snapshots $registryBackup $registryExisted
+            set retainedRoots {}
+            dict for {module pending} [lindex $runtimeBefore 1] {if {[dict exists $pending previous_root]} {lappend retainedRoots [dict get $pending previous_root]}}
+            dict for {module pending} $::GX::pluginRuntimePending {
+                if {[dict exists $pending previous_root] && [dict get $pending previous_root] ni $retainedRoots} {catch {file delete -force [dict get $pending previous_root]}}
+            }
+            lassign $runtimeBefore ::GX::pluginRuntimeLoaded ::GX::pluginRuntimePending ::GX::pluginRuntimeReceipts
             set txn ""
             return -options $opts "Bundle '$bid' installation failed and was rolled back: $e"
         }
@@ -276,6 +286,7 @@ proc ::GX::pluginInstallBundle {source {mode install}} {
         set txn ""
         return [dict create kind bundle action [expr {$mode eq "update" ? "bundle_updated" : "bundle_installed"}] id $bid name [dict get $bundle name] version $bver packages $results package_count [llength $results]]
     } finally {
+        set ::GX::pluginRuntimeDeferActivation $previousDefer
         if {$txn ne "" && [file exists $txn]} { catch {file delete -force $txn} }
         if {$bundle ne ""} { pluginBundleClose $bundle }
     }

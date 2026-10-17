@@ -4,7 +4,7 @@
 proc ::GX::CurveWorkbench::_coordinateDeclaration {units rationale} {
     if {[llength $units]!=2} {error {Declare exactly one X unit and one Y unit}}
     foreach unit $units {
-        if {$unit eq {}||[dict get [::GX::unitRegistryDefinition $unit] conversion_kind] eq "opaque"} {error {Choose a registered physical unit for each axis, or 1 for dimensionless coordinates}}
+        if {$unit eq {} || ([dict get [::GX::unitRegistryDefinition $unit] conversion_kind] eq "opaque" && [catch {::GX::unitRegistryIntrinsicScale $unit}])} {error {Choose a registered or validated intrinsic physical unit for each axis, or 1 for dimensionless coordinates}}
     }
     set rationale [string trim $rationale]
     if {$rationale eq {}||[string length $rationale]>1024||[regexp {[\x00-\x1f]} $rationale]} {error {Record a single-line scientific reason for this declaration (1–1024 characters)}}

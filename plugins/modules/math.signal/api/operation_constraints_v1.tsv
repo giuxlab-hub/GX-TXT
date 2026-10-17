@@ -1,0 +1,27 @@
+# operation|constraint|type|value; consumed by discovery and the execution validator
+design.butterworth|cutoff_length_by_band|map|low:1;high:1;bandpass:2;stop:2
+design.butterworth|cutoff_unit_by_domain|map|discrete:fraction of Nyquist;analog:rad/s
+design.butterworth|cutoff_order|scalar|strictly_increasing
+design.butterworth|discrete_cutoff_range|map|exclusive_lower:0;exclusive_upper:1
+design.chebyshev1|cutoff_length_by_band|map|low:1;high:1;bandpass:2;stop:2
+design.chebyshev1|cutoff_unit_by_domain|map|discrete:fraction of Nyquist;analog:rad/s
+design.chebyshev1|cutoff_order|scalar|strictly_increasing
+design.chebyshev1|discrete_cutoff_range|map|exclusive_lower:0;exclusive_upper:1
+design.chebyshev2|cutoff_length_by_band|map|low:1;high:1;bandpass:2;stop:2
+design.chebyshev2|cutoff_unit_by_domain|map|discrete:fraction of Nyquist;analog:rad/s
+design.chebyshev2|cutoff_order|scalar|strictly_increasing
+design.chebyshev2|discrete_cutoff_range|map|exclusive_lower:0;exclusive_upper:1
+design.elliptic|cutoff_length_by_band|map|low:1;high:1;bandpass:2;stop:2
+design.elliptic|cutoff_unit_by_domain|map|discrete:fraction of Nyquist;analog:rad/s
+design.elliptic|cutoff_order|scalar|strictly_increasing
+design.elliptic|discrete_cutoff_range|map|exclusive_lower:0;exclusive_upper:1
+design.fir_window|cutoff_length_by_band|map|low:1;high:1;bandpass:2;stop:2
+design.fir_window|cutoff_unit_by_domain|map|discrete:fraction of Nyquist;analog:rad/s
+design.fir_window|cutoff_order|scalar|strictly_increasing
+design.fir_window|discrete_cutoff_range|map|exclusive_lower:0;exclusive_upper:1
+design.fir_window|supported_domain|scalar|discrete
+design.fir_window|even_order_bands|list|high;stop
+design.bessel|cutoff_length_by_band|map|low:1;high:1;bandpass:2;stop:2
+design.bessel|cutoff_unit_by_domain|map|discrete:fraction of Nyquist;analog:rad/s
+design.bessel|cutoff_order|scalar|strictly_increasing
+design.bessel|discrete_cutoff_range|map|exclusive_lower:0;exclusive_upper:1

@@ -12,6 +12,7 @@ namespace eval ::GX {
     variable pluginRegistry
     variable pluginRegistryOrder {}
 }
+source [file join [file dirname [info script]] plugin_runtime_lifecycle_v1.tcl]
 
 proc ::GX::pluginTypeSpec {type} {
     switch -- [string tolower [string trim $type]] {
@@ -80,18 +81,27 @@ proc ::GX::pluginRegistryWrite {} {
     variable pluginRegistryOrder
     set path [pluginRegistryPath]
     file mkdir [file dirname $path]
-    set fd [open $path w]
-    fconfigure $fd -encoding utf-8 -translation lf
-    puts $fd "; GX-TXT Plugin Install API v1 managed-plugin registry"
-    puts $fd "; Framework-owned. Do not edit while GX-TXT is running."
-    foreach id [lsort -dictionary -unique $pluginRegistryOrder] {
-        if {![info exists pluginRegistry($id,id)]} continue
-        puts $fd "\n\[plugin.$id\]"
-        foreach field {id type version name installed_at updated_at package_file bundle_id bundle_version} {
-            putKV $fd $field [expr {[info exists pluginRegistry($id,$field)] ? $pluginRegistry($id,$field) : ""}]
+    set temporary "$path.write-[pid]-[clock clicks]"
+    set fd [open $temporary w]
+    try {
+        fconfigure $fd -encoding utf-8 -translation lf
+        puts $fd "; GX-TXT Plugin Install API v1 managed-plugin registry"
+        puts $fd "; Framework-owned. Do not edit while GX-TXT is running."
+        foreach id [lsort -dictionary -unique $pluginRegistryOrder] {
+            if {![info exists pluginRegistry($id,id)]} continue
+            puts $fd "\n\[plugin.$id\]"
+            foreach field {id type version name installed_at updated_at package_file bundle_id bundle_version} {
+                putKV $fd $field [expr {[info exists pluginRegistry($id,$field)] ? $pluginRegistry($id,$field) : ""}]
+            }
         }
+        close $fd
+        set fd {}
+        # Failed writes never truncate the previously functioning registry.
+        file rename -force $temporary $path
+    } finally {
+        if {$fd ne {}} {catch {close $fd}}
+        catch {file delete -force $temporary}
     }
-    close $fd
 }
 
 proc ::GX::pluginRegistryIsManaged {id} {
@@ -306,6 +316,7 @@ proc ::GX::pluginRefreshAfterChange {} {
     catch {refreshModuleDetails}
     catch {pluginInstallRefreshButtons}
     catch {sessionActionGuiRefresh}
+    catch {configurationModulesReload}
 }
 
 # mode: install (must be absent), update (must exist and be newer), auto (install or update).
@@ -333,6 +344,16 @@ proc ::GX::pluginInstallPackage {source {mode auto} {expectedId ""}} {
             if {$mode eq "auto" && $cmp < 0} { error "Refusing downgrade from $oldver to $newver" }
         }
 
+        if {[dict exists $::GX::pluginRuntimePending $id]} {
+            pluginRuntimeTryPending $id
+            if {[dict exists $::GX::pluginRuntimePending $id]} {error {This plugin already has a pending activation; close its editor or restart GX-TXT before another update.}}
+        }
+        set plan [pluginRuntimePrepareUpdate $type $id $target]
+        set runtimeBefore [list $::GX::pluginRuntimeLoaded $::GX::pluginRuntimePending $::GX::pluginRuntimeReceipts]
+        set reg [pluginRegistryPath]
+        set registryExisted [file isfile $reg]
+        set registryBytes {}
+        if {$registryExisted} {set f [open $reg rb];set registryBytes [read $f];close $f}
         set parent [file dirname $target]
         file mkdir $parent
         set stage [file join $parent ".gx-install-[pid]-[clock clicks]"]
@@ -352,21 +373,46 @@ proc ::GX::pluginInstallPackage {source {mode auto} {expectedId ""}} {
         if {$hadTarget} { file rename -force $target $rollback }
         if {[catch {
             file rename -force $stage $target
-            # Validate the complete live discovery before committing registry state.
+            # Discovery, registry and certified activation belong to the same
+            # transaction. Keep the previous package until every step succeeds.
             loadModuleCatalog
+            pluginRegistrySetFromPackage $info $oldInstalledAt
+            pluginRegistryWrite
+            pluginRefreshAfterChange
+            set activation [pluginRuntimeActivate $id $target $newver $plan]
         } e opts]} {
             catch {file delete -force $target}
-            if {$hadTarget && [file exists $rollback]} { catch {file rename -force $rollback $target} }
+            if {$hadTarget && [file exists $rollback]} {file rename -force $rollback $target}
             catch {file delete -force $stage}
-            catch {loadModuleCatalog}
-            return -options $opts $e
+            if {$registryExisted} {
+                file mkdir [file dirname $reg]
+                set f [open $reg wb];puts -nonewline $f $registryBytes;close $f
+            } else {catch {file delete -force $reg}}
+            lassign $runtimeBefore ::GX::pluginRuntimeLoaded ::GX::pluginRuntimePending ::GX::pluginRuntimeReceipts
+            set rollbackFailure {}
+            if {[dict get $plan mode] eq "hot"} {
+                if {[catch {_datasetPrivateWithModule $id [list uplevel #0 [list {*}[dict get $plan hook] rollback $target $oldver]]} why]} {set rollbackFailure "; lifecycle rollback failed; restart required: $why"}
+            }
+            catch {pluginRefreshAfterChange}
+            dict set ::GX::pluginRuntimeReceipts $id [dict create status {Update failed} installed_version $oldver active_version [datasetPublicationV2DictDefault $plan active_version $oldver] reason "$e$rollbackFailure"]
+            return -options $opts "Update failed: $e$rollbackFailure"
         }
-        catch {file delete -force $rollback}
-        pluginRegistrySetFromPackage $info $oldInstalledAt
-        pluginRegistryWrite
-        pluginRefreshAfterChange
-        return [dict create action [expr {$hadTarget ? "updated" : "installed"}] id $id type $type version $newver old_version $oldver target $target]
+        if {[dict get $plan mode] eq "restart" && $hadTarget} {
+            # Preserve old code/assets while a live old implementation remains.
+            # This hidden backup is outside normal descriptor discovery.
+            dict set ::GX::pluginRuntimePending $id previous_root $rollback
+            dict set ::GX::pluginRuntimePending $id previous_version $oldver
+        } else {catch {file delete -force $rollback}}
+        return [dict merge [dict create action [expr {$hadTarget ? "updated" : "installed"}] id $id type $type version $newver old_version $oldver target $target] $activation]
+    } on error {message options} {
+        if {[info exists id]} {
+            set version [pluginInstalledField $id version {}]
+            set active [expr {[dict exists $::GX::pluginRuntimeLoaded $id] ? [dict get $::GX::pluginRuntimeLoaded $id] : $version}]
+            dict set ::GX::pluginRuntimeReceipts $id [dict create status {Update failed} installed_version $version active_version $active reason $message]
+        }
+        return -options $options $message
     } finally {
+        if {[info exists stage] && [file exists $stage]} {catch {file delete -force $stage}}
         pluginPackageClose $info
     }
 }
@@ -402,8 +448,19 @@ proc ::GX::pluginUninstall {type id} {
 }
 
 proc ::GX::pluginInstallChoosePackage {title} {
-    set f [tk_getOpenFile -title $title -filetypes {{{GX-TXT plugin or bundle} {.zip plugin-package.ini plugin-bundle.ini}} {{ZIP archives} {.zip}} {{INI files} {.ini}} {{All files} *}}]
+    set f [tk_getOpenFile -title $title -initialdir [pluginInstallInitialDirectory] -filetypes {{{GX-TXT plugin or bundle} {.zip plugin-package.ini plugin-bundle.ini}} {{ZIP archives} {.zip}} {{INI files} {.ini}} {{All files} *}}]
     return $f
+}
+
+proc ::GX::pluginInstallInitialDirectory {{configured __saved__}} {
+    if {$configured eq "__saved__"} {set configured [configurationGet plugins.package_chooser_directory]}
+    # Browsing preferences never change canonical package installation/storage.
+    foreach directory [list $configured [file normalize ~] [pwd]] {
+        if {$directory ne {} && [file isdirectory $directory] && [file readable $directory] && [file executable $directory]} {
+            return [file normalize $directory]
+        }
+    }
+    return [pwd]
 }
 
 proc ::GX::pluginInstallUiInstall_before_bundle_v1 {} {
@@ -426,10 +483,16 @@ proc ::GX::pluginInstallUiUpdateSelected {} {
     set f [pluginInstallChoosePackage "Update $id"]
     if {$f eq ""} return
     if {[catch {set r [pluginInstallPackage $f update $id]} e]} {
-        tk_messageBox -icon error -title "Plugin update failed" -message $e
+        set receipt [pluginRuntimeInfo $id]
+        dict set receipt status {Update failed}
+        dict set receipt reason $e
+        dict set ::GX::pluginRuntimeReceipts $id $receipt
+        set ::GX::ui(pluginManagerStatus) "Update failed: $e"
+        tk_messageBox -icon error -title "Update failed" -message $e
         return
     }
-    tk_messageBox -icon info -title "Plugin updated" -message "Updated $id from [dict get $r old_version] to [dict get $r version]."
+    set ::GX::ui(pluginManagerStatus) "[dict get $r status]: $id [dict get $r version] (active [dict get $r active_version])."
+    tk_messageBox -icon info -title [dict get $r status] -message "$::GX::ui(pluginManagerStatus)\n[dict get $r reason]"
 }
 
 proc ::GX::pluginInstallUiUninstallSelected {} {
@@ -464,6 +527,10 @@ proc ::GX::pluginInstallRefreshButtons {} {
         if {[pluginIsCore $type $id] || ($type eq "module" && ![moduleField $id selectable 1])} {set removable 0}
     }
     .gxPluginManager.buttons.remove state [expr {$removable ? "!disabled" : "disabled"}]
+    if {$id ne {} && [winfo exists .gxPluginManager.status]} {
+        set runtime [pluginRuntimeInfo $id]
+        set ::GX::ui(pluginManagerStatus) "[dict get $runtime status]: $id. Installed [dict get $runtime installed_version]; active [dict get $runtime active_version]. [dict get $runtime reason]"
+    }
 }
 proc ::GX::pluginManagerSelectedId {} {
     if {![winfo exists .gxPluginManager.tree]} {return ""}
@@ -478,19 +545,33 @@ proc ::GX::pluginManagerRefresh {} {
     if {![winfo exists .gxPluginManager.tree]} return
     set t .gxPluginManager.tree
     set selected [pluginManagerSelectedId]
+    set query [expr {[info exists ::GX::ui(pluginManagerQuery)] ? [string tolower [string trim $::GX::ui(pluginManagerQuery)]] : {}}]
     foreach i [$t children {}] { $t delete $i }
+    array unset ::GX::ui pluginManagerId,*
     set n 0
     foreach id $pluginRegistryOrder {
         incr n
         set bid [pluginInstalledField $id bundle_id ""]
         set bver [pluginInstalledField $id bundle_version ""]
         set btxt [expr {$bid eq "" ? "" : "$bid $bver"}]
-        $t insert {} end -id "p$n" -values [list $id [pluginInstalledField $id type] [pluginInstalledField $id version] $btxt [pluginInstalledField $id name]]
+        set runtime [pluginRuntimeInfo $id]
+        set values [list $id [pluginInstalledField $id type] [pluginInstalledField $id version] $btxt [pluginInstalledField $id name] [dict get $runtime active_version] [dict get $runtime status]]
+        if {$query ne {} && [string first $query [string tolower [join $values { }]]]<0} continue
+        $t insert {} end -id "p$n" -values $values
         set ::GX::ui(pluginManagerId,p$n) $id
         if {$id eq $selected} {$t selection set p$n}
     }
     pluginInstallRefreshButtons
-    if {[llength [info commands configurationModulesReload]]} {configurationModulesReload}
+}
+
+proc ::GX::pluginManagerResetFilter {} {
+    set ::GX::ui(pluginManagerQuery) {}
+    pluginManagerRefresh
+    focus .gxPluginManager.search.query
+}
+
+proc ::GX::pluginManagerResize {widget width} {
+    if {$widget eq ".gxPluginManager"} {.gxPluginManager.status configure -wraplength [expr {max(220,$width-20)}]}
 }
 
 proc ::GX::pluginManagerDialog {} {
@@ -499,14 +580,26 @@ proc ::GX::pluginManagerDialog {} {
     wm title .gxPluginManager "Plugin Manager"
     wm geometry .gxPluginManager 850x420
     grid columnconfigure .gxPluginManager 0 -weight 1
-    grid rowconfigure .gxPluginManager 0 -weight 1
-    ttk::treeview .gxPluginManager.tree -columns {id type version bundle name} -show headings -selectmode browse
-    foreach {c title width} {id "Plugin ID" 240 type "Type" 130 version "Version" 85 bundle "Bundle" 210 name "Name" 260} {
+    grid rowconfigure .gxPluginManager 1 -weight 1
+    set ::GX::ui(pluginManagerQuery) {}
+    ttk::frame .gxPluginManager.search
+    ttk::label .gxPluginManager.search.label -text {Filter plugins}
+    ttk::entry .gxPluginManager.search.query -textvariable ::GX::ui(pluginManagerQuery)
+    ttk::button .gxPluginManager.search.reset -text Reset -command ::GX::pluginManagerResetFilter
+    pack .gxPluginManager.search.label -side left -padx 4
+    pack .gxPluginManager.search.reset -side right -padx 4
+    pack .gxPluginManager.search.query -side left -fill x -expand 1 -padx 4
+    bind .gxPluginManager.search.query <KeyRelease> ::GX::pluginManagerRefresh
+    bind .gxPluginManager.search.query <Escape> ::GX::pluginManagerResetFilter
+    grid .gxPluginManager.search -row 0 -column 0 -columnspan 2 -sticky ew -padx 4 -pady 6
+    ttk::treeview .gxPluginManager.tree -columns {id type version bundle name active status} -show headings -selectmode browse
+    foreach {c title width} {id "Plugin ID" 200 type "Type" 80 version "Installed" 80 bundle "Bundle" 110 name "Name" 180 active "Active" 75 status "Activation" 190} {
         .gxPluginManager.tree heading $c -text $title
         .gxPluginManager.tree column $c -width $width -stretch 1
     }
     ttk::scrollbar .gxPluginManager.sy -orient vertical -command {.gxPluginManager.tree yview}
-    .gxPluginManager.tree configure -yscrollcommand {.gxPluginManager.sy set}
+    ttk::scrollbar .gxPluginManager.sx -orient horizontal -command {.gxPluginManager.tree xview}
+    .gxPluginManager.tree configure -yscrollcommand {.gxPluginManager.sy set} -xscrollcommand {.gxPluginManager.sx set}
     ttk::frame .gxPluginManager.buttons
     ttk::button .gxPluginManager.buttons.install -text "Install..." -command {::GX::pluginInstallUiInstall; ::GX::pluginManagerRefresh}
     ttk::button .gxPluginManager.buttons.update -text "Update selected…" -command {::GX::pluginInstallUiUpdateSelected; ::GX::pluginManagerRefresh}
@@ -526,9 +619,14 @@ proc ::GX::pluginManagerDialog {} {
     }
     ttk::button .gxPluginManager.buttons.close -text "Close" -command {destroy .gxPluginManager}
     pack .gxPluginManager.buttons.install .gxPluginManager.buttons.update .gxPluginManager.buttons.remove .gxPluginManager.buttons.close -side left -padx 4
-    grid .gxPluginManager.tree -row 0 -column 0 -sticky nsew -padx {8 0} -pady 8
-    grid .gxPluginManager.sy -row 0 -column 1 -sticky ns -pady 8
-    grid .gxPluginManager.buttons -row 1 -column 0 -columnspan 2 -sticky w -padx 8 -pady {0 8}
+    grid .gxPluginManager.tree -row 1 -column 0 -sticky nsew -padx {8 0} -pady 8
+    grid .gxPluginManager.sy -row 1 -column 1 -sticky ns -pady 8
+    grid .gxPluginManager.sx -row 2 -column 0 -sticky ew -padx {8 0}
+    grid .gxPluginManager.buttons -row 3 -column 0 -columnspan 2 -sticky w -padx 8 -pady {0 8}
+    if {![info exists ::GX::ui(pluginManagerStatus)]} {set ::GX::ui(pluginManagerStatus) {Installed package and active implementation versions are shown separately.}}
+    ttk::label .gxPluginManager.status -textvariable ::GX::ui(pluginManagerStatus) -wraplength 820 -justify left
+    grid .gxPluginManager.status -row 4 -column 0 -columnspan 2 -sticky ew -padx 8 -pady {0 8}
+    bind .gxPluginManager <Configure> [list ::GX::pluginManagerResize %W %w]
     pluginManagerRefresh
 }
 

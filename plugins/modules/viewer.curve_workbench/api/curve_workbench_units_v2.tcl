@@ -60,8 +60,19 @@ proc ::GX::CurveWorkbench::_unitsOpen {w} {
     set ids [dict keys $st($w,curves)];if {$ids eq {}} {error "Load or create geometry first"}
     set units [_coordinateUnits [_record $w [lindex $ids 0]]]
     set from [lindex $units 0];if {$from eq ""} {set from mm}
-    set fields [dict create source_unit [dict create type choice label {Current coordinate unit} values {mm cm m km um nm in ft}] target_unit [dict create type choice label {New working unit} values {mm cm m km um nm in ft}] assume_undeclared [dict create type boolean label {Explicitly assume the current unit for undeclared coordinates}]]
-    ::GX::uiFieldFormCreate $w.units "Convert whole workspace coordinates — physical size preserved" $fields [dict create source_unit $from target_unit m assume_undeclared 0] [list ::GX::CurveWorkbench::_unitsApply $w $st($w,token) $ids] $w
+    foreach id $ids {
+        foreach unit [_coordinateUnits [_record $w $id]] {if {$unit ne {}} {::GX::unitRegistryHomogeneousCoordinatePlan $unit $from}}
+    }
+    set fields [dict create source_unit {type string required 1 label {Current coordinate unit}} target_unit {type string required 1 label {New common working unit}} assume_undeclared [dict create type boolean label {Explicitly assume the current unit for undeclared coordinates}]]
+    ::GX::uiFieldFormCreate $w.units "Convert whole workspace coordinates — scientific extent preserved" $fields [dict create source_unit $from target_unit $from assume_undeclared 0] [list ::GX::CurveWorkbench::_unitsApply $w $st($w,token) $ids] $w
+}
+proc ::GX::CurveWorkbench::_workingUnitCandidates {{source {}}} {
+    set result {}
+    foreach unit [lsort -unique [concat [::GX::unitSelectorCandidates] [list $source]]] {
+        if {$unit eq {}} continue
+        if {![catch {::GX::unitRegistryHomogeneousCoordinatePlan $unit [expr {$source eq {}?$unit:$source}]}]} {lappend result $unit}
+    }
+    return $result
 }
 proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
     variable st
@@ -70,7 +81,7 @@ proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
     _cancelGesture $w;_pointSyncApply $w
     set from [dict get $values source_unit];set to [dict get $values target_unit]
     set assume [::GX::uiFieldNormalize {type boolean} [dict get $values assume_undeclared]]
-    set factor [lindex [::GX::unitRegistryConvertCoordinates $from $to {1}] 0]
+    set factor [dict get [::GX::unitRegistryHomogeneousCoordinatePlan $from $to] scale]
     set unknown {}
     foreach id $ids {
         set record [_record $w $id];set undeclared 0
@@ -123,9 +134,9 @@ proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
             if {[dict exists $record bridge_descriptors]} {
                 set bridges {}
                 foreach bridge [dict get $record bridge_descriptors] {
-                    foreach key {point start_derivative end_derivative} {if {[dict exists $bridge $key]} {dict set bridge $key [::GX::unitRegistryConvertCoordinates $from $to [dict get $bridge $key]]}}
-                    foreach key {start end} {if {[dict exists $bridge $key]} {foreach component {point derivative} {if {[dict exists $bridge $key $component]} {dict set bridge $key $component [::GX::unitRegistryConvertCoordinates $from $to [dict get $bridge $key $component]]}}}}
-                    if {[dict exists $bridge controls]} {set controls {};foreach point [dict get $bridge controls] {lappend controls [::GX::unitRegistryConvertCoordinates $from $to $point]};dict set bridge controls $controls}
+                    foreach key {point start_derivative end_derivative} {if {[dict exists $bridge $key]} {dict set bridge $key [::GX::unitRegistryConvertValues $from $to [dict get $bridge $key]]}}
+                    foreach key {start end} {if {[dict exists $bridge $key]} {foreach component {point derivative} {if {[dict exists $bridge $key $component]} {dict set bridge $key $component [::GX::unitRegistryConvertValues $from $to [dict get $bridge $key $component]]}}}}
+                    if {[dict exists $bridge controls]} {set controls {};foreach point [dict get $bridge controls] {lappend controls [::GX::unitRegistryConvertValues $from $to $point]};dict set bridge controls $controls}
                     if {[dict exists $bridge tolerance]} {dict set bridge tolerance [expr {[dict get $bridge tolerance]*$factor}]}
                     lappend bridges $bridge
                 }
@@ -136,7 +147,7 @@ proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
         }
         if {[info exists st($w,seriesContainers)]} {dict for {container record} $st($w,seriesContainers) {dict set st($w,seriesContainers) $container [::GX::native2DSeriesRescaleRecord $record $factor]}}
         set regions {}
-        foreach region [dict get $descriptor regions] {dict set region bounds [::GX::unitRegistryConvertCoordinates $from $to [dict get $region bounds]];lappend regions $region}
+        foreach region [dict get $descriptor regions] {dict set region bounds [::GX::unitRegistryConvertValues $from $to [dict get $region bounds]];lappend regions $region}
         dict set descriptor regions $regions
         _coordinateRescaleView $w $factor
         set st($w,coordinateFrameKey) [_coordinateFrameKey [_record $w $st($w,active)]]
@@ -149,7 +160,7 @@ proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
         }
         return -options $options $message
     }
-    set st($w,status) "Converted whole workspace from $from to $to; physical size and original source identities preserved. One Undo restores the prior coordinate frame."
+    set st($w,status) "Converted whole workspace from $from to $to; scientific extent and original source identities preserved. One Undo restores the prior coordinate frame."
     return [dict create source_unit $from target_unit $to factor $factor object_count [llength $ids] physical_scale 0]
 }
 proc ::GX::CurveWorkbench::_buildUnits {w} {
