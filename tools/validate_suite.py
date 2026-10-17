@@ -126,15 +126,44 @@ def verify(announce=True):
             raise ValueError("Dev-104 test differs from accepted scientific source: " + name)
         recent.add(name)
 
+    dev106 = json.loads((ROOT / "source-manifest-dev106.json").read_text(encoding="utf-8"))
+    if (dev106.get("schema") != "gxtxt.public-validation-sources/4"
+            or dev106.get("referenceFramework") != "0.9.8.10-dev-106"
+            or dev106.get("referenceMainCommit") != "db10ef525670944f031bcb33b8d9968d6bcac312"
+            or dev106.get("officialArchiveSha256") != "08a629e05d801279cddcf874a68c3c8b65b877a83cfd697d2847ec9e3fa45777"
+            or dev106.get("selectedCount") != 14
+            or dev106.get("sourceOnly") is not True
+            or dev106.get("runnerStatus") != "NOT RUN"
+            or len(dev106.get("files", [])) != 14):
+        raise ValueError("Unrecognized dev-106 source-only validation inventory")
+    recent106 = set()
+    for entry in dev106["files"]:
+        name = entry["path"]
+        rel = Path(name)
+        if (rel.is_absolute() or ".." in rel.parts
+                or name in (seen | newer | recent | recent106)
+                or not name.startswith("validation/official_dev106/")
+                or rel.suffix.lower() not in (".tcl", ".py")
+                or entry.get("sourcePath") != "validation/integrated_dev106/" + rel.name):
+            raise ValueError("Invalid dev-106 test path/provenance: " + name)
+        source = ROOT / rel
+        if source.is_symlink() or not source.is_file() or not source.resolve().is_relative_to(ROOT):
+            raise ValueError("Missing dev-106 source-only file: " + name)
+        raw = source.read_bytes()
+        if (len(raw) != entry["bytes"]
+                or hashlib.sha256(raw).hexdigest() != entry["sha256"]
+                or any(token.lower() in raw.decode("utf-8").lower() for token in BANNED)):
+            raise ValueError("Unverified dev-106 scientific source: " + name)
+        recent106.add(name)
     for candidate in (ROOT / "validation").rglob("*"):
         if candidate.is_symlink():
             raise ValueError("Unexpected symlink: " + str(candidate))
-        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer | recent):
+        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer | recent | recent106):
             raise ValueError("Unreviewed file inside validation tree: " + str(candidate))
     if not (ROOT / "LICENSE").is_file():
         raise ValueError("GPL license missing")
     if announce:
-        print("PASS: 49 verified original files: 19 dev-102 tests, 3 helpers, 11 dev-103 tests and 16 dev-104 tests.")
+        print("PASS: 63 verified original files: 19 dev-102 tests, 3 helpers, 11 dev-103 tests, 16 dev-104 tests and 14 dev-106 tests.")
         print("PASS: reviewed public inputs only, no private test PDFs or deployment scripts.")
         print("Runtime scientific/GUI tests: NOT RUN by source verification.")
     return info

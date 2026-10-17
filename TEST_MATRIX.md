@@ -88,3 +88,26 @@ The **dev-102 19 cases and three shared helpers remain unchanged**. The Python s
 | `request_fixture.py` | Bounded synthetic subprocess responses | Not a Session Generator Library |
 
 These original sources may require other controlled fixtures not distributed here. They are documentation and reproducible test inputs, **not** newly measured runtime PASS results. Original scientific Sessions, confidential PDFs/generators, deployment scripts and printer credentials are excluded.
+
+## Dev-106 — selected source-only scientific tests
+
+Framework: 0.9.8.10-dev-106. Main commit: db10ef525670944f031bcb33b8d9968d6bcac312. Status: NOT RERUN. All source bytes correspond to archive validation/integrated_dev106/.
+
+| File | Scope | Execution policy |
+| --- | --- | --- |
+| core_contract.tcl | Source import/public CORE and Session guards | Manual Linux only |
+| debug_contract.tcl | Managed Python/Octave debugger and Job lifecycle | Manual Linux only |
+| native_contract.tcl | Native document bridge and fresh output | Manual Linux/native ABI only |
+| signal_contract.tcl | Signal public mathematical contracts | Manual Linux/Octave only |
+| signal_negative.tcl | Invalid Signal request rejection | Manual Linux/Octave only |
+| signal_reference.py | Independent Signal numerical values | Manual scientific Python only |
+| statistics_reference.py | Independent statistics reference values | Manual scientific Python only |
+| xml_bridge_contract.tcl | XML/Script Bridge public API | Manual Linux only |
+| document_preview_gui.tcl | Bounded documents/source inspection | Manual Debian X11 GUI only |
+| editor_close_gui.tcl | Editor clean/dirty window close | Manual Debian X11 GUI only |
+| output_identity_gui.tcl | Output stream identity/selection | Manual Debian X11 GUI only |
+| source_modes_gui.tcl | Document source mode handling | Manual Debian X11 GUI only |
+| statistics_gui.tcl | Statistical Viewer synthetic Dataset | Manual Debian X11 GUI only |
+| streams_gui.tcl | Separated logs and Unicode | Manual Debian X11 GUI only |
+
+These original sources may need supplementary controlled fixtures and a version-specific bootstrap that are not distributed here. They are not universal standalone test commands, not automatic runner entries and not new runtime PASS evidence.

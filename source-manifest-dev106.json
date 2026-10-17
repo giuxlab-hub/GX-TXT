@@ -1,0 +1,110 @@
+{
+  "schema": "gxtxt.public-validation-sources/4",
+  "referenceFramework": "0.9.8.10-dev-106",
+  "referenceMainCommit": "db10ef525670944f031bcb33b8d9968d6bcac312",
+  "officialArchiveSha256": "08a629e05d801279cddcf874a68c3c8b65b877a83cfd697d2847ec9e3fa45777",
+  "skippedRelease": "dev-105",
+  "selectedCount": 14,
+  "sourceOnly": true,
+  "runnerStatus": "NOT RUN",
+  "files": [
+    {
+      "path": "validation/official_dev106/core_contract.tcl",
+      "sourcePath": "validation/integrated_dev106/core_contract.tcl",
+      "bytes": 9224,
+      "sha256": "e98693198979bff0969158a917cd9a27e287c69dbb0b41331f1586af01225f4c",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev106/debug_contract.tcl",
+      "sourcePath": "validation/integrated_dev106/debug_contract.tcl",
+      "bytes": 3305,
+      "sha256": "3253c05ff296e83ecc832f248a66fc1d693e9bc75746924c06850191c5a847db",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev106/native_contract.tcl",
+      "sourcePath": "validation/integrated_dev106/native_contract.tcl",
+      "bytes": 3829,
+      "sha256": "caa21d7d0745e2c4463d2ab96927f6cdfda6ce3e861ef1fe22e050a4c9bfa8ad",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev106/signal_contract.tcl",
+      "sourcePath": "validation/integrated_dev106/signal_contract.tcl",
+      "bytes": 2817,
+      "sha256": "aa11df12a226d8c3890b8dc8b7c2325ab0f40a9349ad7d2f5baca0a87d36f7ac",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev106/signal_negative.tcl",
+      "sourcePath": "validation/integrated_dev106/signal_negative.tcl",
+      "bytes": 2755,
+      "sha256": "a08eb208a28db749e4238c7e99d02afb9d89bfc73106eea76f4213f31ad378f6",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev106/signal_reference.py",
+      "sourcePath": "validation/integrated_dev106/signal_reference.py",
+      "bytes": 3574,
+      "sha256": "befcac0933f12741bb6fbf26c75abef2eaead44ed7d7cf7b5e3d22016d22e9e3",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev106/statistics_reference.py",
+      "sourcePath": "validation/integrated_dev106/statistics_reference.py",
+      "bytes": 4270,
+      "sha256": "8f530756398b9a0d70e367047696e10bb14590617a7c716ef21c0f38637380a0",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev106/xml_bridge_contract.tcl",
+      "sourcePath": "validation/integrated_dev106/xml_bridge_contract.tcl",
+      "bytes": 3289,
+      "sha256": "f73abe39b4d352c87f70a8b97917141de58869b7685d22a3fb4464c1a9f304d6",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev106/document_preview_gui.tcl",
+      "sourcePath": "validation/integrated_dev106/document_preview_gui.tcl",
+      "bytes": 3652,
+      "sha256": "9ad54ebb7b1a0a823b9269c6f7628fa0da27dd50f638ed800297f07358cbc253",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev106/editor_close_gui.tcl",
+      "sourcePath": "validation/integrated_dev106/editor_close_gui.tcl",
+      "bytes": 4911,
+      "sha256": "9be6e4a353ab779a79276e747be95e86fade88bdc81c11a2cc8a6b571baf91e6",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev106/output_identity_gui.tcl",
+      "sourcePath": "validation/integrated_dev106/output_identity_gui.tcl",
+      "bytes": 3933,
+      "sha256": "94ac33d0054fbb4051ef48394ff4bd4bfa8732feacf41daa62f8b3ebf0bf514d",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev106/source_modes_gui.tcl",
+      "sourcePath": "validation/integrated_dev106/source_modes_gui.tcl",
+      "bytes": 1368,
+      "sha256": "fd0f4c072af9d929284bf42ec626d4bec2be37c8af4272e4ade00e60e17f6510",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev106/statistics_gui.tcl",
+      "sourcePath": "validation/integrated_dev106/statistics_gui.tcl",
+      "bytes": 3808,
+      "sha256": "dba721e80d8660aa1eb61e124c341116bb55ede0cd520914fbb2f07c44187787",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev106/streams_gui.tcl",
+      "sourcePath": "validation/integrated_dev106/streams_gui.tcl",
+      "bytes": 2502,
+      "sha256": "d0a7d5a0849c5c98757a78ef34e32c8d18cbf5c937e28c4981b48c6f7b73378b",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    }
+  ]
+}

@@ -70,3 +70,11 @@ The [dev-104 source commit](https://github.com/giuxlab-hub/GX-TXT/commit/d992683
 These are **source-only**, not automatically run. `python3 tools/validate_suite.py verify` checks all three release inventories (dev-102, dev-103, dev-104). The explicit `run` command remains restricted to the seven previously reviewed dev-102 CLI cases. Dev-104 GUI tests require local X11; PDF checks require Poppler/qpdf; CUPS tests require a disposable fake backend. Their inclusion is not new runtime evidence or physical printer acceptance. See [TEST_MATRIX.md](TEST_MATRIX.md).
 
 The branch contains no real user Session, private printer settings, credentials, confidential teaching PDFs, document-extraction test generator or scripts that deposit/activate the official framework.
+
+## GX-TXT dev-106 validation sources (NOT RERUN)
+
+The dev-106 public source commit (db10ef525670944f031bcb33b8d9968d6bcac312) follows dev-104 directly; dev-105 was skipped. This branch now includes 14 original Tcl/Python source-only tests and helpers from the official archive directory validation/integrated_dev106/, copied without modification to validation/official_dev106/. Original paths and SHA-256 hashes are in source-manifest-dev106.json.
+
+The selected material covers document/source and XML contracts, managed debugger services, native document interfaces, Signal and Statistical APIs and GUI inspection workflows. Some tests require a prepared Debian/X11 workspace, compatible native libraries and synthetic scientific fixtures. **No dev-106 cases are executed automatically**; the opt-in runner remains restricted to reviewed dev-102 CLI cases. Source verification covers all published release manifests.
+
+No private scientific Sessions, confidential test PDFs, dependent document-extraction generators, deployment scripts, internal acceptance evidence, credentials or original test outputs are included.
