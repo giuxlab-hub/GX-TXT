@@ -101,12 +101,19 @@ proc ::GX::datasetNamespaceForModule {moduleId} {
 proc ::GX::_datasetPublicationNamespace {session moduleId definition} {
     if {[dict exists $definition dataset_namespace]} {
         set requested [datasetNamespaceNormalize [dict get $definition dataset_namespace]]
+        set assigned [datasetNamespaceForModule $moduleId]
+        if {$requested eq $assigned || [string first "$assigned/" $requested]==0} {return $requested}
         set grants [datasetNamespaceSharedInputs $session]
         if {![dict exists $grants $requested]||$moduleId ni [dict get $grants $requested]} {error {Producer is not authorized for this shared scientific input namespace}}
         if {![dict exists $definition dataset_id]||[datasetField [dict get $definition dataset_id] id {}] ne {}||[datasetPublicationV2DictDefault $definition replace_owned 0]} {error {Shared scientific input publication is CREATE-only}}
         return $requested
     }
-    return [datasetNamespaceForModule $moduleId]
+    set assigned [datasetNamespaceForModule $moduleId]
+    if {[dict exists $definition dataset_id] && [datasetField [dict get $definition dataset_id] id {}] ne {}} {
+        set existing [datasetNamespaceGet $session [dict get $definition dataset_id]]
+        if {$existing eq $assigned || [string first "$assigned/" $existing]==0} {return $existing}
+    }
+    return $assigned
 }
 proc ::GX::_datasetNamespaceRequireModuleWrite {session moduleId datasetId} {
     if {[datasetAuthorityActive $session]} {
@@ -114,7 +121,8 @@ proc ::GX::_datasetNamespaceRequireModuleWrite {session moduleId datasetId} {
     } else {set metadata [datasetPrivateMetadataRead $session $datasetId]}
     set assigned [datasetNamespaceForModule $moduleId]
     if {[dict exists $metadata _gxtxt.framework.dataset_namespace]} {
-        if {[dict get $metadata _gxtxt.framework.dataset_namespace] eq $assigned} {return $assigned}
+        set existing [datasetNamespaceNormalize [dict get $metadata _gxtxt.framework.dataset_namespace]]
+        if {$existing eq $assigned || [string first "$assigned/" $existing]==0} {return $existing}
     } elseif {[datasetField $datasetId producer_module [datasetField $datasetId source_module {}]] eq $moduleId} {
         # Pre-namespace Sessions keep working for their recorded producer. The
         # next publication pins the automatically assigned module namespace.

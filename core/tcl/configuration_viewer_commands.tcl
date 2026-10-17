@@ -142,9 +142,52 @@ proc ::GX::viewerCommandEnabled {window id} {
     }
     return 1
 }
+proc ::GX::viewerCommandApplicable {window id} {
+    if {![dict exists $::GX::ViewerCommands::windows $window handlers $id]} {return 0}
+    set callback [datasetPublicationV2DictDefault [dict get $::GX::ViewerCommands::windows $window handlers $id] applicable {}]
+    return [expr {$callback eq {} || (![catch {uplevel #0 $callback} result] && $result)}]
+}
+proc ::GX::viewerCommandToolbarCreate {window frame {commandIds {}}} {
+    set module [dict get $::GX::ViewerCommands::windows $window module]
+    if {![winfo exists $frame]} {ttk::frame $frame}
+    set buttons {};set i 0
+    dict for {id descriptor} [viewerCommandCatalog $module] {
+        if {$commandIds ne {} && $id ni $commandIds} continue
+        set widget $frame.command[incr i]
+        set label [datasetPublicationV2DictDefault $descriptor toolbar_label [dict get $descriptor label]]
+        ttk::button $widget -text $label -command [list ::GX::viewerCommandInvoke $window $id]
+        if {[dict exists $descriptor toolbar_label]} {$widget configure -width [expr {max(2,[string length $label])}]}
+        dict set buttons $id $widget
+        bind $widget <Enter> [list ::GX::native2DViewportTooltipShow $widget [datasetPublicationV2DictDefault $descriptor tooltip [dict get $descriptor label]]]
+        bind $widget <Leave> {catch {destroy .gxViewportTip}}
+    }
+    dict set ::GX::ViewerCommands::windows $window toolbar [dict create frame $frame buttons $buttons]
+    bind $frame <Configure> [list ::GX::viewerCommandToolbarRefresh $window]
+    viewerCommandToolbarRefresh $window
+    return $frame
+}
+proc ::GX::viewerCommandToolbarRefresh {window} {
+    if {![dict exists $::GX::ViewerCommands::windows $window toolbar]} return
+    set toolbar [dict get $::GX::ViewerCommands::windows $window toolbar];set frame [dict get $toolbar frame]
+    if {![winfo exists $frame]} return
+    set visible {}
+    dict for {id widget} [dict get $toolbar buttons] {
+        if {[viewerCommandApplicable $window $id]} {lappend visible $widget;$widget state [expr {[viewerCommandEnabled $window $id]?"!disabled":"disabled"}]} else {pack forget $widget;grid remove $widget}
+    }
+    if {$visible ne {}} {
+        set width [winfo width $frame];set layout [uiFieldControlsLayout $frame $width $visible];set height [dict get $layout height]
+        if {[datasetPublicationV2DictDefault $toolbar layout_width 0]==$width} {set height [expr {max($height,[datasetPublicationV2DictDefault $toolbar layout_height 0])}]}
+        dict set ::GX::ViewerCommands::windows $window toolbar layout_width $width
+        dict set ::GX::ViewerCommands::windows $window toolbar layout_height $height
+        grid propagate $frame 0
+        if {[$frame cget -height]!=$height} {$frame configure -height $height}
+    }
+    viewerCommandMenusRefresh $window
+}
 proc ::GX::viewerCommandInvoke {window id} {
-    if {![viewerCommandEnabled $window $id]} {return 0}
-    uplevel #0 [dict get $::GX::ViewerCommands::windows $window handlers $id command]
+    if {![viewerCommandApplicable $window $id] || ![viewerCommandEnabled $window $id]} {return 0}
+    set adapter [dict get $::GX::ViewerCommands::windows $window]
+    _datasetPrivateWithModule [dict get $adapter module] [list uplevel #0 [dict get $adapter handlers $id command]]
     return 1
 }
 proc ::GX::viewerCommandKey {window widget key state} {

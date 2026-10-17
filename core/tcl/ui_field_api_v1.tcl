@@ -11,7 +11,107 @@ namespace eval ::GX::UiField {
     variable formStatus
 }
 proc ::GX::uiFieldApiInfo {} {
-    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldFormCreate uiFieldFormSectionEnabled uiMenuPopup uiMenuWorkarea uiMenuRowAttach}]
+    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldFormCreate uiFieldFormSectionEnabled uiFieldViewerShellCreate uiFieldSelectorWithinViewer uiFieldSelectorPost uiFieldSelectorClose uiMenuPopup uiMenuWorkarea uiMenuRowAttach}]
+}
+
+# Viewer-bounded choice projection. The combobox remains the value/variable
+# owner; a native listbox in its Viewer replaces only platform popdown placement.
+proc ::GX::uiFieldSelectorWithinViewer {widget viewer} {
+    if {[winfo class $widget] ne "TCombobox" || [winfo toplevel $widget] ne $viewer} {error {Expected a combobox inside its owning Viewer}}
+    set tag GXBoundedSelector$widget
+    if {$tag in [bindtags $widget]} {return $widget}
+    bindtags $widget [linsert [bindtags $widget] 0 $tag]
+    set resizeTag GXBoundedSelectorViewer$widget
+    bindtags $viewer [linsert [bindtags $viewer] 0 $resizeTag]
+    bind $resizeTag <Configure> [list ::GX::_uiFieldSelectorViewerChanged $widget $viewer %W]
+    foreach sequence {<Button-1> <Key-Down> <Key-Up> <Key-space> <Key-Return>} {
+        bind $tag $sequence [format {::GX::uiFieldSelectorPost %s %s; break} [list $widget] [list $viewer]]
+    }
+    bind $tag <Escape> [list ::GX::uiFieldSelectorClose $widget $viewer]
+    bind $widget <Destroy> +[list ::GX::_uiFieldSelectorDestroyed $widget $viewer %W]
+    return $widget
+}
+proc ::GX::_uiFieldSelectorPanel {widget viewer} {return $viewer.gxSelector_[binary encode hex [encoding convertto utf-8 $widget]]}
+proc ::GX::_uiFieldSelectorDestroyed {widget viewer destroyed} {
+    if {$widget eq $destroyed} {
+        catch {destroy [_uiFieldSelectorPanel $widget $viewer]}
+        set resizeTag GXBoundedSelectorViewer$widget
+        bind $resizeTag <Configure> {}
+        if {[winfo exists $viewer]} {set tags [bindtags $viewer];set i [lsearch -exact $tags $resizeTag];if {$i>=0} {bindtags $viewer [lreplace $tags $i $i]}}
+        bind GXBoundedSelector$widget <Button-1> {}
+        foreach sequence {<Key-Down> <Key-Up> <Key-space> <Key-Return> <Escape>} {bind GXBoundedSelector$widget $sequence {}}
+    }
+}
+proc ::GX::uiFieldSelectorClose {widget viewer {accept 0}} {
+    set panel [_uiFieldSelectorPanel $widget $viewer]
+    if {![winfo exists $panel]} return
+    set selected [$panel.options curselection]
+    set value [expr {$selected eq {}?{}:[$panel.options get [lindex $selected 0]]}]
+    catch {grab release $panel};destroy $panel
+    if {[winfo exists $widget]} {
+        focus $widget
+        if {$accept && $selected ne {}} {$widget set $value;event generate $widget <<ComboboxSelected>>}
+    }
+}
+proc ::GX::_uiFieldSelectorClick {widget viewer x y} {
+    set panel [_uiFieldSelectorPanel $widget $viewer]
+    if {$x<0 || $y<0 || $x>=[winfo width $panel] || $y>=[winfo height $panel]} {uiFieldSelectorClose $widget $viewer}
+}
+proc ::GX::_uiFieldSelectorTab {widget viewer} {
+    uiFieldSelectorClose $widget $viewer
+    if {[winfo exists $widget]} {focus [tk_focusNext $widget]}
+}
+proc ::GX::uiFieldSelectorPost {widget viewer} {
+    if {![winfo exists $widget] || ![winfo viewable $viewer] || [$widget instate disabled]} return
+    set panel [_uiFieldSelectorPanel $widget $viewer]
+    if {[winfo exists $panel]} {uiFieldSelectorClose $widget $viewer;return}
+    set values [$widget cget -values]
+    if {$values eq {}} return
+    update idletasks
+    set width [winfo width $viewer];set height [winfo height $viewer]
+    if {$width<24 || $height<24} return
+    set x [expr {[winfo rootx $widget]-[winfo rootx $viewer]}]
+    set y [expr {[winfo rooty $widget]-[winfo rooty $viewer]}]
+    set line [expr {[font metrics TkDefaultFont -linespace]+6}]
+    set desired [expr {min(12,[llength $values])*$line+6}]
+    set below [expr {max(0,$height-$y-[winfo height $widget]-4)}]
+    set above [expr {max(0,$y-4)}]
+    set ph [expr {min($desired,max($above,$below),$height-8)}]
+    # A very short Viewer uses an interior scrollable projection over its body.
+    if {$ph<$line+6} {set ph [expr {$height-8}];set py 4
+    } elseif {$below>=$desired} {set py [expr {$y+[winfo height $widget]}]
+    } elseif {$above>=$below} {set py [expr {$y-$ph}]
+    } else {set py [expr {$y+[winfo height $widget]}]}
+    set pw [expr {min($width-8,max(160,[winfo width $widget]))}]
+    set px [expr {max(4,min($x,$width-$pw-4))}]
+    set py [expr {max(4,min($py,$height-$ph-4))}]
+    ttk::frame $panel -relief solid -borderwidth 1
+    listbox $panel.options -exportselection 0 -activestyle dotbox -selectmode browse -height 1 -borderwidth 0 -yscrollcommand [list $panel.scroll set]
+    ttk::scrollbar $panel.scroll -command [list $panel.options yview]
+    pack $panel.scroll -side right -fill y;pack $panel.options -fill both -expand 1
+    foreach value $values {$panel.options insert end $value}
+    set selected [lsearch -exact $values [$widget get]]
+    if {$selected<0} {set selected 0}
+    $panel.options selection set $selected;$panel.options activate $selected;$panel.options see $selected
+    place $panel -x $px -y $py -width $pw -height $ph
+    raise $panel;focus $panel.options;grab $panel
+    bind $panel <Button-1> [list ::GX::_uiFieldSelectorClick $widget $viewer %x %y]
+    bind $panel.options <ButtonRelease-1> "[list ::GX::uiFieldSelectorClose $widget $viewer 1];break"
+    bind $panel.options <Return> "[list ::GX::uiFieldSelectorClose $widget $viewer 1];break"
+    bind $panel.options <Escape> "[list ::GX::uiFieldSelectorClose $widget $viewer];break"
+    bind $panel.options <Tab> [format {::GX::_uiFieldSelectorTab %s %s; break} [list $widget] [list $viewer]]
+    bind $panel <Configure> [list ::GX::_uiFieldSelectorResize $widget $viewer $width $height %W]
+    bind $panel <<ViewerResized>> [list ::GX::_uiFieldSelectorResize $widget $viewer $width $height %W]
+}
+proc ::GX::_uiFieldSelectorResize {widget viewer width height changed} {
+    set panel [_uiFieldSelectorPanel $widget $viewer]
+    if {![winfo exists $viewer] || ![winfo exists $panel]} return
+    set vw [winfo width $viewer];set vh [winfo height $viewer]
+    if {$vw==$width && $vh==$height} return
+    if {$vw<24 || $vh<24} {uiFieldSelectorClose $widget $viewer;return}
+    set info [place info $panel];set pw [expr {min([dict get $info -width],$vw-8)}];set ph [expr {min([dict get $info -height],$vh-8)}]
+    set px [expr {max(4,min([dict get $info -x],$vw-$pw-4))}];set py [expr {max(4,min([dict get $info -y],$vh-$ph-4))}]
+    if {[dict get $info -x]!=$px || [dict get $info -y]!=$py || [dict get $info -width]!=$pw || [dict get $info -height]!=$ph} {place configure $panel -x $px -y $py -width $pw -height $ph}
 }
 proc ::GX::uiFieldColor {value {withAlpha 0}} {
     set opacity 1.0
@@ -565,11 +665,12 @@ proc ::GX::uiFieldControlsLayout {frame width {children {}}} {
         set total 0;foreach size $sizes {incr total $size}
         if {$total<=$width || $columns==1} break
     }
-    set i 0
+    set heights {};set i 0
     foreach group $groups {
         set row [expr {$i/$columns}];set col [expr {2*($i%$columns)}];incr i
         set span [expr {[llength $group]==1 ? 2 : 1}]
         foreach child $group {
+            dict set heights $row [expr {max([datasetPublicationV2DictDefault $heights $row 0],[winfo reqheight $child]+4)}]
             set info [grid info $child]
             if {$info eq {} || [dict get $info -row]!=$row || [dict get $info -column]!=$col||[dict get $info -columnspan]!=$span} {
                 grid $child -row $row -column $col -columnspan $span -sticky w -padx 3 -pady 2
@@ -577,6 +678,8 @@ proc ::GX::uiFieldControlsLayout {frame width {children {}}} {
             incr col
         }
     }
+    set height 0;dict for {row pixels} $heights {incr height $pixels}
+    return [dict create columns $columns rows [dict size $heights] height $height]
 }
 namespace eval ::GX::UiField {variable tableLayoutAfter {}}
 proc ::GX::uiFieldInspectionColumnsFit {tree} {
@@ -616,4 +719,11 @@ proc ::GX::uiFieldFormSectionLayout {window} {
     set width [winfo width $window];if {$width<430} {set width 760}
     wm geometry $window ${width}x$desired
     $window.viewport yview moveto 0
+}
+
+source [file join [file dirname [info script]] ui_field_viewer_regions_v1.tcl]
+
+proc ::GX::_uiFieldSelectorViewerChanged {widget viewer changed} {
+    set panel [_uiFieldSelectorPanel $widget $viewer]
+    if {$changed eq $viewer && [winfo exists $panel]} {event generate $panel <<ViewerResized>>}
 }

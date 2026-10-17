@@ -8,7 +8,7 @@ namespace eval ::GX::ScientificWorksheet {
 
 proc ::GX::ScientificWorksheet::_sheetData {book} {
     set data [dict create]
-    foreach key {cells columns ranges bindings column_metadata row_identity hidden_rows operations} {
+    foreach key {cells columns ranges bindings column_metadata row_identity hidden_rows operations styles range_styles merges row_heights column_widths filter_views active_filter filter_hidden_rows scripts} {
         dict set data $key [expr {[dict exists $book $key] ? [dict get $book $key] : [dict create]}]
     }
     return $data
@@ -293,7 +293,8 @@ proc ::GX::ScientificWorksheet::bindDataset {book datasetId mappings {firstRow 1
     if {![dict size $mappings] || [dict size $mappings] > 26} {error "Select 1–26 variables."}
     set schema [dict create]
     if {$firstRow+$limit-1>1000000} {error {Binding window exceeds Worksheet row capacity}}
-    foreach v [::GX::datasetVariableSchemaV3 $datasetId] {dict set schema [dict get $v variable_id] $v}
+    set sourceRevision [::GX::datasetRevisionToken $datasetId [_requireSession]]
+    foreach v [::GX::tableStreamCompatibleSchema [_requireSession] $datasetId] {dict set schema [dict get $v variable_id] $v}
     dict for {col id} $mappings {
         set col [string toupper $col]; _columnNumber $col
         if {![dict exists $schema $id]} {error "Unknown Dataset variable '$id'."}
@@ -338,7 +339,7 @@ proc ::GX::ScientificWorksheet::bindDataset {book datasetId mappings {firstRow 1
                     } elseif {[string equal -nocase $raw NaN]} {set kind nan
                     } else {set kind [expr {[dict get $variable value_kind] in {number elapsed_time} ? "dataset" : "text"}]}
                     dict set book cells $address [dict create source $raw kind $kind unit [dict get $variable unit] lineage [dict create dataset_id $datasetId variable_id $id source_row [expr {[dict get $chunk offset]+$i}] selection_id $selectionId]]
-                    dict set book bindings $col [dict create dataset_id $datasetId variable_id $id unit [dict get $variable unit] selection_id $selectionId first_row $firstRow row_count [expr {$count+1}]]
+                    dict set book bindings $col [dict create dataset_id $datasetId variable_id $id unit [dict get $variable unit] selection_id $selectionId source_revision $sourceRevision first_row $firstRow row_count [expr {$count+1}]]
                     dict set book column_metadata $col [dict create name $id unit [dict get $variable unit]]
                     if {![dict exists $book columns $id]} {dict set book columns $id $col}
                 }
@@ -347,6 +348,7 @@ proc ::GX::ScientificWorksheet::bindDataset {book datasetId mappings {firstRow 1
             if {$count >= $limit || [dict get $chunk eof]} break
         }
     } finally {::GX::tableStreamClose $stream}
+    if {[::GX::datasetRevisionToken $datasetId $session] ne $sourceRevision} {error {Canonical source changed during binding; the Workbook is unchanged}}
     dict incr book revision;_dropBookCache $book
     return [list $book $count]
 }
@@ -771,33 +773,106 @@ proc ::GX::ScientificWorksheet::_uiClear {w} {
 }
 proc ::GX::ScientificWorksheet::_workbookImportDialog {w} {
     variable ui
-    _v1__uiImportDialog $w
-    set d $w.import
-    ttk::label $d.choose -text "Select source variables (Ctrl/Shift for multiple). IDs, types, and units are shown below."
-    listbox $d.variables -selectmode extended -height 9 -width 65 -exportselection 0
-    ttk::label $d.startlabel -text "Destination start column"
-    ttk::combobox $d.start -values {A B C D E F G H I J K L} -textvariable ::GX::ScientificWorksheet::ui($w,import_start) -state readonly
-    set ui($w,import_start) A
-    pack $d.choose $d.variables $d.startlabel $d.start -before $d.go -fill x -padx 6 -pady 3
-    ttk::combobox $d.selections -values [::GX::sessionInspectionSelectionIds] -textvariable ::GX::ScientificWorksheet::ui($w,import_selection)
-    pack $d.selections -before $d.go -fill x -padx 6
-    bind $d.datasets <<ComboboxSelected>> [list ::GX::ScientificWorksheet::_uiImportVariables $w]
-    if {[llength [::GX::sessionInspectionDatasetIds]]} {set ui($w,import_dataset) [lindex [::GX::sessionInspectionDatasetIds] 0]; _uiImportVariables $w}
-    set ui($w,import_mappings) ""
+    set d $w.import;catch {destroy $d};toplevel $d;wm title $d {Bind canonical Dataset columns};wm geometry $d 760x680
+    foreach {key value} {namespace {All namespaces} descendants 1 search {} dataset {} selection {} first 1 limit 2000 start A mappings {}} {set ui($w,import_$key) $value}
+    ttk::label $d.namespaceLabel -text Namespace
+    ttk::combobox $d.namespace -state readonly -values [linsert [::GX::datasetNamespaceList [_requireSession]] 0 {All namespaces}] -textvariable ::GX::ScientificWorksheet::ui($w,import_namespace)
+    ttk::checkbutton $d.descendants -text {Include descendant namespaces} -variable ::GX::ScientificWorksheet::ui($w,import_descendants) -command [list [namespace current]::_uiImportCatalog $w]
+    ttk::label $d.searchLabel -text {Find Dataset by name or exact ID}
+    ttk::entry $d.search -textvariable ::GX::ScientificWorksheet::ui($w,import_search)
+    ttk::combobox $d.datasets -state readonly -textvariable ::GX::ScientificWorksheet::ui($w,import_label)
+    ttk::label $d.summary -textvariable ::GX::ScientificWorksheet::ui($w,import_summary) -wraplength 720
+    ttk::label $d.choose -text {Select Variables (Ctrl/Shift for multiple): label · exact ID · dtype · unit · role}
+    listbox $d.variables -selectmode extended -height 7 -exportselection 0 -yscrollcommand [list $d.scroll set]
+    ttk::scrollbar $d.scroll -command [list $d.variables yview]
+    text $d.preview -height 4 -wrap none -state disabled
+    foreach item {namespaceLabel namespace descendants searchLabel search datasets summary choose variables scroll preview} {pack $d.$item -fill x -padx 8 -pady 3}
+    foreach {key label} {start {Destination start column} first {First Worksheet row} limit {Maximum rows (1–20000)}} {
+        ttk::label $d.l_$key -text $label
+        if {$key eq "start"} {ttk::combobox $d.$key -textvariable ::GX::ScientificWorksheet::ui($w,import_$key)} else {ttk::entry $d.$key -textvariable ::GX::ScientificWorksheet::ui($w,import_$key)}
+        pack $d.l_$key $d.$key -fill x -padx 8
+    }
+    ttk::label $d.selectionLabel -text {Optional subset belonging to this Dataset}
+    ttk::combobox $d.selections -state readonly -textvariable ::GX::ScientificWorksheet::ui($w,import_selection)
+    ttk::checkbutton $d.advancedToggle -text {Advanced explicit column mapping} -variable ::GX::ScientificWorksheet::ui($w,import_advanced) -command [list [namespace current]::_uiImportAdvanced $w]
+    ttk::entry $d.advanced -textvariable ::GX::ScientificWorksheet::ui($w,import_mappings)
+    set ui($w,import_advanced) 0
+    pack $d.advancedToggle -fill x -padx 8
+    ttk::button $d.go -text {Bind selected columns} -command [list [namespace current]::_uiImport $w $d]
+    pack $d.go -side bottom -pady 8
+    bind $d.namespace <<ComboboxSelected>> [list [namespace current]::_uiImportCatalog $w]
+    bind $d.search <KeyRelease> [list [namespace current]::_uiImportCatalog $w]
+    bind $d.datasets <<ComboboxSelected>> [list [namespace current]::_uiImportChoose $w]
+    set ui($w,import_subscription) [::GX::datasetCatalogSubscribe [list [namespace current]::_uiImportCatalogChanged $w]]
+    bind $d <Destroy> [list [namespace current]::_uiImportDestroy $w %W]
+    _uiImportCatalog $w
+}
+proc ::GX::ScientificWorksheet::_uiImportAdvanced {w} {variable ui;if {$ui($w,import_advanced)} {pack $w.import.advanced -before $w.import.go -fill x -padx 8} else {pack forget $w.import.advanced}}
+proc ::GX::ScientificWorksheet::_uiImportDestroy {w actual} {variable ui;if {$actual eq "$w.import" && [info exists ui($w,import_subscription)]} {::GX::datasetCatalogUnsubscribe $ui($w,import_subscription);unset ui($w,import_subscription)}}
+proc ::GX::ScientificWorksheet::_uiImportCatalogChanged {w receipt} {if {[winfo exists $w.import]} {after idle [list [namespace current]::_uiImportCatalog $w]}}
+proc ::GX::ScientificWorksheet::_uiImportCatalog {w} {
+    variable ui;set d $w.import;if {![winfo exists $d]} return
+    set previous $ui($w,import_dataset);set labels {};set ui($w,import_catalog) {}
+    set catalog [::GX::datasetCatalogSnapshot];set ui($w,import_catalog_identity) [list [dict get $catalog session_token] [dict get $catalog revision]]
+    foreach item [dict get $catalog datasets] {
+        set id [dict get $item dataset_id];set ns [dict get $item namespace];set scope $ui($w,import_namespace)
+        if {$scope ne {All namespaces} && $ns ne $scope && (!$ui($w,import_descendants) || ![string match "$scope/*" $ns])} continue
+        if {$ui($w,import_search) ne {} && [string first [string tolower $ui($w,import_search)] [string tolower "$id [dict get $item display_name]"]]<0} continue
+        set cacheKey [list $ui($w,import_catalog_identity) $id]
+        if {![info exists ui($w,import_schema_cache)] || ![dict exists $ui($w,import_schema_cache) $cacheKey]} {
+            if {[catch {set schema [::GX::tableStreamCompatibleSchema [_requireSession] $id]}]} {set schema {}}
+            dict set ui($w,import_schema_cache) $cacheKey $schema
+        }
+        set schema [dict get $ui($w,import_schema_cache) $cacheKey]
+        if {![llength $schema]} continue
+        set label "[dict get $item display_name] · $id · $ns · [dict get $item kind] · [dict get $item row_count] rows"
+        dict set ui($w,import_catalog) $label [dict create id $id schema $schema]
+        lappend labels $label
+    }
+    $d.datasets configure -values $labels
+    set chosen {};foreach label $labels {if {[dict get $ui($w,import_catalog) $label id] eq $previous} {set chosen $label;break}}
+    if {$previous eq {} && [llength $labels]} {set chosen [lindex $labels 0]}
+    set ui($w,import_label) $chosen
+    _uiImportChoose $w
+}
+proc ::GX::ScientificWorksheet::_uiImportChoose {w} {
+    variable ui
+    set ui($w,import_dataset) {}
+    if {[dict exists $ui($w,import_catalog) $ui($w,import_label)]} {set ui($w,import_dataset) [dict get $ui($w,import_catalog) $ui($w,import_label) id]}
+    _uiImportVariables $w
 }
 proc ::GX::ScientificWorksheet::_uiImportVariables {w} {
-    variable ui; set d $w.import
-    $d.variables delete 0 end; set ui($w,import_schema) {}
-    if {$ui($w,import_dataset) eq ""} return
-    foreach variable [::GX::datasetVariableSchema $ui($w,import_dataset)] {
-        set id [dict get $variable variable_id]; lappend ui($w,import_schema) $id
-        set name [expr {[dict exists $variable display_name] ? [dict get $variable display_name] : [dict get $variable canonical]}]
-        set role [expr {[dict exists $variable coordinate_role] ? [dict get $variable coordinate_role] : ""}]
-        $d.variables insert end "$name · $id · [dict get $variable value_kind] · [dict get $variable unit] · $role"
+    variable ui;set d $w.import
+    set previousIds {}
+    if {[info exists ui($w,import_variables_dataset)] && $ui($w,import_variables_dataset) eq $ui($w,import_dataset)} {foreach index [$d.variables curselection] {lappend previousIds [lindex $ui($w,import_schema) $index]}}
+    set ui($w,import_variables_dataset) $ui($w,import_dataset)
+    $d.variables delete 0 end;set ui($w,import_schema) {};set ui($w,import_selection) {};pack forget $d.selectionLabel $d.selections
+    $d.preview configure -state normal;$d.preview delete 1.0 end
+    set id $ui($w,import_dataset)
+    if {$id eq {}} {set ui($w,import_summary) {No compatible Dataset selected. Adjust the namespace or search.};$d.go state disabled;$d.preview configure -state disabled;return}
+    set ui($w,import_source_revision) [::GX::datasetRevisionToken $id [_requireSession]]
+    foreach variable [::GX::tableStreamCompatibleSchema [_requireSession] $id] {
+        set vid [dict get $variable variable_id];lappend ui($w,import_schema) $vid
+        $d.variables insert end "[dict get $variable canonical] · $vid · [dict get $variable dtype] · [dict get $variable unit] · [dict get $variable semantic_role]"
     }
+    set subsets [list {}]
+    foreach sid [::GX::sessionInspectionSelectionIds] {
+        if {![catch {set subset [::GX::sessionInspectionSelection $sid [_requireSession]]}] && [::GX::datasetPublicationV2DictDefault $subset source_dataset_id {}] eq $id && [dict get $subset type] in {x_range rectangle}} {lappend subsets $sid}
+    }
+    if {[llength $subsets]>1} {$d.selections configure -values $subsets;pack $d.selectionLabel $d.selections -before $d.advancedToggle -fill x -padx 8}
+    if {[llength $ui($w,import_schema)]} {
+        $d.go state !disabled
+        if {$previousIds eq {}} {$d.variables selection set 0} else {set index 0;foreach vid $ui($w,import_schema) {if {$vid in $previousIds} {$d.variables selection set $index};incr index}}
+        set sample [lrange $ui($w,import_schema) 0 5]
+        set stream [::GX::tableStreamOpenDataset [_requireSession] $id $sample 4 {count 4}]
+        try {set page [::GX::tableStreamNext $stream];dict for {vid values} [dict get $page values] {$d.preview insert end "$vid: $values\n"}} finally {::GX::tableStreamClose $stream}
+        set ui($w,import_summary) "$id · [::GX::datasetNamespaceGet [_requireSession] $id] · [llength $ui($w,import_schema)] compatible Variables; preview is bounded to 4 rows and 6 columns."
+    } else {$d.go state disabled;set ui($w,import_summary) {No bindable Variables available}}
+    $d.preview configure -state disabled
 }
 proc ::GX::ScientificWorksheet::_uiImport {w d} {
     variable ui
+    if {[::GX::datasetRevisionToken $ui($w,import_dataset) [_requireSession]] ne $ui($w,import_source_revision)} {_uiError $w {Source changed. Select the Dataset again before binding.};return}
     set chosen [$d.variables curselection]
     if {![llength $chosen]} {if {![_uiRemember $w]} return; _v1__uiImport $w $d; return}
     set c [_columnNumber $ui($w,import_start)]; set mappings [dict create]

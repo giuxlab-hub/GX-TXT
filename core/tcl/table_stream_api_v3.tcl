@@ -31,6 +31,20 @@ proc ::GX::tableStreamRequire {stream {allowFailed 0}} {
     if {$status eq "failed" && !$allowFailed} { error "Table Stream handle is failed: $stream" }
 }
 
+# Metadata-only compatibility query; the ordinary stream owner validates the
+# provider and each row-oriented scalar Variable without scanning payload rows.
+proc ::GX::tableStreamCompatibleSchema {session datasetId} {
+    set table [datasetStorageTableDescription $session $datasetId]
+    set result {};set ids {}
+    foreach variable [dict get $table variables] {
+        if {![dict get $variable enabled] || [dict get $variable dtype] ni [tableStreamKnownDtypes] || [string match complex* [dict get $variable dtype]]} continue
+        lappend result $variable;lappend ids [dict get $variable variable_id]
+    }
+    if {$ids eq {}} {return {}}
+    set stream [tableStreamOpenDataset $session $datasetId $ids 1 {count 0}]
+    tableStreamClose $stream
+    return $result
+}
 proc ::GX::tableStreamOpenDataset {session datasetId variableIds chunkRows {options {}}} {
     variable currentSession
     variable tableStreamState

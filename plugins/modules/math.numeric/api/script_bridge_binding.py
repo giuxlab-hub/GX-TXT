@@ -410,7 +410,17 @@ def _dataset_options(host, dataset_id, options):
     return {**{key: value for key, value in options.items() if key != "selection_id"}, "selection": selection}
 
 
+REGISTRATION['operations']['replicate_xy_summary'] = {'name':'replicate_xy_summary', 'summary':'Coordinate profiles and sample cross covariance through the existing Numeric reducers', 'arguments':[{'name':key,'kind':'numeric array or options','required':key!='options'} for key in ('X','Y','source_ids','options')], 'result_contract':'x/y replicate_summary and sample covariance_xy'}
+
+REGISTRATION['operations']['interpolate'] = {'name':'interpolate','summary':'Existing Numeric interpolation kernel','arguments':[{'name':k,'kind':'numeric array or options','required':k!='options'} for k in ('X','Y','query','options')],'result_contract':'xq/yq with kernel and extrapolation receipt'}
+
 def invoke(host, operation, args):
+    if operation == 'interpolate' and len(args) in (3,4):
+        from gxtxt_scientific_binary_v1 import call
+        return call(host, 'gxtxt_numeric_v1', [operation, *[_numeric_argument(v) for v in args]])
+    if operation == 'replicate_xy_summary' and len(args) in (3,4):
+        from gxtxt_scientific_binary_v1 import call
+        return call(host, 'gxtxt_numeric_v1', [operation, *[_numeric_argument(v) for v in args]])
     if operation == "dataset_expression":
         if len(args) != 4 or not isinstance(args[0], str) or not all(isinstance(value, dict) for value in args[1:]):
             raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "Dataset expressions require text, canonical bindings, scalar parameters and explicit bounded options")

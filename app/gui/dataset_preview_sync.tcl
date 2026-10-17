@@ -68,6 +68,7 @@ proc ::GX::datasetPreviewStop {} {
     if {$previewJob ne {}} {datasetViewerClose $previewJob;set previewJob {}}
     native3DPreviewRelease .top.nb.preview.txt
     datasetPreviewBinaryTaskStop
+    datasetDigitizerPreviewClear
     if {[winfo exists .top.nb.preview.geometry]} {place forget .top.nb.preview.geometry}
     if {$::GX::DatasetViewer::previewImage ne {}} {catch {image delete $::GX::DatasetViewer::previewImage};set ::GX::DatasetViewer::previewImage {}}
     if {[info exists ui(preview)] && [winfo exists $ui(preview)]} {previewDescriptorClearWidgetArtifact $ui(preview)}
@@ -78,7 +79,7 @@ proc ::GX::datasetPreviewCacheSignature {} {
     variable ui
     set options {}
     foreach key {previewMap,id previewMap,x previewMap,y previewMap,filters previewMap,separate} {
-        if {[info exists ui($key)]} {lappend options $key $ui($key)}
+        if {[info exists ui($key)]} {set value $ui($key);if {$key eq "previewMap,filters"} {set value [dict remove $value @hidden_filters]};lappend options $key $value}
     }
     set settings [previewSettingsLoad];set ordered {}
     foreach key [lsort [dict keys $settings]] {lappend ordered $key [dict get $settings $key]}
@@ -140,7 +141,7 @@ proc ::GX::datasetPreviewActionsState {} {
     set tabular 0
     if {$mode eq "imported" && $id ne {}} {catch {set page [datasetPreviewPage $::GX::currentSession $id [dict create count 1]];set tabular [dict get $page available]}}
     $f.actions.pages state [expr {$tabular?"!disabled":"disabled"}]
-    set visual [expr {$::GX::DatasetViewer::previewImage ne {} || $::GX::DatasetViewer::previewJob ne {} || [info exists ::GX::previewBinaryTaskState] && $::GX::previewBinaryTaskState in {running ready} || [info exists ::GX::previewArtifactImages($f.txt)]}]
+    set visual [expr {[dict size $::GX::DigitizerPreview::state]>0 || $::GX::DatasetViewer::previewImage ne {} || $::GX::DatasetViewer::previewJob ne {} || [info exists ::GX::previewBinaryTaskState] && $::GX::previewBinaryTaskState in {running ready} || [info exists ::GX::previewArtifactImages($f.txt)]}]
     $f.actions.clear state [expr {$visual?"!disabled":"disabled"}]
     $f.actions.copy state [expr {[$f.txt compare end-1c > 1.0]?"!disabled":"disabled"}]
     datasetPageEditState

@@ -441,3 +441,24 @@ Authority regression covers cross-owner/framework rejection, ordinary replacemen
 preservation, text filtering, observer consistency and failed-commit rollback.
 The local Linux browser journey and actual Python/Octave Bridge journeys cover
 ordinary filtering, owner-bound writes and namespace placement.
+
+## Verified contributors (dev102)
+
+Ordinary CORE writes now record authenticated original and latest contributor per
+key in the existing reserved `_gxtxt.framework.metadata_origins` sidecar manifest.
+Actors are User, System or registered module ID, independent of Dataset producer.
+Revision/value SHA verification preserves unchanged attribution through publication,
+prunes deletes and makes value changes atomic with origin changes. Unverified older
+values remain Unclassified; editing them records the current modifier without
+inventing their original creator. Callers cannot supply a trusted actor label.
+
+Tcl `datasetMetadataContributors session datasetId` returns verified relations;
+`datasetMetadataGroups session datasetId ?all|original|last?` returns actual groups.
+A field can appear under its original and latest modules. Bridge `contributors`
+and `groups` take Dataset ID; Python/Octave propagate their authenticated module.
+User/admin `datasetMetadataAuthorizeContributors session datasetId moduleIds
+expectedRevision` grants ordinary metadata contribution explicitly. Modules cannot
+self-grant. Private namespaces and scientific payload ownership remain enforced.
+Preview resolves actual installed names and only present contributor groups.
+Publication v2, File Publication and Acquisition use the same CORE boundary: supplied
+keys belong to their module, CORE integrity/administrative fields to System.

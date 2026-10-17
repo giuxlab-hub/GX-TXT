@@ -217,3 +217,8 @@ The retained compatibility preview dialog uses the existing CORE Resource
 Management allocation/release/selected-cleanup authority. Closing/replacing the
 preview or failing before image adoption releases only that allocation and its
 Tk photo; retained canonical Graph files are never deleted by preview cleanup.
+
+Dev102 extends this same public Workbook owner with multi-seed fill, sparse range
+styles/merges/sizing, presentation Filter Views and explicit managed Python script
+proposals. See [the versioned extension contracts](../../../../docs/api/SCIENTIFIC_WORKSHEET_DEV102.md)
+and the module manual for working examples, limits and revision guarantees.

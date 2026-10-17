@@ -8,7 +8,10 @@ proc ::GX::ScientificWorksheet::_upgrade {book} {
     }
     if {![dict exists $book options calculation_mode]} {dict set book options calculation_mode automatic}
     if {![dict exists $book presentation display_columns]} {dict set book presentation display_columns {A B C D E F G H I J K L}}
-    foreach key {bindings column_metadata row_identity hidden_rows operations} {if {![dict exists $book $key]} {dict set book $key {}}}
+    foreach key {bindings column_metadata row_identity hidden_rows operations styles range_styles merges row_heights column_widths filter_views active_filter filter_hidden_rows scripts} {if {![dict exists $book $key]} {dict set book $key {}}}
+    dict for {sheet body} [dict get $book sheets] {
+        foreach key {bindings column_metadata row_identity hidden_rows operations styles range_styles merges row_heights column_widths filter_views active_filter filter_hidden_rows scripts} {if {![dict exists $body $key]} {dict set book sheets $sheet $key {}}}
+    }
     if {[dict exists $book active_sheet_cache_omitted]} {
         dict for {key value} [dict get $book sheets [dict get $book active_sheet]] {dict set book $key $value}
         dict unset book active_sheet_cache_omitted
@@ -41,7 +44,7 @@ proc ::GX::ScientificWorksheet::validateBook {book {documentCheck 1}} {
 proc ::GX::ScientificWorksheet::snapshot {book} {
     set book [_flush $book];dict unset book _runtime
     # The sheets dictionary is canonical. Do not persist a second active copy.
-    foreach field {cells columns ranges bindings column_metadata row_identity hidden_rows operations} {dict set book $field {}}
+    foreach field {cells columns ranges bindings column_metadata row_identity hidden_rows operations styles range_styles merges row_heights column_widths filter_views active_filter filter_hidden_rows scripts} {dict set book $field {}}
     dict set book active_sheet_cache_omitted 1
     return $book
 }
@@ -322,14 +325,24 @@ proc ::GX::ScientificWorksheet::_registerSpill {book anchor result} {
     dict for {address item} $pending {dict set spill $key $address $item}
 }
 proc ::GX::ScientificWorksheet::clipboardCapture {book first last} {
-    validateBook $book;set cells {};foreach address [rangeCells $first $last] {
+    validateBook $book;lassign [rectangle $first $last] c1 r1 c2 r2
+    set first "[_columnName $c1]$r1";set last "[_columnName $c2]$r2"
+    set cells {};set styles {};set merges {}
+    foreach address [rangeCells $first $last] {
+        set effective [styleAt $book $address];if {$effective ne {}} {dict set styles $address $effective}
         if {[dict exists $book cells $address]} {
             set cell [dict get $book cells $address]
             if {[dict exists $cell lineage operation_destination]} {set item [value $book $address];dict set cell lineage [dict create transform copied_guided_result source_cell $address operation [dict get $cell lineage operation] field [dict get $cell lineage field] source_lineage [_sourceLineage $item]];dict set cell kind manual;foreach field {statistical_sources source_lineage statistical_result statistical_field statistical_element statistical_window} {if {[dict exists $item $field]} {dict set cell $field [dict get $item $field]}}}
             dict set cells $address $cell
         }
     }
-    return [dict create format scientific_worksheet.clipboard.v2 source_identity [bookIdentity $book] first [_cell $first] last [_cell $last] cells $cells]
+    dict for {anchor bounds} [dict get $book merges] {
+        lassign $bounds a b c d
+        if {$a>$c2 || $c<$c1 || $b>$r2 || $d<$r1} continue
+        if {$a<$c1 || $b<$r1 || $c>$c2 || $d>$r2} {error {Copy the entire merged span or unmerge it first}}
+        dict set merges $anchor $bounds
+    }
+    return [dict create styles $styles merges $merges format scientific_worksheet.clipboard.v2 source_identity [bookIdentity $book] first [_cell $first] last [_cell $last] cells $cells]
 }
 proc ::GX::ScientificWorksheet::clipboardPaste {book clip destination} {
     validateBook $book
@@ -350,6 +363,15 @@ proc ::GX::ScientificWorksheet::clipboardPaste {book clip destination} {
             dict set pending $to $cell
         } else {dict set pending $to {}}
     }
+    set pendingStyles {};set pendingMerges {}
+    dict for {from style} [::GX::datasetPublicationV2DictDefault $clip styles {}] {lassign [_parts $from] c r;dict set pendingStyles "[_columnName [expr {$c+$deltaC}]][expr {$r+$deltaR}]" [styleValidate $style]}
+    dict for {from bounds} [::GX::datasetPublicationV2DictDefault $clip merges {}] {
+        lassign $bounds c1 r1 c2 r2
+        set start "[_columnName [expr {$c1+$deltaC}]][expr {$r1+$deltaR}]"
+        dict set pendingMerges $start [list [expr {$c1+$deltaC}] [expr {$r1+$deltaR}] [expr {$c2+$deltaC}] [expr {$r2+$deltaR}]]
+    }
+    dict for {address style} $pendingStyles {dict set book styles $address $style}
+    dict for {anchor bounds} $pendingMerges {dict set book merges $anchor $bounds}
     # Typed value copies are staged before mutation; overlap reads only clipboard.
     dict for {address cell} $pending {if {$cell eq {}} {if {[dict exists $book cells $address]} {dict unset book cells $address}} else {dict set book cells $address $cell}}
     dict incr book revision;set affected [_invalidate $book [dict keys $pending]];set book [_staleOperations $book $affected];if {[dict get $book options calculation_mode] eq "automatic"} {_dropBookCache $book}
@@ -397,6 +419,11 @@ proc ::GX::ScientificWorksheet::_rowBounds {first last} {
 }
 proc ::GX::ScientificWorksheet::_permuteRows {book first last sources} {
     _rowBounds $first $last
+    dict for {anchor bounds} [dict get $book merges] {lassign $bounds c1 r1 c2 r2;if {$r1<=$last && $r2>=$first} {error {Unmerge affected cells before sorting their scientific rows}}}
+    set styleBuckets {};set styles [dict get $book styles]
+    dict for {address style} $styles {lassign [_parts $address] c r;if {$r>=$first && $r<=$last} {dict set styleBuckets $r $c $style;dict unset styles $address}}
+    set target $first;foreach source $sources {if {[dict exists $styleBuckets $source]} {dict for {c style} [dict get $styleBuckets $source] {dict set styles "[_columnName $c]$target" $style}};incr target}
+    dict set book styles $styles
     set buckets {};set cells [dict get $book cells];set identities [dict get $book row_identity]
     dict for {address cell} [dict get $book cells] {
         lassign [_parts $address] c r
@@ -509,7 +536,23 @@ proc ::GX::ScientificWorksheet::workspaceValidate {payload} {
     if {[dict get $payload format] ne "scientific_worksheet.v2" || [dict get $payload active_sheet] ni [dict get $payload sheet_order]} {error {Invalid Worksheet Workspace format or active sheet}}
     foreach sheet [dict get $payload sheet_order] {
         if {![dict exists $payload sheets $sheet]} {error {Worksheet sheet order refers to absent sheet}}
-        dict for {address cell} [dict get $payload sheets $sheet cells] {_cell $address;foreach key {source kind unit} {if {![dict exists $cell $key]} {error "Persisted cell requires $key"}}}
+        set body [dict get $payload sheets $sheet]
+        foreach layer [::GX::datasetPublicationV2DictDefault $body range_styles {}] {
+            _presentationBoundsValidate [dict get $layer bounds];styleValidate [dict get $layer style]
+            if {[dict get $layer borders] ni {{} all outer inner top bottom left right none}} {error {Invalid persisted range borders}}
+        }
+        dict for {address style} [::GX::datasetPublicationV2DictDefault $body styles {}] {_cell $address;styleValidate $style}
+        dict for {anchor bounds} [::GX::datasetPublicationV2DictDefault $body merges {}] {
+            _presentationBoundsValidate $bounds
+            if {$anchor ne "[_columnName [lindex $bounds 0]][lindex $bounds 1]"} {error {Invalid persisted merge anchor}}
+        }
+        foreach axis {row column} field {row_heights column_widths} {
+            dict for {index pixels} [::GX::datasetPublicationV2DictDefault $body $field {}] {
+                ::GX::uiFieldNormalize [dict create type integer min 1 max [expr {$axis eq "row"?1000000:702}]] $index
+                ::GX::uiFieldNormalize [dict create type integer min [expr {$axis eq "row"?16:35}] max 2000] $pixels
+            }
+        }
+        dict for {address cell} [dict get $body cells] {_cell $address;foreach key {source kind unit} {if {![dict exists $cell $key]} {error "Persisted cell requires $key"}}}
     }
     return 1
 }
@@ -533,6 +576,38 @@ proc ::GX::ScientificWorksheet::_structuralEdit {book axis position count deleti
         dict set cells "[_columnName $c]$r" $cell
     }
     dict set data cells $cells
+    set shiftedStyles {}
+    dict for {address style} [dict get $data styles] {
+        set address [_presentationShiftAddress $address $axis $position $count $deleting]
+        if {$address ne {}} {dict set shiftedStyles $address $style}
+    }
+    dict set data styles $shiftedStyles
+    set layers {}
+    foreach layer [dict get $data range_styles] {
+        lassign [dict get $layer bounds] c1 r1 c2 r2
+        set interval [_presentationShiftInterval [expr {$axis eq "row"?$r1:$c1}] [expr {$axis eq "row"?$r2:$c2}] $position $count $deleting]
+        if {$interval eq {}} continue
+        if {$axis eq "row"} {lassign $interval r1 r2} else {lassign $interval c1 c2}
+        dict set layer bounds [list $c1 $r1 $c2 $r2];lappend layers $layer
+    }
+    dict set data range_styles $layers
+    set merges {}
+    dict for {anchor bounds} [dict get $data merges] {
+        lassign $bounds c1 r1 c2 r2
+        set interval [_presentationShiftInterval [expr {$axis eq "row"?$r1:$c1}] [expr {$axis eq "row"?$r2:$c2}] $position $count $deleting]
+        if {$interval eq {}} continue
+        if {$axis eq "row"} {lassign $interval r1 r2} else {lassign $interval c1 c2}
+        if {$c1!=$c2 || $r1!=$r2} {dict set merges "[_columnName $c1]$r1" [list $c1 $r1 $c2 $r2]}
+    }
+    dict set data merges $merges
+    set field [expr {$axis eq "row"?"row_heights":"column_widths"}];set sizes {}
+    dict for {index pixels} [dict get $data $field] {
+        set interval [_presentationShiftInterval $index $index $position $count $deleting]
+        if {$interval ne {}} {dict set sizes [lindex $interval 0] $pixels}
+    }
+    dict set data $field $sizes
+    dict set data active_filter {};dict set data filter_hidden_rows {}
+    dict for {name view} [dict get $data filter_views] {dict set data filter_views $name invalid_reason {Rows or columns changed. Review and save this Filter View before applying it again.}}
     if {$axis eq "row"} {
         foreach field {row_identity hidden_rows} {
             set values {};if {[dict exists $data $field]} {dict for {r value} [dict get $data $field] {
@@ -588,6 +663,12 @@ proc ::GX::ScientificWorksheet::refreshBookAuthority {book} {
     return $book
 }
 proc ::GX::ScientificWorksheet::_reserveBeforeEdit {book first last} {
+    lassign [rectangle $first $last] c1 r1 c2 r2
+    dict for {anchor bounds} [dict get $book merges] {
+        lassign $bounds a b c d
+        if {$a>$c2 || $c<$c1 || $b>$r2 || $d<$r1} continue
+        if {$first ne $last || $first ne $anchor} {error {Unmerge the presentation span before editing subordinate cells}}
+    }
     _ensureCalculationSnapshot $book
     lassign [_parts $last] maxC maxR
     dict for {address cell} [dict get $book cells] {
@@ -690,6 +771,15 @@ proc ::GX::ScientificWorksheet::viewportRows {book rowIds firstColumn columnCoun
             foreach field {kind unit} {dict set record $field [dict get $item $field]}
             set text [dict get $item value];if {[dict get $item kind] eq "missing"} {set text {Missing}};if {[dict get $item kind] eq "nan"} {set text NaN}
             if {[dict exists $item operation_status] && [dict get $item operation_status] eq "stale"} {set text "Stale: $text";dict set record operation_status stale}
+            set style [styleAt $book $address]
+            if {$style ne {}} {set text [formatValue $item $style];dict set record style $style}
+            set merge [mergeAt $book $address]
+            if {$merge ne {}} {
+                dict set record merge $merge
+                set anchor [dict get $merge anchor];set anchorItem [_evalCell $book $anchor {} 1]
+                set anchorStyle [styleAt $book $anchor]
+                dict set record style $anchorStyle;set text [formatValue $anchorItem $anchorStyle]
+            }
             dict set record text [string range $text 0 511]
         };dict set cells [list $r $c] $record
     }}

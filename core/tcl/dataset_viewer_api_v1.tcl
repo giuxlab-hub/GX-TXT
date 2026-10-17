@@ -453,14 +453,18 @@ proc ::GX::datasetInspectionRenderPreview {w choice} {
     } else {
         set f [file tempfile path];close $f
         try {
-            set requests [scientificDatasetFilterRequests $::GX::ui(previewMap,dimensions) $::GX::ui(previewMap,filters) $::GX::ui(previewMap,separate)]
+            set displayFilters $::GX::ui(previewMap,filters)
+            if {[datasetDigitizerPreviewHasRecord $id]} {set displayFilters [dict remove $displayFilters @hidden_filters]}
+            set requests [scientificDatasetFilterRequests $::GX::ui(previewMap,dimensions) $displayFilters $::GX::ui(previewMap,separate)]
             set receipt [scientificDatasetPreviewFiltered $id [dict get $axes x] [dict get $axes y] $path $requests]
             if {$choice ne $::GX::variableDatasetChoice || $epoch!=$::GX::ui(previewEpoch) || $expected ne [datasetPreviewStamp]} return
             set ::GX::ui(previewMap,status) "[scientificDatasetFilterMode $::GX::ui(previewMap,dimensions) $::GX::ui(previewMap,filters) $::GX::ui(previewMap,separate)] — [dict get $receipt trace_count] trace(s), [dict get $receipt row_count] source rows"
             foreach key {x y} {set vid [dict get $axes $key];set v [datasetVariableV3ById $id $vid];$w insert end "[string toupper $key]: [dict get $v canonical] ([scientificDatasetCoordinateLabel [dict get $receipt coordinate_presentation context] $vid])   "}
             $w insert end "\n"
-            set previewImage [image create photo -file $path]
-            $w image create end -image $previewImage
+            if {![datasetDigitizerPreviewAttachNative $id $w [dict get $receipt native_model]]} {
+                set previewImage [image create photo -file $path]
+                $w image create end -image $previewImage
+            }
             $w insert end "\n[scientificDatasetFilterMode $::GX::ui(previewMap,dimensions) $::GX::ui(previewMap,filters) $::GX::ui(previewMap,separate)] — [dict get $receipt trace_count] trace(s)\nX: [dict get $axes x]   Y: [dict get $axes y]\nRows: [dict get $receipt row_count]; reduced display: [dict get $receipt reduced]. Original source ordering and gaps retained.\n"
             $w insert end "[scientificDatasetCoordinateNotice [dict get $receipt coordinate_presentation]]\n"
             lassign [dict get $receipt view_bounds] x0 y0 x1 y1

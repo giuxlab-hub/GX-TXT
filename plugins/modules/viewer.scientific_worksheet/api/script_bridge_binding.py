@@ -11,6 +11,11 @@ _METHODS = {
  'bind_dataset':('bindDataset',3,6), 'publish':('publish',5,6),
  'identity':('bookIdentity',1,1), 'inspect_cell':('value',2,2),
  'capture_operation':('captureOperationEncoded',1,1),
+ 'fill_range':('fillRange',3,5), 'format_range':('formatRange',4,5),
+ 'merge_range':('mergeRange',3,4), 'set_sizes':('setSizes',5,5),
+ 'filter_view_save':('filterViewSave',5,6), 'filter_view_apply':('filterViewApply',2,2),
+ 'script_context':('scriptContext',1,1), 'script_selection':('scriptSelection',1,1),
+ 'script_snapshot':('scriptSnapshot',1,1),
 }
 _ARGUMENTS = {
  'new':['name?'], 'load':['document_id'], 'save':['workbook_utf8'],
@@ -23,6 +28,13 @@ _ARGUMENTS = {
  'publish':['workbook_utf8','mappings','first','last','dataset_id','display_name?'],
  'identity':['workbook_utf8'], 'inspect_cell':['workbook_utf8','address'],
  'capture_operation':['request_base64'],
+ 'fill_range':['workbook_utf8','first','target_end','seed_end?','mode?'],
+ 'format_range':['workbook_utf8','first','last','style','borders?'],
+ 'merge_range':['workbook_utf8','first','last','unmerge?'],
+ 'set_sizes':['workbook_utf8','axis','first','last','pixels'],
+ 'filter_view_save':['workbook_utf8','name','first_row','last_row','predicates','combine?'],
+ 'filter_view_apply':['workbook_utf8','name'],
+ 'script_context':['context_base64'], 'script_selection':['context_base64'], 'script_snapshot':['workbook_utf8'],
 }
 REGISTRATION = {
  'api_id':'SCIENTIFIC_WORKSHEET_API_v1', 'api_version':1,
@@ -47,6 +59,8 @@ def invoke(host,operation,args):
  if operation=='bind_dataset':
   values=host.as_list(raw)
   return {'workbook_utf8':_text(host,values[0]),'row_count':int(values[1])}
+ if operation=='script_selection':
+  return {str(key):_text(host,item) for key,item in host.as_dict(raw).items()}
  if operation=='inspect_cell':
   value=host.as_dict(raw)
   result={'kind':_text(host,value['kind']),'unit':_text(host,value['unit']),'value_utf8':_text(host,value['value'])}

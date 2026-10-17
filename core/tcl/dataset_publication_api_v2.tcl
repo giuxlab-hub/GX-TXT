@@ -176,6 +176,16 @@ proc ::GX::datasetPublicationV2Prepare {session moduleId definition} {
     set required [datasetPublicationV2DictDefault $definition capabilities_required {}]
     set preferred [datasetPublicationV2DictDefault $definition capabilities_preferred {}]
     set selection [datasetPublicationV2SelectProvider $requested $required $preferred $definition]
+    if {$existing ne {} && [string tolower [string trim $requested]] in {{} auto}} {
+        # Replacement retains the canonical provider, not the new-output size
+        # policy. A provider change requires a separately authorized migration.
+        set retained [datasetField $datasetId storage_provider [datasetField $datasetId format {}]]
+        if {$retained eq "h5"} {set retained hdf5}
+        if {[catch {set selection [datasetPublicationV2SelectProvider $retained $required $preferred $definition]} failure]} {
+            error "Owned Dataset '$datasetId' cannot retain provider '$retained': $failure. Explicit storage migration is required; the existing Dataset has not changed."
+        }
+        dict set selection reason "automatic same-owner replacement retains canonical provider $retained"
+    }
     set provider [dict get $selection provider]
     set extension [expr {$provider eq "hdf5" ? "h5" : "csv"}]
     # An owned Dataset may have been renamed while its immutable payload path
@@ -700,8 +710,7 @@ proc ::GX::_datasetPublicationV2Commit {writer sha integritySeconds providerResu
         set statisticalSchema {}
         foreach variableId $datasetPublicationWriter($writer,variable_ids) {lappend statisticalSchema $datasetPublicationWriter($writer,variable,$variableId)}
         set publicationMetadata [::GX::StatisticsV1::sealPublicationBindings [datasetPublicationV2DictDefault $definition structured_metadata {}] $statisticalSchema $sha]
-        datasetMetadataWrite $session $datasetId [_scientificPublicationMetadata $session $datasetId $publicationMetadata [datasetPublicationV2DictDefault $definition source_dataset_ids {}] [expr {$datasetPublicationPlan($plan,operation) eq "replacing"}]]
-        _datasetMetadataOriginRecord $session $datasetId module:$datasetPublicationPlan($plan,module_id) [dict keys $publicationMetadata]
+        _datasetMetadataPublicationWrite $session $datasetId [_scientificPublicationMetadata $session $datasetId $publicationMetadata [datasetPublicationV2DictDefault $definition source_dataset_ids {}] [expr {$datasetPublicationPlan($plan,operation) eq "replacing"}]] $datasetPublicationPlan($plan,module_id) [dict keys $publicationMetadata]
         _datasetFrameworkMetadataUpdate $session $datasetId [dict create dataset_namespace [dict get $definition dataset_namespace]]
         datasetAuthorityFault after_metadata
     } on error {failure options} {

@@ -140,7 +140,11 @@ proc ::GX::datasetDigitizerPreviewToggle {token curve} {
     variable ::GX::DigitizerPreview::state
     if {![dict exists $state $token]} return
     set record [dict get $state $token]
+    if {[dict get $record session_token] ne [interactiveDocumentSessionToken]} {error {Preview belongs to another Session lifetime}}
     set show [set ::GX::DigitizerPreview::visible($token,$curve)]
+    if {[dict exists $record native_widget]} {
+        foreach series [datasetPublicationV2DictDefault [dict get $record native_series] $curve {}] {::GX::PlotDatasetAPIv4::widgetVisibility [dict get $record native_widget] main $series $show}
+    }
     [dict get $record canvas] itemconfigure [dict get $record curves $curve tag] -state [expr {$show?"normal":"hidden"}]
     set hidden {}
     dict for {identity data} [dict get $record curves] {
@@ -148,13 +152,34 @@ proc ::GX::datasetDigitizerPreviewToggle {token curve} {
     }
     dict set ::GX::ui(previewMap,filters) @hidden_filters $hidden
     set ::GX::ui(previewRasterVisibility) [dict create identity [dict get $record visibility_identity] hidden $hidden]
-    set position [lindex [[dict get $record text_widget] yview] 0]
-    after idle [list ::GX::datasetDigitizerPreviewVisibilityRender [dict get $record text_widget] $position]
+
 }
-proc ::GX::datasetDigitizerPreviewVisibilityRender {w position} {
-    if {![winfo exists $w]} return
-    datasetPreviewRender
-    if {[winfo exists $w]} {$w yview moveto $position}
+proc ::GX::datasetDigitizerPreviewHasRecord {id} {
+    dict for {token record} $::GX::DigitizerPreview::state {if {[dict get $record dataset_id] eq $id && [dict exists $record canvas]} {return 1}}
+    return 0
+}
+proc ::GX::datasetDigitizerPreviewAttachNative {id w model} {
+    variable ::GX::DigitizerPreview::state
+    if {![datasetDigitizerPreviewHasRecord $id]} {return 0}
+    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+    dict for {token record} $state {
+        if {[dict get $record dataset_id] ne $id || ![dict exists $record canvas]} continue
+        set path $w.retainedXY;set mapping {}
+        ::GX::PlotDatasetAPIv4::widgetCreate $path $model {prepared_model 1}
+        foreach series [dict get [lindex [dict get $model panels] 0] series] {
+            foreach filter [dict get $series filters] {
+                if {[dict get $filter filter_variable_id] eq [dict get $record curve_variable] && [dict get $filter predicate] eq "exact_equal"} {
+                    set curve [dict get $filter value]
+                    dict lappend mapping $curve [dict get $series id]
+                    if {[info exists ::GX::DigitizerPreview::visible($token,$curve)] && !$::GX::DigitizerPreview::visible($token,$curve)} {::GX::PlotDatasetAPIv4::widgetVisibility $path main [dict get $series id] 0}
+                }
+            }
+        }
+        dict set record native_widget $path;dict set record native_series $mapping;dict lappend record widgets $path;dict set state $token $record
+        $w window create end -window $path
+        return 1
+    }
+    return 0
 }
 proc ::GX::datasetDigitizerPreviewRender {w id} {
     variable ::GX::DigitizerPreview::state

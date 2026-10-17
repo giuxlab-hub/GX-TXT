@@ -7,6 +7,18 @@ For current interface contracts consult the API references under [docs/api](docs
 
 ## 0.9.8.10 - development revisions
 
+### 0.9.8.10-dev-102
+
+- Preserve compatible automatic same-owner Dataset Publication replacement providers, including empty auto aliases; explicit conflicting owner or capability grants remain explicit failures without implicit deletion.
+- Capture per-key Dataset Metadata contributions with immutable source identity, latest/original contributors, revision and value SHA; expose only verified public contributor groups and keep private ownership unchanged.
+- Retain native Preview Plot v4 curve buffers, axes and bounds during visibility-only toggles without re-reading source rows or rerunning analysis; source and Session revision guards still invalidate stale displays.
+- Introduce Replicate Curve Analysis 16.0 scientific public orchestration and a dedicated Replicate / Consensus Curves Viewer 1.0, reusing existing Numeric, CurveSource and Statistical Result Semantics scientific kernels rather than duplicating solvers. The legacy Analysis retains its prior scientific entries and result identities.
+- Support explicitly justified common-frame repeatability, calibration-sensitivity and hierarchical studies in monotone Y(X) and ordered XY path modes; encode observation/point-set/calibration/source-group identity, with unavailable shared covariance-aware estimators and confidence intervals remaining explicitly unavailable.
+- Publish Replicate profile, original/aligned traces and feature summaries atomically as create-only canonical Datasets, preserving original source-row ordinals and marking derived aligned samples as source-row -1; use the existing Script Jobs and genuine Plot v4 Graph Variants.
+- Extend Scientific Worksheet 2.1 with native guided Dataset binding, sparse styles, fill/merge, row/column dimensions, in-Worksheet Python Script Jobs with guarded proposal Apply, and bounded AND/OR Filter Views. Presentation filters do not change canonical scientific source values.
+- Add a public Viewer GUI Integration Manifest v1 that composes existing UI Field, ViewerCommands, Workspace, History and Native2D/Plot owners without a separate widget registry, scientific execution authority or Script Bridge GUI API.
+- Preserve documented limitations: bounded initial Preview/grid operations, unsupported Replicate cross-source covariance inference, synchronous bounded worksheet filters, and platform-specific Viewer GUI acceptance outside tested Debian X11.
+
 ### 0.9.8.10-dev-101
 
 - Introduce trusted, registered local scientific execution services using the existing durable Script Jobs, typed provider calls, original-Session resource boundaries, live generations, exact result adoption, cancellation and supervised process ownership; do not create a second scheduler.

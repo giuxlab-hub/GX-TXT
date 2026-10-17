@@ -109,7 +109,7 @@
 # Full release history: CHANGELOG.md
 
 namespace eval ::GX {
-    variable version "0.9.8.10-dev-101"
+    variable version "0.9.8.10-dev-102"
     variable scriptDir [file dirname [file normalize [info script]]]
     variable cfg
     variable ch
@@ -259,6 +259,7 @@ source [file join $::GX::scriptDir core tcl native2d_host_v1.tcl]
 source [file join $::GX::scriptDir core tcl dataset_transform_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl dataset_transform_responsive_v1.tcl]
 source [file join $::GX::scriptDir core tcl ui_field_api_v1.tcl]
+source [file join $::GX::scriptDir core tcl viewer_gui_host_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl curve_source_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl curve_source_async_v1.tcl]
 source [file join $::GX::scriptDir core tcl native2d_presentation_v1.tcl]

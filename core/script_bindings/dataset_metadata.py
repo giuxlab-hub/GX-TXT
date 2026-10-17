@@ -94,7 +94,14 @@ def _bounded_coordinate_values(values):
         return [values], None
     raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "Coordinate values require a bounded real scalar or array")
 
+for _operation in ('groups', 'contributors'):
+    REGISTRATION['operations'][_operation] = dict(name=_operation, summary='Read verified per-key metadata contributors and actual groups', arguments=[dict(name='dataset_id',kind='Dataset ID',required=True)], result_contract='contributor/group dictionaries from the canonical metadata resource')
+
 def invoke(host, operation, args):
+    if operation in ('groups', 'contributors') and len(args)==1:
+        command = '::GX::datasetMetadataGroups' if operation=='groups' else '::GX::datasetMetadataContributors'
+        result = host.as_dict(host.call(command, host.session, args[0]))
+        return {str(key): {str(k): str(host.tcl.call('format','%s%s',v,'')) for k,v in host.as_dict(record).items()} for key,record in result.items()}
     if operation=="coordinate_snapshot_affine_plan" and len(args) in (3,4):
         result=host.as_dict(host.call("::GX::datasetCoordinateSnapshotAffinePlan",*args))
         result["revision"]=int(result["revision"]);result["affine"]=bool(int(result["affine"]))
@@ -102,7 +109,8 @@ def invoke(host, operation, args):
             if key in result: result[key]=float(result[key])
         return result
     if operation in ("update", "unset", "private_update", "private_unset", "coordinate_update", "coordinate_reset") and args:
-        host.call("::GX::_datasetNamespaceRequireModuleWrite", host.session, host.module_id, args[0])
+        guard = "::GX::_datasetMetadataRequireContributor" if operation in ("update", "unset") else "::GX::_datasetNamespaceRequireModuleWrite"
+        host.call(guard, host.session, host.module_id, args[0])
     commands={"coordinate_read": ("Read",1), "coordinate_update": ("Update",3), "coordinate_reset": ("Reset",2), "coordinate_validate": ("Validate",2)}
     if operation in commands and len(args)==commands[operation][1]:
         return _coordinate_context(host, host.call("::GX::datasetCoordinate"+commands[operation][0], host.session, *args))
@@ -144,7 +152,7 @@ def invoke(host, operation, args):
     if operation == "read" and len(args) == 1:
         return host.as_dict(host.call("::GX::datasetMetadataRead", host.session, args[0]))
     if operation == "update" and len(args) == 2 and isinstance(args[1], dict):
-        return host.as_dict(host.call("::GX::datasetMetadataUpdate", host.session, args[0], args[1]))
+        return host.as_dict(host.call("::GX::_datasetPrivateWithModule", host.module_id, "::GX::datasetMetadataUpdate", host.session, args[0], args[1]))
     if operation == "unset" and len(args) == 2 and isinstance(args[1], list):
-        return host.as_dict(host.call("::GX::datasetMetadataUnset", host.session, args[0], args[1]))
+        return host.as_dict(host.call("::GX::_datasetPrivateWithModule", host.module_id, "::GX::datasetMetadataUnset", host.session, args[0], args[1]))
     raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", f"invalid {operation} arguments for DATASET_METADATA_API_v1")

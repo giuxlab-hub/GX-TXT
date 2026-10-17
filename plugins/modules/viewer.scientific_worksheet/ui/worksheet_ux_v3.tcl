@@ -46,6 +46,10 @@ proc ::GX::ScientificWorksheet::UI::applyBook {w candidate description} {
  variable st
  guard $w
  if {![prepareEdit $w]} {return 0}
+ if {[dict get $candidate active_filter] ne {}} {
+  set view [dict get $candidate filter_views [dict get $candidate active_filter]]
+  if {![dict exists $view evaluated_revision] || [dict get $view evaluated_revision]!=[dict get $candidate revision]-1} {set candidate [model filterViewApply $candidate [dict get $candidate active_filter]]}
+ }
  set before [book $w]
  try {
   set ::GX::ScientificWorksheet::ui($w,book) $candidate
@@ -64,6 +68,10 @@ proc ::GX::ScientificWorksheet::UI::fetch {w widget receipt} {
  variable st
  if {[catch {guard $w} message]} {status $w $message;return {}}
  if {[dict get $receipt generation]!=$st($w,generation) || [dict get $receipt revision]!=[dict get [book $w] revision]} {return {}}
+ set extent [navigationExtent $w]
+ if {[dict get $receipt last_row]>=[dict get $extent rows]-5 || [dict get $receipt last_column]>=[dict get $extent columns]-2} {
+  if {![info exists st($w,navigationPending)]} {set st($w,navigationPending) [after idle [list [namespace current]::growNavigation $w $st($w,generation) $receipt]]}
+ }
  set first [dict get $receipt first_row];set col [dict get $receipt first_column]
  set rows [expr {[dict get $receipt last_row]-$first+1}];set cols [expr {[dict get $receipt last_column]-$col+1}]
  # Rendering asks only for a bounded exact scientific viewport, never an A:ZZ scan.
@@ -72,7 +80,7 @@ proc ::GX::ScientificWorksheet::UI::fetch {w widget receipt} {
  set cells [dict get $result cells]
  dict for {key item} $cells {
   set value [dict get $item text]
-  if {[dict get $item kind] eq {scalar} && ![string is entier -strict $value] && [string is double -strict $value] && ![catch {expr {abs(double($value))<Inf}} finite] && $finite} {
+  if {![dict exists $item style category] && [dict get $item kind] eq {scalar} && ![string is entier -strict $value] && [string is double -strict $value] && ![catch {expr {abs(double($value))<Inf}} finite] && $finite} {
    set style [setting number_format];set digits [setting display_digits]
    switch $style {General {set value [format %.*g $digits $value]} Scientific {set value [format %.*e $digits $value]} Fixed {set value [format %.*f $digits $value]}}
    dict set cells $key text $value
@@ -86,10 +94,13 @@ proc ::GX::ScientificWorksheet::UI::refresh {w {description {Worksheet edit}} {r
  if {[catch {guard $w} message]} {status $w $message;[grid $w] configure -generation [incr st($w,generation)];return}
  if {$record && [info exists st($w,historySnapshot)] && [capture $w] ne $st($w,historySnapshot)} {::GX::scientificHistoryViewerChanged $w $description}
  set labels {};dict for {col meta} [::GX::datasetPublicationV2DictDefault [book $w] column_metadata {}] {set label $col;if {[::GX::datasetPublicationV2DictDefault $meta name {}] ne {}} {append label " · [dict get $meta name]"};if {[::GX::datasetPublicationV2DictDefault $meta unit {}] ne {}} {append label " \[[dict get $meta unit]\]"};if {[::GX::datasetPublicationV2DictDefault $meta unit_state {}] eq {mixed}} {append label { [mixed units]}};dict set labels [model _columnNumber $col] $label}
- [grid $w] configure -generation $st($w,generation) -revision [dict get [book $w] revision] -hiddenrows [dict keys [::GX::datasetPublicationV2DictDefault [book $w] hidden_rows {}]] -columnlabels $labels
+ set extent [navigationExtent $w $::GX::ScientificWorksheet::ui($w,active)]
+ [grid $w] configure -columnfilters 1 -rows [dict get $extent rows] -columns [dict get $extent columns] -rowheights [dict get [book $w] row_heights] -columnwidths [dict merge [setting column_widths] [dict get [book $w] column_widths]]
+ [grid $w] configure -generation $st($w,generation) -revision [dict get [book $w] revision] -hiddenrows [lsort -integer -unique [concat [dict keys [dict get [book $w] hidden_rows]] [dict keys [dict get [book $w] filter_hidden_rows]]]] -columnlabels $labels
  tabs $w
  if {[llength [info commands ::GX::ScientificWorksheet::Charts::refresh]]} {::GX::ScientificWorksheet::Charts::refresh $w}
  ::GX::sessionWorkspaceViewerTitlesRefresh
+ ::GX::viewerCommandToolbarRefresh $w
  if {![info exists st($w,edit)] || !$st($w,edit)} {inspect $w}
 }
 proc ::GX::ScientificWorksheet::UI::inspect {w} {
@@ -102,17 +113,21 @@ proc ::GX::ScientificWorksheet::UI::inspect {w} {
  $editor delete 1.0 end;$editor insert 1.0 $source
  set detail {};if {[catch {set detail [::GX::ScientificWorksheet::_cellInspectionText $b $active]} e]} {set detail $e}
  set t $w.body.inspector.tabs.data.scroller.content.detail;$t configure -state normal;$t delete 1.0 end;$t insert 1.0 $detail;$t configure -state disabled
- status $w "[model activeSheet $b] · $active · revision [dict get $b revision]"
+ set filterStatus {}
+ if {[dict get $b active_filter] ne {}} {set name [dict get $b active_filter];set view [dict get $b filter_views $name];set filterStatus " · Filter $name: [dict get $view visible_count]/[expr {[dict get $view last]-[dict get $view first]+1}] rows"}
+ status $w "[model activeSheet $b] · $active · revision [dict get $b revision]$filterStatus"
 }
 proc ::GX::ScientificWorksheet::UI::selected {w widget receipt} {
  variable st
  if {[catch {guard $w} message]} {status $w $message;return}
  if {[dict get $receipt generation]!=$st($w,generation)} return
  if {[dict get $receipt action] eq {edit}} {beginEdit $w;return}
- if {[dict get $receipt action] eq {resize}} {set widths [setting column_widths];dict set widths [dict get $receipt column] [dict get $receipt width];setSetting column_widths $widths;return}
+ if {[dict get $receipt action] eq {resize}} {set c [dict get $receipt column];applyBook $w [model setSizes [book $w] column $c $c [dict get $receipt width]] {Resize column};return}
+ if {[dict get $receipt action] eq {column_filter}} {columnFilter $w [dict get $receipt column];return}
+ if {[dict get $receipt action] eq {resize_row}} {set r [dict get $receipt row];applyBook $w [model setSizes [book $w] row $r $r [dict get $receipt height]] {Resize row};return}
  set r [dict get $receipt row];set c [dict get $receipt column];set br [dict get $receipt anchor_row];set bc [dict get $receipt anchor_column]
  set address "[model _columnName $c]$r";set anchor "[model _columnName $bc]$br"
- if {[dict get $receipt action] eq {fill}} {if {[catch {applyBook $w [model fillRange [book $w] $anchor $address] "Fill $anchor:$address"} e]} {status $w $e};return}
+ if {[dict get $receipt action] eq {fill}} {if {[catch {applyBook $w [model fillRange [book $w] "[model _columnName [dict get $receipt source_first_column]][dict get $receipt source_first_row]" $address "[model _columnName [dict get $receipt source_last_column]][dict get $receipt source_last_row]"] "Fill $anchor:$address"} e]} {status $w $e};return}
  if {[info exists st($w,picking)] && $st($w,picking)} {
   set editor $w.body.inspector.tabs.cell.scroller.content.formula
   set phase [::GX::datasetPublicationV2DictDefault $receipt phase press]
@@ -129,7 +144,9 @@ proc ::GX::ScientificWorksheet::UI::selected {w widget receipt} {
  set ::GX::ScientificWorksheet::ui($w,selections) [list [list $anchor $address]]
  if {[dict get $receipt action] eq {row}} {set ::GX::ScientificWorksheet::ui($w,selections) [list [list A$r ZZ$r]]}
  if {[dict get $receipt action] eq {column}} {set ::GX::ScientificWorksheet::ui($w,selections) [list [list [model _columnName $c]1 [model _columnName $c]1000000]]}
+ if {[info exists ::GX::ScientificWorksheet::Charts::state($w,selected)]} {set ::GX::ScientificWorksheet::Charts::state($w,selected) {}}
  inspect $w
+ ::GX::viewerCommandToolbarRefresh $w
  set st($w,selectionPending) 1
  after idle [list [namespace current]::selectionStatus $w $st($w,generation)]
 }
@@ -179,6 +196,7 @@ proc ::GX::ScientificWorksheet::UI::typed {w value key state} {
 }
 proc ::GX::ScientificWorksheet::UI::goto {w address} {
  set address [model _cell $address];lassign [model _parts $address] c r
+ set extent [navigationExtent $w $address];[grid $w] configure -columnfilters 1 -rows [dict get $extent rows] -columns [dict get $extent columns]
  set ::GX::ScientificWorksheet::ui($w,active) $address;set ::GX::ScientificWorksheet::ui($w,selections) [list [list $address $address]]
  [grid $w] select $r $c;[grid $w] see $r $c;inspect $w;focus [grid $w]
 }
@@ -264,7 +282,7 @@ proc ::GX::ScientificWorksheet::UI::layout {w} {
  set panes [$w.body panes]
  if {$visible && "$w.body.inspector" ni $panes} {$w.body insert 0 $w.body.inspector -weight 0} elseif {!$visible && "$w.body.inspector" in $panes} {$w.body forget $w.body.inspector}
  if {$visible} {after idle [list [namespace current]::sash $w]}
- [grid $w] configure -fontsize [setting font_size] -rowheight [expr {max([setting row_height],[setting font_size]+8)}] -columnwidth [setting column_width] -columnwidths [setting column_widths]
+ [grid $w] configure -fontsize [setting font_size] -rowheight [expr {max([setting row_height],[setting font_size]+8)}] -columnwidth [setting column_width] -columnwidths [dict merge [setting column_widths] [dict get [book $w] column_widths]] -rowheights [dict get [book $w] row_heights]
 }
 proc ::GX::ScientificWorksheet::UI::sash {w} {if {[winfo exists $w.body] && [llength [$w.body panes]]>1} {$w.body sashpos 0 [expr {min([winfo width $w]/2,[setting inspector_width])}]}}
 proc ::GX::ScientificWorksheet::UI::toggleInspector {w} {setSetting inspector [expr {![setting inspector]}];layout $w}
@@ -321,14 +339,14 @@ proc ::GX::ScientificWorksheet::UI::open {{context {}}} {
  ::grid [grid $w] -row 0 -column 0 -sticky nsew;::grid $w.body.main.grid.y -row 0 -column 1 -sticky ns;::grid $w.body.main.grid.x -row 1 -column 0 -sticky ew;::grid rowconfigure $w.body.main.grid 0 -weight 1;::grid columnconfigure $w.body.main.grid 0 -weight 1
  ttk::entry $w.edit -textvariable [namespace current]::st($w,direct)
  bind $w.edit <Return> "[list [namespace current]::commit $w 1];break";bind $w.edit <Escape> "[list [namespace current]::cancelEdit $w];break";bind $w.edit <Tab> "[list [namespace current]::editTab $w 1];break";bind $w.edit <Shift-Tab> "[list [namespace current]::editTab $w -1];break"
- bind [grid $w] <Double-1> [list [namespace current]::beginEdit $w];bind [grid $w] <KeyPress> [list [namespace current]::typed $w %A %K %s]
+ bind [grid $w] <Double-1> [list [namespace current]::autoFitHeader $w %x %y];bind [grid $w] <KeyPress> [list [namespace current]::typed $w %A %K %s]
  foreach {event method args} {<Control-c> copy {} <Control-x> copy 1 <Control-v> paste {} <Delete> clear {}} {bind [grid $w] $event "[list [namespace current]::safe $w $method {*}$args];break"}
  bind [grid $w] <Control-a> "[list [namespace current]::selectUsed $w];break"
  menu $w.context -tearoff 0;foreach {label method} {Copy copy Paste paste Clear clear {Fill down} fill} {$w.context add command -label $label -command [list [namespace current]::safe $w $method {*}[expr {$method eq {fill}?{down}:{}}]]};bind [grid $w] <Button-3> [list [namespace current]::context $w %x %y %X %Y]
- ttk::frame $w.sheets -padding 2;pack $w.sheets -fill x
+ ttk::frame $w.sheets -padding 2;pack $w.sheets -before $w.body -side bottom -fill x
  ttk::label $w.status -textvariable ::GX::ScientificWorksheet::ui($w,status) -wraplength 850 -anchor w;pack $w.status -fill x -padx 6 -pady 3
  attachHistory $w
- ttk::frame $w.description;pack $w.description -fill x
+ ttk::frame $w.description;pack $w.description -before $w.body -side bottom -fill x
  ::GX::scientificHistoryViewerStrip $w $w.description $w.status module.viewer.scientific_worksheet.configuration.history_strip {-fill x}
  ::GX::sessionWorkspaceViewerMenu $w.menu.workspace scientific_worksheet [callbacks $w] $w
  ::GX::sessionWorkspaceViewerTitle $w {Scientific Worksheet} [list [namespace current]::current $w] [list [namespace current]::draftName $w]
@@ -336,9 +354,15 @@ proc ::GX::ScientificWorksheet::UI::open {{context {}}} {
  bind $w.body <ButtonRelease-1> [list [namespace current]::sashSaved $w]
  set handlers [dict create save [list [namespace current]::save $w] undo [list [namespace current]::navigate $w undo] redo [list [namespace current]::navigate $w redo] fill_down [list [namespace current]::fill $w down] fill_right [list [namespace current]::fill $w right] recalculate [list [namespace current]::recalculate $w] functions [list [namespace current]::showFunctions $w]]
  dict for {id command} $handlers {dict set handlers $id [dict create command $command]}
+ foreach {id method args} {format_cells formatDialog {} merge_cells merge 0 unmerge_cells merge 1 row_size sizeDialog row column_size sizeDialog column autofit autoFit {} filters filterDialog {} scripts scriptPanel {} chart_edit chartAction edit chart_publish chartAction publish chart_remove chartAction remove} {
+  dict set handlers $id [dict create command [list [namespace current]::safe $w $method {*}$args] applicable [list [namespace current]::actionApplicable $w $id]]
+ }
  ::GX::viewerCommandsAttach $w viewer.scientific_worksheet $handlers [list [namespace current]::commandGuard $w] [list [grid $w]]
  if {[llength [info commands ::GX::ScientificWorksheet::Charts::attach]]} {::GX::ScientificWorksheet::Charts::attach $w $w.body.main.charts $w.body.inspector.tabs.chart}
  if {[llength [info commands ::GX::documentationBrowserAttachViewerHelp]]} {::GX::documentationBrowserAttachViewerHelp viewer.scientific_worksheet scientific_worksheet $w}
+ ttk::frame $w.toolbar.context;pack $w.toolbar.context -side left -fill x -expand 1
+ ::GX::viewerGuiActionsMount $w $w.toolbar.context {format_cells merge_cells unmerge_cells row_size column_size autofit filters scripts chart_edit chart_publish chart_remove}
+ foreach id {format_cells merge_cells unmerge_cells row_size column_size autofit filters scripts} {::GX::viewerCommandMenuAdd $w $w.menu.edit $id;::GX::viewerCommandMenuAdd $w $w.context $id}
  wm protocol $w WM_DELETE_WINDOW [list [namespace current]::close $w]
  bind $w <Destroy> +[list [namespace current]::destroyed $w %W]
  set st($w,configurationSubscription) [::GX::configurationSubscribe [list [namespace current]::configurationChanged $w]]

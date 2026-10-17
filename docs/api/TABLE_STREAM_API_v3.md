@@ -193,3 +193,12 @@ The `standard_octave` Table Stream adapter uses `popen2`, whose output pipe is n
 
 The Octave reader accumulates these fragments and exposes a record to the Table Stream parser only after the newline terminator has been received. A bridge that exits with an unterminated partial record produces an explicit incomplete-record diagnostic. This is transport framing only: chunk sizes, Dataset identities, `numeric_transport`, binary block semantics and public Table Stream API v3 signatures are unchanged.
 
+
+## Canonical table compatibility (dev102 host helper)
+
+`tableStreamCompatibleSchema session datasetId` returns enabled scalar row-oriented
+Variable Schema v3 descriptors only when the actual canonical storage description
+is a supported table. A bounded zero-row provider open verifies availability;
+PDF/raster/mesh, multidimensional and unsupported layouts return no compatible
+Variables. It does not decide compatibility from filename suffix or Dataset ID.
+Worksheet uses this same CORE helper for its picker and binding contract.

@@ -1150,5 +1150,9 @@ proc ::GX::ScientificWorksheet::viewerDispatch {action scene} {
 ::GX::viewerBackendRegister scientific_worksheet_tk ::GX::ScientificWorksheet::viewerDispatch
 source [file join [file dirname [info script]] scientific_worksheet_workbook_v2.tcl]
 source [file join [file dirname [info script]] scientific_worksheet_model_v2.tcl]
+source [file join [file dirname [info script]] scientific_worksheet_presentation_v3.tcl]
+source [file join [file dirname [info script]] scientific_worksheet_automation_v3.tcl]
 source [file join [file dirname [info script]] .. ui worksheet_ux_v3.tcl]
 proc ::GX::ScientificWorksheet::open {{context {}}} {return [::GX::ScientificWorksheet::UI::open $context]}
+
+source [file join [file dirname [info script]] .. ui worksheet_presentation_v3.tcl]

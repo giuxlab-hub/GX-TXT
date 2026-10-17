@@ -333,3 +333,15 @@ paths and record the publication in the supervising Job. Success or failure
 restores the outer Bridge workspace scope. Consumers may reuse the validated
 input resources returned by [Fitter surface results](FITTER_SURFACE_v1.md)
 without expanding the payload in Script control messages.
+
+## Automatic same-owner replacement (dev102)
+
+When replacing an existing owned Dataset with `storage=auto`, CORE retains the
+canonical provider/path when its declared capabilities support the new request.
+CSV remains CSV; HDF5 remains HDF5. Explicit provider requests keep their explicit
+semantics. A retained provider that cannot meet required capabilities returns an
+explicit incompatibility/migration diagnostic without altering the old Dataset.
+No implicit migration or Dataset deletion is performed. New-Dataset auto policy
+is unchanged. Exact IDs, authority rollback and source provenance remain enforced.
+Owned descendants of `module/<producer>/` are valid scientific namespaces;
+shared input namespaces still require explicit grants and CREATE-only publication.

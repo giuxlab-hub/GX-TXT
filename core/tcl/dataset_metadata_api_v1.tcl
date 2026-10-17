@@ -253,7 +253,7 @@ proc ::GX::datasetMetadataRead {session datasetId} {
 proc ::GX::datasetMetadataWrite {session datasetId metadata} {
     if {![datasetAuthorityActive $session]} {return [datasetAuthorityTransaction $session ::GX::datasetMetadataWrite $session $datasetId $metadata]}
     if {$::GX::DatasetPrivate::activeContext ne {}} {
-        _datasetNamespaceRequireModuleWrite $session [dict get $::GX::DatasetPrivate::activeContext module_id] $datasetId
+        _datasetMetadataRequireContributor $session [dict get $::GX::DatasetPrivate::activeContext module_id] $datasetId
     }
     set normalized {}
     dict for {key value} $metadata {dict set normalized [_datasetMetadataUserKey $key] $value}
@@ -261,10 +261,18 @@ proc ::GX::datasetMetadataWrite {session datasetId metadata} {
     ::GX::StatisticsV1::validateMetadataReplacement [_datasetMetadataFilter $before 0] $normalized
     set private [_datasetMetadataFilter $before 1]
     set path [_datasetMetadataWriteAll $session $datasetId [dict merge $normalized $private]]
-    if {$::GX::DatasetPrivate::activeContext ne {}} {
-        set changed {}
-        dict for {key value} $normalized {if {![dict exists $before $key] || [dict get $before $key] ne $value} {lappend changed $key}}
-        if {$changed ne {}} {_datasetMetadataOriginRecord $session $datasetId module:[dict get $::GX::DatasetPrivate::activeContext module_id] $changed}
+    set actor User
+    if {$::GX::DatasetPrivate::activeContext ne {}} {set actor module:[dict get $::GX::DatasetPrivate::activeContext module_id]}
+    set changed {}
+    dict for {key value} $normalized {if {![dict exists $before $key] || [dict get $before $key] ne $value} {lappend changed $key}}
+    set actors $::GX::DatasetPrivate::publicationActors
+    if {$actors eq {}} {
+        _datasetMetadataOriginRecord $session $datasetId $actor $changed $before
+    } else {
+        set byActor {}
+        foreach key $changed {dict lappend byActor [datasetPublicationV2DictDefault $actors $key [dict get $actors default]] $key}
+        dict for {contributor keys} $byActor {_datasetMetadataOriginRecord $session $datasetId $contributor $keys $before}
+        if {$byActor eq {}} {_datasetMetadataOriginRecord $session $datasetId System {} $before}
     }
     return $path
 }

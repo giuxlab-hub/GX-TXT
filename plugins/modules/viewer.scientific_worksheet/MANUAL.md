@@ -330,3 +330,66 @@ recalculation behavior. The inspector includes CORE's definition of each scalar
 diagnostic: satisfying the numerical stopping criterion does not establish
 statistical identification, finite maximum likelihood or inferential coverage.
 These foundation routines do not provide parameter covariance or intervals.
+
+## Dev102 spreadsheet workflow (Worksheet 2.1)
+
+Use Data → Bind Dataset. Namespace and search are at the top; only compatible
+canonical tables appear. PDF/image/mesh and unsupported dimensional data are
+excluded. Select Variables using Ctrl/Shift; their labels, exact IDs, units/types
+and four-row inline preview are visible. Choose a destination column/row and row
+limit. The optional subset list belongs only to the chosen Dataset. Advanced
+retains explicit mappings. A changed source refuses until refreshed.
+
+The grid starts compact and expands for data entry, paste, binding, fill, scrolling
+and Go To, while retaining A–ZZ and one million addressable rows. Select the whole
+seed pattern before dragging the lower-right handle: 4,5,6 continues 7,8,9.
+Horizontal/upward/leftward series and numbered text follow the same rule. Copy
+Cells repeats a seed; formulas shift relative references and retain absolute ones.
+
+Format Cells is available on the contextual toolbar and menus. Set numeric display,
+fonts/colors, alignment/wrapping/rotation, backgrounds and borders. Stored values
+and physical units stay exact. Merge/Unmerge is reversible and refuses data loss.
+Drag a row divider to change that row height; column-divider drag retains the
+existing width gesture. Numeric Row height/Column width and Auto-fit are beside
+Go To. Sizing/styles survive Save, reopen, History and typed internal clipboard.
+Double-click a header divider for Auto-fit. Only visible cells are natively drawn.
+
+Click a column's dropdown triangle for a typed Filter View. Add criteria, combine
+AND/OR, choose/search exact unique values and Save/apply a named view. Counts appear
+in status. Show all clears the display projection. Blank/missing/NaN/error/boolean
+and unit-aware numeric comparisons are distinct. Filtering preserves original
+source rows, formulas and full chart ranges. A structural/source change requires
+reviewing stale criteria. No display-only hidden rows are silently treated as a
+new scientific sample.
+
+Scripts opens an in-Worksheet Python editor. Save the Workspace, write/save a named
+script, then Run. Logs and Cancel use managed Jobs. A successful run returns a
+proposal; Apply commits one Undo item. Any newer Workbook/source revision refuses
+stale adoption. Script source/identities and Filter Views remain portable with the
+Workspace/Session. Run is always explicit, including after reopening.
+
+Example 1, double a typed voltage:
+
+```python
+cell = gxtxt_api_call('SCIENTIFIC_WORKSHEET_API_v1', 'inspect_cell', [book, 'B1'])
+assert cell['unit'] == 'V'
+book = gxtxt_api_call('SCIENTIFIC_WORKSHEET_API_v1', 'set_typed_cell',
+                     [book, 'D1', {'kind':'scalar', 'value':float(cell['value_utf8'])*2, 'unit':'V'}])
+```
+
+Example 2, delegate a mean to public Numeric:
+
+```python
+values = [float(gxtxt_api_call('SCIENTIFIC_WORKSHEET_API_v1', 'inspect_cell',
+                             [book, 'B'+str(row)])['value_utf8']) for row in range(1, 5)]
+summary = gxtxt_api_call('NUMERIC_API_v1', 'reduce_summary', [values, {}])
+book = gxtxt_api_call('SCIENTIFIC_WORKSHEET_API_v1', 'set_typed_cell',
+                     [book, 'E1', {'kind':'scalar', 'value':summary['mean'], 'unit':'V'}])
+print('Mean voltage', summary['mean'])
+```
+
+These examples assume the stated cells contain voltage in V; explicitly convert
+mixed units with the public Unit Registry before reducing them. A selected Chart
+replaces cell-only contextual controls with existing Chart edit/publish/remove
+actions. Publication creates the ordinary immutable Dataset and editable Plot v4
+Graph Variant. See `docs/api/SCIENTIFIC_WORKSHEET_DEV102.md` for bounds and contracts.

@@ -248,6 +248,7 @@ proc ::GX::scientificHistoryViewerStrip {window parent status {configurationId {
     pack propagate $frame 0
     set ::GX::ScientificHistory::strip($window,mode) Description
     ttk::combobox $frame.choice -state readonly -values {Description History} -width 12 -textvariable ::GX::ScientificHistory::strip($window,mode)
+    uiFieldSelectorWithinViewer $frame.choice $window
     pack $frame.choice -side left -fill y
     pack forget $status
     pack $status -in $frame -side left -fill x -expand 1;raise $status

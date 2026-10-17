@@ -98,6 +98,8 @@ function out = gxtxt_numeric_v1(operation, varargin)
       require_nargs(op,varargin,2,3);out=gxtxt_numeric_signal_quality_v1(op,varargin{1},varargin{2},arg_opts(varargin,3));
     case 'signal_summary'
       require_nargs(op,varargin,1,2);out=gxtxt_numeric_signal_summary_v1(varargin{1},arg_opts(varargin,2));
+    case 'replicate_xy_summary'
+      require_nargs(op,varargin,3,4);out=gxtxt_numeric_replicate_xy_v1(varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
     case 'replicate_summary'
       require_nargs(op,varargin,2,3);out=gxtxt_numeric_replicate_summary_v1(varargin{1},varargin{2},arg_opts(varargin,3));
     case 'local_cloud_fit'

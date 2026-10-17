@@ -5,6 +5,15 @@ namespace eval ::GX::DatasetPrivate {
     variable owners {}
     variable moduleCapabilities {}
     variable activeContext {}
+    variable publicationActors {}
+}
+proc ::GX::_datasetMetadataPublicationWrite {session id metadata module suppliedKeys} {
+    variable ::GX::DatasetPrivate::publicationActors
+    if {[moduleField $module descriptor {}] eq {}} {error {Unknown publication metadata contributor}}
+    set prior $publicationActors
+    set publicationActors [dict create default System]
+    foreach key $suppliedKeys {dict set publicationActors $key module:$module}
+    try {return [datasetMetadataWrite $session $id $metadata]} finally {set publicationActors $prior}
 }
 proc ::GX::_datasetMetadataReserved {key} {
     expr {$key eq "_gxtxt"||[string match {_gxtxt.*} $key]}

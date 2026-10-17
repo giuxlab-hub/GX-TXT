@@ -98,6 +98,7 @@ proc ::GX::ScientificWorksheet::Charts::select {w id {object chart}} {
     if {[dict exists $state($w,frames) $id]} {raise [dict get $state($w,frames) $id]}
     inspect $w;$w.body.inspector.tabs select $state($w,tab)
     ui status $w "Selected $id · $object"
+    ::GX::viewerCommandToolbarRefresh $w
 }
 proc ::GX::ScientificWorksheet::Charts::inspect {w} {
     variable edit;variable state;set d [selected $w]

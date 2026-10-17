@@ -648,7 +648,7 @@ proc ::GX::acquisitionHandlerRegisterResult {moduleId session rawRel rawHash out
             foreach id $ids {
                 incr index
                 if {![dict exists $structuredByIndex $index]} continue
-                lappend metadataPaths [datasetMetadataWrite $session $id [dict get $structuredByIndex $index]]
+                lappend metadataPaths [_datasetMetadataPublicationWrite $session $id [dict get $structuredByIndex $index] $moduleId [dict keys [dict get $structuredByIndex $index]]]
             }
         }
     } failure options]} {
