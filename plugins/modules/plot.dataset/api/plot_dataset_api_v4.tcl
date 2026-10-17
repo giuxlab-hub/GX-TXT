@@ -28,27 +28,29 @@ proc ::GX::PlotDatasetAPIv4::rendererOwnerForArtifact {path} {
 }
 proc ::GX::PlotDatasetAPIv4::capabilities {} {
     _ready
-    return [lsort -unique [concat [::GX::PlotDatasetAPIv1::capabilities] [::GX::PlotDatasetAPIv2::capabilities] {cartesian_3d gridded_3d_streaming detached_scientific_capture detached_scientific_render source_row_point_index build_scene open_interactive refresh_interactive persistent_graph_source manual_interactive_sync interactive_sync_status independent_representation interactive_sources idempotent_plot_publication transient_2d_overlay transient_2d_curves readonly_native3d_preview_export transient_independent_2d_curves native_2d_cpp native_3d_cpp native_widget exact_source_bounds}]]
+    set fields {};if {{native_cell_field} in [dict get [::GX::Native2D::core api_info] capabilities]} {set fields {exact_cell_field cell_field_binding}}
+    return [lsort -unique [concat [::GX::PlotDatasetAPIv1::capabilities] [::GX::PlotDatasetAPIv2::capabilities] {cartesian_3d gridded_3d_streaming detached_scientific_capture detached_scientific_render source_row_point_index build_scene open_interactive refresh_interactive persistent_graph_source manual_interactive_sync interactive_sync_status independent_representation interactive_sources idempotent_plot_publication transient_2d_overlay transient_2d_curves readonly_native3d_preview_export transient_independent_2d_curves native_2d_cpp native_3d_cpp native_widget exact_source_bounds} $fields]]
 }
 proc ::GX::PlotDatasetAPIv4::supports {capability} {expr {$capability in [capabilities]}}
 proc ::GX::PlotDatasetAPIv4::requireCapability {capability} {if {![supports $capability]} {error "Unsupported native Plot v4 capability '$capability'"};return 1}
 proc ::GX::PlotDatasetAPIv4::apiInfo {} {
     _ready;set kinds {auto};foreach capability [::GX::PlotDatasetAPIv2::capabilities] {if {[string match series_kind_* $capability]} {lappend kinds [string range $capability 12 end]}}
+    if {{native_cell_field} in [dict get [::GX::Native2D::core api_info] capabilities]} {lappend kinds cell_field}
     ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_3D_API_v1
     return [dict replace [::GX::PlotDatasetAPIv2::apiInfo] api_name PLOT_DATASET_API_v4 api_version 4 capabilities [capabilities] renderer_2d Native2D.C++ renderer_3d Native3D.C++.VTK supported_2d_kinds [lsort -unique $kinds] supported_3d_kinds [dict get [::GX::PlotDataset3DAPIv1::apiInfo] plot_types]]
 }
 # These delegates are persistence and specification authorities only. Every
 # rendering/interactive/export path below is explicitly native-owned.
-foreach name {newSpec validateSpec reconcilePersistentPlots setSeriesPresentation multiPanelEnabled setMultiPanel panelIds panelInfo addPanel removePanel movePanel setPanelTitle setPanelAxis sharedXAxisGet sharedXAxisSet setSeriesPanel plotRefForArtifact panelIdsForArtifact removeSpec} {
+foreach name {newSpec reconcilePersistentPlots setSeriesPresentation multiPanelEnabled setMultiPanel panelIds panelInfo addPanel movePanel setPanelTitle setPanelAxis sharedXAxisGet sharedXAxisSet setSeriesPanel plotRefForArtifact panelIdsForArtifact removeSpec} {
     proc ::GX::PlotDatasetAPIv4::$name {args} [format {_ready;tailcall ::GX::PlotDatasetAPIv2::%s {*}$args} $name]
 }
-foreach name {openPlot deletePlot setPlotEnabled setConfig getConfig setTitle setSeries getSeries listSeries removeSeries setSeriesEnabled moveSeries setSeriesOrder} {
+foreach name {openPlot deletePlot setPlotEnabled setConfig getConfig setTitle setSeries getSeries listSeries setSeriesEnabled moveSeries setSeriesOrder} {
     proc ::GX::PlotDatasetAPIv4::$name {args} [format {_ready;tailcall ::GX::PlotDatasetAPIv1::%s {*}$args} $name]
 }
 proc ::GX::PlotDatasetAPIv4::createPlot {graphId {kind base} {sourceVariant {}}} {_ready;markOwned [::GX::PlotDatasetAPIv1::createPlot $graphId $kind $sourceVariant]}
-proc ::GX::PlotDatasetAPIv4::createPlotFromSpec {spec {kind base} {sourceVariant {}}} {_ready;set ref [markOwned [::GX::PlotDatasetAPIv2::createPlotFromSpec $spec $kind $sourceVariant]];_saveNativeAxes $ref $spec;return $ref}
-proc ::GX::PlotDatasetAPIv4::applySpec {ref spec} {_ready;set result [::GX::PlotDatasetAPIv2::applySpec $ref $spec];markOwned $ref;_saveNativeAxes $ref $spec;return $result}
-proc ::GX::PlotDatasetAPIv4::saveSpec {ref spec} {_ready;if {[dict get $ref graph_id] eq {plot.dataset.xyz}} {set result [::GX::PlotDatasetAPIv2::applySpec $ref $spec]} else {set result [::GX::PlotDatasetAPIv2::saveSpec $ref $spec]};markOwned $ref;_saveNativeAxes $ref $spec;return $result}
+proc ::GX::PlotDatasetAPIv4::createPlotFromSpec {spec {kind base} {sourceVariant {}}} {_ready;validateSpec $spec;set ref [markOwned [::GX::PlotDatasetAPIv2::createPlotFromSpec $spec $kind $sourceVariant]];_saveNativeAxes $ref $spec;return $ref}
+proc ::GX::PlotDatasetAPIv4::applySpec {ref spec} {_ready;validateSpec $spec;set result [::GX::PlotDatasetAPIv2::applySpec $ref $spec];markOwned $ref;_saveNativeAxes $ref $spec;return $result}
+proc ::GX::PlotDatasetAPIv4::saveSpec {ref spec} {_ready;validateSpec $spec;if {[dict get $ref graph_id] eq {plot.dataset.xyz}} {set result [::GX::PlotDatasetAPIv2::applySpec $ref $spec]} else {set result [::GX::PlotDatasetAPIv2::saveSpec $ref $spec]};markOwned $ref;_saveNativeAxes $ref $spec;return $result}
 proc ::GX::PlotDatasetAPIv4::upsertPlotFromSpec {producer key spec} {
     _ready
     if {[::GX::moduleField $producer descriptor {}] eq {}} {error "Unknown plot producer '$producer'"}
@@ -109,6 +111,7 @@ proc ::GX::PlotDatasetAPIv4::_distribution {series position context target input
     return [::gx::native2d::plot_v4 distribution [dict merge $input $series $plan [dict create position $position]]]
 }
 proc ::GX::PlotDatasetAPIv4::_series {series axes budget position} {
+    if {[dict exists $series cell_field]} {return [_cellFieldSeries $series $axes]}
     set session $::GX::currentSession;set ds [dict get $series dataset_id]
     if {[_get $series alignment_mode none] ne {none}} {error {Graph Series alignment_mode is declarative only; materialize alignment before plotting}}
     set token [::GX::curveSourceOpen $session [_request $series $budget]]
@@ -418,7 +421,7 @@ source [file join $::GX::PlotDatasetAPIv4::apiDir plot_dataset_v4_snapshots.tcl]
 source [file join $::GX::PlotDatasetAPIv4::apiDir plot_dataset_v4_native3d.tcl]
 
 proc ::GX::PlotDatasetAPIv4::_saveNativeAxes {ref spec} {
-    set changes {};if {[dict get $ref graph_id] eq {plot.dataset.xyz}&&[dict exists $spec axes]} {dict set changes native_plot_v4_axes [dict get $spec axes]}
+    set fields [_cellFieldBindings $spec];set changes [dict create native_plot_v4_cell_fields $fields native_plot_v4_cell_field_required [expr {$fields ne {}}]];if {[dict get $ref graph_id] eq {plot.dataset.xyz}&&[dict exists $spec axes]} {dict set changes native_plot_v4_axes [dict get $spec axes]}
     if {[dict exists $spec native_presentation]} {set p [dict get $spec native_presentation];if {[_get $p schema {}] ne {GXTXT_NATIVE_GRAPH_PRESENTATION_v1}} {error {Unsupported native graph presentation schema}};dict set changes native_plot_v4_presentation $p}
     if {$changes ne {}} {::GX::graphMetadataUpdate [_graphRef $ref] $changes}
 }
@@ -446,12 +449,13 @@ proc ::GX::PlotDatasetAPIv4::readPlot {ref} {_ready;set result [::GX::PlotDatase
 proc ::GX::PlotDatasetAPIv4::_modelChecks {model} {
     set checks {};set seen {}
     foreach panel [dict get $model panels] {foreach series [dict get $panel series] {
-        if {![dict exists $series source_descriptor]} continue
-        set descriptor [dict get $series source_descriptor]
-        foreach identity [dict get $descriptor source_identities] {set id [dict get $identity dataset_id];if {$id in $seen} continue;lappend seen $id
+        set descriptors [_get $series source_descriptors {}];if {[dict exists $series source_descriptor]} {lappend descriptors [dict get $series source_descriptor]}
+        foreach descriptor $descriptors {foreach identity [dict get $descriptor source_identities] {set id [dict get $identity dataset_id];if {$id in $seen} continue;lappend seen $id
             set stamp [list [::GX::datasetViewerStamp $id [::GX::datasetResolvePath $::GX::currentSession $id]] [::GX::datasetRevisionToken $id]]
             lappend checks [dict create dataset_id $id descriptor $descriptor stamp $stamp]
-        }
+        }}
     }}
     return $checks
 }
+
+source [file join $::GX::PlotDatasetAPIv4::apiDir plot_dataset_v4_cell_field.tcl]

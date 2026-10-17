@@ -35,6 +35,7 @@ proc ::GX::native2DViewportDispose {host widget} {
     variable ::GX::ViewportHost::hosts
     if {$widget ne $host} return
     if {[dict exists $hosts $host layout_pending]} {after cancel [dict get $hosts $host layout_pending]}
+    if {[dict exists $hosts $host curve]} {_native2DViewportCurveDispose $host}
     native2DRasterCanvasDispose $host
     if {[dict exists $hosts $host]} {native2DRasterSceneDispose [dict get $hosts $host scene];dict unset hosts $host}
 }
@@ -375,7 +376,7 @@ proc ::GX::native2DViewportPanelContent {host id widget} {
 }
 
 proc ::GX::native2DViewportHostApiInfo {} {
-    return [dict create api_id NATIVE2D_VIEWPORT_HOST_v1 api_version 1 host_only 1 operations {create panel_create panel_widget panel_content panel_show panel_collapse layout controls context_menu glyph tooltip tool_state see_widget scroll_wheel dispose}]
+    return [dict create api_id NATIVE2D_VIEWPORT_HOST_v1 api_version 1 host_only 1 operations {create panel_create panel_widget panel_content panel_show panel_collapse layout controls context_menu glyph tooltip tool_state see_widget scroll_wheel dispose curve_create curve_describe curve_navigate curve_hit curve_destroy}]
 }
 
 # Public state-managed existing ttk controls; caller supplies controller truth.
@@ -390,3 +391,5 @@ proc ::GX::native2DViewportToolState {widget active} {
     if {[$widget cget -style] ne $style} {$widget configure -style $style}
     $widget state [expr {$active?"selected":"!selected"}]
 }
+
+source [file join [file dirname [info script]] native2d_viewport_curve_source.tcl]

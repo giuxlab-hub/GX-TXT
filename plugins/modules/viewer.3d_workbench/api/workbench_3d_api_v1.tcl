@@ -983,13 +983,15 @@ proc ::GX::Workbench3D::buildPanel {window} {
     foreach {key label action} {group {Group selected} create duplicateGroup {Duplicate group} duplicate ungroup Ungroup ungroup} {ttk::button $panel.$key -text $label -command [list ::GX::Workbench3D::safe [list ::GX::Workbench3D::groupOperation $action]];pack $panel.$key -fill x}
     foreach {key label action} {constraint {Add constraint…} constraintForm constraints {Inspect / delete constraints…} constraintsPanel} {ttk::button $panel.$key -text $label -command [list ::GX::Workbench3D::safe [list ::GX::Workbench3D::$action]];pack $panel.$key -fill x}
     foreach {key label action} {measurement {Add measurement…} measurementForm measurements {Inspect measurements…} measurementsPanel} {ttk::button $panel.$key -text $label -command [list ::GX::Workbench3D::safe [list ::GX::Workbench3D::$action]];pack $panel.$key -fill x}
+    ttk::button $panel.texture -text {Managed image on picked face…} -command [list ::GX::Workbench3D::safe ::GX::Workbench3D::textureForm];pack $panel.texture -fill x
+    ttk::button $panel.textureClear -text {Remove selected object's image} -command [list ::GX::Workbench3D::safe ::GX::Workbench3D::textureClear];pack $panel.textureClear -fill x
     ttk::button $panel.combine -text "Combine B-Rep bodies…" -command [list ::GX::Workbench3D::safe ::GX::Workbench3D::combineForm]
     pack $panel.combine -fill x
     ttk::button $panel.intake -text "Import mesh / CAD Dataset…" -command [list ::GX::Workbench3D::safe ::GX::Workbench3D::importDatasetForm];pack $panel.intake -fill x
     ttk::button $panel.meshPair -text "Append / merge / stitch / bridge meshes…" -command [list ::GX::Workbench3D::safe ::GX::Workbench3D::meshPairForm];pack $panel.meshPair -fill x
     ttk::button $panel.extrusionTargets -text "Extrusion targets / keep tool…" -command [list ::GX::Workbench3D::safe ::GX::Workbench3D::extrusionTargetsForm];pack $panel.extrusionTargets -fill x
     ttk::button $panel.details -text "Name / visibility / lock / attributes…" -command [list ::GX::Workbench3D::safe ::GX::Workbench3D::detailsForm];pack $panel.details -fill x
-    foreach {key label script} {loadProfile {Load profile on working plane} {::GX::Workbench3D::loadProfile} primitiveGo {Create primitive} {::GX::Workbench3D::createPrimitive} preview {Preview extrusion} {::GX::Workbench3D::extrudePreview} accept {Accept preview} {::GX::Workbench3D::acceptPreview} cancel {Cancel preview} {::GX::Workbench3D::cancelPreview;::GX::Engine3D::rerender} edit {Edit / derive selected…} {::GX::Workbench3D::editForm} inspect {Inspect area / volume / diagnostics} {::GX::Workbench3D::inspectSelected} undo Undo {::GX::Workbench3D::undoRedo undo} redo Redo {::GX::Workbench3D::undoRedo redo} publish {Publish selected as Dataset…} {::GX::Workbench3D::publish} save {Save Workbench state} {::GX::Workbench3D::checkpoint}} {
+    foreach {key label script} {planarSection {Edit section in Curve Workbench…} {::GX::Workbench3D::planarEditSelected section} planarProjection {Edit projection in Curve Workbench…} {::GX::Workbench3D::planarEditSelected projection} loadProfile {Load profile on working plane} {::GX::Workbench3D::loadProfile} primitiveGo {Create primitive} {::GX::Workbench3D::createPrimitive} preview {Preview extrusion} {::GX::Workbench3D::extrudePreview} accept {Accept preview} {::GX::Workbench3D::acceptPreview} cancel {Cancel preview} {::GX::Workbench3D::cancelPreview;::GX::Engine3D::rerender} edit {Edit / derive selected…} {::GX::Workbench3D::editForm} inspect {Inspect area / volume / diagnostics} {::GX::Workbench3D::inspectSelected} undo Undo {::GX::Workbench3D::undoRedo undo} redo Redo {::GX::Workbench3D::undoRedo redo} publish {Publish selected as Dataset…} {::GX::Workbench3D::publish} save {Save Workbench state} {::GX::Workbench3D::checkpoint}} {
         ttk::button $panel.$key -text $label -command [list ::GX::Workbench3D::safe $script];pack $panel.$key -fill x -pady 1
     }
     ttk::label $panel.status -textvariable ::GX::Workbench3D::status -wraplength 425;pack $panel.status -fill x
@@ -1016,11 +1018,19 @@ proc ::GX::Workbench3D::open {{context {}}} {
     variable module;variable provider;variable document;variable model;variable undo;variable redo;variable scene;variable allocationCounters
     package require Tk
     if {$::GX::currentSession eq {}} {error "Open a Session first"}
-    if {$scene ne {}&&[winfo exists $::GX::Engine3D::window]} {raise $::GX::Engine3D::window;return $::GX::Engine3D::window}
+    set requested [::GX::datasetPublicationV2DictDefault $context workspace_id {}]
+    if {$requested ne {}} {
+        set requestedOwner [::GX::interactiveDocumentRead $requested]
+        if {[dict get $requestedOwner module_id] ne $module || [dict get $requestedOwner provider_id] ne $provider || [dict get $requestedOwner format] ne "workbench3d.document.v1"} {error {Requested3D Workspace has another scientific owner}}
+    }
+    if {$scene ne {}&&[winfo exists $::GX::Engine3D::window]} {
+        if {$requested ne {} && $requested ne $document} {error {Close the active3D Workspace before opening another explicit identity}}
+        raise $::GX::Engine3D::window;return $::GX::Engine3D::window
+    }
     ::GX::Engine3D::configureHost $module $provider [dict create panel ::GX::Workbench3D::buildPanel close ::GX::Workbench3D::close edit ::GX::Workbench3D::hostEdit selection ::GX::Workbench3D::hostSelection]
     set docs [::GX::interactiveDocumentList $module $provider]
-    if {[llength $docs]} {
-        set document [dict get [lindex $docs end] id]
+    if {$requested ne {} || [llength $docs]} {
+        if {$requested ne {}} {set document $requested} else {set document [dict get [lindex $docs end] id]}
         set recovery [::GX::workbenchRecoveryPrompt $document .]
         if {[dict get $recovery status] eq "corrupt"} {set ::GX::Workbench3D::recoveryNotice "Recovery journal is corrupt; normal document remains available: [dict get $recovery reason]"}
         set payload [dict get [::GX::interactiveDocumentRead $document] payload];set model [dict get $payload model];set undo [dict get $payload undo];set redo [dict get $payload redo]
@@ -1055,3 +1065,6 @@ source [file join [file dirname [info script]] workbench_3d_structural_v1.tcl]
 source [file join [file dirname [info script]] workbench_3d_extensions_recipe_v1.tcl]
 source [file join [file dirname [info script]] workbench_3d_organization_v1.tcl]
 source [file join [file dirname [info script]] workbench_3d_comparison_v1.tcl]
+
+source [file join [file dirname [info script]] workbench_3d_planar_return.tcl]
+source [file join [file dirname [info script]] workbench_3d_texture_v1.tcl]

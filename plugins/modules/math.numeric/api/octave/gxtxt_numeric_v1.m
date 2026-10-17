@@ -15,6 +15,12 @@ function out = gxtxt_numeric_v1(operation, varargin)
     error('GXTXT:Numeric:Influence','Exact linear influence is supported only by least_squares, linear_regression and polynomial_fit');
   endif
   switch (op)
+    case 'expression_evaluate'
+      require_nargs(op,varargin,3,4);out=gxtxt_numeric_expression_v1('evaluate',varargin{:});
+    case 'expression_analyze'
+      require_nargs(op,varargin,1,2);out=gxtxt_numeric_expression_v1('analyze',varargin{:});
+    case 'dataset_expression'
+      require_nargs(op,varargin,4,5);out=gxtxt_numeric_expression_v1('dataset',varargin{:});
     case 'nested_f_test'
       require_nargs(op,varargin,1,1);out=gxtxt_numeric_nested_f_v1(varargin{1});
     case 'fit_bootstrap_prepare'

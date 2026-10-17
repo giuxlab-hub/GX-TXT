@@ -64,8 +64,6 @@ uses the normal Dataset File Publication and Metadata APIs. STEP produces
 `model.cad`; STL/VTP produces `geometry.mesh`. Tessellated output is derived
 from the full B-Rep with explicit budgets and never from its display preview.
 
-The complete geometry, Workspace, export and recovery behavior is described in this manual and the public Native3D API contracts.
-
 The current controller also provides shared typed forms for coordinate
 transforms, complete tessellation, clean/weld/orient/heal, clipping/capping and
 analytical sections. Profile and section lines render through complete Native3D
@@ -188,7 +186,7 @@ survive as read-only retained resources. A changed revision or Session invalidat
 the dialog's captured review; Refresh before confirming a new deletion.
 
 
-## Native3D Workspace behavior
+## Native geometry and exports
 
 The complete profile/plane/extrude, transforms/gizmos/group/alignment/constraint, B-Rep Combine, section, measurement/area/volume, tessellate/diagnose/clean/weld/orient/boundaries/intersections/clip-cap workflow is implemented through the shared Native3D host and public scoped CORE geometry API. Escape cancels an active native gesture at a coalesced worker-idle boundary before rebuilding presentation, preserves the authoritative document/history, and ignores its stale release. Orbit/pan/zoom/NavCube remain shared viewer actions; numeric alternatives use the same geometry authority.
 
@@ -196,7 +194,7 @@ Compare supports complete surfaces and sections in an explicit common plane. Sec
 
 Export geometry… discovers the official STEP/STL/VTP exporter and its shared tessellation quality/resource limits. Native/OCCT/VTK writes complete world geometry with declared units; a `.gxtxt.json` sidecar records logical identity, role, source provenance/SHA and tessellation. Atomic create-only publication rejects geometry or sidecar collisions without overwriting either file. Publish selected as Dataset… uses the same official provider and normal Dataset APIs, preserving the requested public ID (`model.cad` for STEP; `geometry.mesh` for STL/VTP). Reference/construction objects are excluded by default. The normal generic Native3D Viewer and Workbench Dataset intake consume the real published ID/SHA with explicit unit conversion, preserving canonical bytes. Restore reconstructs authoritative presentation layers before restoring measurement markers, including a Session saved only through the Workbench.
 
-### dev097 comparison reports
+### Scientific comparison reports
 
 Surface and section comparisons show shared CORE statistical labels and units.
 The reported RMS and Hausdorff values describe the explicitly sampled vertices or
@@ -205,7 +203,53 @@ regression inference or continuous-surface extrema. A saved historical receipt
 without versioned semantics stays visible as **Refresh required**; refresh it
 before publishing a new scientific report.
 
-New section exports keep the `position` and `signed_residual` variable IDs and
-values. Their labels now state the actual meaning: physical section path distance
+Section exports keep the `position` and `signed_residual` variable IDs and
+values. Their labels state the actual meaning: physical section path distance
 in the working unit and unsigned nearest-curve distance. The latter retains its
 legacy field name for compatibility. Existing published Datasets are unchanged.
+
+
+## Edit a section or projection in Curve Workbench
+
+Select one accepted body, set and apply the physical working plane, then choose
+**Edit section in Curve Workbench…** or **Edit projection in Curve Workbench…**.
+The selected body, original 3D Workspace, geometry SHA, units and normalized plane
+are captured explicitly. The source remains unchanged. A section is an actual
+planar intersection; projection discards depth and can overlap. A closed solid
+without an editable boundary reports this limitation instead of inventing one.
+
+Curve Workbench opens retained editable contours plus its calibrated reference
+image. Edit their true parameters or add valid retained curves in the same unit.
+**Accept → 3D** first retains an accepted planar result, then commits a new profile
+through this originating Workbench's existing transaction and History. The
+original body stays available. Undo/Redo acts on the returned profile normally;
+extrusion or replacing a body remains a separate explicit operation.
+
+A changed/deleted/replaced origin rejects the return. Cancel preserves original
+science. If the planar result committed but the destination failed, the accepted
+planar result remains retained and **Commit staged result →3D** offers an explicit
+retry. These are two owner transactions; GX-TXT does not claim an atomic commit
+across both Documents. Reopening uses the actual captured Workspace ID.
+See [origin, resources, units and failure contract](../../../docs/api/NATIVE_3D_PLANAR_RETURN_v1.md).
+
+The existing editable host can also be mounted in a caller-owned frame through
+[Native3D GUI Host](../../../docs/api/NATIVE_3D_GUI_HOST_API_v1.md). It remains the
+same exclusive controller/worker with real editing tools, camera and selection.
+
+## Managed transparent image on a planar face
+
+Retain an extracted or composited RGBA PNG in the current Session. Click the
+actual planar face of an owned solid, then choose **Managed image on picked
+face…**. Select its retained image and enter explicit decorative width/height in
+the displayed Workbench unit, rotation in radians and optional U/V flips. Apply
+keeps transparent pixels transparent and clips the image to the actual coplanar
+face. The native resolver preserves source face identity rather than trusting a
+rendered display cell number. A stale view or changed Workspace requires a new
+pick. **Remove selected object's image**, Undo/Redo and Session reopen use the
+existing object style and History. The original solid and original image remain
+unchanged. Explicit decorative resizing does not change source calibration.
+
+See the [managed image, physical placement and limitations contract](../../../docs/api/NATIVE3D_MANAGED_TEXTURE_v1.md)
+and [managed raster composition](../../../docs/api/NATIVE2D_RASTER_COMPOSITION.md).
+Only one planar assignment per object is exposed here; curved wrapping and CAM
+are separate capabilities, not implied by this operation.

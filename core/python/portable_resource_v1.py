@@ -13,6 +13,7 @@ import mimetypes
 import os
 import re
 import shutil
+import stat
 import sys
 import tempfile
 import zipfile
@@ -125,16 +126,36 @@ class Builder:
         relative = registry.get("path", "")
         if not relative:
             raise ValueError("Dataset has no Canonical payload path")
-        source = within(self.session, relative)
-        if not source.is_file():
-            raise ValueError("Canonical Dataset payload is missing")
-        actual = sha256_file(source)
+        payload_override = None
+        if registry.get('source_storage_policy') == 'reference' and registry.get('external_source_root'):
+            from gxtxt_scientific_io import open_scoped, signature
+            fd = open_scoped(registry['external_source_root'], registry['external_source_relative'])
+            try:
+                before = os.fstat(fd)
+                if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or before.st_size > 64 * 1024**2:
+                    raise ValueError('Reference portable snapshot requires an ordinary source of at most 64 MiB')
+                parts = []
+                while chunk := os.read(fd, 1024 * 1024): parts.append(chunk)
+                payload_override = b''.join(parts)
+                if signature(os.fstat(fd)) != signature(before):
+                    raise ValueError('External reference changed during portable snapshot')
+            finally: os.close(fd)
+            source = Path(registry['external_source_relative'])
+            actual = hashlib.sha256(payload_override).hexdigest()
+        else:
+            source = within(self.session, relative)
+            if not source.is_file():
+                raise ValueError("Canonical Dataset payload is missing")
+            actual = sha256_file(source)
         expected = registry.get("canonical_sha256") or registry.get("sha256")
         if expected and expected.lower() != actual:
             raise ValueError("Canonical Dataset SHA-256 mismatch")
         portable = {k: v for k, v in registry.items() if k not in
-                    {"path", "source_raw", "storage_locator", "materialized_path"}}
-        if registry.get("source_raw"):
+                    {"path", "source_raw", "storage_locator", "materialized_path", "external_source_root", "external_source_relative"}}
+        if payload_override is not None:
+            portable["source_storage_policy"] = "copy"
+            portable["reference_snapshot_sha256"] = actual
+        elif registry.get("source_raw"):
             self.external_dependencies.append({"kind": "acquisition_raw", "dataset_id": dataset_id,
                                                "name": Path(registry["source_raw"]).name, "embedded": False})
         portable["id"] = dataset_id
@@ -152,7 +173,7 @@ class Builder:
                 raise ValueError("Dataset Variable schema has a missing stable ID")
             variables.append(variable)
         suffix = source.suffix or ".dat"
-        self.add(f"{prefix}/payload/canonical{suffix}", "canonical_payload", source)
+        self.add(f"{prefix}/payload/canonical{suffix}", "canonical_payload", source if payload_override is None else payload_override)
         self.add(f"{prefix}/registry.json", "dataset_registry", json_bytes(portable))
         self.add(f"{prefix}/schema.json", "variable_schema_v3", json_bytes(variables))
         metadata_rel = registry.get("structured_metadata_file") or f"metadata/datasets/{dataset_id}.ini"
@@ -267,13 +288,16 @@ def export_graph(session: Path, artifact: Path, state_tsv: Path, note: str, meta
                 builder.add("graph/" + name, role, path)
     if scientific:
         root = Path(scientific)
+        native_source = (root / "native_v4_snapshot.tcldict").is_file()
         for source in sorted(root.rglob("*")):
             if source.is_symlink():
                 raise ValueError("scientific snapshot contains a symlink")
             if source.is_dir():
                 continue
             rel = source.relative_to(root).as_posix()
-            if rel == "graph.png":
+            if rel == "graph.png" or (native_source and rel in {".gxtxt_plotmeta/graph.ini", ".gxtxt_plotmeta/graph.xrange.ini"}):
+                # Native scene geometry/axis sidecars are regenerated from the
+                # complete canonical spec; they are not scientific source.
                 continue
             payload = portable_presentation(source.read_bytes(), normalize=True) if rel == "presentation.ini" else source
             builder.add("graph/scientific/" + rel, "scientific_snapshot", payload)
@@ -411,7 +435,7 @@ def validate_dataset_tree(zf: zipfile.ZipFile, manifest: dict, prefix: str, expe
         raise ValueError("Dataset registry contains an invalid field name")
     if any("\n" in v or "\r" in v for v in registry.values()):
         raise ValueError("Dataset registry contains a multiline field")
-    if "path" in registry or "source_raw" in registry or "storage_locator" in registry:
+    if any(key in registry for key in ("path", "source_raw", "storage_locator", "external_source_root", "external_source_relative")):
         raise ValueError("Dataset registry contains a host-local path")
     count = int(registry.get("var_count", "-1"))
     if count < 0 or count > 100000 or len(schema) != count:
@@ -550,6 +574,39 @@ def validate_native_graph_snapshot(zf: zipfile.ZipFile, paths: list[str], state:
     if spec.get("graph_id") != snapshot["graph_id"]:
         raise ValueError("Native snapshot specification identity mismatch")
     datasets = dictionary(snapshot.get("datasets", ""))
+    dependencies = {}
+    def require(dataset, variable):
+        if not valid_id(dataset) or not VARIABLE_ID.fullmatch(variable):
+            raise ValueError('Invalid native scientific Dataset/Variable dependency')
+        dependencies.setdefault(dataset, set()).add(variable)
+    if snapshot['graph_id'] == 'plot.dataset.xyz':
+        series = [spec]
+    else:
+        series = [dictionary(item) for panel in parser.splitlist(spec.get('panels', ''))
+                  for item in parser.splitlist(dictionary(panel).get('series', ''))]
+    for item in series:
+        dataset = item.get('dataset_id', '')
+        for key, variable in item.items():
+            if key.endswith('_variable_id') and variable: require(dataset, variable)
+        for field in ('x_error', 'y_error', 'band', 'bar_bounds'):
+            if item.get(field):
+                for key, variable in dictionary(item[field]).items():
+                    if (key.endswith('_variable_id') or key == 'variable_id') and variable: require(dataset, variable)
+        if 'cell_field' in item:
+            binding = dictionary(item['cell_field'])
+            keys = {'schema','nodes_dataset_id','node_id_variable_id','x_variable_id','y_variable_id',
+                    'cell_id_variable_id','node_variable_ids','scalar_variable_id'}
+            if set(binding) != keys or binding['schema'] != 'GXTXT_CELL_FIELD_BINDING_v1':
+                raise ValueError('Invalid native exact-cell binding schema')
+            node_roles = parser.splitlist(binding['node_variable_ids'])
+            if len(node_roles) != 3 or len(set(node_roles)) != 3:
+                raise ValueError('Exact triangles require three distinct connectivity roles')
+            for key in ('node_id_variable_id','x_variable_id','y_variable_id'):
+                require(binding['nodes_dataset_id'], binding[key])
+            for variable in [binding['cell_id_variable_id'],binding['scalar_variable_id'],*node_roles]:
+                require(dataset, variable)
+    if set(dependencies) != set(datasets):
+        raise ValueError('Native snapshot Dataset set does not match its actual specification')
     expected = {name}
     total_nested = 0
     for dataset_id, raw in datasets.items():
@@ -582,6 +639,12 @@ def validate_native_graph_snapshot(zf: zipfile.ZipFile, paths: list[str], state:
             info = inspect(archive)
             if info.get("resource_type") != "dataset" or info.get("resource_identity", {}).get("dataset_id") != dataset_id:
                 raise ValueError("Native snapshot canonical Dataset identity mismatch")
+            with zipfile.ZipFile(archive) as nested:
+                schema = validate_dataset_tree(nested, info, 'dataset', dataset_id)['schema']
+                available = {variable['variable_id'] for variable in schema}
+                if not dependencies[dataset_id] <= available:
+                    raise ValueError('Native snapshot is missing an actual scientific Variable dependency')
+
     if set(paths) != expected:
         raise ValueError("Native snapshot contains undeclared or unsupported files")
 

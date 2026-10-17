@@ -2,7 +2,7 @@
 # Document-owned integration of existing Native3D/Native2D authorities.
 namespace eval ::GX::PlanarGeometry {variable edits {};variable serial 0}
 proc ::GX::native3DPlanarApiInfo {} {
-    return {api_id NATIVE_3D_GEOMETRY_API_v1 extension planar_workflow operations {create list show focus edit_begin edit_accept edit_cancel} working_units explicit frame right_handed projection orthogonal_source_boundary reverse_mapping new_curve_on_plane max_contours 4096 max_points 1000000 reference_pixels_max 4096}
+    return {api_id NATIVE_3D_GEOMETRY_API_v1 extension planar_workflow operations {create list show focus edit_begin edit_accept edit_cancel origin_receipt origin_validate origin_commit} working_units explicit frame right_handed projection orthogonal_source_boundary reverse_mapping new_curve_on_plane max_contours 4096 max_points 1000000 reference_pixels_max 4096}
 }
 proc ::GX::_native3DPlanarOwner {document} {
     set owner [interactiveDocumentRead $document]
@@ -31,6 +31,7 @@ proc ::GX::native3DPlanarList {} {
 }
 proc ::GX::native3DPlanarCreate {sourcePath unit plane tolerance {options {}}} {
     unitRegistryConversionPlan $unit m
+    if {[dict exists $options origin_workspace]} {native3DPlanarOriginValidate [dict get $options origin_workspace]}
     if {![string is double -strict $tolerance]||$tolerance<=0||$tolerance>=Inf} {error {Declare a positive finite section tolerance}}
     set format [string trimleft [string tolower [file extension $sourcePath]] .]
     if {$format ni {vtp stl obj step stp}} {error {Choose VTP, STL, OBJ or STEP geometry}}
@@ -64,6 +65,12 @@ proc ::GX::native3DPlanarCreate {sourcePath unit plane tolerance {options {}}} {
         dict set projectionData diagnostics {depth discarded overlaps preserved_not_merged topology may_overlap_or_degenerate inverse unavailable}
         if {$format eq "step"} {dict set projectionData tessellation [dict get $options tessellation]}
         set payload [dict create schema gxtxt.native3d.planar version 1 source_resource $source source_geometry $object source_name [file tail $sourcePath] color_array [datasetPublicationV2DictDefault $options color_array {}] working_unit $unit plane $normalized tolerance $tolerance section $sectionData projection $projectionData accepted {} presentation [dict create reference_opacity .45 reference_visible 1] provenance [dict create source_sha256 [dict get $source sha256] operation section_and_orthogonal_boundary_projection original_preserved 1 approximation piecewise_linear lost_depth 1 reverse_mapping new_planar_curve source_document $document]]
+        if {[dict exists $options origin_workspace]} {
+            set origin [dict get $options origin_workspace]
+            native3DPlanarOriginValidate $origin
+            dict set origin plane $normalized
+            dict set payload origin_workspace $origin
+        }
         # Worker tokens are process-local, never part of the saved scientific model.
         dict set payload provenance origin [_originCreate derived_geometry [dict create source_origin [_originUnknown] source_sha256 [dict get $source sha256] session_origin [sessionOriginRead]]]
         dict unset payload source_geometry object_token
@@ -155,6 +162,7 @@ proc ::GX::native3DPlanarEditBegin {document mode} {
     set owner [_native3DPlanarOwner $document]
     if {[dict size [dict get $owner payload $mode definitions]]==0} {error {This projection has no editable source boundary; the complete projected surface remains available in the modern Viewer}}
     set token "planar-edit#[pid]-[incr serial]"
+    if {[dict exists [dict get $owner payload] origin_workspace]} {native3DPlanarOriginValidate [dict get $owner payload origin_workspace]}
     set context [dict create document_id $document revision [dict get $owner revision] generation [dict get $owner generation] sha256 [dict get $owner sha256] session_token [interactiveDocumentSessionToken] mode $mode]
     dict set edits $token $context
     return [dict create token $token context $context payload [dict get $owner payload]]
@@ -174,6 +182,7 @@ proc ::GX::native3DPlanarEditAccept {token definitions unit presentation} {
     foreach key {revision generation sha256} {if {[dict get $owner $key] ne [dict get $context $key]} {error {Source changed during editing; cancel and reopen the current source}}}
     if {[dict get $context session_token] ne [interactiveDocumentSessionToken]} {error {Edit belongs to another Session lifetime}}
     set payload [dict get $owner payload]
+    if {[dict exists $payload origin_workspace]} {native3DPlanarOriginValidate [dict get $payload origin_workspace]}
     if {$unit ne [dict get $payload working_unit]} {error {Edit units differ from the working plane; convert explicitly before editing}}
     if {[dict size $definitions]<1||[dict size $definitions]>4096} {error {Accepted result requires 1..4096 curves}}
     interactiveDocumentResourceInfo [dict get $payload source_resource]
@@ -186,21 +195,27 @@ proc ::GX::native3DPlanarEditAccept {token definitions unit presentation} {
             set definition [dict get $record definition]
             set object [::GX::Native2D::core sketch_create $native $definition 257]
             set points [::GX::Native2D::core points $native $object]
+            set closed [dict get [::GX::Native2D::core metrics $native $object] closed]
             # Native2D displays a closed path with its initial vertex repeated;
             # Native3D stores closure separately. Preserve every unique vertex.
-            if {[datasetPublicationV2DictDefault $definition closed 0] && [lindex $points 0] eq [lindex $points end]} {set points [lrange $points 0 end-1]}
+            if {$closed && [lindex $points 0 0]==[lindex $points end 0] && [lindex $points 0 1]==[lindex $points end 1]} {set points [lrange $points 0 end-1]}
             set writer [interactiveDocumentResourceOpenWriter $document [dict create format native2d.float64_xy_le_v1 point_count [llength $points]]]
             try {interactiveDocumentResourceAppend $writer [binary format q* [concat {*}$points]];set resource [interactiveDocumentResourceFinalize $writer]} on error {m o} {catch {interactiveDocumentResourceAbort $writer};return -options $o $m}
-            lappend contours [dict create xy_resource $resource closed [datasetPublicationV2DictDefault $definition closed 0]]
+            lappend contours [dict create xy_resource $resource closed $closed]
         }
         set profile [native3DGeometryCall $scene profile [dict create contours $contours plane [dict get $payload plane] tolerance [dict get $payload tolerance]]]
         set result [native3DGeometryProfileViewResource $scene [dict get $profile profile_token]]
         dict set payload accepted [dict create definitions $definitions view_resource $result contours $contours operation new_curve_on_working_plane source_revision [dict get $owner revision] source_sha256 [dict get $payload source_resource sha256] approximation {piecewise_linear_paths_exact other_retained_families_sampled_257}]
+        dict set payload accepted working_unit $unit
+        dict set payload accepted plane [dict get $payload plane]
+        dict set payload accepted tolerance [dict get $payload tolerance]
+        dict set payload accepted provenance [dict create source_document_id $document source_revision [dict get $owner revision] source_sha256 [dict get $payload source_resource sha256] approximation [dict get $payload accepted approximation] original_preserved 1]
         foreach key {reference_opacity reference_visible} {if {![dict exists $presentation $key]} {error "Missing presentation $key"}}
         set opacity [dict get $presentation reference_opacity]
         if {![string is double -strict $opacity] || !($opacity>=0&&$opacity<=1) || ![string is boolean -strict [dict get $presentation reference_visible]]} {error {Invalid reference presentation}}
         dict set payload accepted origin [_originCreate derived_geometry [dict create source_origin [dict get $payload provenance origin] source_sha256 [dict get $payload source_resource sha256] source_revision [dict get $owner revision]]]
         dict set payload presentation $presentation
+        if {[dict exists $payload origin_workspace]} {native3DPlanarOriginValidate [dict get $payload origin_workspace]}
         # Revalidate after worker callbacks and resource staging, then one owner commit.
         if {[interactiveDocumentRead $document] ne $owner} {error {Source changed during derivation}}
         native3DGeometryCheckpoint $scene $payload
@@ -210,4 +225,30 @@ proc ::GX::native3DPlanarEditAccept {token definitions unit presentation} {
         if {$scene ne {}} {catch {native3DGeometryClose $scene}}
         ::GX::Native2D::core destroy $native
     }
+}
+
+# A receipt binds the destination owner; it is not permission to mutate an
+# arbitrary Workspace schema or a claim of a two-Document atomic transaction.
+proc ::GX::native3DPlanarOriginReceipt {document object} {
+    set owner [interactiveDocumentRead $document]
+    if {[dict get $owner module_id] ne "viewer.3d_workbench" || [dict get $owner provider_id] ne "workbench_3d" || [dict get $owner format] ne "workbench3d.document.v1"} {error {This Workspace has no registered planar-return owner contract}}
+    set model [dict get $owner payload model]
+    if {![dict exists $model objects $object]} {error {Choose an actual originating3D body}}
+    set resource [dict get $model objects $object geometry];interactiveDocumentResourceInfo $resource
+    return [dict create schema gxtxt.native3d.planar_origin.v1 document_id $document module_id [dict get $owner module_id] provider_id [dict get $owner provider_id] generation [dict get $owner generation] revision [dict get $owner revision] sha256 [dict get $owner sha256] object_id $object geometry_sha256 [dict get $resource sha256] working_unit [dict get $model working_unit] session_origin [sessionOriginRead]]
+}
+proc ::GX::native3DPlanarOriginValidate {receipt} {
+    if {[dict get $receipt schema] ne "gxtxt.native3d.planar_origin.v1" || [dict get $receipt session_origin] ne [sessionOriginRead]} {error {Originating3D Workspace belongs to a different scientific Session}}
+    set owner [interactiveDocumentRead [dict get $receipt document_id]]
+    foreach key {module_id provider_id generation revision sha256} {if {[dict get $owner $key] ne [dict get $receipt $key]} {error {Originating3D Workspace changed; reopen its section or projection explicitly}}}
+    set model [dict get $owner payload model];set object [dict get $receipt object_id]
+    if {![dict exists $model objects $object] || [dict get $model objects $object geometry sha256] ne [dict get $receipt geometry_sha256] || [dict get $model working_unit] ne [dict get $receipt working_unit]} {error {Originating3D object identity or physical unit changed}}
+    return $owner
+}
+proc ::GX::native3DPlanarOriginCommit {document} {
+    set owner [_native3DPlanarOwner $document];set payload [dict get $owner payload]
+    if {![dict exists $payload origin_workspace] || [dict get $payload accepted] eq {}} {error {No accepted planar result with an originating Workspace is staged}}
+    set origin [dict get $payload origin_workspace]
+    modulePublicApiActivate viewer.3d_workbench WORKBENCH_3D_API_v1
+    return [::GX::Workbench3D::planarAcceptResult $document $origin [dict get $payload accepted]]
 }

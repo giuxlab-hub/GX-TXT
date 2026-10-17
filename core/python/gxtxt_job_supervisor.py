@@ -104,6 +104,29 @@ def write_report(r,state,reason):
     cfg['execution'].update(status='PASS' if state=='COMPLETED' else state,reason=reason,finished_at=str(time.time()),source_snapshot=r['snapshot'])
     cfg['parameters']={k:str(v) for k,v in r['parameters'].items()}
     text=io.StringIO();cfg.write(text);atomic_text(Path(r['output_dir'])/'execution.ini',text.getvalue())
+def available_cpus():
+    """Existing admission authority honors effective affinity and mounted cgroup quota."""
+    count=max(1,os.cpu_count() or 1)
+    try:count=min(count,len(os.sched_getaffinity(0)))
+    except (AttributeError,OSError):pass
+    locations=[Path('/sys/fs/cgroup')]
+    try:
+        for line in Path('/proc/self/cgroup').read_text().splitlines():
+            _,controllers,relative=line.split(':',2)
+            if not controllers or 'cpu' in controllers.split(','):
+                locations.extend((Path('/sys/fs/cgroup')/relative.lstrip('/'),Path('/sys/fs/cgroup/cpu')/relative.lstrip('/')))
+    except (OSError,ValueError):pass
+    for root in locations:
+        try:
+            quota,period=(root/'cpu.max').read_text().split()
+            if quota!='max':count=min(count,max(1,int(int(quota)/int(period))))
+        except (OSError,ValueError,ZeroDivisionError):pass
+        try:
+            quota=int((root/'cpu.cfs_quota_us').read_text());period=int((root/'cpu.cfs_period_us').read_text())
+            if quota>0:count=min(count,max(1,quota//period))
+        except (OSError,ValueError,ZeroDivisionError):pass
+    return max(1,count)
+
 def physical_memory():
     amount=os.sysconf('SC_PHYS_PAGES')*os.sysconf('SC_PAGE_SIZE')
     for path in ('/sys/fs/cgroup/memory.max','/sys/fs/cgroup/memory/memory.limit_in_bytes'):
@@ -496,7 +519,7 @@ def serve(root):
                 pending=json.loads(row['record'])
                 reserved=sum(item['record']['policy']['memory_mib']*1024**2 for item in running.values())
                 cpus=sum(item['record']['policy']['threads'] for jid,item in running.items() if jid not in waiting)
-                if reserved+pending['policy']['memory_mib']*1024**2>physical_memory()*.8 or cpus+pending['policy']['threads']>max(1,os.cpu_count() or 1):
+                if reserved+pending['policy']['memory_mib']*1024**2>physical_memory()*.8 or cpus+pending['policy']['threads']>available_cpus():
                     pending['queue_reason']='Waiting for CPU or memory reservation budget'
                     c.execute('UPDATE jobs SET record=? WHERE id=?',(json.dumps(pending),row['id']))
                     continue
@@ -649,7 +672,7 @@ def main():
             if k not in p or int(v)<1:raise ValueError('Invalid job policy')
             p[k]=int(v)
         if p['memory_mib']*1024**2>physical_memory()*.8:raise ValueError('Per-job RAM reservation exceeds 80% of physical memory')
-        if p['max_jobs']*p['threads']>max(1,os.cpu_count() or 1):raise ValueError('Concurrent thread budget exceeds available CPUs')
+        if p['max_jobs']*p['threads']>available_cpus():raise ValueError('Concurrent thread budget exceeds available CPUs')
         c.execute('UPDATE settings SET value=? WHERE id=1',(json.dumps(p),));result=p
     else:raise ValueError('Unknown Job API operation')
     print(tcl_result(dict(ok=1,result=result)))

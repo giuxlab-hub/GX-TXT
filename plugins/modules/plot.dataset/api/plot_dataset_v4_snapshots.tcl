@@ -15,10 +15,8 @@ proc ::GX::PlotDatasetAPIv4::snapshotValidate {directory {graph {}}} {
         set package [::GX::portableResourceValidate $path]
         if {[dict get $package resource_type] ne {dataset}||[dict get $package dataset_id] ne $id} {error {Snapshot Dataset archive identity mismatch}}
     }
-    set datasets {};set qualified {}
-    set spec [dict get $manifest spec]
-    if {[dict get $spec graph_id] eq {plot.dataset.xyz}} {set all [list $spec]} else {set all {};foreach p [dict get $spec panels] {lappend all {*}[dict get $p series]}}
-    foreach series $all {set ds [dict get $series dataset_id];lappend datasets $ds;foreach id [_snapshotVariableIds [expr {[dict get $spec graph_id] eq {plot.dataset.xyz}?$spec:[dict create graph_id plot.dataset.xy panels [list [dict create series [list $series]]]]}]] {dict set qualified "$ds:$id" [dict create dataset_id $ds variable_id $id]}}
+    set qualified [_specSourceVariables [dict get $manifest spec]];set datasets {}
+    dict for {key variable} $qualified {lappend datasets [dict get $variable dataset_id]}
     if {[lsort -unique $datasets] ne [lsort [dict keys [dict get $manifest datasets]]]} {error {Snapshot scientific dependency set does not match its canonical PlotSpec}}
     dict set manifest source_dataset_ids [lsort -unique $datasets];dict set manifest source_variable_ids [lsort [dict keys $qualified]];dict set manifest source_variables [dict values $qualified]
     return $manifest
@@ -26,7 +24,7 @@ proc ::GX::PlotDatasetAPIv4::snapshotValidate {directory {graph {}}} {
 proc ::GX::PlotDatasetAPIv4::captureForArtifact {artifact destination} {
     set ref [plotRefForArtifact $artifact];if {$ref eq {}||[_get $ref module_id {}] ne {plot.dataset}} {error {Artifact has no genuine canonical Plot Dataset reference}}
     set spec [loadSpec $ref];set datasets {}
-    if {[dict get $spec graph_id] eq {plot.dataset.xyz}} {lappend datasets [dict get $spec dataset_id]} else {foreach panel [dict get $spec panels] {foreach series [dict get $panel series] {lappend datasets [dict get $series dataset_id]}}}
+    dict for {key variable} [_specSourceVariables $spec] {lappend datasets [dict get $variable dataset_id]}
     file mkdir [file join $destination resources];set resources {}
     foreach id [lsort -unique $datasets] {
         set relative resources/$id.zip;set path [file join $destination $relative]

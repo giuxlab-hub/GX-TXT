@@ -97,6 +97,9 @@ root. Queued jobs survive restart; uncertain active work becomes INTERRUPTED,
 never implicitly reruns. Publication owns recovery of its Dataset journal.
 A launch handshake prevents execution before its child identity is durable.
 
+Registered scientific providers use [Scientific Execution](SCIENTIFIC_EXECUTION_API_v1.md) over this same supervisor and journal; they do not create a separate scheduler.
+
+CPU/thread admission observes effective CPU affinity and mounted cgroup quotas.
 CPU/thread, process-count, memory, temporary storage, timeout, queue and concurrent
 job policy are visible in Jobs. CPU/memory reservation constrains admission;
 resource measurements are sampled and are not kernel cgroup quotas. Nested
@@ -114,7 +117,7 @@ Logout/shutdown need not preserve live processes, but restart must reconcile
 durable interrupted state. Relevant CORE process/lifecycle sources contain this
 contract. The Debian release does not implement or test a Windows adapter/tray.
 
-## dev095 read-only identity and log inspection
+## Read-only identity and log inspection
 
 The existing host API additively supports `inspect id`, `log_read id offset count
 ?tail?`, `inspect_run session runId`, `run_log_read session runId offset count
@@ -122,16 +125,16 @@ The existing host API additively supports `inspect id`, `log_read id offset coun
 `scriptJobInspect`, `scriptJobLogRead`, `scriptExecutionInspectRun` and
 `scriptExecutionRunSummaries`; nonblocking GUI clients use `scriptJobAsync`.
 Read projection never replaces the journal or current Registry identity.
-See `../reports/DEV095_API_CHANGE_REPORT.md` for fields/security/range semantics.
+Inspection uses the original execution identity and bounded owned run files.
 Submitted records add script ID/version/Session name; legacy omissions are filled
 only from immutable runtime metadata. `launched_at` captures worker spawn;
 existing `started` retains its preparation meaning. Never-launched exit code is N/A.
 Complete log access is bounded/paged; missing, expired or unsafe sources diagnose
 that exact execution. No arbitrary file-read operation is exposed to scripts.
 
-## dev097 reversible history and user-local Runner Workspaces
+## Reversible history and user-local Runner Workspaces
 
-The existing Job API adds host-only view operations. `scriptJobViewList view ?offset?`
+The existing Job API supports host-only view operations. `scriptJobViewList view ?offset?`
 returns `jobs`, `total_stored`, `total_scoped`, `hidden_scoped`, `matching`, `offset`,
 `limit` and view-independent `lifecycle` updates. Pages contain at most 500 records;
 counts cover all matching stored Jobs. Existing `scriptJobList` keeps its 100-recent
@@ -178,7 +181,7 @@ with its active name in the OS title. Closing a workspace resets view context;
 closing the Jobs window persists its last view. Neither action submits or cancels
 an execution. Resource policy has its existing separate explicit Apply/Save action.
 
-## Registered callable Jobs (dev097, Linux/Debian)
+## Registered callable Jobs (Linux/Debian)
 
 `scriptJobSubmit reference parameters options ?callback?` accepts additive
 `options.callable_invocation` with exactly these seven fields: `callable_id`,

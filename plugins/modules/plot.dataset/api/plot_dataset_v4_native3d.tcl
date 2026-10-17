@@ -247,6 +247,7 @@ proc ::GX::PlotDatasetAPIv4::loadSpec {ref {deriveIfMissing 1}} {
         if {[dict exists $metadata native_plot_v4_axes]} {dict set spec axes [dict get $metadata native_plot_v4_axes]}
     }
     set metadata [::GX::graphMetadataRead [_graphRef $ref]];if {[dict exists $metadata native_plot_v4_presentation]} {dict set spec native_presentation [dict get $metadata native_plot_v4_presentation]}
+    if {[dict get $spec graph_id] ne {plot.dataset.xyz}} {set spec [_cellFieldRestore $spec $metadata]}
     if {[llength [info commands ::GX::graphRendererEffectiveSpec]]} {set spec [::GX::graphRendererEffectiveSpec $ref $spec]}
     return $spec
 }

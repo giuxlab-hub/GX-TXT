@@ -58,5 +58,6 @@ proc ::GX::defaults {} {
     ::GX::defaults_before_core_ui_surfaces
     set ::GX::cfg(dataset_namespace_current) base
     set ::GX::cfg(dataset_namespace_created) {}
+    set ::GX::cfg(dataset_namespace_shared_inputs) {}
     coreUiSurfaceRegister script_workspace {Show Script Workspace} features.script_workspace
 }

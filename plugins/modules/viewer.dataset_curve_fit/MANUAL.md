@@ -1,9 +1,44 @@
+# Dataset Curve Fit
+
+## Finding controls and scientific guidance
+
+The left inspector has eight existing panels grouped under **Data and selection**,
+**Models and fitting**, **Results and publication**, and **Samples and presentation**.
+Click a panel heading to collapse or expand it. **View → Panels / Configuration…**
+sets each panel to visible, collapsed or hidden, using User defaults and Session
+overrides. A panel's visibility does not remove its data or disable its methods.
+Scrolling remains local to the inspector; the graph and results keep their own area.
+
+The top menus group the existing advanced methods:
+
+| Menu | Category | Purpose |
+| --- | --- | --- |
+| Fit | Models and fitting | Model cards, initialization, solver, specialized models, families and templates |
+| Fit | Measurements and uncertainty | Translation, measurement assumptions, full covariance, bootstrap and profile settings |
+| Fit | Advanced methods and preprocessing | Smoothing, baseline and logarithmic response preparation |
+| Results | Measurement and uncertainty results | Covariance, parameter correlation, solver and interval evidence |
+| Results | Model comparison and diagnostics | Comparison, linked residuals, influence, retained queries and physical review |
+| Results | Results and publication | Scientific report, canonical Datasets, family results, Workbench transfer and exports |
+
+The action names used below remain the labels within those categories. Preview
+and Accept remain in the Fit menu with F5 and F6. Model controls show applicable
+fields while retaining entered settings for other models. Hidden panels leave
+these registered menu commands available when their scientific preconditions hold.
+
+**Help → User Manual…** and **F1** open this independent rendered guide. Start
+with [Common fitting errors](../../../docs/guides/COMMON_FITTING_ERRORS.md) for
+method selection and interpretation. The complete [Statistical Result Semantics
+reference](../../../docs/api/STATISTICAL_RESULT_SEMANTICS_API_v1.md) explains all
+registered interpretation operations, units, unavailable states and inference
+assumptions. The [Numeric API reference](../math.numeric/NUMERIC_API_v1.md)
+documents the actual calculation contracts and Python/Octave access. An available
+numeric estimate does not imply a justified confidence interval or physical model.
+
 Select an accepted fit and use **Results → Query selected model and derivatives…**
 for exact physical queries, slopes, differential resistance where units permit,
 and explicit local inverse brackets. Read the [query guide](../../../docs/api/FITTER_RETAINED_QUERIES_v1.md)
 for domain, extrapolation, historical-result and availability limits.
 
-# Dataset Curve Fit
 
 For a supported nonlinear scalar model, declare Gaussian errors in Statistical
 assumptions, then use **Fit → Profile likelihood settings…**. Choose the canonical
@@ -260,7 +295,7 @@ CSV export keeps the accepted curve's X/Y values and writes `<csv>.metadata.ini`
 
 Source, preview, accepted-fit, selection and residual lines are clipped to the actual Native plotting viewport before rendering. Markers/text crossing the plot are omitted; scientific coordinates and fit input stay unchanged. Auto/X=Y, zoom, pan and resize share this authority. There are no cosmetic margin masks. If controls leave less than the minimum plot size, stale drawing is cleared. The resizable sidebar scrolls independently; plot margins follow the current font metrics.
 
-Host service `DatasetCurveFit::fitPrimitive points family unit` delegates to existing Numerical parametric models and returns `definition`, `quality`, `working_unit`, `method=scientific_fit`, `numeric_api=NUMERIC_API_v1`, `approximation=1`. It accepts declared compatible length units and 3..65536 complete continuous points. Native2D maps Numeric parameters; this service does not publish or adopt an object. The Workbench controls source validation, Preview and explicit Accept..
+Host service `DatasetCurveFit::fitPrimitive points family unit` delegates to existing Numerical parametric models and returns `definition`, `quality`, `working_unit`, `method=scientific_fit`, `numeric_api=NUMERIC_API_v1`, `approximation=1`. It accepts declared compatible length units and 3..65536 complete continuous points. Native2D maps Numeric parameters; this service does not publish or adopt an object. The Workbench controls source validation, Preview and explicit Accept.
 
 
 ## Shared native adapter
@@ -297,7 +332,7 @@ source changes/missing sources produce diagnostics while recoverable accepted
 fits remain available. CORE owns lifecycle, resource remapping and portable backup.
 ## Panels, translation and History
 
-The scroll controls now have actual Tk ancestors inside the left viewport, so
+The scroll controls have actual Tk ancestors inside the left viewport, so
 clipping applies during scrolling. Preview fit and Accept fit are in the single
 top Fit menu; factory keys are F5 and F6. All actionable commands contribute
 stable configurable slots through CORE Configuration. View → Panels /
@@ -452,7 +487,7 @@ boundary portions omitted and explained. Projected geometry and joint response
 models need their own covariance model and remain explicitly unsupported by this
 scalar-response interval API.
 
-Compatibility fields such as `train_rmse`, `source_rmse` and `train_r2` now come
+Compatibility fields such as `train_rmse`, `source_rmse` and `train_r2` come
 from those same validated CORE records. Their `statistical_aliases` entries give
 the quantity identity, sample role, unit, status and reason. A quantity without
 a value carries NaN together with its explicit status. For geometric models,

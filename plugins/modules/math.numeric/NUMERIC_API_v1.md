@@ -215,7 +215,8 @@ This endpoint rule does not infer unique interior connectivity or close open pat
 This is an Octave binding callable through the typed host dispatcher;
 no direct Python/Script Bridge binding is advertised for this operation.
 
-The public service also provides `polar_coordinates(X,Y,options)` and`cartesian_coordinates(theta,radius,options)`, available in Octave and both
+`polar_coordinates(X,Y,options)` and
+`cartesian_coordinates(theta,radius,options)`, available in Octave and both
 Script Bridge languages. The explicit frame options are `origin`,
 `theta_zero` (radians), `clockwise`, `angle_unit=rad|deg`,
 `unwrap_policy=cut|continuous` and `angle_cut` in the chosen angular unit.
@@ -320,7 +321,7 @@ Octave: `gxtxt_numeric_v1('linear_matrix', action, A, B, options)`; pass `[]` fo
 
 Actions and result fields:
 
-| Action | Contract | Added result fields |
+| Action | Contract | Result fields |
 |---|---|---|
 | `inspect` | Any matrix; trace/determinant only when square | `hermitian`, `symmetric`, `positive_definite`, `norm_one`, `norm_frobenius`, `norm_infinity`, optional `trace_*`, `determinant_*` |
 | `identity`, `transpose`, `conjugate_transpose`, `diagonal` | Identity matches A shape; diagonal extracts a matrix diagonal or constructs a diagonal matrix from a vector | `value_real`, `value_imaginary` |
@@ -333,7 +334,7 @@ Actions and result fields:
 
 Every result also contains `rows`, `cols`, numerical `rank`, `rank_tolerance`, and `condition_number`. All array results use paired `*_real`/`*_imaginary` fields, including real arrays (zero imaginary part). Octave reconstructs with `complex(result.value_real, result.value_imaginary)`. Tcl returns row lists for matrices and flat lists for vectors. Script Bridge returns numeric arrays. LU satisfies `P*A=L*U`; QR satisfies `A*P=Q*R`; SVD satisfies `A=U*S*V'`. Eigenvector ordering and phase are backend-dependent; verify eigenpair residuals rather than exact eigenvector bytes.
 
-`solve` defaults to `rank_policy='error'`, rejecting rank deficiency. `rank_policy='minimum_norm'` uses the Moore-Penrose pseudoinverse for underdetermined or rank-deficient problems. Full-rank overdetermined systems use least squares. `rank_tolerance` is a nonnegative singular-value threshold; by default it is `max(size(A))*eps(max(svd(A)))`. Inverse and default solve reject `condition_number > condition_limit` (default `1e12`); an explicit larger finite limit permits an informed ill-conditioned calculation. These checks are diagnostics, not guarantees of accuracy. `relative_residual` divides by `max(norm(B,'fro'),eps)`. Matrix exponential uses Octave `expm`; matrix power uses integer powers. Matrix logarithm and square root remain P1 work.
+`solve` defaults to `rank_policy='error'`, rejecting rank deficiency. `rank_policy='minimum_norm'` uses the Moore-Penrose pseudoinverse for underdetermined or rank-deficient problems. Full-rank overdetermined systems use least squares. `rank_tolerance` is a nonnegative singular-value threshold; by default it is `max(size(A))*eps(max(svd(A)))`. Inverse and default solve reject `condition_number > condition_limit` (default `1e12`); an explicit larger finite limit permits an informed ill-conditioned calculation. These checks are diagnostics, not guarantees of accuracy. `relative_residual` divides by `max(norm(B,'fro'),eps)`. Matrix exponential uses Octave `expm`; matrix power uses integer powers. `logarithm` and `square_root` compute principal matrix functions and return split complex values.
 
 Invalid inputs return `GXTXT:Numeric:*` Octave identifiers; the Tcl facade and Script Bridge preserve a useful error message. Notable errors are `InvalidOperand`, `DimensionMismatch`, `RankDeficient`, `IllConditioned`, `NotHermitian`, `NotPositiveDefinite`, `InvalidTolerance`, and `InvalidExponent`. The existing Dataset representation is unchanged: callers read canonical variables through Dataset APIs, then pass explicit matrix values to this raw mathematical service.
 
@@ -355,7 +356,7 @@ Interpolation, resampling, spline construction, integration, cumulative integrat
 
 Weights are non-negative observation weights. Zero-weight observations are discarded and at least one positive weight is required. Fitting operations use `weight_semantics=relative` by default for backward compatibility: coefficient covariance is scaled by the fitted residual variance. `weight_semantics=inverse_variance` declares absolute inverse-variance weights and leaves the normal-matrix covariance unscaled; the result then reports `reduced_chi_squared`. If positive uncertainties `sigma` are supplied to nonlinear fitting, weights are `1/sigma^2` and inverse-variance semantics are selected automatically.
 
-Low-level APIs do not attach or convert physical units. Callers must pass numerically compatible quantities. Dataset-aware results report source units and derived calculus units, but `math.numeric` does not invent unit conversions or reinterpret fit-parameter units. Polynomial coefficient units are implied by the caller's X/Y units and polynomial power; they are not synthesized into unit strings.
+Raw low-level array APIs do not attach or convert physical units. The explicit expression operations instead use the shared CORE dimensional validator and requested compatible output units. Callers must pass numerically compatible quantities. Dataset-aware results report source units and derived calculus units, but `math.numeric` does not invent unit conversions or reinterpret fit-parameter units. Polynomial coefficient units are implied by the caller's X/Y units and polynomial power; they are not synthesized into unit strings.
 
 Dataset operations use stable `dataset_id + variable_id`. Dataset Selection filtering is applied through the public Selection API before the numerical primitive. No provider-private file is opened by `math.numeric`.
 
@@ -388,8 +389,13 @@ per-group `n_input`/`n_valid` arrays with the same shape as `values`. The existi
 resolved `axis` and numeric values are unchanged. Quantile also records its
 probability and definition. These additive facts let CORE interpret scalar or
 axis-indexed results without calculating the statistic again; use the qualified
-`array_reduce.ACTION` CORE operation ID. `count` and `valid_count` keep their
-existing arithmetic meanings.
+`array_reduce.ACTION` CORE operation ID. The statistical IDs are
+`array_reduce.sum`, `array_reduce.mean`, `array_reduce.median`,
+`array_reduce.minimum`, `array_reduce.maximum`,
+`array_reduce.variance_population`, `array_reduce.variance_sample`,
+`array_reduce.std_population`, `array_reduce.std_sample`, `array_reduce.rms`,
+and `array_reduce.quantile`. `count` and `valid_count` keep their existing
+arithmetic meanings.
 `statistics`, `weighted_statistics`, and `weighted_quantiles` report
 `n_input`, `n_valid`, and `n_nonfinite`; weighted results also report
 `n_zero_weight` and `n_positive_weight`. The existing `n` field remains for
@@ -458,7 +464,7 @@ Builds transform-bin frequencies independently of any scientific spectrum semant
 
 ### `one_sided(real_values, imaginary_values, options)`
 
-Selects the canonical one-sided bins from a full FFT-ordered transform. `scaling=none` (default) performs selection only. `scaling=amplitude` doubles interior complex coefficients while leaving DC and even-length Nyquist unchanged. Power/PSD normalization remains the responsibility of the scientific workflow unless a future generic contract defines it explicitly.
+Selects the canonical one-sided bins from a full FFT-ordered transform. `scaling=none` (default) performs selection only. `scaling=amplitude` doubles interior complex coefficients while leaving DC and even-length Nyquist unchanged. Power/PSD normalization remains the responsibility of the scientific workflow.
 
 ### `detrend(values, options)`
 
@@ -845,7 +851,19 @@ preserves all selected original rows, including explicit NaNs at omitted positio
 
 Scientific formulation: [Whittaker/AsLS documentation](https://pybaselines.readthedocs.io/en/latest/algorithms/whittaker.html).
 
-## 13. Root finding and optimization — Octave binding and Script Bridge
+## 13. Root finding, expressions and optimization
+
+Public `expression_evaluate`, `dataset_expression` and `expression_analyze`
+provide bounded, unit-checked data-only mathematical expressions and candidate
+roots/intersections/local extrema. They reuse the shared CORE grammar and Unit
+Registry, plus the existing Numeric root/minimization methods. See the complete
+[expression operation contracts](../../../docs/api/NUMERIC_EXPRESSION_OPERATIONS.md). The Tcl
+`expressionDataset` facade and Script Bridge accept canonical Dataset/Variable
+IDs; CORE resolves storage privately. Finite sampling does not prove all roots.
+Long analyses use existing managed Script Jobs for cancellation; direct calls
+retain their explicit finite size/evaluation limits.
+
+### Callback root and optimization operations
 
 ### `root_find(fun, bracket_or_initial, options)`
 
@@ -1007,23 +1025,23 @@ r = gxtxt_numeric_v1('root_find', @(z) z.^2-2, [0 2], struct());
 
 ## 19. Deliberate v1 boundaries
 
-A smoothing-spline constructor is not part of v1 because it is not available as a dependable base-Octave primitive in the expected GX-TXT numerical stack; adding one later can be additive through the existing method/options/result pattern. Filter-design workflows are also intentionally excluded: v1 filters already-designed FIR/IIR coefficients but does not become a signal-analysis subsystem. The API owns generic FFT/IFFT and transform helpers, while scientific spectrum workflows remain in analysis modules such as `analysis.fft_spectrum`, Welch, cepstrum and cross-spectral transfer.
+`spline_create` constructs interpolating spline/PCHIP representations. Natural cubic smoothing is available through `curve_model_fit` with model `smoothing_spline`, with the explicit objective and bounded GCV contract documented below. Filter-design workflows are also intentionally excluded: v1 filters already-designed FIR/IIR coefficients but does not become a signal-analysis subsystem. The API owns generic FFT/IFFT and transform helpers, while scientific spectrum workflows remain in analysis modules such as `analysis.fft_spectrum`, Welch, cepstrum and cross-spectral transfer.
 
-The API is designed so new interpolation/smoothing/baseline methods can be added through method names and additive result fields without changing established signatures. Existing callers must ignore unknown additive result fields.
+Method names and additive result fields preserve established call signatures. Callers must ignore unknown additive result fields.
 
 ## Hypothesis-test primitives (Octave binding)
 
 `gxtxt_numeric_v1('student_t_quantile', probability, degrees_of_freedom)` returns a scalar `values` field for confidence intervals. `gxtxt_numeric_v1('hypothesis_test', method, x, y, options)` supports `one_sample_t`, `independent_t`, `welch_t`, `paired_t`, `mann_whitney`, and `signed_rank`. Use `[]` for `y` in the one-sample test. Options are `mu0` (default 0), `alternative=two_sided|greater|less`, `confidence` (default 0.95), and `nonfinite=error|omit`.
 
-Results include the method, statistic, degrees of freedom where defined, input and valid sample counts, p-value, alternative, confidence, estimate, confidence bounds/status, effect size/name, missing-data policy, and exact/approximation method. T-test confidence intervals describe the tested mean or mean difference. Rank-test confidence intervals are reported as undefined. Mann-Whitney and signed-rank p-values use exact conditional enumeration for at most 20 pooled or nonzero paired observations, respectively, including ties; larger samples use a tie-corrected normal approximation with continuity correction. These operations are currently Octave-only and are discoverable as such in the public operation catalog.
+Results include the method, statistic, degrees of freedom where defined, input and valid sample counts, p-value, alternative, confidence, estimate, confidence bounds/status, effect size/name, missing-data policy, and exact/approximation method. T-test confidence intervals describe the tested mean or mean difference. Rank-test confidence intervals are reported as undefined. Mann-Whitney and signed-rank p-values use exact conditional enumeration for at most 20 pooled or nonzero paired observations, respectively, including ties; larger samples use a tie-corrected normal approximation with continuity correction. These operations are available through Octave, the typed Tcl operation catalog and both registered Script Bridge languages.
 
 ### One-way ANOVA (Octave binding)
 
-`gxtxt_numeric_v1('one_way_anova', values, groups, options)` accepts numeric or text group labels and `method=ordinary|welch`, `nonfinite=error|omit`. It returns first-seen group names, counts, means, sample variances and standard deviations, observation counts, sums of squares, degrees of freedom, F and p-value. Ordinary ANOVA returns eta-squared and omega-squared when defined. Welch ANOVA requires at least two observations and positive variance per group; its ordinary-ANOVA effect sizes are reported as undefined. This operation is Octave-only and appears in the public catalog with that binding availability.
+`gxtxt_numeric_v1('one_way_anova', values, groups, options)` accepts numeric or text group labels and `method=ordinary|welch`, `nonfinite=error|omit`. It returns first-seen group names, counts, means, sample variances and standard deviations, observation counts, sums of squares, degrees of freedom, F and p-value. Ordinary ANOVA returns eta-squared and omega-squared when defined. Welch ANOVA requires at least two observations and positive variance per group; its ordinary-ANOVA effect sizes are reported as undefined. This operation is available through Octave, the typed Tcl operation catalog and both registered Script Bridge languages.
 
 ## Octave Script Bridge
 
-Bridge API ID: `NUMERIC_API_v1`. The API-owned script binding registers
+Bridge API ID: `NUMERIC_API_v1`. The API-owned script binding includes
 `array_unary`, `array_binary`, `array_compare`, `array_mask`, `array_select`,
 `array_where`, `array_reduce`, and `statistics_dataset`.
 
@@ -1091,7 +1109,7 @@ r=gxtxt_api_call('NUMERIC_API_v1','foundation',{'vector','dot',a,b,struct('kind'
 <a id="p1p2-foundation-actions-mathnumeric-1130"></a>
 ## Advanced foundation actions
 
-All rows use `gxtxt_numeric_v1('foundation',family,action,a,b,c,options)`. Public Tcl and Script Bridge retain the same `foundation` entry; typed nodes are required there. Callback handles for the new equation and variational rows require direct Octave. The full operation and result schemas are in `api/octave/gxtxt_numeric_advanced_v1.m`; `api/operations_v1.tsv` lists `foundation` as the stable public operation.
+All rows use `gxtxt_numeric_v1('foundation',family,action,a,b,c,options)`. Public Tcl and Script Bridge retain the same `foundation` entry; typed nodes are required there. Callback handles for equation and variational actions require direct Octave. The full operation and result schemas are in `api/octave/gxtxt_numeric_advanced_v1.m`; `api/operations_v1.tsv` lists `foundation` as the stable public operation.
 
 | Family | Actions | Inputs and output |
 |---|---|---|
@@ -1103,6 +1121,18 @@ All rows use `gxtxt_numeric_v1('foundation',family,action,a,b,c,options)`. Publi
 | `variational` | `action`, `functional`, `first_variation`, `euler_lagrange_residual`, `legendre`, `constrained` | Octave functional/Lagrangian callback, generalized coordinates and velocities; finite-difference variations/momentum/residual and quadrature. `constrained` delegates to the public constrained optimizer. |
 | `statistics` | `confidence_interval`, `robust_location`, `robust_regression`, `covariance_diagnostics`, `partial_correlation`, `multiple_testing`, `bootstrap_ci`, `permutation_test`, `logistic_regression`, `glm`, `survival_kaplan_meier`, `kmeans` | Explicit sample/design data; Huber estimators, Bonferroni/Holm/BH correction, binomial/Poisson GLM, Kaplan-Meier and seeded clustering/resampling. Bootstrap/permutation need a seed and at least 100 replicates. Existing PCA remains in the statistics provider. |
 
+For CORE Statistical Result Semantics, the qualified operation IDs for the
+statistics row are `foundation.statistics.confidence_interval`,
+`foundation.statistics.robust_location`, `foundation.statistics.robust_regression`,
+`foundation.statistics.covariance_diagnostics`,
+`foundation.statistics.partial_correlation`, `foundation.statistics.multiple_testing`,
+`foundation.statistics.bootstrap_ci`, `foundation.statistics.permutation_test`,
+`foundation.statistics.logistic_regression`, `foundation.statistics.glm`,
+`foundation.statistics.survival_kaplan_meier`, and `foundation.statistics.kmeans`.
+These identify the existing `foundation` family/action results; they are not
+separate numerical implementations. The corresponding result facts and limits
+are documented below and in the [CORE statistical API](../../../docs/api/STATISTICAL_RESULT_SEMANTICS_API_v1.md).
+
 `linear_matrix` adds `schur`, `logarithm`, and `square_root`. Matrix functions use the principal branch and report split complex values. Stiff ODE result `backend_method` names the solver actually used; on this Octave build, a broken Sundials `ode15s` path falls back to `ode23s`. Event termination and dense-output completion are explicit. All numerical geometry coordinates and distances remain in caller units.
 
 <a id="reconstructible-curve-models-mathnumeric-1160-dev-051"></a>
@@ -1110,7 +1140,7 @@ All rows use `gxtxt_numeric_v1('foundation',family,action,a,b,c,options)`. Publi
 
 Octave dispatcher operations `curve_model_fit(model,x,y,options)`, `curve_model_evaluate(state,query)` and `curve_model_project(state,x,y)` are also available through the typed Tcl `callOperation` catalog and both Script Bridge languages. `fit` returns a data-only model struct suitable for persistence and evaluation. `evaluate` returns X, Y and paired points. Projection supports arc/Bézier and ordered parametric polynomial/spline models and returns the nearest finite-curve point, normalized parameter and geometric distance.
 
-The public service provides `curve_model_residual(state,x,y)` for parametric geometry. It returns
+`curve_model_residual(state,x,y)` handles parametric geometry. It returns
 nearest projected X/Y and parameter, full Euclidean distance, signed residual,
 count/SSE/RMSE/MAE/maximum and an explicitly defined XY dispersion R². Positive
 distance is left of the oriented tangent. At zero cross product (including
@@ -1181,7 +1211,7 @@ The operation is advertised as an Octave binding in the existing operation
 catalog, without claiming a Tcl binding.
 
 <a id="dev097-shared-transport"></a>
-# shared transport
+# Shared transport
 
 Script Bridge regression, polynomial fitting, residual metrics, polar/Cartesian
 conversion and `curve_model_*` operations invoke this same public Octave owner
@@ -1193,7 +1223,7 @@ and do not silently substitute a model. See CORE
 `docs/api/SCIENTIFIC_BINARY_TRANSPORT_v2.md` for resource lifetimes and counters.
 
 <a id="dev097-additive-parameter-uncertainty"></a>
-# additive parameter uncertainty
+# Parameter uncertainty
 
 `parameter_uncertainty(plan)` consumes a public
 `STATISTICAL_RESULT_SEMANTICS_API_v1/parameter_inference_plan` record. It computes
@@ -1372,7 +1402,7 @@ Future response intervals still require explicit response sigma. Polynomial
 ODR uses its declared physical coefficient basis, with the captured model and
 covariance; ordinary polynomial LS retains its separate centered/scaled basis.
 
-### Native residual reductions (C API v1, Numeric 1.19)
+### Native residual reductions (C API v1)
 
 The public `api/c/gxtxt_numeric_reductions_v1.h` is the allocation-free C99 /
 C++ binding of `NUMERIC_API_v1` for streaming residual summary facts. Discovery
@@ -1398,7 +1428,7 @@ policy: consumers must supply those meanings through the CORE statistical
 contract. Native2D retains matching/projection geometry and consumes these
 Numeric facts for both legacy X/path and sampled geometric comparisons.
 
-Native `residual_summary` facts from the public C reduction binding now adapt
+Native `residual_summary` facts from the public C reduction binding adapt
 through `STATISTICAL_RESULT_SEMANTICS_API_v1`. The registered
 `math.numeric.geometric_deviation` descriptor covers descriptive path and
 nearest-curve comparisons without regression-inference claims. Numerical
@@ -1504,7 +1534,7 @@ reuse one captured summary for bias, RMS and maximum absolute deviation.
 same group centers are reused by variance decomposition and downstream reports.
 
 <a id="dev097-signal-summary-and-quality"></a>
-## signal summary and quality
+## Signal summary and quality
 
 `signal_summary(x)` describes finite real or complex samples with magnitude RMS,
 peak, real-component range and split DC means. `signal_snr(signal,noise)` uses
@@ -1516,7 +1546,7 @@ finite logarithmic SNR. These operations infer no sampling standard error.
 positive FFT-bin estimator. The signal must be real and the declared fundamental
 must be a positive coherent bin below Nyquist. Existing power-named fields are
 raw unnormalized squared FFT magnitudes, with the Nyquist bin undoubled. They are
-not normalized mean-square power or a PSD. Added harmonic order IDs preserve the
+not normalized mean-square power or a PSD. Harmonic order IDs preserve the
 vector's identity; `thd_db` is computed here once.
 
 Capture either result through CORE `numeric_model`, `from_numeric`, and
@@ -1525,7 +1555,7 @@ availability. Harmonic vector metadata has a 65536-element bound; it is never
 silently truncated. Large waveform operands still use the binary Script Bridge.
 
 <a id="dev097-amplitude-spectrum-quality"></a>
-## amplitude-spectrum quality
+## Amplitude-spectrum quality
 
 `fft_spectrum_quality(samples, sample_step, options)` exposes the accepted FFT
 lobe estimator. Options select window, detrending, fundamental, tracked orders,
@@ -1548,9 +1578,8 @@ is `none` or `realmin`. Ordered component columns remain identifiable. CORE
 frequency and amplitude units, preserving individual zero-level availability.
 A floored reported level does not claim a positive physical amplitude.
 
-FFT Spectrum 2.3 and Harmonic Analysis 1.2 use these public owners, captured CORE
-metadata and CORE reports. Their targeted integration evidence is separate from
-the owner contract checks and final release acceptance.
+FFT Spectrum and Harmonic Analysis use these public owners, captured CORE
+metadata and CORE reports.
 
 `event_period(crossings, options={})` and
 `pulse_timing(rising_crossings, falling_crossings, options={})` summarize already
@@ -1564,7 +1593,7 @@ Sample jitter uses count minus one and is NaN for one interval. CORE interprets
 these operations under the registered `event_timing` profile and requires
 `x_unit=s`. No independent-sample or timing-accuracy assumption is inferred.
 
-For full-rank linear least squares, the solve now uses the same column scaling
+For full-rank linear least squares, the solve uses the same column scaling
 as the rank decision and transforms coefficients back to their physical units.
 This prevents an unscaled solve from silently discarding a tiny independent
 column that the rank check accepted. The explicit rank-deficient `minimum_norm`
@@ -1659,10 +1688,9 @@ recomputed by interpretation. Singleton sample spread remains undefined.
 ### Foundation location facts
 
 The existing `foundation` family `statistics` actions `confidence_interval` and
-`robust_location` now supply additive scalar facts for CORE interpretation.
+`robust_location` supply scalar facts for CORE interpretation.
 Mean intervals add `n`, `standard_error`, `degrees_of_freedom`, and method
-`student_t_mean`. They use public `student_t_quantile`, so a fresh worker no longer
-needs an externally loaded statistics package.
+`student_t_mean`. They use public `student_t_quantile`, so a fresh worker requires no externally loaded statistics package.
 Singleton uncertainty remains NaN; the sample mean remains valid.
 Huber adds `n`, `huber_constant`, `converged`, and the exact fixed-scale method.
 Both actions require real observations; invalid alpha and tuning constants reject.
@@ -1675,12 +1703,12 @@ performed by the CORE capture or by Worksheet presentation.
 `foundation/statistics/bootstrap_ci` and `permutation_test` retain their existing
 operands and seeded results. Bootstrap explicitly selects native quantile method
 5, preserving the accepted default. Permutation retains zero tolerance in its
-absolute-tail comparison. New fields capture sample counts, method, inference,
+absolute-tail comparison. The result fields capture sample counts, method, inference,
 replicates, actual seed/generator and estimator-specific facts. Bootstrap adds the
 variance/standard error of its already generated replicate distribution; it does
 not generate a second distribution. Explicit integer seeds preserve replay and
 caller RNG restoration. CORE uses distinct registered models for these methods;
-the newer `resampling_summary` keeps its own quantile/tolerance convention.
+`resampling_summary` has its own quantile/tolerance convention.
 
 <a id="foundation-correlation-and-multiplicity-facts-dev097"></a>
 ### Foundation correlation and multiplicity facts
@@ -1694,7 +1722,7 @@ ordinary residual partial correlation. Zero normalization remains undefined.
 No p-value, confidence interval or causal claim is supplied.
 
 `multiple_testing` retains Bonferroni, Holm and BH values for valid input p-values.
-It now rejects values outside [0,1] and complex input, and records `original_p`,
+It rejects values outside [0,1] and complex input, and records `original_p`,
 one-based `hypothesis_index`, `family_size` and `method` beside `adjusted_p`.
 Use CORE `from_numeric_columns` for the three varying columns and keep family
 size/method as common facts. CORE validates identities and explains conditional
@@ -1732,10 +1760,10 @@ A vector is one variable regardless of row/column orientation. The native
 singleton zero remains available in raw results; CORE marks sample covariance
 undefined because its n-minus-one denominator has no sample information.
 
-Data-only `foundation` calls from real Python/Octave Script Bridge jobs now use
+Data-only `foundation` calls from Python/Octave Script Bridge Jobs use
 the existing CORE binary worker and its registered `gxtxt_numeric_v1` entrypoint.
-This fixes unsupported complex matrix results in the old text adapter and avoids
-serializing bulk observations through Tcl/INI. Typed operands, options and
+The binary path supports complex matrix results and avoids serializing bulk
+observations through Tcl/INI. Typed operands, options and
 `result_fields` projection are retained. Existing callback dispatch is unchanged.
 
 <a id="seeded-native-clustering-dev097"></a>
@@ -1925,7 +1953,7 @@ the primary response SHA remains the original supplied response. Shared fit
 diagnostics already attach the actual fitted-response signature automatically.
 An optional fourth predictor matrix adds `predictor_count` and
 `predictors_sha256`, using the same binary64 encoding in column-major order;
-pass an empty third argument to omit translation. New scalar-response fits
+pass an empty third argument to omit translation. Scalar-response fits
 capture their exact retained predictors automatically, including the original
 physical predictor of a scaled polynomial. Historical receipts without these
 additive fields remain valid. This operation fingerprints evidence; it does not
@@ -1947,8 +1975,7 @@ denominator DOF, explicit roundoff/undefined states and numerical facts without
 refitting. Use public CORE `nested_f_interpretation` for meaning, validation and
 reporting. See [Nested-model F test](../../../docs/api/NESTED_MODEL_F_TEST_v1.md).
 
-Fit `response_rmse` is sqrt(unweighted physical residual SSE/N). Historical
-`rmse` remains the weighted residual SD using residual DOF, and `residual_rmse`
+Fit `response_rmse` is sqrt(unweighted physical residual SSE/N). `rmse` is the weighted residual SD using residual DOF, and `residual_rmse`
 remains unweighted residual SD using DOF. CORE maps these distinct identities.
 No old scientific field is renamed or silently redefined.
 
@@ -2046,7 +2073,7 @@ information criteria require eligible local inference; physical RMSE remains a
 separate descriptive comparison. Use explicit multistart and review the retained
 trials when different breakpoint starts expose competing minima.
 
-Declared-expression primitives added with these models:
+Declared-expression primitives used by these models:
 
 - `positive_part(z)`: max(z,0), with right derivative one at zero.
 - `minimum(a,b)`: select the smaller operand; select the second at equality.
@@ -2086,7 +2113,7 @@ semantics are documented in DATASET_CURVE_FIT_API_v1's independent export sectio
 The existing controlled expression compiler produces the export statements;
 user expressions are never evaluated as source code. Voigt, stable logistic,
 positive_part, minimum, exprel and monotone diode evaluation have independent
-numerical helpers. This is the requested evaluation export, not a second fitter.
+numerical helpers. Export evaluates the retained representation without fitting.
 PCHIP derives its deterministic piecewise coefficients from frozen nodes; smoothing
 and parametric splines retain their accepted curvature/coefficient state. No
 training Dataset is reopened, no covariance is recomputed and no random seed is
@@ -2121,11 +2148,11 @@ continues to support all thirteen dtypes, including complex and exact integers.
 `registered_callback` model with callback, parameter IDs/values, source and
 binding SHA, declared predictor domain and bounds. It returns prediction and an
 optional bounded finite-difference Jacobian without refitting. The callback
-nonlinear fitter now computes covariance directly from the weighted Jacobian
+nonlinear fitter computes covariance directly from the weighted Jacobian
 SVD, avoiding the squared condition number of normal equations; it also reports
 physical response RMSE/MAE, active bounds and parameter/observation counts.
-Existing public `positive_translation` and `uniform_grid` operations are now
-available through Script Bridge using their original Numeric implementation.
+Public `positive_translation` and `uniform_grid` operations are available through
+Script Bridge using the same Numeric implementation.
 
 `nonlinear_fit` accepts `response_shape=column` for declared functional models:
 N-by-1 predictor/response contracts are enforced before residual flattening.

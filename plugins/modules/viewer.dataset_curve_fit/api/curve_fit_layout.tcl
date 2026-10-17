@@ -19,7 +19,15 @@ proc ::GX::DatasetCurveFit::_layoutPrepare {w} {
     bind $w.left.viewport <Configure> [list $w.left.viewport itemconfigure content -width %w]
     bind $w.left.viewport.content <Configure> [list $w.left.viewport configure -scrollregion [list 0 0 %w %h]]
     pack $w.left.scroll -side right -fill y;pack $w.left.viewport -fill both -expand 1
-    dict for {group field} [_panelFields] {ttk::labelframe $w.left.viewport.content.$group -text [dict get $field label] -padding 4}
+    dict for {group field} [_panelFields] {
+        set panel $w.left.viewport.content.$group
+        ttk::labelframe $panel -padding 4
+        ttk::button $panel.heading -text [dict get $field label] -command [list ::GX::DatasetCurveFit::_panelToggle $w $group]
+        $panel configure -labelwidget $panel.heading
+    }
+    foreach {id label} {data {Data and selection} models {Models and fitting} results {Results and publication} view {Samples and presentation}} {
+        ttk::label $w.left.viewport.content.category_$id -text $label -font TkHeadingFont -anchor w
+    }
     ttk::frame $w.right.plot;ttk::frame $w.right.residuals;canvas $w.right.report -height 200 -width 1 -highlightthickness 0
     _reportViewportCreate $w
     pack $w.right.residuals -side bottom -fill x
@@ -54,59 +62,20 @@ proc ::GX::DatasetCurveFit::_layout {w} {
         $menu configure -postcommand [list ::GX::DatasetCurveFit::_menuStates $w $menu $widgets]
         pack $button -side left -padx 3
     }
-    $w.menus.fit.menu add separator
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu model_card
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu translation
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu statistics_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu bootstrap_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu profile_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu solver_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu smoothing_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu component_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu formula_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu knot_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu rational_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu implicit_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu complex_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu surface_workflow
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu parameter_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu region_settings
-    foreach command {registered_settings registered_declare registered_cancel} {::GX::viewerCommandMenuAdd $w $w.menus.fit.menu $command}
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu covariance_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu model_suggestions
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu baseline_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu smooth_source
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu log_settings
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu log_publish
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu log_details
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu family_sources
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu global_family
-    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu template_apply
-    $w.menus.results.menu add separator
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu parameter_dataset
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu global_family_results
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu parameter_correlation
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu solver_details
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu prediction_details
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu scientific_report
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu smoothing_details
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu covariance_details
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu measurement_details
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu model_comparison
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu residual_source
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu residual_predicted
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu residual_sequence
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu influence_details
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu bootstrap_details
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu profile_details
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu retained_query
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu physical_plausibility
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu derived_properties
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu model_workbench
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu model_export
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu recipe_python
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu recipe_octave
-    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu template_save
+    # Categories expose existing registered commands; they do not own fit state.
+    foreach {parent id label commands} {
+        fit models {Models and fitting} {model_card model_suggestions parameter_settings solver_settings component_settings formula_settings knot_settings rational_settings implicit_settings complex_settings surface_workflow region_settings registered_settings registered_declare registered_cancel family_sources global_family template_apply}
+        fit measurement {Measurements and uncertainty} {translation statistics_settings covariance_settings bootstrap_settings profile_settings}
+        fit advanced {Advanced methods and preprocessing} {smoothing_settings baseline_settings smooth_source log_settings}
+        results inference {Measurement and uncertainty results} {parameter_correlation solver_details prediction_details smoothing_details covariance_details measurement_details bootstrap_details profile_details log_details}
+        results comparison {Model comparison and diagnostics} {model_comparison residual_source residual_predicted residual_sequence influence_details retained_query physical_plausibility derived_properties}
+        results publication {Results and publication} {scientific_report parameter_dataset global_family_results log_publish model_workbench model_export recipe_python recipe_octave template_save}
+    } {
+        set menu $w.menus.$parent.menu.$id
+        menu $menu -tearoff 0 -postcommand [list ::GX::viewerCommandMenusRefresh $w]
+        foreach command $commands {::GX::viewerCommandMenuAdd $w $menu $command}
+        $w.menus.$parent.menu add cascade -label $label -menu $menu
+    }
     $w.menus.view.menu add separator
     ::GX::viewerCommandMenuAdd $w $w.menus.view.menu configuration
     ::GX::viewerCommandMenuAdd $w $w.menus.view.menu panels_reset
@@ -125,6 +94,10 @@ proc ::GX::DatasetCurveFit::_layout {w} {
     ::GX::viewerCommandMenuAdd $w $w.menus.workspace.menu workspace_clear_history
     $w.menus.workspace.menu configure -postcommand "[list ::GX::viewerCommandMenusRefresh $w];[list ::GX::sessionWorkspaceViewerMenuRefresh $w.menus.workspace.menu]"
     pack $w.menus.workspace -side left -padx 3
+    ttk::menubutton $w.menus.help -text Help -menu $w.menus.help.menu
+    menu $w.menus.help.menu -tearoff 0
+    $w.menus.help.menu add command -label {User Manual…} -accelerator F1 -command [list ::GX::documentationBrowserOpenModuleWindow viewer.dataset_curve_fit $w]
+    pack $w.menus.help -side left -padx 3
     ::GX::uiMenuRowAttach $w.menus [pack slaves $w.menus]
     pack $w.footer -side bottom -fill x
     pack $w.main -fill both -expand 1
@@ -162,22 +135,47 @@ proc ::GX::DatasetCurveFit::_layout {w} {
 }
 proc ::GX::DatasetCurveFit::_panelsChanged {w id} {
     if {![winfo exists $w] || $id ni {{} modules.dataset_curve_fit.panels}} return
+    if {![dict exists $::GX::ViewerCommands::windows $w]} return
+    set adapter [dict get $::GX::ViewerCommands::windows $w]
+    if {[dict get $adapter session_token] ne {} && ([catch {::GX::interactiveDocumentSessionToken} token] || $token ne [dict get $adapter session_token])} return
     set values [_panelValidate [dict get [::GX::configurationResolve modules.dataset_curve_fit.panels] effective]]
     set p $w.left.viewport.content
-    dict for {group field} [_panelFields] {
-        pack forget $p.$group
-        foreach child [winfo children $p.$group] {pack forget $child}
-        set mode [dict get $values $group]
-        if {$mode eq "hidden"} continue
-        pack $p.$group -fill x -pady 4
-        if {$mode eq "visible"} {
-            foreach child [winfo children $p.$group] {
-                if {$child eq "$p.accepted.actions"} continue
-                pack $child -fill x
+    set fraction [lindex [$w.left.viewport yview] 0]
+    foreach category {data models results view} {pack forget $p.category_$category}
+    foreach group [dict keys [_panelFields]] {pack forget $p.$group}
+    foreach {category groups} {data {source sources filters selection} models settings results accepted view {samples presentation}} {
+        set shown 0
+        foreach group $groups {if {[dict get $values $group] ne "hidden"} {set shown 1}}
+        if {$shown} {pack $p.category_$category -fill x -padx 3 -pady {9 2}}
+        foreach group $groups {
+            foreach child [winfo children $p.$group] {if {$child ne "$p.$group.heading"} {pack forget $child}}
+            set mode [dict get $values $group]
+            if {$mode eq "hidden"} continue
+            set arrow [expr {$mode eq "collapsed" ? "+" : "−"}]
+            $p.$group.heading configure -text "$arrow [dict get [_panelFields] $group label]"
+            pack $p.$group -fill x -pady 4
+            if {$mode eq "visible"} {
+                foreach child [winfo children $p.$group] {
+                    if {$child in [list $p.$group.heading $p.accepted.actions]} continue
+                    pack $child -fill x
+                }
             }
         }
     }
-    after idle [list $w.left.viewport yview moveto 0]
+    after idle [list ::GX::DatasetCurveFit::_panelScrollRestore $w $fraction]
+}
+proc ::GX::DatasetCurveFit::_panelScrollRestore {w fraction} {
+    if {[winfo exists $w.left.viewport]} {$w.left.viewport yview moveto $fraction}
+}
+proc ::GX::DatasetCurveFit::_panelToggle {w group} {
+    if {![dict exists $::GX::ViewerCommands::windows $w]} return
+    set expected [dict get $::GX::ViewerCommands::windows $w session_token]
+    if {$expected ne {} && ([catch {::GX::interactiveDocumentSessionToken} token] || $token ne $expected)} {error {Session changed; reopen Fitter before changing its panels}}
+    set resolved [::GX::configurationResolve modules.dataset_curve_fit.panels]
+    set values [_panelValidate [dict get $resolved effective]]
+    dict set values $group [expr {[dict get $values $group] eq "visible" ? "collapsed" : "visible"}]
+    set scope [expr {$::GX::currentSession eq {} ? "user" : "session"}]
+    ::GX::configurationCommit [list [dict create id modules.dataset_curve_fit.panels scope $scope value $values session_token [dict get $resolved session_token]]]
 }
 proc ::GX::DatasetCurveFit::_panelsReset {w} {
     set scope [expr {$::GX::currentSession eq {} ? "user" : "session"}]

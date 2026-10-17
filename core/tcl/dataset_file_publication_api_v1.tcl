@@ -66,7 +66,7 @@ proc ::GX::datasetFilePublicationRegistryFields {moduleId request target sha sto
         publication_api_version file-v1 dataset_file_publication_api_version 1 \
         variable_schema_api_version 3 canonical_sha256 $sha sha256 $sha \
         integrity_algorithm sha256 created_at [datasetFilePublicationDictDefault $request created_at [clock format [clock seconds] -format "%Y-%m-%dT%H:%M:%S%z"]] updated_at [clock format [clock seconds] -format "%Y-%m-%dT%H:%M:%S%z"] \
-        row_count 0 sample_count 0 immutable 0]
+        row_count 0 sample_count 0 immutable [expr {!![datasetFilePublicationDictDefault $request immutable 0]}]]
 }
 
 proc ::GX::datasetFilePublicationPublish {session moduleId request} {
@@ -92,8 +92,10 @@ proc ::GX::datasetFilePublicationPublish {session moduleId request} {
     if {$storageKind ni {text binary}} { error "Dataset file publication storage_kind must be text or binary" }
     set mediaType [string trim [dict get $request media_type]]
     if {![regexp {^[^[:space:]/]+/[^[:space:]/]+$} $mediaType]} { error "Invalid Dataset media_type '$mediaType'" }
+    if {[dict exists $request immutable]&&![string is boolean -strict [dict get $request immutable]]} {error {Dataset immutable policy must be boolean}}
     set sourceFile [file normalize [dict get $request source_file]]
     if {![file isfile $sourceFile]} { error "Dataset file publication source does not exist: $sourceFile" }
+    if {[dict exists $request verified_reference]} {return [_datasetFilePublicationReference $session $moduleId $request]}
     if {$storageKind eq "text"} { datasetFilePublicationValidateText $sourceFile }
 
     set metadata [datasetFilePublicationDictDefault $request structured_metadata ""]
@@ -167,6 +169,7 @@ proc ::GX::datasetFilePublicationPublish {session moduleId request} {
     try {
         file copy -- $sourceFile $staged
         set sha [sha256File $staged]
+        if {[dict exists $request verified_source_sha256]&&$sha ne [dict get $request verified_source_sha256]} {error {Source changed during scientific import}}
         # The shared transaction already owns durable preimages of all three
         # authorities. Keep the original target until atomic replacement.
         if {$existing ne {}} {file rename -force -- $staged $final} else {datasetFilePublicationPlace $staged $final}
@@ -257,4 +260,24 @@ proc ::GX::_datasetFileEditGrant {session datasetId editor contract} {
     set grant [dict get $private _gxtxt.framework.file_edit_grant]
     if {![dict exists $grant dataset_id] || ![dict exists $grant session] || [dict get $grant dataset_id] ne $datasetId || [dict get $grant session] ne [file normalize $session]} {return 0}
     expr {[dict get $grant editor] eq $editor && [dict get $grant owner] eq [datasetField $datasetId source_module {}] && [dict get $grant sha256] eq [datasetField $datasetId sha256 [datasetField $datasetId canonical_sha256 {}]] && [dict get $grant contract] eq $contract}
+}
+
+# Trusted source-reference branch of this same publication/transaction owner.
+proc ::GX::_datasetFilePublicationReference {session moduleId request} {
+    if {![datasetAuthorityActive $session]} {return [datasetAuthorityTransaction $session ::GX::_datasetFilePublicationReference $session $moduleId $request]}
+    set id [dict get $request dataset_id]
+    if {[datasetField $id id {}] ne {}||[datasetPublicationV2DictDefault $request replace_owned 0]} {error {Verified external references are CREATE-only}}
+    set namespace [_datasetPublicationNamespace $session $moduleId $request]
+    set source [dict get $request verified_reference]
+    set verification [expr {[dict get $request storage_kind] eq {text}?{text}:{read}}]
+    set current [_scientificIoCall [dict get $source source_root] $verification [dict get $source source_relative] 0 1 [dict get $source sha256]]
+    if {[dict get $current identity] ne [dict get $source identity]} {error {External source changed during publication}}
+    set metadataPath [file join $session [_datasetMetadataRelativePath $id]]
+    datasetAuthorityEnlist [datasetRegistryPath $session]
+    datasetAuthorityEnlist $metadataPath
+    set fields [datasetFilePublicationRegistryFields $moduleId $request [dict get $request source_file] [dict get $source sha256] [dict get $request storage_kind] {}]
+    lappend fields immutable 1 source_storage_policy reference source_raw [dict get $request source_file] source_sha256 [dict get $source sha256] external_source_root [dict get $source source_root] external_source_relative [dict get $source source_relative]
+    datasetFilePublicationCommitRegistry $session $id $fields
+    _datasetFrameworkMetadataUpdate $session $id [dict create dataset_namespace $namespace]
+    return [dict create dataset_id $id contract [dict get $request contract] format [dict get $request format] sha256 [dict get $source sha256] policy reference readonly 1]
 }

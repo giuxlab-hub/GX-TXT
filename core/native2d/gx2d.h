@@ -187,6 +187,8 @@ GX2D_API gx2d_status gx2d_image_get(const gx2d_scene *,gx2d_id,gx2d_reference_im
 GX2D_API gx2d_status gx2d_image_update(gx2d_scene *,gx2d_id,const gx2d_reference_image *);
 GX2D_API gx2d_status gx2d_image_calibrate(gx2d_scene *,gx2d_id,gx2d_point,gx2d_point,double);
 GX2D_API gx2d_status gx2d_image_map(const gx2d_scene *,gx2d_id,gx2d_point,int,gx2d_point *);
+/* Source-pixel simple polygon validation. Bounds are clipped, vertices unchanged. */
+GX2D_API gx2d_status gx2d_image_roi_validate(const gx2d_scene *,gx2d_id,const gx2d_point *,size_t,gx2d_rect *,double *,int *);
 /* Read-only preview transform, scaling device margins with output dimensions.
  * fit uses existing Fit All semantics; current preserves effective world view. */
 GX2D_API gx2d_status gx2d_preview_view(const gx2d_scene *,int,double,double,double,gx2d_view *);

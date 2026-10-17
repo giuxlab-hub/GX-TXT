@@ -47,6 +47,9 @@ REGISTRATION = {
     "provider_kind": "module", "provider_id": "math.numeric",
     "documentation_ref": "plugins/modules/math.numeric/NUMERIC_API_v1.md",
     "operations": {
+        "expression_evaluate": {"name":"expression_evaluate","summary":"Bounded typed pointwise expressions using shared CORE grammar and physical units","argument_convention":"expression text, symbol scalar/vector map, symbol unit map, optional output_unit options","result_convention":"finite real values, output unit and shared dimensional receipt; no code evaluation"},
+        "expression_analyze": {"name":"expression_analyze","summary":"Bounded roots/intersections/local extrema of declared expressions","argument_convention":"request with expression, variable, finite interval, scalar symbols, symbol_units and mode; optional tolerances/evaluation budget","result_convention":"classified candidates, residuals, physical units and exact evaluation budget; finite sampling is not a completeness proof"},
+        "dataset_expression": {"name":"dataset_expression","summary":"Canonical Dataset mathematical expression over an explicit bounded row window","argument_convention":"expression, symbol Dataset/Variable bindings, scalar parameter metadata and required start/count options","result_convention":"typed values and actual physical units with absolute source-row/Variable provenance"},
         "residual_sequence": {"name":"residual_sequence","summary":"Ordered residual runs, lag correlations and Durbin-Watson diagnostic facts","argument_convention":"residual vector, exact ordering keys (empty for input positions), explicit ordering options","result_convention":"bounded sequence facts and input/order fingerprints; CORE owns interpretation and no p values are computed"},
         "smooth": {"name":"smooth","summary":"Smooth finite ordered XY through the shared Numeric algorithms","argument_convention":"X, Y, optional smoothing options","result_convention":"Smoothed values, residuals, settings and exact retained/omitted positions; no parameter inference"},
         "dataset_smooth": {"name":"dataset_smooth","summary":"Smooth canonical Dataset variables with captured original row identities","argument_convention":"Dataset ID, X/Y variable IDs, optional smoothing options","result_convention":"Smoothed XY, physical units, settings and exact original Dataset row ordinals"},
@@ -178,6 +181,9 @@ REGISTRATION = {
     },
 }
 _ARGUMENTS = {
+    "expression_evaluate": [("expression", "controlled expression text"),("symbols", "finite real scalar/vector map"),("symbol_units", "explicit physical unit map"),("options", "optional bounded output unit options")],
+    "expression_analyze": [("request", "explicit typed expression/domain/parameter request"),("options", "optional bounded numerical policy")],
+    "dataset_expression": [("expression", "controlled expression text"),("bindings", "canonical symbol to Dataset/Variable identities"),("parameters", "scalar value/unit parameter map"),("options", "required bounded start/count options")],
     "residual_sequence": [("residuals","real float32/float64 vector"),("ordering_keys","matching numeric vector or empty"),("options","explicit ordering and optional max_lag/nonfinite policy")],
     "smooth": [("X","strictly increasing distinct predictors"),("Y","observations"),("options","optional smoothing settings")],
     "dataset_smooth": [("dataset_id","Dataset ID"),("x_variable_id","stable X Variable ID"),("y_variable_id","stable Y Variable ID"),("options","optional smoothing and selection settings")],
@@ -315,6 +321,8 @@ for _name, _fields in _ARGUMENTS.items():
         next(field for field in _operation["arguments"] if field["name"] == "weights")["required"] = True
     if _name == "residual_sequence":
         next(field for field in _operation["arguments"] if field["name"] == "options")["required"] = True
+    if _name == "dataset_expression":
+        next(field for field in _operation["arguments"] if field["name"] == "options")["required"] = True
     if _name == "expression_dimensions":
         for field in _operation["arguments"]:
             if field["name"] in ("output_unit", "unknown_parameter_ids"):
@@ -403,6 +411,17 @@ def _dataset_options(host, dataset_id, options):
 
 
 def invoke(host, operation, args):
+    if operation == "dataset_expression":
+        if len(args) != 4 or not isinstance(args[0], str) or not all(isinstance(value, dict) for value in args[1:]):
+            raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "Dataset expressions require text, canonical bindings, scalar parameters and explicit bounded options")
+        from gxtxt_scientific_binary_v1 import call
+        return call(host, "gxtxt_numeric_v1", [operation, host.session, *[_numeric_argument(value) for value in args]])
+    if operation in ("expression_evaluate", "expression_analyze"):
+        minimum = 3 if operation == "expression_evaluate" else 1
+        if len(args) not in (minimum, minimum + 1) or (len(args) == minimum + 1 and not isinstance(args[-1], dict)):
+            raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "Bounded expressions require their declared typed operands and optional options structure")
+        from gxtxt_scientific_binary_v1 import call
+        return call(host, "gxtxt_numeric_v1", [operation, *[_numeric_argument(value) for value in args]])
     if operation == "expression_dimensions":
         if len(args) not in (2, 3, 4) or not isinstance(args[0], str) or not isinstance(args[1], dict):
             raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "expression_dimensions requires text, unit map and optional target/unknown IDs")

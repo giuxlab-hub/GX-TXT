@@ -99,7 +99,13 @@ proc ::GX::datasetNamespaceForModule {moduleId} {
     return $namespace
 }
 proc ::GX::_datasetPublicationNamespace {session moduleId definition} {
-    if {[dict exists $definition dataset_namespace]} {error {Module publication cannot choose a Dataset namespace. CORE assigns the module namespace; users can move Datasets in the browser.}}
+    if {[dict exists $definition dataset_namespace]} {
+        set requested [datasetNamespaceNormalize [dict get $definition dataset_namespace]]
+        set grants [datasetNamespaceSharedInputs $session]
+        if {![dict exists $grants $requested]||$moduleId ni [dict get $grants $requested]} {error {Producer is not authorized for this shared scientific input namespace}}
+        if {![dict exists $definition dataset_id]||[datasetField [dict get $definition dataset_id] id {}] ne {}||[datasetPublicationV2DictDefault $definition replace_owned 0]} {error {Shared scientific input publication is CREATE-only}}
+        return $requested
+    }
     return [datasetNamespaceForModule $moduleId]
 }
 proc ::GX::_datasetNamespaceRequireModuleWrite {session moduleId datasetId} {
@@ -172,4 +178,33 @@ proc ::GX::_datasetNamespaceMigrateApply {session plan backup} {
         return -options $options $message
     }
     return [dict merge $plan [dict create read_projection_only 0 backup_archive $backup recovery {Import the backup into a new directory with Portable Session Import.}]]
+}
+
+# User/admin policy remains in the existing Session Manifest namespace authority.
+proc ::GX::datasetNamespaceSharedInputs {session} {
+    if {$session eq $::GX::currentSession&&[info exists ::GX::cfg(dataset_namespace_shared_inputs)]} {return $::GX::cfg(dataset_namespace_shared_inputs)}
+    set result {}
+    if {![file isfile [file join $session metadata manifest.ini]]} {return $result}
+    set ini [parseIni [file join $session metadata manifest.ini]]
+    set count [datasetPublicationV2DictDefault $ini dataset_organization.namespace_count 0]
+    if {![string is integer -strict $count]||$count<0||$count>10000} {error {Invalid namespace count}}
+    for {set i 1} {$i<=$count} {incr i} {
+        if {[dict exists $ini dataset_namespace.$i.shared_input_producers]} {
+            dict set result [datasetNamespaceNormalize [dict get $ini dataset_namespace.$i.name]] [splitList [dict get $ini dataset_namespace.$i.shared_input_producers]]
+        }
+    }
+    return $result
+}
+proc ::GX::datasetNamespaceAuthorizeSharedInput {session namespace producers} {
+    if {$::GX::DatasetPrivate::activeContext ne {}} {error {Shared namespace authorization is user/admin only}}
+    set session [_sessionInspectionRequire $session]
+    if {$session ne [sessionInspectionCurrentSession]} {error {Open the Session before authorizing shared inputs}}
+    set namespace [datasetNamespaceNormalize $namespace]
+    if {[lindex [split $namespace /] 0] in {module pending}} {error {Private module and pending namespaces cannot be shared}}
+    foreach producer $producers {datasetPublicationV2ValidateId module $producer}
+    datasetNamespaceCreate $session $namespace
+    set prior [datasetNamespaceSharedInputs $session]
+    dict set ::GX::cfg(dataset_namespace_shared_inputs) $namespace [lsort -unique $producers]
+    try {sessionPersistenceCommit} on error {message options} {set ::GX::cfg(dataset_namespace_shared_inputs) $prior;return -options $options $message}
+    return [dict create namespace $namespace producers $producers policy create_only authority Session_Manifest]
 }

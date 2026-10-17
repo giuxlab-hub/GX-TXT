@@ -211,6 +211,7 @@ proc ::GX::manifestStringV2 {} {
     foreach name $created {
         append out "\n\[dataset_namespace.[incr index]\]\n"
         appendKV out name [datasetNamespaceNormalize $name]
+        if {[info exists ::GX::cfg(dataset_namespace_shared_inputs)]&&[dict exists $::GX::cfg(dataset_namespace_shared_inputs) $name]} {appendKV out shared_input_producers [join [dict get $::GX::cfg(dataset_namespace_shared_inputs) $name] {;}]}
     }
     foreach type {note metadata} {
         set index 0
@@ -248,6 +249,10 @@ proc ::GX::loadManifestV2 {path} {
         lappend ::GX::cfg(dataset_namespace_created) [datasetNamespaceNormalize [dict get $parsed $key]]
     }
     set ::GX::cfg(dataset_namespace_created) [lsort -dictionary -unique $::GX::cfg(dataset_namespace_created)]
+    set ::GX::cfg(dataset_namespace_shared_inputs) {}
+    for {set i 1} {$i<=$count} {incr i} {
+        if {[dict exists $parsed dataset_namespace.$i.shared_input_producers]} {dict set ::GX::cfg(dataset_namespace_shared_inputs) [datasetNamespaceNormalize [dict get $parsed dataset_namespace.$i.name]] [splitList [dict get $parsed dataset_namespace.$i.shared_input_producers]]}
+    }
     foreach {section type} {graph_notes note graph_metadata metadata} {
         set count [descriptorValue $parsed $section count 0]
         if {![string is integer -strict $count] || $count < 0 || $count > 100000} continue

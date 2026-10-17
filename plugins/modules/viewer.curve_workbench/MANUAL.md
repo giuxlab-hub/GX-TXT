@@ -543,7 +543,7 @@ The object list distinguishes an immutable **Dataset source**, an exact **Retain
 
 **Create** opens Point, Line, Rectangle, Circle, Arc, Ellipse, quadratic/cubic Bézier, Polyline and Spline. Click defining positions on the canvas. Circle uses center then perimeter; Arc uses center, start and end (counterclockwise sweep); Ellipse uses center, major-axis position and minor-axis extent; Bézier uses its true control polygon. Rectangle uses opposite corners. Polyline/Spline finish with Enter, Space or **Finish**. Canvas creation chooses X=Y aspect so a circle is displayed as a circle; scientific Auto aspect remains available in Grid/view.
 
-Pointer motion displays a transient Native preview; circle/arc previews show a radius witness and value. **Esc**, changing tool or closing cancels incomplete tools without a document/history entry. **Object snap** uses Native endpoint/center/control/midpoint candidates, with visible feedback. Grid snapping remains independent. Defining-point attachment now creates persistent Native Coincident relationships with visible attachment feedback. Incompatible projected control roles reject clearly.
+Pointer motion displays a transient Native preview; circle/arc previews show a radius witness and value. **Esc**, changing tool or closing cancels incomplete tools without a document/history entry. **Object snap** uses Native endpoint/center/control/midpoint candidates, with visible feedback. Grid snapping remains independent. Defining-point attachment creates persistent Native Coincident relationships with visible attachment feedback. Incompatible projected control roles reject clearly.
 
 **Select** clicks a body, segment or defining control; Ctrl adds retained references; Shift subtracts. The defining-handle table provides the same references. Drag a handle to edit its exact Native definition; center drag moves a round primitive, perimeter drag edits its radius, line endpoints/Bezier controls edit their parameters. Preview is separate from the commit on release. Rejected constraint edits preserve geometry/history with a visible reason. **Modify → Move/Rotate on canvas** uses existing Native gizmos. Exact parameters and numeric handle X/Y remain available. Existing Native point operations/groups are preserved behind **Modify → Native point operations / groups…**; scientific range, composition, comparison, measurement and publication controls remain available.
 
@@ -779,7 +779,7 @@ controls are described below.
 
 ## Accepted Fitter models
 
-Fitter’s **Results → Transfer selected model to Workbench…** creates a separate
+Fitter’s **Results → Results and publication → Transfer selected model to Workbench…** creates a separate
 named Workspace. The curve label states **exact retained model** or **sampled approximation**. X and Y keep independent units. Editable geometry and the
 immutable imported scientific model are separate: editing the curve does not
 refit data or update the captured coefficients, uncertainty or provenance.
@@ -854,3 +854,25 @@ History, Undo/Redo and explicit publication retain the conversion provenance.
 **Help → User Manual… / F1** opens this rendered guide in an independent nonmodal
 window. Search, links, scrolling and navigation belong to this manual; other
 Viewer manuals and the main GX-TXT Help remain independent.
+
+
+## Return a retained edit to its originating 3D Workspace
+
+The 3D Workbench's section/projection actions open a distinct retained 2D draft
+with a calibrated original reference image. **Show 3D Reference Image** and its
+opacity control affect presentation only. Edit retained paths/primitive parameters
+in the captured physical unit; the original 3D body is never edited by 2D dragging.
+
+**Accept → 3D** retains the accepted planar result, then asks the original 3D owner
+to add a separate profile to the same captured Workspace. Exact path vertices and
+retained definitions are preserved; other retained families explicitly identify
+their 257-sample 3D profile approximation. Depth discarded by projection cannot be
+reconstructed. New profile extrusion/replacement is an independent 3D action.
+
+Original owner generation/revision/SHA, body identity, units and plane are checked.
+A stale origin is refused. Cancel writes nothing to the original 3D owner. If only
+the accepted planar stage committed, it remains retained and the draft offers
+**Commit staged result → 3D**. Retry does not duplicate an already committed result;
+it cannot silently accept a changed original. Save/reopen retains that pending
+context through the existing Workspace, without serializing worker tokens.
+See [the public planar-return contract](../../../docs/api/NATIVE_3D_PLANAR_RETURN_v1.md).

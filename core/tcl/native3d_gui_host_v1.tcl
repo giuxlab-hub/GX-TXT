@@ -2,6 +2,11 @@
 # Thin Viewer Provider/Tk adapter. Geometry and pixels are produced by libgx3de.
 namespace eval ::GX::Engine3D {
     variable window .gx3de_viewer
+    variable embedded 0
+    variable hostWidgetChanging 0
+    variable mountGeneration 0
+    variable resizePending {}
+    variable renderedSize {960 640}
     variable ownerModule viewer.engine_3d
     variable ownerProvider engine_3d
     variable windowTitle {GX-TXT Native 3D Engine Viewer}
@@ -163,7 +168,7 @@ namespace eval ::GX::Engine3D {
 }
 
 proc ::GX::native3DGuiHostApiInfo {} {
-    return [dict create api_id NATIVE_3D_GUI_HOST_API_v1 api_version 1 shared_renderer 1 shared_worker 1 operations {configure backend panel rpc close compact_preview_acquire compact_preview_release camera_reset camera_roll scientific_axes_grid shared_enlarged_viewport screenshot_dataset_publication}]
+    return [dict create api_id NATIVE_3D_GUI_HOST_API_v1 api_version 1 shared_renderer 1 shared_worker 1 operations {configure mount suspend resume backend panel rpc close compact_preview_acquire compact_preview_release camera_reset camera_roll scientific_axes_grid shared_enlarged_viewport screenshot_dataset_publication layer_texture_validate layer_texture_bind layer_texture_anchor}]
 }
 proc ::GX::Engine3D::ownerModule {} {return $::GX::Engine3D::ownerModule}
 proc ::GX::Engine3D::ownerProvider {} {return $::GX::Engine3D::ownerProvider}
@@ -319,6 +324,7 @@ proc ::GX::Engine3D::rpc {request} {
         set response [waitLine 120000]
     } finally {
         set workerBusy 0
+        if {$::GX::Engine3D::resizePending ne {}} {after idle ::GX::Engine3D::hostResize}
         if {$::GX::Engine3D::pendingBackend ne ""} {
             after idle ::GX::Engine3D::resumeBackend
         }
@@ -486,6 +492,14 @@ proc ::GX::Engine3D::column {datasetId variableId} {
 proc ::GX::Engine3D::preparedScene {scene} {
     set layers [dict get $scene layers]
     dict for {id layer} $layers {
+        if {[::GX::datasetPublicationV2DictDefault $layer texture {}] ne {}} {
+            set descriptor [::GX::native3DLayerTextureValidate [dict get $layer texture] $layer]
+            set resource [dict get $descriptor resource]
+            set relative [::GX::_native3DPlanarArtifact $resource]
+            dict set descriptor source_path [::GX::viewerArtifactResolve $relative [dict get $resource sha256]]
+            dict set layer texture $descriptor
+            dict set layers $id $layer
+        }
         if {[dict get $layer source_mode] ne "dataset"} continue
         set ds [dict get $layer dataset_id]
         foreach axis {x y z} {
@@ -541,7 +555,7 @@ proc ::GX::Engine3D::displayNativePng {path} {
         set photo [image create photo -file $path]
         $window.canvas delete all
         $window.canvas create image 0 0 -anchor nw -image $photo -tags native_image
-        $window.canvas configure -scrollregion {0 0 960 640}
+        $window.canvas configure -scrollregion [list 0 0 [image width $photo] [image height $photo]]
     }
 }
 proc ::GX::Engine3D::gizmoImageRequest {request} {
@@ -573,8 +587,10 @@ proc ::GX::Engine3D::renderScene {scene {destination ""} {stage full}} {
     set status "Rendering..."
     set cancelRequested 0
     set stagedPng "${destination}.stage.[pid].[clock clicks].png"
+    lassign [hostViewportSize] viewportWidth viewportHeight
+    set ::GX::Engine3D::renderedSize [list $viewportWidth $viewportHeight]
     try {
-    if {[catch {set result [rpc [list render $prepared $stagedPng 960 640 $stage]]} first] && \
+    if {[catch {set result [rpc [list render $prepared $stagedPng $viewportWidth $viewportHeight $stage]]} first] && \
             [dict get $graphics execution] eq "Auto" && !$::GX::Engine3D::workerSoftware && \
             [regexp {^(render scene:|create pixel target:|Native renderer worker)} $first]} {
             if {$cancelRequested} {error "Rendering cancelled"}
@@ -583,7 +599,7 @@ proc ::GX::Engine3D::renderScene {scene {destination ""} {stage full}} {
             catch {file delete -- $stagedPng}
             set ::GX::Engine3D::workerSoftware 1
             set status "Retrying with Mesa llvmpipe..."
-            if {[catch {set result [rpc [list render $prepared $stagedPng 960 640 $stage]]} retry]} {
+            if {[catch {set result [rpc [list render $prepared $stagedPng $viewportWidth $viewportHeight $stage]]} retry]} {
                 error "Native render failed ($first); Mesa llvmpipe retry failed: $retry"
             }
         } elseif {![info exists result]} {
@@ -790,6 +806,7 @@ proc ::GX::Engine3D::pick {x y} {
         return [dict create hit 0]
     }
     set latestPick [rpc [list pick $x $y]]
+    dict set latestPick viewport_xy [list $x $y]
     if {[dict get $latestPick hit]} {
         set status "Picked [dict get $latestPick layer_id] at [dict get $latestPick world_point]"
         set ::GX::Engine3D::selectedLayer [dict get $latestPick layer_id]
@@ -1337,7 +1354,7 @@ proc ::GX::Engine3D::chooseArtifact {} {
     set path [tk_getOpenFile -filetypes {{3D {*.stl *.obj *.step *.stp *.vtp *.vtu *.vti}} {All {*}}}]
     if {$path eq ""} return
     if {[string equal -nocase [file extension $path] .vti]} {
-        set dialog .gx3de_viewer.vti
+        set dialog $::GX::Engine3D::window.vti
         if {[winfo exists $dialog]} {destroy $dialog}
         toplevel $dialog
         wm title $dialog "VTI scalar presentation"
@@ -1353,11 +1370,11 @@ proc ::GX::Engine3D::chooseArtifact {} {
         ttk::button $dialog.add -text "Add isosurface" -command {::GX::Engine3D::showError {
             ::GX::Engine3D::addArtifactAndRender $::GX::Engine3D::vtiPath isosurface \
                 $::GX::Engine3D::vtiScalar $::GX::Engine3D::vtiIsovalues
-            destroy .gx3de_viewer.vti
+            destroy $::GX::Engine3D::window.vti
         }}
         ttk::button $dialog.addField -text "Add scalar/vector field" -command {::GX::Engine3D::showError {
             ::GX::Engine3D::addArtifactAndRender $::GX::Engine3D::vtiPath surface
-            destroy .gx3de_viewer.vti
+            destroy $::GX::Engine3D::window.vti
         }}
         ttk::label $dialog.transferLabel -text "Volume transfer scalar,R,G,B,opacity (; separated)"
         ttk::entry $dialog.transfer -textvariable ::GX::Engine3D::vtiVolumeTransfer
@@ -1367,7 +1384,7 @@ proc ::GX::Engine3D::chooseArtifact {} {
             ::GX::Engine3D::addArtifactAndRender $::GX::Engine3D::vtiPath volume \
                 $::GX::Engine3D::vtiScalar "" $::GX::Engine3D::vtiVolumeTransfer \
                 $::GX::Engine3D::vtiVolumeStep
-            destroy .gx3de_viewer.vti
+            destroy $::GX::Engine3D::window.vti
         }}
         pack $dialog.scalarLabel $dialog.scalar $dialog.valuesLabel $dialog.values $dialog.add $dialog.addField \
             $dialog.transferLabel $dialog.transfer $dialog.stepLabel $dialog.step $dialog.addVolume -fill x
@@ -1405,7 +1422,7 @@ proc ::GX::Engine3D::chooseDataset {} {
             [expr {$::GX::Engine3D::datasetVx eq "" ? {} : \
                 [list $::GX::Engine3D::datasetVx $::GX::Engine3D::datasetVy $::GX::Engine3D::datasetVz]}] \
             $::GX::Engine3D::datasetRadius $::GX::Engine3D::datasetOpacity
-        destroy .gx3de_viewer.dataset
+        destroy $::GX::Engine3D::window.dataset
         ::GX::Engine3D::rerender
     }]
     grid $dialog.add -row $row -column 1 -sticky ew
@@ -1601,9 +1618,12 @@ proc ::GX::Engine3D::addFieldDefinition {} {
 proc ::GX::Engine3D::panel {{raiseWindow 1}} {
     variable window
     if {[winfo exists $window]} {if {$raiseWindow} {raise $window};return $window}
-    toplevel $window
-    wm title $window $::GX::Engine3D::windowTitle
-    wm geometry $window 1510x820
+    if {$::GX::Engine3D::embedded} {ttk::frame $window} else {
+        toplevel $window
+        wm title $window $::GX::Engine3D::windowTitle
+        wm geometry $window 1510x820
+    }
+    bind $window <Destroy> [list ::GX::Engine3D::hostDestroyed $window %W]
     ttk::frame $window.side
     pack $window.side -side left -fill y -padx 4 -pady 4
     canvas $window.side.scroll -width 460 -highlightthickness 0 \
@@ -1625,6 +1645,8 @@ proc ::GX::Engine3D::panel {{raiseWindow 1}} {
     bind $window.side.scroll <Button-5> [list $window.side.scroll yview scroll 3 units]
     canvas $window.canvas -width 960 -height 640 -background black
     pack $window.canvas -side left -fill both -expand 1
+    if {$::GX::Engine3D::photo ne {}} {$window.canvas create image 0 0 -anchor nw -image $::GX::Engine3D::photo -tags native_image}
+    bind $window.canvas <Configure> [list ::GX::Engine3D::hostResizeSchedule %w %h]
     bind $window.canvas <ButtonPress-1> {::GX::Engine3D::showError [list ::GX::Engine3D::beginCanvasDrag %x %y]}
     bind $window.canvas <B1-Motion> {::GX::Engine3D::showError [list ::GX::Engine3D::planeMotion %x %y];::GX::Engine3D::showError [list ::GX::Engine3D::gizmoMotion %x %y];::GX::Engine3D::showError [list ::GX::Engine3D::cameraMotion %x %y]}
     bind $window.canvas <ButtonRelease-1> {::GX::Engine3D::showError [list ::GX::Engine3D::endDrag %x %y]}
@@ -1870,12 +1892,15 @@ proc ::GX::Engine3D::panel {{raiseWindow 1}} {
             set ::GX::Engine3D::$variable [dict get $timeline $key]
         }
     }
-    wm protocol $window WM_DELETE_WINDOW ::GX::Engine3D::close
+    if {!$::GX::Engine3D::embedded} {wm protocol $window WM_DELETE_WINDOW ::GX::Engine3D::close}
     if {$::GX::Engine3D::panelHook ne {}} {uplevel #0 [list {*}$::GX::Engine3D::panelHook $window]}
     refreshLayers
     return $window
 }
 proc ::GX::Engine3D::close {} {
+    if {$::GX::Engine3D::hostWidgetChanging} return
+    incr ::GX::Engine3D::mountGeneration
+    if {$::GX::Engine3D::resizePending ne {}} {catch {after cancel $::GX::Engine3D::resizePending};set ::GX::Engine3D::resizePending {}}
     variable scientificDocumentId
     if {[info exists scientificDocumentId]&&$scientificDocumentId ne {}} {catch {::GX::PlotDatasetAPIv4::saveInteractivePresentation $scientificDocumentId};set scientificDocumentId {}}
     variable window
@@ -1901,7 +1926,9 @@ proc ::GX::Engine3D::close {} {
     set ::GX::Engine3D::gizmoActive 0
     incr ::GX::Engine3D::renderGeneration
     if {$photo ne ""} {image delete $photo;set photo ""}
-    if {[winfo exists $window]} {destroy $window}
+    set ::GX::Engine3D::hostWidgetChanging 1
+    try {if {[winfo exists $window]} {destroy $window}} finally {set ::GX::Engine3D::hostWidgetChanging 0}
+    set window .gx3de_viewer;set ::GX::Engine3D::embedded 0
     catch {file delete -- [tempPng]}
     set lastPng ""
 }
@@ -1960,3 +1987,75 @@ proc ::GX::native3DOpenScientificDocument {id} {
     dict set scene dataset_private_context {}
     return [::GX::Engine3D::backend open $scene]
 }
+
+# One editable Engine3D controller can be mounted in one arbitrary Tk owner.
+# Suspend moves widgets only; Scene, worker, camera, photo and edit hooks remain
+# under their existing owners. It is not an independent host/scene registry.
+proc ::GX::native3DGuiHostMount {parent module provider {callbacks {}}} {
+    if {![winfo exists $parent]} {error {Native3D mount parent no longer exists}}
+    if {$::GX::Engine3D::workerBusy} {error {Finish or cancel the active Native3D request before changing its host}}
+    ::GX::Engine3D::configureHost $module $provider $callbacks
+    set target [expr {$parent eq "." ? ".native3d" : "$parent.native3d"}]
+    if {$::GX::Engine3D::window eq $target && [winfo exists $target]} {return $target}
+    if {[winfo exists $target]} {error {Native3D mount destination already exists}}
+    ::GX::Engine3D::hostRemoveWidget
+    set ::GX::Engine3D::window $target;set ::GX::Engine3D::embedded 1
+    incr ::GX::Engine3D::mountGeneration
+    return [::GX::Engine3D::panel 0]
+}
+proc ::GX::Engine3D::hostRemoveWidget {} {
+    variable window;variable resizePending
+    if {$resizePending ne {}} {catch {after cancel $resizePending};set resizePending {}}
+    set ::GX::Engine3D::hostWidgetChanging 1
+    try {if {[winfo exists $window]} {destroy $window}} finally {set ::GX::Engine3D::hostWidgetChanging 0}
+}
+proc ::GX::native3DGuiHostSuspend {} {
+    if {$::GX::Engine3D::workerBusy || $::GX::Engine3D::gizmoActive || $::GX::Engine3D::cameraQueue ne {} || $::GX::Engine3D::pendingBackend ne {}} {error {Finish or cancel the current Native3D gesture/request before switching views}}
+    set receipt [dict create api_id NATIVE_3D_GUI_HOST_STATE_v1 session_token [interactiveDocumentSessionToken] module_id [::GX::Engine3D::ownerModule] viewer_id [::GX::Engine3D::ownerProvider] worker_generation $::GX::Engine3D::workerGeneration view [viewerSceneGet [::GX::Engine3D::ownerModule] [::GX::Engine3D::ownerProvider]] selected_layer $::GX::Engine3D::selectedLayer]
+    ::GX::Engine3D::hostRemoveWidget
+    set ::GX::Engine3D::window .gx3de_suspended
+    dict set receipt mount_generation [incr ::GX::Engine3D::mountGeneration]
+    return $receipt
+}
+proc ::GX::native3DGuiHostResume {parent receipt} {
+    if {[dict get $receipt api_id] ne "NATIVE_3D_GUI_HOST_STATE_v1" || [dict get $receipt session_token] ne [interactiveDocumentSessionToken]} {error {Native3D suspended host belongs to a previous Session lifetime}}
+    if {[dict get $receipt mount_generation]!=$::GX::Engine3D::mountGeneration || [dict get $receipt worker_generation]!=$::GX::Engine3D::workerGeneration || [dict get $receipt module_id] ne [::GX::Engine3D::ownerModule] || [dict get $receipt viewer_id] ne [::GX::Engine3D::ownerProvider]} {error {Native3D suspended controller was closed or replaced}}
+    if {[viewerSceneGet [dict get $receipt module_id] [dict get $receipt viewer_id]] ne [dict get $receipt view]} {error {Native3D view changed while suspended; inspect its current state explicitly}}
+    set callbacks {};foreach key {panel close edit selection} {dict set callbacks $key [set ::GX::Engine3D::${key}Hook]}
+    set widget [native3DGuiHostMount $parent [dict get $receipt module_id] [dict get $receipt viewer_id] $callbacks]
+    set ::GX::Engine3D::selectedLayer [dict get $receipt selected_layer]
+    ::GX::Engine3D::refreshLayers
+    return $widget
+}
+proc ::GX::Engine3D::hostDestroyed {owner widget} {
+    if {$widget eq $owner && !$::GX::Engine3D::hostWidgetChanging && $owner eq $::GX::Engine3D::window} {close}
+}
+proc ::GX::Engine3D::hostViewportSize {} {
+    set canvas $::GX::Engine3D::window.canvas
+    if {![winfo exists $canvas] || [winfo width $canvas]<16 || [winfo height $canvas]<16} {return {960 640}}
+    return [list [expr {max(160,min(4096,[winfo width $canvas]))}] [expr {max(120,min(4096,[winfo height $canvas]))}]]
+}
+proc ::GX::Engine3D::hostResizeSchedule {width height} {
+    variable resizePending
+    if {$width<160||$height<120} return
+    if {$resizePending ne {}} {catch {after cancel $resizePending}}
+    set resizePending [after 150 ::GX::Engine3D::hostResize]
+}
+proc ::GX::Engine3D::hostResize {} {
+    variable resizePending;variable worker;variable workerBusy;variable renderedSize
+    set resizePending {}
+    if {![winfo exists $::GX::Engine3D::window.canvas] || $worker eq {}} return
+    if {$workerBusy} {set resizePending busy;return}
+    if {[hostViewportSize] eq $renderedSize || $::GX::Engine3D::photo eq {}} return
+    lassign [hostViewportSize] width height
+    set destination [tempPng];set staged "$destination.resize.[pid].[clock clicks].png"
+    try {
+        rpc [list viewport $width $height $staged]
+        if {![pngComplete $staged]} {error {Native viewport resize did not produce a complete frame}}
+        file rename -force -- $staged $destination
+        set renderedSize [list $width $height]
+        displayNativePng $destination
+    } on error {message opts} {set ::GX::Engine3D::status "Viewport resize: $message"} finally {catch {file delete -- $staged}}
+}
+
+source [file join [file dirname [info script]] native3d_texture_v1.tcl]

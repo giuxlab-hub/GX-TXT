@@ -1,3 +1,9 @@
+# Numeric integration changes
+
+##1.61.0
+
+Add bounded public expression_evaluate/dataset_expression/expression_analyze using existing CORE parser/units and Numeric root/minimization owners, typed Tcl/Python/Octave interfaces and explicit resource/classification limits. Review the complete current Numeric manual, remove stale release-task commentary and correct obsolete availability statements without changing scientific contracts.
+
 ## 1.60.1
 
 Accept exact zero pixel localization and propagated zero marginal variance in

@@ -187,6 +187,33 @@ proc ::GX::NumericAPIv1::callOperation {id operands {options {kind struct fields
     set lastResultTypes [dict get $result types]
     return [dict get $result values]
 }
+# Canonical identity facade: the public caller supplies Dataset/Variable IDs;
+# trusted transport resolves the current Session privately for its CORE reader.
+proc ::GX::NumericAPIv1::expressionDataset {expression bindings parameters options} {
+    set nodes {}
+    dict for {symbol binding} $bindings {
+        if {[lsort [dict keys $binding]] ne {dataset_id variable_id}} {_error {Expression bindings require exactly Dataset and Variable identities}}
+        set fields {};dict for {key value} $binding {dict set fields $key [::GX::ScientificTransportv1::text $value]}
+        dict set nodes $symbol [::GX::ScientificTransportv1::struct $fields]
+    }
+    set parameterNodes {}
+    dict for {symbol parameter} $parameters {
+        if {[lsort [dict keys $parameter]] ne {unit value}} {_error {Expression parameters require scalar value and explicit unit}}
+        set value [dict get $parameter value]
+        if {[string is entier -strict $value]&&abs($value)>9007199254740992} {_error {Expression integer input is outside exact binary64 range}}
+        dict set parameterNodes $symbol [::GX::ScientificTransportv1::struct [dict create \
+            value [::GX::ScientificTransportv1::array {1 1} [list $value]] unit [::GX::ScientificTransportv1::text [dict get $parameter unit]]]]
+    }
+    set optionNodes {}
+    dict for {key value} $options {
+        if {$key eq {output_unit}} {dict set optionNodes $key [::GX::ScientificTransportv1::text $value]} \
+        elseif {$key in {start count}} {dict set optionNodes $key [::GX::ScientificTransportv1::array {1 1} [list $value]]} \
+        else {_error "Unknown Dataset expression option '$key'"}
+    }
+    return [callOperation dataset_expression [list [::GX::ScientificTransportv1::text [::GX::sessionInspectionCurrentSession]] \
+        [::GX::ScientificTransportv1::text $expression] [::GX::ScientificTransportv1::struct $nodes] \
+        [::GX::ScientificTransportv1::struct $parameterNodes]] [::GX::ScientificTransportv1::struct $optionNodes]]
+}
 proc ::GX::NumericAPIv1::callOperationCaptured {document id operands context {options {kind struct fields {}}} {provenance {}}} {
     ::GX::interactiveDocumentRead $document
     set options [_operationOptions $id $operands $options]

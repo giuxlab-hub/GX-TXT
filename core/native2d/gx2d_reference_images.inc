@@ -1,4 +1,28 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
+static long double image_roi_cross(gx2d_point a,gx2d_point b,gx2d_point c){return ((long double)b.x-a.x)*((long double)c.y-a.y)-((long double)b.y-a.y)*((long double)c.x-a.x);}
+static int image_roi_on(gx2d_point a,gx2d_point b,gx2d_point p){return image_roi_cross(a,b,p)==0&&p.x>=fmin(a.x,b.x)&&p.x<=fmax(a.x,b.x)&&p.y>=fmin(a.y,b.y)&&p.y<=fmax(a.y,b.y);}
+static int image_roi_intersects(gx2d_point a,gx2d_point b,gx2d_point c,gx2d_point d){long double x=image_roi_cross(a,b,c),y=image_roi_cross(a,b,d),u=image_roi_cross(c,d,a),v=image_roi_cross(c,d,b);return (((x<0&&y>0)||(x>0&&y<0))&&((u<0&&v>0)||(u>0&&v<0)))||image_roi_on(a,b,c)||image_roi_on(a,b,d)||image_roi_on(c,d,a)||image_roi_on(c,d,b);}
+gx2d_status gx2d_image_roi_validate(const gx2d_scene *s,gx2d_id id,const gx2d_point *p,size_t n,gx2d_rect *clip,double *area,int *inside){
+    gx2d_reference_image image;gx2d_status code;size_t i,j;long double sum=0;gx2d_rect bounds;
+    if(!p||n<3||n>128||!clip||!area||!inside)return GX2D_INVALID;
+    code=gx2d_image_get(s,id,&image);if(code!=GX2D_OK)return code;
+    bounds=(gx2d_rect){p[0].x,p[0].y,p[0].x,p[0].y};
+    for(i=0;i<n;++i){gx2d_point a=p[i],b=p[(i+1)%n],c=p[(i+2)%n];if(!finite2(a))return GX2D_INVALID;
+        for(j=0;j<i;++j)if(a.x==p[j].x&&a.y==p[j].y)return GX2D_INVALID;
+        if(image_roi_cross(a,b,c)==0&&((long double)b.x-a.x)*((long double)c.x-b.x)+((long double)b.y-a.y)*((long double)c.y-b.y)<0)return GX2D_INVALID;
+        bounds.x0=fmin(bounds.x0,a.x);bounds.x1=fmax(bounds.x1,a.x);bounds.y0=fmin(bounds.y0,a.y);bounds.y1=fmax(bounds.y1,a.y);
+        sum+=((long double)a.x-p[0].x)*((long double)b.y-p[0].y)-((long double)b.x-p[0].x)*((long double)a.y-p[0].y);
+        for(j=i+1;j<n;++j){if(j==i+1||(i==0&&j==n-1))continue;if(image_roi_intersects(a,b,p[j],p[(j+1)%n]))return GX2D_INVALID;}
+    }
+    if(sum==0||!isfinite((double)(fabsl(sum)/2)))return GX2D_INVALID;*area=(double)(fabsl(sum)/2);if(*area==0)return GX2D_RANGE;
+    *inside=0;
+    gx2d_point corners[4]={{0,0},{image.width,0},{image.width,image.height},{0,image.height}};
+    for(i=0;i<n;++i){gx2d_point a=p[i],b=p[(i+1)%n];if(a.x>=0&&a.x<=image.width&&a.y>=0&&a.y<=image.height)*inside=1;
+        for(j=0;j<4;++j)if(image_roi_intersects(a,b,corners[j],corners[(j+1)%4]))*inside=1;
+    }
+    for(j=0;j<4&&!*inside;++j){int odd=0;for(i=0;i<n;++i){gx2d_point a=p[i],b=p[(i+1)%n];if((a.y>corners[j].y)!=(b.y>corners[j].y)){long double x=a.x+((long double)corners[j].y-a.y)*((long double)b.x-a.x)/((long double)b.y-a.y);if(x>corners[j].x)odd=!odd;}}if(odd)*inside=1;}
+    *clip=(gx2d_rect){fmax(0,fmin(image.width,bounds.x0)),fmax(0,fmin(image.height,bounds.y0)),fmax(0,fmin(image.width,bounds.x1)),fmax(0,fmin(image.height,bounds.y1))};return GX2D_OK;
+}
 /* Raster dimensions/calibration live on the existing object identity. Its
  * retained rectangle matrix and style are the sole transform/visibility state. */
 static int image_valid(const gx2d_reference_image *v){

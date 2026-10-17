@@ -1,5 +1,5 @@
 {
-  "framework_version": "0.9.8.10-dev-100",
+  "framework_version": "0.9.8.10-dev-101",
   "bridge_api_id": "OCTAVE_SCRIPT_BRIDGE_API_v1",
   "callback_contract": {
     "api_id": "SCRIPT_CALLBACK_API_v1",
@@ -2294,7 +2294,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/dataset_file_publication.py",
-        "sha256": "7a908b3c725309b39596bc5e286b4190c877e8d2482da3c7f6176753c64a99bf"
+        "sha256": "b0e40cfd3908377f7b451f0495a535b32d0421f528a769d19dc90de9dcf76cee"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -3771,6 +3771,219 @@
       "api_policy": {
         "status": "not_yet_bridged",
         "reason": "No current Script registration; public host API inspection is required"
+      }
+    },
+    {
+      "api_id": "ELECTROMAGNETICS_STUDIO_API_v1",
+      "api_version": 1,
+      "provider": "viewer.electromagnetics",
+      "status": "not_yet_bridged",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "operation_coverage": {},
+      "public_operations": {},
+      "api_policy": {
+        "status": "not_yet_bridged",
+        "reason": "No current Script registration; public host API inspection is required"
+      }
+    },
+    {
+      "api_id": "ELECTROMAGNETIC_SIMULATION_API_v1",
+      "api_version": 1,
+      "provider": "math.electromagnetic_simulation",
+      "provider_kind": "module",
+      "documentation_ref": "plugins/modules/math.electromagnetic_simulation/README.md",
+      "status": "already_script_callable",
+      "operations": [
+        "api_info",
+        "cancel",
+        "default_model",
+        "field_describe",
+        "job_status",
+        "list_models",
+        "load_model",
+        "publish",
+        "result_describe",
+        "result_preview",
+        "run_async",
+        "save_model",
+        "validate_model"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "api_info": [
+          "Octave",
+          "Python"
+        ],
+        "cancel": [
+          "Octave",
+          "Python"
+        ],
+        "default_model": [
+          "Octave",
+          "Python"
+        ],
+        "field_describe": [
+          "Octave",
+          "Python"
+        ],
+        "job_status": [
+          "Octave",
+          "Python"
+        ],
+        "list_models": [
+          "Octave",
+          "Python"
+        ],
+        "load_model": [
+          "Octave",
+          "Python"
+        ],
+        "publish": [
+          "Octave",
+          "Python"
+        ],
+        "result_describe": [
+          "Octave",
+          "Python"
+        ],
+        "result_preview": [
+          "Octave",
+          "Python"
+        ],
+        "run_async": [
+          "Octave",
+          "Python"
+        ],
+        "save_model": [
+          "Octave",
+          "Python"
+        ],
+        "validate_model": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "registration_source": {
+        "path": "plugins/modules/math.electromagnetic_simulation/api/script_bridge_binding.py",
+        "sha256": "9a5cdb10c955ee439588df26bb89ba2ff4035c85e9b2a2d310df7f7a200bcd0b"
+      },
+      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+      },
+      "operation_coverage": {
+        "api_info": {
+          "status": "script_callable",
+          "script_operation": "api_info"
+        },
+        "cancel": {
+          "status": "script_callable",
+          "script_operation": "cancel"
+        },
+        "default_model": {
+          "status": "script_callable",
+          "script_operation": "default_model"
+        },
+        "field_describe": {
+          "status": "script_callable",
+          "script_operation": "field_describe"
+        },
+        "job_status": {
+          "status": "script_callable",
+          "script_operation": "job_status"
+        },
+        "list_models": {
+          "status": "script_callable",
+          "script_operation": "list_models"
+        },
+        "load_model": {
+          "status": "script_callable",
+          "script_operation": "load_model"
+        },
+        "publish": {
+          "status": "script_callable",
+          "script_operation": "publish"
+        },
+        "result_describe": {
+          "status": "script_callable",
+          "script_operation": "result_describe"
+        },
+        "result_preview": {
+          "status": "script_callable",
+          "script_operation": "result_preview"
+        },
+        "run_async": {
+          "status": "script_callable",
+          "script_operation": "run_async"
+        },
+        "save_model": {
+          "status": "script_callable",
+          "script_operation": "save_model"
+        },
+        "validate_model": {
+          "status": "script_callable",
+          "script_operation": "validate_model"
+        }
+      },
+      "public_operations": {
+        "api_info": {
+          "status": "script_callable",
+          "script_operation": "api_info"
+        },
+        "cancel": {
+          "status": "script_callable",
+          "script_operation": "cancel"
+        },
+        "default_model": {
+          "status": "script_callable",
+          "script_operation": "default_model"
+        },
+        "field_describe": {
+          "status": "script_callable",
+          "script_operation": "field_describe"
+        },
+        "job_status": {
+          "status": "script_callable",
+          "script_operation": "job_status"
+        },
+        "list_models": {
+          "status": "script_callable",
+          "script_operation": "list_models"
+        },
+        "load_model": {
+          "status": "script_callable",
+          "script_operation": "load_model"
+        },
+        "publish": {
+          "status": "script_callable",
+          "script_operation": "publish"
+        },
+        "result_describe": {
+          "status": "script_callable",
+          "script_operation": "result_describe"
+        },
+        "result_preview": {
+          "status": "script_callable",
+          "script_operation": "result_preview"
+        },
+        "run_async": {
+          "status": "script_callable",
+          "script_operation": "run_async"
+        },
+        "save_model": {
+          "status": "script_callable",
+          "script_operation": "save_model"
+        },
+        "validate_model": {
+          "status": "script_callable",
+          "script_operation": "validate_model"
+        }
       }
     },
     {
@@ -5791,6 +6004,21 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
     {
+      "api_id": "MATHEMATICS_EXPLORER_API_v1",
+      "api_version": 1,
+      "provider": "viewer.mathematics_explorer",
+      "status": "not_yet_bridged",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "operation_coverage": {},
+      "public_operations": {},
+      "api_policy": {
+        "status": "not_yet_bridged",
+        "reason": "No current Script registration; public host API inspection is required"
+      }
+    },
+    {
       "api_id": "MODULE_API_v1",
       "api_version": 1,
       "provider": "module",
@@ -6154,6 +6382,17 @@
         "polar",
         "polar_bulk",
         "primitive_publish",
+        "raster_freeze",
+        "raster_layer_get",
+        "raster_layer_update",
+        "raster_prepare",
+        "raster_restore",
+        "raster_roi_get",
+        "raster_roi_remove",
+        "raster_roi_set",
+        "raster_save",
+        "raster_snapshot",
+        "raster_submit",
         "reference",
         "reference_connected",
         "reference_point_index",
@@ -6620,6 +6859,50 @@
           "Python"
         ],
         "primitive_publish": [
+          "Octave",
+          "Python"
+        ],
+        "raster_freeze": [
+          "Octave",
+          "Python"
+        ],
+        "raster_layer_get": [
+          "Octave",
+          "Python"
+        ],
+        "raster_layer_update": [
+          "Octave",
+          "Python"
+        ],
+        "raster_prepare": [
+          "Octave",
+          "Python"
+        ],
+        "raster_restore": [
+          "Octave",
+          "Python"
+        ],
+        "raster_roi_get": [
+          "Octave",
+          "Python"
+        ],
+        "raster_roi_remove": [
+          "Octave",
+          "Python"
+        ],
+        "raster_roi_set": [
+          "Octave",
+          "Python"
+        ],
+        "raster_save": [
+          "Octave",
+          "Python"
+        ],
+        "raster_snapshot": [
+          "Octave",
+          "Python"
+        ],
+        "raster_submit": [
           "Octave",
           "Python"
         ],
@@ -7708,6 +7991,50 @@
         "axis_presentation": {
           "status": "script_callable",
           "script_operation": "axis_presentation"
+        },
+        "raster_freeze": {
+          "status": "script_callable",
+          "script_operation": "raster_freeze"
+        },
+        "raster_layer_get": {
+          "status": "script_callable",
+          "script_operation": "raster_layer_get"
+        },
+        "raster_layer_update": {
+          "status": "script_callable",
+          "script_operation": "raster_layer_update"
+        },
+        "raster_prepare": {
+          "status": "script_callable",
+          "script_operation": "raster_prepare"
+        },
+        "raster_restore": {
+          "status": "script_callable",
+          "script_operation": "raster_restore"
+        },
+        "raster_roi_get": {
+          "status": "script_callable",
+          "script_operation": "raster_roi_get"
+        },
+        "raster_roi_remove": {
+          "status": "script_callable",
+          "script_operation": "raster_roi_remove"
+        },
+        "raster_roi_set": {
+          "status": "script_callable",
+          "script_operation": "raster_roi_set"
+        },
+        "raster_save": {
+          "status": "script_callable",
+          "script_operation": "raster_save"
+        },
+        "raster_snapshot": {
+          "status": "script_callable",
+          "script_operation": "raster_snapshot"
+        },
+        "raster_submit": {
+          "status": "script_callable",
+          "script_operation": "raster_submit"
         }
       },
       "documented_public_commands": [
@@ -8554,6 +8881,50 @@
         "axis_presentation": {
           "status": "script_callable",
           "script_operation": "axis_presentation"
+        },
+        "raster_freeze": {
+          "status": "script_callable",
+          "script_operation": "raster_freeze"
+        },
+        "raster_layer_get": {
+          "status": "script_callable",
+          "script_operation": "raster_layer_get"
+        },
+        "raster_layer_update": {
+          "status": "script_callable",
+          "script_operation": "raster_layer_update"
+        },
+        "raster_prepare": {
+          "status": "script_callable",
+          "script_operation": "raster_prepare"
+        },
+        "raster_restore": {
+          "status": "script_callable",
+          "script_operation": "raster_restore"
+        },
+        "raster_roi_get": {
+          "status": "script_callable",
+          "script_operation": "raster_roi_get"
+        },
+        "raster_roi_remove": {
+          "status": "script_callable",
+          "script_operation": "raster_roi_remove"
+        },
+        "raster_roi_set": {
+          "status": "script_callable",
+          "script_operation": "raster_roi_set"
+        },
+        "raster_save": {
+          "status": "script_callable",
+          "script_operation": "raster_save"
+        },
+        "raster_snapshot": {
+          "status": "script_callable",
+          "script_operation": "raster_snapshot"
+        },
+        "raster_submit": {
+          "status": "script_callable",
+          "script_operation": "raster_submit"
         }
       },
       "native_operation_policy": {
@@ -9291,7 +9662,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/native2d_geometry.py",
-        "sha256": "e475f7e683e01de978b22f1d499ade5366c5aacfce85e3e45642693edc43fe4a"
+        "sha256": "2a6ce2ee2892b32d991cce7923ae5358f6460647ae78645438f3f12f940620b0"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -10822,6 +11193,7 @@
         "curve_model_project",
         "curve_model_residual",
         "dataset_baseline",
+        "dataset_expression",
         "dataset_nonlinear_fit",
         "dataset_polynomial_fit",
         "dataset_smooth",
@@ -10831,7 +11203,9 @@
         "digitization_covariance",
         "digitization_uncertainty",
         "event_period",
+        "expression_analyze",
         "expression_dimensions",
+        "expression_evaluate",
         "fft_spectrum_quality",
         "fit_bootstrap",
         "fit_bootstrap_draw",
@@ -11016,6 +11390,10 @@
           "Octave",
           "Python"
         ],
+        "dataset_expression": [
+          "Octave",
+          "Python"
+        ],
         "dataset_nonlinear_fit": [
           "Octave",
           "Python"
@@ -11052,7 +11430,15 @@
           "Octave",
           "Python"
         ],
+        "expression_analyze": [
+          "Octave",
+          "Python"
+        ],
         "expression_dimensions": [
+          "Octave",
+          "Python"
+        ],
+        "expression_evaluate": [
           "Octave",
           "Python"
         ],
@@ -11961,6 +12347,18 @@
         "window_metrics": {
           "status": "script_callable",
           "script_operation": "window_metrics"
+        },
+        "dataset_expression": {
+          "status": "script_callable",
+          "script_operation": "dataset_expression"
+        },
+        "expression_analyze": {
+          "status": "script_callable",
+          "script_operation": "expression_analyze"
+        },
+        "expression_evaluate": {
+          "status": "script_callable",
+          "script_operation": "expression_evaluate"
         }
       },
       "public_operations": {
@@ -12475,6 +12873,18 @@
         "window_metrics": {
           "status": "script_callable",
           "script_operation": "window_metrics"
+        },
+        "dataset_expression": {
+          "status": "script_callable",
+          "script_operation": "dataset_expression"
+        },
+        "expression_analyze": {
+          "status": "script_callable",
+          "script_operation": "expression_analyze"
+        },
+        "expression_evaluate": {
+          "status": "script_callable",
+          "script_operation": "expression_evaluate"
         }
       },
       "documentation_ref": "plugins/modules/math.numeric/NUMERIC_API_v1.md",
@@ -12485,7 +12895,7 @@
       "provider_kind": "module",
       "registration_source": {
         "path": "plugins/modules/math.numeric/api/script_bridge_binding.py",
-        "sha256": "79415cf7a62d33eb4081a3863d4d57a1002954422407d1cab251f57ee717b8a2"
+        "sha256": "9142edf7389d7bd5953faea8af37a61fa59867f388e3a0fb33be95cf3ef4c7b4"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -14211,6 +14621,7 @@
         "apply_spec",
         "artifacts",
         "build_scene",
+        "cell_field_spec",
         "create_plot",
         "delete_plot",
         "interactive_representations",
@@ -14263,6 +14674,10 @@
           "Python"
         ],
         "build_scene": [
+          "Octave",
+          "Python"
+        ],
+        "cell_field_spec": [
           "Octave",
           "Python"
         ],
@@ -14385,7 +14800,7 @@
       },
       "registration_source": {
         "path": "plugins/modules/plot.dataset/api/script_bridge_binding_v4.py",
-        "sha256": "0f6d0e3a0db11c031680ef238ea694c8dd4aacfc8a3fdde38d9954c63512254a"
+        "sha256": "4c0d14728f5be90aad149e0b7c342f048ee1636d9fb7cdd5c85ba2867c0cdabd"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
@@ -14528,6 +14943,10 @@
         "validate_spec": {
           "status": "script_callable",
           "script_operation": "validate_spec"
+        },
+        "cell_field_spec": {
+          "status": "script_callable",
+          "script_operation": "cell_field_spec"
         }
       },
       "public_operations": {
@@ -14666,6 +15085,10 @@
         "validate_spec": {
           "status": "script_callable",
           "script_operation": "validate_spec"
+        },
+        "cell_field_spec": {
+          "status": "script_callable",
+          "script_operation": "cell_field_spec"
         }
       }
     },
@@ -15518,6 +15941,217 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
     {
+      "api_id": "SCIENTIFIC_EXECUTION_API_v1",
+      "api_version": 1,
+      "provider": "scientific_execution",
+      "provider_kind": "core",
+      "documentation_ref": "docs/api/SCIENTIFIC_EXECUTION_API_v1.md",
+      "status": "already_script_callable",
+      "operations": [
+        "cancel",
+        "describe",
+        "discard",
+        "discover",
+        "freeze_resource",
+        "import_results",
+        "log",
+        "outputs",
+        "prepare",
+        "read_output",
+        "read_records",
+        "reconnect",
+        "status",
+        "submit"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "cancel": [
+          "Octave",
+          "Python"
+        ],
+        "describe": [
+          "Octave",
+          "Python"
+        ],
+        "discard": [
+          "Octave",
+          "Python"
+        ],
+        "discover": [
+          "Octave",
+          "Python"
+        ],
+        "freeze_resource": [
+          "Octave",
+          "Python"
+        ],
+        "import_results": [
+          "Octave",
+          "Python"
+        ],
+        "log": [
+          "Octave",
+          "Python"
+        ],
+        "outputs": [
+          "Octave",
+          "Python"
+        ],
+        "prepare": [
+          "Octave",
+          "Python"
+        ],
+        "read_output": [
+          "Octave",
+          "Python"
+        ],
+        "read_records": [
+          "Octave",
+          "Python"
+        ],
+        "reconnect": [
+          "Octave",
+          "Python"
+        ],
+        "status": [
+          "Octave",
+          "Python"
+        ],
+        "submit": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "registration_source": {
+        "path": "core/script_bindings/scientific_execution.py",
+        "sha256": "733f7efbedf3c3a617fcd53ea81ef3176181b38e003f3fb0a4ab683de28f5335"
+      },
+      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+      },
+      "operation_coverage": {
+        "cancel": {
+          "status": "script_callable",
+          "script_operation": "cancel"
+        },
+        "describe": {
+          "status": "script_callable",
+          "script_operation": "describe"
+        },
+        "discard": {
+          "status": "script_callable",
+          "script_operation": "discard"
+        },
+        "discover": {
+          "status": "script_callable",
+          "script_operation": "discover"
+        },
+        "freeze_resource": {
+          "status": "script_callable",
+          "script_operation": "freeze_resource"
+        },
+        "import_results": {
+          "status": "script_callable",
+          "script_operation": "import_results"
+        },
+        "log": {
+          "status": "script_callable",
+          "script_operation": "log"
+        },
+        "outputs": {
+          "status": "script_callable",
+          "script_operation": "outputs"
+        },
+        "prepare": {
+          "status": "script_callable",
+          "script_operation": "prepare"
+        },
+        "read_output": {
+          "status": "script_callable",
+          "script_operation": "read_output"
+        },
+        "read_records": {
+          "status": "script_callable",
+          "script_operation": "read_records"
+        },
+        "reconnect": {
+          "status": "script_callable",
+          "script_operation": "reconnect"
+        },
+        "status": {
+          "status": "script_callable",
+          "script_operation": "status"
+        },
+        "submit": {
+          "status": "script_callable",
+          "script_operation": "submit"
+        }
+      },
+      "public_operations": {
+        "cancel": {
+          "status": "script_callable",
+          "script_operation": "cancel"
+        },
+        "describe": {
+          "status": "script_callable",
+          "script_operation": "describe"
+        },
+        "discard": {
+          "status": "script_callable",
+          "script_operation": "discard"
+        },
+        "discover": {
+          "status": "script_callable",
+          "script_operation": "discover"
+        },
+        "freeze_resource": {
+          "status": "script_callable",
+          "script_operation": "freeze_resource"
+        },
+        "import_results": {
+          "status": "script_callable",
+          "script_operation": "import_results"
+        },
+        "log": {
+          "status": "script_callable",
+          "script_operation": "log"
+        },
+        "outputs": {
+          "status": "script_callable",
+          "script_operation": "outputs"
+        },
+        "prepare": {
+          "status": "script_callable",
+          "script_operation": "prepare"
+        },
+        "read_output": {
+          "status": "script_callable",
+          "script_operation": "read_output"
+        },
+        "read_records": {
+          "status": "script_callable",
+          "script_operation": "read_records"
+        },
+        "reconnect": {
+          "status": "script_callable",
+          "script_operation": "reconnect"
+        },
+        "status": {
+          "status": "script_callable",
+          "script_operation": "status"
+        },
+        "submit": {
+          "status": "script_callable",
+          "script_operation": "submit"
+        }
+      }
+    },
+    {
       "api_id": "SCIENTIFIC_IMAGE_INSPECTOR_API_v1",
       "api_version": 1,
       "provider": "viewer.scientific_image_inspector",
@@ -15530,6 +16164,113 @@
       "api_policy": {
         "status": "not_yet_bridged",
         "reason": "No current Script registration; public host API inspection is required"
+      }
+    },
+    {
+      "api_id": "SCIENTIFIC_IO_API_v1",
+      "api_version": 1,
+      "provider": "scientific_io",
+      "provider_kind": "core",
+      "documentation_ref": "docs/api/SCIENTIFIC_IO_API_v1.md",
+      "status": "already_script_callable",
+      "operations": [
+        "browse",
+        "capabilities",
+        "describe",
+        "export",
+        "import",
+        "read"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "browse": [
+          "Octave",
+          "Python"
+        ],
+        "capabilities": [
+          "Octave",
+          "Python"
+        ],
+        "describe": [
+          "Octave",
+          "Python"
+        ],
+        "export": [
+          "Octave",
+          "Python"
+        ],
+        "import": [
+          "Octave",
+          "Python"
+        ],
+        "read": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "registration_source": {
+        "path": "core/script_bindings/scientific_io.py",
+        "sha256": "2011a88697e881f17b5d8f0b3f6a184284cec53d00d6a951ebab63b652b10f7a"
+      },
+      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+      },
+      "operation_coverage": {
+        "browse": {
+          "status": "script_callable",
+          "script_operation": "browse"
+        },
+        "capabilities": {
+          "status": "script_callable",
+          "script_operation": "capabilities"
+        },
+        "describe": {
+          "status": "script_callable",
+          "script_operation": "describe"
+        },
+        "export": {
+          "status": "script_callable",
+          "script_operation": "export"
+        },
+        "import": {
+          "status": "script_callable",
+          "script_operation": "import"
+        },
+        "read": {
+          "status": "script_callable",
+          "script_operation": "read"
+        }
+      },
+      "public_operations": {
+        "browse": {
+          "status": "script_callable",
+          "script_operation": "browse"
+        },
+        "capabilities": {
+          "status": "script_callable",
+          "script_operation": "capabilities"
+        },
+        "describe": {
+          "status": "script_callable",
+          "script_operation": "describe"
+        },
+        "export": {
+          "status": "script_callable",
+          "script_operation": "export"
+        },
+        "import": {
+          "status": "script_callable",
+          "script_operation": "import"
+        },
+        "read": {
+          "status": "script_callable",
+          "script_operation": "read"
+        }
       }
     },
     {
@@ -20490,8 +21231,8 @@
     "validation": "dev097 actual Python/Octave Jobs verify default/query/grid, host-only override rejection and equal-aspect round trip; native/module auto-aspect verified by actual Preview consumer evidence183/186."
   },
   "verification_scope": "Registration and source/manifest inventory; this is not a claim that every operation was invoked",
-  "api_registration_count": 65,
-  "registered_operation_count": 1035,
+  "api_registration_count": 68,
+  "registered_operation_count": 1083,
   "provider_manifests": [
     {
       "module_id": "analysis.octave_script",
@@ -20539,7 +21280,7 @@
       "api_id": "CURVE_REPLICATE_GRAPHICS_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/curve.replicate_analysis/module.ini",
-      "manifest_sha256": "60f114fbb99fc7b3d4a3d2061483ede96d4899263ef1c01c2db29e31d813a278",
+      "manifest_sha256": "5b30fc4db6d7b105273b86ab28990a14c5d9b267ceb920e592206b8d77a8a9b6",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -20678,6 +21419,29 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "math.electromagnetic_simulation",
+      "api_id": "ELECTROMAGNETIC_SIMULATION_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/math.electromagnetic_simulation/module.ini",
+      "manifest_sha256": "dc0e52dc0b2a9768f086f9c8fcd17dc952720f97bf410f9deefca05b1288f6b9",
+      "script_registered": true,
+      "operations": [
+        "api_info",
+        "cancel",
+        "default_model",
+        "field_describe",
+        "job_status",
+        "list_models",
+        "load_model",
+        "publish",
+        "result_describe",
+        "result_preview",
+        "run_async",
+        "save_model",
+        "validate_model"
+      ]
+    },
+    {
       "module_id": "math.magnetics",
       "api_id": "MAGNETICS_API_v1",
       "api_version": 1,
@@ -20749,7 +21513,7 @@
       "api_id": "NUMERIC_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/math.numeric/module.ini",
-      "manifest_sha256": "4bbebd1a504fcbbda736cad0b9d764398f39852516352df8bfce7a317a3effee",
+      "manifest_sha256": "4ba2fef0db3dca469a89183e1cfdb6d447588691d0fc0c640852f2f0adf51ae6",
       "script_registered": true,
       "operations": [
         "array_binary",
@@ -20772,6 +21536,7 @@
         "curve_model_project",
         "curve_model_residual",
         "dataset_baseline",
+        "dataset_expression",
         "dataset_nonlinear_fit",
         "dataset_polynomial_fit",
         "dataset_smooth",
@@ -20781,7 +21546,9 @@
         "digitization_covariance",
         "digitization_uncertainty",
         "event_period",
+        "expression_analyze",
         "expression_dimensions",
+        "expression_evaluate",
         "fft_spectrum_quality",
         "fit_bootstrap",
         "fit_bootstrap_draw",
@@ -21026,7 +21793,7 @@
       "api_id": "PLOT_DATASET_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "e9731edf98602f9ef755a65661582b4c6100ab83fb6a9cb7aa550271c478aa75",
+      "manifest_sha256": "3c56895fbdfe322f69474dfecd41c49e3dbd7011fe36263165502b5c8e7bad5c",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -21056,7 +21823,7 @@
       "api_id": "PLOT_DATASET_API_v2",
       "api_version": 2,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "e9731edf98602f9ef755a65661582b4c6100ab83fb6a9cb7aa550271c478aa75",
+      "manifest_sha256": "3c56895fbdfe322f69474dfecd41c49e3dbd7011fe36263165502b5c8e7bad5c",
       "script_registered": true,
       "operations": [
         "api_info",
@@ -21072,7 +21839,7 @@
       "api_id": "PLOT_DATASET_API_v3",
       "api_version": 3,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "e9731edf98602f9ef755a65661582b4c6100ab83fb6a9cb7aa550271c478aa75",
+      "manifest_sha256": "3c56895fbdfe322f69474dfecd41c49e3dbd7011fe36263165502b5c8e7bad5c",
       "script_registered": true,
       "operations": [
         "add_panel",
@@ -21116,7 +21883,7 @@
       "api_id": "PLOT_DATASET_3D_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "e9731edf98602f9ef755a65661582b4c6100ab83fb6a9cb7aa550271c478aa75",
+      "manifest_sha256": "3c56895fbdfe322f69474dfecd41c49e3dbd7011fe36263165502b5c8e7bad5c",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -21143,7 +21910,7 @@
       "api_id": "PLOT_DATASET_API_v4",
       "api_version": 4,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "e9731edf98602f9ef755a65661582b4c6100ab83fb6a9cb7aa550271c478aa75",
+      "manifest_sha256": "3c56895fbdfe322f69474dfecd41c49e3dbd7011fe36263165502b5c8e7bad5c",
       "script_registered": true,
       "operations": [
         "add_panel",
@@ -21151,6 +21918,7 @@
         "apply_spec",
         "artifacts",
         "build_scene",
+        "cell_field_spec",
         "create_plot",
         "delete_plot",
         "interactive_representations",
@@ -21187,13 +21955,13 @@
       "api_id": "WORKBENCH_3D_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.3d_workbench/module.ini",
-      "manifest_sha256": "95ec563237452c99ef2bbedcee98b98e32c4cde5bdbb79d08ce898f0bb3a8fb0",
+      "manifest_sha256": "b5eeea98e5ee5955783b97c5a7d59ae9b2ec31b3d003f6bc82663e1c885bfe6c",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
       "reason": "No current Script registration; public host API inspection is required",
       "entrypoint": "plugins/modules/viewer.3d_workbench/api/workbench_3d_api_v1.tcl",
-      "entrypoint_sha256": "d42a6ffcffbc0b80fca07dbddfb49dd048ff7ccfc8014951327908a997e3ebdd",
+      "entrypoint_sha256": "bd3f8cba0c237610dd8aaad219f1f1169be49e974d358bea01c25298d495d7a9",
       "capabilities": [
         "viewer_backend",
         "native3d",
@@ -21373,7 +22141,7 @@
       "api_id": "CURVE_WORKBENCH_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_workbench/module.ini",
-      "manifest_sha256": "fb806a7edd1556e0b797f08b5594d817e1b791d7e2a4a9c2ff6cd79a9ac6137d",
+      "manifest_sha256": "04874ee63bc14a61a7b2bc5e35bce471e25f5777239fb470ca3a32c7df5f443e",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -21398,7 +22166,7 @@
       "api_id": "DATASET_CURVE_FIT_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.dataset_curve_fit/module.ini",
-      "manifest_sha256": "560eb67cf1446da4ae11920d38d75ab521f37cdbb3ec8f22e26933bb58f84c32",
+      "manifest_sha256": "058cdf5332aa35c8555b8d88769b128d04b14df0a2ae4b771231a68945f63701",
       "script_registered": true,
       "operations": [
         "dataset_suggestions",
@@ -21486,6 +22254,27 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "viewer.electromagnetics",
+      "api_id": "ELECTROMAGNETICS_STUDIO_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.electromagnetics/module.ini",
+      "manifest_sha256": "9b1474d39867797fe09c4c5efe1f2f6a436b130c1fd27a49e2cacf51c7d0d2ea",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.electromagnetics/api/electromagnetics_studio_api_v1.tcl",
+      "entrypoint_sha256": "7794636defaf5d3cf65a2d7029cc7d75521ae2a413d49987d55ab079810b436a",
+      "capabilities": [
+        "viewer_backend",
+        "electromagnetic_core_client",
+        "tk_notebook",
+        "gui_en"
+      ],
+      "namespace": "::GX::ElectromagneticsStudio",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
       "module_id": "viewer.interactive_curve_builder",
       "api_id": "INTERACTIVE_CURVE_BUILDER_API_v1",
       "api_version": 1,
@@ -21504,6 +22293,29 @@
         "dataset_publication"
       ],
       "namespace": "::GX::InteractiveCurveBuilder",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "viewer.mathematics_explorer",
+      "api_id": "MATHEMATICS_EXPLORER_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.mathematics_explorer/module.ini",
+      "manifest_sha256": "9ddcee3ae9dba341388f79f1557b5e3c0d56c365f5e2d16bf07fa7e6c56e247c",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.mathematics_explorer/api/mathematics_explorer_api_v1.tcl",
+      "entrypoint_sha256": "ef21918977ef1698f64696b652b5f2bd6c0d1f20305b8a89a5261a232b4361a1",
+      "capabilities": [
+        "viewer_backend",
+        "controlled_formula_ast",
+        "dimensionless_numerics",
+        "transient_plot",
+        "interactive_document",
+        "dataset_publication"
+      ],
+      "namespace": "::GX::MathematicsExplorer",
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {

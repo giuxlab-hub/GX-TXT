@@ -5302,10 +5302,31 @@ proc ::GX::documentationResolveApiRef {ref} {
     variable scriptDir
     set ref [string trim $ref]
     if {$ref eq ""} { return "" }
-    if {[file extension $ref] eq "" && ![string match */* $ref]} { append ref ".md" }
     if {[file pathtype $ref] ne "relative"} { return [file normalize $ref] }
     if {[string match */* $ref]} { return [file normalize [file join $scriptDir $ref]] }
-    return [file normalize [file join $scriptDir docs api $ref]]
+    set api [file rootname $ref]
+    set filename [expr {[file extension $ref] eq {}?"$ref.md":$ref}]
+    set common [file normalize [file join $scriptDir docs api $filename]]
+    if {[file isfile $common]} {return $common}
+    # Installed providers own their API manuals. Resolve descriptor declarations
+    # without activating scientific code; conflicting documents stay unavailable.
+    set paths {}
+    foreach module $::GX::moduleOrder {
+        set info [documentationDescriptorInfo module $module]
+        if {$info eq {}} continue
+        lassign $info descriptor d name
+        if {$api ni [splitList [descriptorValue $d public_apis ids {}]]} continue
+        set relative [descriptorValue $d public_api.$api documentation {}]
+        if {$relative eq {}||[file pathtype $relative] ne {relative}||{..} in [file split $relative]} continue
+        set ownerRoot [file normalize [file dirname $descriptor]]
+        set path [file normalize [file join $ownerRoot $relative]]
+        if {[string first "$ownerRoot/" "$path/"]!=0||![file isfile $path]||[file type $path] eq {link}} continue
+        lappend paths $path
+    }
+    set paths [lsort -unique $paths]
+    if {[llength $paths]==1} {return [lindex $paths 0]}
+    if {[llength $paths]>1} {return {}}
+    return $common
 }
 
 proc ::GX::documentationValidateOne {kind id} {

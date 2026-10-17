@@ -10,13 +10,15 @@ while {[gets stdin line] >= 0} {
     if {[catch {
         set command [lindex $line 0]
         set args [lrange $line 1 end]
-        if {$readonly&&$command ni {render graphics_probe focus_logical pick preset navcube_pick navcube_click navigate camera viewport scientific_axes export_png export_vector close}} {error {Read-only consultation worker rejects this operation}}
+        if {$readonly&&$command ni {capabilities render graphics_probe focus_logical pick preset navcube_pick navcube_click navigate camera viewport scientific_axes export_png export_vector close}} {error {Read-only consultation worker rejects this operation}}
         switch -- $command {
+            capabilities {if {[llength $args]} {error "capabilities takes no arguments"};set result [::GX3DEViewer::capabilities]}
             cad {if {[llength $args]!=3} {error "cad expects owner scope, action and request"};set result [::GX3DEViewer::cad {*}$args]}
             render {if {[llength $args] != 5} {error "render expects scene, PNG, width, height, stage"};set result [::GX3DEViewer::render {*}$args]}
             graphics_probe {if {[llength $args] != 1} {error "graphics_probe expects policy"};set result [::GX3DEViewer::graphics_probe {*}$args]}
             focus_logical {if {[llength $args]!=2} {error "focus_logical expects reference PNG"};set result [::GX3DEViewer::focus_logical {*}$args]}
             pick {if {[llength $args] != 2} {error "pick expects x,y"};set result [::GX3DEViewer::pick {*}$args]}
+            texture_anchor {if {[llength $args]!=5} {error "texture_anchor expects x,y,verified PNG,width,height"};set result [::GX3DEViewer::texture_anchor {*}$args]}
             preset {if {[llength $args] != 5} {error "preset expects preset, layer, PNG, width, height"};set result [::GX3DEViewer::preset {*}$args]}
             presentation {if {[llength $args]!=3} {error "presentation expects layer fields PNG"};set result [::GX3DEViewer::presentation {*}$args]}
             camera {if {[llength $args] != 2} {error "camera expects camera dictionary and PNG"};set result [::GX3DEViewer::camera {*}$args]}

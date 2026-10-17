@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.16)
+project(gxtxt_em_native LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 17)
+find_package(TCL REQUIRED)
+add_library(emfem MODULE em_fem_native.cpp)
+target_include_directories(emfem PRIVATE ${TCL_INCLUDE_PATH})
+target_link_libraries(emfem PRIVATE ${TCL_LIBRARY})
+set_target_properties(emfem PROPERTIES PREFIX "" OUTPUT_NAME "emfem")

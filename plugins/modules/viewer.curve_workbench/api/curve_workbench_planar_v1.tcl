@@ -42,7 +42,7 @@ proc ::GX::CurveWorkbench::_planarControls {w} {
     # Reopen a saved draft only against its original durable owner revision.
     # Session/worker tokens are deliberately reacquired, never deserialized.
     set stale {}
-    if {![info exists st($w,planarToken)]} {
+    if {![info exists st($w,planarToken)] && ![::GX::datasetPublicationV2DictDefault $st($w,planarContext) staged_origin 0]} {
         if {[catch {
             set context $st($w,planarContext)
             set owner [::GX::interactiveDocumentRead [dict get $context document_id]]
@@ -80,12 +80,14 @@ proc ::GX::CurveWorkbench::_planarPresentation {w} {
 proc ::GX::CurveWorkbench::_planarFinish {w accept} {
     variable st
     set context $st($w,planarContext);set document [dict get $context document_id]
-    if {$accept && ![info exists st($w,planarToken)]} {
-        set owner [::GX::interactiveDocumentRead $document]
-        foreach key {revision generation sha256} {if {[dict get $context $key] ne [dict get $owner $key]} {error {Saved edit source is stale; reopen a new section/projection from the modern Viewer}}}
-        set st($w,planarToken) [dict get [::GX::native3DPlanarEditBegin $document [dict get $context mode]] token]
-    }
-    if {$accept} {
+    set staged [::GX::datasetPublicationV2DictDefault $context staged_origin 0]
+    set origin [dict exists [dict get [::GX::_native3DPlanarOwner $document] payload] origin_workspace]
+    if {$accept && !$staged} {
+        if {![info exists st($w,planarToken)]} {
+            set owner [::GX::interactiveDocumentRead $document]
+            foreach key {revision generation sha256} {if {[dict get $context $key] ne [dict get $owner $key]} {error {Saved edit source is stale; reopen a new section/projection from the modern Viewer}}}
+            set st($w,planarToken) [dict get [::GX::native3DPlanarEditBegin $document [dict get $context mode]] token]
+        }
         set definitions {}
         dict for {id record} $st($w,curves) {
             set definition [::GX::Native2D::core sketch_definition $st($w,scene) [dict get $record native]]
@@ -93,11 +95,30 @@ proc ::GX::CurveWorkbench::_planarFinish {w accept} {
             dict set definitions $id [dict create name [dict get $record name] definition $definition units [list [dict get $record working_unit] [dict get $record working_unit]]]
         }
         ::GX::native3DPlanarEditAccept $st($w,planarToken) $definitions $st($w,sketchUnit) [dict create reference_opacity [expr {$st($w,referenceOpacity)/100.0}] reference_visible $st($w,referenceVisible)]
-    } elseif {[info exists st($w,planarToken)]} {::GX::native3DPlanarEditCancel $st($w,planarToken)}
+        unset st($w,planarToken)
+        if {$origin} {
+            # The planar owner committed. Retain a durable retry state before
+            # asking the independent destination owner to commit its profile.
+            dict set st($w,planarContext) staged_origin 1
+            set owner [::GX::interactiveDocumentRead $document]
+            foreach key {revision generation sha256} {dict set st($w,planarContext) $key [dict get $owner $key]}
+            _save $w
+        }
+    }
+    if {$accept && $origin} {
+        if {[catch {set returned [::GX::native3DPlanarOriginCommit $document]} message opts]} {
+            _planarControls $w
+            $w.planar.accept configure -text {Commit staged result → 3D}
+            set st($w,status) "Planar result retained; originating3D commit is pending: $message"
+            return -options $opts $message
+        }
+    } elseif {!$accept && [info exists st($w,planarToken)]} {::GX::native3DPlanarEditCancel $st($w,planarToken)}
     unset -nocomplain st($w,planarToken) st($w,planarContext)
     destroy $w.planar;_save $w
-    if {$accept} {::GX::native3DPlanarShow $document accepted} else {catch {::GX::native3DPlanarShow $document all}}
-    set st($w,status) [expr {$accept?"Accepted: new curve on the working plane; original 3D source preserved.":"Cancelled: source scientific document unchanged."}]
+    if {!($accept && $origin)} {
+        if {$accept} {::GX::native3DPlanarShow $document accepted} else {catch {::GX::native3DPlanarShow $document all}}
+    }
+    if {$accept && $origin} {set st($w,status) "Accepted profile in original3D Workspace [dict get $returned document_id]; source body preserved."} elseif {$accept} {set st($w,status) {Accepted: new curve on the working plane; original3D source preserved.}} else {set st($w,status) {Cancelled: originating scientific source unchanged; any already staged planar result remains retained.}}
 }
 
 # Existing selection authority invokes this optional adapter, never a second

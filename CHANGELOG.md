@@ -7,6 +7,16 @@ For current interface contracts consult the API references under [docs/api](docs
 
 ## 0.9.8.10 - development revisions
 
+### 0.9.8.10-dev-101
+
+- Introduce trusted, registered local scientific execution services using the existing durable Script Jobs, typed provider calls, original-Session resource boundaries, live generations, exact result adoption, cancellation and supervised process ownership; do not create a second scheduler.
+- Add authorized Scientific I/O with metadata-only inspection, immutable source import or verified external references, CREATE-only namespaces, retained source identity and recoverable canonical publication. These cooperating-plugin grants are not an OS sandbox or a remote HPC adapter.
+- Integrate planar linear static electromagnetic simulation with Gmsh/GetDP and native C++ geometry/field services. Publish exact nodes, triangular cells and field identities to canonical Datasets and Plot Dataset v4; preserve prior Plot v1/v2/v3 interfaces and acknowledge finite-boundary convergence limits.
+- Organize Dataset Curve Fit panels and public documentation discovery without changing its numerical engine. Extend CORE Numeric with bounded unit-aware mathematical expressions and root/extremum searches, plus an optional Mathematics Explorer Viewer.
+- Extend native Viewer hosting and source-bound Curve Workbench transfers, including explicit non-atomic origin-to-destination Workspace return. Add managed Native2D image-local ROI, layers, masks, ImageMagick operations and transparent Native3D appearance alongside retained profile extrusion/export.
+- Replicate Curve Analysis 15.3 remains protected, selectable and default-off. The separately requested independent Replicate scientific-service package is PENDING USER SOURCE, so no new callable scientific engine or independent results are claimed.
+- Keep CAM as an explicitly non-executable architecture design; no generated toolpaths, G-code, postprocessor or machine-control behavior is implied. Carry forward the official release limitations and residual verification scope.
+
 ### 0.9.8.10-dev-100
 
 - Extend Scientific Worksheet 2.0 with the retained typed Workbook model, formulas, units, named ranges, source bindings, managed large-history resources, canonical Dataset publication and same-ID Session Workspace persistence.

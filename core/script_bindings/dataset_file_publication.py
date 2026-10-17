@@ -32,6 +32,8 @@ def invoke(host, operation, args):
     if operation not in {"publish", "publish_auto"} or len(args) != 1 or not isinstance(args[0], dict):
         raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "publish/publish_auto requires one file publication struct")
     request = dict(args[0])
+    if {'verified_reference','verified_source_sha256'} & request.keys():
+        raise BridgeError("GXTXT:ScriptBridge:Ownership", "Authorized source grants are CORE host-only; use the opaque Scientific I/O API")
     output = host.config.get("runtime", "output_dir", fallback="")
     if not output:
         raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "script output directory is unavailable")

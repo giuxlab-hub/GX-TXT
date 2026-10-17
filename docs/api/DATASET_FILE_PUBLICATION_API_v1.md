@@ -38,6 +38,7 @@ provenance
 notes
 structured_metadata
 replace_owned
+immutable           boolean; default false
 ```
 
 The caller never supplies the authoritative SHA-256 and never edits `metadata/datasets.ini`. `source_file` is an input to the transaction and its absolute location is not stored as persistent module state.
@@ -64,7 +65,7 @@ CORE validates the request and source, copies to a private staging file, compute
 
 Any failure restores the previous in-memory/file registry state, previous same-owner payload and previous structured metadata. A failed new publication leaves no registered Dataset, authoritative payload, partial staging file or valid-looking metadata sidecar.
 
-Publication is create-only unless `replace_owned=true`. Replacement is allowed only when the existing Dataset was published through this API by the same `module_id`; it retains the established Session-relative target. A foreign or legacy Dataset ID is never overwritten.
+Publication is create-only unless `replace_owned=true`. Replacement is allowed only when the existing Dataset was published through this API by the same `module_id`; it retains the established Session-relative target. A foreign or legacy Dataset ID is never overwritten. An explicit `immutable=true` creates a read-only canonical source copy and rejects later replacement; the default remains mutable for existing file editors.
 
 ## File and schema semantics
 
@@ -91,7 +92,7 @@ variable_schema_api_version=3
 
 This API performs no OCR, PDF/image interpretation, viewer activation, Octave execution or Tk initialization.
 
-## Simple file helper (dev-051)
+## Simple file helper
 
 `::GX::datasetFilePublicationPublishAuto session module_id request` requires `dataset_id`, `contract` and `source_file`. It delegates to the same existing owned-file transaction. Optional `format_id` selects a declared Acquisition Format Registry record; otherwise extension and unambiguous registry records supply format/media defaults. PNG/JPEG/TIFF, WAV and PDF have standard MIME fallbacks. Neutral mesh/CAD/chemistry or ambiguous formats require an explicit `media_type`/`format` when their installed registry does not supply one. The helper does not infer scientific column schemas or context-dependent meanings. Contract discovery remains `CONTRACT_REGISTRY_API_v1`; file format discovery remains `ACQUISITION_FORMAT_REGISTRY_API_v1`.
 
@@ -104,7 +105,7 @@ gxtxt_api_call('DATASET_FILE_PUBLICATION_API_v1', 'publish_auto',
       'structured_metadata':{'processing.method':'simulation'}}])
 ```
 
-## Dev-070 producer-authorized file edits
+## Producer-authorized file edits
 
 `::GX::datasetFileEditAuthorize producerCapability session datasetId editorModule`
 grants an edit of one existing `geometry.sketch`, `document.pdf` or `document.text`
@@ -126,16 +127,21 @@ through the normal transaction. Public APIs trust in-process modules under GX-TX
 existing capability model; this is not an operating-system sandbox.
 
 
-Dev087's explicit Native3D Save High-Resolution Image action uses this API with
+The explicit Native3D Save High-Resolution Image action uses this API with
 producer `core.native3d`, `image.raster`/PNG, create-only IDs and transactional metadata.
 It records the originating graph/Variant, canonical source IDs/hashes/bindings,
 image dimensions, exact current camera/projection, calibrated axis/grid and scalar
 settings, requested/effective graphics policy and supersampling. Preview/navigation/
 enlargement do not publish. Existing Dataset GUI/metadata/registry remain authoritative.
 
-## dev093 local transaction authority
+## Local transaction authority
 
 File publication and edit grants participate in the shared per-Session Dataset
 transaction. Ownership, immutable protection, namespace and optional expected SHA
 are validated under the same lock as the recoverable payload/metadata/registry
-commit. See [Dataset Publication v2](DATASET_PUBLICATION_API_v2.md).
+commit. The shared Dataset Publication authority provides recoverable transaction guarantees.
+
+
+## Authorized external scientific sources
+
+Ordinary scientific clients use [Scientific I/O](SCIENTIFIC_IO_API_v1.md) with authorized opaque entry tokens. Its trusted CORE adapter shares this same publication transaction for immutable copy or verified read-only external reference. Reference identity and source SHA remain canonical while transport location is private and may be unavailable. The private reference-verification fields are not accepted from Script Bridge requests; scripts cannot mint a source grant through file publication. Existing trusted produced-file publication retains its complete-output-directory boundary.

@@ -3,7 +3,7 @@
 SPDX-License-Identifier: GPL-3.0-or-later
 
 CORE indexes installed public manuals from the live module/model/instrument
-catalog and `docs/api`. This service complements the descriptor contract in
+catalog and `docs/api`. Public provider API manuals declared by installed module descriptors are also indexed under `api:API_ID`, including manuals stored beside the provider implementation. Discovery reads descriptors without activating scientific code. Canonical framework references take precedence; conflicting provider-document declarations remain unavailable rather than guessing an owner. Relative provider manual paths must stay inside their installed module, with symbolic-link files refused. This service complements the descriptor contract in
 [Documentation API v1](DOCUMENTATION_API_v1.md).
 
 | Script operation | Arguments | Result |

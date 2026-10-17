@@ -241,6 +241,8 @@ proc ::GX::configurationRegisterBuiltins {} {
         runtime.ffprobe Runtime {FFprobe} command auto user \
         runtime.tesseract Runtime {Tesseract OCR} command auto user \
         runtime.spice Runtime {SPICE tool} command auto user \
+        runtime.gmsh Runtime {Gmsh mesh generator} command auto user \
+        runtime.getdp Runtime {GetDP finite element solver} command auto user \
         runtime.mpi Runtime {MPI launcher} command auto user \
         runtime.magick Runtime {ImageMagick} command auto user \
         runtime.pdftoppm Runtime {PDF thumbnailer} command auto user \
@@ -395,7 +397,7 @@ proc ::GX::configurationSave {{fields {}} {apply 1}} {
 
 proc ::GX::runtimeToolDetect {name} {
     set candidates [dict create octave {octave octave-cli} python {python3 python} \
-        ffmpeg {ffmpeg} ffprobe {ffprobe} tesseract {tesseract} spice {ngspice} mpi {mpirun mpiexec} \
+        ffmpeg {ffmpeg} ffprobe {ffprobe} tesseract {tesseract} spice {ngspice} gmsh {gmsh} getdp {getdp} mpi {mpirun mpiexec} \
         magick {magick} pdftoppm {pdftoppm} mutool {mutool} qpdf {qpdf}]
     if {![dict exists $candidates $name]} { error "Unknown runtime tool '$name'." }
     if {$::tcl_platform(platform) eq "windows"} {
@@ -411,7 +413,8 @@ proc ::GX::runtimeToolDetect {name} {
             pdftoppm {runtime/msys64/ucrt64/bin/pdftoppm.exe} \
             mutool {runtime/msys64/ucrt64/bin/mutool.exe} \
             qpdf {runtime/msys64/ucrt64/bin/qpdf.exe}]
-        set localPath [file join $installation [dict get $localNames $name]]
+        set localPath {}
+        if {[dict exists $localNames $name]} {set localPath [file join $installation [dict get $localNames $name]]}
         if {[file isfile $localPath]} { return [file normalize $localPath] }
     }
     foreach command [dict get $candidates $name] {

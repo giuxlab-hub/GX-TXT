@@ -361,9 +361,10 @@ proc ::GX::viewerLayerPrepare {moduleId viewerId layerId fields {resourceContext
     variable viewerLayer
     viewerRequireProvider $moduleId $viewerId
     if {![viewerIdValid $layerId]} {error "Invalid viewer layer ID"}
-    set defaults [dict create kind "" source_mode "" dataset_id "" resource_path "" sha256 "" format "" format_version "" source_path_hint "" x_variable_id "" y_variable_id "" z_variable_id "" visible 1 opacity 1 colormap "" scalar_range "" color_array "" scalar_array "" vector_array "" radius_array "" opacity_array "" tube_radius 0 isovalues "" volume_transfer "" volume_sample_distance 0.05 layer_order 0 source_dataset_id "" source_dataset_sha256 "" source_update_policy strict representation surface base_color {0.78;0.82;0.9} line_width 1 point_size 4 backface_culling 0 scalar_coloring 0 local_transform ""]
+    set defaults [dict create kind "" source_mode "" dataset_id "" resource_path "" sha256 "" format "" format_version "" source_path_hint "" x_variable_id "" y_variable_id "" z_variable_id "" visible 1 opacity 1 colormap "" scalar_range "" color_array "" scalar_array "" vector_array "" radius_array "" opacity_array "" tube_radius 0 isovalues "" volume_transfer "" volume_sample_distance 0.05 layer_order 0 source_dataset_id "" source_dataset_sha256 "" source_update_policy strict representation surface base_color {0.78;0.82;0.9} line_width 1 point_size 4 backface_culling 0 scalar_coloring 0 local_transform "" texture {}]
     set d [dict merge $defaults $fields]
     foreach k [dict keys $d] {if {![dict exists $defaults $k]} {error "Unknown viewer layer field $k"}}
+    if {[dict get $d texture] ne {}} {native3DLayerTextureValidate [dict get $d texture] $d}
     set kind [dict get $d kind]
     if {$kind ni {points surface triangle_mesh trajectory geometry isosurface volume}} {error "Unknown viewer layer kind $kind"}
     set declared [viewerProviderDefinition $moduleId $viewerId]
@@ -713,7 +714,7 @@ proc ::GX::loadManifestV2_before_plot_variant {path} {
         foreach k {module_id viewer_id} {dict unset d $k}
         set viewerScene($module,$viewer) $d
     }
-    foreach d [viewerReadIndexed $ini viewer_layers {module_id viewer_id layer_id kind source_mode dataset_id resource_path sha256 format format_version source_path_hint x_variable_id y_variable_id z_variable_id visible opacity colormap scalar_range color_array scalar_array vector_array radius_array opacity_array tube_radius isovalues volume_transfer volume_sample_distance layer_order source_dataset_id source_dataset_sha256 source_update_policy representation base_color line_width point_size backface_culling scalar_coloring local_transform}] {
+    foreach d [viewerReadIndexed $ini viewer_layers {module_id viewer_id layer_id kind source_mode dataset_id resource_path sha256 format format_version source_path_hint x_variable_id y_variable_id z_variable_id visible opacity colormap scalar_range color_array scalar_array vector_array radius_array opacity_array tube_radius isovalues volume_transfer volume_sample_distance layer_order source_dataset_id source_dataset_sha256 source_update_policy representation base_color line_width point_size backface_culling scalar_coloring local_transform texture}] {
         foreach k {module_id viewer_id layer_id} {if {![dict exists $d $k]} {error "Incomplete viewer layer"}}
         set module [dict get $d module_id];set viewer [dict get $d viewer_id];set layer [dict get $d layer_id]
         foreach k {module_id viewer_id layer_id} {dict unset d $k}

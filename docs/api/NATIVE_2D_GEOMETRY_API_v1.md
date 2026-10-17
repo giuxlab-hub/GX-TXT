@@ -165,12 +165,8 @@ context or selected by the caller. The example uses no private Tcl command or
 framework/storage path. Octave passes `{scene,struct(...)}`; numeric pages are
 N×2 matrices, object lists are cells, and row identities remain exact integers.
 
-Validation: `validation/task9_dev052/native2d_bridge.tcl` executes genuine Python
-and Octave scripts, verifies independent affine/bridge/residual results, exact
-resource restoration, bounded requests, cross-scene ownership, revision expiry,
-explicit cleanup and absence of implicit Dataset entries. This API's published
-inventory states its supported operations; it does not imply coverage of future
-primitive/series/constraint operations until those are added and tested.
+The public inventory states the currently supported scoped operations. Host-only
+widget and gesture services retain their separate contracts.
 
 `nearest_vertex` accepts `point`, nonnegative world `radius`, optional
 `exclude_object_tokens` and `endpoints_only`. It searches complete Native geometry
@@ -269,6 +265,25 @@ Retained curve `path_length`/`path_point` operate on the definition; path points
 use bounded native arc-length inversion rather than display chords. A returned
 segment/fraction denotes the corresponding display-sample parameter interval,
 while point/distance retain scientific curve semantics.
+
+## Image-local ROI, alpha masks and raster composition
+
+The same API includes `raster_roi_set`, `raster_roi_get`, `raster_roi_remove`,
+`raster_layer_get`, `raster_layer_update`, `raster_prepare`, `raster_submit`,
+`raster_freeze`, `raster_snapshot`, `raster_save` and `raster_restore`.
+Native2D retains source-pixel vector ROI geometry and existing image/layer
+identity, transforms, order, visibility, lock and opacity. ImageMagick owns
+pixel masking, fixed blend modes and explicit derived RGBA exports through
+the existing supervised Scientific Execution and Document Resource services.
+
+See [Native2D raster composition](NATIVE2D_RASTER_COMPOSITION.md) for the exact
+bounded requests/results, source-unit policy, geometry/mask distinctions,
+alpha/inversion/feather semantics, non-destructive processing, persistence and
+existing Native3D texture transfer. The host-only
+`native2DGeometryViewportAttach` / `native2DGeometryViewportDraw` adapters mount
+a scoped scene through the existing ViewportHost and presentation owners.
+They do not expose a Script GUI construction protocol or create another scene,
+pixel-processing engine, image editor, persistence store or Job queue.
 
 ## Native constraints and joins
 
@@ -470,7 +485,7 @@ These additive operations preserve API version1 and execution-owned object/const
 
 `constraint_apply` drives supported retained components; `control_edit` maintains their compatible relationships, with a hard defining-control target. `sketch_update` drives coupled definitions while holding changed parameters. Old PODs and enum values1..21 are unchanged; new kinds are horizontal_distance, vertical_distance, point_line_distance, line_distance, axis_angle and curvature. Receipts include solved/driven/placed, annotation, branch, curvature_tolerance and explicit enforcement. For references, measured_value/geometry.value are authoritative current measurements; stored numeric value is an inactive driving literal, never a geometry command while driven.
 
-Whole Fixed/locked objects are excluded from movable parameters; Fixed controls retain their individual position equations. Dimensional overconstraint/redundancy is rejected atomically and can be explicitly retried as driven. State restoration validates already-saved geometry, using `gx2d_constraint_create_state`, without replaying a fresh driving operation. `gx2d_relationship_state` is additive and leaves `gx2d_constraint_v2` ABI intact. Angular tolerance is radians; curvature tolerance is inverse working length and is reexpressed with physical units. Annotation world XY is presentation, independent of scientific dimension value. Future expression authorities may add metadata while preserving the resolved numeric value/working-unit contract.
+Whole Fixed/locked objects are excluded from movable parameters; Fixed controls retain their individual position equations. Dimensional overconstraint/redundancy is rejected atomically and can be explicitly retried as driven. State restoration validates already-saved geometry, using `gx2d_constraint_create_state`, without replaying a fresh driving operation. `gx2d_relationship_state` is additive and leaves `gx2d_constraint_v2` ABI intact. Angular tolerance is radians; curvature tolerance is inverse working length and is reexpressed with physical units. Annotation world XY is presentation, independent of scientific dimension value. The resolved numeric value and working unit remain part of the relationship contract.
 
 Bounds/limits and supported mathematical families are documented in [Native2D implementation notes](../../core/native2d/README.md). Rank is local; analysis_complete=false precludes a fully-constrained claim. Unsupported/singular/nonconvergent cases return explicit errors. These public operations do not publish a Dataset, invent identities or accept foreign scene tokens.
 
@@ -541,7 +556,7 @@ transient construction feedback. Reference raster underlays precede vector
 geometry; dimensions/optional relationship markers follow geometry. Output is
 deterministic for identical retained state and options and always restores real
 view/state on success or failure. It returns the existing Document resource
-receipt. No path option is accepted. Pillow>=10 is the portable host raster
+receipt by default; explicit file export options are described below. Pillow>=10 is the portable host raster
 dependency, declared in CORE requirements; geometry/calibration/view math stays C.
 
 Widget creation, semantic panel placement, tool activation, tooltips and captured
@@ -580,7 +595,7 @@ membership is bounded at 65536 and capacity overflow rejects atomically. Restore
 is for saved semantic state, not an ordinary hidden-geometry pick. Existing named
 sets, layers, fragments and source row locators retain their authorities.
 
-`path` is the first supported case of the general retained path definition:
+`path` is a retained straight-path definition:
 unique ordered `controls`, optional boolean `closed`, and canonical `segments`
 containing `family=line`, zero-based `first`/`last` vertex ordinals. Closing edges
 refer back to vertex zero. An open two-vertex path has normal finite-line behavior.
@@ -606,8 +621,6 @@ are derived interpolation, not exact Dataset geometry. Missing spans or reduced
 inputs are rejected rather than silently bridged. Exact provenance reconstruction
 validates producer, original canonical receipt, variables, units, every XY value,
 global ordering schema/values and closure/direction policy before adoption.
-Python and Octave independently exercise these operations through real Script
-Workspace runs in `validation/dev057/bridge.tcl`.
 
 ## Exact heterogeneous composition
 
@@ -659,7 +672,6 @@ Primitive publication records the actual publishing module and uses its assigned
 Dataset namespace. `producer=core.native2d` identifies the geometry service;
 `publishing_module` identifies the caller. Legacy provenance without the latter
 continues to require the historical `core.native2d` publication owner.
-`validation/dev059/composition_bridge.tcl` exercises both genuine script runtimes.
 
 ## exact internal Path controls
 
@@ -684,11 +696,11 @@ rejected instead of disconnecting or flattening constituents.
 ## shared aspect default and constituent Spline tangent controls
 
 CORE scenes default to `GX2D_ASPECT_XY_EQUAL` (the existing Tcl spelling is
-`xy_equal`, implementing the task's `x_equal_y` behavior). Equal coordinate scale
+`xy_equal`). Equal coordinate scale
 is applied through `gx2d_view_set`, including the initial effective view. Existing
 host C `gx2d_view_aspect_set` and native Tcl `core aspect`/`presentation`/`view_state`
 remain the authority for exceptional module-specific overrides. The shared
-viewport toolbar and grid form no longer offer a user aspect toggle. Script
+viewport toolbar and grid form do not offer a user aspect toggle. Script
 Bridge exposes no aspect setter and rejects a non-default aspect in a mutating
 `view_state` request. Equal-aspect view-state round trips remain compatible.
 Saved Workspace presentation is preserved; new Workbench Workspace bounds start

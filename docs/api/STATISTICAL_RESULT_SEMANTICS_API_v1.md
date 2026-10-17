@@ -675,9 +675,7 @@ the authority of CORE statistical interpretation.
 
 Python and Octave use the existing unified
 `gxtxt_api_call('STATISTICAL_RESULT_SEMANTICS_API_v1', operation, arguments)`.
-Operations are `api_info`, `models`, `model`, `quantities`, `from_numeric`, `feature`,
-`interpret`, `validate`, `report`, `parameter_report`, `publication_metadata`. Argument order is the
-Tcl order above. Optional arguments may only be omitted from the right.
+The complete registered operation inventory is in [Public operation index](#public-operation-index). Argument order follows each operation’s listed inputs and its detailed contract below. Optional arguments may only be omitted from the right.
 Ordinary Script Bridge API discovery exposes argument and result descriptors.
 The binding transports calls to the same CORE functions and contains no second
 applicability table. Returned vectors/matrices use the existing typed bridge.
@@ -894,12 +892,28 @@ definitions, applicability, solver receipts and inference must still match CORE
 interpretation exactly. Arbitrary missing fields or missing applicable facts are
 rejected. Validation does not rewrite the saved result or invent new facts.
 
-The public Statistical Result Semantics contract is enforced through the declared
-CORE authorities and validated result metadata. Modules must not silently
-substitute local statistical policy for shared interpretation. The public
-source checkout excludes internal release-audit evidence and private validation
-fixtures. A source-level audit alone is not a substitute for actual numerical
-and registered Script Job execution.
+`python3 tools/check_statistical_semantics.py FRAMEWORK --output REPORT.json`
+returns nonzero for detected bypasses and unresolved dynamic/parse findings.
+Python uses AST analysis; Tcl uses the installed interpreter's public command
+parser without evaluating inspected code; Octave and C++ use language-aware
+tokenization and balanced structural analysis. Reports include file, line, operation, violated
+authority, actionable reason and coverage limits. This is not a claim to defeat
+arbitrary obfuscation. Runtime publication validation and real registered Script
+Jobs cover boundaries that source inspection cannot establish.
+
+An exception registry entry in
+`docs/architecture/STATISTICAL_SEMANTICS_EXCEPTIONS.json` must specify exact file,
+line, rule, owner, scientific justification, test path and source SHA256. Changes
+invalidate the exception. Exceptions are narrowly reviewed domain boundaries,
+not blanket allowances for modules to compute their own statistical meaning.
+
+The default production scan includes CORE, app, plugins, Session Generators,
+the accepted generator libraries and expanded independent generator packages.
+Archive/expanded byte parity is checked separately before packaging. The two
+current exceptions cover copies of the same fixed five-measurement teaching
+oracle: it writes test-only ground truth, which production analysis never reads.
+Both exceptions bind one assignment, exact source SHA and the dedicated
+`generator_statistics_boundary.py` test. Additional source bypasses still fail.
 
 `from_numeric` also adapts Numeric `mad`: median, raw median absolute deviation
 and scaled median absolute deviation retain physical units and `mad_scale`
@@ -1789,3 +1803,97 @@ determines response-sigma, actual XY ODR or full response-covariance eligibility
 versioned meaning, source bindings and all qualifications. No private consumer
 may turn correlated marginal sigmas into independent weights. See the
 [pixel/calibration contract](DIGITIZATION_UNCERTAINTY_v1.md).
+
+
+## Public operation index
+
+The following inventory names every registered Script operation. Python and
+Octave use the same operation IDs and input order through the existing Bridge;
+Tcl callers use the corresponding methods documented above. Names in parentheses
+are input fields, not a promise that every trailing argument is required: consult
+the operation's detailed section and live Bridge descriptor for defaults and
+bounds. All interpretation, plan, validation and report operations reuse captured
+facts; only the named Numeric provider calculates estimates. Storage/binding
+operations retain existing resource and canonical publication authority.
+
+| Operation | Ordered inputs | Result role |
+| --- | --- | --- |
+| `api_info` | None | Registered discovery descriptor |
+| `bind_columns` | `prototype`, `column_variables`, `row_count`, `row_start` | Existing owned storage binding / bounded read |
+| `bind_resource_columns` | `prototype`, `resource`, `column_variables`, `row_count`, `row_start` | Existing owned storage binding / bounded read |
+| `binding_table` | `dataset_id`, `record_name`, `start`, `count` | Existing owned storage binding / bounded read |
+| `bootstrap_interpretation` | `source`, `numeric` | Validated interpretation / presentation |
+| `bootstrap_plan` | `source`, `settings` | Validated eligibility / settings plan |
+| `bootstrap_settings` | `settings` | Validated eligibility / settings plan |
+| `derived_properties_interpretation` | `source`, `numeric` | Validated interpretation / presentation |
+| `derived_properties_plan` | `source`, `definitions` | Validated eligibility / settings plan |
+| `derived_properties_report` | `source`, `numeric` | Validated interpretation / presentation |
+| `digitization_fit_plan` | `meaning`, `kind`, `orientation` | Validated eligibility / settings plan |
+| `digitization_interpretation` | `summary`, `context` | Validated interpretation / presentation |
+| `digitization_report` | `meaning` | Validated interpretation / presentation |
+| `feature` | `result`, `quantity` | Validated interpretation / presentation |
+| `fit_suggestions` | `numeric`, `candidates`, `context`, `entries`, `criterion` | Validated interpretation / presentation |
+| `fit_suggestions_report` | `result` | Validated interpretation / presentation |
+| `from_native_comparison` | `method`, `receipt`, `context`, `provenance` | Validated interpretation / presentation |
+| `from_numeric` | `model_id`, `operation`, `numeric_result`, `context`, `metrics`, `provenance` | Validated interpretation / presentation |
+| `from_numeric_columns` | `model_id`, `operation`, `row_ids`, `raw_columns`, `common_raw`, `context`, `provenance` | Validated interpretation / presentation |
+| `from_numeric_table` | `model_id`, `operation`, `rows`, `context`, `provenance` | Validated interpretation / presentation |
+| `gls_interpretation` | `numeric`, `context` | Validated interpretation / presentation |
+| `gls_report` | `result` | Validated interpretation / presentation |
+| `influence_interpretation` | `source`, `numeric` | Validated interpretation / presentation |
+| `influence_plan` | `source` | Validated eligibility / settings plan |
+| `ini_report` | `result`, `mapping` | Validated interpretation / presentation |
+| `interpret` | `request` | Validated interpretation / presentation |
+| `interpret_table` | `request` | Validated interpretation / presentation |
+| `log_response_interpretation` | `source`, `numeric`, `prediction` | Validated interpretation / presentation |
+| `log_response_plan` | `source` | Validated eligibility / settings plan |
+| `model` | `model_id` | Registered discovery descriptor |
+| `model_comparison` | `entries`, `criterion` | Validated interpretation / presentation |
+| `model_selection_plan` | `result`, `binding` | Validated eligibility / settings plan |
+| `models` | None | Registered discovery descriptor |
+| `nested_f_interpretation` | `reduced`, `full`, `numeric` | Validated interpretation / presentation |
+| `nested_f_plan` | `reduced`, `full` | Validated eligibility / settings plan |
+| `numeric_data_fields` | `result` | Validated interpretation / presentation |
+| `numeric_field_elements` | `result`, `field` | Validated interpretation / presentation |
+| `numeric_field_map` | `operation` | Registered discovery descriptor |
+| `numeric_fields` | `result` | Validated interpretation / presentation |
+| `numeric_model` | `operation`, `facts` | Registered discovery descriptor |
+| `parameter_correlation_report` | `result` | Validated interpretation / presentation |
+| `parameter_inference_plan` | `result`, `confidence` | Validated eligibility / settings plan |
+| `parameter_ini_report` | `result` | Validated interpretation / presentation |
+| `parameter_report` | `result` | Validated interpretation / presentation |
+| `parameter_rows` | `result` | Validated interpretation / presentation |
+| `physical_plausibility` | `source`, `rules`, `context` | Validated interpretation / presentation |
+| `physical_plausibility_report` | `result` | Validated interpretation / presentation |
+| `prediction_inference_plan` | `result`, `kind`, `confidence` | Validated eligibility / settings plan |
+| `prediction_interpretation` | `source`, `numeric` | Validated interpretation / presentation |
+| `profile_eligibility` | `model_id`, `operation`, `context` | Validated eligibility / settings plan |
+| `profile_interpretation` | `source`, `numeric` | Validated interpretation / presentation |
+| `profile_plan` | `source`, `settings` | Validated eligibility / settings plan |
+| `profile_report` | `meaning` | Validated interpretation / presentation |
+| `profile_settings` | `settings` | Validated eligibility / settings plan |
+| `publication_metadata` | `named_results` | Validated metadata for canonical publication |
+| `quantities` | None | Registered discovery descriptor |
+| `report` | `result`, `quantities` | Validated interpretation / presentation |
+| `residual_sequence_interpretation` | `numeric`, `context` | Validated interpretation / presentation |
+| `resource_binding_table` | `result`, `start`, `count` | Existing owned storage binding / bounded read |
+| `resource_field_elements` | `result`, `field`, `start`, `count` | Existing owned storage binding / bounded read |
+| `scalar_rows` | `result`, `mapping` | Validated interpretation / presentation |
+| `solver_report` | `result`, `details` | Validated interpretation / presentation |
+| `store_columns` | `document_id`, `prototype`, `columns` | Existing owned storage binding / bounded read |
+| `table_csv_rows` | `result`, `mapping`, `row_ids` | Validated interpretation / presentation |
+| `table_report` | `result`, `row_ids`, `quantities` | Validated interpretation / presentation |
+| `table_rows` | `result`, `mapping`, `row_ids` | Validated interpretation / presentation |
+| `table_select` | `result`, `row_ids` | Validated interpretation / presentation |
+| `table_values` | `result`, `quantities` | Validated interpretation / presentation |
+| `validate` | `result` | Consistency validation / typed result |
+| `validated_result` | `result` | Consistency validation / typed result |
+| `with_parameter_uncertainty` | `result`, `confidence`, `numeric` | Validated interpretation / presentation |
+
+Non-value states retain their explicit reason; reports and field projections
+never manufacture zero uncertainty or a nominal interval. Physical units and
+parameter/row identities follow the detailed model contract. Storage operations
+have Session/Document lifetimes; stateless discovery and interpretation do not
+create scientific data or Jobs. The source-field, parameter, table and resource
+contracts above explain result shapes and bounds. For numerical calculations,
+use the [Numeric API](../../plugins/modules/math.numeric/NUMERIC_API_v1.md).

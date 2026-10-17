@@ -49,6 +49,18 @@ proc ::GX::documentationBrowserRefresh {} {
         set name [file rootname [file tail $path]]
         documentationBrowserAdd "api:$name" {API references} $name api $path framework $::GX::version
     }
+    # Provider API references may live beside their implementation rather than
+    # under docs/api. The existing descriptor resolver owns path/ambiguity rules.
+    foreach module $moduleOrder {
+        set info [documentationDescriptorInfo module $module]
+        if {$info eq {}} continue
+        lassign $info descriptor d name
+        foreach api [splitList [descriptorValue $d public_apis ids {}]] {
+            if {[dict exists $documentationBrowserEntries api:$api]} continue
+            set path [documentationResolveApiRef $api]
+            if {$path ne {}} {documentationBrowserAdd api:$api {API references} $api api $path $module [moduleField $module version {}]}
+        }
+    }
     foreach spec [list [list module $moduleOrder] [list model $::GX::modelOrder] \
         [list analysis_definition $::GX::analysisDefinitionOrder] [list instrument $::GX::instrumentOrder]] {
         lassign $spec kind ids

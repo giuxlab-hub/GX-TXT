@@ -173,6 +173,26 @@ struct State {
             gx3de_mat4 matrix{};for(size_t i=0;i<16;++i)matrix.m[i]=number(values[i],"local transform");
             check(gx3de_object_set_transform(object,&matrix),"set persisted object transform");
         }
+        if(auto descriptor=get(ip,layer,"texture")) {
+            if(!str(descriptor).empty() && uint64_t(std::count_if(objects.begin(),objects.end(),[&](const auto& entry){return entry.second==id;}))==integer(field(ip,descriptor,"occurrence_index"),"texture source occurrence")) {
+                gx3de_texture *texture=nullptr;
+                check(gx3de_texture_load_file(engine,field(ip,descriptor,"source_path").c_str(),&texture),"load owned RGBA texture");
+                try {
+                    gx3de_texture_info info{};info.struct_size=sizeof info;check(gx3de_texture_info_get(texture,&info),"inspect RGBA texture");
+                    if(info.channels!=4)throw std::runtime_error("Managed texture must retain actual RGBA channels");
+                    gx3de_planar_texture_spec spec{};spec.struct_size=sizeof spec;
+                    spec.source_triangle=integer(field(ip,descriptor,"source_triangle"),"source triangle");
+                    spec.local_anchor=vec(field(ip,descriptor,"local_anchor"),"object-local texture anchor");
+                    spec.anchor_u=number(field(ip,descriptor,"anchor_u"),"texture U anchor");spec.anchor_v=number(field(ip,descriptor,"anchor_v"),"texture V anchor");
+                    spec.width=number(field(ip,descriptor,"width"),"physical texture width");spec.height=number(field(ip,descriptor,"height"),"physical texture height");
+                    spec.rotation_radians=number(field(ip,descriptor,"rotation_radians"),"texture rotation");
+                    spec.flip_u=yes(field(ip,descriptor,"flip_u"));spec.flip_v=yes(field(ip,descriptor,"flip_v"));
+                    gx3de_planar_texture *assignment=nullptr;
+                    check(gx3de_object_planar_texture_add(object,texture,&spec,&assignment),"assign existing native planar texture");
+                } catch(...) {gx3de_texture_destroy(texture);throw;}
+                check(gx3de_texture_destroy(texture),"release texture loader handle");
+            }
+        }
         objects.emplace_back(object,id);
     }
 };
@@ -722,7 +742,7 @@ void fillScene(Tcl_Interp *ip,State &state,Tcl_Obj *scene,bool preview) {
         bool visible=yes(field(ip,layer.value,"visible"));double opacity=number(field(ip,layer.value,"opacity"),"opacity");
         try {
             if(field(ip,layer.value,"source_mode")=="dataset") {gx3de_object *object=datasetObject(ip,state.scene,layer.value);state.add(ip,object,layer.id,layer.value,visible,opacity);}
-            else importArtifact(ip,state,layer.id,layer.value,visible,opacity,preview);
+            else importArtifact(ip,state,layer.id,layer.value,visible,opacity,preview&&field(ip,layer.value,"texture").empty());
         } catch(const std::exception &e) {
             std::string source=field(ip,layer.value,"source_mode")=="artifact"?field(ip,layer.value,"resource_path"):field(ip,layer.value,"dataset_id");
             throw std::runtime_error("3D layer "+layer.id+" ("+source+"): "+e.what());
@@ -968,6 +988,10 @@ int render(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
         Tcl_SetObjResult(ip,result);return TCL_OK;
     } catch(const std::exception &e) {state.clearRender();error(ip,e);return TCL_ERROR;}
 }
+int capabilities(ClientData,Tcl_Interp*ip,int argc,Tcl_Obj*const args[]){
+    if(argc!=1){Tcl_WrongNumArgs(ip,1,args,"");return TCL_ERROR;}
+    Tcl_SetObjResult(ip,Tcl_NewStringObj("managed_planar_texture",-1));return TCL_OK;
+}
 int graphicsProbe(ClientData,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]) {
     if(argc!=2){Tcl_WrongNumArgs(ip,1,args,"graphics policy");return TCL_ERROR;}
     gx3de_engine* engine=nullptr;gx3de_scene* scene=nullptr;gx3de_view* view=nullptr;
@@ -1017,6 +1041,26 @@ int focusLogical(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]) 
  if(argc!=3){Tcl_WrongNumArgs(ip,1,args,"reference PNG");return TCL_ERROR;}
  auto& state=*static_cast<State*>(data);
  try {if(!state.view||!state.target)throw std::runtime_error("Render before logical focus");logicalFocus(ip,state,args[1]);checkRender(state.target,gx3de_target_render(state.target),"render logical focus");check(gx3de_target_write_png(state.target,str(args[2]).c_str()),"write logical focus");Tcl_SetObjResult(ip,args[1]);return TCL_OK;}catch(const std::exception& e){error(ip,e);return TCL_ERROR;}
+}
+int textureAnchor(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
+    if(argc!=6){Tcl_WrongNumArgs(ip,1,args,"x y verified_managed_png width height");return TCL_ERROR;}
+    auto &state=*static_cast<State*>(data);gx3de_texture *texture=nullptr;gx3de_planar_texture *assignment=nullptr;
+    try {
+        if(!state.viewport)throw std::runtime_error("Render the actual source geometry before choosing a texture anchor");
+        gx3de_pick_hit hit{};hit.struct_size=sizeof hit;
+        check(gx3de_viewport_pick(state.viewport,static_cast<uint32_t>(integer(str(args[1]),"x")),static_cast<uint32_t>(integer(str(args[2]),"y")),&hit),"pick texture source face");
+        auto found=std::find_if(state.objects.begin(),state.objects.end(),[&](const auto &item){return item.first==hit.object;});
+        if(found==state.objects.end())throw std::runtime_error("Picked geometry has no retained layer identity");
+        check(gx3de_texture_load_file(state.engine,str(args[3]).c_str(),&texture),"inspect managed anchor image");
+        gx3de_planar_texture_spec spec{};spec.struct_size=sizeof spec;spec.width=number(str(args[4]),"texture width");spec.height=number(str(args[5]),"texture height");spec.anchor_u=spec.anchor_v=.5;
+        check(gx3de_object_planar_texture_add_from_pick(texture,&hit,&spec,&assignment),"resolve actual source triangle from picked surface");
+        check(gx3de_planar_texture_get(assignment,&spec),"read stable source texture anchor");
+        Tcl_Obj *reply=Tcl_NewDictObj();put(ip,reply,"layer_id",Tcl_NewStringObj(found->second.c_str(),-1));
+        uint64_t occurrence=0;for(auto it=state.objects.begin();it!=found;++it)if(it->second==found->second)++occurrence;
+        put(ip,reply,"occurrence_index",Tcl_NewWideIntObj(occurrence));put(ip,reply,"source_triangle",Tcl_NewWideIntObj(spec.source_triangle));put(ip,reply,"local_anchor",vecObj(spec.local_anchor));
+        check(gx3de_planar_texture_destroy(assignment),"release temporary anchor resolver");assignment=nullptr;
+        check(gx3de_texture_destroy(texture),"release temporary anchor image");texture=nullptr;Tcl_SetObjResult(ip,reply);return TCL_OK;
+    }catch(const std::exception &e){if(assignment)gx3de_planar_texture_destroy(assignment);if(texture)gx3de_texture_destroy(texture);error(ip,e);return TCL_ERROR;}
 }
 int pick(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
     if(argc!=3){Tcl_WrongNumArgs(ip,1,args,"x y");return TCL_ERROR;}
@@ -1411,6 +1455,8 @@ extern "C" int Gx3deviewer_Init(Tcl_Interp *ip) {
     Tcl_SetAssocData(ip,"GX3DEViewer",release,state);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::presentation",presentationUpdate,state,nullptr);
     Tcl_CreateNamespace(ip,"::GX3DEViewer",nullptr,nullptr);
+    Tcl_CreateObjCommand(ip,"::GX3DEViewer::capabilities",capabilities,state,nullptr);
+    Tcl_CreateObjCommand(ip,"::GX3DEViewer::texture_anchor",textureAnchor,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::render",render,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::cad",cadDispatch,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::graphics_probe",graphicsProbe,state,nullptr);

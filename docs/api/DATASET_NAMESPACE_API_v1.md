@@ -1,95 +1,39 @@
-# Dataset Namespace API v1
+# Dataset Namespace API
 
-Organizational namespaces group canonical Datasets within a Session. They are
-not filesystem paths, Dataset IDs or separate stores. CORE enforces module write
-placement while allowing reads across namespaces.
-The stable Dataset ID and existing Dataset Publication/Metadata/Catalog APIs
-remain authoritative.
+`DATASET_NAMESPACE_API_v1` organizes canonical Datasets within a Session. Namespaces are neither physical paths nor Dataset identities/stores. Existing Publication, Metadata, Catalog and Session Manifest remain authoritative. Reads can cross namespaces; producer writes are restricted.
 
-`datasetNamespaceNormalize value` trims surrounding whitespace and empty slash
-components, and returns1–32 slash-separated components. Components contain
-letters/digits, underscores, hyphens and dots; `.` and `..` are forbidden.
-The maximum total length is512 characters. Case is preserved and significant.
+## Identity and user/admin operations
 
-Tcl functions in `::GX`:
+`datasetNamespaceNormalize value` trims whitespace and empty slash components. It returns1–32 case-sensitive components, at most512 characters overall, using letters/digits, underscores, hyphens and dots. `.` and `..` are forbidden. A legacy leading `current` projects to `base` without rewriting sources.
 
-- `datasetNamespaceGet session datasetId`: explicit namespace, or the Session's
-  current namespace when no private field exists. Old Datasets are not rewritten.
-- `datasetNamespaceSet session datasetId namespace`: user/admin host operation;
-  writes only `_gxtxt.framework.dataset_namespace` in the existing Dataset
-  Metadata resource. ID, payload, schema, source bindings and provenance remain.
-- `datasetNamespaceCurrentGet ?session?`: current namespace; default `current`.
-- `datasetNamespaceCurrentSet session namespace`: user/admin host operation changing the open Session's
-  current namespace through Session Persistence. Writes to another Session are
-  rejected. Missing-field Dataset display follows this current value.
-- `datasetNamespaceCreate session namespace`: user/admin host operation creating
-  an empty namespace through the existing Session Manifest. Existing namespaces
-  are idempotent; no Dataset or alternate namespace registry is created.
-- `datasetNamespaceList ?session?`: occupied namespaces, current namespace and
-  explicitly created empty namespaces, and their ancestors; no parallel
-  namespace catalog is maintained.
-- `datasetNamespaceForModule moduleId`: assigned `module/<moduleId>`, with
-  reversible UTF-8 hex fallback for an identity requiring encoding.
+Tcl functions live in `::GX`:
 
-The current namespace and explicit empty namespaces persist in the existing
-Session Manifest under `[dataset_organization] current_namespace`,
-`namespace_count` and `[dataset_namespace.N] name`. Catalog snapshots expose
-`current_namespace` and each Dataset's `namespace`. Both Dataset moves and
-current-namespace changes notify existing catalog subscribers; empty namespace
-creation also notifies browser subscribers.
+- `datasetNamespaceGet session datasetId`: recorded namespace, or deterministic `base` when absent.
+- `datasetNamespaceSet session datasetId value`: user/admin placement change, writing only reserved framework metadata. IDs, schema, payload and provenance remain intact.
+- `datasetNamespaceCurrentGet ?session?`: current user selection, default `base`.
+- `datasetNamespaceCurrentSet session value`: change Current in the open Session through Session Persistence. It does not move existing Datasets.
+- `datasetNamespaceCreate session value`: idempotently create an empty namespace in the existing Manifest.
+- `datasetNamespaceList ?session?`: occupied, empty/current/pending namespaces and ancestors; no separate namespace catalog.
+- `datasetNamespaceForModule moduleId`: `module/<id>` with reversible UTF-8 hex fallback where necessary.
 
-Publication v2 series/writers and file publication automatically use the module's
-assigned namespace. A caller-supplied `dataset_namespace` is rejected, including
-one matching the assignment: modules do not choose output placement. A module
-cannot replace an output which the user has moved outside its assigned namespace.
-Streaming writers recheck placement before finalization. Old outputs without an
-explicit namespace remain replaceable by their recorded producer and acquire the
-assigned namespace on publication. Namespace metadata participates in publication
-rollback even when the caller supplied no ordinary metadata.
+Current and empty namespaces persist under `[dataset_organization]` and `[dataset_namespace.N]`. Dataset moves, Current changes and empty namespace creation notify existing Catalog subscribers. New registrations with a known producer receive `module/<producer>`; anonymous registrations use `base`. Pending is an acquisition context, never a canonical publication destination.
 
-Host imports through legacy acquisition registration pin the Session's current
-namespace when first committed. Later current-namespace changes leave that import
-in place. Existing Datasets with no namespace continue to follow the current
-namespace for display. Module publication, including publication by an acquisition
-module, always uses its assigned module namespace.
+## Producer publication and shared scientific inputs
 
-Python/Octave use `DATASET_NAMESPACE_API_v1` operations `get`, `list`,
-`current_get`, and `module_default`. Arguments follow the Tcl
-operations with the Session supplied by the trusted Bridge host. Module identity
-comes from runtime context. There is no caller-supplied owner override or namespace
-mutation operation. `create`, `set` and `current_set` are intentionally
-host-only user/admin operations; module scripts cannot choose output placement.
-User/admin namespace changes are exposed in the Dataset browser and manager.
+Ordinary Publication v2 and File Publication assign the producer's private module namespace. A producer cannot replace content moved outside its assigned namespace. Streaming writers recheck placement at finalization. Historical records without placement remain writable only by their recorded producer, acquiring explicit placement on publication.
 
-The Dataset browser is a catalog projection. Its row highlight is only a browse
-state. The small row glyph or explicit context-menu action activates a Dataset
-through the existing inspection choice; row clicks and context-menu opening do
-not. Preview's historical choice variable is an alias of that choice, not a
-second Dataset selection authority. Namespace and Dataset context menus create
-empty namespaces and move Datasets. The pictographic manager presents hierarchy,
-membership, current namespace, move and drag/drop using these same API calls.
-Ordinary Metadata UI/text export hides all reserved private fields.
+`datasetNamespaceAuthorizeSharedInput session namespace producers` is a host-only user/admin operation. It records an explicit authorized producer list in the **same Session Manifest**, beside namespace definitions. `datasetNamespaceSharedInputs session` reads that policy. Private `module/*` and pending namespaces cannot be shared. An empty list revokes permission.
 
-Portable Dataset ZIP import preserves private module fields but assigns the target
-Session current namespace. User/admin move/current/import operations reject a
-bound module context. Ordinary metadata, schema, notes, rename and deletion also
-enforce module placement when invoked from a bound Tcl module context. Host UI
-operations remain user/admin actions. In-process trusted Tcl is not an OS sandbox.
+An authorized producer may pass `dataset_namespace` to ordinary Publication APIs to **create a new Dataset** there. Existing IDs, `replace_owned`, foreign overwrite, mutation or deletion are never granted by this policy, even to the original creator. Namespace spelling and shared read access grant no write permission. A caller-supplied namespace without a real grant is rejected. Private module publication remains the default. Shared inputs preserve stable Dataset identities and source provenance.
 
-## dev071 compatibility and migration
+## Browser, metadata and imports
 
-Missing/empty organizational metadata has the deterministic `base` fallback,
-independent of Current. A legacy leading `current` path component projects to
-`base` without a read-time source rewrite. New registrations with a known producer,
-including legacy acquisition registration, receive `module/<producer>`; anonymous
-registrations receive `base`. Pending is never a canonical destination. An explicit
-user package import uses Current unless Current is Pending, in which case it uses
-base. File/structured publication still validates producer ownership and namespace;
-a user move does not grant the producer permission to write in the new namespace.
+The Dataset Browser is a Catalog projection. Row highlight is browse state; the row glyph or explicit guarded context action activates the canonical inspection choice. Preview shares this authority. Namespace context menus and the pictographic manager use the same user/admin create/move/current APIs, including drag/drop.
 
-`datasetNamespaceMigrationPlan ?session?` describes legacy Dataset and Manifest
-fields. `datasetNamespaceMigrate session newBackupArchive` is a host/admin operation:
-create and validate a new portable backup outside the Session, then migrate in a
-catalog transaction. Errors restore registry, affected metadata and Manifest bytes,
-plus in-memory settings. Restore through Portable Session Import into a new directory.
-The existing private metadata authority remains the only writer of namespace keys.
+Ordinary Metadata UI/text export hides reserved private fields. Portable Dataset import preserves private module fields while assigning the target Session Current namespace (or `base` when Current is pending). Bound module contexts cannot invoke user/admin placement operations. Metadata, schema, notes, rename and deletion retain existing module placement checks. In-process trusted Tcl is not an OS sandbox.
+
+## Script Bridge and migration
+
+Python/Octave operations are `get`, `list`, `current_get`, `module_default`; the trusted host supplies Session and module identity. Namespace grants/moves/create/current mutation remain host-only. Publication can request only an explicitly authorized CREATE-only shared destination.
+
+`datasetNamespaceMigrationPlan ?session?` describes legacy Dataset/Manifest fields without rewriting them. `datasetNamespaceMigrate session newBackupArchive` creates and validates a portable backup outside the Session, then migrates through the existing Catalog transaction. Errors restore affected registry, metadata, Manifest and in-memory settings. Restore by importing that backup into a new directory. Reserved namespace keys remain under the existing private metadata authority.

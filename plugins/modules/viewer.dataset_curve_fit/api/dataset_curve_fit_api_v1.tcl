@@ -4,7 +4,7 @@
 namespace eval ::GX::DatasetCurveFit {
     variable state
     variable serial 0
-    variable version "0.45.0"
+    variable version "0.46.0"
     variable root [file normalize [file join [file dirname [info script]] ../../../..]]
 }
 
