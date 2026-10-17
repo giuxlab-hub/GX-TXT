@@ -98,15 +98,43 @@ def verify(announce=True):
             raise ValueError("Unverified dev-103 scientific source: " + name)
         newer.add(name)
 
+    newest = json.loads((ROOT / "source-manifest-dev104.json").read_text(encoding="utf-8"))
+    if (newest.get("schema") != "gxtxt.public-validation-sources/3"
+            or newest.get("referenceFramework") != "0.9.8.10-dev-104"
+            or newest.get("referenceMainCommit") != "d99268348aa55b62f3a1e21ec3672f04504a740d"
+            or newest.get("officialArchiveSha256") != "ee07751380454c226003efa0edb4cbbe2d002ea2424c6ef893ed6982af14726b"
+            or newest.get("selectedCount") != 16
+            or newest.get("sourceOnly") is not True
+            or newest.get("runnerStatus") != "NOT RUN"
+            or len(newest.get("files", [])) != 16):
+        raise ValueError("Unrecognized dev-104 source-only validation inventory")
+    recent = set()
+    for entry in newest["files"]:
+        name = entry["path"]
+        rel = Path(name)
+        if (rel.is_absolute() or ".." in rel.parts or name in seen or name in newer
+                or name in recent or not name.startswith("validation/official_dev104/")
+                or rel.suffix.lower() not in (".tcl", ".py")):
+            raise ValueError("Unexpected dev-104 validation source path: " + name)
+        candidate = ROOT / rel
+        if candidate.is_symlink() or not candidate.is_file() or not candidate.resolve().is_relative_to(ROOT):
+            raise ValueError("Dev-104 scientific test file absent: " + name)
+        raw = candidate.read_bytes()
+        if (len(raw) != entry["bytes"]
+                or hashlib.sha256(raw).hexdigest() != entry["sha256"]
+                or any(token.lower() in raw.decode("utf-8").lower() for token in BANNED)):
+            raise ValueError("Dev-104 test differs from accepted scientific source: " + name)
+        recent.add(name)
+
     for candidate in (ROOT / "validation").rglob("*"):
         if candidate.is_symlink():
             raise ValueError("Unexpected symlink: " + str(candidate))
-        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer):
+        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer | recent):
             raise ValueError("Unreviewed file inside validation tree: " + str(candidate))
     if not (ROOT / "LICENSE").is_file():
         raise ValueError("GPL license missing")
     if announce:
-        print("PASS: 22 byte-identical files, 19 dev-102 scientific cases, 3 shared helpers.")
+        print("PASS: 49 verified original files: 19 dev-102 tests, 3 helpers, 11 dev-103 tests and 16 dev-104 tests.")
         print("PASS: reviewed public inputs only, no private test PDFs or deployment scripts.")
         print("Runtime scientific/GUI tests: NOT RUN by source verification.")
     return info

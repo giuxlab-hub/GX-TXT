@@ -63,3 +63,28 @@ Future suites should state meaningful independent reference values, input hashes
 The source-only list intentionally omits dev-103 release delivery, rollback, installation, private GUI Session/2D21 case-specific studies and evidence-manifest generation. The public code here does not contain copied private Sessions, TLS keys, user data, or the PDF-based test generators previously excluded from `main`.
 
 The **dev-102 19 cases and three shared helpers remain unchanged**. The Python source verification function now checks both cryptographic inventories while preserving its restricted opt-in **dev-102** runner behavior.
+
+## Dev-104 original scientific validation sources
+
+**Scope:** dev-104 [main commit](https://github.com/giuxlab-hub/GX-TXT/commit/d99268348aa55b62f3a1e21ec3672f04504a740d). **Status:** source only, NOT RERUN on Windows or in CI. All 16 original test/helper files have immutable SHA-256 entries in `source-manifest-dev104.json`.
+
+| Original filename | Scientific or interface scope | Manual prerequisites |
+| --- | --- | --- |
+| `builder_contract.tcl` | Public Viewer design schema and safety checks | Fresh synthetic output, dev-104 |
+| `builder_smoke_gui.tcl` | Designer/Preview layout, native interactions and Undo/Redo | Debian X11, xdotool and helper below |
+| `p0_workflow.tcl` | Shared X11 UI automation and focus/grab checks | Manual GUI helper; not standalone |
+| `project_contract.tcl` | Project grouping and atomic identity guards | New synthetic Project and Session |
+| `project_scale.tcl` | Hierarchical Project navigation performance | Controlled large synthetic Project fixture |
+| `print_recipe_contract.tcl` | Typed canonical Dataset printing recipes | Fresh synthetic Session |
+| `print_pipeline_contract.tcl` | Graphs, annotation and PDF composition | Depends on print recipe helper |
+| `print_media_contract.tcl` | Raster/media source fidelity and qualified modes | Pillow and print recipe helper |
+| `print_native3d_contract.tcl` | Native3D scientific Print source | Compatible native renderer |
+| `print_pdf_contract.py` | Independent PDF rendering/text checks | Poppler/qpdf and controlled synthetic inputs |
+| `cups_contract.tcl` | Cancellable printer discovery and guarded submission | Fake backend only |
+| `cups_fixture.py` | Synthetic printer process replies | Disposable fake backend; no real printer |
+| `cups_fixture_setup.py` | Creates temporary fake-CUPS tools | Private synthetic test root |
+| `preview_subscription_contract.tcl` | Preview subscription/cache lifetime | Script Jobs and recipe helper |
+| `request_contract.tcl` | Managed request cancellation/lifecycle | Helper below |
+| `request_fixture.py` | Bounded synthetic subprocess responses | Not a Session Generator Library |
+
+These original sources may require other controlled fixtures not distributed here. They are documentation and reproducible test inputs, **not** newly measured runtime PASS results. Original scientific Sessions, confidential PDFs/generators, deployment scripts and printer credentials are excluded.

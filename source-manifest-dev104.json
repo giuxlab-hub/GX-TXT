@@ -1,0 +1,107 @@
+{
+  "schema": "gxtxt.public-validation-sources/3",
+  "referenceFramework": "0.9.8.10-dev-104",
+  "referenceMainCommit": "d99268348aa55b62f3a1e21ec3672f04504a740d",
+  "officialArchiveSha256": "ee07751380454c226003efa0edb4cbbe2d002ea2424c6ef893ed6982af14726b",
+  "selectedCount": 16,
+  "sourceOnly": true,
+  "runnerStatus": "NOT RUN",
+  "files": [
+    {
+      "path": "validation/official_dev104/builder_contract.tcl",
+      "bytes": 7885,
+      "sha256": "612b4a2ebc10d36bfb4c860dd5a3ce757e129144d5cde08ad4fdc00d8a264772",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/builder_smoke_gui.tcl",
+      "bytes": 6100,
+      "sha256": "00d55d222c73b3018c58c24969f09f08e735def448787c6be1cafe37bc11e161",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/p0_workflow.tcl",
+      "bytes": 8321,
+      "sha256": "9b807b60a66af49d64d54b428564e9a5b92152ad853055d40db19f6216d04d44",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/project_contract.tcl",
+      "bytes": 5431,
+      "sha256": "5f52e13935728dbd4990e0838b14354e4e655d30e5d4ee882fb852b804687b3d",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/project_scale.tcl",
+      "bytes": 1933,
+      "sha256": "b47f87148361ab48c822876e02e3670c301f42dd13b65e9019abd091af39b74b",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/print_recipe_contract.tcl",
+      "bytes": 4310,
+      "sha256": "60f64a7d1aeee60979b867b1c98e22eefaa7c16138c2665febcf2a3f29c94785",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/print_pipeline_contract.tcl",
+      "bytes": 4954,
+      "sha256": "6096f6bd6a671f9b7b8945b06c22780453601a48ba382ea74ac849bbf63d950e",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/print_media_contract.tcl",
+      "bytes": 1983,
+      "sha256": "3b4546db501eca614bee49dbd6e94d1a555e3a3060337f0a4b4b3dd4ab9df970",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/print_native3d_contract.tcl",
+      "bytes": 2947,
+      "sha256": "ba6489ce8ae8c3ac8e80c2cf3bb334dff5ccfc179b67399edf029f15c9a025de",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/print_pdf_contract.py",
+      "bytes": 5330,
+      "sha256": "c1a0ebc26d179adb15186149b34c0c5d1434482cfe588d55e1e11f819be3d7ec",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/cups_contract.tcl",
+      "bytes": 5062,
+      "sha256": "809864d12f9bc6fef0aedf30db956d475fea06643a664736e08a79126016bf67",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/cups_fixture.py",
+      "bytes": 2608,
+      "sha256": "091b732ec894ff1744f13fd73c58cd06903714d770ff233181fa5156e43b09e0",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/cups_fixture_setup.py",
+      "bytes": 869,
+      "sha256": "0b8085d9e48b1361e2691b9c166bec71b4410979839c2f78a30d650c2a666bbe",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/preview_subscription_contract.tcl",
+      "bytes": 2814,
+      "sha256": "0bedfccd5f7f4fba838d6dfa64681102ef14fe9be9095b5cab7a355b83683ad2",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/request_contract.tcl",
+      "bytes": 2302,
+      "sha256": "1afc43049d0f71794140d9180eaec4efc225f9c3419c30bab02e049454f1a799",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev104/request_fixture.py",
+      "bytes": 788,
+      "sha256": "fa389531a658f370acda863498fa0eb2a0d8d04c9148487c0bd0b30217f8b6e5",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    }
+  ]
+}

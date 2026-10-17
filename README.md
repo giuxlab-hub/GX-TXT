@@ -62,3 +62,11 @@ The framework source commit [`e07376e0a62e0eecf1737da33c87bbbb41273f4b`](https:/
 Run `python3 tools/validate_suite.py verify` for a read-only consistency check of **both** dev-102 and dev-103 source manifests. The `list` and `run` subcommands remain intentionally limited to the original **dev-102** vetted CLI cases. The dev-103 cases are published as **source-only/manual**: they are not automatically executed by this branch and are not new proof of Debian/Windows/platform acceptance. The upstream dev-103 acceptance took place on Linux and includes a localhost mTLS compute-node campaign; no separate physical remote machine is asserted here.
 
 Dev-103 materials deliberately exclude the private copied 2D21 scientific Session, remote-node certificates or account configuration, developer-source reviews, release activation/deposit/rollback and evidence scripts, and any privately supplied teaching-document PDFs/generators. Tests using remote/TLS dependencies require a separately provisioned isolated test node and synthetic inputs; never point them at a live computing service.
+
+## GX-TXT dev-104 validation sources (NOT RERUN)
+
+The [dev-104 source commit](https://github.com/giuxlab-hub/GX-TXT/commit/d99268348aa55b62f3a1e21ec3672f04504a740d) introduces Viewer Interface Builder, grouped Projects and scientific Print/PDF. We publish **16 original Tcl/Python validation cases and helpers**, SHA-256 identical to the official Debian archive, in `validation/official_dev104/` with [source-manifest-dev104.json](source-manifest-dev104.json).
+
+These are **source-only**, not automatically run. `python3 tools/validate_suite.py verify` checks all three release inventories (dev-102, dev-103, dev-104). The explicit `run` command remains restricted to the seven previously reviewed dev-102 CLI cases. Dev-104 GUI tests require local X11; PDF checks require Poppler/qpdf; CUPS tests require a disposable fake backend. Their inclusion is not new runtime evidence or physical printer acceptance. See [TEST_MATRIX.md](TEST_MATRIX.md).
+
+The branch contains no real user Session, private printer settings, credentials, confidential teaching PDFs, document-extraction test generator or scripts that deposit/activate the official framework.
