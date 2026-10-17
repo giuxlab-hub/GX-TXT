@@ -10,7 +10,7 @@ while {[gets stdin line] >= 0} {
     if {[catch {
         set command [lindex $line 0]
         set args [lrange $line 1 end]
-        if {$readonly&&$command ni {render graphics_probe focus_logical pick preset navcube_pick navcube_click navigate camera viewport scientific_axes export_png close}} {error {Read-only consultation worker rejects this operation}}
+        if {$readonly&&$command ni {render graphics_probe focus_logical pick preset navcube_pick navcube_click navigate camera viewport scientific_axes export_png export_vector close}} {error {Read-only consultation worker rejects this operation}}
         switch -- $command {
             cad {if {[llength $args]!=3} {error "cad expects owner scope, action and request"};set result [::GX3DEViewer::cad {*}$args]}
             render {if {[llength $args] != 5} {error "render expects scene, PNG, width, height, stage"};set result [::GX3DEViewer::render {*}$args]}
@@ -35,6 +35,7 @@ while {[gets stdin line] >= 0} {
             plane_begin {if {[llength $args] != 6} {error "plane_begin expects target, action, handle, slot, x, y"};set result [::GX3DEViewer::plane_begin {*}$args]}
             plane_update {if {[llength $args] != 3} {error "plane_update expects x, y, PNG"};set result [::GX3DEViewer::plane_update {*}$args]}
             plane_end {if {[llength $args] != 1} {error "plane_end expects accept"};set result [::GX3DEViewer::plane_end {*}$args]}
+            export_vector {if {[llength $args]!=2} {error "export_vector expects path format"};set result [::GX3DEViewer::export_vector {*}$args]}
             close {::GX3DEViewer::close;set result closed}
             default {error "Unknown renderer worker command"}
         }

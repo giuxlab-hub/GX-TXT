@@ -277,7 +277,8 @@ def export_graph(session: Path, artifact: Path, state_tsv: Path, note: str, meta
                 continue
             payload = portable_presentation(source.read_bytes(), normalize=True) if rel == "presentation.ini" else source
             builder.add("graph/scientific/" + rel, "scientific_snapshot", payload)
-        if "graph/scientific/snapshot.h5" not in builder.content or "graph/scientific/presentation.ini" not in builder.content:
+        native = "graph/scientific/native_v4_snapshot.tcldict" in builder.content
+        if not native and ("graph/scientific/snapshot.h5" not in builder.content or "graph/scientific/presentation.ini" not in builder.content):
             raise ValueError("scientific snapshot is incomplete")
     for dataset_id in [d for d in dependencies.split(";") if d]:
         prefix = "datasets/" + dataset_id
@@ -509,6 +510,82 @@ def validate_hdf5_member(zf: zipfile.ZipFile, name: str) -> dict:
         return datasets
 
 
+def validate_native_graph_snapshot(zf: zipfile.ZipFile, paths: list[str], state: dict) -> None:
+    """Parse inert Tcl lists and inspect complete canonical Dataset archives.
+
+    Tcl's list parser performs no command, variable or expression evaluation.
+    The interpreter has no Tk/display requirement. Snapshot content is never
+    sourced and a nested Graph package cannot recurse into this validator.
+    """
+    import tkinter
+    parser = tkinter.Tcl()
+
+    def dictionary(value: str) -> dict:
+        try:
+            items = parser.splitlist(value)
+        except tkinter.TclError as exc:
+            raise ValueError("Native snapshot contains a malformed inert dictionary") from exc
+        if len(items) % 2:
+            raise ValueError("Native snapshot dictionary has an odd item count")
+        result = dict(zip(items[::2], items[1::2]))
+        if len(result) * 2 != len(items):
+            raise ValueError("Native snapshot dictionary has duplicate fields")
+        return result
+
+    name = "graph/scientific/native_v4_snapshot.tcldict"
+    if zf.getinfo(name).file_size > 16 * 1024**2:
+        raise ValueError("Native snapshot manifest exceeds size limit")
+    try:
+        outer = parser.splitlist(zf.read(name).decode("utf-8"))
+    except tkinter.TclError as exc:
+        raise ValueError("Native snapshot contains a malformed inert list") from exc
+    if len(outer) != 1:
+        raise ValueError("Native snapshot requires one inert dictionary")
+    snapshot = dictionary(outer[0])
+    if snapshot.get("schema") != "GXTXT_NATIVE_PLOT_SNAPSHOT_v1" or snapshot.get("renderer_owner") != "PLOT_DATASET_API_v4":
+        raise ValueError("Unsupported native scientific snapshot")
+    if snapshot.get("graph_id") != state["graph_id"] or not valid_id(snapshot.get("graph_id")):
+        raise ValueError("Native snapshot graph identity mismatch")
+    spec = dictionary(snapshot.get("spec", ""))
+    if spec.get("graph_id") != snapshot["graph_id"]:
+        raise ValueError("Native snapshot specification identity mismatch")
+    datasets = dictionary(snapshot.get("datasets", ""))
+    expected = {name}
+    total_nested = 0
+    for dataset_id, raw in datasets.items():
+        if not valid_id(dataset_id):
+            raise ValueError("Native snapshot has an invalid Dataset identity")
+        resource = dictionary(raw)
+        relative = resource.get("archive", "")
+        if relative != f"resources/{dataset_id}.zip":
+            raise ValueError("Native snapshot has an unsafe Dataset archive path")
+        member = "graph/scientific/" + relative
+        expected.add(member)
+        if member not in paths or not re.fullmatch(r"[0-9a-f]{64}", resource.get("sha256", "")):
+            raise ValueError("Native snapshot Dataset declaration is incomplete")
+        with tempfile.TemporaryDirectory(prefix="gxtxt-native-snapshot-") as temp:
+            archive = Path(temp) / "dataset.zip"
+            digest = hashlib.sha256()
+            with zf.open(member) as source, archive.open("xb") as target:
+                while chunk := source.read(1024 * 1024):
+                    digest.update(chunk)
+                    target.write(chunk)
+            if digest.hexdigest() != resource["sha256"]:
+                raise ValueError("Native snapshot canonical Dataset archive SHA-256 mismatch")
+            with zipfile.ZipFile(archive) as nested:
+                header = read_json_member(nested, MANIFEST, MAX_MANIFEST)
+                if not isinstance(header, dict) or header.get("resource_type") != "dataset":
+                    raise ValueError("Native snapshot permits canonical Dataset packages only")
+                total_nested += sum(item.file_size for item in nested.infolist())
+                if total_nested > MAX_UNCOMPRESSED:
+                    raise ValueError("Native snapshot canonical content exceeds total size limit")
+            info = inspect(archive)
+            if info.get("resource_type") != "dataset" or info.get("resource_identity", {}).get("dataset_id") != dataset_id:
+                raise ValueError("Native snapshot canonical Dataset identity mismatch")
+    if set(paths) != expected:
+        raise ValueError("Native snapshot contains undeclared or unsupported files")
+
+
 def validate_graph_tree(zf: zipfile.ZipFile, manifest: dict) -> None:
     roles: dict[str, list[str]] = {}
     for record in manifest["files"]:
@@ -556,11 +633,17 @@ def validate_graph_tree(zf: zipfile.ZipFile, manifest: dict) -> None:
     scientific_paths = roles.get("scientific_snapshot", [])
     if any(not name.startswith("graph/scientific/") for name in scientific_paths):
         raise ValueError("Graph scientific snapshot has a nonstandard path")
-    for name in scientific_paths:
+    native = "graph/scientific/native_v4_snapshot.tcldict" in scientific_paths
+    if native:
+        validate_native_graph_snapshot(zf, scientific_paths, state)
+        metadata = read_json_member(zf, "graph/metadata.json") if roles.get("graph_metadata") else {}
+        if metadata.get("renderer_owner") != "PLOT_DATASET_API_v4" or metadata.get("renderer_owner_api_version") != "1":
+            raise ValueError("Native scientific snapshot requires matching Graph renderer ownership")
+    for name in ([] if native else scientific_paths):
         relative = name[len("graph/scientific/"):]
         if relative not in {"snapshot.h5", "presentation.ini"} and not re.fullmatch(r"(?:\.gxtxt_plotmeta|private_session/metadata/plot\.dataset/plotspec_v2)/[A-Za-z0-9_.-]+\.ini", relative):
             raise ValueError("Graph snapshot contains an undeclared executable or unsupported resource")
-    if scientific_paths and ("graph/scientific/snapshot.h5" not in scientific_paths or
+    if scientific_paths and not native and ("graph/scientific/snapshot.h5" not in scientific_paths or
                              "graph/scientific/presentation.ini" not in scientific_paths):
         raise ValueError("Graph scientific snapshot is incomplete")
     for name in scientific_paths:

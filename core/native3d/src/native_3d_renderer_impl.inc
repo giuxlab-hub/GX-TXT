@@ -1446,7 +1446,18 @@ static void renderer_scientific_figure(gx3de_target* target,gx3de_render_viewpor
     auto* calibrated=rv.scientific_axes.GetPointer();
     calibrated->SetBounds(f.world_bounds.min.x,f.world_bounds.max.x,f.world_bounds.min.y,f.world_bounds.max.y,f.world_bounds.min.z,f.world_bounds.max.z);
     calibrated->SetXAxisRange(f.axis_min[0],f.axis_max[0]);calibrated->SetYAxisRange(f.axis_min[1],f.axis_max[1]);calibrated->SetZAxisRange(f.axis_min[2],f.axis_max[2]);
+    calibrated->SetDrawXGridlines(scientific_style(vp->view,"xgrid",1)!=0);calibrated->SetDrawYGridlines(scientific_style(vp->view,"ygrid",1)!=0);calibrated->SetDrawZGridlines(scientific_style(vp->view,"zgrid",1)!=0);
+    calibrated->SetScreenSize(scientific_style(vp->view,"font_size",12*scale));
+    if(!vp->view->figure_axis_labels[0].empty()||!vp->view->figure_axis_labels[1].empty()||!vp->view->figure_axis_labels[2].empty()){double font=scientific_style(vp->view,"font_size",12*scale);calibrated->SetLabelOffset(std::max(8*scale,4.0*font));double titleOffset[2]={5.0*font,5.0*font};calibrated->SetTitleOffset(titleOffset);}
+    for(int axis=0;axis<3;++axis){calibrated->GetTitleTextProperty(axis)->SetFontSize(int(scientific_style(vp->view,"axis_label_font_size",14*scale)));calibrated->GetLabelTextProperty(axis)->SetFontSize(int(scientific_style(vp->view,"font_size",12*scale)));}
+    double gr=scientific_style(vp->view,"grid_r",grid),gg=scientific_style(vp->view,"grid_g",grid),gb=scientific_style(vp->view,"grid_b",grid);calibrated->GetXAxesGridlinesProperty()->SetColor(gr,gg,gb);calibrated->GetYAxesGridlinesProperty()->SetColor(gr,gg,gb);calibrated->GetZAxesGridlinesProperty()->SetColor(gr,gg,gb);
     calibrated->SetXTitle(f.axis_labels_utf8[0]);calibrated->SetYTitle(f.axis_labels_utf8[1]);calibrated->SetZTitle(f.axis_labels_utf8[2]);
+    for(int axis=0;axis<3;++axis){const auto& labels=vp->view->figure_axis_labels[axis];
+        if(labels.empty()){calibrated->SetAxisLabels(axis,nullptr);continue;}
+        vtkNew<vtkStringArray> values;for(const auto& label:labels)values->InsertNextValue(label);
+        calibrated->SetAxisLabels(axis,values);
+    }
+
     rv.scientific_axes->SetVisibility(f.axes_grid_visible);
     fr->AddActor(rv.scientific_axes);
     auto text=[&](const char* value,double x,double y,int size,bool rotate){
@@ -1456,9 +1467,10 @@ static void renderer_scientific_figure(gx3de_target* target,gx3de_render_viewpor
         auto* p=t->GetTextProperty();p->SetColor(ink,ink,ink);p->SetFontSize(int(size*scale));
         p->ShadowOff();p->BoldOff();p->ItalicOff();p->SetFontFamilyToArial();p->SetJustificationToCentered();p->SetVerticalJustificationToCentered();
         if(rotate)p->SetOrientation(90);
+        if(value==f.legend_utf8){int alignment=int(scientific_style(vp->view,"legend_alignment",1));if(alignment==0)p->SetJustificationToLeft();else if(alignment==2)p->SetJustificationToRight();if(scientific_style(vp->view,"legend_background",0)!=0){p->SetBackgroundColor(scientific_style(vp->view,"legend_background_r",1),scientific_style(vp->view,"legend_background_g",1),scientific_style(vp->view,"legend_background_b",1));p->SetBackgroundOpacity(1);}if(scientific_style(vp->view,"legend_border",0)!=0){p->FrameOn();p->SetFrameColor(scientific_style(vp->view,"legend_border_r",.5),scientific_style(vp->view,"legend_border_g",.5),scientific_style(vp->view,"legend_border_b",.5));}}
         fr->AddActor2D(t);
     };
-    text(f.title_utf8,.45,.95,18,false);text(f.legend_utf8,.45,.035,12,false);
+    text(f.title_utf8,.45,.95,int(scientific_style(vp->view,"title_font_size",18*scale)/scale),false);text(f.legend_utf8,scientific_style(vp->view,"legend_x",.45),scientific_style(vp->view,"legend_y",.035),int(scientific_style(vp->view,"legend_font_size",12*scale)/scale),false);
     if(f.colorbar_visible){
         vtkNew<vtkLookupTable> lut;lut->SetNumberOfTableValues(f.palette_count);
         lut->SetRange(f.scalar_min,f.scalar_max);lut->Build();

@@ -3,6 +3,8 @@
 #include "../../../plugins/modules/math.numeric/api/c/gxtxt_numeric_reductions_v1.h"
 #include "native_3d_scientific_figure_api_v1.h"
 #include <vtkCubeAxesActor.h>
+#include <vtkGL2PSExporter.h>
+#include <vtkStringArray.h>
 #include <vtkAxesActor.h>
 #include <vtkCaptionActor2D.h>
 #include <vtkScalarBarActor.h>
@@ -246,6 +248,8 @@ struct gx3de_render_viewport {gx3de_viewport* viewport;vtkSmartPointer<vtkRender
 struct gx3de_target { gx3de_engine* engine;uint32_t width,height;std::vector<gx3de_viewport*> viewports;uint32_t native_kind=0;uint64_t native_id=0;uint32_t logical_width=0,logical_height=0,backend_preference=0;gx3de_render_quality quality{sizeof(gx3de_render_quality),0,GX3DE_TRANSPARENCY_DEPTH_PEEL,0,{}};uint32_t interaction_active=0;bool quality_explicit=false;std::unordered_map<std::string,std::shared_ptr<const Mesh>> display_lod_cache;vtkSmartPointer<vtkRenderWindow> window;std::vector<gx3de_render_viewport> rendered;std::vector<uint8_t> rgba;std::string diagnostic,render_key;std::thread::id render_owner=std::this_thread::get_id();uint64_t completed_frames=0,geometry_rebuild_frames=0,geometry_reuse_frames=0;uint64_t gpu_budget_bytes=0,gpu_estimated_bytes=0,gpu_last_rejected_bytes=0;std::shared_ptr<void> d3d_state; };
 struct gx3de_view { gx3de_scene* scene;gx3de_camera camera{};double orthographic_height=0;gx3de_plane* working_plane=nullptr;gx3de_anchor* selection=nullptr;std::array<gx3de_view_clip_plane,GX3DE_MAX_VIEW_CLIP_PLANES> clips{};gx3de_view_interaction interaction{};std::vector<gx3de_viewport*> viewports;
     gx3de_scientific_figure figure{};
+    std::array<std::vector<std::string>,3> figure_axis_labels;
+    std::map<std::string,double> figure_style;
     uint32_t shadow_light_mask=15;
     std::array<gx3de_positional_light,4> positional_lights{};
     std::vector<gx3de_gizmo*> gizmos;
@@ -864,6 +868,7 @@ static uint32_t navcube_synced(const gx3de_view* view);
 #include "native_3d_curved_texture_impl.inc"
 #include "native_3d_shadow_impl.inc"
 static void figure_rect(const gx3de_view*,double&,double&,double&,double&);
+static double scientific_style(const gx3de_view*,const char*,double);
 #include "native_3d_renderer_impl.inc"
 #include "native_3d_backend_impl.inc"
 #include "native_3d_gizmo_impl.inc"
@@ -3244,6 +3249,19 @@ gx3de_result gx3de_target_write_png(gx3de_target* t,const char* path) {
     }catch(const std::bad_alloc&){return GX3DE_OUT_OF_MEMORY;
     }catch(const std::exception&){return GX3DE_DEGENERATE;}
 }
+gx3de_result gx3de_target_write_vector(gx3de_target* t,const char* path,const char* format) {
+    if(!t||!t->window||!valid_utf8(path,4096)||!path[0]||!format)return GX3DE_INVALID_ARGUMENT;
+    const std::string f(format);if(f!="svg"&&f!="pdf")return GX3DE_INVALID_ARGUMENT;
+    try {const auto output=std::filesystem::u8path(path);
+        const auto prefix=output.string()+".native-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
+        vtkNew<vtkGL2PSExporter> writer;writer->SetRenderWindow(t->window);writer->SetFilePrefix(prefix.c_str());
+        if(f=="svg")writer->SetFileFormatToSVG();else writer->SetFileFormatToPDF();
+        writer->CompressOff();writer->Write3DPropsAsRasterImageOff();writer->SetSortToBSP();writer->SilentOn();writer->Write();
+        const auto staged=prefix+"."+f;std::error_code ec;
+        if(!std::filesystem::is_regular_file(staged)||std::filesystem::file_size(staged)<100)return GX3DE_DEGENERATE;
+        std::filesystem::rename(staged,output,ec);return ec?GX3DE_DEGENERATE:GX3DE_OK;
+    }catch(const std::bad_alloc&){return GX3DE_OUT_OF_MEMORY;}catch(const std::exception&){return GX3DE_DEGENERATE;}
+}
 gx3de_result gx3de_view_render_rgba(gx3de_view* view,uint32_t width,uint32_t height,
                                      uint8_t* pixels,uint64_t capacity,uint64_t* required) {
     if(!view||!required||(!pixels&&capacity)||!width||!height)return GX3DE_INVALID_ARGUMENT;
@@ -3369,13 +3387,25 @@ gx3de_result gx3de_view_scientific_figure_set(gx3de_view* v,const gx3de_scientif
     }
     v->figure=*f;return GX3DE_OK;
 }
+gx3de_result gx3de_view_scientific_style_set(gx3de_view*v,const char*key,double value) {
+ if(!v||!key||!std::isfinite(value))return GX3DE_INVALID_ARGUMENT;
+ static const std::set<std::string> allowed={"font_size","axis_label_font_size","title_font_size","legend_font_size","legend_x","legend_y","legend_alignment","legend_background","legend_border","legend_background_r","legend_background_g","legend_background_b","legend_border_r","legend_border_g","legend_border_b","margin_left","margin_right","margin_top","margin_bottom","xgrid","ygrid","zgrid","grid_r","grid_g","grid_b"};
+ if(!allowed.count(key))return GX3DE_INVALID_ARGUMENT;
+ v->figure_style[key]=value;return GX3DE_OK;
+}
+static double scientific_style(const gx3de_view*v,const char*key,double fallback){auto found=v->figure_style.find(key);return found==v->figure_style.end()?fallback:found->second;}
+gx3de_result gx3de_view_scientific_axis_labels_set(gx3de_view*v,uint32_t axis,const char*const*labels,uint32_t count) {
+ if(!v||axis>2||count>64||(!labels&&count))return GX3DE_INVALID_ARGUMENT;
+ std::vector<std::string> next;for(uint32_t i=0;i<count;++i){if(!valid_utf8(labels[i],128))return GX3DE_INVALID_ARGUMENT;next.emplace_back(labels[i]);}
+ v->figure_axis_labels[axis]=std::move(next);return GX3DE_OK;
+}
 gx3de_result gx3de_view_scientific_figure_get(gx3de_view* v,gx3de_scientific_figure* f) {
     if(!v||!f||f->struct_size<sizeof(*f))return GX3DE_INVALID_ARGUMENT;
     *f=v->figure;f->struct_size=sizeof(*f);return GX3DE_OK;
 }
 static void figure_rect(const gx3de_view* v,double& x,double& y,double& w,double& h) {
     x=0;y=0;w=1;h=1;
-    if(v->figure.enabled){x=.09;y=.13;w=v->figure.colorbar_visible?.68:.80;h=.73;}
+    if(v->figure.enabled){x=scientific_style(v,"margin_left",.09);y=scientific_style(v,"margin_bottom",.13);w=1-x-scientific_style(v,"margin_right",v->figure.colorbar_visible?.23:.11);h=1-y-scientific_style(v,"margin_top",.14);}
 }
 static double camera_ortho_height(const gx3de_view* v) {
     return v->orthographic_height>0?v->orthographic_height:

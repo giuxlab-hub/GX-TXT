@@ -1,50 +1,46 @@
-# Scientific Worksheet 1.2.0 — User guide
+# Scientific Worksheet — User Manual
 
-Scientific Worksheet is a saved calculation workbook inside a GX-TXT Session. It combines typed cells, scientific formulas, public mathematical operations, canonical Dataset snapshots, and Plot Dataset output. A bound Dataset is read into the workbook with its source identity; editing Worksheet cells never changes the source Dataset.
+Scientific Worksheet is a calculation Workbook inside a GX-TXT Session. It combines typed cells, safe formulas, public scientific operations, canonical Dataset snapshots and live native charts. Editing a Worksheet never changes a bound source Dataset.
 
-## Start, open, and save
+## Start and save
 
-1. Open a Session in GX-TXT, then choose **Viewers → Scientific Worksheet**. A new workbook opens with one sheet, **Sheet1**.
-2. Enter values or bind a Session Dataset. The workbook title, formula bar, grid, sheet tabs, and status line remain visible while you work.
-3. Choose **Workbook → Save** to create or update the Session Interactive Document. **Workbook → Open…** lists saved Worksheet documents in the current Session.
-4. Closing the window does not save unsaved edits automatically. Use **Save** before closing or publishing a result.
+Open a Session, then choose **Viewers → Scientific Worksheet**. A draft starts with **Sheet1**. The top menu provides Workbook, Edit, Insert, Data, Formulas, View, Workspace, History and Help. The compact toolbar provides Save, Undo, Redo, Functions, the inspector toggle and a Go To address.
 
-The upper controls are grouped by purpose: **Workbook** for Save/Open, **Data** for binding and table preparation, **Analyze** for functions and Plot Dataset, **Edit** for cell actions, and **Calculate** for mode and recalculation scope. On a narrow window, Analyze and Calculate move to their own row. The action names and commands are the same in either layout.
+**Workspace → Save** persists the complete Workbook as a canonical Session Workspace. Open, New, Save As / Duplicate, Rename, Manager, Notes, Preview, Import, Export, Close and Delete use the shared [Workspace host](../../../docs/api/SESSION_WORKSPACE_API_v1.md). New remains an unsaved draft until Save. A dirty close or switch asks **Save / Discard / Cancel**; it never publishes a Dataset automatically. A stale Session, deleted document or externally changed scientific document must be reopened before editing or saving. The title follows the actual Workspace name.
 
-## Read and edit the grid
+**Help → User Manual…** or **F1** opens this rendered manual in its own nonmodal window. Find, scrolling, Back and Forward belong to that manual window. Closing it leaves the Worksheet and main application Help available.
 
-The selection status summarizes at most 5,000 cells using the public Numeric
-provider and CORE statistical interpretation. It includes finite scalar numbers,
-reports their count, and omits text, errors and nonfinite/nonscalar values.
-Mixed units require explicit conversion before aggregation; missing units stay
-undeclared. Empty or oversized selections show an explanation. Calculation keeps
-the interface responsive, and edits or reopened windows cannot receive an older
-selection's result. Identical selections reuse the captured result.
+## Native grid and docked editor
 
-Automatic calculation uses the supplied workbook's values, including when two
-in-memory copies share the same document ID or revision. Changing any sheet
-invalidates dependent cached results for that workbook. Manual mode continues
-to retain calculated values until the requested recalculation action.
+The native grid virtualizes visible rows and columns, with bounded overscan. Its address domain is **A:ZZ** and **1:1,000,000**. Scrollbars, fast wheel input, arrows, Page Up/Down, Home/End and Ctrl+Home/End use the same clamped viewport. Filtering preserves original row numbers. Headers show column identities, names and declared units; drag a column divider to change its display width.
 
-Column letters and row numbers identify cells such as **B4**. The active cell is shown in blue, and its full stored value or formula appears beside **fx**. A pale row highlight helps locate the active cell. Fine gridlines separate cells, including empty cells. Named columns and units appear in column headings.
+The resizable **left inspector** has Cell & Formula, Functions, Data / Lineage and Chart tabs. Its controls scroll vertically on smaller windows. **Inspector** hides or restores the panel; **View → Reset layout** restores the standard arrangement.
 
-- Click a cell to activate it. Double-click, press **F2**, or press **Enter** to edit directly. Press **Enter** to commit or **Escape** to cancel the direct editor.
-- Type in the formula bar and select **Apply Formula** to commit the active cell. Plain numeric or text values are accepted; a formula begins with an equals sign.
-- Use arrow keys, Tab/Shift+Tab, Home/End, Ctrl+Home/Ctrl+End, Page Up/Down, the mouse wheel, and the scrollbars to navigate. The grid renders a 200-row window while stored cells may extend to row 1,000,000 and column ZZ.
-- Drag to select a rectangular range. Shift extends from the anchor; Ctrl-click adds another range. A blue outline marks the selected range. The status line reports its cell count, numeric count, sum, and mean for selections of up to 5,000 cells.
-- **Inspect Cell** shows the computed value, unit, lineage, or a detailed error. **Clear** clears the selected range. **Undo** and **Redo** work on recent edits in the current editor window.
+- Click a cell, press **F2** or double-click to edit directly. Typing in the grid starts a direct edit. **Enter** commits and moves vertically; **Tab / Shift+Tab** commits and moves horizontally. **Escape** cancels the draft. One native caret editor is used for the active cell.
+- The **Cell & Formula** tab contains a multiline editor. **Apply** commits its value or formula; **Ctrl+Enter** also applies. **Cancel / Escape** restores the stored source. A formula begins with `=`. Selecting another cell commits a valid pending cell edit; an invalid transaction stays available for correction.
+- Drag to select a rectangle, use Shift to extend it, or click row/column headers. **Ctrl+A** selects the populated extent. Drag the active cell's small fill handle to complete one fill transaction. Edit also provides Fill Down and Fill Right.
+- **Ctrl+C / Ctrl+X / Ctrl+V** use bounded, quoted UTF-8 TSV externally and typed cells internally. Internal formulas shift relative references once; fixed and mixed references retain their meaning. A dedicated clipboard format identifies internal copies; identical plain-text content from another application remains external TSV.
+- Data / Lineage shows computed values, units, source Dataset and Variable IDs, original row identities and provider interpretation. Errors remain visible and editable. Long cell previews are bounded; the stored source/formula remains intact.
 
-**Ctrl+C** copies a rectangular TSV selection. **Ctrl+V** pastes TSV starting at the active cell. Formulas copied inside Worksheet adjust their relative references once for the source-to-destination offset. Select an initial formula and its destination range, then choose **Fill Down** or **Fill Right**. Pasting ordinary external TSV does not reinterpret it as a Worksheet formula relocation.
+**View → Viewer configuration…** uses the shared Configuration editor for User defaults and Session overrides, including inspector visibility/width, grid font and density, individual column widths, numerical display format/digits and command shortcuts. Text formatting changes no canonical value; integer strings retain their exact precision. Navigation and hover do not create scientific History steps.
 
-## Sheets, columns, and ranges
+## Sheets and table preparation
 
-Sheet tabs sit below the grid. The active tab is bold and marked with a dot. Select **+** to create a sheet; **Rename…**, **Duplicate…**, and **Delete…** act on the active sheet. Deletion asks for confirmation. Sheet names use identifiers such as Calibration_2. A cross-sheet reference uses Sheet1!A1. Renaming a sheet updates its references.
+Sheet tabs sit below the grid. **+** creates a sheet; Insert provides rename, duplicate and guarded delete, plus row/column insertion and deletion through the reference-aware model. A deleted sheet cannot reappear after Save/Open. Structural changes that would invalidate a captured guided operation require explicitly unlinking that operation first.
 
-**Data → Columns / Ranges…** sets a column display name and unit or defines a named rectangular range. For example, name column B Voltage and define voltages as B1:B10; a formula can then use =numeric.mean(voltages) or =Voltage[2]. Drag a heading divider to adjust a column width. Sheet order, names, formulas, bindings, and presentation survive Save/Open.
+**Data → Columns / Ranges…** sets a column display name/unit or a named range. For example, name column B `Voltage` and define `voltages` as B1:B10; formulas can use `=numeric.mean(voltages)` or `=Voltage[2]`. A acts on A only; AA and AB retain their separate identities. Renaming a sheet updates parsed references while preserving quoted text.
+
+**Data → Sort / Filter…** performs bounded table preparation on the Workbook snapshot. Sorting and restoring source order preserve exact source-row lineage. Filtering hides rows without renumbering them or rewriting a Dataset. **Convert Unit…** applies an explicit compatible CORE Unit Registry conversion to the selection; incompatible or opaque semantic conversions reject.
+
+## Durable History
+
+Undo/Redo and Previous/Next/Return to latest use the shared CORE Scientific Recipe History. The timeline, Details and explicit Branch / Restart here operate on the same retained semantic steps. Browsing is read-only until an explicit branch is confirmed. Cancelling that confirmation leaves scientific state unchanged. Clear History is guarded and offers an external Workspace backup first.
+
+Cell, paste/fill, sheet, Dataset binding, sorting/filtering, unit, operation and chart edits are recorded as semantic actions. One completed drag or paste is one step. Published Datasets, external exports and published Graphs are explicit side effects and are not silently deleted by local Undo. Save/Open retains History; it is not a process-local list of twenty snapshots. The CORE limit is 4096 steps and an 8 MiB recipe; larger saved scientific checkpoints use the existing Document-owned resource authority. Large unsaved work must be saved before managed scientific execution or resource-backed checkpoints.
 
 ## Formulas and calculation
 
-References can be relative (A1), fixed ($A$1), or mixed (A$1, $A1). Copy and Fill shift only relative row or column parts. Formulas support arithmetic, comparisons, parentheses, ranges (A1:B10), named ranges, named columns, cross-sheet references, and formula-safe functions. Use **Pick Reference** when composing a formula: click or drag in the grid to insert a cell or range into the formula bar. **Ctrl+Space** completes a function, range, column, or sheet name when there is a unique match.
+References can be relative (A1), fixed ($A$1), or mixed (A$1, $A1). Copy and Fill shift only relative row or column parts. Formulas support arithmetic, comparisons, parentheses, ranges (A1:B10), named ranges, named columns, cross-sheet references, and formula-safe functions. Enable **Pick cell/range reference** in the left editor, then click or drag in the native grid to insert one cell or range. The green reference highlight preserves the formula target; releasing the pointer returns focus to the editor. **Ctrl+Space** completes a function, range, column or sheet name when there is one matching public candidate; otherwise the status line lists candidates.
 
 ~~~text
 =B1-$J$1
@@ -60,7 +56,7 @@ Statistical scalar formulas (mean, median, extrema, sum, population/sample
 variance and standard deviation, RMS, quantile, covariance, correlation and MAD)
 retain the shared CORE interpretation of the Numeric result. For example,
 sample variance of voltage has unit V²; a single observation has an explicit
-undefined variance. **Inspect Cell** displays its meaning and reason. Units
+undefined variance. **Data / Lineage** displays its meaning and reason. Units
 must agree within an aggregated vector or range, including undeclared units.
 Arithmetic, cell references and spills retain the statistical inputs and source
 Dataset/Variable identities. The inspector distinguishes those inputs from the
@@ -89,87 +85,53 @@ instead of imported cells. Named Selections are resolved before execution;
 publication retains their ID with the captured calculation. The shared typed
 model path also applies named Selections to nonlinear fits.
 
-Foundation and remaining explicit-model/unmapped output paths
-are still being migrated during dev097 development; this coverage is not a claim
-of complete Worksheet statistical acceptance. Existing arithmetic may leave a
-derived unit undeclared. Inference that requires undeclared assumptions remains
-unavailable, even when a numerical provider returns a candidate value.
+Fields outside the captured CORE interpretation retain their public provider
+values without being relabelled as interpreted statistical quantities. Arithmetic
+and compatible conversions use CORE's Unit Registry and dimensional plans.
+Unspecified dimensions and inference requiring undeclared assumptions remain
+unavailable, even when a provider supplies a candidate numerical value.
 
-**Calculate → Mode: automatic/manual** changes the calculation mode. Automatic recalculates after edits. Manual leaves cached results until **Selection**, **Sheet**, or **Workbook** recalculation is selected. Guided operation definitions retain their inputs, options, result field, and destination for recalculation. The calculation mode is saved with the workbook.
+**Formulas → Automatic / manual mode** changes the calculation mode. Automatic recalculates after edits. Manual leaves cached results until explicit Workbook recalculation is selected. Guided operation definitions retain their inputs, options, result field, and destination for recalculation. The calculation mode is saved with the workbook.
 
 The formula parser accepts only its documented data grammar. It does not evaluate Tcl, Octave, Python, shell commands, callbacks, or macros. The vector, matrix, complex, record, empty, and field helpers construct data-only operands and inspect structured scientific results.
 
-## Bind a Session Dataset
+## Bind a canonical Dataset
 
-Choose **Data → Bind Dataset…**. The dialog displays the Session Dataset selector and its canonical variables with names, stable IDs, kinds, units, and roles. Select one or more variables with Ctrl/Shift; choose a first destination column, first row, optional Dataset Selection ID, and a row limit. Select **Bind Selected Variables**. The dialog also exposes **Manual column mapping…** for existing A=variable_id B=variable_id workflows.
+Choose **Data → Bind Dataset…**, select a current Session Dataset and one or more canonical variables, then set the destination column/row, optional Dataset Selection and row limit. The picker shows actual Variable IDs, kinds, names and units; destination columns extend through ZZ. Explicit `A=variable_id B=variable_id` mapping remains available.
 
-The import reads public Table Stream chunks and is limited to **20,000 rows per binding**. Numeric and text variables may be bound together. Each bound cell keeps the source Dataset ID, variable ID, source-row ordinal, optional Selection ID, unit, and original source value. Binding creates a snapshot; bind again explicitly to refresh from a changed Dataset. The source bytes and canonical Dataset are unchanged.
+Binding reads public Table Stream pages and copies a snapshot of at most **20,000 source rows per binding**. Each bound cell retains Dataset/Variable identity, absolute source-row ordinal, optional Selection, unit and original value. Rebind explicitly to refresh a changed source. CSV and supported HDF5 paths use the same canonical access authority; no physical column position is inferred.
 
-**Data → Convert Unit…** converts selected numeric cells through a compatible public Unit Registry relationship. No formula or Dataset import silently converts units. Undefined, ambiguous, or nonlinear conversions are refused. Incompatible unit arithmetic reports #UNIT!; undefined derived units remain blank.
+## Functions and managed scientific operations
 
-**Data → Sort / Filter…** sorts one or two columns, filters numeric or text values, shows all rows, and restores source order. These actions affect only the Worksheet snapshot. Source-row lineage moves with each value and remains available after restoring order.
+Open **Functions** or press **F3**. Search the public operation catalog and select a function to read its provider, signature, typed inputs, shapes, units, result fields and applicability. **Insert formula** places its name in the docked formula editor. The guided editor stays in the left pane: enter cells/ranges/literals, options or a provider-owned declarative model, then choose Preview fields and an output cell/field.
 
-## Find and apply scientific operations
+Save the Workspace before submitting a managed operation. Preview/Apply use existing CORE Script Jobs, with real status, retained logs and **Cancel operation**. A captured result is not recomputed merely to inspect or apply a different permitted field. Changed inputs, a replaced editor, changed document or Session prevent stale adoption. Job tickets can be saved in the Workbook and explicitly recovered through **Recover saved scientific Job** when their canonical owner and scientific inputs still match. Closing a Viewer does not reassign its Job or scientific result to another Session.
 
-Choose **Analyze → Functions…**. Search by operation name or subject, browse categories, and select an operation. The lower pane shows its public provider, signature, argument information, shape, units, result fields, Worksheet example, and whether it is a formula or guided operation. The visible result count updates as you search.
+The Worksheet calls public Numeric, Signal, RF Network and Magnetics providers; it implements no independent mathematical solver. Foundation actions are listed individually. Process settings and metadata-only contracts are not cell calculations. Callback operations require provider-owned safe declarative models.
 
-For a formula-safe operation, select **Insert into formula** and supply its arguments in the formula bar. For a guided operation, select **Apply…**. Enter cells, ranges, literals, options, or a provider-owned declarative model as requested. **Preview fields** evaluates the operation and lists available result fields. Choose a field and an output cell, then select **Apply to cells**. A vector or matrix field occupies a destination range, with collision checks. The Worksheet calls public Numeric, Signal, RF Network, or Magnetics providers; it implements no new mathematics.
+## Live native charts and Plots
 
-For statistical operations with captured interpretation, repeated **Preview** and
-**Apply** reuse the same result while the workbook and inputs are unchanged.
-Editing either requires a fresh calculation. A Session change requires reopening
-the dialog; a closed or replaced dialog cannot receive an earlier result. Closing
-the dialog releases its preview. These guards do not change the saved operation's
-explicit recalculation command.
+Select a table range, then choose **Insert → Native chart from selection**, or use **Add selection** in the Chart tab. Source columns extend through ZZ; each chart uses an explicit bounded row interval of at most 20,000 rows. Several live Native2D charts can share the resizable chart area. Drag a chart header to move it or its lower-right grip to resize it. Click a native point or object to select it. Wheel zooms, middle-button drag pans, and double-click fits the complete selected source.
 
-The Numeric foundation dispatcher and configure_fft_threads process setting are not cell calculations. Individual foundation actions are listed separately. Callback mathematics are available only through provider-owned safe declarative models. A full operation inventory appears in Task 005's WORKSHEET_MATH_OPERATION_INVENTORY.tsv.
+The left Chart tab edits the title, X/Y and right-Y columns, source rows, representation, line/marker style, legend, axis bounds/scales and text annotation. Its property form scrolls independently. Compatible Y units are explicitly converted for a common display through CORE Unit Registry; original values, units and source-row lineage remain intact. Incompatible dimensions require separate panels or an appropriate independent right axis. A completed move or resize is one History transaction. Workspace Save retains every chart descriptor and layout.
 
-## Preview, retain, and publish
+**Publish immutable Graph to Plots** first publishes a canonical immutable Dataset with exact scientific provenance, then its native Graph variant. Later Workbook edits do not alter that retained Graph. Existing Plots actions, including Info, Notes, USE, rerender, Clone/Edit and portable export, retain the native owner. **Publish and open authentic Native3D** additionally requires a genuine Z column and uses the existing Native3D host.
 
-Choose **Analyze → Plot / Publish…**. Supply an X column, one or more Y columns, first and last row, and an output Dataset ID. A Z column enables a three-dimensional preview or retained graph where appropriate.
+## Publication and errors
 
-- **Preview Graph** creates a temporary Plot Dataset graph without publishing a Dataset.
-- **Publish Dataset** creates a canonical Session Dataset. It becomes available to Dataset Preview, Analysis selectors, Table Stream, and other viewers.
-- **Publish + Retain Graph** publishes the Dataset and saves a Plot Dataset graph that can be reopened later.
+**Data → Publish Dataset…** publishes a standalone canonical Dataset through the existing publication workflow. **Data → Charts / Publish…** restores the left inspector and opens its native Chart tab. Save the Workbook first. Canonical Dataset publication records exact source Dataset/Variable IDs, selected original rows, units and derivation lineage. A committed Dataset remains a real result if a later graph/export phase fails; the reported receipt identifies partial completion. Live charts use the public native v4 owner described below; existing standalone v3 consumers remain unchanged.
 
-Save the workbook before publication. Published provenance includes the Worksheet document and revision, formulas, selected rows, units, source Dataset and variable identity, and row lineage. All rendering and retained graph state use public PLOT_DATASET_API_v3.
+A parse error preserves its formula source. `#CIRC!` identifies a dependency cycle, `#REF!` a missing reference, `#UNIT!` incompatible units, `#SPILL!` a blocked output region and `#VALUE!` unsupported data or arguments. Correct or cancel the draft; use Data / Lineage for details. Missing, explicit NaN, text, complex and finite numeric values retain their distinct meanings.
 
-## Common errors and recovery
+The address domain is not an unlimited operation size: formula ranges and guided spills are limited to **20,000 cells**, selection statistics to **5,000**, formula text to **8,192 characters**, and clipboard input to **2 MiB**. A native value fetch is at most **4,096 cells**. Captured unsaved statistical vectors retain the **8,192-row** limit. These bounds produce explicit errors rather than silent truncation. Statistical summaries include finite compatible scalar inputs and explain omitted/unavailable content through CORE semantics.
 
-An invalid formula shows a syntax location; select **Inspect Cell** for the full diagnostic. #CIRC! means cells depend on each other in a cycle. #REF! means a referenced cell, sheet, or range is unavailable. #UNIT! indicates incompatible units or a conversion that cannot be safely defined. #SPILL! means a vector or matrix destination is occupied; clear it or choose another output cell. #VALUE! covers unsupported values, shapes, or operation arguments. The status line and error dialog identify the failing action, and the saved source/formula remains available for correction. Use Undo when an edit produced an unwanted result.
+## Worked scientific examples
 
-Very large sources should be bound in explicit intervals. The visible grid uses a 200-row window, a single bind action is limited to 20,000 rows, and a formula range or guided output is limited to 20,000 cells. Worksheet is a scientific workbook, not an office-suite formatter or arbitrary scripting environment.
+In a disposable statistics Session, bind X and measurement variables into A:B, save the Workspace, then choose `numeric.statistics` in Functions. Preview B1:B10, select `mean` and apply at J1. Enter `=B1-$J$1` in F1 and fill F1:F10. The original example with mean **2.9** produces **10.1** at F10. A regression column can use `=$J$2+$J$1*A1` and Fill Down.
 
-## Worked examples
+For mixed text/numeric data, bind the canonical identity, family parameter and scientific coordinates together. Inspect retained source row IDs, sort/filter the snapshot, then Restore order. Units, text and provenance remain linked to their actual sources. The source Dataset bytes are unchanged.
 
-### Real statistics Session
-
-Open demo_numeric_statistics_1.0.0 on a disposable copy. Bind statistics.source variables v0001, v0002, and v0003 into A:C for 10 rows. In **Functions**, select numeric.statistics, enter B1:B10, preview fields, choose mean, and apply at J1. The real-source mean is **2.9**. Enter =B1-$J$1 in F1, select F1:F10, and choose **Fill Down**. F10 uses =B10-$J$1 and evaluates to **10.1**. Preview A versus B in **Plot / Publish**, then save the workbook.
-
-### Interpolation or regression source
-
-Open copied interpolation-demo and bind interpolation.source X/Y variables into A:B. Use numeric.interpolate in the guided browser with source X, source Y, and a target range, then choose its yq result field. In copied linear-regression-example, bind linear.source X/Y into A:B, apply numeric.linear_regression, and place slope/intercept in cells. A fitted column can use fixed coefficient references such as =$J$2+$J$1*A1 followed by Fill Down.
-
-### Mixed text and numeric Dataset
-
-Open copied uvvis_mxene_quantitative_analysis. Bind mxene.concentration.family variables member_id, parameter_value, spectral_x, and spectral_y into A:D. Column A contains text; C retains its **nm** unit; every row retains its source ordinal. Sort or filter a Worksheet range, inspect lineage, then choose **Restore order**. Derived formulas and guided statistics can use the numeric columns without changing the source Dataset.
-
-## Final production GUI images
-
-**Wide layout on the copied statistics Session**
-
-![Wide statistics workbook](docs/images/worksheet_statistics_final.png)
-
-**Narrow layout with wrapped controls**
-
-![Narrow workbook layout](docs/images/worksheet_statistics_narrow.png)
-- [Dataset binding dialog](docs/images/bind_statistics_source.png)
-- [Function Browser](docs/images/worksheet_function_browser.png)
-- [Guided statistics dialog](docs/images/worksheet_guided_statistics.png)
-- [Mixed text and numeric source](docs/images/worksheet_mixed_text_numeric.png)
-- [Real Plot Dataset preview](docs/images/worksheet_real_plot.png)
-
-## Integrated spectral powers and Welch summaries (dev097)
+## Integrated spectral powers and Welch summaries
 
 `numeric.power_level` expects already integrated, nonnegative spectral band
 powers. Declare their actual column unit (for example `V^2`). The RMS reference
@@ -189,13 +151,12 @@ vectors plus `window_count`, `frequency_step_hz` and `enbw_sum_hz`. The first bi
 is DC. Declare both input units; incompatible PSD/amplitude units reject. CORE
 supplies the units and interpretation of the scalar aggregate fields.
 
-The provider adapter now converts row-ordered real and complex Workbook matrices
-to the public column-major transport convention. This fixes transposed/misplaced
-values for nonsymmetric matrices. Existing saved derived values are preserved;
-explicit recalculation uses the corrected order. Scientific source data and
-historical releases are not rewritten.
+The provider adapter converts row-ordered real and complex Workbook matrices
+to the public column-major transport convention. Nonsymmetric matrix values keep
+their original positions. Saved derived values are preserved; explicit
+recalculation uses the current inputs and provider. Source data remain unchanged.
 
-### Matrix summaries (dev097)
+### Matrix summaries
 
 Guided `numeric.matrix_statistics` and `numeric.reduce_summary` preserve the
 actual output orientation. Dimension 1 yields a row; dimension 2 yields a column.
@@ -206,7 +167,7 @@ CORE; saved guided results and Dataset metadata retain those receipts. The cell
 inspector explains unavailable values. Signal `statistical_contract` describes
 an API and is excluded from Worksheet calculations.
 
-### Signal summaries and physical units (dev097)
+### Signal summaries and physical units
 
 Signal basic quality, supplied-noise SNR, coherent harmonic/spectrum quality,
 correlation peaks/delays, event periods, pulse metrics and window gains use the
@@ -225,12 +186,10 @@ fundamental-frequency parameters accept bare values in their documented Hz unit
 or values explicitly labelled Hz; convert kHz first. Window coefficients are
 dimensionless. Undeclared signal units remain explicitly unspecified in CORE.
 
-Four remaining foundation-statistics contracts remain development work.
-Raw fields outside the captured CORE mapping
-retain their existing behavior; a contributor receipt does not relabel them as
-an interpreted statistical quantity.
+Raw fields outside the captured CORE mapping retain their provider meaning;
+a contributor receipt does not relabel them as interpreted statistical quantities.
 
-### Captured spectral rows (dev097)
+### Captured spectral rows
 
 Periodogram, Welch PSD, amplitude spectral density, cross spectrum, coherence,
 and H1/H2 frequency responses retain per-frequency CORE meaning and physical units.
@@ -239,7 +198,7 @@ existing Document. Unsaved Workbooks support compact results up to 8192 rows;
 save the Workbook before requesting a larger spectrum.
 
 Choose **First result row** (starting at 1) and **Number of rows** in the guided
-dialog to select a bounded result window. A blank count selects the whole field,
+editor to select a bounded result window. A blank count selects the whole field,
 subject to the Worksheet's 20000-cell spill limit. Formula
 `field(result,"imag",16385,3)` selects three rows starting at result row 16385.
 The existing two-argument `field` form selects the whole field. Shared scalar
@@ -259,12 +218,12 @@ binding as provenance. Formulas recalculate normally and save their latest resou
 references as provenance. Resource reads use the public CORE owner and bounded
 pages; presentation caches clear on reopen and recalculation.
 
-### Accumulated summaries (dev097)
+### Accumulated summaries
 
 A scalar result from `numeric.reduce_summary` or `numeric.reduce_accumulate` can
 be passed as the first accumulation operand. For example,
 `field(numeric.reduce_accumulate(numeric.reduce_summary(A1:A2),A3:A4),"mean")`
-combines two blocks through the public Numeric owner. The guided dialog accepts
+combines two blocks through the public Numeric owner. The guided editor accepts
 the same source expression or a reference to a cell holding the summary result.
 `empty()` initializes a state. Explicit records need dimensionless `count` and
 `sum`, `min`, `max` in the new observations' physical unit. Captured state facts,
@@ -272,7 +231,7 @@ identity and units are checked before calling Numeric. A non-scalar axis summary
 cannot silently become one scalar state. Convert observations before summarizing.
 Both source and accumulated receipts survive guided save/open and publication.
 
-### Foundation location estimates (dev097)
+### Foundation location estimates
 
 Guided `numeric.foundation.statistics.confidence_interval` and
 `numeric.foundation.statistics.robust_location` retain CORE units and meaning.
@@ -283,7 +242,7 @@ empty(),empty(),record("alpha",0.1)),"lower")`. The inspector explains singleton
 undefined confidence limits and distinguishes a Huber scale from mean uncertainty.
 Captured guided results persist and publish without re-running the estimator.
 
-### Seeded foundation inference (dev097)
+### Seeded foundation inference
 
 The foundation bootstrap/permutation actions accept an explicit integer `seed`
 and `replicates` (at least 100); bootstrap also accepts `alpha`. Guided operations
@@ -293,7 +252,7 @@ counts and actual conventions. CORE explains why singleton groups or degenerate
 bootstrap distributions cannot establish the requested inference. Publication
 uses those captured receipts without another randomized run.
 
-### Partial correlation and multiple testing (dev097)
+### Partial correlation and multiple testing
 
 `numeric.foundation.statistics.partial_correlation` takes two aligned measured
 vectors and control columns. Their units may differ; the coefficient is
@@ -303,7 +262,7 @@ An invalid normalization appears as unavailable numeric content with an explicit
 undefined reason in the cell inspector.
 
 `numeric.foundation.statistics.multiple_testing` accepts dimensionless p-values.
-In the guided dialog, enter a quoted method expression such as `"holm"` for the
+In the guided editor, enter a quoted method expression such as `"holm"` for the
 `method` option. `adjusted_p` spills in original input order; `family_size` is one
 shared scalar. In formulas use, for example,
 `field(numeric.foundation.statistics.multiple_testing(D1:D6,empty(),empty(),
@@ -311,7 +270,7 @@ record("method","bh")),"adjusted_p")`. CORE retains method-specific FWER/FDR
 assumptions and hypothesis positions through guided save/open and publication.
 No second adjustment is performed during presentation or publication.
 
-### Survival curves (dev097)
+### Survival curves
 
 `numeric.foundation.statistics.survival_kaplan_meier` accepts observed coordinates
 and dimensionless event indicators (one for an event, zero for censoring). Declare
@@ -327,7 +286,7 @@ Saved guided values reopen and publish with their full captured binding without
 another estimator call; formulas retain their normal recalculation behavior.
 Unsaved compact curves/tables retain the 8192-row limit.
 
-### Covariance diagnostics (dev097)
+### Covariance diagnostics
 
 For `numeric.foundation.statistics.covariance_diagnostics`, construct a matrix
 with observations in rows, for example `matrix(A1:B4,4,2)`. A vector input is
@@ -343,7 +302,7 @@ The inspector explains why a singleton has undefined sample covariance even
 though the underlying provider returns a zero placeholder. These diagnostics do
 not supply fit-parameter uncertainty or a statistical significance test.
 
-### Clustering and regression results (dev097)
+### Clustering and regression results
 
 For `numeric.foundation.statistics.kmeans`, supply observation rows and explicit
 `seed` and `clusters` options. `centroids` is a cluster-by-feature matrix;

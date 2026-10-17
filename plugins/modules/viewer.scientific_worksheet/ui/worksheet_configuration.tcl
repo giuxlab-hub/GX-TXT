@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Lightweight existing Configuration schema contribution. CORE discovers it
+# before Session overrides load; no Viewer, Workbook or persistent store opens.
+namespace eval ::GX::ScientificWorksheet::UI {}
+proc ::GX::ScientificWorksheet::UI::widthsValidate {widths} {dict for {col width} $widths {if {![string is integer -strict $col] || $col<1 || $col>702 || ![string is integer -strict $width] || $width<35 || $width>2000} {error {Column widths require column 1–702 and width 35–2000 pixels}}};return $widths}
+proc ::GX::ScientificWorksheet::UI::configureRegister {} {
+ foreach {key label type default} {inspector {Show left inspector} boolean 1 inspector_width {Left inspector width} integer 300 font_size {Grid font size} integer 13 row_height {Grid row height} integer 25 column_width {Grid column width} integer 110} {
+  set d [dict create group Modules label $label type $type default $default scope module module_id viewer.scientific_worksheet module_key $key module_type $type scopes {user session} application immediate]
+  if {$type eq {integer}} {lassign [dict get {inspector_width {140 1200} font_size {6 72} row_height {16 200} column_width {35 2000}} $key] lo hi;dict set d min $lo;dict set d max $hi}
+  ::GX::configurationRegister module.viewer.scientific_worksheet.configuration.$key $d
+ }
+ ::GX::configurationRegister module.viewer.scientific_worksheet.configuration.number_format [dict create group Modules label {Grid number format} type choice values {General Scientific Fixed} default General scope module module_id viewer.scientific_worksheet module_key number_format module_type string scopes {user session} application immediate]
+ ::GX::configurationRegister module.viewer.scientific_worksheet.configuration.display_digits [dict create group Modules label {Grid display digits} type integer min 1 max 17 default 8 scope module module_id viewer.scientific_worksheet module_key display_digits module_type integer scopes {user session} application immediate]
+ ::GX::configurationRegister module.viewer.scientific_worksheet.configuration.column_widths [dict create group Modules label {Individual column widths} type string default {} scope module module_id viewer.scientific_worksheet module_key column_widths module_type string scopes {user session} application immediate validator ::GX::ScientificWorksheet::UI::widthsValidate]
+ ::GX::configurationRegister module.viewer.scientific_worksheet.configuration.history_strip [dict create group Modules label {Description / History strip} type string default [::GX::scientificHistoryStripValidate {}] scope module module_id viewer.scientific_worksheet module_key history_strip module_type string scopes {user session} application immediate validator ::GX::scientificHistoryStripValidate structured_fields ::GX::scientificHistoryStripFields]
+ ::GX::viewerCommandCatalogRegister viewer.scientific_worksheet [dict create save {label Save default Ctrl+s} undo {label Undo default Ctrl+z} redo {label Redo default Ctrl+y} fill_down {label {Fill down} default Ctrl+d} fill_right {label {Fill right} default Ctrl+r} recalculate {label Recalculate default F9} functions {label Functions default F3}]
+}
+::GX::ScientificWorksheet::UI::configureRegister

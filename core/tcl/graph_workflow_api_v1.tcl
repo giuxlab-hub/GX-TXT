@@ -524,8 +524,16 @@ proc ::GX::writeStandardRuntimeConfig_before_dataset_access_v2 {moduleId} {
 
 proc ::GX::buildStandardRerenderQueue {paths} {
     variable graphRuntimeSelectionOverride
-    set selected [dict create]
+    set selected [dict create];set legacy {};set native {};set seen {}
     foreach path $paths {
+        set normalized [file normalize $path]
+        if {$normalized in $seen} continue
+        lappend seen $normalized
+        if {[graphRendererOwnerForPath $normalized] eq {PLOT_DATASET_API_v4}} {
+            lappend native [graphRendererQueueCommand [graphResourceRefForPath $normalized]]
+            continue
+        }
+        lappend legacy $path
         set identity [graphUseIdentityForPath $path]
         if {[llength $identity] != 3} continue
         lassign $identity moduleId graphId variantId
@@ -535,7 +543,7 @@ proc ::GX::buildStandardRerenderQueue {paths} {
     set previous $graphRuntimeSelectionOverride
     set graphRuntimeSelectionOverride $selected
     try {
-        return [::GX::buildStandardRerenderQueue_before_graph_workflow $paths]
+        return [concat [::GX::buildStandardRerenderQueue_before_graph_workflow $legacy] $native]
     } finally {
         set graphRuntimeSelectionOverride $previous
     }

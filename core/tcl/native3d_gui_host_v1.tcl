@@ -657,6 +657,7 @@ proc ::GX::Engine3D::completeProgressive {generation session {newLayer ""}} {
     if {$::GX::Engine3D::activeNewLayer eq $newLayer} {set ::GX::Engine3D::activeNewLayer ""}
 }
 proc ::GX::Engine3D::backend {action scene} {
+    variable scientificDocumentId;variable scientificDocumentSession
     variable renderGeneration
     set addedSourceId ""
     if {$::GX::currentSession eq ""} {error "Open a Session before using the Native 3D Engine Viewer"}
@@ -668,6 +669,15 @@ proc ::GX::Engine3D::backend {action scene} {
     }
     set provider [dict get $scene provider]
     setHostIdentity [dict get $provider module_id] [dict get $provider viewer_id]
+    if {$action eq {open}} {
+        set scientificDocumentId [::GX::datasetPublicationV2DictDefault [::GX::datasetPublicationV2DictDefault $scene open_context {}] scientific_document_id {}]
+        set scientificDocumentSession [::GX::interactiveDocumentSessionToken]
+    }
+    if {[info exists scientificDocumentId]&&$scientificDocumentId ne {}} {
+        if {$scientificDocumentSession ne [::GX::interactiveDocumentSessionToken]} {error {Scientific representation belongs to a previous Session; reopen it explicitly}}
+        set document [::GX::native3DScientificDocumentRead $scientificDocumentId]
+        dict set scene scientific_figure [dict get $document scientific_figure]
+    }
     if {$action eq "open" && [dict exists $scene open_context source_path]} {
         set source [dict get $scene open_context source_path]
         if {![file isfile $source]} {error "Viewer source does not exist: $source"}
@@ -714,10 +724,15 @@ proc ::GX::Engine3D::backend {action scene} {
         catch {refreshLayers}
         return -options $options $problem
     }
+    if {[info exists scientificDocumentId]&&$scientificDocumentId ne {}} {::GX::PlotDatasetAPIv4::saveInteractivePresentation $scientificDocumentId}
     refreshLayers
     return $::GX::Engine3D::window
 }
 proc ::GX::Engine3D::rerender {} {
+    variable scientificDocumentId
+    if {[info exists scientificDocumentId]&&$scientificDocumentId ne {}} {
+        return [backend rerender [::GX::viewerSceneResolve [ownerModule] [ownerProvider]]]
+    }
     return [::GX::viewerRerender [::GX::Engine3D::ownerModule] [::GX::Engine3D::ownerProvider]]
 }
 proc ::GX::Engine3D::latestPick {} {return $::GX::Engine3D::latestPick}
@@ -1861,6 +1876,8 @@ proc ::GX::Engine3D::panel {{raiseWindow 1}} {
     return $window
 }
 proc ::GX::Engine3D::close {} {
+    variable scientificDocumentId
+    if {[info exists scientificDocumentId]&&$scientificDocumentId ne {}} {catch {::GX::PlotDatasetAPIv4::saveInteractivePresentation $scientificDocumentId};set scientificDocumentId {}}
     variable window
     variable photo
     variable lastPng
@@ -1923,3 +1940,23 @@ proc ::GX::Engine3D::stopWorker {} {
 }
 
 ::GX::viewerBackendRegister gx3de_viewer ::GX::Engine3D::backend
+
+# Retained Plot v4 representations use the same native host and public Viewer
+# scene state; no live Dataset or source Variant is needed to inspect them.
+proc ::GX::native3DScientificDocumentRead {id} {
+    set item [interactiveDocumentRead $id]
+    if {[dict get $item module_id] ne {plot.dataset}||[dict get $item provider_id] ne {native_3d}||[dict get $item format] ne {gxtxt.plot_dataset.native_v4_scene}} {error {Document is not an owned native Plot v4 scientific representation}}
+    set payload [dict get $item payload]
+    if {[dict get $payload renderer_owner] ne {PLOT_DATASET_API_v4}||![dict exists $payload scientific_figure]} {error {Invalid native scientific representation ownership}}
+    return $payload
+}
+proc ::GX::native3DOpenScientificDocument {id} {
+    set payload [native3DScientificDocumentRead $id]
+    modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+    ::GX::PlotDatasetAPIv4::activateInteractive $id
+    set scene [viewerSceneResolve viewer.native_3d native_3d]
+    dict set scene scientific_figure [dict get $payload scientific_figure]
+    dict set scene open_context [dict create scene_only 1 scientific_document_id $id]
+    dict set scene dataset_private_context {}
+    return [::GX::Engine3D::backend open $scene]
+}

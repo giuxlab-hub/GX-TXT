@@ -293,6 +293,7 @@ class Host:
     def _discover(self):
         files = list(sorted((ROOT / "core" / "script_bindings").glob("*.py")))
         files += list(sorted((ROOT / "plugins" / "modules").glob("*/api/script_bridge_binding.py")))
+        files += list(sorted((ROOT / "plugins" / "modules").glob("*/api/script_bridge_binding_v[0-9]*.py")))
         if self.core_service:
             # Same registration and invocation as real Jobs, without Session
             # creation, callback registration or a numerical worker.

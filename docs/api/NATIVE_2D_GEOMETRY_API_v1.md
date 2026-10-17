@@ -18,7 +18,7 @@ with Dataset Transform guidance; resource export/restore preserves this guard.
 Workbench uses the same inspection before automatic alignment and physical
 metrics/comparison. Nominal unit symbols alone cannot override source formulas.
 
-## Shared host grid and export presentation (dev097)
+## Shared host grid and export presentation
 
 The Tcl host helper `native2DGridForm window scene changed ?parent? ?presentation?`
 accepts an optional captured axis presentation. Existing callers retain Native
@@ -41,8 +41,10 @@ spacing: Workbench retains and labels the Native grid unit for that axis.
 `native2DPresentationSnapshot scene options` accepts optional `x_tick_labels`
 and `y_tick_labels`, exactly six strings per supplied axis (at most 256 characters
 each), corresponding to the existing six equally spaced Native viewport ticks.
-They change text only; positions, geometry, grid, clipping and sampling policy
-remain Native-owned. Existing callers retain numeric Native labels. Workbench
+These legacy labels retain their historical six-fraction positions and override
+normal axis tick planning for that supplied axis. Otherwise the shared planner
+chooses readable numerical positions and uses the same positions for scientific
+grid lines and labels. Geometry, clipping and sampling remain Native-owned. Workbench
 uses bounded public coordinate conversion for tick text and axis labels before
 passing the same snapshot to the SVG/PNG exporters. No Dataset materialization
 or scientific unit relabelling occurs.
@@ -52,7 +54,7 @@ The exporter draws these separately from curve paths and supports the existing
 `part_markers` descriptors. Workbench uses one palette resolver for Canvas and
 export, filters invisible objects, and preserves its points-only display mode.
 
-CORE provider `native2d_geometry`, API version 1. This additive TASK-9 authority
+CORE provider `native2d_geometry`, API version 1. This authority
 provides retained Native2D geometry to Python and Octave Script Workspace through
 the common Script Bridge. It delegates geometry to `NATIVE2D_API_v1`; it does not
 implement a second geometry engine or publish Datasets implicitly.
@@ -376,7 +378,7 @@ Session, revision and execution lifetime/foreign-token checks.
 
 `view_state` queries or applies a complete snapshot in `view_state`:
 `viewport` (typed width/height/left/top/right/bottom/world), `grid`, `background`,
-`aspect`, `polar`, `coordinate_mode`. Native C validates the entire candidate before
+`aspect`, `polar`, `coordinate_mode`, and optional `axis_presentation`. The native scene host validates the entire candidate before
 committing. `view_state_rescale` takes a snapshot and explicit positive `factor`;
 it converts world/grid/polar lengths, preserves pixel/color/angular state and
 changes no live geometry. Both return `geometry_modified=false`.
@@ -419,14 +421,14 @@ Exact supported target projection and exact supported closest-boundary pairs are
 Curve Workbench's `geometry` comparison mode displays the unsigned deviation with this policy, persists definition/fingerprints/receipt and marks changed geometry stale. Publish deviations creates one explicitly named Dataset from bounded projection rows through normal Schema/Metadata/Publication APIs. Named measurements also support geometric RMS, sampled Hausdorff, curve length/closed-area difference and closest-curve distance; their capture/refresh/stale/report/Undo behavior uses the shared measurement lifecycle.
 
 
-## TASK-9 dev-052 final behavior
+## Bounded polar conversion and host selection
 
 `polar_bulk` accepts `xy_base64`: 1..65536 finite float64 little-endian XY rows, converted in the execution-owned scene's current polar frame. The receipt contains interleaved `theta_r_base64`, `angle_defined_base64`, row count, normalized `polar_frame`, normalization and origin policy. Base64 is ASCII in both Script Bridge languages. Native C owns the math; CORE does not evaluate it in Tcl/Python. `gx2d_cartesian_to_polar_many` is additive and atomic on invalid input.
 
 The host point-selection API coalesces pending updates while a native drag is active and applies them after release. Destructive scene updates are deferred outside active native callbacks; UI recursion is separately guarded. Script geometry remains scoped by execution, Session lifetime and document generation/revision; widget/gesture controller operations remain intentionally host-only.
 
 
-## dev-053 CAD workspace
+## CAD workspace
 
 Existing scene/object/constraint opaque tokens, Session/document generation/revision validation and owned-resource persistence remain authoritative. API version1 is unchanged; operations are additive. Legacy constraint PODs and ordinary sample-index meanings retain ABI/behavior.
 
@@ -444,14 +446,14 @@ Existing scene/object/constraint opaque tokens, Session/document generation/revi
 | constraint_apply | definition, optional constraint_token → direct drive/update and constraint receipt; atomic other-rule validation |
 | constraint_location | owned constraint_token → Native witness point for marker placement |
 
-Retained controls use the Native parameter topology epoch; ordinary points use topology epoch. Same-family parameter edits and display resampling preserve true handle identity. Replaced family/control topology, deleted ownership and malformed entity/index combinations reject references. Legacy endpoint Join maps only true endpoints through Native, never arbitrary render samples. Constraint definitions use existing semantic indices: defining controls start at1000000000, straight segments at2000000000, object reference3000000000. Existing unencoded indices retain dev-052 semantics. These encodings are CORE descriptor data, not ordinary GUI inputs.
+Retained controls use the Native parameter topology epoch; ordinary points use topology epoch. Same-family parameter edits and display resampling preserve true handle identity. Replaced family/control topology, deleted ownership and malformed entity/index combinations reject references. Legacy endpoint Join maps only true endpoints through Native, never arbitrary render samples. Constraint definitions use existing semantic indices: defining controls start at1000000000, straight segments at2000000000, object reference3000000000. Existing unencoded indices retain the original point-index semantics. These encodings are CORE descriptor data, not ordinary GUI inputs.
 
 Python/Octave expose every scoped operation above through the registered Script Bridge. Effective-device pick/snap/clip and captured canvas lifecycle remain explicitly host-owned; standalone C APIs remain renderer neutral. Host conversion services `native2DPrimitivePublish` / `native2DPrimitiveReconstruct` reuse Canonical Publication/Metadata/Table Stream and immutable source bindings; they create no parallel persistence/publication model. Scripts retain safe scoped sample/sketch APIs and normal Dataset Publication/Metadata, with bounded explicit acceptance. See Script Bridge coverage JSON and Workbench manual for contracts and policy.
 
 C additions: gx2d_sketch_construct, gx2d_sketch_preview_definition, gx2d_sketch_from_fit, gx2d_sketch_controls, gx2d_reference_create/from_index/resolve/point_index, gx2d_control_definition/edit, gx2d_interaction_pick, gx2d_placement_snap, gx2d_constraint_from_selection/apply/location and gx2d_viewport_clip_segment. See gx2d.h for caller-owned output buffers, capacities and atomic errors. CORE owns all geometric calculations. Constraints directly drive supported retained lines/round centers/radii/control locations; other supported shapes may be validation-only. No general solver, implicit representation conversion or implicit constraints.
 
 
-## dev-054 retained components and persistent dimensions
+## retained components and persistent dimensions
 
 These additive operations preserve API version1 and execution-owned object/constraint tokens. All reference inputs use the existing `reference`/`controls` descriptors. Solved relationships retain their existing IDs and can be captured/restored with the existing Document resources.
 
@@ -466,19 +468,19 @@ These additive operations preserve API version1 and execution-owned object/const
 | relationship_state | constraint_token, optional presentation{annotation,placed,driven} → same relationship receipt; protected mode transitions |
 | relationship_hit | constraint_token, device, label_bounds → hit(bool), renderer-neutral device query |
 
-`constraint_apply` now drives supported retained components; `control_edit` maintains their compatible relationships, with a hard defining-control target. `sketch_update` drives coupled definitions while holding changed parameters. Old PODs and enum values1..21 are unchanged; new kinds are horizontal_distance, vertical_distance, point_line_distance, line_distance, axis_angle and curvature. Receipts include solved/driven/placed, annotation, branch, curvature_tolerance and explicit enforcement. For references, measured_value/geometry.value are authoritative current measurements; stored numeric value is an inactive driving literal, never a geometry command while driven.
+`constraint_apply` drives supported retained components; `control_edit` maintains their compatible relationships, with a hard defining-control target. `sketch_update` drives coupled definitions while holding changed parameters. Old PODs and enum values1..21 are unchanged; new kinds are horizontal_distance, vertical_distance, point_line_distance, line_distance, axis_angle and curvature. Receipts include solved/driven/placed, annotation, branch, curvature_tolerance and explicit enforcement. For references, measured_value/geometry.value are authoritative current measurements; stored numeric value is an inactive driving literal, never a geometry command while driven.
 
 Whole Fixed/locked objects are excluded from movable parameters; Fixed controls retain their individual position equations. Dimensional overconstraint/redundancy is rejected atomically and can be explicitly retried as driven. State restoration validates already-saved geometry, using `gx2d_constraint_create_state`, without replaying a fresh driving operation. `gx2d_relationship_state` is additive and leaves `gx2d_constraint_v2` ABI intact. Angular tolerance is radians; curvature tolerance is inverse working length and is reexpressed with physical units. Annotation world XY is presentation, independent of scientific dimension value. Future expression authorities may add metadata while preserving the resolved numeric value/working-unit contract.
 
 Bounds/limits and supported mathematical families are documented in [Native2D implementation notes](../../core/native2d/README.md). Rank is local; analysis_complete=false precludes a fully-constrained claim. Unsupported/singular/nonconvergent cases return explicit errors. These public operations do not publish a Dataset, invent identities or accept foreign scene tokens.
 
-## dev-055 semantic construction
+## semantic construction
 
 `construct_attached`, `placement_points`, `placement_preview`, `reference_connected` use the existing execution-owned scene/object/constraint tokens. Placement dictionaries have `point: [x,y]`, `reference: defining_control_receipt`, or `earlier: zero_based_prior_placement`; reference and earlier are exclusive. Declare `working_unit` consistently with referenced geometry. Native owns validation and exact reference resolution. Preview has no history/persistence side effect. Creation takes `family`, `placements`, optional `display_samples` (default257) and `closure_references`, returning the ordinary object receipt plus `definition`, `constraints`, `tail_reference`, `closed`, `periodic:false`. Constraints are ordinary persistent Coincident relationships. Editing connected controls uses the existing solver, checkpoint, Document and recovery contracts. Foreign/stale references or incompatible projected controls reject atomically. Numeric coordinate equality alone is not semantic connectivity.
 
 Portable C APIs: `gx2d_construction_resolve`, `gx2d_construction_preview`, `gx2d_sketch_create_attached`, `gx2d_references_connected`; checked output capacity and failure semantics are documented in gx2d.h. `gx2d_construction_pick` is intentionally host-only: device coordinates and pixel tolerance depend on the effective viewport. No Workbench dependency is required.
 
-## dev-056 views, retained tangents, reference images and preview
+## views, retained tangents, reference images and preview
 
 All operations use `[owned_scene_token, request]` in Python and the equivalent
 Octave cell arguments. Existing `view_state` remains the sole portable authority.
@@ -503,7 +505,7 @@ Octave cell arguments. Existing `view_state` remains the sole portable authority
 
 Spline state adds dense optional `tangents` records `[flags, incomingXY, outgoingXY]`,
 with local knot-relative offsets, incoming bit1 and outgoing bit2. No active flags
-preserves the exact dev-055 Catmull-Rom kernel. Existing evaluator, derivatives,
+preserves the original Catmull-Rom kernel. Existing evaluator, derivatives,
 bounds, transforms, unit rescale, solver, history and resources use that same
 representation. C callers must zero-initialize `gx2d_sketch_definition` and rebuild
 against the extended header; the additive tail changes POD size. Enum values and
@@ -548,9 +550,9 @@ workspace/note services have separate registered scoped APIs sharing Document
 resources, not separate filesystem destinations.
 
 
-## Dev-057 semantic selection and retained straight paths
+## semantic selection and retained straight paths
 
-The shared C selection-set authority now holds `object`, `point`, `control`,
+The shared C selection-set authority holds `object`, `point`, `control`,
 `segment` and existing `fragment` references. Dataset/Native point indices are
 scientific entities; retained control/segment indices use stable Native reference
 encodings (control base 1,000,000,000; segment base 2,000,000,000). Object selection
@@ -584,8 +586,7 @@ containing `family=line`, zero-based `first`/`last` vertex ordinals. Closing edg
 refer back to vertex zero. An open two-vertex path has normal finite-line behavior.
 Individual segments dimension their real adjacent vertices; moving a shared
 vertex updates both incident segments. Coincident constraints between unrelated
-objects do not combine their topology. Dev-059 extends this authority with exact
-heterogeneous composition as described below; straight paths remain compatible.
+objects do not combine their topology. Exact heterogeneous composition extends this authority as described below; straight paths remain compatible.
 
 For a straight path, `sampling` publishes exact authoritative vertices, one
 Dataset, optional `index_variable_id` (default `index`, blank omits), and explicit
@@ -608,7 +609,7 @@ global ordering schema/values and closure/direction policy before adoption.
 Python and Octave independently exercise these operations through real Script
 Workspace runs in `validation/dev057/bridge.tcl`.
 
-## Exact heterogeneous composition (dev-059)
+## Exact heterogeneous composition
 
 These additive operations use the existing scene/object tokens, Native2D geometry
 authority and Interactive Document resources. No Dataset is created implicitly.
@@ -660,10 +661,10 @@ Dataset namespace. `producer=core.native2d` identifies the geometry service;
 continues to require the historical `core.native2d` publication owner.
 `validation/dev059/composition_bridge.tcl` exercises both genuine script runtimes.
 
-## dev-062 exact internal Path controls
+## exact internal Path controls
 
 The existing `controls`, `reference`, `reference_resolve`, `control_definition`
-and `control_edit` operations now support a `composite_path` as one logical
+and `control_edit` operations support a `composite_path` as one logical
 object. Control ordinals concatenate each retained leaf's real defining handles
 in stored constituent order. They are not display samples. A junction may have
 two incident references at the same point; editing either keeps their shared
@@ -680,9 +681,9 @@ allocation pointer or separate geometry authority. Commit validates exact Path
 topology and existing constraints atomically. An unsupported coupled edit is
 rejected instead of disconnecting or flattening constituents.
 
-## dev-063 shared aspect default and constituent Spline tangent controls
+## shared aspect default and constituent Spline tangent controls
 
-New CORE scenes default to `GX2D_ASPECT_XY_EQUAL` (the existing Tcl spelling is
+CORE scenes default to `GX2D_ASPECT_XY_EQUAL` (the existing Tcl spelling is
 `xy_equal`, implementing the task's `x_equal_y` behavior). Equal coordinate scale
 is applied through `gx2d_view_set`, including the initial effective view. Existing
 host C `gx2d_view_aspect_set` and native Tcl `core aspect`/`presentation`/`view_state`
@@ -703,11 +704,11 @@ only an exact leaf tangent offset in a deep candidate, then validates/adopts the
 entire Path through the existing scene/constraint authority. No new public
 endpoint, raw pointer, constituent top-level object or sampled proxy is created.
 
-## Integrated dev-065 extension
+## Workspace parameter and retained-network contracts
 
 See [CORE Parameter Service](CORE_PARAMETER_SERVICE_v1.md) for automatic Workspace contexts and descriptor Workspace actions, and the retained-network behavior specified in this API for exact topology/reference/constraint semantics.
 
-## Dev-068 compatible segment and curve placements
+## compatible segment and curve placements
 
 Existing `construct_attached`, `placement_points` and `placement_preview` accept
 a placement with `point` plus a checked segment or curved `reference`. Native2D
@@ -717,7 +718,7 @@ Octave use the same operation/field names and execution-owned references/units.
 `gx2d_reference_render` / Tcl `interaction_render` return device geometry only
 for host semantic-selection feedback; no new portable bridge operation is needed.
 
-## Dev-069 compatible semantic target policy
+## compatible semantic target policy
 
 Existing `selection_pick` accepts optional `target`: `detail` (legacy default),
 `local` (control/atomic primitive/exact Spline span or composed constituent), or
@@ -732,9 +733,9 @@ Spline rendering evaluates its exact parameter interval; no display-cache identi
 or retained geometry conversion. `interaction_render` stays host-only presentation.
 Connection/dimension/constraint tool picking retains legacy detail policy.
 
-## Dev-070 exact span extraction and replacement
+## exact span extraction and replacement
 
-Composed Spline local picks now identify the actual span rather than the whole leaf.
+Composed Spline local picks identify the actual span rather than the whole leaf.
 Additive `selection_definition`, `spline_line_plan`, `spline_span_to_line` operations
 are documented in [Sketch Dataset API](SKETCH_DATASET_API_v1.md). They are available
 through Tcl and Python/Octave using existing scene ownership and semantic indices.
@@ -745,7 +746,7 @@ managed resource result). PDF uses the same presentation plan with vector linewo
 text, grid, dimensions and reference images; camera state is guarded and restored.
 `::GX::pdfDatasetOpen path identity` launches the integrated read-only PDF reader.
 
-## dev092 additive constituent contracts
+## additive constituent contracts
 
 See the constituent contracts specified in this API for stable scoped
 part identities, independent marker state and batch updates, device picking and
@@ -753,7 +754,7 @@ placement, compound semantic references, atomic owned-definition persistence,
 truthful traversal/materialization and public image calibration reset. Python
 and Octave expose the same additional operations under API version 1.
 
-### dev097 comparison semantics
+### Comparison semantics
 
 `compare` and `compare_geometry` preserve existing numerical receipt fields and
 add `statistics`: public `STATISTICAL_RESULT_SEMANTICS_API_v1` records named
@@ -797,3 +798,14 @@ affine Native copies retain full geometry and are released on success or failure
 identity frames allocate no copies. The original objects and scientific source
 payloads are not changed. This is evaluation normalization, independent of
 Dataset calibration, display LOD and Workspace viewport zoom.
+
+
+## View-scoped axis presentation
+
+The additive `axis_presentation` operation queries the current descriptor or accepts
+`{axis_presentation DESCRIPTOR}`. It shares the ordinary scene/document/Session
+lifetime checks. The same descriptor is carried by `view_state`, named views and
+saved owner payloads. See [axis presentation](NATIVE2D_AXIS_PRESENTATION_v1.md)
+for exact fields, mapped numeric anchors, supported formats and calibrated units.
+Python and Octave use the same typed request and response dictionaries/structs.
+This is presentation metadata; it never changes Dataset values or scene geometry.

@@ -532,7 +532,9 @@ proc ::GX::Native3D::openChosenPlot {} {
     variable plotChoice
     variable plotSources
     if {![dict exists $plotSources $plotChoice]} {error "Select a persistent Plot Dataset 3D graph/Variant."}
-    set scene [::GX::PlotDatasetAPIv3::openInteractive [dict get $plotSources $plotChoice]]
+    set ref [dict get $plotSources $plotChoice]
+    set owner [_plotApiOwner $ref]
+    set scene [${owner}::openInteractive $ref]
     set ::GX::Native3D::representationChoice [dict get $scene representation_id]
     refreshRepresentations
     return $scene
@@ -542,7 +544,7 @@ proc ::GX::Native3D::refreshRepresentations {} {
     variable representationChoice
     if {$::GX::currentSession eq ""} {set rows {}} else {
         ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
-        set rows [::GX::PlotDatasetAPIv3::interactiveRepresentations]
+        set rows [_plotRepresentations]
     }
     set ids {}
     foreach row $rows {lappend ids [dict get $row id]}
@@ -563,7 +565,7 @@ proc ::GX::Native3D::representationSelected {} {
     set ::GX::Native3D::plotVariantLabel "Variant: —"
     set ::GX::Native3D::plotSyncStatus "Status: —"
     if {$representationChoice eq ""} return
-    foreach row [::GX::PlotDatasetAPIv3::interactiveRepresentations] {
+    foreach row [_plotRepresentations] {
         if {[dict get $row id] ne $representationChoice} continue
         set ref [dict get $row plot_ref]
         set ::GX::Native3D::plotSourceLabel "Source: [dict get $ref graph_id]"
@@ -576,8 +578,8 @@ proc ::GX::Native3D::representationSelected {} {
 proc ::GX::Native3D::openChosenRepresentation {} {
     set id $::GX::Native3D::representationChoice
     if {$id eq ""} {error "Select an interactive representation."}
-    set result [::GX::PlotDatasetAPIv3::activateInteractive $id]
-    ::GX::viewerOpen viewer.native_3d native_3d [dict create scene_only 1]
+    set owner [_representationApiOwner $id]
+    if {$owner eq {::GX::PlotDatasetAPIv4}} {set result [${owner}::openRepresentation $id]} else {set result [${owner}::activateInteractive $id];::GX::viewerOpen viewer.native_3d native_3d [dict create scene_only 1]}
     representationSelected
     return $result
 }
@@ -585,7 +587,8 @@ proc ::GX::Native3D::openChosenRepresentation {} {
 proc ::GX::Native3D::syncChosenRepresentation {} {
     set id $::GX::Native3D::representationChoice
     if {$id eq ""} {error "Select an interactive representation."}
-    set result [::GX::PlotDatasetAPIv3::syncInteractive $id]
+    set owner [_representationApiOwner $id]
+    set result [${owner}::syncInteractive $id]
     refreshRepresentations
     return $result
 }
@@ -2171,3 +2174,24 @@ proc ::GX::Native3D::backend {action scene} {
 }
 
 ::GX::viewerBackendRegister gx3d_native_host ::GX::Native3D::backend
+
+# Explicit owner dispatch prevents new native Variants from entering the
+# legacy scientific rendering path through the existing source selectors.
+proc ::GX::Native3D::_plotApiOwner {ref} {
+    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+    if {[::GX::PlotDatasetAPIv4::isOwned $ref]} {return ::GX::PlotDatasetAPIv4}
+    return ::GX::PlotDatasetAPIv3
+}
+proc ::GX::Native3D::_plotRepresentations {} {
+    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
+    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+    return [concat [::GX::PlotDatasetAPIv3::interactiveRepresentations] [::GX::PlotDatasetAPIv4::interactiveRepresentations]]
+}
+proc ::GX::Native3D::_representationApiOwner {id} {
+    set record [::GX::interactiveDocumentRead $id]
+    switch -- [dict get $record format] {
+        gxtxt.plot_dataset.native_v4_scene {::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4;return ::GX::PlotDatasetAPIv4}
+        gxtxt.plot_dataset.interactive_scene {return ::GX::PlotDatasetAPIv3}
+        default {error {Selected representation has no supported Plot Dataset owner}}
+    }
+}

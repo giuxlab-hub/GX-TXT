@@ -1,5 +1,5 @@
 {
-  "framework_version": "0.9.8.10-dev-099",
+  "framework_version": "0.9.8.10-dev-100",
   "bridge_api_id": "OCTAVE_SCRIPT_BRIDGE_API_v1",
   "callback_contract": {
     "api_id": "SCRIPT_CALLBACK_API_v1",
@@ -4773,6 +4773,61 @@
       }
     },
     {
+      "api_id": "INTERACTIVE_DOCUMENT_RESOURCE_API_v1",
+      "api_version": 1,
+      "provider": "interactive_document_resources",
+      "provider_kind": "core",
+      "documentation_ref": "docs/api/INTERACTIVE_DOCUMENT_RESOURCE_API_v1.md",
+      "status": "already_script_callable",
+      "operations": [
+        "references",
+        "remap_references"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "references": [
+          "Octave",
+          "Python"
+        ],
+        "remap_references": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "registration_source": {
+        "path": "core/script_bindings/interactive_document_resources.py",
+        "sha256": "7cf14e3725f26021c8632ceb4f7eefe6da79bc4dbf5cbbaa64070c473d7c3ef9"
+      },
+      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+      },
+      "operation_coverage": {
+        "references": {
+          "status": "script_callable",
+          "script_operation": "references"
+        },
+        "remap_references": {
+          "status": "script_callable",
+          "script_operation": "remap_references"
+        }
+      },
+      "public_operations": {
+        "references": {
+          "status": "script_callable",
+          "script_operation": "references"
+        },
+        "remap_references": {
+          "status": "script_callable",
+          "script_operation": "remap_references"
+        }
+      }
+    },
+    {
       "api_id": "IR_LIBRARY_TYPE_PROVIDER_API_v1",
       "api_version": 1,
       "provider": "library.spectroscopy.ir.reference",
@@ -6001,6 +6056,7 @@
       "operations": [
         "affine",
         "api_info",
+        "axis_presentation",
         "bridge",
         "canvas_preview",
         "checkpoint",
@@ -6172,6 +6228,10 @@
           "Python"
         ],
         "api_info": [
+          "Octave",
+          "Python"
+        ],
+        "axis_presentation": [
           "Octave",
           "Python"
         ],
@@ -7644,6 +7704,10 @@
         "spline_span_to_line": {
           "status": "script_callable",
           "script_operation": "spline_span_to_line"
+        },
+        "axis_presentation": {
+          "status": "script_callable",
+          "script_operation": "axis_presentation"
         }
       },
       "documented_public_commands": [
@@ -8486,6 +8550,10 @@
         "spline_span_to_line": {
           "status": "script_callable",
           "script_operation": "spline_span_to_line"
+        },
+        "axis_presentation": {
+          "status": "script_callable",
+          "script_operation": "axis_presentation"
         }
       },
       "native_operation_policy": {
@@ -9223,7 +9291,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/native2d_geometry.py",
-        "sha256": "b17eaf7de84b8751cf4dc76318ebb64c043ba53bd348845b0e279640d3c1b16f"
+        "sha256": "e475f7e683e01de978b22f1d499ade5366c5aacfce85e3e45642693edc43fe4a"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -14131,6 +14199,477 @@
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
     {
+      "api_id": "PLOT_DATASET_API_v4",
+      "api_version": 4,
+      "provider": "plot.dataset",
+      "provider_kind": "module",
+      "documentation_ref": "docs/api/PLOT_DATASET_API_v4.md",
+      "status": "already_script_callable",
+      "operations": [
+        "add_panel",
+        "api_info",
+        "apply_spec",
+        "artifacts",
+        "build_scene",
+        "create_plot",
+        "delete_plot",
+        "interactive_representations",
+        "interactive_source_info",
+        "interactive_sources",
+        "interactive_status",
+        "load_spec",
+        "move_panel",
+        "multi_panel_enabled",
+        "new_spec",
+        "open_plot",
+        "panel_ids",
+        "panel_info",
+        "read_plot",
+        "remove_panel",
+        "remove_spec",
+        "render",
+        "rerender",
+        "save_spec",
+        "set_multi_panel",
+        "set_panel_axis",
+        "set_panel_title",
+        "set_plot_enabled",
+        "set_series_panel",
+        "set_series_presentation",
+        "source_fingerprint",
+        "sync_interactive",
+        "upsert_plot",
+        "validate_spec"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "add_panel": [
+          "Octave",
+          "Python"
+        ],
+        "api_info": [
+          "Octave",
+          "Python"
+        ],
+        "apply_spec": [
+          "Octave",
+          "Python"
+        ],
+        "artifacts": [
+          "Octave",
+          "Python"
+        ],
+        "build_scene": [
+          "Octave",
+          "Python"
+        ],
+        "create_plot": [
+          "Octave",
+          "Python"
+        ],
+        "delete_plot": [
+          "Octave",
+          "Python"
+        ],
+        "interactive_representations": [
+          "Octave",
+          "Python"
+        ],
+        "interactive_source_info": [
+          "Octave",
+          "Python"
+        ],
+        "interactive_sources": [
+          "Octave",
+          "Python"
+        ],
+        "interactive_status": [
+          "Octave",
+          "Python"
+        ],
+        "load_spec": [
+          "Octave",
+          "Python"
+        ],
+        "move_panel": [
+          "Octave",
+          "Python"
+        ],
+        "multi_panel_enabled": [
+          "Octave",
+          "Python"
+        ],
+        "new_spec": [
+          "Octave",
+          "Python"
+        ],
+        "open_plot": [
+          "Octave",
+          "Python"
+        ],
+        "panel_ids": [
+          "Octave",
+          "Python"
+        ],
+        "panel_info": [
+          "Octave",
+          "Python"
+        ],
+        "read_plot": [
+          "Octave",
+          "Python"
+        ],
+        "remove_panel": [
+          "Octave",
+          "Python"
+        ],
+        "remove_spec": [
+          "Octave",
+          "Python"
+        ],
+        "render": [
+          "Octave",
+          "Python"
+        ],
+        "rerender": [
+          "Octave",
+          "Python"
+        ],
+        "save_spec": [
+          "Octave",
+          "Python"
+        ],
+        "set_multi_panel": [
+          "Octave",
+          "Python"
+        ],
+        "set_panel_axis": [
+          "Octave",
+          "Python"
+        ],
+        "set_panel_title": [
+          "Octave",
+          "Python"
+        ],
+        "set_plot_enabled": [
+          "Octave",
+          "Python"
+        ],
+        "set_series_panel": [
+          "Octave",
+          "Python"
+        ],
+        "set_series_presentation": [
+          "Octave",
+          "Python"
+        ],
+        "source_fingerprint": [
+          "Octave",
+          "Python"
+        ],
+        "sync_interactive": [
+          "Octave",
+          "Python"
+        ],
+        "upsert_plot": [
+          "Octave",
+          "Python"
+        ],
+        "validate_spec": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "registration_source": {
+        "path": "plugins/modules/plot.dataset/api/script_bridge_binding_v4.py",
+        "sha256": "0f6d0e3a0db11c031680ef238ea694c8dd4aacfc8a3fdde38d9954c63512254a"
+      },
+      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+      },
+      "operation_coverage": {
+        "add_panel": {
+          "status": "script_callable",
+          "script_operation": "add_panel"
+        },
+        "api_info": {
+          "status": "script_callable",
+          "script_operation": "api_info"
+        },
+        "apply_spec": {
+          "status": "script_callable",
+          "script_operation": "apply_spec"
+        },
+        "artifacts": {
+          "status": "script_callable",
+          "script_operation": "artifacts"
+        },
+        "build_scene": {
+          "status": "script_callable",
+          "script_operation": "build_scene"
+        },
+        "create_plot": {
+          "status": "script_callable",
+          "script_operation": "create_plot"
+        },
+        "delete_plot": {
+          "status": "script_callable",
+          "script_operation": "delete_plot"
+        },
+        "interactive_representations": {
+          "status": "script_callable",
+          "script_operation": "interactive_representations"
+        },
+        "interactive_source_info": {
+          "status": "script_callable",
+          "script_operation": "interactive_source_info"
+        },
+        "interactive_sources": {
+          "status": "script_callable",
+          "script_operation": "interactive_sources"
+        },
+        "interactive_status": {
+          "status": "script_callable",
+          "script_operation": "interactive_status"
+        },
+        "load_spec": {
+          "status": "script_callable",
+          "script_operation": "load_spec"
+        },
+        "move_panel": {
+          "status": "script_callable",
+          "script_operation": "move_panel"
+        },
+        "multi_panel_enabled": {
+          "status": "script_callable",
+          "script_operation": "multi_panel_enabled"
+        },
+        "new_spec": {
+          "status": "script_callable",
+          "script_operation": "new_spec"
+        },
+        "open_plot": {
+          "status": "script_callable",
+          "script_operation": "open_plot"
+        },
+        "panel_ids": {
+          "status": "script_callable",
+          "script_operation": "panel_ids"
+        },
+        "panel_info": {
+          "status": "script_callable",
+          "script_operation": "panel_info"
+        },
+        "read_plot": {
+          "status": "script_callable",
+          "script_operation": "read_plot"
+        },
+        "remove_panel": {
+          "status": "script_callable",
+          "script_operation": "remove_panel"
+        },
+        "remove_spec": {
+          "status": "script_callable",
+          "script_operation": "remove_spec"
+        },
+        "render": {
+          "status": "script_callable",
+          "script_operation": "render"
+        },
+        "rerender": {
+          "status": "script_callable",
+          "script_operation": "rerender"
+        },
+        "save_spec": {
+          "status": "script_callable",
+          "script_operation": "save_spec"
+        },
+        "set_multi_panel": {
+          "status": "script_callable",
+          "script_operation": "set_multi_panel"
+        },
+        "set_panel_axis": {
+          "status": "script_callable",
+          "script_operation": "set_panel_axis"
+        },
+        "set_panel_title": {
+          "status": "script_callable",
+          "script_operation": "set_panel_title"
+        },
+        "set_plot_enabled": {
+          "status": "script_callable",
+          "script_operation": "set_plot_enabled"
+        },
+        "set_series_panel": {
+          "status": "script_callable",
+          "script_operation": "set_series_panel"
+        },
+        "set_series_presentation": {
+          "status": "script_callable",
+          "script_operation": "set_series_presentation"
+        },
+        "source_fingerprint": {
+          "status": "script_callable",
+          "script_operation": "source_fingerprint"
+        },
+        "sync_interactive": {
+          "status": "script_callable",
+          "script_operation": "sync_interactive"
+        },
+        "upsert_plot": {
+          "status": "script_callable",
+          "script_operation": "upsert_plot"
+        },
+        "validate_spec": {
+          "status": "script_callable",
+          "script_operation": "validate_spec"
+        }
+      },
+      "public_operations": {
+        "add_panel": {
+          "status": "script_callable",
+          "script_operation": "add_panel"
+        },
+        "api_info": {
+          "status": "script_callable",
+          "script_operation": "api_info"
+        },
+        "apply_spec": {
+          "status": "script_callable",
+          "script_operation": "apply_spec"
+        },
+        "artifacts": {
+          "status": "script_callable",
+          "script_operation": "artifacts"
+        },
+        "build_scene": {
+          "status": "script_callable",
+          "script_operation": "build_scene"
+        },
+        "create_plot": {
+          "status": "script_callable",
+          "script_operation": "create_plot"
+        },
+        "delete_plot": {
+          "status": "script_callable",
+          "script_operation": "delete_plot"
+        },
+        "interactive_representations": {
+          "status": "script_callable",
+          "script_operation": "interactive_representations"
+        },
+        "interactive_source_info": {
+          "status": "script_callable",
+          "script_operation": "interactive_source_info"
+        },
+        "interactive_sources": {
+          "status": "script_callable",
+          "script_operation": "interactive_sources"
+        },
+        "interactive_status": {
+          "status": "script_callable",
+          "script_operation": "interactive_status"
+        },
+        "load_spec": {
+          "status": "script_callable",
+          "script_operation": "load_spec"
+        },
+        "move_panel": {
+          "status": "script_callable",
+          "script_operation": "move_panel"
+        },
+        "multi_panel_enabled": {
+          "status": "script_callable",
+          "script_operation": "multi_panel_enabled"
+        },
+        "new_spec": {
+          "status": "script_callable",
+          "script_operation": "new_spec"
+        },
+        "open_plot": {
+          "status": "script_callable",
+          "script_operation": "open_plot"
+        },
+        "panel_ids": {
+          "status": "script_callable",
+          "script_operation": "panel_ids"
+        },
+        "panel_info": {
+          "status": "script_callable",
+          "script_operation": "panel_info"
+        },
+        "read_plot": {
+          "status": "script_callable",
+          "script_operation": "read_plot"
+        },
+        "remove_panel": {
+          "status": "script_callable",
+          "script_operation": "remove_panel"
+        },
+        "remove_spec": {
+          "status": "script_callable",
+          "script_operation": "remove_spec"
+        },
+        "render": {
+          "status": "script_callable",
+          "script_operation": "render"
+        },
+        "rerender": {
+          "status": "script_callable",
+          "script_operation": "rerender"
+        },
+        "save_spec": {
+          "status": "script_callable",
+          "script_operation": "save_spec"
+        },
+        "set_multi_panel": {
+          "status": "script_callable",
+          "script_operation": "set_multi_panel"
+        },
+        "set_panel_axis": {
+          "status": "script_callable",
+          "script_operation": "set_panel_axis"
+        },
+        "set_panel_title": {
+          "status": "script_callable",
+          "script_operation": "set_panel_title"
+        },
+        "set_plot_enabled": {
+          "status": "script_callable",
+          "script_operation": "set_plot_enabled"
+        },
+        "set_series_panel": {
+          "status": "script_callable",
+          "script_operation": "set_series_panel"
+        },
+        "set_series_presentation": {
+          "status": "script_callable",
+          "script_operation": "set_series_presentation"
+        },
+        "source_fingerprint": {
+          "status": "script_callable",
+          "script_operation": "source_fingerprint"
+        },
+        "sync_interactive": {
+          "status": "script_callable",
+          "script_operation": "sync_interactive"
+        },
+        "upsert_plot": {
+          "status": "script_callable",
+          "script_operation": "upsert_plot"
+        },
+        "validate_spec": {
+          "status": "script_callable",
+          "script_operation": "validate_spec"
+        }
+      }
+    },
+    {
       "api_id": "PLOT_MODULE_API_v1",
       "api_version": 1,
       "provider": "plot_module",
@@ -15480,16 +16019,277 @@
       "api_id": "SCIENTIFIC_WORKSHEET_API_v1",
       "api_version": 1,
       "provider": "viewer.scientific_worksheet",
-      "status": "not_yet_bridged",
-      "operations": [],
-      "script_languages": [],
-      "operation_languages": {},
-      "operation_coverage": {},
-      "public_operations": {},
+      "status": "already_script_callable",
+      "operations": [
+        "bind_dataset",
+        "capture_operation",
+        "chart_add",
+        "chart_remove",
+        "chart_update",
+        "create_sheet",
+        "define_range",
+        "delete_sheet",
+        "identity",
+        "inspect_cell",
+        "load",
+        "new",
+        "publish",
+        "rename_sheet",
+        "save",
+        "select_sheet",
+        "set_cell",
+        "set_column",
+        "set_typed_cell"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "bind_dataset": [
+          "Octave",
+          "Python"
+        ],
+        "capture_operation": [
+          "Octave",
+          "Python"
+        ],
+        "chart_add": [
+          "Octave",
+          "Python"
+        ],
+        "chart_remove": [
+          "Octave",
+          "Python"
+        ],
+        "chart_update": [
+          "Octave",
+          "Python"
+        ],
+        "create_sheet": [
+          "Octave",
+          "Python"
+        ],
+        "define_range": [
+          "Octave",
+          "Python"
+        ],
+        "delete_sheet": [
+          "Octave",
+          "Python"
+        ],
+        "identity": [
+          "Octave",
+          "Python"
+        ],
+        "inspect_cell": [
+          "Octave",
+          "Python"
+        ],
+        "load": [
+          "Octave",
+          "Python"
+        ],
+        "new": [
+          "Octave",
+          "Python"
+        ],
+        "publish": [
+          "Octave",
+          "Python"
+        ],
+        "rename_sheet": [
+          "Octave",
+          "Python"
+        ],
+        "save": [
+          "Octave",
+          "Python"
+        ],
+        "select_sheet": [
+          "Octave",
+          "Python"
+        ],
+        "set_cell": [
+          "Octave",
+          "Python"
+        ],
+        "set_column": [
+          "Octave",
+          "Python"
+        ],
+        "set_typed_cell": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "operation_coverage": {
+        "bind_dataset": {
+          "status": "script_callable",
+          "script_operation": "bind_dataset"
+        },
+        "capture_operation": {
+          "status": "script_callable",
+          "script_operation": "capture_operation"
+        },
+        "chart_add": {
+          "status": "script_callable",
+          "script_operation": "chart_add"
+        },
+        "chart_remove": {
+          "status": "script_callable",
+          "script_operation": "chart_remove"
+        },
+        "chart_update": {
+          "status": "script_callable",
+          "script_operation": "chart_update"
+        },
+        "create_sheet": {
+          "status": "script_callable",
+          "script_operation": "create_sheet"
+        },
+        "define_range": {
+          "status": "script_callable",
+          "script_operation": "define_range"
+        },
+        "delete_sheet": {
+          "status": "script_callable",
+          "script_operation": "delete_sheet"
+        },
+        "identity": {
+          "status": "script_callable",
+          "script_operation": "identity"
+        },
+        "inspect_cell": {
+          "status": "script_callable",
+          "script_operation": "inspect_cell"
+        },
+        "load": {
+          "status": "script_callable",
+          "script_operation": "load"
+        },
+        "new": {
+          "status": "script_callable",
+          "script_operation": "new"
+        },
+        "publish": {
+          "status": "script_callable",
+          "script_operation": "publish"
+        },
+        "rename_sheet": {
+          "status": "script_callable",
+          "script_operation": "rename_sheet"
+        },
+        "save": {
+          "status": "script_callable",
+          "script_operation": "save"
+        },
+        "select_sheet": {
+          "status": "script_callable",
+          "script_operation": "select_sheet"
+        },
+        "set_cell": {
+          "status": "script_callable",
+          "script_operation": "set_cell"
+        },
+        "set_column": {
+          "status": "script_callable",
+          "script_operation": "set_column"
+        },
+        "set_typed_cell": {
+          "status": "script_callable",
+          "script_operation": "set_typed_cell"
+        }
+      },
+      "public_operations": {
+        "bind_dataset": {
+          "status": "script_callable",
+          "script_operation": "bind_dataset"
+        },
+        "capture_operation": {
+          "status": "script_callable",
+          "script_operation": "capture_operation"
+        },
+        "chart_add": {
+          "status": "script_callable",
+          "script_operation": "chart_add"
+        },
+        "chart_remove": {
+          "status": "script_callable",
+          "script_operation": "chart_remove"
+        },
+        "chart_update": {
+          "status": "script_callable",
+          "script_operation": "chart_update"
+        },
+        "create_sheet": {
+          "status": "script_callable",
+          "script_operation": "create_sheet"
+        },
+        "define_range": {
+          "status": "script_callable",
+          "script_operation": "define_range"
+        },
+        "delete_sheet": {
+          "status": "script_callable",
+          "script_operation": "delete_sheet"
+        },
+        "identity": {
+          "status": "script_callable",
+          "script_operation": "identity"
+        },
+        "inspect_cell": {
+          "status": "script_callable",
+          "script_operation": "inspect_cell"
+        },
+        "load": {
+          "status": "script_callable",
+          "script_operation": "load"
+        },
+        "new": {
+          "status": "script_callable",
+          "script_operation": "new"
+        },
+        "publish": {
+          "status": "script_callable",
+          "script_operation": "publish"
+        },
+        "rename_sheet": {
+          "status": "script_callable",
+          "script_operation": "rename_sheet"
+        },
+        "save": {
+          "status": "script_callable",
+          "script_operation": "save"
+        },
+        "select_sheet": {
+          "status": "script_callable",
+          "script_operation": "select_sheet"
+        },
+        "set_cell": {
+          "status": "script_callable",
+          "script_operation": "set_cell"
+        },
+        "set_column": {
+          "status": "script_callable",
+          "script_operation": "set_column"
+        },
+        "set_typed_cell": {
+          "status": "script_callable",
+          "script_operation": "set_typed_cell"
+        }
+      },
       "api_policy": {
-        "status": "not_yet_bridged",
-        "reason": "No current Script registration; public host API inspection is required"
-      }
+        "status": "script_callable",
+        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+      },
+      "provider_kind": "module",
+      "documentation_ref": "plugins/modules/viewer.scientific_worksheet/docs/MODEL_API.md",
+      "registration_source": {
+        "path": "plugins/modules/viewer.scientific_worksheet/api/script_bridge_binding.py",
+        "sha256": "2fb265ca12e65b34a450b3076f41976f16081b5bc6fcdf6b5a88c6f72053b8e5"
+      },
+      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
     {
       "api_id": "SCRIPT_EXECUTION_API_v1",
@@ -19000,6 +19800,7 @@
       "status": "already_script_callable",
       "operations": [
         "affine_plan",
+        "arithmetic_plan",
         "compatible",
         "conversion_plan",
         "convert",
@@ -19016,6 +19817,10 @@
       ],
       "operation_languages": {
         "affine_plan": [
+          "Octave",
+          "Python"
+        ],
+        "arithmetic_plan": [
           "Octave",
           "Python"
         ],
@@ -19120,6 +19925,10 @@
         "unitRegistryHomogeneousCoordinatePlan": {
           "status": "script_callable",
           "script_operation": "homogeneous_coordinate_plan"
+        },
+        "arithmetic_plan": {
+          "status": "script_callable",
+          "script_operation": "arithmetic_plan"
         }
       },
       "documented_public_commands": [
@@ -19193,6 +20002,10 @@
         "unitRegistryHomogeneousCoordinatePlan": {
           "status": "script_callable",
           "script_operation": "homogeneous_coordinate_plan"
+        },
+        "arithmetic_plan": {
+          "status": "script_callable",
+          "script_operation": "arithmetic_plan"
         }
       },
       "documentation_ref": "docs/api/UNIT_REGISTRY_API_v1.md",
@@ -19203,7 +20016,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/unit_registry.py",
-        "sha256": "f1ef9e510cdf38e19c67df2eb793f56f7717debd8f4138675394e48901985d07"
+        "sha256": "b7c105ea565b8d9bf025b573bd4c635088feb8688ca93ec83901eee5d42885ba"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -19677,8 +20490,8 @@
     "validation": "dev097 actual Python/Octave Jobs verify default/query/grid, host-only override rejection and equal-aspect round trip; native/module auto-aspect verified by actual Preview consumer evidence183/186."
   },
   "verification_scope": "Registration and source/manifest inventory; this is not a claim that every operation was invoked",
-  "api_registration_count": 62,
-  "registered_operation_count": 978,
+  "api_registration_count": 65,
+  "registered_operation_count": 1035,
   "provider_manifests": [
     {
       "module_id": "analysis.octave_script",
@@ -20213,7 +21026,7 @@
       "api_id": "PLOT_DATASET_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "ddbef0b3d66a309cf3160a3afcfd9fa1f5e8fe823a882f34eea04def3964ca37",
+      "manifest_sha256": "e9731edf98602f9ef755a65661582b4c6100ab83fb6a9cb7aa550271c478aa75",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -20243,7 +21056,7 @@
       "api_id": "PLOT_DATASET_API_v2",
       "api_version": 2,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "ddbef0b3d66a309cf3160a3afcfd9fa1f5e8fe823a882f34eea04def3964ca37",
+      "manifest_sha256": "e9731edf98602f9ef755a65661582b4c6100ab83fb6a9cb7aa550271c478aa75",
       "script_registered": true,
       "operations": [
         "api_info",
@@ -20259,7 +21072,7 @@
       "api_id": "PLOT_DATASET_API_v3",
       "api_version": 3,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "ddbef0b3d66a309cf3160a3afcfd9fa1f5e8fe823a882f34eea04def3964ca37",
+      "manifest_sha256": "e9731edf98602f9ef755a65661582b4c6100ab83fb6a9cb7aa550271c478aa75",
       "script_registered": true,
       "operations": [
         "add_panel",
@@ -20303,7 +21116,7 @@
       "api_id": "PLOT_DATASET_3D_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "ddbef0b3d66a309cf3160a3afcfd9fa1f5e8fe823a882f34eea04def3964ca37",
+      "manifest_sha256": "e9731edf98602f9ef755a65661582b4c6100ab83fb6a9cb7aa550271c478aa75",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -20324,6 +21137,50 @@
       ],
       "namespace": "::GX::PlotDataset3DAPIv1",
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "plot.dataset",
+      "api_id": "PLOT_DATASET_API_v4",
+      "api_version": 4,
+      "manifest": "plugins/modules/plot.dataset/module.ini",
+      "manifest_sha256": "e9731edf98602f9ef755a65661582b4c6100ab83fb6a9cb7aa550271c478aa75",
+      "script_registered": true,
+      "operations": [
+        "add_panel",
+        "api_info",
+        "apply_spec",
+        "artifacts",
+        "build_scene",
+        "create_plot",
+        "delete_plot",
+        "interactive_representations",
+        "interactive_source_info",
+        "interactive_sources",
+        "interactive_status",
+        "load_spec",
+        "move_panel",
+        "multi_panel_enabled",
+        "new_spec",
+        "open_plot",
+        "panel_ids",
+        "panel_info",
+        "read_plot",
+        "remove_panel",
+        "remove_spec",
+        "render",
+        "rerender",
+        "save_spec",
+        "set_multi_panel",
+        "set_panel_axis",
+        "set_panel_title",
+        "set_plot_enabled",
+        "set_series_panel",
+        "set_series_presentation",
+        "source_fingerprint",
+        "sync_interactive",
+        "upsert_plot",
+        "validate_spec"
+      ]
     },
     {
       "module_id": "viewer.3d_workbench",
@@ -20654,7 +21511,7 @@
       "api_id": "NATIVE_3D_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.native_3d/module.ini",
-      "manifest_sha256": "689ea2ff05a317d238d54ec8842225f53af74d4a3ca15a61c585c808bb074d85",
+      "manifest_sha256": "d71c88067f3bb6bdd25b6b2751dacaec8f22949fdd3db4c91cc0ba1625f8b737",
       "script_registered": true,
       "operations": [
         "source_identity"
@@ -20735,22 +21592,29 @@
       "api_id": "SCIENTIFIC_WORKSHEET_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.scientific_worksheet/module.ini",
-      "manifest_sha256": "9ee23b3bbb521c6832ad9e4c47432b5e9ab5b7827b7fd313cbf3bec983438cda",
-      "script_registered": false,
-      "operations": [],
-      "coverage_status": "not_yet_bridged",
-      "reason": "No current Script registration; public host API inspection is required",
-      "entrypoint": "plugins/modules/viewer.scientific_worksheet/api/scientific_worksheet_api_v1.tcl",
-      "entrypoint_sha256": "844d7c2ccd469cf071bb740db73b8ce0c901c8dc0c23e9277c59ac865d874ed5",
-      "capabilities": [
-        "viewer_backend",
-        "interactive_document",
-        "dataset_publication",
-        "managed_statistical_columns",
-        "result_row_windows"
-      ],
-      "namespace": "::GX::ScientificWorksheet",
-      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+      "manifest_sha256": "924f3f339ab0c54a17af4438827b130ed3992350aa60616013930be2f229de20",
+      "script_registered": true,
+      "operations": [
+        "bind_dataset",
+        "capture_operation",
+        "chart_add",
+        "chart_remove",
+        "chart_update",
+        "create_sheet",
+        "define_range",
+        "delete_sheet",
+        "identity",
+        "inspect_cell",
+        "load",
+        "new",
+        "publish",
+        "rename_sheet",
+        "save",
+        "select_sheet",
+        "set_cell",
+        "set_column",
+        "set_typed_cell"
+      ]
     },
     {
       "module_id": "viewer.section_profile",

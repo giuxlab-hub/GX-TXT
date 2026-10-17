@@ -591,7 +591,7 @@ proc ::GX::sessionGeneratorRunPython {info session} {
     set python [runtimeToolRequired python]
     set cmd [list $python [dict get $info entry_path] --target-session $session --library-id [dict get $info library_id] --generator-id [dict get $info generator_id]]
     set logPath [file join $session logs session_generator.log]
-    if {[catch {exec {*}$cmd 2>@1} output opts]} {
+    if {[catch {exec env GXTXT_FRAMEWORK_ROOT=$::GX::scriptDir {*}$cmd 2>@1} output opts]} {
         catch {
             set fd [open $logPath w]; fconfigure $fd -encoding utf-8 -translation lf; puts $fd $output; close $fd
         }
@@ -669,6 +669,10 @@ proc ::GX::sessionGeneratorGenerate {libraryId generatorId sessionRoot sessionNa
             sessionGeneratorCopyTemplate [dict get $generatorInfo template_path] $staging
         }
         if {$type in {python hybrid}} {
+            # A public-API producer must be able to open its genuine staging
+            # Session before producing science; CORE owns its initial Manifest.
+            set initialManifest [file join $staging metadata manifest.ini]
+            if {![file isfile $initialManifest]} {writeManifest $initialManifest}
             sessionGeneratorRunPython $generatorInfo $staging
         }
         # Generators own scientific content; CORE owns the Session Manifest.

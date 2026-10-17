@@ -3,7 +3,7 @@ aa799ab469eedf0a4d9d3d8fac7775796df0ac9dba761717312f2d358e864dce  ./CHANGELOG.md
 39b45c8bd1ac85e25c4cf8497f70c16ed84348ff0727487695db1c99354b6022  ./MANUAL.md
 f39a29a21d48c74599091b12d719e82377b412bfec29f7405fba21dd58d2a341  ./NATIVE_3D_VIEWER_API_v1.md
 a29be83152caa8a4b8d4df778dc0ff6ba932aee4d98d671192204660a05a6d47  ./THIRD_PARTY_NOTICES.md
-8d0edc5a8c82c1e543c7a2437daad1aafd1a1ee827cdb0faf09002bfaafcf8fc  ./api/native_3d_viewer_api_v1.tcl
+99682df2108a265339f0e30e616e9c9719b7919dfe9b4dddf5f217934d324d14  ./api/native_3d_viewer_api_v1.tcl
 c0a8aab62538cb455284771791224847d00e3d3ae9e3cca602540192e75df6d9  ./api/script_bridge_binding.py
 50227dd7f4be9be0e6c2d01ba2e0d7c3ccaaa1c445f6afd33e7e6000e77e8a5a  ./bin/gx3d-host
 53ec174cf17d98e9b2bb5ff31ee2809603cc119cdf6c3c9aa2e42c343e51adac  ./bin/gx3d-worker
@@ -131,7 +131,7 @@ f7dfbf26d2722f9b32f4269b5dc26e9433cf18dd4db6c3a6c4d1f1d017a1818c  ./licenses/win
 79969e86a67892f84e92af67aa96f67d3cb70f19de3993f6bb9278ca1ad5a8d6  ./licenses/windows-runtime/vtk-base-9.6.2-py314hb4b7858_7/vendored-token-license.txt
 c5145609f2b70450768237eee7c3d3308e7c64b12aa546565db1a7a3d8dffa68  ./licenses/windows-runtime/vtk-base-9.6.2-py314hb4b7858_7/vendored-verdict-license.txt
 7055266497633c9025b777c78eb7235af13922117480ed5c674677adc381c9d8  ./licenses/windows-runtime/zstd-1.5.7-h534d264_7/LICENSE
-689ea2ff05a317d238d54ec8842225f53af74d4a3ca15a61c585c808bb074d85  ./module.ini
+d71c88067f3bb6bdd25b6b2751dacaec8f22949fdd3db4c91cc0ba1625f8b737  ./module.ini
 61c905f059add99974bb00c00a5d5a8de7f5c90f9d9ae54863b12627f10052a5  ./native/CMakeLists.txt
 4f3dd24c10c2b161c56d7e9d5d81818970d8710e07afea7b8181ac47ccd36356  ./native/include/gx3d.h
 5a5655ad76fad497c4b02c47184ccff4440b1a922164540bc7a656fbf44b6ea3  ./native/src/display_cache.hpp
@@ -140,4 +140,4 @@ c5145609f2b70450768237eee7c3d3308e7c64b12aa546565db1a7a3d8dffa68  ./licenses/win
 bd6a8b1b71bb0aee2f69e52ea5a9d04ef62477c8c737f3fb5ed32a849e0bf1a4  ./native/src/repeat_components.hpp
 c95153c61e6352d902db8a9616f862c86ab5d9ed9b2c877e568eedbcdd646c76  ./native/src/step_transfer_cache.cpp
 f93ea103deaa458be7bb12af17fe66d88573ac1f9c107ed05332b7dff17583a5  ./native/src/worker.cpp
-105cefb83b46bc0614f9f311f1a91af4b6e43c41c09b09697ccc1b5c5b4e642c  ./plugin-package.ini
+55559cf7be52451353f9ae190156e6526b2ecd8d0a6305d169a1673c02fac0a7  ./plugin-package.ini

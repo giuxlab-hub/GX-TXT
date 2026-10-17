@@ -19,6 +19,10 @@ typedef struct gx3de_scientific_figure {
 } gx3de_scientific_figure;
 GX3DE_API gx3de_result gx3de_view_scientific_figure_set(gx3de_view*,const gx3de_scientific_figure*);
 GX3DE_API gx3de_result gx3de_view_scientific_figure_get(gx3de_view*,gx3de_scientific_figure*);
+/* Export the current native target using the same VTK scene/camera. */
+GX3DE_API gx3de_result gx3de_view_scientific_style_set(gx3de_view*,const char* key,double value);
+GX3DE_API gx3de_result gx3de_view_scientific_axis_labels_set(gx3de_view*,uint32_t axis,const char*const* labels,uint32_t count);
+GX3DE_API gx3de_result gx3de_target_write_vector(gx3de_target*,const char* path,const char* format);
 GX3DE_API gx3de_result gx3de_view_camera_roll(gx3de_view*,double radians);
 #ifdef __cplusplus
 }

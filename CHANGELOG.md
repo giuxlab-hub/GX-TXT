@@ -7,6 +7,16 @@ For current interface contracts consult the API references under [docs/api](docs
 
 ## 0.9.8.10 - development revisions
 
+### 0.9.8.10-dev-100
+
+- Extend Scientific Worksheet 2.0 with the retained typed Workbook model, formulas, units, named ranges, source bindings, managed large-history resources, canonical Dataset publication and same-ID Session Workspace persistence.
+- Add a Native2D C++ virtual-grid interface for large worksheets, preserving exact scientific cell identities, keyboard/pointer editing, focus and clipboard semantics. It redraws the bounded visible viewport and does not claim dirty-tile-only invalidation.
+- Add Plot Dataset API v4 while retaining the public v1/v2/v3 source and behavior. Native2D and Native3D backends render the supported scientific 2D/3D plot kinds with exact Dataset row/coordinate bindings and explicit capabilities.
+- Integrate Worksheet charts and plots with the existing Graph and Clone/portable data authorities, guarded snapshots, editable presentation, complete canonical Dataset exports and persistent view state.
+- Provide Native2D view-scoped scientific axes: titles, explicit intervals, formatting, unit-aware conversion and anchored labels, preserving original data and native view lifetimes.
+- Include a reusable independent Scientific Worksheet Session Generator that exercises public Worksheet/Script Job services without writing private Workbook state.
+- Preserve official limitations: the native grid repaints visible viewport regions rather than implementing regional dirty-tile updates; large scientific views use bounded display representations without replacing their full source.
+
 ### 0.9.8.10-dev-099
 
 - Make Project membership changes explicit: Project selection does not implicitly relocate the active Session, and a dedicated Move action targets the open Session.

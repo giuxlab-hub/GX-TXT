@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Renderer-neutral CORE object/scene presentation adapters.
+source [file join [file dirname [info script]] native2d_axis_presentation_v1.tcl]
 proc ::GX::native2DAxisPlan {lower upper pixels {font 14}} {
     foreach value [list $lower $upper $pixels] {if {![string is double -strict $value] || ![expr {abs($value)<Inf}]} {error {Axis limits and size must be finite}}}
     if {$upper<=$lower || $pixels<=0} {error {Axis planner needs an increasing range and positive size}}
@@ -35,10 +36,17 @@ proc ::GX::native2DAxisPlan {lower upper pixels {font 14}} {
     }
     return [dict create lower $lower upper $upper step $step ticks $ticks]
 }
-proc ::GX::native2DAxisPlans {scene {font 14}} {
+proc ::GX::native2DAxisPlans {scene {font 14} {descriptor __scene__}} {
     lassign [::GX::Native2D::core view $scene] width height left top right bottom bounds
     lassign $bounds x0 y0 x1 y1
-    return [dict create x [native2DAxisPlan $x0 $x1 [expr {$width-$left-$right}] $font] y [native2DAxisPlan $y0 $y1 [expr {$height-$top-$bottom}] $font]]
+    if {$descriptor eq {__scene__}} {
+        # Empty/default compatibility also permits an older binary to load
+        # while an isolated Native2D extension is being built.
+        if {[catch {set descriptor [native2DAxisPresentation $scene]}]} {set descriptor {}}
+        if {$descriptor eq {}} {set descriptor [native2DAxisPresentationDefault $scene]}
+    }
+    set descriptor [native2DAxisPresentationValidate $scene $descriptor]
+    return [dict create x [native2DAxisPresentationPlan $scene x $x0 $x1 [expr {$width-$left-$right}] $font [datasetPublicationV2DictDefault $descriptor x {}]] y [native2DAxisPresentationPlan $scene y $y0 $y1 [expr {$height-$top-$bottom}] $font [datasetPublicationV2DictDefault $descriptor y {}]]]
 }
 proc ::GX::native2DAxisLabelMargin {scene {font 14}} {
     set plans [native2DAxisPlans $scene $font];set width 60
@@ -137,7 +145,7 @@ proc ::GX::native2DCanvasDrawObject {canvas object background {tags {}}} {
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Renderer-neutral presentation data. No Tk item inspection or geometry math.
 proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
-    foreach key [dict keys $options] {if {$key ni {point_budget x_label y_label x_tick_labels y_tick_labels title legend object_labels font_size include_construction_reference}} {error "Unknown Native2D snapshot option '$key'"}}
+    foreach key [dict keys $options] {if {$key ni {point_budget x_label y_label x_tick_labels y_tick_labels title legend object_labels font_size include_construction_reference axis_presentation}} {error "Unknown Native2D snapshot option '$key'"}}
     foreach axis {x y} {
         if {[dict exists $options ${axis}_tick_labels]} {
             set labels [dict get $options ${axis}_tick_labels]
@@ -170,7 +178,10 @@ proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
     set view [::GX::Native2D::core view $scene]
     lassign $view width height left top right bottom bounds
     lassign $bounds x0 y0 x1 y1
-    set texts {};set plans [native2DAxisPlans $scene $font]
+    set descriptor [datasetPublicationV2DictDefault $options axis_presentation __scene__]
+    if {$descriptor eq {__scene__}} {if {[catch {set descriptor [native2DAxisPresentation $scene]}]} {set descriptor {}};if {$descriptor eq {}} {set descriptor [native2DAxisPresentationDefault $scene]}}
+    set descriptor [native2DAxisPresentationValidate $scene $descriptor]
+    set texts {};set plans [native2DAxisPlans $scene $font $descriptor]
     # Construction references retain their authored grid. Scientific axes use
     # the same numeric positions for both labels and grid primitives.
     if {!$includeReference && ![dict exists $options x_tick_labels] && ![dict exists $options y_tick_labels]} {set gridLines {}}
@@ -188,7 +199,7 @@ proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
             if {$axis eq "x"} {
                 lassign [::GX::Native2D::core device $scene [list $value $y0]] px unused
                 set a [list $px $top];set b [list $px [expr {$height-$bottom}]]
-                set position [list $px [expr {$height-$bottom+14}]];set anchor n
+                set position [list $px [expr {$height-$bottom+4}]];set anchor n
                 set half [expr {[string length [dict get $tick label]]*$font*.31+4}]
                 if {$px-$half<2} {set anchor nw}
                 if {$px+$half>$width-2} {set anchor ne}
@@ -203,8 +214,14 @@ proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
             }
         }
     }
-    foreach {key position anchor rotation} [list x_label [list [expr {($left+$width-$right)/2}] [expr {$height-12}]] s 0 y_label [list 14 [expr {($top+$height-$bottom)/2}]] center 90 title [list [expr {$width/2}] 5] n 0] {
+    foreach {key position anchor rotation} [list x_label [list [expr {($left+$width-$right)/2}] [expr {$height-3}]] s 0 y_label [list 14 [expr {($top+$height-$bottom)/2}]] center 90 title [list [expr {$width/2}] 5] n 0] {
         set text [datasetPublicationV2DictDefault $options $key ""]
+        if {![dict exists $options $key] && $key in {x_label y_label}} {
+            set axis [string index $key 0];set settings [datasetPublicationV2DictDefault $descriptor $axis {}]
+            set text [datasetPublicationV2DictDefault $settings title {}]
+            set unit [dict get [native2DAxisCoordinatePlan $scene $axis $settings] unit]
+            if {$unit ne {}} {if {$text ne {}} {append text " ($unit)"} else {set text $unit}}
+        }
         if {$text ne ""} {lappend texts [dict create position $position text $text anchor $anchor rotation $rotation font_size $font color $textColor]}
     }
     set legend [datasetPublicationV2DictDefault $options legend {}];set legendLines {};set legendObjects {}
@@ -221,7 +238,7 @@ proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
         incr row;set y [expr {$y+$font+5}]
     }
     if {$total>$row} {lappend texts [dict create position [list [expr {$left+42}] $y] text "+[expr {$total-$row}] more curves (see table)" anchor w rotation 0 font_size $font color $textColor]}
-    return [dict create api_id NATIVE2D_PRESENTATION_SNAPSHOT_v1 api_version 1 presentation $presentation view $view axis_plans $plans point_budget $budget include_construction_reference $includeReference excluded_object_ids $excluded objects $objects grid_primitives $gridLines legend_primitives $legendLines texts $texts legend $legend]
+    return [dict create api_id NATIVE2D_PRESENTATION_SNAPSHOT_v1 api_version 1 presentation $presentation view $view axis_plans $plans axis_presentation $descriptor point_budget $budget include_construction_reference $includeReference excluded_object_ids $excluded objects $objects grid_primitives $gridLines legend_primitives $legendLines texts $texts legend $legend]
 }
 proc ::GX::native2DCanvasSnapshot {canvas snapshot} {
     set background [uiFieldColorComposite [uiFieldColorFromRGBA [dict get $snapshot presentation background]] #FFFFFF]

@@ -1390,6 +1390,14 @@ int timelineControl(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[
     }catch(const std::exception& e){error(ip,e);return TCL_ERROR;}
 }
 #include "native3d_workbench_tcl_v1.inc"
+int exportVector(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj*const args[]) {
+    if(argc!=3){Tcl_WrongNumArgs(ip,1,args,"path svg|pdf");return TCL_ERROR;}
+    auto& state=*static_cast<State*>(data);
+    try {if(!state.target)throw std::runtime_error("Render a scene before vector export");
+        check(gx3de_target_write_vector(state.target,str(args[1]).c_str(),str(args[2]).c_str()),"export native vector figure");
+        Tcl_SetObjResult(ip,args[1]);return TCL_OK;
+    }catch(const std::exception&e){error(ip,e);return TCL_ERROR;}
+}
 int close(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
     if(argc!=1){Tcl_WrongNumArgs(ip,1,args,"");return TCL_ERROR;}
     static_cast<State*>(data)->clear();return TCL_OK;
@@ -1421,6 +1429,7 @@ extern "C" int Gx3deviewer_Init(Tcl_Interp *ip) {
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::gizmo_update",gizmoUpdate,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::gizmo_end",gizmoEnd,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::export_png",exportPng,state,nullptr);
+    Tcl_CreateObjCommand(ip,"::GX3DEViewer::export_vector",exportVector,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::timeline",timelineControl,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::plane_begin",planeBegin,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::plane_update",planeUpdate,state,nullptr);

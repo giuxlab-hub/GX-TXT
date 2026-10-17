@@ -201,6 +201,8 @@ proc ::GX::native3DPreviewPrepared {w} {
     } message]} {native3DPreviewFailure $w $message}
 }
 proc ::GX::native3DPreviewPlotKey {ref} {
+    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+    if {[::GX::PlotDatasetAPIv4::isOwned $ref]} {return [list [interactiveDocumentSessionToken] PLOT_DATASET_API_v4 $ref [::GX::PlotDatasetAPIv4::sourceFingerprint $ref]]}
     ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
     set artifact [dict get [::GX::PlotDatasetAPIv3::artifacts $ref] graph_artifact]
     file stat $artifact st
@@ -230,8 +232,11 @@ proc ::GX::native3DPreviewPlotKey {ref} {
 }
 proc ::GX::native3DPreviewPlotPrepare {ref w} {
     variable ::GX::DatasetViewer::state
-    set state($w,sourceInfo) [::GX::PlotDatasetAPIv3::interactiveSourceInfo $ref]
-    set command [::GX::PlotDatasetAPIv3::previewExportCommand $ref $state($w,temp)]
+    set owner ::GX::PlotDatasetAPIv3
+    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+    if {[::GX::PlotDatasetAPIv4::isOwned $ref]} {set owner ::GX::PlotDatasetAPIv4}
+    set state($w,sourceInfo) [${owner}::interactiveSourceInfo $ref]
+    set command [${owner}::previewExportCommand $ref $state($w,temp)]
     set state($w,prepareLog) {}
     if {[auto_execok prlimit] ne {}} {set command [concat [list [auto_execok prlimit] --as=[expr {[configurationGet viewers.native3d.worker_address_space_budget_mib]*1024*1024}] --] $command]}
     if {[auto_execok setsid] ne {}} {set command [concat [list [auto_execok setsid]] $command];set state($w,prepareGroup) 1}
@@ -244,7 +249,10 @@ proc ::GX::native3DPreviewPlotActivate {} {
         set ref [graphResourceRefForPath [currentGraphPath]]
         if {[dict get $ref module_id] ne "plot.dataset" || [dict get $ref graph_id] ne "plot.dataset.xyz"} {error {Select an existing Plot Dataset 3D graph/Variant.}}
         ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
-        set info [::GX::PlotDatasetAPIv3::interactiveSourceInfo $ref]
+        set owner ::GX::PlotDatasetAPIv3
+        ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+        if {[::GX::PlotDatasetAPIv4::isOwned $ref]} {set owner ::GX::PlotDatasetAPIv4}
+        set info [${owner}::interactiveSourceInfo $ref]
         set key [native3DPreviewPlotKey $ref]
         native3DPreviewAcquire .top.nb.graphs.preview.img [dict get $info source_dataset_id] $key [list ::GX::native3DPreviewPlotKey $ref] [list ::GX::native3DPreviewPlotPrepare $ref]
     } message]} {native3DPreviewDiagnostic .top.nb.graphs.preview.img $message}
@@ -417,7 +425,8 @@ proc ::GX::native3DPreviewPlotIcon {} {
         set ref [graphResourceRefForPath [currentGraphPath]]
         if {[dict get $ref module_id] ne "plot.dataset" || [dict get $ref graph_id] ne "plot.dataset.xyz"} {error unsupported}
         modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
-        ::GX::PlotDatasetAPIv3::previewCompatibility $ref
+        ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+        if {[::GX::PlotDatasetAPIv4::isOwned $ref]} {::GX::PlotDatasetAPIv4::previewCompatibility $ref} else {::GX::PlotDatasetAPIv3::previewCompatibility $ref}
     } message]} {set ::GX::ui(native3DEligibility) $message;return}
     set ::GX::ui(native3DEligibility) supported
     place $parent.interactive -relx 1 -x -8 -y 8 -anchor ne

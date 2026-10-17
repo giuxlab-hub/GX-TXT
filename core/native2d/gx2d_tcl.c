@@ -1,5 +1,9 @@
 /* Small Tcl adapter for the public Native 2D C API. No geometry lives here. */
 #include "gx2d.h"
+#include "gx2d_surface.h"
+#ifdef GXTXT_NATIVE_PLOT_V4
+#include "gx2d_plot_v4.h"
+#endif
 #include <tcl.h>
 #include <stdint.h>
 #include <math.h>
@@ -10,6 +14,7 @@ typedef struct scene_node {
     uint64_t serial;
     gx2d_scene *scene;
     gx2d_display_accumulator *display;
+    Tcl_Obj *axis_presentation;
     struct scene_node *next;
 } scene_node;
 typedef struct { scene_node *head; uint64_t next; } bridge;
@@ -25,7 +30,7 @@ static int status(Tcl_Interp *ip, gx2d_status code) {
 static void free_bridge(ClientData data) {
     bridge *b = (bridge *)data;
     scene_node *p = b->head;
-    while (p) { scene_node *next = p->next; gx2d_display_destroy(p->display);gx2d_destroy(p->scene); free(p); p = next; }
+    while (p) { scene_node *next = p->next; gx2d_display_destroy(p->display);gx2d_destroy(p->scene);if(p->axis_presentation)Tcl_DecrRefCount(p->axis_presentation); free(p); p = next; }
     free(b);
 }
 static scene_node *lookup(bridge *b, Tcl_Interp *ip, Tcl_Obj *value) {
@@ -380,7 +385,7 @@ static int command(ClientData data, Tcl_Interp *ip, int argc, Tcl_Obj *const arg
     op = Tcl_GetString(argv[1]);
     if (strcmp(op, "api_info") == 0) {
         if(argc!=2)return fail(ip,"Usage: core api_info");
-        Tcl_SetObjResult(ip,Tcl_NewStringObj("api_id NATIVE2D_API_v1 api_version 1 engine gx2d capabilities {stable_constituent_identity independent_part_direction truthful_composition_traversal compound_subentities retained_network_nodes network_subentity_constraints atomic_dimension_batch multi_object_semantic_selection polygon_region_selection retained_straight_path ordered_path_vertices retained_path_join_split retained_spline_tangents calibrated_reference_images scene_preview_views atomic_symmetric_construction atomic_attached_construction semantic_point_connectivity retained_component_solver graphical_dimensions driven_dimensions local_sketch_rank relationship_hit_regions retained_control_descriptors epoch_checked_references canvas_construction selection_constraint_compatibility atomic_constraint_driving native_viewport_clip defining_control_snap atomic_presentation_snapshots native_selection_sets native_layer_lifecycle native_identity_attributes parent_linked_fragments topology_epoch structured_scientific_measurements exact_supported_projection extended_constraint_lifecycle constraint_diagnostics native_constraint_enforcement rectangular_circular_series retained_sketch exact_sketch_evaluation paged_sketch_sampling coordinate_rescale exact_vertex_snap gizmo_snap_translation gizmo rotation_transaction pivot flat_group_lifecycle affine_objects copy_reflect endpoint_frame point_frame point_distance bridge_c0_c1 bounded_spline_range native_spline_object selection_replace selection_state selection_paged device_point_hit bounded_compare drag_active aspect requested_view direction_marker grid background polar display_sample numeric_pack numeric_companions numeric_row_audit numeric_gaps binary_points bounded_points object_sample render_lod curve_render object_style fit_selected}",-1));
+        Tcl_SetObjResult(ip,Tcl_NewStringObj("api_id NATIVE2D_API_v1 api_version 1 engine gx2d capabilities {native_virtual_grid native_cairo_surface native_cairo_export axis_presentation stable_constituent_identity independent_part_direction truthful_composition_traversal compound_subentities retained_network_nodes network_subentity_constraints atomic_dimension_batch multi_object_semantic_selection polygon_region_selection retained_straight_path ordered_path_vertices retained_path_join_split retained_spline_tangents calibrated_reference_images scene_preview_views atomic_symmetric_construction atomic_attached_construction semantic_point_connectivity retained_component_solver graphical_dimensions driven_dimensions local_sketch_rank relationship_hit_regions retained_control_descriptors epoch_checked_references canvas_construction selection_constraint_compatibility atomic_constraint_driving native_viewport_clip defining_control_snap atomic_presentation_snapshots native_selection_sets native_layer_lifecycle native_identity_attributes parent_linked_fragments topology_epoch structured_scientific_measurements exact_supported_projection extended_constraint_lifecycle constraint_diagnostics native_constraint_enforcement rectangular_circular_series retained_sketch exact_sketch_evaluation paged_sketch_sampling coordinate_rescale exact_vertex_snap gizmo_snap_translation gizmo rotation_transaction pivot flat_group_lifecycle affine_objects copy_reflect endpoint_frame point_frame point_distance bridge_c0_c1 bounded_spline_range native_spline_object selection_replace selection_state selection_paged device_point_hit bounded_compare drag_active aspect requested_view direction_marker grid background polar display_sample numeric_pack numeric_companions numeric_row_audit numeric_gaps binary_points bounded_points object_sample render_lod curve_render object_style fit_selected}",-1));
         return TCL_OK;
     }
     if (strcmp(op, "scene") == 0) {
@@ -697,7 +702,7 @@ static int command(ClientData data, Tcl_Interp *ip, int argc, Tcl_Obj *const arg
         scene_node **link = &b->head;
         if (argc != 3) return fail(ip, "Usage: core destroy scene");
         while (*link != node) link = &(*link)->next;
-        *link = node->next;gx2d_display_destroy(node->display); gx2d_destroy(node->scene); free(node);
+        *link = node->next;gx2d_display_destroy(node->display); gx2d_destroy(node->scene);if(node->axis_presentation)Tcl_DecrRefCount(node->axis_presentation); free(node);
         return TCL_OK;
     }
     if (strcmp(op, "add") == 0 || strcmp(op, "pointset") == 0 || strcmp(op,"point")==0) {
@@ -1115,7 +1120,8 @@ static int command(ClientData data, Tcl_Interp *ip, int argc, Tcl_Obj *const arg
         free(objects);free(sources);Tcl_SetObjResult(ip,result);return TCL_OK;
 series_invalid:free(input);free(objects);free(sources);return TCL_ERROR;
     }
-    if(strcmp(op,"view_state")==0||strcmp(op,"view_state_rescale")==0)return view_state_command(node->scene,ip,op,argc,argv);
+    if(strcmp(op,"axis_presentation")==0)return axis_presentation_command(node,ip,argc,argv);
+    if(strcmp(op,"view_state")==0||strcmp(op,"view_state_rescale")==0)return view_state_command(node,ip,op,argc,argv);
     if(!strcmp(op,"path_vertices")||!strcmp(op,"path_split")||!strcmp(op,"path_join"))return path_command(node->scene,ip,op,argc,argv);
     if(!strncmp(op,"part_",5)||!strcmp(op,"composition_states")||!strcmp(op,"composition_traversal"))return part_command(node->scene,ip,op,argc,argv);
     if(!strncmp(op,"composition_",12))return composition_command(node->scene,ip,op,argc,argv);
@@ -1501,5 +1507,9 @@ int Gx2dtcl_Init(Tcl_Interp *ip) {
     if (!b) return fail(ip, "Out of memory");
     Tcl_CreateNamespace(ip, "::GX::Native2D", NULL, NULL);
     Tcl_CreateObjCommand(ip, "::GX::Native2D::core", command, b, free_bridge);
+    if(gx2d_surface_init(ip)!=TCL_OK)return TCL_ERROR;
+#ifdef GXTXT_NATIVE_PLOT_V4
+    if(gx2d_plot_v4_init(ip)!=TCL_OK)return TCL_ERROR;
+#endif
     return Tcl_PkgProvide(ip, "gx2dtcl", "1.0");
 }

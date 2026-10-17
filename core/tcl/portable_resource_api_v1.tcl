@@ -113,7 +113,28 @@ proc ::GX::portableResourceExportGraph {artifact archive} {
     set annotation [annotationPathForPlot $artifact];if {![file isfile $annotation]} {set annotation ""}
     set renderMeta [plotRegionMetadataPath $artifact];if {![file isfile $renderMeta]} {set renderMeta ""}
     set snapshot ""
-    if {[dict get $ref kind] eq "clone" && [dict get $state capture_mode] eq "scientific"} {
+    set native [expr {[graphRendererOwner $ref] eq {PLOT_DATASET_API_v4}}]
+    if {$native} {
+        try {
+            graphNativeRendererRequire
+            if {[dict get $ref kind] eq {clone}} {
+                set capture [::GX::PlotDatasetAPIv4::snapshotCopy [file dirname $artifact] $scientific]
+            } else {
+                set capture [::GX::PlotDatasetAPIv4::captureForArtifact $artifact $scientific]
+            }
+            # Each canonical Dataset archive is embedded in the verified native
+            # snapshot. Export also works after its live source was removed.
+            set dependencies {}
+            set snapshot $scientific
+            dict set state capture_mode scientific
+            set fd [open $statePath a]
+            try {fconfigure $fd -encoding utf-8 -translation lf;_portableResourceWriteStateField $fd capture_mode scientific} finally {close $fd}
+        } on error {message options} {
+            catch {file delete -force -- $statePath}
+            catch {file delete -force -- $scientific}
+            return -options $options $message
+        }
+    } elseif {[dict get $ref kind] eq "clone" && [dict get $state capture_mode] eq "scientific"} {
         file mkdir $scientific
         foreach item {snapshot.h5 presentation.ini private_session} {
             file copy -force -- [file join [file dirname $artifact] $item] [file join $scientific $item]
@@ -287,11 +308,18 @@ proc ::GX::_portableResourceImportGraph {staging options} {
     set cloneRoot [file join [::GX::PlotClone::root] $cloneId]
     set source [file join $graphRoot graph.png]
     if {![::GX::PlotClone::validPng $source]} {error "Graph package has an invalid rendered artifact"}
-    set scientific [expr {!$renderedOnly && [dict get $state module_id] eq "plot.dataset" && [dict get $state capture_mode] eq "scientific" && [file isfile [file join $graphRoot scientific snapshot.h5]]}]
+    set native [file isfile [file join $graphRoot scientific native_v4_snapshot.tcldict]]
+    set scientific [expr {!$renderedOnly && [dict get $state module_id] eq "plot.dataset" && [dict get $state capture_mode] eq "scientific" && ($native || [file isfile [file join $graphRoot scientific snapshot.h5]])}]
     if {$scientific} {
-        file mkdir [file join $graphRoot scientific private_session]
-        modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
-        ::GX::PlotDatasetAPIv3::renderSnapshot [file join $graphRoot scientific] [dict get $state graph_id]
+        if {$native} {
+            graphNativeRendererRequire
+            set nativeInfo [::GX::PlotDatasetAPIv4::snapshotValidate [file join $graphRoot scientific] [dict get $state graph_id]]
+            ::GX::PlotDatasetAPIv4::renderSnapshot [file join $graphRoot scientific] [dict get $state graph_id]
+        } else {
+            file mkdir [file join $graphRoot scientific private_session]
+            modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
+            ::GX::PlotDatasetAPIv3::renderSnapshot [file join $graphRoot scientific] [dict get $state graph_id]
+        }
         if {![::GX::PlotClone::validPng [file join $graphRoot scientific graph.png]]} {error "Graph scientific snapshot failed validation"}
     }
     set registryPath [datasetRegistryPath $currentSession]
@@ -316,8 +344,12 @@ proc ::GX::_portableResourceImportGraph {staging options} {
         file mkdir $cloneRoot
         file copy -- $source [file join $cloneRoot graph.png]
         if {$scientific} {
-            foreach item {snapshot.h5 presentation.ini private_session} {
-                file copy -force -- [file join $graphRoot scientific $item] [file join $cloneRoot $item]
+            if {$native} {
+                ::GX::PlotDatasetAPIv4::snapshotCopy [file join $graphRoot scientific] $cloneRoot
+            } else {
+                foreach item {snapshot.h5 presentation.ini private_session} {
+                    file copy -force -- [file join $graphRoot scientific $item] [file join $cloneRoot $item]
+                }
             }
         }
         set fd [open [file join $cloneRoot clone.ini] w]
@@ -334,8 +366,8 @@ proc ::GX::_portableResourceImportGraph {staging options} {
             putKV $fd source_module_version [dict get $state source_module_version]
             putKV $fd source_graph [dict get $state graph_id]
             putKV $fd source_variant [dict get $state variant_id]
-            putKV $fd source_dataset_ids [join $dependencies {;}]
-            putKV $fd source_variable_ids ""
+            putKV $fd source_dataset_ids [join [expr {$scientific && $native ? [dict keys [dict get $nativeInfo datasets]] : $dependencies}] {;}]
+            putKV $fd source_variable_ids [expr {$scientific && $native && [dict exists $nativeInfo source_variable_ids] ? [join [dict get $nativeInfo source_variable_ids] {;}] : ""}]
             putKV $fd source_artifact "portable-resource-package"
             putKV $fd source_artifact_bytes [file size $source]
         if {$scientific} {
@@ -355,6 +387,13 @@ proc ::GX::_portableResourceImportGraph {staging options} {
         file copy -- [file join $graphRoot graph-state.json] [file join $cloneRoot portable_source.json]
         set metadata [file join $graphRoot metadata.json]
         if {[file isfile $metadata]} {graphMetadataWrite $cloneRef [_portableResourceFields $metadata]}
+        if {$renderedOnly} {
+            # An intentional rendered-only import must not retain an executable
+            # renderer claim without its scientific representation.
+            set fields [graphMetadataRead $cloneRef]
+            foreach field {renderer_owner renderer_owner_api_version} {catch {dict unset fields $field}}
+            graphMetadataWrite $cloneRef $fields
+        }
         set annotation [file join $graphRoot annotations.json]
         if {[file isfile $annotation]} {
             set target [annotationPathForPlot [file join $cloneRoot graph.png]]

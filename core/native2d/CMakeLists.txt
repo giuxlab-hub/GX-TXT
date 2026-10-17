@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(gxtxt_native2d VERSION 0.9.8 LANGUAGES C)
+project(gxtxt_native2d VERSION 0.9.8 LANGUAGES C CXX)
 
 # Numeric owns shared reductions; Native2D owns matching/projection geometry.
 set(GXTXT_NUMERIC_REDUCTION_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/../../plugins/modules/math.numeric/api/c/gxtxt_numeric_reductions_v1.h")
@@ -19,9 +19,20 @@ endif()
 # Tcl adapter for viewers. The geometry engine remains a standalone C library.
 find_package(TCL QUIET)
 if(TCL_FOUND)
-  add_library(gx2dtcl MODULE gx2d_tcl.c gx2d.c)
-  target_include_directories(gx2dtcl PRIVATE ${TCL_INCLUDE_PATH})
-  target_link_libraries(gx2dtcl PRIVATE ${TCL_LIBRARY})
+  # Device presentation is owned by Native2D and shares one painter between
+  # virtual grids and native Plot projections. Cairo supplies real clipping,
+  # alpha composition, dashed strokes and rotated text on the Tk drawable.
+  find_path(GXTXT_CAIRO_INCLUDE cairo.h PATH_SUFFIXES cairo REQUIRED)
+  find_library(GXTXT_CAIRO_LIBRARY NAMES cairo libcairo.so.2 REQUIRED)
+  find_package(X11 REQUIRED)
+  add_library(gx2dtcl MODULE gx2d_tcl.c gx2d.c gx2d_surface.cpp)
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/gx2d_plot_v4.cpp")
+    target_sources(gx2dtcl PRIVATE gx2d_plot_v4.cpp)
+    target_compile_definitions(gx2dtcl PRIVATE GXTXT_NATIVE_PLOT_V4=1)
+  endif()
+  target_include_directories(gx2dtcl PRIVATE ${TCL_INCLUDE_PATH} ${TK_INCLUDE_PATH} ${GXTXT_CAIRO_INCLUDE})
+  target_link_libraries(gx2dtcl PRIVATE ${TCL_LIBRARY} ${TK_LIBRARY} ${GXTXT_CAIRO_LIBRARY} X11::X11)
+  target_compile_features(gx2dtcl PRIVATE cxx_std_17)
   target_compile_features(gx2dtcl PRIVATE c_std_99)
   if(NOT MSVC)
     target_link_libraries(gx2dtcl PRIVATE m)

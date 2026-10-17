@@ -1,7 +1,5 @@
 # Graph Workflow API v1
 
-Introduced in GX-TXT 0.9.7.22.
-
 ## Scope
 
 Graph Workflow API v1 provides three CORE services around the stable graph
@@ -70,7 +68,7 @@ artifact. A NON USE variant is removed before plotVariantCommand, so its dataset
 scan, series preparation, provider preparation, rendering, and artifact
 regeneration are not started.
 
-## Public Session plot deletion (added in dev-036)
+## Public Session plot deletion
 
 `::GX::graphLifecycleDelete path` is the public CORE lifecycle entry point
 used by the Plots page. It accepts an existing Session-owned PNG under the
@@ -106,11 +104,11 @@ save, reopening the Session does not restore the deleted Variant or enabled
 base graph. `graphLifecycleDelete` is host-only in Script Bridge coverage:
 the Bridge does not register this path-based filesystem deletion operation.
 
-## GX-TXT 0.9.7.39 Graph configuration extensions
+## Graph configuration extensions
 
 Graph Workflow API v1 now hosts the public [Graph Configuration Extension API v1](GRAPH_CONFIG_EXTENSION_API_v1.md). A module public API advertising `graph_config_extension` is activated before lookup; its provider-owned controls are appended to the normal base Graph configuration window and to the Variant editor Plot tab with the exact graph/variant identity. Generic graph fields remain CORE-owned.
 
-## Script Bridge operations (GX-TXT dev-037)
+## Script Bridge operations
 
 The Bridge exposes state for stable module/graph/Variant identities. Empty or omitted `variant_id` addresses the base graph where the Tcl API permits it. `use_set` requires an explicit `variant_id`, including the empty string for the base. USE state persists in the Session Manifest and affects later scheduled work. Both Octave/MATLAB and Python call these names through `gxtxt_api_call(API_ID, operation, arguments)`. Arguments are positional and are passed to the named public Tcl procedure.
 
@@ -127,7 +125,7 @@ registered Plot Dataset v3 `delete_plot` operation for a Plot Dataset Variant.
 Nested Tcl dictionaries and lists returned by these registered state calls
 are normalized for script clients.
 
-## Public aspect and background mutation (dev-051)
+## Public aspect and background mutation
 
 `::GX::graphAxisPresentationSet module_id graph_id variant_id changes` validates all changes before changing the existing CORE Axes authority. Allowed fields are `xy_aspect_mode` (`inherit`, `auto`, `xy_equal`), 3-D `aspect_mode` (`inherit`, `auto`, `xy_equal`, `data_equal`, `manual`), `aspect_ratio` (three positive values for manual), and `background` (`inherit`, `#RRGGBB`, `transparent`). Empty values mean inheritance. This does not change camera/view or scientific values. Invalid identities, ratios, colors and unsupported fields fail without partial mutation.
 
@@ -141,7 +139,7 @@ gxtxt_api_call('GRAPH_WORKFLOW_API_v1', 'presentation_set',
 
 The GUI Axes dialog accepts `transparent` beside inherited/opaque backgrounds. Static 2-D/3-D Octave rendering writes real RGBA PNG alpha through GNUplot pngcairo at the requested pixel dimensions; axes/figure margins are transparent. Explicitly filled objects can remain opaque. Annotation composition, full-size viewer, Save image, clipboard image and HTML use the same alpha-bearing PNG. This changes the shared static PNG path; it does not claim transparent native interactive 3-D scenes. Effective background/aspect appear in plot metadata and persist through Session save/reopen.
 
-## Public API activation lifetime (dev-066)
+## Public API activation lifetime
 
 The existing `modulePublicApiActivated` cache describes commands installed in
 the Tcl interpreter. Defaults, configuration loading and Session changes reset
@@ -150,3 +148,9 @@ re-sourcing established wrapper APIs causes duplicate rename targets. Activation
 continues to use declared module entrypoints and trusted module execution scope.
 This is an internal lifecycle correction to the existing host/admin loader, not
 a new Script Bridge operation or a hot-reload mechanism.
+
+## Declared native rendering owner
+
+Native Plot Dataset graphs use existing Graph Metadata to declare their renderer. Existing Plots controls retain the same stable Graph/Variant identity and configuration authorities. CORE projects global, enabled module, Variant, Axes, Legend and layout settings into an ephemeral effective native PlotSpec; it does not rewrite canonical source data or the saved PlotSpec. Rerender uses the existing Analysis queue and a captured Session worker invoking public Plot Dataset API v4. Historical unmarked graphs keep their established routing. Unknown owner markers are errors, never silent fallback.
+
+The same owner dispatch supplies exact source-row point indices for the existing Select data dialog. Distribution aggregates remain ineligible for individual source-point selection. Host queue construction and effective configuration projection are host adapters, while reusable scientific rendering and capture operations are exposed by Plot Dataset API v4 and its Script Bridge.

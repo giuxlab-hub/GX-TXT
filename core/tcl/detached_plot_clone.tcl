@@ -103,7 +103,30 @@ proc ::GX::PlotClone::captureRendered {source} {
         set mode rendered
         set captureFailure ""
         set scientific [file join $staging scientific]
-        if {![catch {
+        set native [expr {[::GX::graphRendererOwnerForPath $source] eq {PLOT_DATASET_API_v4}}]
+        if {$native} {
+            ::GX::graphNativeRendererRequire
+            set prior [infoForPath $source]
+            if {$prior ne {} && [dict get $prior clone.capture_mode] eq {scientific}} {
+                set snapshot [::GX::PlotDatasetAPIv4::snapshotCopy [file dirname $source] $scientific]
+                set scientificInfo [dict create graph_id [dict get $snapshot graph_id] source_variant [dict get $snapshot source_variant]]
+                set datasets [dict keys [dict get $snapshot datasets]]
+                set sourceModule plot.dataset;set sourceGraph [dict get $snapshot graph_id];set sourceVariant [dict get $snapshot source_variant]
+                set variables [dict get $snapshot source_variable_ids]
+                ::GX::PlotDatasetAPIv4::renderSnapshot $scientific $sourceGraph
+            } else {
+                set scientificInfo [::GX::PlotDatasetAPIv4::captureForArtifact $source $scientific]
+                set datasets [dict get $scientificInfo source_dataset_ids]
+                set variables [dict get $scientificInfo source_variable_ids]
+            }
+            foreach name {native_v4_snapshot.tcldict resources graph.png .gxtxt_plotmeta graph.xrange.ini} {
+                if {[file exists [file join $scientific $name]]} {
+                    file rename -force -- [file join $scientific $name] [file join $staging $name]
+                }
+            }
+            file delete -force -- $scientific
+            set mode scientific
+        } elseif {![catch {
             ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
             set prior [infoForPath $source]
             if {$prior ne "" && [dict get $prior clone.capture_mode] eq "scientific"} {
@@ -191,6 +214,10 @@ proc ::GX::PlotClone::presentationFields {path} {
         error "This Clone has no scientific presentation to edit."
     }
     set graph [dict get $info clone.snapshot_graph]
+    if {[::GX::graphRendererOwnerForPath $path] eq {PLOT_DATASET_API_v4}} {
+        ::GX::graphNativeRendererRequire
+        return [::GX::PlotDatasetAPIv4::snapshotPresentationFields [file dirname $path] $graph]
+    }
     set config [::GX::parseIni [file join [file dirname $path] presentation.ini]]
     set values [dict create]
     foreach {field section key default} {
@@ -260,7 +287,7 @@ proc ::GX::PlotClone::setPresentation {path values} {
         }
     }
     if {[dict exists $values legend_placement] &&
-        [dict get $values legend_placement] ni {inside above below left right manual}} {
+        [dict get $values legend_placement] ni {none inside above below left right manual}} {
         error "Unknown legend placement."
     }
     if {[dict exists $values line_width] &&
@@ -295,6 +322,12 @@ proc ::GX::PlotClone::setPresentation {path values} {
         }
     }
     set graph [dict get $info clone.snapshot_graph]
+    if {[::GX::graphRendererOwnerForPath $path] eq {PLOT_DATASET_API_v4}} {
+        ::GX::graphNativeRendererRequire
+        set result [::GX::PlotDatasetAPIv4::snapshotPresentationSet [file dirname $path] $graph $values]
+        if {[dict exists $values title]} {setDescriptorFields $path [dict create title [dict get $values title]]}
+        return $result
+    }
     if {[dict exists $values title]} {setDescriptorFields $path [dict create title [dict get $values title]]}
     set dir [file dirname $path]
     set runtime [file join $dir presentation.ini]
@@ -476,6 +509,10 @@ proc ::GX::startRerenderPaths {paths {allConfigured 0}} {
         if {$info eq ""} {
             lappend live $path
         } elseif {[dict get $info clone.capture_mode] eq "scientific"} {
+            if {[::GX::graphRendererOwnerForPath $path] eq {PLOT_DATASET_API_v4}} {
+                lappend live $path
+                continue
+            }
             if {[catch {
                 ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
                 ::GX::PlotDatasetAPIv3::renderSnapshot [file dirname $path] [dict get $info clone.snapshot_graph]
@@ -515,7 +552,7 @@ proc ::GX::previewGraph_before_graph_selection {} {
     }
     if {$isClone} {
         if {[dict get [::GX::PlotClone::infoForPath $path] clone.capture_mode] eq "scientific"} {
-            set ::GX::ui(graphInfo) "Detached scientific Clone. Its plotted values are frozen; use Edit clone... to change presentation or Rerender to redraw from the Session-owned HDF5 snapshot."
+            set ::GX::ui(graphInfo) "Detached scientific Clone. Its plotted values are frozen; use Edit clone... to change presentation or Rerender to redraw from the Session-owned scientific snapshot."
         } else {
             set ::GX::ui(graphInfo) "Detached rendered Clone. The captured PNG is owned by this Session and can be exported."
         }

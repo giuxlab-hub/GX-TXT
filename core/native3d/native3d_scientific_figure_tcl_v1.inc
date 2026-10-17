@@ -19,6 +19,14 @@ void scientificFigure(Tcl_Interp* ip,State& state,Tcl_Obj* d) {
         if(Tcl_ListObjGetElements(ip,get(ip,d,"palette"),&n,&items)!=TCL_OK||n<2||n>256)throw std::runtime_error("Scientific palette requires 2..256 RGB entries");
         f.palette_count=n;for(int i=0;i<n;++i)f.palette[i]=rgb(str(items[i]),"scientific palette RGB");}
     check(gx3de_view_scientific_figure_set(state.view,&f),"set calibrated scientific figure");
+    if(auto style=get(ip,d,"native_style")){Tcl_DictSearch search;Tcl_Obj*key;Tcl_Obj*value;int done;if(Tcl_DictObjFirst(ip,style,&search,&key,&value,&done)!=TCL_OK)throw std::runtime_error("Native scientific style must be a dictionary");for(;!done;Tcl_DictObjNext(&search,&key,&value,&done)){double x;if(Tcl_GetDoubleFromObj(ip,value,&x)!=TCL_OK){Tcl_DictObjDone(&search);throw std::runtime_error("Native scientific style must be finite numeric fields");}check(gx3de_view_scientific_style_set(state.view,Tcl_GetString(key),x),"apply scientific presentation style");}Tcl_DictObjDone(&search);}
+    auto custom=get(ip,d,"tick_labels");int axes=0;Tcl_Obj** axisLists=nullptr;
+    if(custom&&(Tcl_ListObjGetElements(ip,custom,&axes,&axisLists)!=TCL_OK||axes!=3))throw std::runtime_error("Scientific custom labels require three axes");
+    for(int axis=0;axis<3;++axis){std::vector<const char*> labels;
+        if(custom){int count;Tcl_Obj** items;if(Tcl_ListObjGetElements(ip,axisLists[axis],&count,&items)!=TCL_OK||count>64)throw std::runtime_error("Scientific axis label limit exceeded");for(int i=0;i<count;++i)labels.push_back(Tcl_GetString(items[i]));}
+        check(gx3de_view_scientific_axis_labels_set(state.view,axis,labels.data(),labels.size()),"set scientific numeric axis labels");
+    }
+
 }
 int viewportResize(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]) {
     if(argc!=4){Tcl_WrongNumArgs(ip,1,args,"width height png");return TCL_ERROR;}

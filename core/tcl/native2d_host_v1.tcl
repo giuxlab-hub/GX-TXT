@@ -229,3 +229,4 @@ proc ::GX::native2DCoordinateReadout {scene device} {
     return [format "X %.7g, Y %.7g" {*}$world]
 }
 proc ::GX::native2DToolbarLayout {frame width {children {}}} {tailcall ::GX::uiFieldControlsLayout $frame $width $children}
+source [file join [file dirname [info script]] native2d_virtual_grid_v1.tcl]

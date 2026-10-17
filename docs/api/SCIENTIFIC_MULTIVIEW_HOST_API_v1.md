@@ -1,4 +1,4 @@
-# CORE Scientific Multiview Host API v1 — dev075
+# CORE Scientific Multiview Host API v1
 
 An optional Tk coordinator for genuine Native2D and isolated Native3D viewports.
 It reuses CORE's retained presentation, calibrated raster worker, ViewportHost,
@@ -15,12 +15,12 @@ be a notebook page, and supports up to four slots and sixteen concurrent hosts.
 | Command | Contract |
 | --- | --- |
 | `scientificMultiviewHostCreate parent document ?options?` | Returns an opaque host; binds Session, document generation/revision. Options: `layout horizontal|vertical`, trusted `selection_command`, trusted `refresh_command`. |
-| `scientificMultiviewHostAttach host slot native2d options` | `scene_token`, optional `owned 0|1`, `title`. Independent scene instance required, bound to the host document. Reuses CORE Native presentation and raster overlay. |
+| `scientificMultiviewHostAttach host slot native2d options` | `scene_token`, optional `owned 0|1`, `title`, `axis_presentation`. Independent scene instance required, bound to the host document. Reuses CORE Native presentation and raster overlay. |
 | `scientificMultiviewHostAttach host slot native3d options` | `layers`, optional `title`. Opens an independent existing read-only renderer worker for that viewport; imports validated target-owned managed resources. |
 | `scientificMultiviewHostBindIdentity host map ?frames?` | `logicalId {slot objectHandleOrLayerId ...}`. Validates actual objects/layers and common declared coordinate units. Frames are declarations, not guessed transforms. |
 | `scientificMultiviewHostSetSelection host logicalIds ?origin?` | Reversible selection, no scientific writes. Returns logical IDs, unmapped IDs, origin, revision, epoch; synchronous echoes are suppressed. |
 | `scientificMultiviewHostModelChanged host revision changedIds reason` | Validates authoritative revision, invalidates old work, and invokes the explicit refresh procedure. Same revision returns `refreshed 0`. No procedure returns `regeneration_unavailable` and disables obsolete rendering/mapping. |
-| `scientificMultiviewHostConfigure host options` | `layout`, `order` naming every attached slot once. Preserves widgets, workers and cameras across layout/reorder/tab/resize. |
+| `scientificMultiviewHostConfigure host options` | `layout`, `order` naming every attached slot once, and `axis_presentation {slot descriptor ...}` for attached Native2D slots. Preserves widgets, workers and cameras across layout/reorder/tab/resize. |
 | `scientificMultiviewHostInfo host` | Instance state and actual backend status/receipts, without channels/paths/images. |
 | `scientificMultiviewHostDestroy host` | Idempotent cleanup; cancels timers, removes subscriptions, stops workers, releases owned scenes/images/staged resources/widgets. |
 
@@ -94,7 +94,7 @@ Real X mouse input, actual Native camera/picking, two hosts, owner dimension edi
 stale-frame rejection, resize/reorder/tab, unavailable backend and process cleanup
 are tested on Linux Xorg at 1366×768 and 1920×1080.
 
-## Dev076 delayed owner revision response
+## Delayed owner revision response
 
 A response delivered after an owner commit, before its explicit `ModelChanged`, is
 rejected as stale. The host, other views, camera and worker remain available;
@@ -105,9 +105,9 @@ Session expiry, document deletion/replacement and explicit destruction still dis
 owned resources. Worker READY during this interval records readiness but schedules no
 obsolete render. Public signatures and model editing authority are unchanged.
 
-## Dev088 durable element correspondence
+## Durable element correspondence
 
-A Native3D mapping value may now be `{layer_id L association point|cell logical_id N}`
+A Native3D mapping value may be `{layer_id L association point|cell logical_id N}`
 instead of the historical bare layer ID. N resolves the retained scientific array
 `logical_point_id` or `logical_cell_id`, exact integer0..2^53-1. Mapping validation
 requires an existing layer and common explicit physical units. A real Native3D pick
@@ -121,3 +121,14 @@ anchor at the logical point or cell's vertex centroid. Multiple selected IDs are
 retained by the coordinator; the last mapped 3D element is the focus marker. This
 is not a filled per-cell selection overlay. Bare layer mappings keep their former
 whole-layer color behavior. Owner generation/revision/epoch invalidation still applies.
+
+
+## Native2D axis descriptors
+
+Attach and Configure use the shared [axis presentation authority](NATIVE2D_AXIS_PRESENTATION_v1.md).
+Titles, formats and verified pixel/physical contexts stay scene-scoped, are
+recomputed after pan/zoom/resize, and follow the existing Document/Session guards.
+An invalid or ambiguous image mapping is reported rather than relabelled as pixels.
+Configure accepts a dictionary keyed by actual attached Native2D slot; Native3D
+slots do not accept these descriptors. Existing six-label snapshot overrides
+retain their precedence. Rendering/export reads the same Native2D plan.

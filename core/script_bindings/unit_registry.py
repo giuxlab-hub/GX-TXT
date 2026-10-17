@@ -14,6 +14,7 @@ REGISTRATION = {
     "provider_kind": "core", "provider_id": "unit_registry",
     "documentation_ref": "docs/api/UNIT_REGISTRY_API_v1.md",
     "operations": {
+        "arithmetic_plan": {"name":"arithmetic_plan", "summary":"Plan dimension-preserving scalar arithmetic over registered linear units", "argument_convention":"operator, left unit, right unit, optional integer exponent", "result_convention":"output unit and authoritative operand scales"},
         "list": {"name": "list", "summary": "List registered unit symbols", "argument_convention": "no arguments", "result_convention": "cell of strings"},
         "definition": {"name": "definition", "summary": "Read a registered unit definition", "argument_convention": "unit symbol", "result_convention": "definition struct"},
         "compatible": {"name": "compatible", "summary": "Test conversion compatibility", "argument_convention": "source unit, target unit", "result_convention": "logical scalar"},
@@ -27,6 +28,7 @@ REGISTRATION = {
     },
 }
 _ARGUMENTS = {
+    "arithmetic_plan": [("operator", "arithmetic operator"), ("left_unit", "unit symbol"), ("right_unit", "unit symbol"), ("exponent", "optional integer exponent")],
     "list": [], "definition": [("unit", "unit symbol")],
     "compatible": [("source", "unit symbol"), ("target", "unit symbol")],
     "convert": [("values", "numeric scalar/vector/matrix"), ("source", "unit symbol"), ("target", "unit symbol")],
@@ -39,7 +41,7 @@ _ARGUMENTS = {
 }
 for _name, _fields in _ARGUMENTS.items():
     _operation = REGISTRATION["operations"][_name]
-    _operation["arguments"] = [{"name": name, "kind": kind, "required": name not in ("source_override", "direction") and not (_name == "differential_ratio_plan" and name == "target")} for name, kind in _fields]
+    _operation["arguments"] = [{"name": name, "kind": kind, "required": name not in ("source_override", "direction", "exponent") and not (_name == "differential_ratio_plan" and name == "target")} for name, kind in _fields]
     _operation["result_contract"] = _operation["result_convention"]
     _operation["unit_behavior"] = "Registry-defined compatible conversion" if _name in ("convert", "convert_values") else "Registry symbols"
 
@@ -77,6 +79,13 @@ def _convert(host, values, source, target):
 
 
 def invoke(host, operation, args):
+    if operation == "arithmetic_plan" and len(args) in (3, 4):
+        plan = host.as_dict(host.call("::GX::unitRegistryArithmeticPlan", *args))
+        for name in ("output_unit", "dimension_key"):
+            plan[name] = str(host.tcl.call("format", "%s%s", plan[name], ""))
+        for name in ("left_scale", "right_scale"):
+            plan[name] = float(plan[name])
+        return plan
     if operation == "homogeneous_coordinate_plan" and len(args) == 2:
         plan = host.as_dict(host.call("::GX::unitRegistryHomogeneousCoordinatePlan", *args))
         for name in ("schema", "source_unit", "target_unit", "dimension_key"):

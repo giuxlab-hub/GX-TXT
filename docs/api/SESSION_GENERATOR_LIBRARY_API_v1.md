@@ -1,6 +1,6 @@
 # GX-TXT Session Generator Library API v1
 
-GX-TXT 0.9.7.71 introduces a public, domain-neutral contract for reusable Session generators and portable generator libraries.
+This is the public, domain-neutral contract for reusable Session generators and portable generator libraries.
 
 ## Purpose
 
@@ -90,6 +90,14 @@ The installed entry point is launched only after an explicit **Generate Session*
 --generator-id ID
 ```
 
+The Debian host additionally supplies read-only child environment context
+`GXTXT_FRAMEWORK_ROOT`, the actual framework root executing this request.
+Independent producers can resolve its public API bootstrap without guessing an
+installation path or requiring a particular module implementation version.
+`--target-session` remains the only generator output authority. The context does
+not grant permission to modify framework contents or another Session. Standalone
+generators may accept an explicit `--framework` argument instead.
+
 No shell command is read from the descriptor and no shell interpolation is used.
 
 ### `template`
@@ -159,7 +167,7 @@ It records library ID/version, generator ID/version/type and generation timestam
 
 ## Default library
 
-0.9.7.71 ships `GX-TXT Numerical Examples` with deterministic generators for:
+The default `GX-TXT Numerical Examples` library ships with deterministic generators for:
 
 - Linear Regression;
 - Polynomial Fitting;
@@ -170,7 +178,7 @@ It records library ID/version, generator ID/version/type and generation timestam
 
 Noise-bearing examples use explicit deterministic seeds and record their ground truth in the generated Session.
 
-Library1.1.0 also includes `calibrated_digitizer`1.0.0: an independent raster,
+The library also includes `calibrated_digitizer`: an independent raster,
 ordered pixel/physical references, units, calibration and quantization assumptions.
 It imports no tested scientific module and embeds no completed analysis. Existing
 installed libraries are preserved; the standalone generator ZIP can be imported

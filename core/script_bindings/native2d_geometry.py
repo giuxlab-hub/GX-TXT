@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gxtxt_script_bridge_server import BridgeError, NumericArray
 
-_OPERATIONS = "composition_parts composition_traversal part_direction part_direction_batch part_render part_marker_geometry part_marker_hit part_marker_place part_pick image_calibration_reset selection_definition spline_line_plan spline_span_to_line composition_create composition_part composition_split composition_explode path_vertices path_split path_join primitive_publish dataset_promote selection_pick selection_region selection_set_apply selection_set_restore selection_set_bounds image_attach image_get image_update image_calibrate image_map symmetry_preview symmetry_construct canvas_preview spline_tangent_get spline_tangent_edit fit_all fit_selected fit_bounds zoom pan scene_bounds world_to_device device_to_world pixel_tolerance construct_attached placement_points placement_preview reference_connected sketch_status sketch_component dimension_infer dimension_preview dimension_apply dimension_geometry relationship_state relationship_hit construct construct_preview from_fit controls reference reference_resolve reference_point_index control_definition control_edit constraint_options constraint_apply constraint_location polar_bulk compare_geometry geometry_role series_create series_get series_list series_members series_update series_transform series_bounds series_delete series_explode saved_view_create saved_view_get saved_view_list saved_view_update saved_view_restore saved_view_delete view_state view_state_rescale layer_create layer_get layer_list layer_update layer_delete layer_assign selection_set_create selection_set_get selection_set_list selection_set_update selection_set_add_member selection_set_remove_member selection_set_delete selection_set_activate identity fragment_create fragment_get fragment_list fragment_update fragment_delete fragment_sample fragment_length fragment_bounds fragment_materialize sketch sketch_update sketch_evaluate sketch_sample sketch_materialize sketch_explode curve from_source describe metrics measure path_point replace_points points_page nearest_vertex rescale_coordinates affine series group group_members group_add group_remove ungroup delete endpoint_frame bridge spline compare selection pivot grid polar view style direction export_resource restore_resource constraint_create constraint_join constraint_get constraint_list constraint_update constraint_enable constraint_delete checkpoint".split()
+_OPERATIONS = "axis_presentation composition_parts composition_traversal part_direction part_direction_batch part_render part_marker_geometry part_marker_hit part_marker_place part_pick image_calibration_reset selection_definition spline_line_plan spline_span_to_line composition_create composition_part composition_split composition_explode path_vertices path_split path_join primitive_publish dataset_promote selection_pick selection_region selection_set_apply selection_set_restore selection_set_bounds image_attach image_get image_update image_calibrate image_map symmetry_preview symmetry_construct canvas_preview spline_tangent_get spline_tangent_edit fit_all fit_selected fit_bounds zoom pan scene_bounds world_to_device device_to_world pixel_tolerance construct_attached placement_points placement_preview reference_connected sketch_status sketch_component dimension_infer dimension_preview dimension_apply dimension_geometry relationship_state relationship_hit construct construct_preview from_fit controls reference reference_resolve reference_point_index control_definition control_edit constraint_options constraint_apply constraint_location polar_bulk compare_geometry geometry_role series_create series_get series_list series_members series_update series_transform series_bounds series_delete series_explode saved_view_create saved_view_get saved_view_list saved_view_update saved_view_restore saved_view_delete view_state view_state_rescale layer_create layer_get layer_list layer_update layer_delete layer_assign selection_set_create selection_set_get selection_set_list selection_set_update selection_set_add_member selection_set_remove_member selection_set_delete selection_set_activate identity fragment_create fragment_get fragment_list fragment_update fragment_delete fragment_sample fragment_length fragment_bounds fragment_materialize sketch sketch_update sketch_evaluate sketch_sample sketch_materialize sketch_explode curve from_source describe metrics measure path_point replace_points points_page nearest_vertex rescale_coordinates affine series group group_members group_add group_remove ungroup delete endpoint_frame bridge spline compare selection pivot grid polar view style direction export_resource restore_resource constraint_create constraint_join constraint_get constraint_list constraint_update constraint_enable constraint_delete checkpoint".split()
 _ARGS = {"api_info": [], "open": ["document_id"], "close": ["scene"]}
 _ARGS.update({name: ["scene", "request"] for name in _OPERATIONS})
 REGISTRATION = {
@@ -31,11 +31,33 @@ def _matrix(host, raw):
     return NumericArray([float(row[column]) for column in range(2) for row in rows], [len(rows), 2])
 
 
+def _axis_presentation(host, raw):
+    result = {}
+    for axis, settings in host.as_dict(raw).items():
+        fields = host.as_dict(settings)
+        if 'ticks' in fields:
+            ticks = host.as_dict(fields['ticks'])
+            if 'precision' in ticks:
+                ticks['precision'] = int(ticks['precision'])
+            if ticks.get('step', 'auto') != 'auto':
+                ticks['step'] = float(ticks['step'])
+            fields['ticks'] = ticks
+        if 'context' in fields:
+            context = host.as_dict(fields['context'])
+            if 'image_id' in context:
+                context['image_id'] = int(context['image_id'])
+            fields['context'] = context
+        result[axis] = fields
+    return result
+
+
 def _receipt(host, raw):
     result = host.as_dict(raw)
     series_parameters = "columns" in result and "rows" in result
     for key, value in list(result.items()):
-        if key == "coordinate_frame":
+        if key == "axis_presentation":
+            result[key] = _axis_presentation(host, value)
+        elif key == "coordinate_frame":
             frame = host.as_dict(value)
             result[key] = {"schema_version": int(frame["schema_version"]), "method": frame["method"],
                            **{name: host.as_list(frame[name]) for name in ("reference_units", "target_units", "output_units")},

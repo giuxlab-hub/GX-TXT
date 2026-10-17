@@ -357,7 +357,7 @@ proc ::GX::viewerDatasetVariableCheck {datasetId variableId} {
     if {![dict get $v enabled]} {error "Viewer cannot bind Use=no variable $variableId"}
 }
 
-proc ::GX::viewerLayerSet {moduleId viewerId layerId fields} {
+proc ::GX::viewerLayerPrepare {moduleId viewerId layerId fields {resourceContext {}}} {
     variable viewerLayer
     viewerRequireProvider $moduleId $viewerId
     if {![viewerIdValid $layerId]} {error "Invalid viewer layer ID"}
@@ -376,7 +376,16 @@ proc ::GX::viewerLayerSet {moduleId viewerId layerId fields} {
     if {[llength $capabilities] && ([dict get $d scalar_range] ne "" || [dict get $d colormap] ne "") && "scalar" ni $capabilities} {error "Viewer backend does not declare scalar display"}
     if {[dict get $d source_mode] ni {dataset artifact}} {error "Viewer layer source_mode must be dataset or artifact"}
     if {[dict get $d source_mode] eq "artifact"} {
-        viewerArtifactResolve [dict get $d resource_path] [dict get $d sha256]
+        if {$resourceContext eq {}} {
+            viewerArtifactResolve [dict get $d resource_path] [dict get $d sha256]
+        } else {
+            if {[dict keys $resourceContext] ne {temporary_root}} {error {Invalid temporary layer resource context}}
+            set root [file normalize [dict get $resourceContext temporary_root]]
+            set path [file normalize [dict get $d resource_path]]
+            if {![file isdirectory $root]||![string match "$root/*" $path]||![file isfile $path]||[file type $path] ne {file}||[sha256File $path] ne [dict get $d sha256]} {error {Temporary native layer resource failed containment or SHA validation}}
+            set probe $path
+            while {$probe ne $root} {if {[file type $probe] eq {link}} {error {Temporary native layer resource cannot contain symlinks}};set probe [file dirname $probe]}
+        }
         if {[dict get $d format] eq "" || [dict get $d format_version] eq ""} {error "Artifact format and version are required"}
         set formats [splitList [dict get $declared artifact_formats]]
         if {[llength $formats] && [dict get $d format] ni $formats} {error "Provider does not support artifact format"}
@@ -481,6 +490,11 @@ proc ::GX::viewerLayerSet {moduleId viewerId layerId fields} {
     }
     foreach v [dict values $d] {if {[regexp {[
 ]} $v]} {error "Viewer layer fields must be single-line"}}
+    return $d
+}
+proc ::GX::viewerLayerSet {moduleId viewerId layerId fields} {
+    variable viewerLayer
+    set d [viewerLayerPrepare $moduleId $viewerId $layerId $fields]
     set viewerLayer($moduleId,$viewerId,$layerId) $d
     return $d
 }

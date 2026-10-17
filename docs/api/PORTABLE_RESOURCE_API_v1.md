@@ -1,6 +1,6 @@
 # Portable Resource API v1
 
-Introduced in GX-TXT 0.9.8.10-dev-051. These operations are headless host/plugin APIs. They are intentionally absent from Script Bridge: filesystem import/export does not have a script-safe destination policy.
+These operations are headless host/plugin APIs. They are intentionally absent from Script Bridge: filesystem import/export does not have a script-safe destination policy.
 
 ```tcl
 ::GX::portableResourceValidate $archive
@@ -24,7 +24,9 @@ A schema-source snapshot is retained with its SHA-256 so CSV Use=no/Use=yes edit
 
 A Graph contains `graph/graph.png`, `graph-state.json`, optional notes/metadata/annotations/render metadata, a scientific snapshot when available, and explicitly declared embedded Dataset dependencies under `datasets/<id>/`. State records source identity/version, USE, title, axes and series. Plot Dataset scientific snapshots preserve prepared values and presentation without reading changed source data. Imported graphs become new Detached Clones, never overwrite/recreate the source base graph or Variant. Scientific import verifies the frozen snapshot by rendering it in staging, then commits its normal Clone resources. A rendered-only import keeps the exact PNG, notes, metadata and annotation layer and has no scientific rerender capability. The package's source JSON is retained as descriptive `portable_source.json`, not as a second live graph registry.
 
-Graph Dataset dependencies use the same Dataset transport rules. Scientific import errors on a dependency ID collision. Explicit rendered-only import skips Dataset imports and can be used when source plugins are absent or dependencies collide. Imported Clones retain title/USE and ordinary independent note/metadata lifecycle. Static Plot Dataset is the supported scientific reconstruction provider; other providers retain rendered output.
+Graph Dataset dependencies use the same Dataset transport rules. Scientific import errors on a dependency ID collision. Explicit rendered-only import skips Dataset imports and can be used when source plugins are absent or dependencies collide. Imported Clones retain title/USE and ordinary independent note/metadata lifecycle. Static Plot Dataset and explicitly owned native Plot Dataset snapshots are supported scientific reconstruction providers; other providers retain rendered output.
+
+Native snapshots use `native_v4_snapshot.tcldict` and complete canonical Dataset ZIPs under `resources/<dataset-id>.zip`. The bounded manifest is parsed as inert Tcl lists and dictionaries, never sourced or evaluated. Dataset IDs, declared paths, nested package type and every SHA-256 must agree. Nested Graph packages and undeclared scientific files are rejected. Existing metadata `renderer_owner=PLOT_DATASET_API_v4` selects the public native reconstruction provider. A caller-requested rendered-only import removes that owner marker because the resulting Clone has no scientific rerender capability. Full native snapshot capture and validation remain owned by public Plot Dataset API v4; portable transport does not create another data store.
 
 ## GUI and security
 

@@ -33,7 +33,21 @@ def axis_label(canvas, row):
     if font is None:
         font = ImageFont.load_default()
     anchor = {'n': 'mt', 'ne': 'rt', 'nw': 'lt', 'e': 'rm', 'w': 'lm', 's': 'mb', 'center': 'mm'}.get(row[4], 'lt')
-    ImageDraw.Draw(canvas).text((x,y), text, font=font, anchor=anchor, fill=rgba(row[1]))
+    rotation = float(row[6]) if len(row) > 6 else 0.0
+    if not math.isfinite(rotation):
+        raise ValueError("Axis text rotation must be finite")
+    if rotation:
+        # Native's rotated axis title is center-anchored. Preserve its exact
+        # device center while rendering a bounded local text layer.
+        if row[4] != 'center':
+            raise ValueError("Rotated axis text requires a center anchor")
+        left, top, right, bottom = font.getbbox(text)
+        layer = Image.new('RGBA', (max(1, right-left+8), max(1, bottom-top+8)))
+        ImageDraw.Draw(layer).text((4-left, 4-top), text, font=font, fill=rgba(row[1]))
+        layer = layer.rotate(rotation, expand=True, resample=Image.Resampling.BICUBIC)
+        canvas.alpha_composite(layer, (round(x-layer.width/2), round(y-layer.height/2)))
+    else:
+        ImageDraw.Draw(canvas).text((x,y), text, font=font, anchor=anchor, fill=rgba(row[1]))
 
 
 def rgba(text):
@@ -206,8 +220,20 @@ def render_pdf(plan, output):
     c.restoreState();c.setFont("GXText" if font.exists() else "Helvetica",10)
     for row in rows[1:]:
         if row[0] == "label":
-            x,y=map(float,row[2].split());color=list(map(float,row[1].split()));c.setFillColorRGB(*color[:3])
-            c.drawString(x,height-y-10,base64.b64decode(row[3]).decode("utf-8"))
+            x,y=map(float,row[2].split());color=list(map(float,row[1].split()))
+            text=base64.b64decode(row[3]).decode("utf-8")
+            size=max(6,min(96,float(row[5]))) if len(row)>5 else 10
+            face="GXText" if font.exists() else "Helvetica"
+            anchor=row[4] if len(row)>4 else 'nw'
+            rotation=float(row[6]) if len(row)>6 else 0
+            if not math.isfinite(rotation): raise ValueError("Axis text rotation must be finite")
+            width_text=pdfmetrics.stringWidth(text,face,size)
+            ascent,descent=pdfmetrics.getAscentDescent(face,size)
+            dx=-width_text if anchor in ('e','ne') else (-width_text/2 if anchor in ('n','s','center') else 0)
+            dy=-ascent if anchor in ('n','ne','nw') else (-descent if anchor=='s' else -(ascent+descent)/2)
+            c.saveState();c.setFillColorRGB(*color[:3]);c.setFillAlpha(color[3])
+            c.translate(x,height-y);c.rotate(rotation);c.setFont(face,size)
+            c.drawString(dx,dy,text);c.restoreState()
     c.showPage(); c.save()
 
 

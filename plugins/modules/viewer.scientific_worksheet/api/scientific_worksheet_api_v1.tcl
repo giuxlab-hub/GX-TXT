@@ -1,7 +1,7 @@
 # GX-TXT Scientific Worksheet API v1
 # SPDX-License-Identifier: GPL-3.0-or-later
 namespace eval ::GX::ScientificWorksheet {
-    variable version 1.2.0
+    variable version 2.0.0
     variable cache [dict create]
     variable dirty [dict create]
     variable evaluating [dict create]
@@ -11,10 +11,13 @@ proc ::GX::ScientificWorksheet::_requireSession {} {return [::GX::sessionInspect
 proc ::GX::ScientificWorksheet::_cell {cell} {
     set cell [string toupper [string trim $cell]]
     if {![regexp {^([A-Z]{1,3})([1-9][0-9]*)$} $cell unused column row]} {error "Invalid cell address '$cell'."}
+    if {[_columnNumber $column] > 702} {error "Worksheet column limit is ZZ."}
     if {$row > 1000000} {error "Worksheet row limit is 1000000."}
     return $cell
 }
 proc ::GX::ScientificWorksheet::_columnNumber {letters} {
+    set letters [string toupper [string trim $letters]]
+    if {![regexp {^[A-Z]{1,2}$} $letters]} {error "Worksheet column must be A through ZZ."}
     set result 0
     foreach character [split $letters {}] {set result [expr {$result*26+[scan $character %c]-64}]}
     return $result
@@ -25,7 +28,7 @@ proc ::GX::ScientificWorksheet::_columnName {number} {
     while {$number} {set remainder [expr {($number-1)%26}]; set out "[format %c [expr {65+$remainder}]]$out"; set number [expr {($number-1)/26}]}
     return $out
 }
-proc ::GX::ScientificWorksheet::_parts {cell} {_cell $cell; regexp {^([A-Z]+)([0-9]+)$} [string toupper $cell] unused col row; return [list [_columnNumber $col] $row]}
+proc ::GX::ScientificWorksheet::_parts {cell} {set cell [_cell $cell]; regexp {^([A-Z]+)([0-9]+)$} $cell unused col row; return [list [_columnNumber $col] $row]}
 proc ::GX::ScientificWorksheet::rangeCells {from to} {
     lassign [_parts $from] c1 r1; lassign [_parts $to] c2 r2
     if {$c2 < $c1 || $r2 < $r1} {error "Range end must follow its start."}
@@ -34,15 +37,11 @@ proc ::GX::ScientificWorksheet::rangeCells {from to} {
     for {set row $r1} {$row <= $r2} {incr row} {for {set col $c1} {$col <= $c2} {incr col} {lappend cells "[_columnName $col]$row"}}
     return $cells
 }
-proc ::GX::ScientificWorksheet::new {{name "Untitled Worksheet"}} {
+proc ::GX::ScientificWorksheet::_v1_new {{name "Untitled Worksheet"}} {
     if {[string trim $name] eq ""} {error "Worksheet name is required."}
     return [dict create format scientific_worksheet.v1 document_id "" name $name revision 0 cells [dict create] columns [dict create] ranges [dict create] bindings [dict create] options [dict create display_digits 8] presentation [dict create visible_rows 200 first_row 1]]
 }
-proc ::GX::ScientificWorksheet::_key {book} {
-    if {[dict get $book document_id] ne ""} {return [dict get $book document_id]}
-    return "new:[dict get $book name]"
-}
-proc ::GX::ScientificWorksheet::_tokenize {formula} {
+proc ::GX::ScientificWorksheet::_v1__tokenize {formula} {
     set remaining [string trim $formula]
     if {[string index $remaining 0] eq "="} {set remaining [string range $remaining 1 end]}
     if {[string length $remaining] > 8192} {error "Formula exceeds 8192 characters."}
@@ -68,7 +67,7 @@ proc ::GX::ScientificWorksheet::_tokenize {formula} {
     lappend tokens [list eof ""]
     return $tokens
 }
-proc ::GX::ScientificWorksheet::_dependencies {book formula} {
+proc ::GX::ScientificWorksheet::_v1__dependencies {book formula} {
     set tokens [_tokenize $formula]; set deps [dict create]
     for {set i 0} {$i < [llength $tokens]-1} {incr i} {
         lassign [lindex $tokens $i] kind value
@@ -89,22 +88,7 @@ proc ::GX::ScientificWorksheet::_dependencies {book formula} {
     }
     return [dict keys $deps]
 }
-proc ::GX::ScientificWorksheet::_invalidate {book changed} {
-    variable cache; variable dirty
-    set key [_key $book]
-    set queue [list $changed]; set touched [dict create]
-    while {[llength $queue]} {
-        set current [lindex $queue 0]; set queue [lrange $queue 1 end]
-        if {[dict exists $touched $current]} continue
-        dict set touched $current 1
-        if {[dict exists $cache $key $current]} {dict unset cache $key $current}
-        dict set dirty $key $current 1
-        dict for {address data} [dict get $book cells] {
-            if {[dict exists $data dependencies] && $current in [dict get $data dependencies]} {lappend queue $address}
-        }
-    }
-}
-proc ::GX::ScientificWorksheet::setCell {book address source} {
+proc ::GX::ScientificWorksheet::_v1_setCell {book address source} {
     set address [_cell $address]
     if {[string length $source] > 8192} {error "Cell source exceeds 8192 characters."}
     if {$source eq ""} {dict unset book cells $address} else {
@@ -126,7 +110,7 @@ proc ::GX::ScientificWorksheet::setCell {book address source} {
     _invalidate $book $address
     return $book
 }
-proc ::GX::ScientificWorksheet::setColumn {book column name {unit ""}} {
+proc ::GX::ScientificWorksheet::_v1_setColumn {book column name {unit ""}} {
     set column [string toupper $column]
     _columnNumber $column
     if {$name ne "" && ![regexp {^[A-Za-z_][A-Za-z0-9_]*$} $name]} {error "Column name must be an identifier."}
@@ -136,7 +120,7 @@ proc ::GX::ScientificWorksheet::setColumn {book column name {unit ""}} {
     }
     if {$unit eq "" && [dict exists $book column_metadata $column unit]} {set unit [dict get $book column_metadata $column unit]}
     dict for {cell data} [dict get $book cells] {
-        if {![string match "$column*" $cell]} continue
+        if {![expr {[lindex [_parts $cell] 0] == [_columnNumber $column]}]} continue
         if {[dict get $data kind] eq "dataset" && [dict get $data unit] ne $unit} {error "Dataset-bound column $column has source unit '[dict get $data unit]'. Convert explicitly before assigning another unit."}
         if {[dict get $data kind] in {manual text}} {dict set book cells $cell unit $unit}
     }
@@ -150,7 +134,7 @@ proc ::GX::ScientificWorksheet::setColumn {book column name {unit ""}} {
     dict incr book revision
     return $book
 }
-proc ::GX::ScientificWorksheet::defineRange {book name start end} {
+proc ::GX::ScientificWorksheet::_v1_defineRange {book name start end} {
     if {![regexp {^[A-Za-z_][A-Za-z0-9_]*$} $name]} {error "Range name must be an identifier."}
     set addresses [rangeCells $start $end]
     if {[dict exists $book ranges $name] && [dict get $book ranges $name] ne $addresses} {error "Range name '$name' already has a stable binding."}
@@ -179,18 +163,11 @@ proc ::GX::ScientificWorksheet::_statisticalSources {item} {
     if {[dict exists $item statistical_result]&&[lsearch -exact $results [dict get $item statistical_result]]<0} {lappend results [dict get $item statistical_result]}
     return $results
 }
-proc ::GX::ScientificWorksheet::_sourceLineage {item} {
-    set records [expr {[dict exists $item source_lineage]?[dict get $item source_lineage]:{}}]
-    if {[dict exists $item lineage dataset_id]&&[dict exists $item lineage variable_id]} {
-        set record [dict create dataset_id [dict get $item lineage dataset_id] variable_id [dict get $item lineage variable_id]]
-        if {$record ni $records} {lappend records $record}
-    }
-    return $records
-}
 proc ::GX::ScientificWorksheet::_carryStatistics {item inputs} {
     set results [_statisticalSources $item]
     set lineage {};foreach record [_sourceLineage $item] {dict set lineage $record 1}
     foreach input $inputs {
+        if {[dict exists $input operation_status] && [dict get $input operation_status] eq "stale"} {dict set item operation_status stale;dict set item stale_reason {Input contains a stale captured scientific result}}
         foreach result [_statisticalSources $input] {if {[lsearch -exact $results $result]<0} {lappend results $result}}
         foreach record [_sourceLineage $input] {dict set lineage $record 1}
         if {[dict exists $input mixed_units]&&[dict get $input mixed_units]} {dict set item mixed_units 1}
@@ -199,7 +176,7 @@ proc ::GX::ScientificWorksheet::_carryStatistics {item inputs} {
     if {[dict size $lineage]} {dict set item source_lineage [dict keys $lineage]}
     return $item
 }
-proc ::GX::ScientificWorksheet::_evalCell {book address stack} {
+proc ::GX::ScientificWorksheet::_v1__evalCell {book address stack} {
     variable cache; variable evaluating
     set address [_cell $address]; set key [_key $book]
     if {$address in $stack} {error "Circular reference: [join [concat $stack $address] { -> }]."}
@@ -219,8 +196,8 @@ proc ::GX::ScientificWorksheet::_evalCell {book address stack} {
     dict set cache $key $address $result
     return $result
 }
-proc ::GX::ScientificWorksheet::value {book address} {return [_evalCell $book $address {}]}
-proc ::GX::ScientificWorksheet::recalculate {book {all 0}} {
+proc ::GX::ScientificWorksheet::_v1_value {book address} {return [_evalCell $book $address {}]}
+proc ::GX::ScientificWorksheet::_v1_recalculate {book {all 0}} {
     variable cache; variable dirty
     set key [_key $book]
     if {$all} {if {[dict exists $cache $key]} {dict unset cache $key}; set targets [dict keys [dict get $book cells]]} else {
@@ -236,28 +213,6 @@ proc ::GX::ScientificWorksheet::recalculate {book {all 0}} {
 proc ::GX::ScientificWorksheet::_numericOperand {item} {
     if {[dict get $item kind] eq "text"} {error "Numeric function requires a number or vector."}
     return [dict create kind [dict get $item kind] value [dict get $item value]]
-}
-proc ::GX::ScientificWorksheet::_binary {operator left right} {
-    if {[dict get $left kind] ne "scalar" || [dict get $right kind] ne "scalar"} {error "Arithmetic with vectors requires a public numeric function."}
-    set a [dict get $left value]; set b [dict get $right value]
-    if {![string is double -strict $a] || ![string is double -strict $b]} {error "Arithmetic requires numeric values."}
-    set u [dict get $left unit]; set v [dict get $right unit]
-    if {$operator in {+ - < > <= >= == !=} && $u ne $v} {error "Units '$u' and '$v' differ. Convert explicitly with Unit Registry first."}
-    switch -- $operator {
-        + {set result [expr {$a+$b}]; set unit $u}
-        - {set result [expr {$a-$b}]; set unit $u}
-        * {set result [expr {$a*$b}]; set unit ""}
-        / {if {$b == 0} {error "Division by zero."}; set result [expr {double($a)/$b}]; set unit ""}
-        ^ {set result [expr {pow($a,$b)}]; set unit ""}
-        < {set result [expr {$a<$b}]; set unit ""}
-        > {set result [expr {$a>$b}]; set unit ""}
-        <= {set result [expr {$a<=$b}]; set unit ""}
-        >= {set result [expr {$a>=$b}]; set unit ""}
-        == {set result [expr {$a==$b}]; set unit ""}
-        != {set result [expr {$a!=$b}]; set unit ""}
-    }
-    if {![string is double -strict $result] || [expr {abs(double($result)) == Inf || double($result) != double($result)}]} {error "Nonfinite formula result."}
-    return [_carryStatistics [_value $result $unit] [list $left $right]]
 }
 proc ::GX::ScientificWorksheet::_parseComparison {book tokens indexVar stack} {
     upvar 1 $indexVar index
@@ -283,7 +238,7 @@ proc ::GX::ScientificWorksheet::_parsePower {book tokens indexVar stack} {
     if {[_peek $tokens $index] eq "^"} {incr index; set right [_parsePower $book $tokens index $stack]; set left [_binary ^ $left $right]}
     return $left
 }
-proc ::GX::ScientificWorksheet::_parsePrimary {book tokens indexVar stack} {
+proc ::GX::ScientificWorksheet::_v1__parsePrimary {book tokens indexVar stack} {
     upvar 1 $indexVar index
     lassign [lindex $tokens $index] kind value
     if {$value eq "-"} {incr index; return [_binary * [_value -1] [_parsePrimary $book $tokens index $stack]]}
@@ -323,7 +278,7 @@ proc ::GX::ScientificWorksheet::_parsePrimary {book tokens indexVar stack} {
     }
     error "Unknown formula name '$value'."
 }
-proc ::GX::ScientificWorksheet::functionCatalog {{query ""}} {
+proc ::GX::ScientificWorksheet::_v1_functionCatalog {{query ""}} {
     set out [dict create]
     foreach {provider api namespace prefix} {
         math.numeric NUMERIC_API_v1 NumericAPIv1 numeric
@@ -454,7 +409,7 @@ proc ::GX::ScientificWorksheet::_typed {item} {
     }
     error "Scientific API argument must be a scalar, vector or string."
 }
-proc ::GX::ScientificWorksheet::_call {name args} {
+proc ::GX::ScientificWorksheet::_v1__call {name args} {
     if {$name eq "empty"} {if {[llength $args]} {error "empty() takes no arguments."}; return [_value "" "" empty]}
     if {$name eq "record"} {
         if {[llength $args] % 2} {error "record requires name/value argument pairs."}
@@ -531,7 +486,7 @@ proc ::GX::ScientificWorksheet::_call {name args} {
     set raw [::GX::${namespace}::call $family $action {*}$typed $options]
     return [_value $raw "" struct]
 }
-proc ::GX::ScientificWorksheet::functionHelp {name} {
+proc ::GX::ScientificWorksheet::_v1_functionHelp {name} {
     set catalog [functionCatalog $name]
     if {![dict exists $catalog $name]} {error "Unknown Worksheet function '$name'."}
     set meta [dict get $catalog $name]
@@ -539,7 +494,7 @@ proc ::GX::ScientificWorksheet::functionHelp {name} {
     if {[dict exists $meta arguments]} {append out "Arguments: [join [dict get $meta arguments] {, }]\nShape: [dict get $meta shape_semantics]\nUnits: [dict get $meta unit_behavior]\n"} else {append out "Operands: [dict get $meta operands]\nShapes: [dict get $meta input_shapes]\nUnits: [dict get $meta units]\n"}
     return $out
 }
-proc ::GX::ScientificWorksheet::bindDataset {book datasetId mappings {firstRow 1} {limit 20000} {selectionId ""}} {
+proc ::GX::ScientificWorksheet::_v1_bindDataset {book datasetId mappings {firstRow 1} {limit 20000} {selectionId ""}} {
     set session [_requireSession]
     if {![string is integer -strict $firstRow] || $firstRow < 1 || ![string is integer -strict $limit] || $limit < 1 || $limit > 20000} {error "Import range must start at row 1 or later and contain at most 20000 rows."}
     set ids [dict values $mappings]
@@ -596,7 +551,7 @@ proc ::GX::ScientificWorksheet::bindDataset {book datasetId mappings {firstRow 1
     if {[dict exists $dirty $key]} {dict unset dirty $key}
     return [list $book $imported]
 }
-proc ::GX::ScientificWorksheet::save {book} {
+proc ::GX::ScientificWorksheet::_v1_save {book} {
     _requireSession
     set id [dict get $book document_id]
     if {$id eq ""} {
@@ -607,7 +562,7 @@ proc ::GX::ScientificWorksheet::save {book} {
     return $book
 }
 proc ::GX::ScientificWorksheet::listDocuments {} {return [::GX::interactiveDocumentList viewer.scientific_worksheet scientific_worksheet]}
-proc ::GX::ScientificWorksheet::load {id} {
+proc ::GX::ScientificWorksheet::_v1_load {id} {
     set record [::GX::interactiveDocumentRead $id]
     if {[dict get $record format] ne "scientific_worksheet.v1"} {error "Unsupported Worksheet document format."}
     set book [dict get $record payload]
@@ -619,37 +574,29 @@ proc ::GX::ScientificWorksheet::load {id} {
     if {[dict exists $dirty $key]} {dict unset dirty $key}
     return $book
 }
-proc ::GX::ScientificWorksheet::columnValues {book column first last} {
-    set column [string toupper $column]; _columnNumber $column
-    if {![string is integer -strict $first] || ![string is integer -strict $last] || $first < 1 || $last < $first || $last-$first >= 20000} {error "Select a valid range of at most 20000 rows."}
-    set values {}; set unit ""; set sources {}; set formulas {};set statistics {}
-    for {set row $first} {$row <= $last} {incr row} {
-        set address "$column$row"
-        set item [value $book $address]
-        if {[dict get $item kind] eq "blank"} {error "Selected column has an empty cell at $address."}
-        if {[dict get $item kind] ne "scalar" || ![string is double -strict [dict get $item value]]} {error "Selected column requires scalar numeric cells: $address."}
-        if {$row == $first} {set unit [dict get $item unit]} elseif {[dict get $item unit] ne $unit} {error "Selected column contains incompatible units at $address."}
-        lappend values [dict get $item value]
-        if {[llength [_statisticalSources $item]]} {dict set statistics $address [_statisticalSources $item]}
-        foreach record [_sourceLineage $item] {if {$record ni $sources} {lappend sources $record}}
-        if {[dict exists $book cells $address]} {
-            set cell [dict get $book cells $address]
-            if {[dict get $cell kind] eq "formula"} {lappend formulas "$address=[dict get $cell source]"}
-        } elseif {[dict exists $item anchor]} {lappend formulas "$address=spill([dict get $item anchor])"}
-    }
-    return [dict create values $values unit $unit sources $sources formulas $formulas statistical_sources $statistics]
-}
 proc ::GX::ScientificWorksheet::publish {book mappings first last datasetId {displayName ""}} {
+    validateBook $book
     set session [_requireSession]
     if {[dict get $book document_id] eq ""} {error "Save the Worksheet before publication so its identity is retained."}
     set datasetId [::GX::datasetPublicationV2ValidateId dataset $datasetId]
     if {![llength $mappings]} {error "Select at least one column."}
-    set values [dict create]; set units [dict create]; set sources [dict create]; set bindings [dict create]; set formulaText {};set statisticalResults {};set statisticalLinks {};set distinctStatistics {}
+    set values [dict create]; set units [dict create]; set sources [dict create]; set bindings [dict create]; set formulaText {};set statisticalResults {};set statisticalLinks {};set distinctStatistics {};set rowLineage {};set cellKinds {};set missingMasks {};set dataTypes {};set maskVariables {}
     dict for {outputId col} $mappings {
         if {![regexp {^[A-Za-z][A-Za-z0-9_]*$} $outputId]} {error "Invalid output variable ID '$outputId'."}
         set selected [columnValues $book $col $first $last]
         dict set values $outputId [dict get $selected values]
         dict set units $outputId [dict get $selected unit]
+        dict set rowLineage $outputId [dict get $selected row_lineage]
+        dict set cellKinds $outputId [dict get $selected cell_kinds]
+        dict set missingMasks $outputId [dict get $selected missing_mask]
+        if {1 in [dict get $selected missing_mask]} {
+            set maskId "${outputId}_missing"
+            if {[dict exists $mappings $maskId] || [dict exists $values $maskId]} {error "Missing-mask Variable ID '$maskId' collides with an explicit output; choose different output IDs"}
+            dict set maskVariables $outputId $maskId
+        }
+        set dtype int64;foreach v [dict get $selected values] {if {$v eq {}} continue;if {![string is entier -strict $v] || $v < -9223372036854775808 || $v > 9223372036854775807} {set dtype float64;break}}
+        if {$dtype eq "float64"} {foreach v [dict get $selected values] {if {[string is entier -strict $v] && abs($v)>9007199254740992} {error {Mixed binary64 publication cannot preserve this integer exactly; publish separate typed columns}}}}
+        dict set dataTypes $outputId $dtype
         foreach lineage [dict get $selected sources] {dict set sources [dict get $lineage dataset_id] 1; dict set bindings "[dict get $lineage dataset_id]:[dict get $lineage variable_id]" 1}
         set formulaText [concat $formulaText [dict get $selected formulas]]
         dict for {address results} [dict get $selected statistical_sources] {
@@ -670,6 +617,8 @@ proc ::GX::ScientificWorksheet::publish {book mappings first last datasetId {dis
         dict set statisticalMetadata worksheet.statistical_contributions $statisticalLinks
         dict set definition structured_metadata $statisticalMetadata
     }
+    set stagedMetadata [dict merge $statisticalMetadata [dict create dataset.display_name $displayName worksheet.document_id [dict get $book document_id] worksheet.revision [dict get $book revision] worksheet.active_sheet [dict get $book active_sheet] worksheet.source_rows "$first:$last" worksheet.columns $mappings worksheet.formulas [join $formulaText {; }] worksheet.source_dataset_ids [join [dict keys $sources] {;}] worksheet.source_variable_ids [join [dict keys $bindings] {;}] worksheet.row_lineage $rowLineage worksheet.cell_kinds $cellKinds worksheet.missing_masks $missingMasks worksheet.missing_mask_variables $maskVariables]]
+    dict set definition structured_metadata $stagedMetadata
     set plan [::GX::datasetPublicationV2Prepare $session viewer.scientific_worksheet $definition]
     set writer ""
     try {
@@ -678,24 +627,27 @@ proc ::GX::ScientificWorksheet::publish {book mappings first last datasetId {dis
         set index 0
         dict for {outputId col} $mappings {
             set role [expr {$index == 0 ? "coordinate" : "data"}]
-            ::GX::datasetPublicationV2DeclareVariable $writer $outputId [dict create name $outputId unit [dict get $units $outputId] semantic_role "" dtype float64 rank 1 dimension_ids row coordinate_role $role axis_kind explicit]
+            ::GX::datasetPublicationV2DeclareVariable $writer $outputId [dict create name $outputId unit [dict get $units $outputId] semantic_role "" dtype [dict get $dataTypes $outputId] rank 1 dimension_ids row coordinate_role $role axis_kind explicit]
             incr index
+        }
+        dict for {outputId maskId} $maskVariables {
+            ::GX::datasetPublicationV2DeclareVariable $writer $maskId [dict create name "Missing mask for $outputId" unit 1 dtype bool rank 1 dimension_ids row coordinate_role data axis_kind explicit]
+            dict set values $maskId [dict get $missingMasks $outputId]
         }
         ::GX::datasetPublicationV2Append $writer row $values
         set result [::GX::datasetPublicationV2Finalize $writer]
     } on error {message options} {if {$writer ne ""} {catch {::GX::datasetPublicationV2Abort $writer}}; return -options $options $message}
-    ::GX::datasetMetadataWrite $session $datasetId [dict merge $statisticalMetadata [dict create dataset.display_name $displayName worksheet.document_id [dict get $book document_id] worksheet.revision [dict get $book revision] worksheet.source_rows "$first:$last" worksheet.columns $mappings worksheet.formulas [join $formulaText {; }] worksheet.source_dataset_ids [join [dict keys $sources] {;}] worksheet.source_variable_ids [join [dict keys $bindings] {;}]]]
     return $result
 }
 proc ::GX::ScientificWorksheet::preview {book xColumn yColumns first last destinationDir {zColumn ""}} {
-    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
+    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
     file mkdir $destinationDir
     set x [dict get [columnValues $book $xColumn $first $last] values]
     if {$zColumn ne ""} {
         if {[llength $yColumns] != 1} {error "3-D preview requires one Y column."}
         set y [dict get [columnValues $book [lindex $yColumns 0] $first $last] values]
         set z [dict get [columnValues $book $zColumn $first $last] values]
-        return [::GX::PlotDatasetAPIv3::renderTransientCurve3D $x $y $z "Worksheet 3-D preview" $destinationDir]
+        return [::GX::PlotDatasetAPIv4::renderTransientCurve3D $x $y $z "Worksheet 3-D preview" $destinationDir]
     }
     set series {}
     foreach yColumn $yColumns {
@@ -704,23 +656,23 @@ proc ::GX::ScientificWorksheet::preview {book xColumn yColumns first last destin
     }
     if {![llength $series]} {error "Choose at least one Y column."}
     set xUnit [dict get [columnValues $book $xColumn $first $last] unit]
-    return [::GX::PlotDatasetAPIv3::renderTransientCurves2D $x $series "Scientific Worksheet preview" $destinationDir $xUnit]
+    return [::GX::PlotDatasetAPIv4::renderTransientCurves2D $x $series "Scientific Worksheet preview" $destinationDir $xUnit]
 }
 proc ::GX::ScientificWorksheet::previewOnArtifact {book artifact xColumn yColumns first last destinationDir} {
-    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
+    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
     file mkdir $destinationDir
     set x [dict get [columnValues $book $xColumn $first $last] values]
     set results {}; set index 0
     foreach yColumn $yColumns {
         set y [dict get [columnValues $book $yColumn $first $last] values]
         set path [file join $destinationDir "y[incr index]"]
-        lappend results [::GX::PlotDatasetAPIv3::renderTransientOverlay $artifact $x $y "Worksheet $yColumn" $path]
+        lappend results [::GX::PlotDatasetAPIv4::renderTransientOverlay $artifact $x $y "Worksheet $yColumn" $path]
     }
     return $results
 }
 proc ::GX::ScientificWorksheet::retainPlot {book mappings first last datasetId xId yIds {zId ""}} {
     publish $book $mappings $first $last $datasetId "Worksheet plot source"
-    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
+    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
     if {$zId ne ""} {
         set spec [dict create schema PLOT_DATASET_PLOTSPEC_v2 graph_type cartesian_3d graph_id plot.dataset.xyz dataset_id $datasetId x_variable_id $xId y_variable_id [lindex $yIds 0] z_variable_id $zId title "Worksheet 3-D plot" config [dict create plot_type line3]]
     } else {
@@ -728,8 +680,9 @@ proc ::GX::ScientificWorksheet::retainPlot {book mappings first last datasetId x
         foreach yId $yIds {lappend series [dict create id "y[incr index]" dataset_id $datasetId x_variable_id $xId y_variable_id $yId axis left kind line label $yId style [dict create line_width 2.0]]}
         set spec [dict create schema PLOT_DATASET_PLOTSPEC_v2 graph_type cartesian_2d graph_id plot.dataset.xy title "Worksheet plot" defaults [dict create style [dict create]] panels [list [dict create id main title "Worksheet" axes [dict create x [dict create label $xId scale linear] y_left [dict create label Y scale linear]] series $series annotations {}]] output [dict create]]
     }
-    set ref [::GX::PlotDatasetAPIv3::createPlotFromSpec $spec variant]
-    ::GX::PlotDatasetAPIv3::render $ref
+    set ref [::GX::PlotDatasetAPIv4::createPlotFromSpec $spec variant]
+    ::GX::sessionPersistenceCommit
+    ::GX::PlotDatasetAPIv4::render $ref
     return $ref
 }
 proc ::GX::ScientificWorksheet::_uiError {w message} {
@@ -768,12 +721,12 @@ proc ::GX::ScientificWorksheet::_uiSelectRow {w} {
     set ui($w,active) "$column[lindex $selected 0]"
     _uiSelect $w
 }
-proc ::GX::ScientificWorksheet::_uiCommit {w} {
+proc ::GX::ScientificWorksheet::_v1__uiCommit {w} {
     variable ui
     if {$ui($w,active) eq ""} return
     if {[catch {set ui($w,book) [setCell $ui($w,book) $ui($w,active) $ui($w,formula)]; recalculate $ui($w,book); _uiRefresh $w} message]} {_uiError $w $message}
 }
-proc ::GX::ScientificWorksheet::_uiRefresh {w} {
+proc ::GX::ScientificWorksheet::_v1__uiRefresh {w} {
     variable ui
     set table $w.grid.table
     $table delete [$table children {}]
@@ -814,7 +767,7 @@ proc ::GX::ScientificWorksheet::_uiPage {w delta} {
     set ui($w,first_row) [expr {max(1,$ui($w,first_row)+$delta)}]
     _uiRefresh $w
 }
-proc ::GX::ScientificWorksheet::_uiMove {w rowDelta colDelta} {
+proc ::GX::ScientificWorksheet::_v1__uiMove {w rowDelta colDelta} {
     variable ui
     lassign [_parts $ui($w,active)] col row
     set col [expr {max(1,min(12,$col+$colDelta))}]
@@ -841,10 +794,12 @@ proc ::GX::ScientificWorksheet::_uiNamesDialog {w} {
     pack $d.column $d.range -side left -padx 4 -pady 5
 }
 proc ::GX::ScientificWorksheet::_uiSetColumn {w} {
+    if {![_uiRemember $w]} return
     variable ui
     if {[catch {set ui($w,book) [setColumn $ui($w,book) $ui($w,names_column) $ui($w,names_name) $ui($w,names_unit)]; _uiRefresh $w} message]} {_uiError $w $message}
 }
 proc ::GX::ScientificWorksheet::_uiDefineRange {w} {
+    if {![_uiRemember $w]} return
     variable ui
     if {[catch {set ui($w,book) [defineRange $ui($w,book) $ui($w,names_range_name) $ui($w,names_range_start) $ui($w,names_range_end)]; _uiRefresh $w} message]} {_uiError $w $message}
 }
@@ -882,7 +837,7 @@ proc ::GX::ScientificWorksheet::_uiPaste {w} {
     set ui($w,book) $book
     _uiRefresh $w
 }
-proc ::GX::ScientificWorksheet::_uiSave {w} {
+proc ::GX::ScientificWorksheet::_v1__uiSave {w} {
     variable ui
     if {[catch {set ui($w,book) [save $ui($w,book)]; set ui($w,status) "Saved document [dict get $ui($w,book) document_id]."} message]} {_uiError $w $message}
 }
@@ -897,7 +852,7 @@ proc ::GX::ScientificWorksheet::_uiLoad {w} {
     ttk::button $dialog.open -text Open -command [list ::GX::ScientificWorksheet::_uiLoadSelected $w $dialog]
     pack $dialog.open
 }
-proc ::GX::ScientificWorksheet::_uiLoadSelected {w dialog} {
+proc ::GX::ScientificWorksheet::_v1__uiLoadSelected {w dialog} {
     variable ui
     set index [lindex [$dialog.list curselection] 0]
     if {$index eq ""} return
@@ -1002,7 +957,7 @@ proc ::GX::ScientificWorksheet::_uiInspect {w} {
     grid $d.detail $d.scroll -sticky nsew;grid $d.close -columnspan 2 -sticky e -padx 12 -pady 8
     grid rowconfigure $d 0 -weight 1;grid columnconfigure $d 0 -weight 1
 }
-proc ::GX::ScientificWorksheet::_uiFunctionBrowser {w} {
+proc ::GX::ScientificWorksheet::_v1__uiFunctionBrowser {w} {
     variable ui
     set d $w.functions; catch {destroy $d}; toplevel $d; wm title $d "Worksheet functions"
     ttk::entry $d.search -textvariable ::GX::ScientificWorksheet::ui($w,function_query)
@@ -1016,12 +971,12 @@ proc ::GX::ScientificWorksheet::_uiFunctionBrowser {w} {
     bind $d.tree <<TreeviewSelect>> [list ::GX::ScientificWorksheet::_uiFunctionHelp $w $d]
     _uiFunctionSearch $w $d
 }
-proc ::GX::ScientificWorksheet::_uiFunctionSearch {w d} {
+proc ::GX::ScientificWorksheet::_v1__uiFunctionSearch {w d} {
     variable ui
     $d.tree delete [$d.tree children {}]
     dict for {name meta} [functionCatalog $ui($w,function_query)] {$d.tree insert {} end -id $name -text $name -values [list [dict get $meta api_id] [dict get $meta summary]]}
 }
-proc ::GX::ScientificWorksheet::_uiFunctionHelp {w d} {
+proc ::GX::ScientificWorksheet::_v1__uiFunctionHelp {w d} {
     set selected [$d.tree selection]
     if {![llength $selected]} return
     $d.help configure -state normal; $d.help delete 1.0 end; $d.help insert 1.0 [functionHelp [lindex $selected 0]]; $d.help configure -state disabled
@@ -1039,7 +994,7 @@ proc ::GX::ScientificWorksheet::_uiAutocomplete {w} {
     set matches [dict keys [functionCatalog $prefix]]
     if {[llength $matches] == 1} {set ui($w,formula) "[string range $text 0 end-[string length $prefix]][lindex $matches 0]("}
 }
-proc ::GX::ScientificWorksheet::_uiImportDialog {w} {
+proc ::GX::ScientificWorksheet::_v1__uiImportDialog {w} {
     variable ui
     set d $w.import; catch {destroy $d}; toplevel $d; wm title $d "Import canonical Dataset columns"
     foreach {key label} {dataset Dataset mappings {Column=variable pairs, e.g. A=v_time B=v_signal} first {First Worksheet row} limit {Maximum rows (≤20000)} selection {Dataset Selection ID (optional)}} {
@@ -1051,7 +1006,7 @@ proc ::GX::ScientificWorksheet::_uiImportDialog {w} {
     ttk::button $d.go -text "Bind values" -command [list ::GX::ScientificWorksheet::_uiImport $w $d]
     pack $d.go
 }
-proc ::GX::ScientificWorksheet::_uiImport {w d} {
+proc ::GX::ScientificWorksheet::_v1__uiImport {w d} {
     variable ui
     if {[catch {
         set mappings [dict create]
@@ -1074,7 +1029,7 @@ proc ::GX::ScientificWorksheet::_uiPlotDialog {w mode} {
     ttk::button $d.preview -text "Transient preview" -command [list ::GX::ScientificWorksheet::_uiPlotAction $w preview]
     ttk::button $d.publish -text "Publish as Dataset" -command [list ::GX::ScientificWorksheet::_uiPlotAction $w publish]
     ttk::button $d.retain -text "Publish and retain plot" -command [list ::GX::ScientificWorksheet::_uiPlotAction $w retain]
-    pack $d.preview $d.publish $d.retain -side left
+    if {$mode eq "dataset"} {pack $d.publish -side left} else {pack $d.preview $d.publish $d.retain -side left}
 }
 proc ::GX::ScientificWorksheet::_uiPlotAction {w action} {
     variable ui
@@ -1082,18 +1037,21 @@ proc ::GX::ScientificWorksheet::_uiPlotAction {w action} {
         set book $ui($w,book); set x $ui($w,plot_x); set ys [split [string trim $ui($w,plot_y)]]; set z $ui($w,plot_z)
         set first $ui($w,plot_first); set last $ui($w,plot_last)
         if {$action eq "preview"} {
-            set channel [file tempfile dest]; close $channel; file delete -- $dest; file mkdir $dest
-            set result [preview $book $x $ys $first $last $dest $z]
-            set ui($w,status) "Transient Plot Dataset preview: [dict get $result artifact]"
-            _uiShowPreview $w [dict get $result artifact]
+            set allocation [::GX::resourceManagementAllocate worksheet_preview [dict create kind directory session [_requireSession] lifetime consultation expected_bytes 16777216]]
+            try {
+                set result [preview $book $x $ys $first $last [dict get $allocation path] $z]
+                _uiShowPreview $w [dict get $result artifact] $allocation
+                set allocation {}
+                set ui($w,status) "Transient native Plot Dataset preview: [dict get $result artifact]"
+            } finally {if {$allocation ne {}} {_uiPreviewReleaseAllocation $allocation}}
         } else {
             set mappings [dict create x $x]; set yIds {}; set index 0
             foreach y $ys {set id "y[incr index]"; dict set mappings $id $y; lappend yIds $id}
             if {$z ne ""} {dict set mappings z $z}
             if {$action eq "retain"} {
                 set result [retainPlot $book $mappings $first $last $ui($w,plot_dataset) x $yIds [expr {$z eq "" ? "" : "z"}]]
-                if {$z ne ""} {::GX::PlotDatasetAPIv3::openInteractive $result} else {
-                    set rendered [::GX::PlotDatasetAPIv3::render $result]
+                if {$z ne ""} {::GX::PlotDatasetAPIv4::openInteractive $result} else {
+                    set rendered [::GX::PlotDatasetAPIv4::render $result]
                     _uiShowPreview $w [dict get [dict get $rendered artifacts] graph_artifact]
                 }
             } else {set result [publish $book $mappings $first $last $ui($w,plot_dataset)]}
@@ -1101,17 +1059,43 @@ proc ::GX::ScientificWorksheet::_uiPlotAction {w action} {
         }
     } message]} {_uiError $w $message}
 }
-proc ::GX::ScientificWorksheet::_uiShowPreview {w artifact} {
-    variable ui
-    set d $w.preview
-    catch {destroy $d}
-    toplevel $d
-    wm title $d "Scientific Worksheet — Plot Dataset transient preview"
-    set ui($w,preview_photo) [image create photo -file $artifact]
-    ttk::label $d.image -image $ui($w,preview_photo)
-    pack $d.image -fill both -expand 1
+proc ::GX::ScientificWorksheet::_uiPreviewReleaseAllocation {allocation} {
+    ::GX::resourceManagementRelease [dict get $allocation id] verified_orphan 0
+    return [::GX::resourceManagementCleanup [list [dict get $allocation id]]]
 }
-proc ::GX::ScientificWorksheet::open {{context {}}} {
+proc ::GX::ScientificWorksheet::_uiPreviewDispose {w expected actual} {
+    if {$expected ne $actual} return
+    variable ui
+    if {[info exists ui($w,preview_photo)]} {catch {image delete $ui($w,preview_photo)};unset ui($w,preview_photo)}
+    if {[info exists ui($w,preview_allocation)]} {
+        set allocation $ui($w,preview_allocation);unset ui($w,preview_allocation)
+        if {[catch {_uiPreviewReleaseAllocation $allocation} message]} {set ui($w,status) "Preview closed; CORE retained its temporary allocation: $message"}
+    }
+}
+proc ::GX::ScientificWorksheet::_uiPreviewClose {w} {
+    set d $w.preview
+    if {[winfo exists $d]} {destroy $d}
+    _uiPreviewDispose $w $d $d
+}
+proc ::GX::ScientificWorksheet::_uiShowPreview {w artifact {allocation {}}} {
+    variable ui
+    _uiPreviewClose $w
+    # Load before accepting the allocation so failed images keep caller ownership.
+    set photo [image create photo -file $artifact]
+    set d $w.preview
+    try {
+        toplevel $d
+        wm title $d "Scientific Worksheet — native Plot Dataset preview"
+        ttk::label $d.image -image $photo
+        pack $d.image -fill both -expand 1
+        ttk::button $d.close -text Close -command [list ::GX::ScientificWorksheet::_uiPreviewClose $w]
+        pack $d.close -anchor e
+        set ui($w,preview_photo) $photo
+        if {$allocation ne {}} {set ui($w,preview_allocation) $allocation}
+        bind $d <Destroy> [list ::GX::ScientificWorksheet::_uiPreviewDispose $w $d %W]
+    } on error {message options} {catch {image delete $photo};catch {destroy $d};return -options $options $message}
+}
+proc ::GX::ScientificWorksheet::_v1_open {{context {}}} {
     variable ui
     package require Tk
     _requireSession
@@ -1165,4 +1149,6 @@ proc ::GX::ScientificWorksheet::viewerDispatch {action scene} {
 }
 ::GX::viewerBackendRegister scientific_worksheet_tk ::GX::ScientificWorksheet::viewerDispatch
 source [file join [file dirname [info script]] scientific_worksheet_workbook_v2.tcl]
+source [file join [file dirname [info script]] scientific_worksheet_model_v2.tcl]
 source [file join [file dirname [info script]] .. ui worksheet_ux_v3.tcl]
+proc ::GX::ScientificWorksheet::open {{context {}}} {return [::GX::ScientificWorksheet::UI::open $context]}

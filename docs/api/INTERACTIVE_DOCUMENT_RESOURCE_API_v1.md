@@ -1,6 +1,6 @@
 # Interactive Document Resource API v1
 
-Dev096 candidate: an optional derivative may declare both `disposable=1` and
+An optional derivative may declare both `disposable=1` and
 `scientific_authority=0` in its metadata. Workspace preflight/reference discovery
 still validates logical owner/generation and SHA syntax, but permits a missing
 or corrupt optional blob so its owning service can rebuild. Reader/Info remain
@@ -71,6 +71,31 @@ an unchanged save preserves it. Extension contexts validate document ownership
 and revision before execution.
 
 
-## TASK-9 dev-052 final behavior
+## Registry ownership and bounded verification
 
 Owner generation resolves against the authoritative Document registry without reading/hashing complete scientific payload for each receipt. Resource collection validates each distinct receipt identity once per complete bounded scan; a same-SHA receipt with changed size/generation is independently validated and rejected. Full SHA/corruption/symlink/lifetime validation is retained. Scientific arrays remain in owned resources rather than repeated GUI/history lists.
+
+
+## Read-only dependency discovery and portable remapping
+
+`interactiveDocumentResourceReferences value ?document?` returns the original
+full verified resource receipts nested in an inert value. An optional Document
+ID restricts results to that owner. It reuses the existing portable Workspace
+reference enumerator and the same bounded validation scanner as Collect,
+including nested metadata, Session/generation checks, SHA verification and
+optional-derivative policy. It writes, deletes and allocates nothing. Scientific
+interpretations and origins are preserved in the complete returned metadata.
+
+`interactiveDocumentResourceRemapReferences value references` validates the
+supplied current receipts and delegates rewriting to the existing portable
+Workspace remapper, keyed by scientific content SHA. Untouched text keeps its
+exact representation. A referenced resource absent from the supplied mapping
+rejects; no guessed owner or filesystem path is accepted. This is an explicit
+value transformation, not a resource or Dataset mutation.
+
+Python and Octave expose `references`, arguments `{payload_utf8, document_id}`,
+and `remap_references`, arguments `{payload_utf8, references}`. A consumer storing
+an opaque History snapshot in a managed blob can retain the full dependencies
+in its resource metadata. Existing Collect/export/import scanners preserve them;
+after import, restore can explicitly remap embedded owner references through
+that same existing authority. No separate dependency registry is introduced.

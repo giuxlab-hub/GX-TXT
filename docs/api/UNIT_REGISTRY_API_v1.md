@@ -299,3 +299,26 @@ coordinates but cannot become a Euclidean CAD metric. Formal measurements retain
 their coordinate units: distance in V, area in V², and compound area in `(m/s)^2`.
 These labels do not claim that a physical exporter accepts a non-length plane or
 that every formal derived-unit expression has a registered conversion.
+
+## Scalar arithmetic unit plans
+
+`unitRegistryArithmeticPlan operator leftUnit rightUnit ?exponent?` is the public
+Unit Registry owner for scalar arithmetic dimensions. Python and Octave call
+`arithmetic_plan` with the same arguments. Empty units are admitted as
+unspecified dimensionless scalar inputs; consumers retain that presentation
+choice. The result has `output_unit`, `dimension_key`, `left_scale` and
+`right_scale`. Multiply each operand by its corresponding scale before the
+specified arithmetic operation. Addition and subtraction retain the left unit;
+compatible right operands convert through the existing Registry relation.
+Comparisons return dimensionless results. Products, quotients and integral
+powers use the existing canonical dimension product and declared scales.
+Dimensioned powers require a dimensionless integer exponent in -16..16;
+fully dimensionless powers may use a real exponent.
+
+Unknown/opaque and semantic level units, incompatible addition/comparison,
+nonlinear relations and nonzero absolute affine origins reject. Affine offsets
+may cancel in a *differential* ratio, but this API does not silently interpret
+absolute coordinates as differentials. Explicit Unit Registry conversion remains
+available when a physical transformation is intended. The plan changes no input
+value, Dataset, unit definition or calibration. Consumers must independently
+validate scalar arithmetic domain and representability.

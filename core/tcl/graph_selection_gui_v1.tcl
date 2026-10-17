@@ -53,10 +53,16 @@ proc ::GX::GraphSelectionGui::readPointIndex {artifact} {
         error "Open a Session before selecting graph points."
     }
     set temporary [file join $::GX::currentSession metadata ".gxtxt_points_[pid]_[clock clicks].tsv"]
-    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
+    set native [expr {[::GX::graphRendererOwnerForPath $artifact] eq {PLOT_DATASET_API_v4}}]
+    set api [expr {$native?{PLOT_DATASET_API_v4}:{PLOT_DATASET_API_v3}}]
+    ::GX::modulePublicApiActivate plot.dataset $api
     set rows {}
     try {
-        ::GX::PlotDatasetAPIv3::writePointIndex $artifact $temporary
+        if {$native} {
+            ::GX::PlotDatasetAPIv4::writePointIndex $artifact $temporary
+        } else {
+            ::GX::PlotDatasetAPIv3::writePointIndex $artifact $temporary
+        }
         set input [::open $temporary r]
         fconfigure $input -encoding utf-8
         try {

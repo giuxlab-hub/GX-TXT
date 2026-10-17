@@ -2,7 +2,7 @@
 # Content-addressed bulk resources owned by a real Interactive Document.
 namespace eval ::GX::DocumentResource {variable writers {};variable readers {};variable serial 0}
 proc ::GX::interactiveDocumentResourceApiInfo {} {
-    return [dict create api_id INTERACTIVE_DOCUMENT_RESOURCE_API_v1 api_version 1 operations {open_writer append finalize abort info read_chunk read_ranges open_reader next close_reader collect import_numeric native2d_store native2d_restore native2d_restore_with_gaps} chunk_bytes_max 1048576 implicit_dataset_publication 0]
+    return [dict create api_id INTERACTIVE_DOCUMENT_RESOURCE_API_v1 api_version 1 operations {open_writer append finalize abort info read_chunk read_ranges open_reader next close_reader references remap_references collect import_numeric native2d_store native2d_restore native2d_restore_with_gaps} chunk_bytes_max 1048576 implicit_dataset_publication 0]
 }
 proc ::GX::_documentResourceRoot {document {allowRetired 0}} {
     if {![interactiveDocumentIdValid $document]} {error "Invalid Document resource owner"}
@@ -375,4 +375,28 @@ proc ::GX::interactiveDocumentNative2DRestore {reference scene {kind auto}} {
 rename ::GX::interactiveDocumentNative2DRestoreWithGaps ::GX::interactiveDocumentNative2DRestoreWithGaps_identity_base
 proc ::GX::interactiveDocumentNative2DRestoreWithGaps {reference gapReference scene} {
     return [_interactiveDocumentNative2DRestoreIdentity $reference $scene [interactiveDocumentNative2DRestoreWithGaps_identity_base $reference $gapReference $scene]]
+}
+
+# Public read-only dependency projection over the SAME scanners used by GC
+# and portable Workspaces. No parallel reference grammar or registry exists.
+proc ::GX::interactiveDocumentResourceReferences {value {document {}}} {
+    if {$document ne {}} {_documentResourceRoot $document 1}
+    if {[string first INTERACTIVE_DOCUMENT_RESOURCE_API_v1 $value]<0 && [string first \\ $value]<0} {return {}}
+    set found {};_workspacePackageReferences $value 0 found
+    set result {};set checked {};set budget 0
+    dict for {sha reference} $found {
+        set owner [dict get $reference document_id]
+        if {$document ne {} && $owner ne $document} continue
+        _documentResourceReferences $reference $owner 0 budget checked
+        lappend result $reference
+    }
+    return $result
+}
+proc ::GX::interactiveDocumentResourceRemapReferences {value references} {
+    set mapping {};set checked {};set budget 0
+    foreach reference $references {
+        _documentResourceReferences $reference [dict get $reference document_id] 0 budget checked
+        dict set mapping [dict get $reference sha256] $reference
+    }
+    return [_workspaceRemapResources $value $mapping 0]
 }

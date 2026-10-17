@@ -2,14 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 namespace eval ::GX::ScientificWorksheet {
     variable spill [dict create]
-    variable undo
-    variable redo
     variable automaticCacheSnapshots [dict create]
 }
 
-foreach method {new save load setCell setColumn defineRange _tokenize _parsePrimary _dependencies _evalCell value recalculate bindDataset} {
-    rename ::GX::ScientificWorksheet::$method ::GX::ScientificWorksheet::_v1_$method
-}
 
 proc ::GX::ScientificWorksheet::_sheetData {book} {
     set data [dict create]
@@ -17,16 +12,6 @@ proc ::GX::ScientificWorksheet::_sheetData {book} {
         dict set data $key [expr {[dict exists $book $key] ? [dict get $book $key] : [dict create]}]
     }
     return $data
-}
-proc ::GX::ScientificWorksheet::_upgrade {book} {
-    if {![dict exists $book presentation display_columns]} {dict set book presentation display_columns {A B C D E F G H I J K L}}
-    if {![dict exists $book sheets]} {
-        dict set book sheets [dict create Sheet1 [_sheetData $book]]
-        dict set book sheet_order {Sheet1}
-        dict set book active_sheet Sheet1
-        dict set book options calculation_mode automatic
-    }
-    return $book
 }
 proc ::GX::ScientificWorksheet::_flush {book} {
     set book [_upgrade $book]
@@ -40,15 +25,6 @@ proc ::GX::ScientificWorksheet::_activate {book sheet} {
     dict for {key value} [dict get $book sheets $sheet] {dict set book $key $value}
     return $book
 }
-proc ::GX::ScientificWorksheet::_key {book} {
-    set id [dict get $book document_id]
-    if {$id eq ""} {set id "new:[dict get $book name]"}
-    set sheet [expr {[dict exists $book active_sheet] ? [dict get $book active_sheet] : "Sheet1"}]
-    return "$id/$sheet"
-}
-proc ::GX::ScientificWorksheet::new {{name "Untitled Worksheet"}} {return [_upgrade [_v1_new $name]]}
-proc ::GX::ScientificWorksheet::save {book} {return [_v1_save [_flush [_formulaResourceReferences $book]]]}
-proc ::GX::ScientificWorksheet::load {id} {variable statisticalFieldCache;set statisticalFieldCache {};variable statisticalItemCache;set statisticalItemCache {};return [_upgrade [_v1_load $id]]}
 proc ::GX::ScientificWorksheet::sheetNames {book} {return [dict get [_upgrade $book] sheet_order]}
 proc ::GX::ScientificWorksheet::activeSheet {book} {return [dict get [_upgrade $book] active_sheet]}
 proc ::GX::ScientificWorksheet::selectSheet {book sheet} {return [_activate $book $sheet]}
@@ -57,6 +33,7 @@ proc ::GX::ScientificWorksheet::_validSheetName {name} {
     return $name
 }
 proc ::GX::ScientificWorksheet::createSheet {book name} {
+    set book [_upgrade $book];validateBook $book
     set book [_flush $book]; _validSheetName $name
     if {[dict exists $book sheets $name]} {error "Sheet '$name' already exists."}
     dict set book sheets $name [dict create cells [dict create] columns [dict create] ranges [dict create] bindings [dict create] column_metadata [dict create] row_order [dict create] hidden_rows [dict create]]
@@ -65,6 +42,7 @@ proc ::GX::ScientificWorksheet::createSheet {book name} {
     return [_activate $book $name]
 }
 proc ::GX::ScientificWorksheet::duplicateSheet {book from name} {
+    set book [_upgrade $book];validateBook $book
     set book [_flush $book]; _validSheetName $name
     if {![dict exists $book sheets $from] || [dict exists $book sheets $name]} {error "Source sheet is missing or destination already exists."}
     dict set book sheets $name [dict get $book sheets $from]
@@ -72,35 +50,8 @@ proc ::GX::ScientificWorksheet::duplicateSheet {book from name} {
     dict incr book revision
     return [_activate $book $name]
 }
-proc ::GX::ScientificWorksheet::renameSheet {book old name} {
-    set book [_flush $book]; _validSheetName $name
-    if {![dict exists $book sheets $old] || [dict exists $book sheets $name]} {error "Source sheet is missing or destination already exists."}
-    set data [dict get $book sheets $old]; dict unset book sheets $old; dict set book sheets $name $data
-    set order {}; foreach item [dict get $book sheet_order] {lappend order [expr {$item eq $old ? $name : $item}]}; dict set book sheet_order $order
-    if {[dict get $book active_sheet] eq $old} {dict set book active_sheet $name}
-    dict for {sheet body} [dict get $book sheets] {
-        dict for {address cell} [dict get $body cells] {
-            if {[dict get $cell kind] ne "formula"} continue
-            set src [dict get $cell source]
-            set src [regsub -all -- "\\m${old}!" $src "${name}!"]
-            dict set book sheets $sheet cells $address source $src
-        }
-    }
-    dict incr book revision
-    variable cache; set cache [dict create]
-    return [_activate $book [dict get $book active_sheet]]
-}
-proc ::GX::ScientificWorksheet::deleteSheet {book name} {
-    set book [_flush $book]
-    if {[llength [dict get $book sheet_order]] < 2} {error "A workbook must have at least one sheet."}
-    if {![dict exists $book sheets $name]} {error "Unknown sheet '$name'."}
-    dict unset book sheets $name
-    set order {}; foreach item [dict get $book sheet_order] {if {$item ne $name} {lappend order $item}}
-    dict set book sheet_order $order; dict incr book revision
-    variable cache; set cache [dict create]
-    return [_activate $book [lindex $order 0]]
-}
 proc ::GX::ScientificWorksheet::moveSheet {book name offset} {
+    set book [_upgrade $book];validateBook $book
     set book [_flush $book]; set order [dict get $book sheet_order]; set i [lsearch -exact $order $name]
     if {$i < 0} {error "Unknown sheet '$name'."}
     set j [expr {max(0,min([llength $order]-1,$i+$offset))}]
@@ -109,44 +60,18 @@ proc ::GX::ScientificWorksheet::moveSheet {book name offset} {
     return $book
 }
 proc ::GX::ScientificWorksheet::setCalculationMode {book mode} {
+    set book [_upgrade $book];validateBook $book
     if {$mode ni {automatic manual}} {error "Calculation mode must be automatic or manual."}
     dict set book options calculation_mode $mode; dict incr book revision
     return $book
 }
-proc ::GX::ScientificWorksheet::setCell {book address source} {
-    set book [_upgrade $book]
-    variable cache; variable spill
-    set mode [dict get $book options calculation_mode]
-    if {$mode eq "manual"} {set oldCache $cache; set oldSpill $spill}
-    if {[string equal -nocase [string trim $source] "NaN"]} {
-        set address [_cell $address]
-        lassign [_parts $address] number unused; set column [_columnName $number]
-        set unit [expr {[dict exists $book column_metadata $column unit] ? [dict get $book column_metadata $column unit] : ""}]
-        dict set book cells $address [dict create source NaN kind missing unit $unit lineage [dict create]]
-        dict incr book revision
-        set cache [dict create]; set spill [dict create]
-        return $book
-    }
-    set result [_v1_setCell $book $address $source]
-    if {[string toupper [string trim $source]] in {TRUE FALSE}} {dict set result cells [_cell $address] kind boolean}
-    if {$mode eq "manual"} {
-        set cache $oldCache; set spill $oldSpill
-        set key [_key $book]
-        if {[dict exists $cache $key [_cell $address]]} {dict unset cache $key [_cell $address]}
-        if {[dict exists $spill $key]} {
-            dict for {spillAddress item} [dict get $spill $key] {
-                if {[dict get $item anchor] eq [_cell $address]} {dict unset spill $key $spillAddress}
-            }
-        }
-    } else {set cache [dict create]; set spill [dict create]}
-    return $result
-}
 proc ::GX::ScientificWorksheet::setColumn {book column name {unit ""}} {
+    set book [_upgrade $book];validateBook $book
     set result [_v1_setColumn [_upgrade $book] $column $name $unit]
-    variable cache; set cache [dict create]
+    _dropBookCache $result
     return $result
 }
-proc ::GX::ScientificWorksheet::defineRange {book name start end} {return [_v1_defineRange [_upgrade $book] $name $start $end]}
+proc ::GX::ScientificWorksheet::defineRange {book name start end} {set book [_upgrade $book];validateBook $book; return [_v1_defineRange [_upgrade $book] $name $start $end]}
 
 proc ::GX::ScientificWorksheet::_reference {token} {
     if {![regexp {^(?:([A-Za-z_][A-Za-z0-9_]*)!)?(\$?)([A-Za-z]{1,3})(\$?)([1-9][0-9]*)$} $token unused sheet absCol letters absRow row]} {return {}}
@@ -164,7 +89,7 @@ proc ::GX::ScientificWorksheet::_tokenize {formula} {
         incr position $spaces; set remaining [string trimleft $remaining]
         if {[regexp {^([0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?} $remaining match]} {set kind number
         } elseif {[regexp {^"([^"\\]|\\.)*"} $remaining match]} {set kind string; set quoted $match; set match [string range $match 1 end-1]; set match [string map [list {\"} {"}] $match]; lappend tokens [list $kind $match $position]; incr position [string length $quoted]; set remaining [string range $remaining [string length $quoted] end]; continue
-        } elseif {[regexp {^(?:[A-Za-z_][A-Za-z0-9_]*!)?\$?[A-Za-z]{1,3}\$?[1-9][0-9]*} $remaining match]} {set kind identifier
+        } elseif {[regexp {^(?:[A-Za-z_][A-Za-z0-9_]*!)?\$?[A-Za-z]{1,3}\$?[1-9][0-9]*(?![A-Za-z0-9_.])} $remaining match]} {set kind identifier
         } elseif {[regexp {^[A-Za-z_][A-Za-z0-9_.]*} $remaining match]} {set kind identifier
         } elseif {[regexp {^(<=|>=|==|!=|[+*/^(),:\[\]<>-])} $remaining match]} {set kind symbol
         } else {error "#VALUE! Invalid formula character at column $position near '[string range $remaining 0 15]'."}
@@ -174,31 +99,10 @@ proc ::GX::ScientificWorksheet::_tokenize {formula} {
     lappend tokens [list eof "" $position]
     return $tokens
 }
-proc ::GX::ScientificWorksheet::_dependencies {book formula} {
-    set deps [dict create]; set tokens [_tokenize $formula]
-    for {set i 0} {$i < [llength $tokens]-1} {incr i} {
-        set token [lindex [lindex $tokens $i] 1]; set ref [_reference $token]
-        if {[dict size $ref]} {
-            set sheet [dict get $ref sheet]; set first [dict get $ref address]
-            if {[lindex [lindex $tokens [expr {$i+1}]] 1] eq ":"} {
-                set endRef [_reference [lindex [lindex $tokens [expr {$i+2}]] 1]]
-                if {![dict size $endRef]} {error "#REF! Invalid range endpoint."}
-                foreach address [rangeCells $first [dict get $endRef address]] {dict set deps "${sheet}!$address" 1}
-            } else {dict set deps "${sheet}!$first" 1}
-        } elseif {[dict exists $book ranges $token]} {
-            foreach address [dict get $book ranges $token] {dict set deps "![set address]" 1}
-        } elseif {[dict exists $book columns $token] && [lindex [lindex $tokens [expr {$i+1}]] 1] eq "\["} {
-            set row [lindex [lindex $tokens [expr {$i+2}]] 1]
-            if {![string is integer -strict $row] || $row < 1} {error "#REF! Named column row must be positive."}
-            dict set deps "![dict get $book columns $token]$row" 1
-        }
-    }
-    return [dict keys $deps]
-}
 proc ::GX::ScientificWorksheet::_parsePrimary {book tokens indexVar stack} {
     upvar 1 $indexVar index
     lassign [lindex $tokens $index] kind token
-    set ref [_reference $token]
+    set ref [expr {$kind ne "identifier" || [lindex [lindex $tokens [expr {$index+1}]] 1] eq "("?{}:[_reference $token]}]
     if {![dict size $ref]} {
         variable evaluationDocument
         set previous $evaluationDocument;set evaluationDocument [dict get $book document_id]
@@ -225,7 +129,7 @@ proc ::GX::ScientificWorksheet::_parsePrimary {book tokens indexVar stack} {
     if {[dict get $item kind] in {vector matrix}} {return [_scalarComponent $item 0]}
     return $item
 }
-proc ::GX::ScientificWorksheet::_evalCell {book address stack} {
+proc ::GX::ScientificWorksheet::_evalCell {book address stack {blankSpillsPrepared 0}} {
     variable cache; variable spill
     set address [_cell $address]; set key [_key $book]; set identity "$key!$address"
     if {$identity in $stack} {error "#CIRC! [join [concat $stack $identity] { -> }]."}
@@ -233,13 +137,13 @@ proc ::GX::ScientificWorksheet::_evalCell {book address stack} {
     if {[dict exists $spill $key $address]} {return [dict get $spill $key $address]}
     if {![dict exists $book cells $address]} {
         lassign [_parts $address] targetCol targetRow
-        dict for {candidate candidateData} [dict get $book cells] {
-            if {[dict get $candidateData kind] ne "formula"} continue
+        if {!$blankSpillsPrepared} {dict for {candidate candidateData} [dict get $book cells] {
+            if {[dict get $candidateData kind] ni {formula vector matrix}} continue
             lassign [_parts $candidate] candidateCol candidateRow
             if {$candidateCol > $targetCol || $candidateRow > $targetRow || $targetRow-$candidateRow > 20000 || "$key!$candidate" in $stack} continue
             catch {_evalCell $book $candidate $stack}
             if {[dict exists $spill $key $address]} {return [dict get $spill $key $address]}
-        }
+        }}
         return [_value "" "" blank]
     }
     set data [dict get $book cells $address]; set source [dict get $data source]
@@ -247,20 +151,26 @@ proc ::GX::ScientificWorksheet::_evalCell {book address stack} {
         set tokens [_tokenize $source]; set index 0
         set result [_parseComparison $book $tokens index [concat $stack $identity]]
         if {[_peek $tokens $index] ne ""} {error "#VALUE! Unexpected token at column [lindex [lindex $tokens $index] 2]: '[_peek $tokens $index]'."}
+    } elseif {[dict get $data kind] in {vector matrix complex nan}} {
+        set result [_value $source [dict get $data unit] [dict get $data kind]]
+        if {[dict exists $data shape]} {dict set result shape [dict get $data shape]}
     } elseif {[dict get $data kind] eq "missing"} {set result [_value NaN [dict get $data unit] missing]
     } elseif {[dict get $data kind] eq "boolean"} {set result [_value [expr {[string toupper $source] eq "TRUE"}] "" boolean]
     } elseif {[dict get $data kind] eq "text"} {
-        if {[string toupper $source] in {TRUE FALSE}} {set result [_value [expr {[string toupper $source] eq "TRUE"}] "" boolean]} else {set result [_value $source "" text]}
+        set result [_value $source "" text]
     } else {
         set unit [expr {[dict exists $data unit] ? [dict get $data unit] : ""}]
         set result [_value $source $unit]
     }
     dict set result origin [dict get $data kind]
     if {[dict exists $data lineage]} {dict set result lineage [dict get $data lineage]}
+    foreach field {statistical_sources source_lineage statistical_result statistical_field statistical_element statistical_window} {if {[dict exists $data $field]} {dict set result $field [dict get $data $field]}}
     if {[dict exists $data lineage operation_destination]} {
         set destination [dict get $data lineage operation_destination]
         if {![dict exists $book operations $destination]} {error {Guided cell is missing its captured operation definition}}
         set definition [dict get $book operations $destination]
+        if {[dict exists $definition status]} {dict set result operation_status [dict get $definition status]}
+        if {[dict exists $definition stale_reason]} {dict set result stale_reason [dict get $definition stale_reason]}
         foreach key {statistical_sources source_lineage} {if {[dict exists $definition $key]} {dict set result $key [dict get $definition $key]}}
         if {[dict exists $definition captured_statistics]} {
             set statistics [dict get $definition captured_statistics]
@@ -288,23 +198,6 @@ proc ::GX::ScientificWorksheet::_scalarComponent {result index} {
     if {[dict exists $result statistical_result]} {dict set item statistical_element $index}
     return $item
 }
-proc ::GX::ScientificWorksheet::_registerSpill {book anchor result} {
-    variable spill
-    set key [_key $book]; lassign [_parts $anchor] c0 r0
-    set values [dict get $result value]
-    if {[dict get $result kind] eq "matrix"} {lassign [dict get $result shape] rows cols} else {set rows [llength $values]; set cols 1}
-    if {$rows*$cols != [llength $values] || $rows*$cols > 20000} {error "#VALUE! Invalid spill shape."}
-    set pending [dict create]; set i 0
-    for {set r 0} {$r < $rows} {incr r} {
-        for {set c 0} {$c < $cols} {incr c} {
-            set address "[_columnName [expr {$c0+$c}]][expr {$r0+$r}]"
-            if {$address ne $anchor && [dict exists $book cells $address]} {error "#SPILL! $address contains data; clear the destination range."}
-            if {$address ne $anchor} {dict set pending $address [dict merge [_scalarComponent $result $i] [dict create origin spill anchor $anchor]]}
-            incr i
-        }
-    }
-    dict for {address item} $pending {dict set spill $key $address $item}
-}
 proc ::GX::ScientificWorksheet::_ensureCalculationSnapshot {book} {
     # Automatic values are a function of the supplied workbook, not the last
     # workbook with the same document/sheet ID. Revision alone is insufficient:
@@ -331,15 +224,17 @@ proc ::GX::ScientificWorksheet::_ensureCalculationSnapshot {book} {
 }
 proc ::GX::ScientificWorksheet::value {book address} {
     set book [_upgrade $book]
+    validateBook $book 0
     _ensureCalculationSnapshot $book
     return [_evalCell $book $address {}]
 }
 proc ::GX::ScientificWorksheet::recalculate {book {all 0}} {
+    set book [_upgrade $book];validateBook $book
     variable cache; variable spill; variable dirty
     variable statisticalFieldCache;set statisticalFieldCache {}
     variable statisticalItemCache;set statisticalItemCache {}
     set book [_upgrade $book]; set key [_key $book]
-    if {$all} {set cache [dict create]; set spill [dict create]; set targets [dict keys [dict get $book cells]]} else {
+    if {$all} {_dropBookCache $book; set targets [dict keys [dict get $book cells]]} else {
         set targets [expr {[dict exists $dirty $key] ? [dict keys [dict get $dirty $key]] : [dict keys [dict get $book cells]]}]
     }
     set result [dict create]
@@ -350,6 +245,7 @@ proc ::GX::ScientificWorksheet::recalculate {book {all 0}} {
     return $result
 }
 proc ::GX::ScientificWorksheet::recalculateSelection {book first last} {
+    set book [_upgrade $book];validateBook $book
     variable cache
     set book [_upgrade $book]; set key [_key $book]
     set result [dict create]
@@ -360,6 +256,7 @@ proc ::GX::ScientificWorksheet::recalculateSelection {book first last} {
     return $result
 }
 proc ::GX::ScientificWorksheet::recalculateWorkbook {book} {
+    set book [_upgrade $book];validateBook $book
     set book [_flush $book]; set result [dict create]
     foreach name [dict get $book sheet_order] {
         dict set result $name [recalculate [_activate $book $name] 1]
@@ -367,6 +264,7 @@ proc ::GX::ScientificWorksheet::recalculateWorkbook {book} {
     return $result
 }
 proc ::GX::ScientificWorksheet::reapplyOperations {book} {
+    set book [_upgrade $book];validateBook $book
     set book [_upgrade $book]
     if {![dict exists $book operations]} {return $book}
     set definitions [dict get $book operations]
@@ -383,64 +281,34 @@ proc ::GX::ScientificWorksheet::reapplyOperations {book} {
     return $book
 }
 
-proc ::GX::ScientificWorksheet::shiftFormula {formula rowOffset columnOffset} {
-    if {[string index $formula 0] ne "="} {return $formula}
-    set out "="; set remaining [string range $formula 1 end]
-    while {$remaining ne ""} {
-        if {[string index $remaining 0] eq "\""} {
-            if {[regexp {^"([^"\\]|\\.)*"} $remaining quoted]} {append out $quoted; set remaining [string range $remaining [string length $quoted] end]; continue}
-        }
-        if {[regexp {^(?:[A-Za-z_][A-Za-z0-9_]*!)?\$?[A-Za-z]{1,3}\$?[1-9][0-9]*} $remaining token]} {
-            set ref [_reference $token]
-            lassign [_parts [dict get $ref address]] c r
-            if {![dict get $ref absolute_column]} {incr c $columnOffset}
-            if {![dict get $ref absolute_row]} {incr r $rowOffset}
-            if {$c < 1 || $r < 1} {error "#REF! Copy would move a reference outside the sheet."}
-            set prefix [expr {[dict get $ref sheet] eq "" ? "" : "[dict get $ref sheet]!"}]
-            append out $prefix [expr {[dict get $ref absolute_column] ? "$" : ""}] [_columnName $c] [expr {[dict get $ref absolute_row] ? "$" : ""}] $r
-            set remaining [string range $remaining [string length $token] end]
-        } else {append out [string index $remaining 0]; set remaining [string range $remaining 1 end]}
-    }
-    return $out
-}
-proc ::GX::ScientificWorksheet::fillRange {book source targetEnd} {
-    set book [_upgrade $book]; set source [_cell $source]; set targetEnd [_cell $targetEnd]
-    if {![dict exists $book cells $source]} {error "Source cell is empty."}
-    set formula [dict get $book cells $source source]
-    lassign [_parts $source] c0 r0
-    foreach address [rangeCells $source $targetEnd] {
-        if {$address eq $source} continue
-        lassign [_parts $address] c r
-        set book [setCell $book $address [shiftFormula $formula [expr {$r-$r0}] [expr {$c-$c0}]]]
-    }
-    return $book
-}
-proc ::GX::ScientificWorksheet::copyRange {book first last destination} {
-    set book [_upgrade $book]; lassign [_parts $first] c0 r0; lassign [_parts $destination] dc dr
-    set snapshot [dict get $book cells]
-    foreach address [rangeCells $first $last] {
-        lassign [_parts $address] c r
-        set target "[_columnName [expr {$dc+$c-$c0}]][expr {$dr+$r-$r0}]"
-        set source [expr {[dict exists $snapshot $address] ? [dict get $snapshot $address source] : ""}]
-        set book [setCell $book $target [shiftFormula $source [expr {$dr-$r0}] [expr {$dc-$c0}]]]
-    }
-    return $book
-}
 proc ::GX::ScientificWorksheet::clearRange {book first last} {
+    set book [_upgrade $book];validateBook $book
     foreach address [rangeCells $first $last] {set book [setCell $book $address ""]}
     return $book
 }
 proc ::GX::ScientificWorksheet::bindDataset {book datasetId mappings {firstRow 1} {limit 20000} {selectionId ""}} {
+    set book [_upgrade $book];validateBook $book
     set book [_upgrade $book]
     if {![string is integer -strict $firstRow] || $firstRow < 1 || ![string is integer -strict $limit] || $limit < 1 || $limit > 20000} {error "Import start and limit must be positive; limit is at most 20000 rows."}
     if {![dict size $mappings] || [dict size $mappings] > 26} {error "Select 1–26 variables."}
     set schema [dict create]
-    foreach v [::GX::datasetVariableSchema $datasetId] {dict set schema [dict get $v variable_id] $v}
+    if {$firstRow+$limit-1>1000000} {error {Binding window exceeds Worksheet row capacity}}
+    foreach v [::GX::datasetVariableSchemaV3 $datasetId] {dict set schema [dict get $v variable_id] $v}
     dict for {col id} $mappings {
         set col [string toupper $col]; _columnNumber $col
         if {![dict exists $schema $id]} {error "Unknown Dataset variable '$id'."}
     }
-    set session [_requireSession]; set ids [dict values $mappings]; set xId ""; set yId ""
+    set session [_requireSession]; set ids [dict values $mappings]; set xId ""; set yId "";set publishedMasks {}
+    if {[::GX::datasetField $datasetId producer_module {}] eq "viewer.scientific_worksheet"} {
+        set metadata [::GX::datasetMetadataRead $session $datasetId]
+        if {[dict exists $metadata worksheet.missing_mask_variables]} {
+            dict for {id maskId} [dict get $metadata worksheet.missing_mask_variables] {
+                if {$id ni $ids} continue
+                if {![dict exists $schema $maskId] || [dict get $schema $maskId dtype] ne "bool"} {error {Published Worksheet missing-mask Variable is unavailable or has the wrong type}}
+                dict set publishedMasks $id $maskId;lappend ids $maskId
+            }
+        }
+    }
     if {$selectionId ne ""} {
         set selection [::GX::sessionInspectionSelection $selectionId $session]
         if {[dict get $selection source_dataset_id] ne $datasetId} {error "Selection belongs to another Dataset."}
@@ -465,7 +333,10 @@ proc ::GX::ScientificWorksheet::bindDataset {book datasetId mappings {firstRow 1
                 dict for {col id} $mappings {
                     set variable [dict get $schema $id]; set address "${col}[expr {$firstRow+$count}]"
                     set raw [lindex [dict get $values $id] $i]
-                    if {$raw eq ""} {set kind missing} else {set kind [expr {[dict get $variable value_kind] in {number elapsed_time} ? "dataset" : "text"}]}
+                    if {[dict exists $publishedMasks $id] && [string is true -strict [lindex [dict get $values [dict get $publishedMasks $id]] $i]]} {set kind missing
+                    } elseif {$raw eq ""} {set kind missing
+                    } elseif {[string equal -nocase $raw NaN]} {set kind nan
+                    } else {set kind [expr {[dict get $variable value_kind] in {number elapsed_time} ? "dataset" : "text"}]}
                     dict set book cells $address [dict create source $raw kind $kind unit [dict get $variable unit] lineage [dict create dataset_id $datasetId variable_id $id source_row [expr {[dict get $chunk offset]+$i}] selection_id $selectionId]]
                     dict set book bindings $col [dict create dataset_id $datasetId variable_id $id unit [dict get $variable unit] selection_id $selectionId first_row $firstRow row_count [expr {$count+1}]]
                     dict set book column_metadata $col [dict create name $id unit [dict get $variable unit]]
@@ -476,41 +347,10 @@ proc ::GX::ScientificWorksheet::bindDataset {book datasetId mappings {firstRow 1
             if {$count >= $limit || [dict get $chunk eof]} break
         }
     } finally {::GX::tableStreamClose $stream}
-    dict incr book revision; variable cache; variable spill; set cache [dict create]; set spill [dict create]
+    dict incr book revision;_dropBookCache $book
     return [list $book $count]
 }
 
-proc ::GX::ScientificWorksheet::sortRows {book first last columns directions} {
-    set book [_upgrade $book]
-    if {![llength $columns] || [llength $columns] != [llength $directions]} {error "Choose matching sort columns and directions."}
-    if {$last-$first > 19999 || $first < 1 || $last < $first} {error "Sort range must contain 1–20000 rows."}
-    set rows {}; set snapshot [dict get $book cells]
-    for {set r $first} {$r <= $last} {incr r} {
-        if {![dict exists $book row_identity $r]} {dict set book row_identity $r $r}
-        set keys {}
-        foreach col $columns {
-            set address "[string toupper $col]$r"
-            if {[dict exists $snapshot $address]} {
-                if {[catch {set item [value $book $address]}]} {set v ""} else {set v [dict get $item value]}
-            } else {set v ""}
-            lappend keys $v
-        }
-        lappend rows [list $r $keys]
-    }
-    set sorted [lsort -command [list ::GX::ScientificWorksheet::_compareRows $directions] $rows]
-    set newCells $snapshot; set newIdentity [dict get $book row_identity]
-    for {set target $first} {$target <= $last} {incr target} {
-        set source [lindex [lindex $sorted [expr {$target-$first}]] 0]
-        dict set newIdentity $target [dict get $book row_identity $source]
-        for {set c 1} {$c <= 702} {incr c} {
-            set col [_columnName $c]; set to "$col$target"; set from "$col$source"
-            if {[dict exists $snapshot $from]} {dict set newCells $to [dict get $snapshot $from]} elseif {[dict exists $newCells $to]} {dict unset newCells $to}
-        }
-    }
-    dict set book cells $newCells; dict set book row_identity $newIdentity; dict incr book revision
-    variable cache; variable spill; set cache [dict create]; set spill [dict create]
-    return $book
-}
 proc ::GX::ScientificWorksheet::_compareRows {directions a b} {
     set ak [lindex $a 1]; set bk [lindex $b 1]
     for {set i 0} {$i < [llength $directions]} {incr i} {
@@ -520,24 +360,10 @@ proc ::GX::ScientificWorksheet::_compareRows {directions a b} {
     }
     return [expr {[lindex $a 0]-[lindex $b 0]}]
 }
-proc ::GX::ScientificWorksheet::restoreRowOrder {book first last} {
-    set book [_upgrade $book]
-    if {![dict exists $book row_identity]} {return $book}
-    set rows {}; for {set r $first} {$r <= $last} {incr r} {lappend rows [list $r [dict get $book row_identity $r]]}
-    set rows [lsort -integer -index 1 $rows]; set snapshot [dict get $book cells]; set cells $snapshot
-    for {set target $first} {$target <= $last} {incr target} {
-        set source [lindex [lindex $rows [expr {$target-$first}]] 0]
-        for {set c 1} {$c <= 702} {incr c} {
-            set col [_columnName $c]; set to "$col$target"; set from "$col$source"
-            if {[dict exists $snapshot $from]} {dict set cells $to [dict get $snapshot $from]} elseif {[dict exists $cells $to]} {dict unset cells $to}
-        }
-        dict set book row_identity $target [lindex [lindex $rows [expr {$target-$first}]] 1]
-    }
-    dict set book cells $cells; dict incr book revision; variable cache; set cache [dict create]
-    return $book
-}
 proc ::GX::ScientificWorksheet::filterRows {book column comparator operand first last} {
+    set book [_upgrade $book];validateBook $book
     set book [_upgrade $book]
+    _rowBounds $first $last;_columnNumber $column
     if {$comparator ni {contains equals greater less}} {error "Choose contains, equals, greater, or less."}
     set hidden [dict create]
     for {set r $first} {$r <= $last} {incr r} {
@@ -556,69 +382,12 @@ proc ::GX::ScientificWorksheet::filterRows {book column comparator operand first
     dict set book hidden_rows $hidden; dict incr book revision
     return $book
 }
-proc ::GX::ScientificWorksheet::showAllRows {book} {dict set book hidden_rows [dict create]; dict incr book revision; return $book}
+proc ::GX::ScientificWorksheet::showAllRows {book} {set book [_upgrade $book];validateBook $book; dict set book hidden_rows [dict create]; dict incr book revision; return $book}
 
-proc ::GX::ScientificWorksheet::convertUnit {book first last targetUnit} {
-    set book [_upgrade $book]
-    if {$targetUnit ni [::GX::unitRegistryList]} {error "#UNIT! Choose a registered destination unit."}
-    set first [_cell $first]; set last [_cell $last]
-    foreach address [rangeCells $first $last] {
-        if {![dict exists $book cells $address]} continue
-        set item [value $book $address]; set old [dict get $item unit]
-        if {$old eq "" || ![::GX::unitTclCompatible $old $targetUnit]} {error "#UNIT! $address has unit '$old', incompatible with '$targetUnit'."}
-        if {[dict get $item kind] ne "scalar" || ![string is double -strict [dict get $item value]]} {error "#TYPE! $address is not a numeric scalar."}
-        set source [::GX::unitRegistryDefinition $old]; set target [::GX::unitRegistryDefinition $targetUnit]
-        foreach def [list $source $target] {
-            if {[dict get $def conversion_kind] in {scale affine identity intrinsic}} continue
-            set symbol [dict get $def symbol]
-            if {[dict get $def conversion_kind] eq "opaque" && ($symbol eq [dict get $source canonical_unit] || $symbol eq [dict get $target canonical_unit])} continue
-            error "#UNIT! Unit Registry has no safe conversion for '$old' to '$targetUnit'."
-        }
-        if {[dict get $source conversion_kind] eq "intrinsic"} {
-            if {[catch {set a [lindex [::GX::unitTclSingle $old] 0]}]} {error "#UNIT! No intrinsic conversion scale is defined for '$old'."}
-        } else {set a [expr {[dict get $source scale] eq "" ? 1.0 : [dict get $source scale]}]}
-        set b [expr {[dict get $source offset] eq "" ? 0.0 : [dict get $source offset]}]
-        if {[dict get $target conversion_kind] eq "intrinsic"} {
-            if {[catch {set c [lindex [::GX::unitTclSingle $targetUnit] 0]}]} {error "#UNIT! No intrinsic conversion scale is defined for '$targetUnit'."}
-        } else {set c [expr {[dict get $target scale] eq "" ? 1.0 : [dict get $target scale]}]}
-        set d [expr {[dict get $target offset] eq "" ? 0.0 : [dict get $target offset]}]
-        set converted [expr {(double([dict get $item value])*$a+$b-$d)/$c}]
-        set original [dict get $book cells $address]
-        dict set book cells $address [dict create source [format %.17g $converted] kind manual unit $targetUnit lineage [dict create conversion_from $old conversion_to $targetUnit source [dict get $original source] source_lineage [expr {[dict exists $original lineage] ? [dict get $original lineage] : [dict create]}]]]
-    }
-    dict incr book revision; variable cache; set cache [dict create]
-    return $book
-}
-
-foreach method {open _uiRefresh _uiMove _uiCommit _uiImportDialog _uiImport _uiSave _uiLoadSelected} {
-    rename ::GX::ScientificWorksheet::$method ::GX::ScientificWorksheet::_v1_$method
-}
-proc ::GX::ScientificWorksheet::_uiRemember {w} {
-    variable ui; variable undo; variable redo
-    lappend undo($w) $ui($w,book)
-    if {[llength $undo($w)] > 20} {set undo($w) [lrange $undo($w) end-19 end]}
-    set redo($w) {}
-}
-proc ::GX::ScientificWorksheet::_uiUndo {w} {
-    variable ui; variable undo; variable redo
-    if {![info exists undo($w)] || ![llength $undo($w)]} return
-    lappend redo($w) $ui($w,book)
-    set ui($w,book) [lindex $undo($w) end]; set undo($w) [lrange $undo($w) 0 end-1]
-    variable cache; variable spill; set cache [dict create]; set spill [dict create]
-    _uiRefresh $w
-}
-proc ::GX::ScientificWorksheet::_uiRedo {w} {
-    variable ui; variable undo; variable redo
-    if {![info exists redo($w)] || ![llength $redo($w)]} return
-    lappend undo($w) $ui($w,book)
-    set ui($w,book) [lindex $redo($w) end]; set redo($w) [lrange $redo($w) 0 end-1]
-    variable cache; variable spill; set cache [dict create]; set spill [dict create]
-    _uiRefresh $w
-}
 proc ::GX::ScientificWorksheet::_uiCommit {w} {
     variable ui
     if {$ui($w,active) eq ""} return
-    _uiRemember $w
+    if {![_uiRemember $w]} return
     if {[catch {
         set ui($w,book) [setCell $ui($w,book) $ui($w,active) $ui($w,formula)]
         if {[dict get $ui($w,book) options calculation_mode] eq "automatic"} {recalculate $ui($w,book)}
@@ -910,7 +679,7 @@ proc ::GX::ScientificWorksheet::_uiPaste {w} {
     variable ui
     if {[catch {set text [clipboard get -displayof $w]}]} return
     if {[string length $text] > 2000000} {_uiError $w "Paste exceeds 2 MB."; return}
-    _uiRemember $w
+    if {![_uiRemember $w]} return
     lassign [_parts $ui($w,active)] c0 r0
     set shift [expr {[info exists ui($w,copy_text)] && $text eq $ui($w,copy_text) && [info exists ui($w,copy_origin)]}]
     if {$shift} {lassign [_parts $ui($w,copy_origin)] sourceC sourceR}
@@ -949,7 +718,7 @@ proc ::GX::ScientificWorksheet::_uiSheetAction {w action} {
     if {$action eq "delete"} {
         set old [activeSheet $ui($w,book)]
         if {[tk_messageBox -parent $w -type yesno -icon warning -title "Delete sheet" -message "Delete sheet '$old' and its cells? This can be undone until Save."] ne "yes"} return
-        _uiRemember $w
+        if {![_uiRemember $w]} return
         if {[catch {set ui($w,book) [deleteSheet $ui($w,book) $old]} message]} {_uiError $w $message; return}
         _uiRefresh $w; return
     }
@@ -962,7 +731,7 @@ proc ::GX::ScientificWorksheet::_uiSheetAction {w action} {
 proc ::GX::ScientificWorksheet::_uiApplySheetAction {w action} {
     variable ui
     set book $ui($w,book); set name $ui($w,sheet_name); set old [activeSheet $book]
-    _uiRemember $w
+    if {![_uiRemember $w]} return
     if {[catch {
         switch -- $action {
             create {set book [createSheet $book $name]}
@@ -983,7 +752,7 @@ proc ::GX::ScientificWorksheet::_uiFill {w mode} {
     if {![info exists ui($w,selections)] || ![llength $ui($w,selections)]} return
     lassign [lindex $ui($w,selections) end] from to
     lassign [_parts $from] c1 r1; lassign [_parts $to] c2 r2
-    _uiRemember $w
+    if {![_uiRemember $w]} return
     if {[catch {
         set book $ui($w,book)
         if {$mode eq "down"} {
@@ -998,9 +767,9 @@ proc ::GX::ScientificWorksheet::_uiClear {w} {
     variable ui
     if {![info exists ui($w,selections)] || ![llength $ui($w,selections)]} {_uiSetSelection $w $ui($w,active) $ui($w,active) 0}
     lassign [lindex $ui($w,selections) end] first last
-    _uiRemember $w; set ui($w,book) [clearRange $ui($w,book) $first $last]; _uiRefresh $w
+    if {![_uiRemember $w]} return; set ui($w,book) [clearRange $ui($w,book) $first $last]; _uiRefresh $w
 }
-proc ::GX::ScientificWorksheet::_uiImportDialog {w} {
+proc ::GX::ScientificWorksheet::_workbookImportDialog {w} {
     variable ui
     _v1__uiImportDialog $w
     set d $w.import
@@ -1030,10 +799,10 @@ proc ::GX::ScientificWorksheet::_uiImportVariables {w} {
 proc ::GX::ScientificWorksheet::_uiImport {w d} {
     variable ui
     set chosen [$d.variables curselection]
-    if {![llength $chosen]} {_uiRemember $w; _v1__uiImport $w $d; return}
+    if {![llength $chosen]} {if {![_uiRemember $w]} return; _v1__uiImport $w $d; return}
     set c [_columnNumber $ui($w,import_start)]; set mappings [dict create]
     foreach index $chosen {dict set mappings [_columnName $c] [lindex $ui($w,import_schema) $index]; incr c}
-    _uiRemember $w
+    if {![_uiRemember $w]} return
     if {[catch {
         lassign [bindDataset $ui($w,book) $ui($w,import_dataset) $mappings $ui($w,import_first) $ui($w,import_limit) $ui($w,import_selection)] book count
         set ui($w,book) $book; _uiRefresh $w; set ui($w,status) "Imported $count rows from $ui($w,import_dataset). Save to retain the binding snapshot."; destroy $d
@@ -1057,7 +826,7 @@ proc ::GX::ScientificWorksheet::_uiSortFilter {w} {
 }
 proc ::GX::ScientificWorksheet::_uiApplySortFilter {w action} {
     variable ui
-    _uiRemember $w
+    if {![_uiRemember $w]} return
     if {[catch {
         set book $ui($w,book); set first $ui($w,sort_first); set last $ui($w,sort_last); set col $ui($w,sort_column)
         switch -- $action {
@@ -1080,7 +849,7 @@ proc ::GX::ScientificWorksheet::_uiConvert {w} {
     variable ui
     if {![info exists ui($w,selections)] || ![llength $ui($w,selections)]} {_uiSetSelection $w $ui($w,active) $ui($w,active) 0}
     lassign [lindex $ui($w,selections) end] first last
-    _uiRemember $w
+    if {![_uiRemember $w]} return
     if {[catch {set ui($w,book) [convertUnit $ui($w,book) $first $last $ui($w,target_unit)]; _uiRefresh $w; destroy $w.convert} message]} {_uiError $w $message}
 }
 proc ::GX::ScientificWorksheet::_uiGoto {w kind} {
@@ -1168,9 +937,6 @@ proc ::GX::ScientificWorksheet::open {{context {}}} {
     return $w
 }
 
-foreach method {functionCatalog functionHelp _call _uiFunctionBrowser _uiFunctionSearch _uiFunctionHelp} {
-    rename ::GX::ScientificWorksheet::$method ::GX::ScientificWorksheet::_v1_$method
-}
 proc ::GX::ScientificWorksheet::functionCatalog {{query ""}} {
     set out [_v1_functionCatalog $query]
     foreach {provider api namespace prefix} {
@@ -1348,6 +1114,7 @@ proc ::GX::ScientificWorksheet::_uiFunctionHelp {w d} {
 }
 proc ::GX::ScientificWorksheet::_expressionValue {book source} {
     set book [_upgrade $book]
+    validateBook $book 0
     _ensureCalculationSnapshot $book
     set source [string trim $source]
     if {$source eq ""} {return [_value "" "" empty]}
@@ -1711,41 +1478,39 @@ proc ::GX::ScientificWorksheet::_operationRaw {book name inputs options {model {
     return $out
 }
 proc ::GX::ScientificWorksheet::_resultFieldPaths {raw} {
-    set out {}
-    dict for {key value} [dict get $raw values] {
-        set kind [expr {[dict exists [dict get $raw types] $key] ? [dict get [dict get $raw types] $key] : "number"}]
-        if {$kind eq "struct" && ![catch {dict size $value}]} {
-            dict for {nested unused} $value {lappend out "$key.$nested"}
-        } else {lappend out $key}
+    set out {};dict for {path kind} [dict get $raw types] {
+        if {$kind in {struct cell}} continue
+        set root [lindex [split $path .] 0]
+        if {[dict exists $raw values $root]} {lappend out $path}
     }
-    if {[dict exists $raw captured_statistics]} {
-        foreach field [dict keys [_capturedStatisticalFieldMap [dict get $raw captured_statistics]]] {if {$field ni $out} {lappend out $field}}
-    }
+    if {[dict exists $raw captured_statistics]} {foreach field [dict keys [_capturedStatisticalFieldMap [dict get $raw captured_statistics]]] {if {$field ni $out} {lappend out $field}}}
     return $out
 }
 proc ::GX::ScientificWorksheet::_resultFieldValue {raw path} {
-    set parts [split $path .]; set head [lindex $parts 0]
-    if {![dict exists [dict get $raw values] $head]} {error "Unknown result field '$head'."}
-    set chosen [dict get [dict get $raw values] $head]
-    set kind [expr {[dict exists [dict get $raw types] $head] ? [dict get [dict get $raw types] $head] : "number"}]
+    if {![dict exists $raw types $path]} {error "Result field '$path' has no provider-owned typed descriptor"}
+    set parts [split $path .];set head [lindex $parts 0]
+    if {![dict exists $raw values $head]} {error "Unknown result field '$head'"}
+    set chosen [dict get $raw values $head];set prefix $head
     foreach nested [lrange $parts 1 end] {
-        if {![dict exists $chosen $nested]} {error "Nested result field '$path' is unavailable."}
-        set chosen [dict get $chosen $nested]
-        set kind [expr {[llength $chosen] > 1 ? "vector" : "number"}]
+        set parentKind [dict get $raw types $prefix]
+        if {$parentKind eq "cell"} {
+            if {![regexp {^item([1-9][0-9]*)$} $nested unused n] || $n>[llength $chosen]} {error "Unavailable typed result cell '$path'"}
+            set chosen [lindex $chosen [expr {$n-1}]]
+        } elseif {$parentKind eq "struct" && [dict exists $chosen $nested]} {set chosen [dict get $chosen $nested]
+        } else {error "Nested result field '$path' is unavailable in its actual provider shape"}
+        append prefix .$nested
     }
-    if {$kind eq "struct"} {error "Choose a nested field under '$path'."}
-    if {$kind eq "cell"} {
-        if {[llength $chosen] > 1} {set kind vector} else {set kind text}
-    }
+    set kind [dict get $raw types $path]
+    if {$kind in {struct cell}} {error "Choose an actual typed leaf below '$path'"}
     return [list $chosen $kind]
 }
 proc ::GX::ScientificWorksheet::applyOperation {book name inputs options destination field {model {}} {outputWindow {}}} {
-    set book [_upgrade $book]; set destination [_cell $destination]
+    set book [_upgrade $book];validateBook $book
+    set book [_upgrade $book];validateBook $book; set destination [_cell $destination]
     set raw [_operationRaw $book $name $inputs $options $model]
     return [_applyCapturedOperation $book $name $inputs $options $destination $field $model $raw $outputWindow]
 }
-proc ::GX::ScientificWorksheet::_applyCapturedOperation {book name inputs options destination field model raw {outputWindow {}}} {
-    set book [_upgrade $book];set destination [_cell $destination]
+proc ::GX::ScientificWorksheet::_applyCapturedOperation {book name inputs options destination field model raw {outputWindow {}}} {;set destination [_cell $destination]
     set values [dict get $raw values]
     set availableFields [_resultFieldPaths $raw]
     if {$field eq ""} {
@@ -1780,6 +1545,12 @@ proc ::GX::ScientificWorksheet::_applyCapturedOperation {book name inputs option
             }
         }
     }
+    if {$kind in {complex_number complex_vector complex_matrix}} {
+        set re [dict get $chosen real];set im [dict get $chosen imaginary]
+        if {$kind eq "complex_matrix"} {set shape [list [llength $re] [llength [lindex $re 0]]];set re [concat {*}$re];set im [concat {*}$im]
+        } elseif {$kind eq "complex_vector"} {set shape [list [llength $re] 1]} else {set shape {1 1};set re [list $re];set im [list $im]}
+        set chosen [dict create shape $shape real $re imaginary $im];set kind complex
+    } elseif {$kind in {tensor complex_tensor}} {error {Choose a provider result with a supported scalar/vector/matrix shape before applying to Worksheet cells}}
     if {$kind in {vector matrix}} {
         set rows [llength $chosen]; set cols 1
         if {$kind eq "matrix" && $rows > 0} {set cols [llength [lindex $chosen 0]]; set chosen [concat {*}$chosen]}
@@ -1788,17 +1559,23 @@ proc ::GX::ScientificWorksheet::_applyCapturedOperation {book name inputs option
     set i 0; set pending [dict create]
     for {set r 0} {$r < $rows} {incr r} {
         for {set c 0} {$c < $cols} {incr c} {
-            set address "[_columnName [expr {$c0+$c}]][expr {$r0+$r}]"
+            set address [_cell "[_columnName [expr {$c0+$c}]][expr {$r0+$r}]"]
+            variable spill;set spillKey [_key $book]
+            if {[dict exists $spill $spillKey $address]} {error "#SPILL! Output overlaps another spilled result at $address"}
             if {[dict exists $book cells $address]} {error "#SPILL! Output cell $address is occupied. Clear or choose another destination."}
             set scalar [lindex $chosen $i]
             if {$statisticalItem ne {}} {set resultUnit [lindex [dict get $statisticalItem element_units] $i]}
-            set cellKind [expr {[string is double -strict $scalar] ? "derived" : "text"}]
+            if {$kind in {string text}} {set cellKind text
+            } elseif {$kind eq "boolean"} {set cellKind boolean;set scalar [expr {$scalar?"TRUE":"FALSE"}]
+            } elseif {$kind eq "complex"} {set cellKind complex
+            } elseif {[string equal -nocase $scalar NaN]} {set cellKind nan
+            } else {set cellKind [expr {[string is double -strict $scalar]?"derived":"text"}]}
             dict set pending $address [dict create source $scalar kind $cellKind unit $resultUnit lineage [dict create operation $name field $field output_index $i operation_destination $destination]]
             incr i
         }
     }
     dict for {address cell} $pending {dict set book cells $address $cell}
-    set definition [dict create operation $name inputs $inputs options $options model $model destination $destination field $field rows $rows columns $cols]
+    set definition [dict create status current operation $name inputs $inputs options $options model $model destination $destination field $field rows $rows columns $cols]
     if {$outputWindow ne {}} {dict set definition field_window $outputWindow}
     set contributors [_carryStatistics [_value {}] [dict get $raw inputs]]
     if {[dict exists $raw captured_statistics]} {
@@ -1815,7 +1592,7 @@ proc ::GX::ScientificWorksheet::_applyCapturedOperation {book name inputs option
     if {[dict exists $statisticalItem statistical_data_companions]} {dict set definition captured_data_companions [dict get $statisticalItem statistical_data_companions]}
     dict set book operations $destination $definition
     dict incr book revision
-    variable cache; set cache [dict create]
+    _dropBookCache $book
     return [list $book $raw]
 }
 proc ::GX::ScientificWorksheet::_uiApplyFunctionDialog {w browser} {
@@ -1943,7 +1720,7 @@ proc ::GX::ScientificWorksheet::_uiApplyFunction {w} {
         }
         _uiOperationCurrent $w $key $windowId
         if {[list $ui($w,apply_destination) $ui($w,apply_field) [_uiResultWindow $w]] ne $outputIdentity} {error {Output destination or result row selection changed during calculation; apply the current selection again}}
-        _uiRemember $w
+        if {![_uiRemember $w]} return
         set ui($w,book) $book; _uiRefresh $w; destroy $w.applyfunction
         set ui($w,status) "Applied $ui($w,apply_name) at $ui($w,apply_destination)."
     } message]} {

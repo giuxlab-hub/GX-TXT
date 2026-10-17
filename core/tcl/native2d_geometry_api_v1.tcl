@@ -14,7 +14,7 @@ proc ::GX::native2DGeometryPolarBulk {frame encoded} {
     } finally {::GX::Native2D::core destroy $scene}
 }
 proc ::GX::native2DGeometryApiInfo {} {
-    return [dict create api_id NATIVE_2D_GEOMETRY_API_v1 api_version 1 operations {open composition_parts composition_traversal part_direction part_direction_batch part_render part_marker_geometry part_marker_hit part_marker_place part_pick image_calibration_reset selection_definition spline_line_plan spline_span_to_line composition_create composition_part composition_split composition_explode path_vertices path_split path_join primitive_publish dataset_promote image_attach image_get image_update image_calibrate image_map symmetry_preview symmetry_construct canvas_preview spline_tangent_get spline_tangent_edit fit_all fit_selected fit_bounds zoom pan scene_bounds world_to_device device_to_world pixel_tolerance construct_attached placement_points placement_preview reference_connected sketch_status sketch_component dimension_infer dimension_preview dimension_apply dimension_geometry relationship_state relationship_hit construct construct_preview from_fit controls reference reference_resolve reference_point_index control_definition control_edit constraint_options constraint_apply constraint_location polar_bulk compare_geometry geometry_role series_create series_get series_list series_members series_update series_transform series_bounds series_delete series_explode saved_view_create saved_view_get saved_view_list saved_view_update saved_view_restore saved_view_delete view_state view_state_rescale layer_create layer_get layer_list layer_update layer_delete layer_assign selection_pick selection_region selection_set_apply selection_set_restore selection_set_bounds selection_set_create selection_set_get selection_set_list selection_set_update selection_set_add_member selection_set_remove_member selection_set_delete selection_set_activate identity fragment_create fragment_get fragment_list fragment_update fragment_delete fragment_sample fragment_length fragment_bounds fragment_materialize sketch sketch_update sketch_evaluate sketch_sample sketch_materialize sketch_explode curve from_source describe metrics measure path_point replace_points points_page nearest_vertex rescale_coordinates affine series group group_members group_add group_remove ungroup delete endpoint_frame bridge spline compare selection pivot grid polar view style direction export_resource restore_resource constraint_create constraint_join constraint_get constraint_list constraint_update constraint_enable constraint_delete checkpoint close} raw_pointers 0 implicit_dataset_publication 0 point_page_limit 65536]
+    return [dict create api_id NATIVE_2D_GEOMETRY_API_v1 api_version 1 operations {open axis_presentation composition_parts composition_traversal part_direction part_direction_batch part_render part_marker_geometry part_marker_hit part_marker_place part_pick image_calibration_reset selection_definition spline_line_plan spline_span_to_line composition_create composition_part composition_split composition_explode path_vertices path_split path_join primitive_publish dataset_promote image_attach image_get image_update image_calibrate image_map symmetry_preview symmetry_construct canvas_preview spline_tangent_get spline_tangent_edit fit_all fit_selected fit_bounds zoom pan scene_bounds world_to_device device_to_world pixel_tolerance construct_attached placement_points placement_preview reference_connected sketch_status sketch_component dimension_infer dimension_preview dimension_apply dimension_geometry relationship_state relationship_hit construct construct_preview from_fit controls reference reference_resolve reference_point_index control_definition control_edit constraint_options constraint_apply constraint_location polar_bulk compare_geometry geometry_role series_create series_get series_list series_members series_update series_transform series_bounds series_delete series_explode saved_view_create saved_view_get saved_view_list saved_view_update saved_view_restore saved_view_delete view_state view_state_rescale layer_create layer_get layer_list layer_update layer_delete layer_assign selection_pick selection_region selection_set_apply selection_set_restore selection_set_bounds selection_set_create selection_set_get selection_set_list selection_set_update selection_set_add_member selection_set_remove_member selection_set_delete selection_set_activate identity fragment_create fragment_get fragment_list fragment_update fragment_delete fragment_sample fragment_length fragment_bounds fragment_materialize sketch sketch_update sketch_evaluate sketch_sample sketch_materialize sketch_explode curve from_source describe metrics measure path_point replace_points points_page nearest_vertex rescale_coordinates affine series group group_members group_add group_remove ungroup delete endpoint_frame bridge spline compare selection pivot grid polar view style direction export_resource restore_resource constraint_create constraint_join constraint_get constraint_list constraint_update constraint_enable constraint_delete checkpoint close} raw_pointers 0 implicit_dataset_publication 0 point_page_limit 65536]
 }
 proc ::GX::native2DGeometryOpen {document} {
     variable ::GX::Native2DGeometry::scenes;variable ::GX::Native2DGeometry::serial
@@ -688,10 +688,32 @@ proc ::GX::native2DGeometryCall {token operation request} {
     }
     return [_native2DGeometryCollectionReceipt $token $kind $id]
 }
+proc ::GX::_native2DGeometryAxisPresentationRequest {scene descriptor} {
+    dict for {axis settings} $descriptor {
+        if {![dict exists $settings context]} continue
+        set context [dict get $settings context]
+        if {[dict exists $context image_id]} {error {Public axis context requires an owned object_token or stable image_resource_id, not a native object number}}
+        if {[dict exists $context object_token]} {
+            set native [_native2DGeometryObject $scene [dict get $context object_token]]
+            set image [::GX::Native2D::core image_get [dict get $scene native] $native]
+            if {$image eq {}} {error {Axis object_token must identify an owned reference image}}
+            dict unset context object_token;dict set context image_resource_id [dict get $image resource_id]
+            dict set descriptor $axis context $context
+        }
+    }
+    return $descriptor
+}
 rename ::GX::native2DGeometryCall ::GX::native2DGeometryCall_view_state_base
 proc ::GX::native2DGeometryCall {token operation request} {
-    if {$operation ni {view_state view_state_rescale}} {return [native2DGeometryCall_view_state_base $token $operation $request]}
+    if {$operation ni {view_state view_state_rescale axis_presentation}} {return [native2DGeometryCall_view_state_base $token $operation $request]}
     set scene [_native2DGeometryRequire $token];set native [dict get $scene native]
+    if {$operation eq "axis_presentation"} {
+        set args {};if {[dict exists $request axis_presentation]} {set args [list [_native2DGeometryAxisPresentationRequest $scene [dict get $request axis_presentation]]]}
+        return [dict create axis_presentation [::GX::Native2D::core axis_presentation $native {*}$args] geometry_modified 0]
+    }
+    if {[dict exists $request view_state axis_presentation]} {
+        dict set request view_state axis_presentation [_native2DGeometryAxisPresentationRequest $scene [dict get $request view_state axis_presentation]]
+    }
     if {$operation eq "view_state_rescale"} {return [dict create view_state [::GX::Native2D::core view_state_rescale $native [dict get $request view_state] [dict get $request factor]] geometry_modified 0]}
     set args {};if {[dict exists $request view_state]} {set args [list [dict get $request view_state]]}
     return [dict create view_state [::GX::Native2D::core view_state $native {*}$args] geometry_modified 0]

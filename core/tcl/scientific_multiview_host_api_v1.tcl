@@ -51,7 +51,7 @@ proc ::GX::scientificMultiviewHostAttach {host slot backend options} {
     set h [_multiviewRequire $host]
     if {![regexp {^[a-z][a-z0-9_]{0,31}$} $slot] || $backend ni {native2d native3d}} {error {Invalid view slot/backend}}
     if {[dict exists $h views $slot] || [dict size [dict get $h views]]>=4} {error {Occupied slot or host view budget}}
-    foreach k [dict keys $options] {if {$k ni {scene_token owned layers title}} {error "Unknown adapter option $k"}}
+    foreach k [dict keys $options] {if {$k ni {scene_token owned layers title axis_presentation}} {error "Unknown adapter option $k"}}
     if {$backend eq "native2d"} {
         set scene [_native2DGeometryRequire [dict get $options scene_token]]
         if {[dict get $scene document_id] ne [dict get $h document]} {error {Native2D view requires the bound document}}
@@ -61,6 +61,10 @@ proc ::GX::scientificMultiviewHostAttach {host slot backend options} {
     } else {
         if {![file isfile [file join $::GX::scriptDir core native3d bin libgx3de_viewer_tcl.so]]} {error {Native3D provider unavailable}}
         _multiviewValidateLayers $host [dict get $options layers]
+        if {[dict exists $options axis_presentation]} {error {Axis presentation applies to Native2D viewports}}
+    }
+    if {$backend eq {native2d} && [dict exists $options axis_presentation]} {
+        dict set options axis_presentation [native2DAxisPresentationValidate [dict get $scene native] [dict get $options axis_presentation]]
     }
     set frame [dict get $h root].$slot
     ttk::frame $frame
@@ -85,6 +89,7 @@ proc ::GX::scientificMultiviewHostAttach {host slot backend options} {
     if {$backend eq "native2d"} {
         set token [dict get $options scene_token];set native [dict get $scene native]
         dict set hosts $host views $slot scene_token $token
+        if {[dict exists $options axis_presentation]} {native2DAxisPresentation $native [dict get $options axis_presentation]}
         native2DViewportHostCreate $frame $frame.canvas $native [list ::GX::_multiviewSchedule $host $slot]
         dict set hosts $host views $slot ready 1
         native2DGeometryCall $token fit_all {}
@@ -389,7 +394,15 @@ proc ::GX::scientificMultiviewHostModelChanged {host revision changedIds reason}
 proc ::GX::scientificMultiviewHostConfigure {host options} {
     variable ::GX::Multiview::hosts
     set h [_multiviewRequire $host]
-    foreach k [dict keys $options] {if {$k ni {layout order}} {error "Unknown host layout option $k"}}
+    foreach k [dict keys $options] {if {$k ni {layout order axis_presentation}} {error "Unknown host layout option $k"}}
+    set axisChanges {}
+    if {[dict exists $options axis_presentation]} {
+        dict for {slot descriptor} [dict get $options axis_presentation] {
+            if {![dict exists $h views $slot] || [dict get $h views $slot backend] ne {native2d}} {error {Axis presentation requires an attached Native2D slot}}
+            set scene [_native2DGeometryRequire [dict get $h views $slot scene_token]]
+            dict set axisChanges $slot [native2DAxisPresentationValidate [dict get $scene native] $descriptor]
+        }
+    }
     set pane [dict get $h pane]
     if {[dict exists $options layout]} {
         set layout [dict get $options layout];if {$layout ni {horizontal vertical}} {error {Unsupported layout}}
@@ -414,6 +427,10 @@ proc ::GX::scientificMultiviewHostConfigure {host options} {
         if {[lsort $order] ne [lsort [dict keys [dict get $h views]]]} {error {Order must name each slot once}}
         foreach f [$pane panes] {$pane forget $f}
         foreach slot $order {set f [dict get $h views $slot frame];$pane add $f -weight 1;raise $f}
+    }
+    dict for {slot descriptor} $axisChanges {
+        native2DGeometryCall [dict get $h views $slot scene_token] axis_presentation [dict create axis_presentation $descriptor]
+        dict set hosts $host views $slot options axis_presentation $descriptor
     }
     dict for {slot v} [dict get $h views] {_multiviewSchedule $host $slot}
 }

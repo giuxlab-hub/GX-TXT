@@ -483,3 +483,34 @@ proc ::GX::plotEnv {{moduleId ""}} {
     if {$path ne ""} { set out [envListReplace $out GXTXT_UNIT_REGISTRY_FILE $path] }
     return $out
 }
+
+# Public algebra plan over the existing registered dimension/conversion authority.
+# Absolute affine and nonlinear coordinates must be explicitly transformed first.
+proc ::GX::unitRegistryArithmeticPlan {operator leftUnit rightUnit {exponent 1}} {
+    if {$operator ni {+ - * / ^ < > <= >= == !=}} {error {Unsupported unit arithmetic operator}}
+    foreach name {leftUnit rightUnit} {if {[set $name] eq {}} {set $name 1}}
+    set left [_unitDifferentialBasis $leftUnit];set right [_unitDifferentialBasis $rightUnit]
+    foreach basis [list $left $right] {if {[dict get $basis affine_offset]!=0} {error {Absolute affine unit arithmetic requires explicit physical transformation before calculation}}}
+    if {$operator in {+ - < > <= >= == !=}} {
+        if {[dict get $left dimension_key] ne [dict get $right dimension_key]} {error {Arithmetic units have incompatible dimensions}}
+        set plan [unitRegistryAffinePlan $rightUnit $leftUnit]
+        if {![dict get $plan affine] || [dict get $plan offset]!=0} {error {Arithmetic requires a homogeneous unit conversion}}
+        set output [expr {$operator in {+ -}?$leftUnit:1}]
+        return [dict create output_unit $output left_scale 1.0 right_scale [dict get $plan scale] dimension_key [dict get $left dimension_key]]
+    }
+    if {$operator eq "^" && [dict get $left dimension_key] eq "1" && [dict get $right dimension_key] eq "1"} {return [dict create output_unit 1 dimension_key 1 left_scale [dict get $left scale] right_scale [dict get $right scale]]}
+    if {$operator eq "^"} {
+        if {[dict get $right dimension_key] ne "1" || ![string is double -strict $exponent] || ![expr {abs(double($exponent))<Inf}] || abs($exponent)>16 || entier($exponent)!=$exponent} {error {Unit powers require a dimensionless integer exponent between -16 and 16}}
+        set factors [list [expr {int($exponent)}] 0]
+    } else {set factors [list 1 [expr {$operator eq "*"?1:-1}]]}
+    set dimensions {};foreach basis [list $left $right] factor $factors {
+        set key [dict get $basis dimension_key];if {$key eq "1"} continue
+        foreach term [split $key ,] {lassign [split $term :] base power;dict incr dimensions $base [expr {$power*$factor}]}
+    }
+    set labels {};set keys {};foreach base [lsort [dict keys $dimensions]] {
+        set power [dict get $dimensions $base];if {!$power} continue
+        lappend keys "$base:$power";lappend labels [expr {$power==1?$base:"$base^$power"}]
+    }
+    set output [join $labels *];if {$output eq {}} {set output 1}
+    return [dict create output_unit $output dimension_key [expr {[llength $keys]?[join $keys ,]:1}] left_scale [dict get $left scale] right_scale [dict get $right scale]]
+}

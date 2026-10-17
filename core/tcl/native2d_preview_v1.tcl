@@ -175,7 +175,7 @@ proc ::GX::native2DCanvasPreview {scene document mode {options {}}} {
         }
         set readable [uiFieldColorToRGBA [uiFieldColorReadableText [uiFieldColorFromRGBA $background]]]
         if {[datasetPublicationV2DictDefault $options annotations 0]} {
-            foreach text [dict get $snapshot texts] {puts $channel "label\t$readable\t[dict get $text position]\t[binary encode base64 -maxlen 0 [encoding convertto utf-8 [dict get $text text]]]\t[dict get $text anchor]\t[dict get $text font_size]"}
+            foreach text [dict get $snapshot texts] {puts $channel "label\t$readable\t[dict get $text position]\t[binary encode base64 -maxlen 0 [encoding convertto utf-8 [dict get $text text]]]\t[dict get $text anchor]\t[dict get $text font_size]\t[dict get $text rotation]"}
         }
         foreach relationship [::GX::Native2D::core constraint_list $scene] {
             if {[dict get $relationship disabled]} continue

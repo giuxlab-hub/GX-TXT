@@ -195,7 +195,11 @@ proc ::GX::viewerCommandMenusRefresh {window} {
 proc ::GX::_viewerCommandsChanged {window id} {
     if {![dict exists $::GX::ViewerCommands::windows $window] || ![winfo exists $window]} return
     set adapter [dict get $::GX::ViewerCommands::windows $window]
+    # Session teardown can retire the field before the old window is destroyed.
+    if {[dict get $adapter session_token] ne {} && ([catch {interactiveDocumentSessionToken} token] || $token ne [dict get $adapter session_token])} return
+    if {![dict exists $::GX::ViewerCommands::catalogs [dict get $adapter module] field]} return
     set field [dict get $::GX::ViewerCommands::catalogs [dict get $adapter module] field]
+    if {![dict exists [configurationFields] $field]} return
     if {$id ne {} && $id ne $field} return
     set bindings [viewerShortcutsValidate [dict get $adapter module] [dict get [configurationResolve $field] effective]]
     dict set ::GX::ViewerCommands::windows $window bindings $bindings
