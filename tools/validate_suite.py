@@ -68,10 +68,40 @@ def verify(announce=True):
     for case in set(CLI) | set(MANUAL):
         if f"validation/official_dev102/{case}.tcl" not in seen:
             raise ValueError("Missing declared case: " + case)
+
+    additional = json.loads((ROOT / "source-manifest-dev103.json").read_text(encoding="utf-8"))
+    if (additional.get("schema") != "gxtxt.public-validation-sources/2"
+            or additional.get("referenceFramework") != "0.9.8.10-dev-103"
+            or additional.get("referenceMainCommit") != "e07376e0a62e0eecf1737da33c87bbbb41273f4b"
+            or additional.get("officialArchiveSha256") != "c13ff6b8170eb76efa4fb724137238646efc7766a752862fc7f8ddbe2aa85745"
+            or additional.get("selectedCount") != 11
+            or not additional.get("sourceOnly")
+            or additional.get("runnerStatus") != "NOT RUN"):
+        raise ValueError("Unrecognized or unverified dev-103 source-only suite")
+    newer = set()
+    if len(additional["files"]) != 11:
+        raise ValueError("Dev-103 manifest does not contain exactly 11 reviewed scripts")
+    for entry in additional["files"]:
+        name = entry["path"]
+        rel = Path(name)
+        if (rel.is_absolute() or ".." in rel.parts or name in newer or name in seen
+                or not name.startswith("validation/official_dev103/")
+                or rel.suffix.lower() not in (".tcl", ".py")):
+            raise ValueError("Unexpected dev-103 source path: " + name)
+        source = ROOT / rel
+        if source.is_symlink() or not source.is_file() or not source.resolve().is_relative_to(ROOT):
+            raise ValueError("Missing dev-103 source: " + name)
+        original = source.read_bytes()
+        if (len(original) != entry["bytes"]
+                or hashlib.sha256(original).hexdigest() != entry["sha256"]
+                or any(token.lower() in original.decode("utf-8").lower() for token in BANNED)):
+            raise ValueError("Unverified dev-103 scientific source: " + name)
+        newer.add(name)
+
     for candidate in (ROOT / "validation").rglob("*"):
         if candidate.is_symlink():
             raise ValueError("Unexpected symlink: " + str(candidate))
-        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in seen:
+        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer):
             raise ValueError("Unreviewed file inside validation tree: " + str(candidate))
     if not (ROOT / "LICENSE").is_file():
         raise ValueError("GPL license missing")

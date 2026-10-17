@@ -41,3 +41,25 @@ The branch is an independently accessible **source distribution** for tests. The
 For the seven opt-in CLI cases, `python3 tools/validate_suite.py run CASE --framework DIR --execute` creates isolated temp storage and preserves its output logs. Native/GUI/multi-stage cases require controlled preparation and have no one-click universal runner. Never point the test suite to an installed or live framework with real scientific Sessions.
 
 Future suites should state meaningful independent reference values, input hashes, actual units and tolerances. A framework test and a Session Generator are separate deliverables, even if a generator can create a synthetic fixture for a validation case.
+
+## Dev-103 — selected original source-only tests
+
+**Source baseline:** `0.9.8.10-dev-103`, public [main commit](https://github.com/giuxlab-hub/GX-TXT/commit/e07376e0a62e0eecf1737da33c87bbbb41273f4b). All 11 files preserve their official source SHA-256. **Status: NOT RERUN in the validation branch publication workflow.**
+
+| Original source | Coverage and prerequisites | Execution policy |
+| --- | --- | --- |
+| `cache_contracts.tcl` | Canonical Preview/cache invalidation and scientific provenance, fresh Session | Manual Linux synthetic-data test |
+| `media_cache.tcl` | Supported media Preview and disposable cache lifecycle, fresh synthetic data | Manual Linux test |
+| `catalog_inputs.py` | Original deterministic synthetic raster and NMRPipe fixtures; NumPy/Pillow | Input generator for controlled tests, not a Session Generator Library |
+| `catalog_seed.tcl` | Fixture helper imports synthetic image/NMR to a new Session | Manual helper; requires `catalog_inputs.py` output |
+| `catalog_workflow.tcl` | Viewer catalog/group icons, enable/disable and opening | Manual local Debian X11 GUI only, needs synthetic fixture |
+| `catalog_persist.tcl` | Checks catalog selection/configuration persisted by prior GUI workflow | Manual check after an isolated GUI run |
+| `digitizer_inputs.py` | Synthetic large digitizer publication payload, calibration provenance | Input fixture generator only; no private datasheets |
+| `digitizer_publish.tcl` | Canonical synthetic Digitalizer source publication | Manual; needs synthetic input files and fresh Session |
+| `remote_seed.tcl` | Builds an isolated canonical node Session for remote protocol tests | Manual fixture producer, no actual remote Node started |
+| `remote_checks.tcl` | mTLS compute-node typed scientific range/Job protocol | Manual only; separate controlled test agent and credentials required, **not included** |
+| `remote_security.py` | Negative TLS/protocol/authorization checks | Manual only; separately configured, authorized test endpoint required |
+
+The source-only list intentionally omits dev-103 release delivery, rollback, installation, private GUI Session/2D21 case-specific studies and evidence-manifest generation. The public code here does not contain copied private Sessions, TLS keys, user data, or the PDF-based test generators previously excluded from `main`.
+
+The **dev-102 19 cases and three shared helpers remain unchanged**. The Python source verification function now checks both cryptographic inventories while preserving its restricted opt-in **dev-102** runner behavior.

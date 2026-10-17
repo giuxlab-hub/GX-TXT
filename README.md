@@ -54,3 +54,11 @@ Scientific runtime testing on Windows, remote X11 and different GPU/ABI combinat
 ## Contributing future cases
 
 Add new versions under their own `validation/official_devNNN/` directory; avoid changing previously published source files. Supply small redistributable synthetic fixtures and expected results with documented units, tolerances, provenance and science limitations. Review hard-coded paths, resource ownership, subprocesses, write/delete actions, credentials, license terms and private data before any publication. Update the source SHA-256 inventory and tests before committing to this branch. Keep the published `main` and `gh-pages` branches unchanged.
+
+## Second suite: GX-TXT dev-103 (source-only)
+
+The framework source commit [`e07376e0a62e0eecf1737da33c87bbbb41273f4b`](https://github.com/giuxlab-hub/GX-TXT/commit/e07376e0a62e0eecf1737da33c87bbbb41273f4b) adds remote scientific compute-node services, asynchronous Dataset Preview, a disposable verified Preview cache and Viewer catalog improvements. A **separate selection of 11 original source files** is now published at `validation/official_dev103/`; all 11 are SHA-256-identical to the officially accepted Debian archive. Consult [source-manifest-dev103.json](source-manifest-dev103.json) and the separate dev-103 section of [TEST_MATRIX.md](TEST_MATRIX.md).
+
+Run `python3 tools/validate_suite.py verify` for a read-only consistency check of **both** dev-102 and dev-103 source manifests. The `list` and `run` subcommands remain intentionally limited to the original **dev-102** vetted CLI cases. The dev-103 cases are published as **source-only/manual**: they are not automatically executed by this branch and are not new proof of Debian/Windows/platform acceptance. The upstream dev-103 acceptance took place on Linux and includes a localhost mTLS compute-node campaign; no separate physical remote machine is asserted here.
+
+Dev-103 materials deliberately exclude the private copied 2D21 scientific Session, remote-node certificates or account configuration, developer-source reviews, release activation/deposit/rollback and evidence scripts, and any privately supplied teaching-document PDFs/generators. Tests using remote/TLS dependencies require a separately provisioned isolated test node and synthetic inputs; never point them at a live computing service.

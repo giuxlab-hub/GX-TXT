@@ -1,0 +1,78 @@
+{
+  "schema": "gxtxt.public-validation-sources/2",
+  "referenceFramework": "0.9.8.10-dev-103",
+  "referenceMainCommit": "e07376e0a62e0eecf1737da33c87bbbb41273f4b",
+  "officialArchiveSha256": "c13ff6b8170eb76efa4fb724137238646efc7766a752862fc7f8ddbe2aa85745",
+  "sourceOfTruth": "Official accepted Debian dev103 archive, selected original scripts under validation/official_dev103/",
+  "sourceOnly": true,
+  "runnerStatus": "NOT RUN",
+  "selectedCount": 11,
+  "files": [
+    {
+      "path": "validation/official_dev103/cache_contracts.tcl",
+      "bytes": 6540,
+      "sha256": "534ec84eba291b820824149bdb6cde0159425c4953c057742ae05be65c6aa62c",
+      "execution": "CLI synthetic Dataset Preview/cache lifecycle, manual only"
+    },
+    {
+      "path": "validation/official_dev103/media_cache.tcl",
+      "bytes": 4667,
+      "sha256": "664cf504baf8bccb568a3efa7a85412600643121e1e3b9a8a2123b6cd019a919",
+      "execution": "CLI synthetic media Preview/cache lifecycle, manual only"
+    },
+    {
+      "path": "validation/official_dev103/catalog_inputs.py",
+      "bytes": 1061,
+      "sha256": "9350bf8f7c146ebc5b9cd204175ab280bdcaa4ae7e73aee377c891e89e5c9b81",
+      "execution": "Synthetic image/NMRPipe fixture producer, manual only"
+    },
+    {
+      "path": "validation/official_dev103/catalog_seed.tcl",
+      "bytes": 1431,
+      "sha256": "1d28a9ee025314ce8daf08932221d889043e22340810f9b08b49fba9e135fe96",
+      "execution": "Synthetic Viewer acquisition/metadata fixture helper, manual only"
+    },
+    {
+      "path": "validation/official_dev103/catalog_workflow.tcl",
+      "bytes": 7251,
+      "sha256": "df268ba24a492a34fc55a3297652123f7fb68aeeea0346f546ae886b7ae9c40d",
+      "execution": "Local Debian X11 Viewer catalog GUI fixture, manual only"
+    },
+    {
+      "path": "validation/official_dev103/catalog_persist.tcl",
+      "bytes": 536,
+      "sha256": "68533ecf4aaf51b5ffa42691cd7c0ba6206c9fdb4098218907976314ca2226e6",
+      "execution": "Persisted catalog state confirmation with preceding fixture, manual only"
+    },
+    {
+      "path": "validation/official_dev103/digitizer_inputs.py",
+      "bytes": 7208,
+      "sha256": "2456ec42023aab0373db047041621c7442f433cc5c824b5d860e5341c3681dd4",
+      "execution": "Synthetic 60k-row Digitizer fixture generator (not a Session Generator Library), manual only"
+    },
+    {
+      "path": "validation/official_dev103/digitizer_publish.tcl",
+      "bytes": 2154,
+      "sha256": "0e6b85236ab1e1b732bbee4addb31cc5586b2c184f7d7cf97a8bc74cc1017567",
+      "execution": "Native Digitizer synthetic-source publication, manual only"
+    },
+    {
+      "path": "validation/official_dev103/remote_seed.tcl",
+      "bytes": 3082,
+      "sha256": "c5cf8b2bd87291fdd1b620a2408267c4be1a2b968d87fc8b076ba28d2e334b5e",
+      "execution": "Synthetic node Session producer for controlled localhost TLS campaign, manual only"
+    },
+    {
+      "path": "validation/official_dev103/remote_checks.tcl",
+      "bytes": 12388,
+      "sha256": "6efc8f18a0a69843db19b41eeb466e5e7309ec83ae13071f1fd11a77c4e3b306",
+      "execution": "Remote node protocol/typed Dataset check; requires configured isolated mTLS agent, manual only"
+    },
+    {
+      "path": "validation/official_dev103/remote_security.py",
+      "bytes": 2775,
+      "sha256": "a703b495e9c638dae35ea627a5ef50d47ada39725a4f1f76a64e31589a281087",
+      "execution": "Negative TLS/host authorization checks; requires controlled test agent, manual only"
+    }
+  ]
+}
