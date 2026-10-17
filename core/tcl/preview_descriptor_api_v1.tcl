@@ -94,6 +94,7 @@ proc ::GX::previewDescriptorNormalize {result previewDir} {
 }
 
 proc ::GX::previewDescriptorClearWidgetArtifact {w} {
+    if {[winfo exists $w.source_surface]} {destroy $w.source_surface}
     variable previewArtifactImages
     if {[info exists previewArtifactImages($w)]} {
         catch {image delete $previewArtifactImages($w)}

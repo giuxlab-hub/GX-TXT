@@ -1,3 +1,7 @@
+# 1.5.0 — Debian dev106
+
+Unified public source/document, managed execution and scientific Viewer integration. See the module manual and dev106 acceptance ledger for exact tested scope and remaining limits.
+
 # 1.4.0 — dev099
 
 - Publish typed per-operation fields, options, units, defaults and design conditions from the same provider-owned contract consumed by execution validation.

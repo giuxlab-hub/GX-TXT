@@ -7,6 +7,17 @@ For current interface contracts consult the API references under [docs/api](docs
 
 ## 0.9.8.10 - development revisions
 
+### 0.9.8.10-dev-106
+
+- Release development sequence continues directly from dev-104; dev-105 was intentionally skipped and has no publication entry.
+- Add official HTML, Signal Analysis and Statistical Analysis Viewers using shared public CORE service and GUI integration facilities. Rendering and scientific execution remain separate.
+- Provide bounded native Markdown, HTML and structured XML document presentation with inert external assets and scripts; retained source bytes remain readable through shared source inspection.
+- Extend source editor and Python/Octave Script Workspace services with source-language presentation, structural import, exact dirty-state tracking, reversible Undo/Redo and Session identity guards.
+- Integrate managed Python and GNU Octave debugging with actual debug Jobs, step/continue, bounded stack and variable observations, lease/cancellation handling, and source-revision safety.
+- Add Python environment configuration assistance, read-only Dataset source previews, independent execution output streams, exact source export and checkbox-driven Results inspection.
+- Update Text Document, Script Analysis, Signal and Viewer packages. Canonical Dataset ownership, publication, source provenance and the protected Plot Dataset/Digitalizer/Curve Workbench implementations remain preserved.
+- Scope limits: advanced debugger combinations and breakpoint persistence are not fully established; native source highlighting is lexical; the HTML viewer omits CSS layout, images, forms and remote resources; Debian release acceptance is not Windows GUI verification.
+
 ### 0.9.8.10-dev-104
 
 - Repair shared Module/Viewer catalog, Help and Session History lifecycle while preserving existing canonical scientific data.

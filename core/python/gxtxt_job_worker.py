@@ -5,6 +5,8 @@ import json
 import os
 from pathlib import Path
 import signal
+import selectors
+import json
 import subprocess
 import sys
 import time
@@ -60,21 +62,27 @@ def drain():
     reap()
 
 
-def run_child(command):
-    child = subprocess.Popen(command, close_fds=True)
-    stopped_at = None
-    while True:
-        rc = child.poll()
-        if rc is not None:
-            return rc
-        if stopping:
-            if stopped_at is None:
-                signal_children(signal.SIGTERM)
-                stopped_at = time.monotonic()
-            elif time.monotonic() - stopped_at > 1:
-                signal_children(signal.SIGKILL)
-        reap(exclude=(child.pid,))
-        time.sleep(.05)
+def run_child(command, role='program'):
+    """Drain genuine stdout/stderr separately, retaining legacy combined reads."""
+    directory=Path(os.environ['GXTXT_CAPTURE_DIR'])
+    child=subprocess.Popen(command,close_fds=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    selector=selectors.DefaultSelector()
+    for stream,name in ((child.stdout,'stdout'),(child.stderr,'stderr')):
+        os.set_blocking(stream.fileno(),False);selector.register(stream,selectors.EVENT_READ,name)
+    stopped_at=None
+    with (directory/'program.stdout').open('ab',buffering=0) as output, (directory/'program.stderr').open('ab',buffering=0) as errors, (directory/'diagnostic.log').open('ab',buffering=0) as diagnostics:
+        while selector.get_map() or child.poll() is None:
+            for key,_ in selector.select(.04):
+                raw=os.read(key.fileobj.fileno(),65536)
+                if not raw:selector.unregister(key.fileobj);key.fileobj.close();continue
+                (diagnostics if role=='preflight' else output if key.data=='stdout' else errors).write(raw)
+                sys.stdout.buffer.write(raw);sys.stdout.buffer.flush()
+            if stopping:
+                if stopped_at is None:signal_children(signal.SIGTERM);stopped_at=time.monotonic()
+                elif time.monotonic()-stopped_at>1:signal_children(signal.SIGKILL)
+            reap(exclude=(child.pid,))
+    selector.close()
+    return child.wait()
 
 
 def main():
@@ -102,7 +110,7 @@ def main():
     else:
         raise RuntimeError("Supervisor launch permit timed out")
     try:
-        rc = run_child([sys.executable, "-B", str(Path(__file__).with_name("script_api_preflight.py")), runtime])
+        rc = run_child([sys.executable, "-B", str(Path(__file__).with_name("script_api_preflight.py")), runtime], role="preflight")
         if rc or stopping:
             return rc or 143
         return run_child(sys.argv[2:])

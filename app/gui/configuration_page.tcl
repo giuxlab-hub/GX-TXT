@@ -48,7 +48,7 @@ proc ::GX::buildConfigurationPage {} {
             ttk::button $section.browse_$widgetId -text Browse… -command ::GX::configurationGuiPluginDirectory
             grid $section.browse_$widgetId -row $i -column 2 -padx 4 -pady 5
         }
-        if {[string match {runtime.*} $id]} {
+        if {[string match {runtime.*} $id] && $id ni {runtime.markdown_viewer runtime.html_viewer}} {
             set tool [string range $id 8 end]
             ttk::button $section.detect_$widgetId -text Detect -command [list ::GX::configurationGuiDetect $tool]
             grid $section.detect_$widgetId -row $i -column 2 -padx 4 -pady 5
@@ -63,6 +63,7 @@ proc ::GX::buildConfigurationPage {} {
     grid $f.sections.libraries.registry -row [dict get $row Libraries] -column 0 -columnspan 2 -sticky w -padx 8 -pady 7
     ttk::label $f.sections.scripts.explain -text "This path contains registered reusable scripts. Session-owned script snapshots remain inside each Session." -wraplength 760 -justify left
     grid $f.sections.scripts.explain -row [dict get $row Scripts] -column 0 -columnspan 2 -sticky w -padx 8 -pady 7
+    pythonEnvironmentPanelBuild $f.sections.scripts [expr {[dict get $row Scripts]+1}]
     ttk::label $f.sections.viewers.explain -text "Per Dataset contract/type: auto, internal, system, gxtxt:module-id/viewer-id, or an external command argv prefix. Binary Datasets keep an internal inspection fallback." -wraplength 780 -justify left
     grid $f.sections.viewers.explain -row [dict get $row Viewers] -column 0 -columnspan 2 -sticky w -padx 8 -pady 7
     set section $f.sections.viewers
@@ -267,6 +268,7 @@ proc ::GX::configurationGuiSave {} {
         configurationCommit $changes
         if {$changes eq {}} {configurationSave}
         configurationModulesSaved
+        sourceSurfaceRefreshAll
     } reason]} {
         set configurationValues $previous
         set configurationUi(status) "Configuration was not saved: $reason"
@@ -345,6 +347,7 @@ proc ::GX::configurationAppearanceBuild {} {
     ttk::label $p.effective.warning -textvariable ::GX::configurationUi(appearanceWarning) -justify left
     pack $p.effective.values $p.effective.warning -fill x
     pack $p.effective -fill x -padx 8 -pady 5
+    sourceSurfaceAppearanceBuild $p
     ttk::frame $p.actions
     ttk::button $p.actions.revert -text {Revert unsaved appearance} -command [list ::GX::configurationAppearanceReset 0]
     ttk::button $p.actions.defaults -text {Restore appearance defaults} -command [list ::GX::configurationAppearanceReset 1]

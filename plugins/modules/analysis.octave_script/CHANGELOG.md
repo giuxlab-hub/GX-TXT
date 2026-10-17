@@ -1,3 +1,7 @@
+# 1.5.0 — Debian dev106
+
+Unified public source/document, managed execution and scientific Viewer integration. The module manual documents usage and the shared public API contracts; advanced debugging remains qualified by the documented limits.
+
 ## 1.4.1
 
 Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.

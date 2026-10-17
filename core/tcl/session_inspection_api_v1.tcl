@@ -305,3 +305,51 @@ proc ::GX::sessionInspectionMarkdownDocuments {{session {}}} {
     }
     return $out
 }
+
+# Read-only typed result projection of existing authorities, not a Results store.
+proc ::GX::sessionInspectionResults {session {offset 0} {limit 500}} {
+    set session [_sessionInspectionRequire $session]
+    if {![string is integer -strict $offset] || $offset<0 || ![string is integer -strict $limit] || $limit<1 || $limit>1000} {error {Results query requires offset >= 0 and limit 1..1000}}
+    set imports {};set scriptImports {}
+    foreach path [lrange [lsort [glob -nocomplain -directory [file join $session metadata acquisitions] *.tcldict]] 0 9999] {
+        if {[file type $path] ne {file} || [file size $path]>65536} continue
+        set fd [open $path];fconfigure $fd -encoding utf-8;try {set receipt [read $fd]} finally {close $fd}
+        if {[catch {dict get $receipt schema} schema] || $schema ne {gxtxt.acquisition_receipt.v1}} continue
+        foreach output [dict get $receipt outputs] {if {[string match session:* $output]} {lappend scriptImports $receipt} else {dict lappend imports $output $receipt}}
+    }
+    set rows {};set records [_sessionInspectionDatasetRecords $session]
+    foreach id [lsort -dictionary [dict keys $records]] {
+        set dataset [dict get $records $id]
+        set producer [datasetPublicationV2DictDefault $dataset producer_module [datasetPublicationV2DictDefault $dataset source_module unknown]]
+        set category [expr {[moduleField $producer kind {}] eq {acquisition} ? {Acquisition/import} : ([moduleField $producer kind {}] eq {analysis} ? {Analysis} : ([moduleField $producer kind {}] eq {viewer} ? {Viewer publications} : {Canonical Datasets}))}]
+        set receipt [dict create id dataset:$id category $category name $id type [datasetPublicationV2DictDefault $dataset contract [datasetPublicationV2DictDefault $dataset kind {}]] producer $producer state {Registered canonical output} dataset_id $id session $session timestamp [datasetPublicationV2DictDefault $dataset created_at {}] summary $dataset origin user_scientific]
+        if {$category eq {Acquisition/import}} {
+            if {[dict exists $imports $id]} {dict set receipt summary import_outcomes [dict get $imports $id];dict set receipt state {Import completed; canonical output registered}} else {dict set receipt historical_operation_status {Publication verified by Registry; historical import operation status is not independently recorded}}
+        }
+        lappend rows $receipt
+    }
+    foreach receipt $scriptImports {
+        lappend rows [dict create id acquisition:[dict get $receipt id] category Acquisition/import name [join [dict get $receipt outputs] {, }] type session_script producer [dict get $receipt module_id] state [dict get $receipt state] session $session timestamp [dict get $receipt timestamp] summary $receipt origin user_scientific]
+    }
+    # Inspect only descriptor-declared reports, never a recursive technical tree.
+    foreach module $::GX::moduleOrder {
+        if {[moduleField $module kind {}] ne {analysis}} continue
+        foreach name [splitList [moduleExpectedOutputs $module]] {
+            if {![regexp {(_report\.(txt|md|html)|_summary\.ini)$} $name]} continue
+            set relative [file join analysis [sanitize $module] $name]
+            if {[catch {sessionInspectionResolveResource $relative $session} verified]} continue
+            set path [dict get $verified path]
+            set fd [open $path];fconfigure $fd -encoding utf-8;try {set content [read $fd 32768];set truncated [expr {![eof $fd]}]} finally {close $fd}
+            lappend rows [dict create id analysis:$module:$name category Analysis name "[moduleField $module name] — $name" type scientific_report producer $module state {Declared report available} session $session timestamp [clock format [file mtime $path] -format {%Y-%m-%dT%H:%M:%S%z}] summary [dict create relative_path $relative sha256 [dict get $verified sha256] text $content truncated $truncated] origin user_scientific]
+        }
+    }
+    foreach run [scriptExecutionRunSummaries $session] {
+        if {[datasetPublicationV2DictDefault $run origin user_script] eq {core_service}} continue
+        set id [dict get $run id]
+        set category {User Script Jobs};set producer [datasetPublicationV2DictDefault $run reference unknown]
+        if {[datasetPublicationV2DictDefault $run origin user_script] eq {scientific_provider}} {set category {Scientific Jobs};set producer SCIENTIFIC_EXECUTION_API_v1;dict unset run reference}
+        lappend rows [dict create id script:$id category $category name [datasetPublicationV2DictDefault $run script_name $id] type script_job producer $producer state [datasetPublicationV2DictDefault $run state {not recorded}] job_id $id session $session timestamp [datasetPublicationV2DictDefault $run started {}] summary $run origin user_script]
+    }
+    set total [llength $rows]
+    return [dict create api_id SESSION_INSPECTION_API_v1 projection user_results session $session offset $offset limit $limit total $total records [lrange $rows $offset [expr {$offset+$limit-1}]] has_next [expr {$offset+$limit<$total}] classification_owner {Dataset provenance / Script Job inspection}]
+}

@@ -10,13 +10,13 @@ proc ::GX::moduleEffectiveConfigSnapshot {module} {
 }
 proc ::GX::workbenchExtensionRequireApi {api} {
     if {$api eq "SCIENTIFIC_RECIPE_API_v1"&&[llength [info commands ::GX::scientificRecipeApiInfo]]} {return}
-    set core [dict create PRINT_DOCUMENT_API_v1 ::GX::printDocumentApiInfo VIEWER_GUI_HOST_API_v1 ::GX::viewerGuiHostApiInfo DATASET_PUBLICATION_API_v2 ::GX::datasetPublicationV2Prepare DATASET_SCIENTIFIC_PROFILE_API_v1 ::GX::datasetProfileApiInfo GEOMETRY_EXCHANGE_API_v1 ::GX::geometryExchangeApiInfo SCIENTIFIC_MULTIVIEW_HOST_API_v1 ::GX::scientificMultiviewHostCapabilities SESSION_WORKSPACE_API_v1 ::GX::sessionWorkspaceApiInfo NOTE_DOCUMENT_API_v1 ::GX::noteDocumentApiInfo MANAGED_RESOURCE_API_v1 ::GX::managedResourceApiInfo NATIVE_2D_GEOMETRY_API_v1 ::GX::native2DGeometryApiInfo NATIVE_3D_GEOMETRY_API_v1 ::GX::native3DGeometryApiInfo DATASET_TRANSFORM_API_v1 ::GX::datasetTransformOperations WORKBENCH_EXTENSION_API_v1 ::GX::workbenchExtensionApiInfo UI_FIELD_API_v1 ::GX::uiFieldApiInfo CURVE_SOURCE_API_v1 ::GX::curveSourceApiInfo NATIVE2D_PRESENTATION_SNAPSHOT_v1 ::GX::native2DPresentationSnapshot]
+    set core [dict create SOURCE_SURFACE_API_v1 ::GX::sourceSurfaceApiInfo XML_DOCUMENT_API_v1 ::GX::xmlDocumentApiInfo PYTHON_ENVIRONMENT_API_v1 ::GX::pythonEnvironmentApiInfo PRINT_DOCUMENT_API_v1 ::GX::printDocumentApiInfo VIEWER_GUI_HOST_API_v1 ::GX::viewerGuiHostApiInfo DATASET_PUBLICATION_API_v2 ::GX::datasetPublicationV2Prepare DATASET_SCIENTIFIC_PROFILE_API_v1 ::GX::datasetProfileApiInfo GEOMETRY_EXCHANGE_API_v1 ::GX::geometryExchangeApiInfo SCIENTIFIC_MULTIVIEW_HOST_API_v1 ::GX::scientificMultiviewHostCapabilities SESSION_WORKSPACE_API_v1 ::GX::sessionWorkspaceApiInfo NOTE_DOCUMENT_API_v1 ::GX::noteDocumentApiInfo MANAGED_RESOURCE_API_v1 ::GX::managedResourceApiInfo NATIVE_2D_GEOMETRY_API_v1 ::GX::native2DGeometryApiInfo NATIVE_3D_GEOMETRY_API_v1 ::GX::native3DGeometryApiInfo DATASET_TRANSFORM_API_v1 ::GX::datasetTransformOperations WORKBENCH_EXTENSION_API_v1 ::GX::workbenchExtensionApiInfo UI_FIELD_API_v1 ::GX::uiFieldApiInfo CURVE_SOURCE_API_v1 ::GX::curveSourceApiInfo NATIVE2D_PRESENTATION_SNAPSHOT_v1 ::GX::native2DPresentationSnapshot]
     if {[dict exists $core $api]} {
         if {![llength [info commands [dict get $core $api]]]} {error "Required CORE API '$api' is unavailable"}
         return
     }
     foreach module $::GX::moduleOrder {
-        if {[moduleIsEnabled $module] && $api in [modulePublicApiIds $module]} {modulePublicApiActivate $module $api;return}
+        if {$api in [modulePublicApiIds $module]} {modulePublicApiActivate $module $api;return}
     }
     error "Required public API '$api' is unavailable"
 }

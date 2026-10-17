@@ -218,6 +218,8 @@ proc ::GX::configurationHome {} {
 }
 
 proc ::GX::configurationRegisterBuiltins {} {
+    foreach kind {markdown html} {configurationRegister runtime.${kind}_viewer [dict create group Runtime label "[string totitle $kind] Dataset viewer (internal or argv prefix)" type string default internal scope user]}
+    sourceSurfaceConfigurationRegister
     configurationRegister ui.projects.organization [dict create group General label {Project navigator state} type string default {selected {} opened {} y 0 query {}} scope user scopes {user} application on_reopen validator ::GX::projectOrganizationGuiStateValidate]
     foreach {id label type default} {printing.dock_width {Print Studio dock width (px)} integer 350 printing.log_height {Print Studio diagnostics height (px)} integer 150 printing.cups_timeout_ms {CUPS operation timeout (ms)} integer 3000 printing.log_visible {Show Print Studio diagnostics} boolean 0 printing.last_printer {Last verified printer} string {} printing.capabilities_cache {Verified printer metadata cache} string {}} {
         configurationRegister $id [dict create group Printing label $label type $type default $default scope user scopes {user} application immediate]

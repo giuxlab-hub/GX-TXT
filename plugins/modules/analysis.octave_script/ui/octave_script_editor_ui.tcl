@@ -11,19 +11,11 @@ namespace eval ::GX::OctaveScriptEditorUI {
 
 proc ::GX::OctaveScriptEditorUI::_setModified {{value 1}} {
     variable ui
-    set ui(modified) [expr {$value ? 1 : 0}]
+    if {$value==0} {_acceptBaseline} else {_recomputeDirty}
     _updateStatus
 }
 
-proc ::GX::OctaveScriptEditorUI::_editorModified {} {
-    variable ui
-    if {![info exists ui(text)] || ![winfo exists $ui(text)]} return
-    if {[$ui(text) edit modified]} {
-        $ui(text) edit modified 0
-        _setModified 1
-        _scheduleRefresh
-    }
-}
+proc ::GX::OctaveScriptEditorUI::_editorModified {} {variable ui;::GX::_sourceSurfaceModified [winfo parent $ui(text)]}
 
 proc ::GX::OctaveScriptEditorUI::_propertyModified {name element operation} {
     variable ui
@@ -59,59 +51,15 @@ proc ::GX::OctaveScriptEditorUI::_refreshEditor {} {
     _updateStatus
 }
 
-proc ::GX::OctaveScriptEditorUI::_updateLineNumbers {} {
-    variable ui
-    if {![winfo exists $ui(text)] || ![winfo exists $ui(lines)]} return
-    set last [lindex [split [$ui(text) index "end-1c"] .] 0]
-    if {$last < 1} { set last 1 }
-    set data ""
-    for {set i 1} {$i <= $last} {incr i} { append data "$i\n" }
-    $ui(lines) configure -state normal
-    $ui(lines) delete 1.0 end
-    $ui(lines) insert 1.0 $data
-    $ui(lines) configure -state disabled
-    $ui(lines) yview moveto [lindex [$ui(text) yview] 0]
-}
+proc ::GX::OctaveScriptEditorUI::_updateLineNumbers {} {variable ui;if {[info exists ui(text)] && [winfo exists $ui(text)]} {::GX::_sourceSurfaceGutter [winfo parent $ui(text)]}}
 
-proc ::GX::OctaveScriptEditorUI::_tagRegexp {tag pattern} {
-    variable ui
-    set t $ui(text)
-    set start 1.0
-    while 1 {
-        set count 0
-        set idx [$t search -regexp -count count -- $pattern $start end]
-        if {$idx eq ""} break
-        if {$count <= 0} { set count 1 }
-        set stop "$idx + $count chars"
-        $t tag add $tag $idx $stop
-        set start $stop
-    }
-}
 
-proc ::GX::OctaveScriptEditorUI::_highlight {} {
-    variable ui
-    set t $ui(text)
-    foreach tag {comment string keyword number bridge} { $t tag remove $tag 1.0 end }
-    _tagRegexp comment {%[^\n]*}
-    _tagRegexp string {'[^'\n]*'|"[^"\n]*"}
-    _tagRegexp keyword {\m(break|case|catch|classdef|continue|do|else|elseif|end|endfor|endfunction|endif|endswitch|endwhile|for|function|global|if|otherwise|persistent|return|switch|try|until|unwind_protect|unwind_protect_cleanup|while)\M}
-    _tagRegexp number {\m([0-9]+(\.[0-9]*)?|\.[0-9]+)([eEdD][+-]?[0-9]+)?\M}
-    _tagRegexp bridge {\mgxtxt_[A-Za-z0-9_]+\M}
-    $t tag raise string
-    $t tag raise comment
-}
 
-proc ::GX::OctaveScriptEditorUI::_yscroll {first last} {
-    variable ui
-    if {[winfo exists $ui(vscroll)]} { $ui(vscroll) set $first $last }
-    if {[winfo exists $ui(lines)]} { $ui(lines) yview moveto $first }
-}
+proc ::GX::OctaveScriptEditorUI::_highlight {} {variable ui;::GX::sourceSurfaceRefresh $ui(text)}
 
-proc ::GX::OctaveScriptEditorUI::_scrollBoth {args} {
-    variable ui
-    $ui(text) yview {*}$args
-    $ui(lines) yview moveto [lindex [$ui(text) yview] 0]
-}
+proc ::GX::OctaveScriptEditorUI::_yscroll {first last} {variable ui;::GX::_sourceSurfaceScroll [winfo parent $ui(text)] $first $last}
+
+proc ::GX::OctaveScriptEditorUI::_scrollBoth {args} {variable ui;$ui(text) yview {*}$args}
 
 proc ::GX::OctaveScriptEditorUI::_updateStatus {} {
     variable ui
@@ -132,6 +80,7 @@ proc ::GX::OctaveScriptEditorUI::_updateStatus {} {
 
 proc ::GX::OctaveScriptEditorUI::_confirmAbandon {} {
     variable ui
+    _recomputeDirty
     if {![info exists ui(modified)] || !$ui(modified)} { return 1 }
     set answer [tk_messageBox -parent $ui(window) -icon question -type yesnocancel -default yes -title "Unsaved script" -message "Save changes to the current script before continuing?"]
     switch -- $answer {
@@ -160,7 +109,7 @@ proc ::GX::OctaveScriptEditorUI::_loadDocument {documentId} {
     $ui(text) insert 1.0 [dict get $full code]
     $ui(text) edit reset
     $ui(text) edit modified 0
-    set ui(modified) 0
+    _acceptBaseline
     _refreshEditor
     _selectTreeId $documentId
     return 1
@@ -210,7 +159,7 @@ proc ::GX::OctaveScriptEditorUI::_new {} {
     $ui(text) insert 1.0 [::GX::OctaveScriptEditor::defaultCode]
     $ui(text) edit reset
     $ui(text) edit modified 0
-    set ui(modified) 1
+    _acceptBaseline
     $ui(tree) selection remove [$ui(tree) selection]
     _refreshEditor
     focus $ui(text)
@@ -232,7 +181,7 @@ proc ::GX::OctaveScriptEditorUI::_save {} {
     }
     set ui(currentId) [dict get $result reference]
     set ui(currentSha) [dict get $result sha256]
-    set ui(modified) 0
+    _acceptBaseline
     _refreshDocuments
     _selectTreeId $ui(currentId)
     _updateStatus
@@ -258,7 +207,7 @@ proc ::GX::OctaveScriptEditorUI::_saveCopy {} {
     set ui(currentId) [dict get $result reference]
     set ui(currentSha) [dict get $result sha256]
     set ui(name) $copyName
-    set ui(modified) 0
+    _acceptBaseline
     _refreshDocuments
     _selectTreeId $ui(currentId)
     _updateStatus
@@ -293,7 +242,7 @@ proc ::GX::OctaveScriptEditorUI::_delete {} {
     set ui(currentSha) ""
     set ui(scriptId) ""
     set ui(scope) session
-    set ui(modified) 0
+    _acceptBaseline
     _refreshDocuments
     _new
 }
@@ -324,6 +273,7 @@ proc ::GX::OctaveScriptEditorUI::_import {} {
     $ui(text) insert 1.0 $code
     $ui(text) edit reset
     $ui(text) edit modified 0
+    set ui(importDraft) 1
     set ui(modified) 1
     _refreshEditor
 }
@@ -365,25 +315,7 @@ proc ::GX::OctaveScriptEditorUI::_run {} {
 
 proc ::GX::OctaveScriptEditorUI::_find {{direction forward}} {
     variable ui
-    set pattern $ui(find)
-    if {$pattern eq ""} return
-    set t $ui(text)
-    $t tag remove search_hit 1.0 end
-    if {$direction eq "backward"} {
-        set start [$t index "insert - 1c"]
-        set idx [$t search -backwards -nocase -- $pattern $start 1.0]
-        if {$idx eq ""} { set idx [$t search -backwards -nocase -- $pattern end 1.0] }
-    } else {
-        set start [$t index "insert + 1c"]
-        set idx [$t search -nocase -- $pattern $start end]
-        if {$idx eq ""} { set idx [$t search -nocase -- $pattern 1.0 end] }
-    }
-    if {$idx eq ""} { bell; return }
-    set stop "$idx + [string length $pattern] chars"
-    $t tag add search_hit $idx $stop
-    $t mark set insert $stop
-    $t see $idx
-    focus $t
+    if {[::GX::sourceSurfaceFind $ui(text) $ui(find) $direction] eq {}} {bell}
     _updateStatus
 }
 
@@ -510,7 +442,9 @@ proc ::GX::OctaveScriptEditorUI::_buildMenus {w} {
     $m add command -label {Find next} -accelerator F3 -command {::GX::OctaveScriptEditorUI::_find forward}
     $m add command -label {Find previous} -accelerator Shift+F3 -command {::GX::OctaveScriptEditorUI::_find backward}
     $m add command -label {Go to line...} -accelerator Ctrl+G -command ::GX::OctaveScriptEditorUI::_gotoLineDialog
+    foreach {label operation} {{Fold current block} toggle {Fold all} fold_all {Unfold all} unfold_all} {$m add command -label $label -command [list ::GX::sourceSurfaceFold $w.p.center.edit $operation]}
     set m $w.toolbar.run.menu
+    $m add command -label {Debug Session script…} -command [list ::GX::scriptDebugOpen $w Octave]
     $m add command -label {Open Script Runner...} -command ::GX::OctaveScriptEditorUI::_run
     $m add command -label {Script Library...} -command ::GX::scriptLibraryDialog
     $m add command -label {Script Jobs Manager...} -command ::GX::scriptJobsDialog
@@ -611,29 +545,10 @@ proc ::GX::OctaveScriptEditorUI::_build {} {
     pack $w.p.center.desc.l -side left -padx {0 6}
     pack $w.p.center.desc.e -side left -fill x -expand 1
 
-    ttk::frame $w.p.center.edit
+    set ui(text) [::GX::sourceSurfaceCreate $w.p.center.edit [dict create mode editable language octave change_command ::GX::OctaveScriptEditorUI::_sourceChanged]]
     pack $w.p.center.edit -side top -fill both -expand 1
-    text $w.p.center.edit.lines -width 6 -state disabled -takefocus 0 -wrap none -font TkFixedFont -background #f0f0f0 -foreground #666666 -padx 4 -pady 4
-    text $w.p.center.edit.text -undo 1 -autoseparators 1 -maxundo 0 -wrap none -font TkFixedFont -tabs {32} -padx 5 -pady 4
-    ttk::scrollbar $w.p.center.edit.v -orient vertical -command ::GX::OctaveScriptEditorUI::_scrollBoth
-    ttk::scrollbar $w.p.center.edit.h -orient horizontal -command [list $w.p.center.edit.text xview]
     set ui(lines) $w.p.center.edit.lines
-    set ui(text) $w.p.center.edit.text
     set ui(vscroll) $w.p.center.edit.v
-    $ui(text) configure -yscrollcommand ::GX::OctaveScriptEditorUI::_yscroll -xscrollcommand [list $w.p.center.edit.h set]
-    grid $ui(lines) -row 0 -column 0 -sticky ns
-    grid $ui(text) -row 0 -column 1 -sticky nsew
-    grid $w.p.center.edit.v -row 0 -column 2 -sticky ns
-    grid $w.p.center.edit.h -row 1 -column 1 -sticky ew
-    grid rowconfigure $w.p.center.edit 0 -weight 1
-    grid columnconfigure $w.p.center.edit 1 -weight 1
-    $ui(text) tag configure comment -foreground #6a737d
-    $ui(text) tag configure string -foreground #a31515
-    $ui(text) tag configure keyword -foreground #0000aa
-    $ui(text) tag configure number -foreground #7a3e9d
-    $ui(text) tag configure bridge -foreground #006b54
-    $ui(text) tag configure search_hit -background #fff2a8
-    bind $ui(text) <<Modified>> ::GX::OctaveScriptEditorUI::_editorModified
     bind $ui(text) <KeyRelease> ::GX::OctaveScriptEditorUI::_updateStatus
     bind $ui(text) <ButtonRelease-1> ::GX::OctaveScriptEditorUI::_updateStatus
 
@@ -694,6 +609,8 @@ The bridge is not a sandbox.}
     ::GX::uiTextEditingAttach $w [list $ui(text) $w.p.center.props.ie $w.p.center.props.ne $w.p.center.desc.e $w.p.center.find.e $w.p.center.props.ae]
     bind $w.p.center.find.e <Escape> [list focus $ui(text)]
     _watchProperties
+    # A rebuilt empty shell must not inherit the previous document baseline.
+    _acceptBaseline
     _refreshDocuments
     set docs [$ui(tree) children {}]
     if {[llength $docs]} { _loadDocument [lindex $docs 0] } else { _new }
@@ -712,3 +629,14 @@ proc ::GX::OctaveScriptEditorUI::open {} {
     _build
     return [dict create status opened]
 }
+
+proc ::GX::OctaveScriptEditorUI::_snapshot {} {
+    variable ui
+    set out {}
+    foreach key {scope scriptId name description arguments version requiredApis} {if {[info exists ui($key)]} {dict set out $key $ui($key)}}
+    foreach key {text parameters} {if {[info exists ui($key)] && [winfo exists $ui($key)]} {dict set out $key [$ui($key) get 1.0 end-1c]}}
+    return $out
+}
+proc ::GX::OctaveScriptEditorUI::_acceptBaseline {} {variable ui;set ui(importDraft) 0;set ui(baseline) [_snapshot];set ui(modified) 0;::GX::sourceSurfaceDocumentIdentity $ui(text) [list $ui(currentId) $ui(currentSha) [zlib crc32 [$ui(text) get 1.0 end-1c]]]}
+proc ::GX::OctaveScriptEditorUI::_recomputeDirty {} {variable ui;if {![info exists ui(baseline)]} {return};set ui(modified) [expr {([info exists ui(importDraft)] && $ui(importDraft)) || [_snapshot] ne $ui(baseline)}]}
+proc ::GX::OctaveScriptEditorUI::_sourceChanged {} {_recomputeDirty;_scheduleRefresh}

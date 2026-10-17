@@ -1455,8 +1455,8 @@ proc ::GX::acquisitionHandlerStartCooperative_atomic_v09781 {moduleId} {
         error "$moduleId: acquisition preflight failed: [join [dict get $pf errors] {; }]"
     }
     set cfg(session_mode) measurement
-    set session [makeSession]
-    datasetRegistryClear
+    if {$::GX::currentSession ne {} && [file isdirectory $::GX::currentSession]} {set session [file normalize $::GX::currentSession]} else {set session [makeSession];datasetRegistryClear}
+    set importToken [interactiveDocumentSessionToken]
     set rawRel [file join raw [sanitize $moduleId] [sanitize $id] [format "001_%s" [file tail $src]]]
     set finalRaw [file join $session $rawRel]
     if {[file exists $finalRaw]} { error "$moduleId: RAW destination already exists: $finalRaw" }
@@ -1473,10 +1473,11 @@ proc ::GX::acquisitionHandlerStartCooperative_atomic_v09781 {moduleId} {
     if {[catch {
         file copy -- $src $rawAbs
         set rawHash [sha256File $rawAbs]
+        set cfgDict {};foreach key [moduleConfigKeys $moduleId] {if {[info exists ::GX::moduleCfg($moduleId,$key)]} {dict set cfgDict $key $::GX::moduleCfg($moduleId,$key)}}
         set req [dict create api_version 1 module_id $moduleId handler_id $hid \
             source_path $src source_paths [list $src] raw_path $rawAbs raw_paths [list $rawAbs] \
             session_path $session output_dir [file join $txn datasets] dataset_id $id \
-            contract [acquisitionHandlerDefaultContract $moduleId] variables [acquisitionHandlerVariableMap] inspection $inspect]
+            config $cfgDict contract [acquisitionHandlerDefaultContract $moduleId] variables [acquisitionHandlerVariableMap] inspection $inspect]
         dict for {k v} [acquisitionHandlerRequestCallbacks $moduleId] { dict set req $k $v }
         set token [uplevel #0 [list $bp $req]]
     } failure options]} {
@@ -1486,7 +1487,7 @@ proc ::GX::acquisitionHandlerStartCooperative_atomic_v09781 {moduleId} {
     set acquisitionHandlerCancelFlag 0
     set acquisitionHandlerAsyncActive 1
     set acquisitionHandlerAsyncState [dict create module_id $moduleId handler_id $hid session $session \
-        txn $txn raw_rel $rawRel raw_hash $rawHash prior_registry $priorRegistry \
+        session_token $importToken txn $txn raw_rel $rawRel raw_hash $rawHash prior_registry $priorRegistry \
         registry_existed $registryExisted request $req state_token $token]
     foreach k {startButton analysisStart runAllButton} {
         if {[info exists ui($k)] && [winfo exists $ui($k)]} { $ui($k) configure -state disabled }
@@ -1506,6 +1507,13 @@ proc ::GX::acquisitionHandlerAsyncFinalize_atomic_v09781 {ok payload} {
     set ctx $acquisitionHandlerAsyncState
     set moduleId [dict get $ctx module_id]
     set session [dict get $ctx session]
+    if {$currentSession eq {} || [file normalize $currentSession] ne $session || [interactiveDocumentSessionToken] ne [dict get $ctx session_token]} {
+        catch {file delete -force -- [dict get $ctx txn]}
+        set acquisitionHandlerAsyncActive 0;set acquisitionHandlerAsyncState {};set acquisitionHandlerCancelFlag 0
+        progressPublish [dict create state cancelled module_id $moduleId message {Session changed; no acquisition outputs committed}]
+        foreach k {startButton analysisStart runAllButton} {if {[info exists ui($k)] && [winfo exists $ui($k)]} {$ui($k) configure -state normal}}
+        return
+    }
     if {![datasetAuthorityActive $session]} {return [datasetAuthorityTransaction $session ::GX::acquisitionHandlerAsyncFinalize_atomic_v09781 $ok $payload]}
     loadDatasetRegistry $session
     dict set ctx prior_registry [array get datasetRegistry]
@@ -1520,6 +1528,12 @@ proc ::GX::acquisitionHandlerAsyncFinalize_atomic_v09781 {ok payload} {
     if {$ok} {
         set rc [catch {
             set result $payload
+            if {[dict exists $result outcome] && [dict get $result outcome] eq {registered_session_script}} {
+                if {$moduleId ne {acq.text_document}} {error {Importer has not declared Session script outcomes}}
+                lassign [acquisitionHandlerSafeDatasetPath $session [file join $txn datasets] [dict get $result source_path]] scriptSource unused
+                set receipt [scriptRegistryImportSource $session $scriptSource [dict get $result script_id] [dict get $result name] [dict get $result language] [dict get $result provenance]]
+                set ids [list [dict get $receipt reference]]
+            } else {
             if {[catch {dict size $result}] || ![dict exists $result datasets]} {
                 error "$moduleId: asynchronous result must contain datasets."
             }
@@ -1559,9 +1573,11 @@ proc ::GX::acquisitionHandlerAsyncFinalize_atomic_v09781 {ok payload} {
                 [dict get $ctx raw_hash] [file join $session datasets] $result]
             saveDatasetRegistry $session
             writeManifest [file join $session metadata manifest.ini]
+            }
         } failure]
         if {!$rc} {
             set currentSession $session
+            if {[catch {acquisitionHandlerReceiptSave $session $moduleId [dict get $ctx request source_paths] $ids} receiptError]} {guiLog "Import succeeded; operation receipt unavailable: $receiptError"}
             guiLog "Cooperative acquisition completed: [join $ids {, }]"
             progressPublish [dict create state completed mode determinate current 1 total 1 module_id $moduleId message "Acquisition completed"]
         } else {
@@ -2285,6 +2301,8 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
     set hid [acquisitionHandlerLoadModule $moduleId]
     set session [file normalize $session]
     if {![file isdirectory $session]} { error "$moduleId: target session does not exist: $session" }
+    if {$::GX::currentSession eq {} || [file normalize $::GX::currentSession] ne $session} {error {Import target must be the selected validated Session}}
+    set importToken [interactiveDocumentSessionToken]
     set norm {}
     foreach src $sourcePaths {
         set src [file normalize $src]
@@ -2355,6 +2373,7 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
         dict for {k v} [acquisitionHandlerRequestCallbacks $moduleId] { dict set request $k $v }
         set importProc [acquisitionHandlerField $hid import_proc ""]
         set result [uplevel #0 [list $importProc $request]]
+        if {$importToken ne [interactiveDocumentSessionToken] || [file normalize $::GX::currentSession] ne $session} {error {Session changed during import; no outputs were committed}}
         if {$storagePolicy eq "reference"} {
             foreach source $norm expected $rawHashes {
                 if {![file isfile $source] || ![string equal -nocase [sha256File $source] $expected]} {
@@ -2362,6 +2381,12 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
                 }
             }
         }
+        if {[dict exists $result outcome] && [dict get $result outcome] eq {registered_session_script}} {
+            if {$moduleId ne {acq.text_document}} {error {This importer has not declared a registered Session script outcome}}
+            lassign [acquisitionHandlerSafeDatasetPath $session [file join $txn datasets] [dict get $result source_path]] scriptSource unused
+            set scriptReceipt [scriptRegistryImportSource $session $scriptSource [dict get $result script_id] [dict get $result name] [dict get $result language] [dict get $result provenance]]
+            set ids [list [dict get $scriptReceipt reference]]
+        } else {
         if {[catch {dict size $result}] || ![dict exists $result datasets]} {
             error "$moduleId: import_proc must return a dict with datasets."
         }
@@ -2411,14 +2436,14 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
                 source_size_bytes [file size [lindex $norm 0]] source_mtime [file mtime [lindex $norm 0]]]
         }
         saveDatasetRegistry $session
+        }
     } failure options]
     if {$status} {
         foreach path [lreverse $moved] { catch {file delete -- $path} }
         foreach path [glob -nocomplain -directory $metadataDir *] {
             if {[lsearch -exact $priorMetadata $path] < 0} { catch {file delete -- $path} }
         }
-        array unset datasetRegistry *
-        array set datasetRegistry $priorRegistry
+        if {$::GX::currentSession ne {} && [file normalize $::GX::currentSession] eq $session} {array unset datasetRegistry *;array set datasetRegistry $priorRegistry}
         if {$registryExisted} {
             catch {file copy -force -- $registrySnapshot $registryPath}
         } else {
@@ -2428,6 +2453,8 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
     catch {file delete -force -- $txn}
     if {$status} { return -options $options $failure }
     acquisitionHandlerApplyInstrumentSuggestions $inspect
+    if {[catch {acquisitionHandlerReceiptSave $session $moduleId $norm $ids} receiptError]} {guiLog "Import succeeded; operation receipt unavailable: $receiptError"}
+    if {[info exists scriptReceipt]} {return $scriptReceipt}
     return $ids
 }
 
@@ -2436,4 +2463,20 @@ proc ::GX::acquisitionHandlerStartCooperative {moduleId} {
 }
 proc ::GX::acquisitionHandlerAsyncFinalize {ok payload} {
     tailcall ::GX::acquisitionHandlerAsyncFinalize_atomic_v09781 $ok $payload
+}
+
+# Persist successful importer outcomes in the acquisition owner. Legacy Sessions
+# remain honestly unqualified; scientific Dataset rows are never duplicated.
+proc ::GX::acquisitionHandlerReceiptSave {session module sources outputs} {
+    if {$session ne $::GX::currentSession} {error {Cannot record an import against another Session}}
+    set id import-[clock microseconds]-[pid]
+    set names {};foreach source $sources {lappend names [file tail $source]}
+    set warnings {};foreach output $outputs {if {[datasetField $output id {}] ne {}} {set metadata [datasetMetadataRead $session $output];dict for {key value} $metadata {if {[string match *warning* $key] && $value ne {}} {dict set warnings $key $value}}}}
+    set receipt [dict create schema gxtxt.acquisition_receipt.v1 id $id module_id $module handler_id [acquisitionHandlerLoadModule $module] state COMPLETED timestamp [clock format [clock seconds] -gmt 1 -format {%Y-%m-%dT%H:%M:%SZ}] sources $names outputs $outputs warnings $warnings]
+    if {[string length [encoding convertto utf-8 $receipt]]>65536} {error {Import receipt exceeds the bounded metadata limit}}
+    set directory [file join $session metadata acquisitions]
+    foreach parent [list [file join $session metadata] $directory] {if {![catch {file type $parent} type] && $type eq {link}} {error {Import receipt destination contains a symlink}}}
+    file mkdir $directory
+    resourceLifecycleWriteBytes [file join $directory $id.tcldict] [encoding convertto utf-8 $receipt]
+    return $receipt
 }

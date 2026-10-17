@@ -165,6 +165,15 @@ function analysis_octave_script_main(args, framework_root)
       cd(working_directory);
     endif
 
+    if (strcmp(gxtxt_ini_get(cfg, 'debug.enabled', '0'), '1'))
+      debug_on_interrupt(true);
+      PS1(['GXTXT_' getenv('GXTXT_DEBUG_TOKEN') '> ']);
+      breakpoint_text=gxtxt_ini_get(cfg,'debug.breakpoints','1');
+      breakpoint_lines=str2double(strsplit(breakpoint_text,';'));
+      if (isempty(breakpoint_lines) || any(!isfinite(breakpoint_lines))), breakpoint_lines=1; endif
+      addpath(fileparts(snapshot_path));
+      for debug_line=breakpoint_lines, dbstop('executed_script',num2str(debug_line)); endfor
+    endif
     callable_entrypoint = gxtxt_ini_get(cfg, 'registered_callable.entrypoint', '');
     callable_function = execute_user_script(snapshot_path, callable_entrypoint);
     if (!isempty(callable_entrypoint)), gxtxt_registered_callable_v1(callable_function, cfg); endif

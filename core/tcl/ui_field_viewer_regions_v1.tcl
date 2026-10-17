@@ -285,3 +285,30 @@ proc ::GX::uiFieldViewerRegionsSet {window regions} {
         } else {pack forget $widget}
     }
 }
+
+# Independent checkbox state is distinct from current-row focus/selection.
+namespace eval ::GX::UiCheckTable {variable checked;variable callback}
+proc ::GX::uiFieldCheckTableCreate {widget columns callback} {
+    ttk::treeview $widget -columns $columns -show {tree headings} -selectmode browse
+    $widget heading #0 -text {Show};$widget column #0 -width 52 -stretch 0
+    set ::GX::UiCheckTable::checked($widget) {};set ::GX::UiCheckTable::callback($widget) $callback
+    bind $widget <ButtonRelease-1> [list ::GX::_uiFieldCheckTableClick $widget %x %y]
+    bind $widget <Key-space> "[list ::GX::uiFieldCheckTableToggle $widget];break"
+    bind $widget <Destroy> [list ::GX::_uiFieldCheckTableDestroy $widget %W]
+    return $widget
+}
+proc ::GX::_uiFieldCheckTableDestroy {widget actual} {if {$actual eq $widget} {unset -nocomplain ::GX::UiCheckTable::checked($widget) ::GX::UiCheckTable::callback($widget)}}
+proc ::GX::_uiFieldCheckTableClick {widget x y} {if {[$widget identify column $x $y] eq {#0}} {set id [$widget identify row $x $y];if {$id ne {}} {uiFieldCheckTableToggle $widget $id}}}
+proc ::GX::uiFieldCheckTableToggle {widget {id {}}} {
+    if {$id eq {}} {set id [lindex [$widget selection] 0]}
+    if {$id eq {} || ![$widget exists $id]} return
+    set current $::GX::UiCheckTable::checked($widget);set i [lsearch -exact $current $id]
+    if {$i<0} {lappend current $id} else {set current [lreplace $current $i $i]}
+    uiFieldCheckTableSet $widget $current
+    set command $::GX::UiCheckTable::callback($widget);if {$command ne {}} {uplevel #0 $command}
+}
+proc ::GX::uiFieldCheckTableSet {widget ids} {
+    set ::GX::UiCheckTable::checked($widget) [lsort -unique $ids]
+    foreach row [$widget children {}] {$widget item $row -text [expr {$row in $ids ? {☑}:{☐}}]}
+}
+proc ::GX::uiFieldCheckTableGet {widget} {return $::GX::UiCheckTable::checked($widget)}

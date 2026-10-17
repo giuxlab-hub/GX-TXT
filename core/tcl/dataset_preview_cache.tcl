@@ -164,18 +164,8 @@ proc ::GX::datasetPreviewCacheRequest {id {options {}} {callback {}}} {
     if {[dict exists $tasks $key]} {if {!$::GX::PreviewCache::watchCalling} {dict set tasks $key legacy_joined 1};if {$callback ne {}} {set callbacks [dict get $tasks $key callbacks];lappend callbacks $callback;dict set tasks $key callbacks $callbacks};return $key}
     incr misses
     dict unset ::GX::PreviewCache::outcomes $key
-    set script {import gxtxt
-p=gxtxt.gxtxt_context()['parameters']
-gxtxt.gxtxt_api_call('DATASET_PREVIEW_API_v1','cache_generate',[p['dataset_id'],p['options'],p['expected_key']])
-}
-    set metadata [dict create language Python version 1.0.0 parameters [dict create dataset_id {type string required 1} options {type string default {}} expected_key {type string required 1}]]
-    set name gx-core-dataset-preview
-    if {[catch {set registered [scriptRegistryRead session $name]}]} {scriptRegistrySave session $name {CORE Dataset Preview preparation} $script $metadata} else {
-        set f [open [dict get $registered source_path] r];try {set existing [read $f]} finally {close $f}
-        if {$existing ne $script} {error {Reserved Preview script differs; inspect it before preparing previews}}
-    }
     dict set tasks $key [dict create session $session id $id options $options callbacks [expr {$callback eq {}?{}:[list $callback]}] job_id {} creator [expr {$::GX::PreviewCache::watchCalling ? {watch} : {legacy}}] legacy_joined [expr {!$::GX::PreviewCache::watchCalling}]]
-    scriptJobSubmit session:$name [dict create dataset_id $id options $options expected_key $key] [dict create session $session] [list ::GX::_datasetPreviewCacheSubmitted $key]
+    _scriptJobSubmitCore dataset-preview [dict create dataset_id $id options $options expected_key $key] [dict create session $session] [list ::GX::_datasetPreviewCacheSubmitted $key]
     return $key
 }
 proc ::GX::_datasetPreviewCacheRemoteVerified {id key token callback response} {

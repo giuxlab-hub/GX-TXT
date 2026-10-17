@@ -75,3 +75,4 @@ proc ::GX::SignalAPIv1::interpretResult {operation raw context {provenance {}}} 
     set contract [statisticalContract $operation]
     return [::GX::StatisticsV1::fromNumeric [dict get $contract model_id] [dict get $contract numerical_operation] $raw $context {} $provenance]
 }
+source [file join [file dirname [info script]] dataset_service.tcl]

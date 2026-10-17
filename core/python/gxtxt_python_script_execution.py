@@ -106,7 +106,11 @@ def main(runtime_path):
                 sys.path.insert(0, str(bundle))
             code = compile(snapshot.read_bytes(), str(snapshot), "exec")
             namespace = {"__name__": "__main__", "__file__": str(snapshot), "__package__": None}
-            exec(code, namespace)
+            if config.getboolean('debug','enabled',fallback=False):
+                from gxtxt_python_debug import run_debug
+                breakpoints=[int(x) for x in config.get('debug','breakpoints',fallback='').split(';') if x]
+                run_debug(code,namespace,snapshot,breakpoints)
+            else:exec(code, namespace)
             if config.has_section('registered_callable'):
                 from gxtxt_registered_callable import execute
                 invocation = config['registered_callable']

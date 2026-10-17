@@ -20,6 +20,7 @@ proc ::GX::datasetViewerDescribe {datasetId} {
 }
 proc ::GX::datasetViewerOpen {datasetId} {
     set info [datasetViewerDescribe $datasetId]
+    if {[datasetDocumentKind $datasetId] ne {}} {return [datasetDocumentOpen $datasetId]}
     switch [dict get $info target] {
         scientific {return [scientificDatasetViewerOpen $datasetId]}
         mesh - structure {return [meshDatasetViewerOpen $datasetId]}
@@ -417,6 +418,7 @@ proc ::GX::datasetConsultationOpen {id info} {
 # descriptors; scientific PNGs use the same Curve Source + Native authority.
 rename ::GX::datasetInspectionRenderPreview ::GX::datasetInspectionRenderPreview_before_core_viewers
 proc ::GX::datasetInspectionRenderPreview {w choice} {
+    previewDescriptorClearWidgetArtifact $w
     datasetDigitizerPreviewClear
     datasetPreviewUpdateOpenButton
     set expected [datasetPreviewStamp]
@@ -430,6 +432,10 @@ proc ::GX::datasetInspectionRenderPreview {w choice} {
     if {$mode ne "imported"} {return [datasetInspectionRenderPreview_before_core_viewers $w $choice]}
     if {[catch {set info [datasetViewerDescribe $id]} reason]} {
         $w configure -state normal;$w delete 1.0 end;$w insert end "Canonical Dataset unavailable: $reason";$w configure -state disabled;return 0
+    }
+    if {[datasetDocumentKind $id] in {markdown html xml code}} {
+        if {[catch {datasetDocumentRender $w $id} reason]} {$w configure -state normal;$w delete 1.0 end;$w insert end "Document preview failed: $reason";$w configure -state disabled;return 0}
+        return 1
     }
     if {[dict get $info target] in {mesh structure}} {
         $w configure -state normal;$w delete 1.0 end;$w insert end "Rendering canonical geometry through CORE Native3D…";$w configure -state disabled

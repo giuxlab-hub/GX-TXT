@@ -1,6 +1,6 @@
 # Text and Source Code Import
 
-**Plugin:** `acq.text_document` 1.0.4  
+**Plugin:** `acq.text_document` 1.1.0  
 **Framework baseline:** GX-TXT 0.9.8.10-dev  
 **Runtime:** framework-configured Python 3.10+, standard library only.  
 **License:** GPL-3.0-or-later.

@@ -34,7 +34,8 @@ def run_summaries(session, records):
         if not re.fullmatch(r'script-[A-Za-z0-9-]+', p.name): continue
         try:
             r = inspect_run(str(root), p.name, by_id.get(p.name), verify=False)
-            result.append({k: r.get(k, '') for k in ('id', 'script_name', 'reference', 'state', 'started', 'finished', 'diagnostics', 'archived')})
+            if r.get('origin') == 'core_service': continue
+            result.append({k: r.get(k, '') for k in ('id', 'script_name', 'reference', 'state', 'started', 'finished', 'diagnostics', 'archived', 'origin')})
         except (OSError, ValueError) as exc:
             result.append(dict(id=p.name, script_name='', diagnostics=[str(exc)]))
     return result
@@ -120,7 +121,8 @@ def inspect_run(session, run_id, record=None, verify=True):
         r['execution_report'] = execution
         r['output_dir'] = str(path)
         language = r['language']
-        r['log_streams'] = 'stdout and stderr merged in the execution log'
+        r['origin'] = result_origin(fd, cfg, runtime)
+        r['log_streams'] = 'Separate program stdout, program stderr and lifecycle diagnostics' if (path/'streams.json').is_file() else 'Legacy combined execution stream (stdout and stderr merged)'
         r['log_path'] = str(path / ('python.log' if language == 'Python' else 'octave.log')) if language in ('Python', 'Octave') else ''
         r['snapshot_validation'] = 'not verified'
         if verify and language in ('Python', 'Octave'):
@@ -174,7 +176,7 @@ def inspect_run(session, run_id, record=None, verify=True):
         r['diagnostics'] = diagnostics
     return r
 
-def log_read(session, run_id, record, offset=0, count=65536, tail=False):
+def log_read(session, run_id, record, offset=0, count=65536, tail=False, stream_role="legacy"):
     offset, count = int(offset), int(count)
     tail = bool(int(tail))
     if offset < 0 or not 4 <= count <= LIMIT:
@@ -182,7 +184,8 @@ def log_read(session, run_id, record, offset=0, count=65536, tail=False):
     language = record.get('language', '')
     if language not in ('Python', 'Octave'):
         return dict(available=False, diagnostic='Log unavailable: execution language not recorded', content='', offset=offset, next_offset=offset, size=0, eof=True)
-    name = 'python.log' if language == 'Python' else 'octave.log'
+    if stream_role not in {'stdout','stderr','diagnostics','legacy'}:raise ValueError('Unknown execution stream role')
+    name = {'stdout':'program.stdout','stderr':'program.stderr','diagnostics':'diagnostic.log'}.get(stream_role, 'python.log' if language=='Python' else 'octave.log')
     try:
         with run_directory(session, run_id) as (fd, path), run_file(fd, name) as (f, s):
             size = s.st_size
@@ -209,8 +212,32 @@ def log_read(session, run_id, record, offset=0, count=65536, tail=False):
                 diagnostic = 'Invalid UTF-8 bytes shown as replacement characters'
             return dict(available=True, diagnostic=diagnostic, content=content, offset=offset,
                         next_offset=next_offset, size=size, eof=next_offset >= size,
-                        content_base64=__import__('base64').b64encode(raw).decode('ascii'),
+                        stream_role=stream_role, job_id=run_id, source_sha256=record.get('source_sha256',''), complete=record.get('state') in ('COMPLETED','FAILED','CANCELLED','INTERRUPTED'), content_base64=__import__('base64').b64encode(raw).decode('ascii'),
                         receipt=f'{s.st_dev}:{s.st_ino}:{s.st_mtime_ns}:{size}', path=str(path / name))
     except (OSError, ValueError) as exc:
         return dict(available=False, diagnostic=f'Log unavailable, expired or unsafe: {exc}',
                     content='', offset=offset, next_offset=offset, size=0, eof=True)
+
+
+def result_origin(fd, cfg, runtime):
+    """Classify authenticated installed service snapshots, including exact legacy copies."""
+    if cfg.get('script_language') != 'Python': return 'user_script'
+    reference = cfg.get('registered_script', '')
+    if reference == 'core-service:scientific-provider' and runtime.get('job_origin',{}).get('classification') == 'scientific_provider':
+        expected=hashlib.sha256(Path(__file__).with_name('gxtxt_core_scientific_service.py').read_bytes()).hexdigest()
+        try:
+            with run_file(fd,'registered_script.py') as (stream,st): digest=hashlib.file_digest(stream,'sha256').hexdigest()
+            if digest==expected and cfg.get('script_sha256')==expected:return 'scientific_provider'
+        except (OSError,ValueError):pass
+        return 'unverified_service_conflict'
+    legacy = reference == 'session:gx-core-dataset-preview' and cfg.get('script_name') == 'CORE Dataset Preview preparation' and cfg.get('script_revision') == '1' and cfg.get('script_version') == '1.0.0'
+    current = reference == 'core-service:dataset-preview' and runtime.get('job_origin',{}).get('classification') == 'core_service'
+    if not (legacy or current): return 'user_script'
+    source = Path(__file__).with_name('gxtxt_core_preview_service.py').read_bytes()
+    expected = hashlib.sha256(source).hexdigest()
+    try:
+        with run_file(fd, 'registered_script.py') as (stream, st):
+            digest = hashlib.file_digest(stream,'sha256').hexdigest()
+        if digest == expected and cfg.get('script_sha256') == expected: return 'core_service'
+    except (OSError,ValueError): pass
+    return 'unverified_service_conflict'

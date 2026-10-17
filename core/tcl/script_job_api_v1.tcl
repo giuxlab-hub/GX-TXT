@@ -100,6 +100,15 @@ proc ::GX::scriptJobRequestsShutdown {actual} {
     dict for {request entry} $::GX::scriptJobRequests {if {[dict get $entry options ui_lifetime]} {_scriptJobRequestSignal $request KILL}}
 }
 proc ::GX::scriptJobSubmit {reference parameters {options {}} {callback {}}} {
+    if {[string match core-service:* $reference] || [dict exists $options core_service]} {error {Private CORE services cannot be submitted through user Script Job APIs}}
+    tailcall ::GX::_scriptJobSubmit $reference $parameters $options $callback
+}
+proc ::GX::_scriptJobSubmitCore {service parameters {options {}} {callback {}}} {
+    _scriptCoreServiceMetadata $service
+    dict set options core_service $service
+    tailcall ::GX::_scriptJobSubmit core-service:$service $parameters $options $callback
+}
+proc ::GX::_scriptJobSubmit {reference parameters options callback} {
     set session [dict get [dict merge [dict create session $::GX::currentSession] $options] session]
     if {$session eq {} || ![file isdirectory $session]} {error {Open a Session before submitting a script.}}
     set moduleConfig {}
@@ -157,3 +166,26 @@ source [file join [file dirname [info script]] script_job_presentation_v1.tcl]
 # Use the same LOCAL CORE Job API with an independent Windows supervisor/tray:
 # reopen GUI, inspect jobs, cancel selected/all (confirm all), safe supervisor exit.
 # No remote dispatch or mandatory service; native Job Objects own child lifetime.
+
+proc ::GX::scriptJobStreamRead {id role {offset 0} {count 65536} {tail 0}} {scriptJobCall stream_read $id $role $offset $count $tail}
+proc ::GX::scriptJobStreamPublish {id role datasetId {session {}}} {
+    if {$session eq {}} {set record [scriptJobInspect $id]} else {set record [scriptExecutionInspectRun $session $id]}
+    if {[dict get $record origin] eq {core_service}} {error {Private CORE service streams cannot be published as user results}}
+    if {$::GX::currentSession eq {} || [file normalize [dict get $record session]] ne [file normalize $::GX::currentSession]} {error {Activate the source Job Session before publication}}
+    set page [expr {$session eq {} ? [scriptJobStreamRead $id $role 0 65536 0] : [scriptJobCall run_stream_read $session $id $role 0 65536 0]}]
+    if {![dict get $page available]} {error [dict get $page diagnostic]}
+    if {![dict get $page complete]} {error {Wait for a terminal Job before publishing an immutable complete stream}}
+    set path [dict get $page path];set before [sha256File $path]
+    set producer [scriptAnalysisModule [dict get $record language]]
+    set request [dict create dataset_id $datasetId contract document.text format txt source_file $path storage_kind text media_type text/plain provenance "Script Job $id; stream $role; source SHA [dict get $record source_sha256]" structured_metadata [dict create script.job_id $id script.stream_role $role script.source_sha256 [dict get $record source_sha256] script.stream_sha256 $before script.complete 1 text.encoding UTF-8]]
+    set receipt [datasetFilePublicationPublish $::GX::currentSession $producer $request]
+    if {[sha256File $path] ne $before} {error {Retained stream changed unexpectedly during publication}}
+    return $receipt
+}
+
+proc ::GX::scriptJobDebugSubmit {reference parameters {options {}} {callback {}}} {dict set options debug 1;tailcall ::GX::scriptJobSubmit $reference $parameters $options $callback}
+proc ::GX::scriptJobDebugRead {id} {scriptJobCall debug_read $id}
+proc ::GX::scriptJobDebugControl {id operation sourceSha {frame 0}} {
+    if {$operation eq {stop}} {return [scriptJobCancel $id]}
+    scriptJobCall debug_control $id $operation $sourceSha $frame
+}

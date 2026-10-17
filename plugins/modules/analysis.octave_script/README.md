@@ -4,7 +4,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 `analysis.octave_script` is the advanced scripting module for researchers who need ad-hoc or evolving scientific calculations without first packaging a complete GX-TXT analysis plugin.
 
-Version 1.3.0 combines the following functions:
+Version 1.5.0 combines the following functions:
 
 1. **Octave Script Workspace Viewer** — an editor that saves normal `session:<id>` and `user:<id>` Script Registry records, and imports/exports GNU Octave `.m` source;
 2. **Script Library and Session Script Explorer** — register, revise, inspect and run user scripts and physical Session-owned snapshots;

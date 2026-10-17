@@ -65,6 +65,14 @@ def status(row):
         submission_identity(d)
     return d
 def admit(c,root,r):
+    if r.get('origin') == 'core_service':
+        expected=Path(__file__).with_name('gxtxt_core_preview_service.py')
+        if r.get('reference') != 'core-service:dataset-preview' or r.get('service_id') != 'dataset-preview' or hashlib.sha256(expected.read_bytes()).hexdigest()!=r.get('source_sha256'):
+            raise ValueError('Invalid installed CORE service identity')
+    elif r.get('origin') == 'scientific_provider':
+        expected=Path(__file__).with_name('gxtxt_core_scientific_service.py')
+        if r.get('reference')!='core-service:scientific-provider' or hashlib.sha256(expected.read_bytes()).hexdigest()!=r.get('source_sha256'):raise ValueError('Invalid scientific provider driver identity')
+    elif r.get('reference','').startswith('core-service:'):raise ValueError('Private service admission required')
     parent=request_parent(c)
     r.pop('parent_job_id',None)
     if parent:r['parent_job_id']=parent['id']
@@ -99,7 +107,13 @@ def ensure(root):
         fcntl.flock(lock,fcntl.LOCK_UN)
     log=open(root/'supervisor.log','ab',buffering=0)
     subprocess.Popen([sys.executable,'-B',str(Path(__file__).resolve()),'--root',str(root),'serve'],stdin=subprocess.DEVNULL,stdout=log,stderr=log,start_new_session=True,close_fds=True);log.close()
+def diagnostic_event(r,event,**fields):
+    path=Path(r['output_dir'])/'diagnostic.log'
+    with path.open('a',encoding='utf-8') as stream:
+        stream.write(json.dumps(dict(time=time.time(),job_id=r['run_id'],event=event,**fields),ensure_ascii=False)+'\n')
+
 def write_report(r,state,reason):
+    diagnostic_event(r,'terminal',state=state,reason=reason)
     cfg=configparser.ConfigParser(interpolation=None)
     cfg['execution']={k:str(v) for k,v in r.items() if isinstance(v,(str,int,float))}
     cfg['execution'].update(status='PASS' if state=='COMPLETED' else state,reason=reason,finished_at=str(time.time()),source_snapshot=r['snapshot'])
@@ -442,6 +456,15 @@ def launch_job(c,root,row):
         if hashlib.sha256(Path(r['snapshot']).read_bytes()).hexdigest()!=r['source_sha256']:raise ValueError('Source snapshot hash mismatch')
         env=dict(os.environ);env.update(r.get('environment',{}));env.update(GXTXT_JOB_ID=jid,GXTXT_JOB_ROOT=str(root),GXTXT_PARALLEL_DEPTH='1',GXTXT_JOB_THREADS=str(r['policy']['threads']),GXTXT_JOB_INTERNAL_THREADS=str(r['policy']['threads']),GXTXT_SUPERVISOR_PID=str(os.getpid()),GXTXT_SUPERVISOR_START=process_identity(os.getpid()),PYTHONUNBUFFERED='1',PYTHONDONTWRITEBYTECODE='1')
         for key in ('OMP_NUM_THREADS','OPENBLAS_NUM_THREADS','MKL_NUM_THREADS','NUMEXPR_NUM_THREADS','VECLIB_MAXIMUM_THREADS','BLIS_NUM_THREADS'):env[key]=str(r['policy']['threads'])
+        if str(r.get('debug','0')) == '1':
+            from gxtxt_debug_control import prepare
+            prepare(r,env)
+        directory=Path(r['output_dir'])
+        atomic_json(directory/'streams.json',dict(schema='gxtxt.script_streams.v1',stdout='program.stdout',stderr='program.stderr',diagnostics='diagnostic.log'))
+        for name in ('program.stdout','program.stderr','diagnostic.log'):
+            with (directory/name).open('ab'):pass
+        diagnostic_event(r,'launch',runtime=r['command'][0],source_sha256=r['source_sha256'])
+        env['GXTXT_CAPTURE_DIR']=str(directory)
         stream=open(r['log_path'],'ab',buffering=0)
         command=[sys.executable,'-B',str(Path(__file__).with_name('gxtxt_job_worker.py')),r['runtime'],*r['command']]
         proc=subprocess.Popen(command,stdin=subprocess.DEVNULL,stdout=stream,stderr=subprocess.STDOUT,cwd=r['session'],env=env,start_new_session=True,close_fds=True)
@@ -655,7 +678,7 @@ def presentation_view(c,operation,request):
     terminal="j.state IN ('COMPLETED','FAILED','CANCELLED','INTERRUPTED')"
     hidden='(h.id IS NOT NULL AND '+terminal+')'
     source=' FROM jobs j LEFT JOIN view_hidden h ON h.id=j.id'
-    where=[];params=[]
+    where=["COALESCE(json_extract(j.record,'$.origin'),'user_script') != 'core_service'"];params=[]
     if scope!='all':where.append("json_extract(j.record,'$.session')=?");params.append(str(Path(scope).resolve()))
     clause=lambda conditions:' WHERE '+(' AND '.join(conditions) if conditions else '1')
     c.execute('BEGIN')
@@ -689,16 +712,29 @@ def presentation_view(c,operation,request):
         return dict(jobs=jobs,lifecycle=list(lifecycle.values()),total_stored=total,total_scoped=scoped,hidden_scoped=hidden_count,matching=count,offset=offset,limit=limit)
     finally:c.execute('ROLLBACK')
 
+def public_receipt(value):
+    """Private debugger command credentials never belong in inspection/results."""
+    if isinstance(value,dict):return {k:public_receipt(v) for k,v in value.items() if k not in {'debug_token','GXTXT_DEBUG_TOKEN'}}
+    if isinstance(value,(list,tuple)):return [public_receipt(v) for v in value]
+    return value
+
 def main():
     a=argparse.ArgumentParser();a.add_argument('--root',required=True);a.add_argument('operation');a.add_argument('args',nargs='*');args=a.parse_args();root=root_path(args.root)
     if args.operation=='serve':serve(root);return
     c=connect(root)
     if args.operation=='submit':result=admit(c,root,read_request());ensure(root)
-    elif args.operation=='list':result=[status(r) for r in c.execute('SELECT * FROM jobs ORDER BY created DESC LIMIT 100')]
+    elif args.operation=='list':result=[status(r) for r in c.execute("SELECT * FROM jobs WHERE COALESCE(json_extract(record,'$.origin'),'user_script') != 'core_service' ORDER BY created DESC LIMIT 100")]
     elif args.operation=='wait_begin':result=wait_begin(c,args.args[0]);ensure(root)
     elif args.operation=='wait_end':result=wait_end(c,args.args[0])
     elif args.operation in ('view_list','history_candidates','history_validate'):result=presentation_view(c,args.operation,presentation_request())
-    elif args.operation in ('describe','inspect','log_read'):
+    elif args.operation in ('debug_read','debug_control'):
+        row=c.execute('SELECT * FROM jobs WHERE id=?',(args.args[0],)).fetchone()
+        if not row:raise ValueError('Unknown Debug Job')
+        record=status(row)
+        if str(record.get('debug','0'))!='1':raise ValueError('Job was not admitted in Debug mode')
+        from gxtxt_debug_control import inspect,control
+        result=inspect(record) if args.operation=='debug_read' else control(record,*args.args[1:])
+    elif args.operation in ('describe','inspect','log_read','stream_read'):
         row=c.execute('SELECT * FROM jobs WHERE id=?',(args.args[0],)).fetchone()
         if not row:raise ValueError('Unknown job ID')
         result=status(row)
@@ -707,8 +743,9 @@ def main():
         if args.operation!='describe':
             from gxtxt_script_inspection import inspect_run, log_read
             if args.operation=='inspect':result=inspect_run(result['session'],result['id'],result)
+            elif args.operation=='stream_read':result=log_read(result['session'],result['id'],result,*args.args[2:],stream_role=args.args[1])
             else:result=log_read(result['session'],result['id'],result,*args.args[1:])
-    elif args.operation in ('inspect_run','run_log_read'):
+    elif args.operation in ('inspect_run','run_log_read','run_stream_read'):
         from gxtxt_script_inspection import inspect_run, log_read
         session,run_id=args.args[:2]
         row=c.execute('SELECT * FROM jobs WHERE id=?',(run_id,)).fetchone()
@@ -716,6 +753,7 @@ def main():
         if record and Path(record['session']).resolve()!=Path(session).resolve():record=None
         result=inspect_run(session,run_id,record,verify=args.operation=='inspect_run')
         if args.operation=='run_log_read':result=log_read(session,run_id,result,*args.args[2:])
+        elif args.operation=='run_stream_read':result=log_read(session,run_id,result,*args.args[3:],stream_role=args.args[2])
     elif args.operation=='run_summaries':
         from gxtxt_script_inspection import run_summaries
         result=run_summaries(args.args[0],[status(r) for r in c.execute("SELECT * FROM jobs WHERE json_extract(record,'$.session')=? LIMIT 4096",(str(Path(args.args[0]).resolve()),))])
@@ -732,7 +770,7 @@ def main():
         if p['max_jobs']*p['threads']>available_cpus():raise ValueError('Concurrent thread budget exceeds available CPUs')
         c.execute('UPDATE settings SET value=? WHERE id=1',(json.dumps(p),));result=p
     else:raise ValueError('Unknown Job API operation')
-    print(tcl_result(dict(ok=1,result=result)))
+    print(tcl_result(dict(ok=1,result=public_receipt(result))))
 if __name__=='__main__':
     os.umask(0o077)
     try:main()

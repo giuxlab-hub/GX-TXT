@@ -232,3 +232,38 @@ or missing completed receipt produces diagnostics and an invalid status.
 ## Remote registered scientific Jobs
 
 Scientific Execution can return an opaque remote Job ID. `scriptJobDescribe`, `scriptJobInspect`, `scriptJobLogRead`, `scriptJobCancel`, and `scriptJobWait` route that ID to its original node-local Supervisor through the configured authenticated agent. They preserve source Session and durable Job identity. A remote wait observes that Supervisor and does not create a client-side admission lease. Transport unavailability is distinct from terminal scientific failure. Local submit/list/history/resource-policy behavior remains account-local; remote transport does not add a scheduler or merge unrelated node journals into the local history.
+
+## Debian dev106 streams, preflight and native debugging
+
+New managed Jobs retain independent actual `program.stdout`, `program.stderr`
+and lifecycle/preflight `diagnostic.log` streams, described by `streams.json`.
+`scriptJobStreamRead id role ?offset? ?count?` reads a bounded source page;
+`scriptJobStreamPublish id role dataset_id` explicitly publishes that source
+through Dataset File Publication. Roles are stdout, stderr, diagnostics and
+legacy. Historic merged logs remain truthfully labeled legacy, not guessed apart.
+The UI copies the focused selection, full retained selected source or an atomic
+external byte-exact export. Clipboard UTF-8 scalars are carried across page edges.
+
+`scriptJobDebugSubmit reference parameters options`, `scriptJobDebugRead id` and
+`scriptJobDebugControl id operation source_sha256 ?frame?` use the same managed
+Job/resource owner as normal Run. Only clean registered Session Python/Octave
+scripts are admitted. Operations into/over/out/continue/pause/frame/stop validate
+real state and immutable source identity. Python uses native bdb; GNU Octave uses
+its genuine dbstop/dbstep/dbstack/whos state with an owned PTY and authenticated
+JSON sideband. A native prompt alone never establishes a stopped source frame.
+A 600-second debugger lease bounds detached pauses. CORE workers are ineligible.
+Command credentials remain private and are omitted from public receipts.
+
+Python Run and Debug perform non-executing import preflight in the exact selected
+runtime/Job working directory. Missing unconditional imports or syntax/encoding
+errors refuse admission by default. An explicit import_policy=continue option
+records the caller's override; the ordinary GUI asks before setting it. Optional,
+conditional, relative and dynamic imports retain qualified results. No package
+is installed or imported by inventory/preflight. See PYTHON_ENVIRONMENT_API_v1.
+
+Private Dataset Preview services now execute an installed immutable CORE service
+source with verified provenance, outside the Session Script Registry. Exact
+legacy worker identities remain preserved and hidden from ordinary selection and
+Results; changed/unverified legacy identities are explicit conflicts, never
+silently treated as safe user scripts. Ordinary Jobs and user publications remain
+visible. Scientific provider Jobs have their own legitimate Results category.

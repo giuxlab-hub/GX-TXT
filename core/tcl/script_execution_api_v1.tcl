@@ -96,7 +96,11 @@ proc ::GX::scriptRegistryDeclaredApis {language source} {
 proc ::GX::scriptRegistryWrite {metadata code {session ""}} {
     set m [scriptRegistryValidate $metadata]
     set dir [scriptRegistryPath [dict get $m scope] [dict get $m id] $session]
+    set target $dir
+    set isNew [expr {![file exists $target]}]
+    if {$isNew} {set dir "${target}.[pid].[clock clicks].pending"}
     file mkdir $dir
+    try {
     set source [file join $dir [scriptRegistrySourceName [dict get $m language]]]
     set temp "${source}.[pid].tmp"
     set ch [open $temp w]
@@ -134,7 +138,9 @@ proc ::GX::scriptRegistryWrite {metadata code {session ""}} {
         }
     } finally { close $ch }
     file rename -force -- $temp $path
+    if {$isNew} {if {[file exists $target]} {error {Script identity appeared during registration}};file rename -- $dir $target}
     return $m
+    } on error {reason options} {if {$isNew} {catch {file delete -force -- $dir}};return -options $options $reason}
 }
 
 proc ::GX::scriptRegistryRead {scope id {session ""}} {
@@ -173,6 +179,9 @@ proc ::GX::scriptRegistryRead {scope id {session ""}} {
     if {[dict get $m id] ne $id || [dict get $m scope] ne $scope} { error "Registered script identity disagrees with its storage path." }
     if {[string tolower [dict get $m sha256]] ne [scriptRegistryHash $source]} { error "Registered script '$scope:$id' failed SHA-256 verification." }
     dict set m source_path $source
+    set policy [_scriptLegacyPreviewPolicy $m]
+    if {$policy eq {verified_legacy_private}} {return -code error -errorcode {GXTXT SCRIPT CORE_PRIVATE} {Verified legacy CORE Preview service is not a user script; original source and historical Jobs are retained}}
+    if {$policy ne {user}} {dict set m access_policy $policy;dict set m diagnostic {Legacy CORE identity has modified or unverifiable source. Preserve and review before running or changing it.}}
     return $m
 }
 
@@ -187,6 +196,7 @@ proc ::GX::scriptRegistrySave {scope id name code {options {}} {session ""}} {
 
 proc ::GX::scriptRegistryUpdate {scope id expectedSha metadata code {session ""}} {
     set current [scriptRegistryRead $scope $id $session]
+    if {[dict exists $current access_policy]} {error [dict get $current diagnostic]}
     if {[string tolower [dict get $current sha256]] ne [string tolower $expectedSha]} { error "Script changed since it was opened; reload before editing." }
     foreach immutable {id scope language source_scope source_id source_sha256 created_at} {
         if {[dict exists $metadata $immutable] && [dict get $metadata $immutable] ne [dict get $current $immutable]} {
@@ -221,7 +231,9 @@ proc ::GX::scriptRegistryCompare {a b} {
 
 proc ::GX::scriptRegistryDescribe {reference {session ""}} {
     if {![regexp {^(user|session):(.+)$} $reference -> scope id]} { error "Use a qualified script ID such as user:my_script or session:my_script." }
-    return [scriptRegistryRead $scope $id $session]
+    set m [scriptRegistryRead $scope $id $session]
+    if {[dict exists $m access_policy]} {error [dict get $m diagnostic]}
+    return $m
 }
 
 proc ::GX::scriptRegistryAssignToSession {userId {session ""}} {
@@ -279,11 +291,14 @@ proc ::GX::scriptExecutionParameters {metadata supplied} {
     return $out
 }
 
-proc ::GX::scriptExecutionPrepare {reference parameters {session ""} {runtimeTemplate ""} {moduleOutputDir ""} {invocation {}}} {
+proc ::GX::scriptExecutionPrepare {reference parameters {session ""} {runtimeTemplate ""} {moduleOutputDir ""} {invocation {}} {coreService {}}} {
     if {$session eq ""} { set session $::GX::currentSession }
     if {$session eq "" || ![file isdirectory $session]} { error "Open a Session before running a registered script." }
     set session [file normalize $session]
-    set m [scriptRegistryDescribe $reference $session]
+    if {$coreService ne {}} {
+        if {$reference ne "core-service:$coreService"} {error {CORE service identity mismatch}}
+        set m [_scriptCoreServiceMetadata $coreService]
+    } else {set m [scriptRegistryDescribe $reference $session]}
     if {$invocation ne {}} {set invocation [scriptCallableInvocationValidate $reference $invocation $session]}
     set language [dict get $m language]
     set moduleId [scriptAnalysisModule $language]
@@ -331,7 +346,7 @@ proc ::GX::scriptExecutionPrepare {reference parameters {session ""} {runtimeTem
             putKV $ch $key $value
         }
         puts $ch "\n\[config\]"
-        foreach {key value} [list source_mode registered_script registered_script $reference script_file $snapshot \
+        foreach {key value} [list source_mode [expr {$coreService eq {}?{registered_script}:{core_service}}] registered_script $reference script_file $snapshot \
             script_id [dict get $m id] script_scope [dict get $m scope] script_name [dict get $m name] \
             script_version [dict get $m version] script_revision [dict get $m revision] \
             script_sha256 [dict get $m sha256] script_language $language working_directory $workingDirectory \
@@ -445,4 +460,38 @@ proc ::GX::scriptAnalysisBuildQueueItem {id} {
     set command [list tclsh [file join $::GX::scriptDir core tcl script_execution_cli.tcl] \
         $::GX::scriptDir $currentSession $reference $runtime $output $statusPath]
     return [list "Analysis - [moduleField $id name $id]" $command $id $runId]
+}
+
+# Installed immutable CORE service source is never a Session Script Registry item.
+proc ::GX::_scriptCoreServiceMetadata {service} {
+    if {$service eq {scientific-provider}} {
+        set source [file join $::GX::scriptDir core python gxtxt_core_scientific_service.py]
+        return [dict merge [scriptRegistryDefaults] [dict create id scientific-provider name {Scientific provider execution} language Python scope core version 1.0.0 revision 1 source_path $source sha256 [sha256File $source] parameters [dict create request {type string required 1}]]]
+    }
+    if {$service ne {dataset-preview}} {error {Unknown private CORE service}}
+    set source [file join $::GX::scriptDir core python gxtxt_core_preview_service.py]
+    return [dict merge [scriptRegistryDefaults] [dict create id dataset-preview name {CORE Dataset Preview preparation} language Python scope core version 1.0.0 revision 1 source_path $source sha256 [sha256File $source] required_apis DATASET_PREVIEW_API_v1 parameters [dict create dataset_id {type string required 1} options {type string default {}} expected_key {type string required 1}]]]
+}
+proc ::GX::_scriptLegacyPreviewPolicy {metadata} {
+    if {[dict get $metadata id] ne {gx-core-dataset-preview} || [dict get $metadata name] ne {CORE Dataset Preview preparation} || [dict get $metadata language] ne {Python}} {return user}
+    set trusted [_scriptCoreServiceMetadata dataset-preview]
+    if {[dict get $metadata version] eq {1.0.0} && [dict get $metadata revision]==1 && [dict get $metadata source_scope] eq {} && [dict get $metadata source_sha256] eq {} && [dict get $metadata sha256] eq [dict get $trusted sha256] && [lsort [dict keys [dict get $metadata parameters]]] eq {dataset_id expected_key options}} {return verified_legacy_private}
+    return legacy_conflict_requires_review
+}
+
+proc ::GX::scriptRegistryImportSource {session path id name language {provenance {}}} {
+    set session [_sessionInspectionRequire $session]
+    scriptRegistryId $id
+    if {$language ni {Python Octave}} {error {Session script import requires Python or explicitly confirmed GNU Octave language}}
+    if {![file isfile $path] || [file type $path] eq {link} || [file size $path]>4194304} {error {Script import requires a regular source file up to 4 MiB}}
+    set ch [open $path rb];try {set raw [read $ch]} finally {close $ch}
+    set bytes $raw
+    if {[string range $bytes 0 2] eq [binary format H* efbbbf]} {set bytes [string range $bytes 3 end]}
+    set code [encoding convertfrom utf-8 $bytes]
+    if {[encoding convertto utf-8 $code] ne $bytes} {error {Script Registry import requires UTF-8. Choose Dataset destination to preserve a different source encoding.}}
+    set original [sha256File $path]
+    set options [dict create language $language source_scope import source_id [file tail $path] source_sha256 $original description {Imported inert source. UTF-8 BOM is removed if present; no code was executed.}]
+    if {$provenance ne {}} {dict set options description $provenance}
+    set result [scriptRegistrySave session $id $name $code $options $session]
+    return [dict create outcome registered_session_script reference session:$id language $language revision [dict get $result revision] sha256 [dict get $result sha256] original_sha256 $original session $session executed 0]
 }

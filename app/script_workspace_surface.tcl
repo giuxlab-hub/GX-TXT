@@ -249,8 +249,30 @@ proc ::GX::scriptWorkspaceRunCommit {} {
         set output {}
         if {$scriptRunUi(output_id) ne {}} {set output [dict create dataset_id $scriptRunUi(output_id) label $scriptRunUi(output_label) replace_owned $scriptRunUi(replace)]}
         set options [dict create session $scriptRunUi(session) namespace $scriptRunUi(namespace) inputs $inputs output $output]
+        if {[info exists scriptRunUi(importOverride)] && $scriptRunUi(importOverride)} {dict set options import_policy continue}
         scriptJobSubmit $scriptRunUi(reference) $supplied $options ::GX::scriptWorkspaceSubmitted
         $w.run state disabled
         set scriptRunUi(status) {Submitting immutable script snapshot…}
     } reason]} {set scriptRunUi(status) "Submission failed: $reason"}
 }
+
+# Keep the source useful while an in-editor assistant is open. The normal
+# library and reference panes return when the last assistant closes.
+namespace eval ::GX::WorkspaceAssist {variable panels {}}
+proc ::GX::scriptWorkspaceAssistMount {editor panel} {
+    foreach side {left right} {set w $editor.p.$side;if {$w in [$editor.p panes]} {$editor.p forget $w}}
+    $editor.p add $panel -weight 3
+    dict set ::GX::WorkspaceAssist::panels $panel $editor
+    bind $panel <Destroy> +[list ::GX::scriptWorkspaceAssistDestroyed $panel %W]
+    after idle [list ::GX::scriptWorkspaceAssistSize $editor]
+}
+proc ::GX::scriptWorkspaceAssistSize {editor} {if {[winfo exists $editor.p]} {catch {$editor.p sashpos 0 [expr {int([winfo width $editor.p]*.58)}]}}}
+proc ::GX::scriptWorkspaceAssistDestroyed {panel actual} {
+    if {$actual ne $panel || ![dict exists $::GX::WorkspaceAssist::panels $panel]} return
+    set editor [dict get $::GX::WorkspaceAssist::panels $panel];dict unset ::GX::WorkspaceAssist::panels $panel
+    if {![winfo exists $editor.p]} return
+    dict for {other owner} $::GX::WorkspaceAssist::panels {if {$owner eq $editor} return}
+    foreach side {left right} {set w $editor.p.$side;if {[winfo exists $w] && $w ni [$editor.p panes]} {if {$side eq {left}} {$editor.p insert 0 $w -weight 1} else {$editor.p add $w -weight 2}}}
+    after idle [list ::GX::scriptWorkspaceAssistRestore $editor]
+}
+proc ::GX::scriptWorkspaceAssistRestore {editor} {if {[winfo exists $editor.p] && [llength [$editor.p panes]]==3} {set n [winfo width $editor.p];catch {$editor.p sashpos 0 [expr {int($n*.22)}];$editor.p sashpos 1 [expr {int($n*.78)}]}}}

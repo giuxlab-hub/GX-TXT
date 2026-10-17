@@ -207,6 +207,14 @@ proc ::AcqTextDocument::_datasetResult {request result} {
         if {![dict exists $f $key]} { error "Text import result is missing $key." }
     }
     set md [dict get $result metadata]
+    set language [dict get $md code.language]
+    set destination [_setting $request destination auto]
+    if {$destination eq {auto} && $language eq {python}} {set destination session_script}
+    if {$destination eq {auto} && $language in {matlab matlab-octave octave}} {error {Choose a destination explicitly: Session script with Language = octave confirms GNU Octave intent; Dataset preserves source without claiming MATLAB compatibility.}}
+    if {$destination eq {session_script}} {
+        if {$language ni {python octave}} {error {Session script destination requires Python or explicitly selected GNU Octave language. Choose Dataset for other source.}}
+        return [dict create outcome registered_session_script language [expr {$language eq {python}?{Python}:{Octave}}] script_id [dict get $request dataset_id] name [dict get $f label] source_path [dict get $f path] provenance {Source imported through Text and Source Code Import; UTF-8 Registry snapshot; no execution.}]
+    }
     set notes [join [dict get $result warnings] "\n"]
     # Text/code is a file-shaped Dataset, NOT a one-column numerical table.
     # Original encoding, BOM, tabs and line endings remain byte-for-byte intact.

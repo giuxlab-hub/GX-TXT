@@ -99,13 +99,18 @@ proc ::GX::scriptJobDetailsWindow {id {session {}}} {
     set scriptJobDetail($w,id) $id;set scriptJobDetail($w,session) $session
     set scriptJobDetail($w,generation) 0;set scriptJobDetail($w,pageGeneration) 0
     set scriptJobDetail($w,follow) 0;set scriptJobDetail($w,offset) 0;set scriptJobDetail($w,next) 0
-    set scriptJobDetail($w,record) {};set scriptJobDetail($w,status) {Loading exact execution…}
+    set scriptJobDetail($w,stream) legacy;set scriptJobDetail($w,streamLabel) {Legacy combined stream};set scriptJobDetail($w,record) {};set scriptJobDetail($w,status) {Loading exact execution…}
     toplevel $w;wm title $w "Execution details — $id";wm geometry $w 1100x780;wm minsize $w 680 480
     wm protocol $w WM_DELETE_WINDOW [list ::GX::scriptJobDetailClose $w]
     ttk::frame $w.actions;pack $w.actions -fill x
-    foreach {name label command} {script {Copy Script ID} scriptJobDetailCopyScript id {Copy Job ID} scriptJobDetailCopyId details {Copy details} scriptJobDetailCopyDetails copy {Copy selection} scriptJobDetailCopySelection all {Select all log page} scriptJobDetailSelectLog full {Copy full log} scriptJobDetailCopyFull save {Save full log…} scriptJobDetailSaveLog} {
+    foreach {name label command} {script {Copy Script ID} scriptJobDetailCopyScript id {Copy Job ID} scriptJobDetailCopyId details {Copy details} scriptJobDetailCopyDetails copy {Copy selection} scriptJobDetailCopySelection all {Select visible page} scriptJobDetailSelectLog full {Copy entire source} scriptJobDetailCopyFull save {Save source to file…} scriptJobDetailSaveLog} {
         ttk::button $w.actions.$name -text $label -command [list ::GX::$command $w];pack $w.actions.$name -side left -padx 3 -pady 3
     }
+    ttk::combobox $w.actions.source -state readonly -values {{Program output} {Program stderr} {Diagnostic log} {Legacy combined stream}} -textvariable ::GX::scriptJobDetail($w,streamLabel) -width 24
+    pack $w.actions.source -side left -padx 3
+    bind $w.actions.source <<ComboboxSelected>> [list ::GX::scriptJobDetailSourceChanged $w]
+    ttk::button $w.actions.publish -text {Publish source as Dataset…} -command [list ::GX::scriptJobDetailPublish $w]
+    pack $w.actions.publish -side left -padx 3
     bind $w.actions <Configure> {::GX::uiFieldControlsLayout %W %w}
     ttk::panedwindow $w.split -orient vertical;pack $w.split -fill both -expand 1 -padx 5
     ttk::frame $w.split.info;ttk::frame $w.split.log
@@ -126,8 +131,9 @@ proc ::GX::scriptJobDetailsWindow {id {session {}}} {
 }
 proc ::GX::scriptJobDetailCommand {w operation args} {
     variable scriptJobDetail
+    if {$operation eq {log_read}} {set args [linsert $args 0 $scriptJobDetail($w,stream)];set operation stream_read}
     if {$scriptJobDetail($w,session) eq {}} {return [scriptJobCommand $operation $scriptJobDetail($w,id) {*}$args]}
-    set op [expr {$operation eq "inspect" ? "inspect_run" : "run_log_read"}]
+    set op [expr {$operation eq "inspect" ? "inspect_run" : "run_stream_read"}]
     return [scriptJobCommand $op $scriptJobDetail($w,session) $scriptJobDetail($w,id) {*}$args]
 }
 proc ::GX::scriptJobDetailRefresh {w} {
@@ -145,6 +151,8 @@ proc ::GX::scriptJobDetailReady {w id gen response} {
         return
     }
     set job [dict get $response result];set scriptJobDetail($w,record) $job
+    if {[dict exists $job origin] && [dict get $job origin] eq {core_service}} {set scriptJobDetail($w,status) {Private CORE service: engineering inspection only. Ordinary user stream actions are unavailable.};$w.actions.publish state disabled}
+    if {$scriptJobDetail($w,stream) eq {legacy} && [string match {Separate*} [dict get $job log_streams]]} {set scriptJobDetail($w,streamLabel) {Program output};scriptJobDetailSourceChanged $w}
     wm title $w "[scriptJobField $job script_name] — [scriptJobField $job state] — $id"
     scriptJobTextReplace $w.info [scriptJobDetailsFormat $job]
     if {[scriptJobField $job state] in {QUEUED PREPARING RUNNING FINALIZING}} {
@@ -172,7 +180,7 @@ proc ::GX::scriptJobDetailLogReady {w id gen action response} {
     if {![dict get $response ok]} {set scriptJobDetail($w,status) "Log unavailable: [dict get $response error]";scriptJobTextReplace $w.log $scriptJobDetail($w,status);return}
     set page [dict get $response result]
     set scriptJobDetail($w,offset) [dict get $page offset];set scriptJobDetail($w,next) [dict get $page next_offset]
-    set scriptJobDetail($w,status) "Complete log accessible in 64 KiB pages — bytes [dict get $page offset] .. [dict get $page next_offset] / [dict get $page size]. [dict get $page diagnostic]"
+    set scriptJobDetail($w,status) "$scriptJobDetail($w,streamLabel) in 64 KiB pages — bytes [dict get $page offset] .. [dict get $page next_offset] / [dict get $page size]. [dict get $page diagnostic]"
     set text [dict get $page content]
     if {![dict get $page available]} {set text [dict get $page diagnostic]}
     scriptJobTextReplace $w.log $text [expr {!$scriptJobDetail($w,follow)}]
@@ -191,18 +199,18 @@ proc ::GX::scriptJobDetailCopyScript {w} {scriptJobClipboard [scriptJobField $::
 proc ::GX::scriptJobDetailCopyId {w} {scriptJobClipboard $::GX::scriptJobDetail($w,id)}
 proc ::GX::scriptJobDetailCopyDetails {w} {scriptJobClipboard [$w.info get 1.0 end-1c]}
 proc ::GX::scriptJobDetailCopySelection {w} {
-    if {[llength [$w.info tag ranges sel]]} {scriptJobTextCopy $w.info} else {scriptJobTextCopy $w.log}
+    if {[focus -displayof $w] eq "$w.info"} {scriptJobTextCopy $w.info} else {scriptJobTextCopy $w.log}
 }
 proc ::GX::scriptJobDetailSelectLog {w} {scriptJobTextSelectAll $w.log;scriptJobDetailSuspend $w}
 proc ::GX::scriptJobDetailCopyFull {w} {scriptJobDetailTransfer $w clipboard}
 proc ::GX::scriptJobDetailSaveLog {w} {
-    set path [tk_getSaveFile -parent $w -title {Save complete execution log} -initialfile "$::GX::scriptJobDetail($w,id).log"]
+    set path [tk_getSaveFile -parent $w -title "Save $::GX::scriptJobDetail($w,streamLabel)" -initialfile "$::GX::scriptJobDetail($w,id).log"]
     if {$path ne {}} {scriptJobDetailTransfer $w $path}
 }
 proc ::GX::scriptJobDetailTransfer {w destination} {
     variable scriptJobDetail
-    if {[info exists scriptJobDetail($w,transfer)]} {set scriptJobDetail($w,status) {Full-log transfer is already running};return}
-    set scriptJobDetail($w,transfer) $destination;set scriptJobDetail($w,transferBytes) 0
+    if {[info exists scriptJobDetail($w,transfer)]} {set scriptJobDetail($w,status) {A source transfer is already running};return}
+    set scriptJobDetail($w,transfer) $destination;set scriptJobDetail($w,transferBytes) 0;set scriptJobDetail($w,transferPending) {}
     unset -nocomplain scriptJobDetail($w,transferSize) scriptJobDetail($w,transferIdentity)
     if {$destination eq "clipboard"} {clipboard clear} else {
         set normalized [file normalize $destination]
@@ -214,8 +222,10 @@ proc ::GX::scriptJobDetailTransfer {w destination} {
             file lstat $destination st
             if {$st(type) ne "file" || $st(nlink)!=1} {unset scriptJobDetail($w,transfer);set scriptJobDetail($w,status) {Save requires a regular destination without links.};return}
         }
-        if {[catch {set ch [open $destination wb]} reason]} {unset scriptJobDetail($w,transfer);set scriptJobDetail($w,status) $reason;return}
-        set scriptJobDetail($w,transferChannel) $ch
+        set scriptJobDetail($w,exportDestination) $destination
+        set scriptJobDetail($w,exportPolicy) [expr {[file exists $destination]?{replace}:{create_only}}]
+        if {[catch {set ch [file tempfile temporary [file join [file dirname $destination] .gxtxt-stream-export-]];set scriptJobDetail($w,exportTemporary) $temporary} reason]} {unset scriptJobDetail($w,transfer);set scriptJobDetail($w,status) $reason;return}
+        fconfigure $ch -encoding binary -translation binary;set scriptJobDetail($w,transferChannel) $ch
     }
     scriptJobAsync [scriptJobDetailCommand $w log_read 0 65536 0] {} [list ::GX::scriptJobDetailTransferReady $w $scriptJobDetail($w,id)]
 }
@@ -236,17 +246,23 @@ proc ::GX::scriptJobDetailTransferReady {w id response} {
         }
     }
     if {$error ne {}} {
-        if {[info exists scriptJobDetail($w,transferChannel)]} {close $scriptJobDetail($w,transferChannel);unset scriptJobDetail($w,transferChannel)}
-        unset scriptJobDetail($w,transfer);set scriptJobDetail($w,status) "Full-log transfer stopped: $error";return
+        if {[info exists scriptJobDetail($w,transferChannel)]} {close $scriptJobDetail($w,transferChannel);unset scriptJobDetail($w,transferChannel);catch {file delete -- $scriptJobDetail($w,exportTemporary)}}
+        unset scriptJobDetail($w,transfer);set scriptJobDetail($w,status) "Source transfer stopped: $error";return
     }
     set take [expr {min([dict get $page next_offset]-[dict get $page offset],$scriptJobDetail($w,transferSize)-[dict get $page offset])}]
     set raw [binary decode base64 [dict get $page content_base64]]
     if {$take<[string length $raw]} {set raw [string range $raw 0 [expr {$take-1}]]}
-    if {$scriptJobDetail($w,transfer) eq "clipboard"} {clipboard append -- [encoding convertfrom utf-8 $raw]} else {puts -nonewline $scriptJobDetail($w,transferChannel) $raw}
+    if {$scriptJobDetail($w,transfer) eq "clipboard"} {set bytes $scriptJobDetail($w,transferPending)$raw;set split [scriptJobUtf8CompleteLength $bytes];clipboard append -- [encoding convertfrom utf-8 [string range $bytes 0 [expr {$split-1}]]];set scriptJobDetail($w,transferPending) [string range $bytes $split end]} else {puts -nonewline $scriptJobDetail($w,transferChannel) $raw}
     incr scriptJobDetail($w,transferBytes) $take
-    set scriptJobDetail($w,status) "Transferring complete retained log snapshot: $scriptJobDetail($w,transferBytes) / $scriptJobDetail($w,transferSize) bytes"
+    set scriptJobDetail($w,status) "Transferring complete retained source snapshot: $scriptJobDetail($w,transferBytes) / $scriptJobDetail($w,transferSize) bytes"
     if {[dict get $page eof] || $scriptJobDetail($w,transferBytes)>=$scriptJobDetail($w,transferSize)} {
-        if {[info exists scriptJobDetail($w,transferChannel)]} {close $scriptJobDetail($w,transferChannel);unset scriptJobDetail($w,transferChannel)}
+        if {$scriptJobDetail($w,transfer) eq {clipboard} && $scriptJobDetail($w,transferPending) ne {}} {clipboard append -- [encoding convertfrom utf-8 $scriptJobDetail($w,transferPending)]}
+        if {[info exists scriptJobDetail($w,transferChannel)]} {
+            close $scriptJobDetail($w,transferChannel);unset scriptJobDetail($w,transferChannel)
+            set temporary $scriptJobDetail($w,exportTemporary)
+            if {[catch {filePublicationCopy $temporary $scriptJobDetail($w,exportDestination) [sha256File $temporary] $scriptJobDetail($w,exportPolicy)} reason]} {set scriptJobDetail($w,status) "Atomic source export failed: $reason";catch {file delete -- $temporary};unset scriptJobDetail($w,transfer);return}
+            file delete -- $temporary
+        }
         unset scriptJobDetail($w,transfer);append scriptJobDetail($w,status) { — complete};return
     }
     scriptJobAsync [scriptJobDetailCommand $w log_read [dict get $page next_offset] 65536 0] {} [list ::GX::scriptJobDetailTransferReady $w $id]
@@ -254,6 +270,41 @@ proc ::GX::scriptJobDetailTransferReady {w id response} {
 proc ::GX::scriptJobDetailClose {w} {
     variable scriptJobDetail
     if {[info exists scriptJobDetail($w,timer)]} {after cancel $scriptJobDetail($w,timer)}
-    if {[info exists scriptJobDetail($w,transferChannel)]} {close $scriptJobDetail($w,transferChannel)}
+    if {[info exists scriptJobDetail($w,transferChannel)]} {close $scriptJobDetail($w,transferChannel);catch {file delete -- $scriptJobDetail($w,exportTemporary)}}
     catch {destroy $w};array unset scriptJobDetail $w,*
+}
+
+proc ::GX::scriptJobDetailSourceChanged {w} {
+    variable scriptJobDetail
+    if {[info exists scriptJobDetail($w,transfer)]} {set scriptJobDetail($w,streamLabel) [dict get {stdout {Program output} stderr {Program stderr} diagnostics {Diagnostic log} legacy {Legacy combined stream}} $scriptJobDetail($w,stream)];set scriptJobDetail($w,status) {Finish the current source transfer before switching streams};return}
+    set mapping [dict create {Program output} stdout {Program stderr} stderr {Diagnostic log} diagnostics {Legacy combined stream} legacy]
+    set scriptJobDetail($w,stream) [dict get $mapping $scriptJobDetail($w,streamLabel)]
+    set scriptJobDetail($w,offset) 0;set scriptJobDetail($w,next) 0
+    scriptJobDetailPage $w first
+}
+proc ::GX::scriptJobDetailPublish {w} {
+    set d $w.publish
+    uiFieldDialogCreate $d $w {Publish the selected execution source}
+    set ::GX::scriptJobDetail($w,publishId) "[string map {- _} $::GX::scriptJobDetail($w,id)]_$::GX::scriptJobDetail($w,stream)"
+    ttk::label $d.label -text "New Dataset ID for $::GX::scriptJobDetail($w,streamLabel):"
+    ttk::entry $d.id -textvariable ::GX::scriptJobDetail($w,publishId) -width 52
+    ttk::button $d.apply -text {Publish as canonical text Dataset} -command [list ::GX::scriptJobDetailPublishCommit $w]
+    pack $d.label $d.id $d.apply -fill x -padx 8 -pady 5
+    uiFieldDialogPresent $d $d.id 0
+}
+proc ::GX::scriptJobDetailPublishCommit {w} {
+    variable scriptJobDetail
+    if {[catch {set receipt [scriptJobStreamPublish $scriptJobDetail($w,id) $scriptJobDetail($w,stream) $scriptJobDetail($w,publishId) $scriptJobDetail($w,session)]} reason]} {set scriptJobDetail($w,status) "Publication failed: $reason";return}
+    set scriptJobDetail($w,status) "Published [dict get $receipt dataset_id] from $scriptJobDetail($w,streamLabel)"
+    uiFieldDialogClose $w.publish;refreshResults
+}
+
+# Byte pages may split a UTF-8 scalar; retain only the incomplete suffix.
+proc ::GX::scriptJobUtf8CompleteLength {bytes} {
+    set length [string length $bytes];if {!$length} {return 0}
+    set i [expr {$length-1}]
+    while {$i>=0 && $i>=$length-4} {binary scan [string index $bytes $i] cu byte;if {($byte&192)!=128} break;incr i -1}
+    if {$i<0 || $i<$length-4} {return $length}
+    set need [expr {$byte<128?1:($byte&224)==192?2:($byte&240)==224?3:($byte&248)==240?4:1}]
+    return [expr {$length-$i<$need?$i:$length}]
 }

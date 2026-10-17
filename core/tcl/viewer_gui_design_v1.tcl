@@ -172,7 +172,7 @@ proc ::GX::viewerGuiDesignCapture window {
             }
         }
     }
-    return [dict create schema gxtxt.viewer_interface_state.v1 values [viewerGuiDesignValues $window] bindings $bindings]
+    return [dict create schema gxtxt.viewer_interface_state.v1 values [viewerGuiDesignValues $window] bindings $bindings choices [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] choice_options {}] visibility [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] component_visibility {}] domain_state [viewerGuiDesignContextGet $window]]
 }
 proc ::GX::viewerGuiDesignComponent {window id} {
     foreach component [dict get $::GX::ViewerGui::instances $window design components] {if {[dict get $component id] eq $id} {return $component}}
@@ -296,6 +296,8 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
         dict set ::GX::ViewerGui::instances $window widgets $widgets
         uiFieldViewerRegionsSet $window [lsort -unique $regions]
         if {[dict exists $design shell status]} {[dict get $slots status] configure -text [dict get $design shell status]}
+        if {$mode eq {runtime} && [dict exists $design initial_action]} {viewerGuiDesignAction $window [dict get $design initial_action]}
+        if {$workspaceId eq {}} {dict set ::GX::ViewerGui::instances $window saved [viewerGuiDesignCapture $window]}
         return $slots
     } on error {message options} {destroy $window;return -options $options $message}
 }
@@ -601,6 +603,9 @@ proc ::GX::viewerGuiDesignRestore {window state} {
     viewerGuiDesignStateValidate $state
     dict set ::GX::ViewerGui::instances $window restoring 1
     try {
+        viewerGuiDesignContextSet $window [datasetPublicationV2DictDefault $state domain_state {}]
+        dict for {id choices} [datasetPublicationV2DictDefault $state choices {}] {if {[dict exists $::GX::ViewerGui::instances $window widgets $id]} {viewerGuiDesignChoicesSet $window $id $choices}}
+        dict for {id visible} [datasetPublicationV2DictDefault $state visibility {}] {if {[dict exists $::GX::ViewerGui::instances $window widgets $id]} {viewerGuiDesignComponentVisible $window $id $visible}}
         dict for {id value} [dict get $state values] {
             if {![info exists ::GX::ViewerGui::values($window,$id)]} continue
             set definition [viewerGuiDesignComponent $window $id]
@@ -677,7 +682,8 @@ proc ::GX::viewerGuiDesignTableSet {window id rows} {
 }
 proc ::GX::viewerGuiDesignValidate design {
     foreach field {schema title module_id provider_id version geometry requirements components handlers origin} {if {![dict exists $design $field]} {error "Viewer design requires '$field'."}}
-    foreach field [dict keys $design] {if {$field ni {schema title module_id provider_id version geometry requirements components handlers origin shell}} {error "Unknown Viewer design field '$field'."}}
+    foreach field [dict keys $design] {if {$field ni {schema title module_id provider_id version geometry requirements components handlers origin shell initial_action}} {error "Unknown Viewer design field '$field'."}}
+    if {[dict exists $design initial_action] && ![dict exists $design handlers [dict get $design initial_action]]} {error {Initial action must name a declared public handler}}
     if {[dict exists $design shell]} {
         foreach key [dict keys [dict get $design shell]] {if {$key ni {inspector_width status}} {error {Unknown Viewer shell property.}}}
         set width [datasetPublicationV2DictDefault [dict get $design shell] inspector_width 320]
@@ -786,7 +792,7 @@ proc ::GX::viewerGuiDesignValueSet {window id value} {
     if {$type in {field toggle choice combobox checkbutton}} {
         set datatype [datasetPublicationV2DictDefault $p datatype [dict get {field string toggle boolean choice choice combobox choice checkbutton boolean} $type]]
         set descriptor [dict create type $datatype]
-        if {$datatype eq {choice}} {dict set descriptor values [dict get $p choices]}
+        if {$datatype eq {choice}} {dict set descriptor values [dict get $p choices];if {[dict exists $::GX::ViewerGui::instances $window choice_options $id]} {dict set descriptor values [dict get $::GX::ViewerGui::instances $window choice_options $id]}}
         foreach key {min max} {if {[dict exists $p $key]} {dict set descriptor $key [dict get $p $key]}}
         set value [uiFieldNormalize $descriptor $value]
     }
@@ -811,6 +817,7 @@ proc ::GX::viewerGuiDesignWorkspaceClose window {
     sessionWorkspaceViewerAction [dict get $instance workspace_provider] [dict get $instance workspace_callbacks] $window close
 }
 proc ::GX::viewerGuiDesignWorkspaceOpen {module provider design mode handlers context} {
+    if {$context ne {} && ![catch {sessionWorkspaceGet $context} item]} {set context [dict create workspace_id [dict get $item workspace_id]]}
     set id [datasetPublicationV2DictDefault $context workspace_id {}]
     if {$id ni {{} new}} {set item [sessionWorkspaceGet $id];set payload [dict get $item payload];viewerGuiDesignStateValidate $payload;set design [dict get $payload design]}
     set window .designed_[incr ::GX::ViewerGui::serial]
@@ -964,3 +971,36 @@ proc ::GX::_viewerGuiSourceScopeDispose {tag expected actual} {
     if {$expected ne $actual} return
     foreach event [bind $tag] {bind $tag $event {}}
 }
+
+proc ::GX::viewerGuiDesignChoicesSet {window component choices} {
+    if {[llength $choices]>4096} {error {Choice projection exceeds 4096 entries}}
+    set definition [viewerGuiDesignComponent $window $component]
+    set widget [dict get $::GX::ViewerGui::instances $window widgets $component]
+    if {[dict get $definition type] eq {choice}} {set widget $widget.entry}
+    if {[winfo class $widget] ne {TCombobox}} {error {The component is not a public choice control}}
+    $widget configure -values $choices
+    dict set ::GX::ViewerGui::instances $window choice_options $component $choices
+}
+proc ::GX::viewerGuiDesignComponentVisible {window component visible} {
+    if {![string is boolean -strict $visible]} {error {Visibility must be boolean}}
+    set widget [dict get $::GX::ViewerGui::instances $window widgets $component]
+    if {[winfo manager $widget] eq {pack}} {error {Use the existing grid component layout for conditional fields}}
+    if {$visible} {grid $widget} else {grid remove $widget}
+    dict set ::GX::ViewerGui::instances $window component_visibility $component $visible
+}
+proc ::GX::viewerGuiDesignTextSet {window component content} {
+    set definition [viewerGuiDesignComponent $window $component]
+    if {[string bytelength $content]>1048576} {error {Presentation text exceeds 1 MiB; use bounded consultation}}
+    set widget [dict get $::GX::ViewerGui::instances $window widgets $component]
+    switch [dict get $definition type] {
+        log {$widget configure -state normal;$widget delete 1.0 end;$widget insert 1.0 $content;$widget configure -state disabled}
+        label - status {$widget configure -text $content}
+        default {error {Select an existing public read-only text component}}
+    }
+}
+
+proc ::GX::viewerGuiDesignContextSet {window value} {
+    if {[catch {dict size $value}] || [string bytelength $value]>65536} {error {Viewer domain state requires a bounded inert dictionary of at most 64 KiB}}
+    dict set ::GX::ViewerGui::instances $window domain_state $value
+}
+proc ::GX::viewerGuiDesignContextGet {window} {return [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] domain_state {}]}

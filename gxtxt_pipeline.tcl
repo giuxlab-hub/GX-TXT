@@ -109,7 +109,7 @@
 # Full release history: CHANGELOG.md
 
 namespace eval ::GX {
-    variable version "0.9.8.10-dev-104"
+    variable version "0.9.8.10-dev-106"
     variable scriptDir [file dirname [file normalize [info script]]]
     variable cfg
     variable ch
@@ -317,6 +317,10 @@ proc ::GX::main {} {
     return 0
 }
 
+source [file join $::GX::scriptDir core tcl document_source_api_v1.tcl]
+source [file join $::GX::scriptDir core tcl source_surface_api_v1.tcl]
+source [file join $::GX::scriptDir core tcl python_environment_api_v1.tcl]
+source [file join $::GX::scriptDir app script_debug_surface.tcl]
 source [file join $::GX::scriptDir core tcl dataset_viewer_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_dataset_coordinates_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_dataset_filters_v1.tcl]

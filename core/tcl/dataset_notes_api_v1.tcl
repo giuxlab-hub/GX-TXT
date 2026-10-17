@@ -702,31 +702,7 @@ proc ::GX::chooseSession {} {
 # Results expose whether a dataset carries user-authored notes and where the
 # corresponding Markdown file lives.
 # Retain the older Results text-widget path for programmatic and historical GUI callers.
-proc ::GX::refreshResults {} {
-    ::GX::refreshResults_v091_before_dataset_notes
-    variable ui
-    variable currentSession
-    if {$currentSession eq "" || ![file isdirectory $currentSession]} return
-    if {![info exists ui(results)] || ![winfo exists $ui(results)]} return
-    if {[catch {loadDatasetRegistry $currentSession}]} return
-    set ids {}
-    foreach id [datasetRegistryIds] {
-        set rel [datasetField $id user_notes_file ""]
-        if {$rel ne "" && [file isfile [file join $currentSession $rel]]} { lappend ids $id; continue }
-        if {[string trim [datasetField $id user_notes_markup ""]] ne ""} { lappend ids $id }
-    }
-    if {![llength $ids]} return
-    set w $ui(results); $w configure -state normal
-    $w insert end "\n=== DATASET USER NOTES ===\n"
-    foreach id $ids {
-        set rel [datasetField $id user_notes_file [datasetNoteRelativePath $id]]
-        $w insert end "Dataset: $id  ·  $rel"
-        set t [datasetField $id user_notes_updated_at ""]
-        if {$t ne ""} { $w insert end "  ·  updated $t" }
-        $w insert end "\n"
-    }
-    $w configure -state disabled
-}
+proc ::GX::refreshResults {} {return [resultsRefresh]}
 
 # Add reusable entry points without disturbing the existing Results/Session
 # Files layouts.

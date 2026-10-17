@@ -1,3 +1,7 @@
+# 1.1.0 — Debian dev106
+
+Unified public source/document, managed execution and scientific Viewer integration. See the module manual and dev106 acceptance ledger for exact tested scope and remaining limits.
+
 # Changelog
 
 ## 1.0.4

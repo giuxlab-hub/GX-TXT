@@ -6,14 +6,13 @@ proc ::GX::moduleAnalysisCapabilities {module} {
     set reason {}
     if {[moduleField $module descriptor {}] eq {}} {set reason {Unknown module}}
     if {$reason eq {} && (![moduleIsRunnableAnalysis $module] || [moduleField $module runner {}] ne "standard_octave")} {set reason {Target requires a runnable Standard Octave Analysis module}}
-    if {$reason eq {} && ![moduleIsEnabled $module]} {set reason {Target module is disabled}}
     foreach dependency [splitList [moduleField $module depends {}]] {
-        if {$reason eq {} && ([moduleField $dependency descriptor {}] eq {} || ![moduleIsEnabled $dependency])} {set reason "Required module '$dependency' is unavailable or disabled"}
+        if {$reason eq {} && [moduleField $dependency descriptor {}] eq {}} {set reason "Required module '$dependency' is not installed"}
     }
     return [dict create api_id MODULE_API_v1 operation targeted_analysis module_id $module available [expr {$reason eq {}}] reason $reason runner [moduleField $module runner {}] request_fields {session_token sources config tables bindings document_id document_revision document_generation} execution_owner standard_analysis_queue mutation_scope invocation_only host_only 1]
 }
 proc ::GX::_moduleAnalysisCaller {caller {admission 1}} {
-    if {[moduleField $caller kind {}] ne "viewer" || ($admission && ![moduleIsEnabled $caller])} {error {A registered enabled Viewer is required for targeted Analysis admission}}
+    if {[moduleField $caller kind {}] ne "viewer"} {error {An installed registered Viewer is required for targeted Analysis admission}}
 }
 proc ::GX::_moduleAnalysisReceiptPath {module run} {
     if {[moduleField $module descriptor {}] eq {} || ![regexp {^[A-Za-z0-9_.-]+$} $run]} {error {Invalid Analysis receipt identity}}
@@ -91,6 +90,22 @@ proc ::GX::moduleAnalysisSubmit {caller module request} {
             dict for {key value} [dict get $request config] {
                 if {$key ni [moduleConfigKeys $module]} {error "Unknown module parameter '$key'"}
                 set type [moduleConfigField $module $key type string]
+                if {$type eq {variable}} {
+                    if {$value ne {}} {
+                        set source [moduleConfigField $module $key source primary]
+                        set row [analysisSourceFindRow $module $source]
+                        set dataset [analysisSourceRowDataset $module $row]
+                        set variable [datasetVariableV3ById $dataset $value]
+                        if {![dict get $variable enabled]} {error "Variable '$value' is disabled in the canonical source schema"}
+                    }
+                    set ::GX::moduleCfg($module,$key) $value
+                    continue
+                }
+                if {$type eq {selection}} {
+                    set ::GX::moduleCfg($module,$key) $value
+                    datasetSelectionValidateConfig $module $key
+                    continue
+                }
                 if {$type ni [dict get [uiFieldApiInfo] types]} {error "Parameter '$key' requires its typed Configuration authority"}
                 set descriptor [dict create type $type label [moduleConfigField $module $key label $key]]
                 foreach field {required min max} {set v [moduleConfigField $module $key $field {}];if {$v ne {}} {dict set descriptor $field $v}}

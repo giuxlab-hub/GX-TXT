@@ -23,6 +23,7 @@ proc ::GX::scriptRunBindingsBuild {w row} {
     variable scriptRunUi
     set scriptRunUi(session) $::GX::currentSession
     set scriptRunUi(namespace) [datasetNamespaceCurrentGet]
+    set scriptRunUi(importOverride) 0
     set scriptRunUi(input_count) 0;set scriptRunUi(eligible) {};set scriptRunUi(output_id) {};set scriptRunUi(output_label) {};set scriptRunUi(replace) 0
     foreach item [dict get [datasetCatalogSnapshot] datasets] {
         if {[dict get $item namespace] eq $scriptRunUi(namespace)} {lappend scriptRunUi(eligible) [dict get $item dataset_id]}
@@ -58,7 +59,14 @@ proc ::GX::scriptWorkspaceSubmitted {response} {
     variable scriptRunUi
     if {![winfo exists .gxtxtScriptRun]} return
     .gxtxtScriptRun.run state !disabled
-    if {![dict get $response ok]} {set scriptRunUi(status) "Submission failed: [dict get $response error]";return}
+    if {![dict get $response ok]} {
+        set scriptRunUi(status) "Submission failed: [dict get $response error]"
+        if {[dict exists $response error_code] && [dict get $response error_code] eq {GXTXT PYTHON IMPORT_PREFLIGHT} && [string match {*MISSING*} [dict get $response error]]} {
+            set answer [tk_messageBox -parent .gxtxtScriptRun -icon warning -type yesno -default no -title {Python imports unavailable} -message "[dict get $response error]\nContinue deliberately despite missing imports?"]
+            if {$answer eq {yes}} {set scriptRunUi(importOverride) 1;scriptWorkspaceRunCommit}
+        }
+        return
+    }
     set r [dict get $response result]
     set scriptRunUi(status) "[dict get $r state]: [dict get $r id]"
     if {[dict exists $r deduplicated] && [dict get $r deduplicated]} {append scriptRunUi(status) { (existing equivalent job)}}

@@ -3814,17 +3814,17 @@ proc ::GX::buildStandardAnalysisQueue_before_plot_variant {{target ""}} {
     foreach id $owners {
         if {[moduleField $id kind ""] ne "analysis"} continue
         if {[moduleField $id runner ""] eq "script_module"} {
-            if {![moduleIsEnabled $id] || ($target eq "" && ![moduleRunIsSelected $id])} continue
+            if {$target eq "" && (![moduleIsEnabled $id] || ![moduleRunIsSelected $id])} continue
             lappend q [scriptModuleBuildQueueItem $id]
             continue
         }
         if {$id eq "analysis.python_script" && [moduleField $id runner ""] eq "script_execution"} {
-            if {![moduleIsEnabled $id] || ($target eq "" && ![moduleRunIsSelected $id])} continue
+            if {$target eq "" && (![moduleIsEnabled $id] || ![moduleRunIsSelected $id])} continue
             lappend q [scriptAnalysisBuildQueueItem $id]
             continue
         }
         if {[moduleField $id runner ""] ne "standard_octave"} continue
-        if {![moduleIsEnabled $id] || ($target eq "" && ![moduleRunIsSelected $id])} continue
+        if {$target eq "" && (![moduleIsEnabled $id] || ![moduleRunIsSelected $id])} continue
         if {[moduleField $id ui_replaced_by_core 0] && (![info exists ::GX::cliMode] || !$::GX::cliMode)} continue
         if {$id eq "analysis.octave_script" && $::GX::moduleCfg($id,source_mode) eq "registered_script"} {
             lappend q [scriptAnalysisBuildQueueItem $id]
