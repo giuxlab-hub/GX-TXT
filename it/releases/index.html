@@ -50,15 +50,15 @@
       <h1 id="releases-title">Come si è evoluto il framework scientifico.</h1>
       <p class="lead">Una selezione delle novità più significative di ogni versione pubblicata, dalla prima copia ripulita su GitHub fino all’ultima release coperta da questa pagina.</p>
       <div class="buttons">
-        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/blob/93d326af356ce1bc9237e93d0ebff8c0f87f75ee/CHANGELOG.md">Consulta il CHANGELOG completo ↗</a>
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/blob/e07376e0a62e0eecf1737da33c87bbbb41273f4b/CHANGELOG.md">Consulta il CHANGELOG completo ↗</a>
         <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT">Vai ai sorgenti ↗</a>
       </div>
     </div>
     <div class="release-stat" aria-label="VERSIONI DOCUMENTATE">
       <div class="release-stat-head">GX-TXT / 0.9.8.10</div>
-      <div class="release-stat-number">08</div>
+      <div class="release-stat-number">09</div>
       <div class="release-stat-label">REVISIONI PUBBLICHE</div>
-      <div class="release-stat-row"><span>VERSIONI DOCUMENTATE</span><strong>dev-095 → dev-102</strong></div>
+      <div class="release-stat-row"><span>VERSIONI DOCUMENTATE</span><strong>dev-095 → dev-103</strong></div>
       <div class="release-stat-row"><span>FONTE PRINCIPALE</span><strong>CHANGELOG delle versioni</strong></div>
     </div>
   </section>
@@ -66,6 +66,7 @@
     <div class="wrap">
       <nav class="release-jump" aria-label="Vai a una release">
         <span>Vai a una release</span>
+<a href="#dev-103" aria-label="GX-TXT 0.9.8.10-dev-103">dev-103</a>
 <a href="#dev-102" aria-label="GX-TXT 0.9.8.10-dev-102">dev-102</a>
 <a href="#dev-101" aria-label="GX-TXT 0.9.8.10-dev-101">dev-101</a>
 <a href="#dev-100" aria-label="GX-TXT 0.9.8.10-dev-100">dev-100</a>
@@ -76,13 +77,36 @@
 <a href="#dev-095" aria-label="GX-TXT 0.9.8.10-dev-095">dev-095</a>
       </nav>
       <ol class="release-timeline">
+<li class="release-entry" id="dev-103">
+  <div class="release-marker" aria-hidden="true"><span>103</span></div>
+  <article class="release-panel release-featured">
+<div class="release-head">
+  <div><div class="release-version">0.9.8.10-dev-103</div>
+  <h2>Nodi di calcolo remoti e ambiente scientifico più reattivo</h2></div>
+  <span class="release-current">ULTIMA VERSIONE DI QUESTA CRONOLOGIA</span>
+</div>
+    <p class="release-intro">GX-TXT estende l&#39;esecuzione scientifica gestita e i servizi Dataset oltre il processo locale, migliorando la preparazione di Preview, la ricerca dei Viewer e la coerenza dei Workspace interattivi.</p>
+    <h3 class="release-group-label">Novità principali</h3>
+    <ul class="release-bullets"><li>I provider dei nodi di calcolo usano TLS mutuale, autorizzazioni per Session, trasferimento verificato degli input e il supervisore Script Jobs esistente. Esecuzioni, log e annullamento restano gestiti senza consentire comandi shell remoti arbitrari.</li>
+<li>I Dataset canonici possono essere consultati da remoto tramite intervalli e hyperslab tipizzati con trasporto verificato tramite SHA; la copia locale completa richiede un&#39;operazione esplicita.</li>
+<li>Dataset Preview prepara le rappresentazioni scientifiche in modo asincrono, con avanzamento, annullamento e cache verificata eliminabile. Modificare i controlli lascia visibile l&#39;ultimo frame valido finché non si sceglie Render.</li>
+<li>Il catalogo raggruppa 30 provider Viewer, ciascuno con immagini scientifiche dedicate e disponibilità persistente. I comandi GUI condivisi e i dialoghi Replicate/Curve Workbench riutilizzano le autorità CORE.</li></ul>
+    <div class="release-scope"><span>Ambito scientifico</span><p>I nodi di calcolo sono stati verificati con processi Linux separati e TLS su localhost, non tra due macchine fisiche. La preparazione iniziale di Preview può richiedere tempo; non si dichiarano test GUI Windows né intervalli avanzati di covarianza condivisa.</p></div>
+<div class="release-actions">
+<a href="https://github.com/giuxlab-hub/GX-TXT/commit/e07376e0a62e0eecf1737da33c87bbbb41273f4b">Apri il commit esatto ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/e07376e0a62e0eecf1737da33c87bbbb41273f4b/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/e07376e0a62e0eecf1737da33c87bbbb41273f4b/docs/api/SCIENTIFIC_EXECUTION_API_v1.md">Documentazione pubblica pertinente ↗</a>
+</div>
+  </article>
+</li>
+
 <li class="release-entry" id="dev-102">
   <div class="release-marker" aria-hidden="true"><span>102</span></div>
-  <article class="release-panel release-featured">
+  <article class="release-panel">
 <div class="release-head">
   <div><div class="release-version">0.9.8.10-dev-102</div>
   <h2>Curve replicate e consenso, Worksheet 2.1</h2></div>
-  <span class="release-current">ULTIMA VERSIONE DI QUESTA CRONOLOGIA</span>
+
 </div>
     <p class="release-intro">GX-TXT introduce un Viewer e un&#39;API scientifica pubblica per confrontare curve correlate, mentre lo Scientific Worksheet diventa uno spazio di lavoro più completo, interattivo e programmabile.</p>
     <h3 class="release-group-label">Novità principali</h3>
@@ -267,7 +291,7 @@
 
 <footer><div class="wrap">
 <div><p><strong>GX-TXT</strong> — Sviluppato da <a href="https://giux-lab.it/" rel="author">Giux-Lab</a>.</p>
-<p>Open source · GNU GPL-3.0-or-later · 8 release</p></div>
+<p>Open source · GNU GPL-3.0-or-later · 9 release</p></div>
 <div class="links">
 <a href="../">Panoramica</a>
 <a href="../#guides">Guide</a>

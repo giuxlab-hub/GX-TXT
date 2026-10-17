@@ -40,7 +40,7 @@ for (const r of data.releases) {
 const translations = {
   en: {
     title: 'GX-TXT development highlights | dev-' + data.coverage.first + ' to dev-' + data.coverage.last,
-    description: 'The development of GX-TXT through eight public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.',
+    description: 'The development of GX-TXT through ' + data.releases.length + ' public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.',
     heroTag: 'GX-TXT / PUBLIC DEVELOPMENT HISTORY',
     heading: 'How the scientific workbench evolved.',
     lead: 'A curated record of the features that mattered most in each published source version, from the first clean GitHub snapshot to the current milestone covered here.',
@@ -252,4 +252,4 @@ for (const [lang,relative] of outputs) {
   fs.writeFileSync(output,render(lang),'utf8');
   console.log(lang.toUpperCase() + '_RELEASE_PAGE=' + relative + ' BYTES=' + fs.statSync(output).size);
 }
-console.log('RELEASES_RENDERED=8 VERSION_IDS=' + data.releases.map(x=>x.id).join(','));
+console.log('RELEASES_RENDERED=' + data.releases.length + ' VERSION_IDS=' + data.releases.map(x=>x.id).join(','));

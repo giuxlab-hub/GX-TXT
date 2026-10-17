@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0c131d">
-  <title>GX-TXT development highlights | dev-095 to dev-102</title>
-  <meta name="description" content="The development of GX-TXT through eight public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.">
+  <title>GX-TXT development highlights | dev-095 to dev-103</title>
+  <meta name="description" content="The development of GX-TXT through 9 public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.">
   <meta name="author" content="Giux-Lab">
   <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/releases/">
   <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/releases/">
@@ -17,8 +17,8 @@
   <link rel="stylesheet" href="../assets/releases.css">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="GX-TXT / Giux-Lab">
-  <meta property="og:title" content="GX-TXT development highlights | dev-095 to dev-102">
-  <meta property="og:description" content="The development of GX-TXT through eight public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.">
+  <meta property="og:title" content="GX-TXT development highlights | dev-095 to dev-103">
+  <meta property="og:description" content="The development of GX-TXT through 9 public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.">
   <meta property="og:url" content="https://giuxlab-hub.github.io/GX-TXT/releases/">
 </head>
 
@@ -50,15 +50,15 @@
       <h1 id="releases-title">How the scientific workbench evolved.</h1>
       <p class="lead">A curated record of the features that mattered most in each published source version, from the first clean GitHub snapshot to the current milestone covered here.</p>
       <div class="buttons">
-        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/blob/93d326af356ce1bc9237e93d0ebff8c0f87f75ee/CHANGELOG.md">Read complete CHANGELOG ↗</a>
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/blob/e07376e0a62e0eecf1737da33c87bbbb41273f4b/CHANGELOG.md">Read complete CHANGELOG ↗</a>
         <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT">View project source ↗</a>
       </div>
     </div>
     <div class="release-stat" aria-label="COVERED SOURCE HISTORY">
       <div class="release-stat-head">GX-TXT / 0.9.8.10</div>
-      <div class="release-stat-number">08</div>
+      <div class="release-stat-number">09</div>
       <div class="release-stat-label">PUBLIC REVISIONS</div>
-      <div class="release-stat-row"><span>COVERED SOURCE HISTORY</span><strong>dev-095 → dev-102</strong></div>
+      <div class="release-stat-row"><span>COVERED SOURCE HISTORY</span><strong>dev-095 → dev-103</strong></div>
       <div class="release-stat-row"><span>PRIMARY REFERENCE</span><strong>Versioned CHANGELOG</strong></div>
     </div>
   </section>
@@ -66,6 +66,7 @@
     <div class="wrap">
       <nav class="release-jump" aria-label="Go to a release">
         <span>Go to a release</span>
+<a href="#dev-103" aria-label="GX-TXT 0.9.8.10-dev-103">dev-103</a>
 <a href="#dev-102" aria-label="GX-TXT 0.9.8.10-dev-102">dev-102</a>
 <a href="#dev-101" aria-label="GX-TXT 0.9.8.10-dev-101">dev-101</a>
 <a href="#dev-100" aria-label="GX-TXT 0.9.8.10-dev-100">dev-100</a>
@@ -76,13 +77,36 @@
 <a href="#dev-095" aria-label="GX-TXT 0.9.8.10-dev-095">dev-095</a>
       </nav>
       <ol class="release-timeline">
+<li class="release-entry" id="dev-103">
+  <div class="release-marker" aria-hidden="true"><span>103</span></div>
+  <article class="release-panel release-featured">
+<div class="release-head">
+  <div><div class="release-version">0.9.8.10-dev-103</div>
+  <h2>Remote compute nodes and a more responsive scientific workspace</h2></div>
+  <span class="release-current">LATEST IN THIS TIMELINE</span>
+</div>
+    <p class="release-intro">GX-TXT extends its managed scientific execution and Dataset services beyond the local process, while improving Preview preparation, Viewer discovery and the consistency of interactive scientific workspaces.</p>
+    <h3 class="release-group-label">Selected changes</h3>
+    <ul class="release-bullets"><li>Trusted compute-node providers use mutual TLS, per-Session authorization, verified input staging and the existing durable Script Job supervisor. Runs can be observed, cancelled and reconnected without accepting arbitrary remote shell commands.</li>
+<li>Canonical Datasets can be consulted remotely through bounded typed ranges and hyperslabs with SHA-verified transport; downloading a complete local copy is a separate, explicit operation.</li>
+<li>Dataset Preview prepares standard scientific representations asynchronously, offers progress and cancellation, and retains a disposable verified cache. Editing presentation settings leaves the last successful frame visible until Render.</li>
+<li>The grouped catalog presents distinct scientific artwork for 30 Viewer providers, with persisted presentation availability. Shared Viewer GUI controls and Replicate/Curve Workbench dialogs reuse established CORE authorities.</li></ul>
+    <div class="release-scope"><span>Scientific scope</span><p>Compute-node acceptance used separately running Linux client/agent/Supervisor processes over localhost TLS, not two physical machines. Large Preview preparation can still take time; Windows GUI acceptance and advanced shared-covariance intervals are not claimed.</p></div>
+<div class="release-actions">
+<a href="https://github.com/giuxlab-hub/GX-TXT/commit/e07376e0a62e0eecf1737da33c87bbbb41273f4b">View exact Git commit ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/e07376e0a62e0eecf1737da33c87bbbb41273f4b/CHANGELOG.md">CHANGELOG at this revision ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/e07376e0a62e0eecf1737da33c87bbbb41273f4b/docs/api/SCIENTIFIC_EXECUTION_API_v1.md">Relevant public documentation ↗</a>
+</div>
+  </article>
+</li>
+
 <li class="release-entry" id="dev-102">
   <div class="release-marker" aria-hidden="true"><span>102</span></div>
-  <article class="release-panel release-featured">
+  <article class="release-panel">
 <div class="release-head">
   <div><div class="release-version">0.9.8.10-dev-102</div>
   <h2>Replicate / Consensus Curves and Worksheet 2.1</h2></div>
-  <span class="release-current">LATEST IN THIS TIMELINE</span>
+
 </div>
     <p class="release-intro">GX-TXT adds a dedicated Viewer and a public scientific API for comparing related curves, while the scientific Worksheet becomes more capable as an interactive, scriptable workspace.</p>
     <h3 class="release-group-label">Selected changes</h3>
@@ -267,7 +291,7 @@
 
 <footer><div class="wrap">
 <div><p><strong>GX-TXT</strong> — Developed by <a href="https://giux-lab.it/" rel="author">Giux-Lab</a>.</p>
-<p>Open source · GNU GPL-3.0-or-later · 8 releases</p></div>
+<p>Open source · GNU GPL-3.0-or-later · 9 releases</p></div>
 <div class="links">
 <a href="../">Overview</a>
 <a href="../#guides">Guides</a>

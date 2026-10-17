@@ -4,10 +4,37 @@
   "sourceRepository": "https://github.com/giuxlab-hub/GX-TXT",
   "coverage": {
     "first": "095",
-    "last": "102",
-    "count": 8
+    "last": "103",
+    "count": 9
   },
   "releases": [
+    {
+      "id": "103",
+      "sha": "e07376e0a62e0eecf1737da33c87bbbb41273f4b",
+      "en": {
+        "title": "Remote compute nodes and a more responsive scientific workspace",
+        "intro": "GX-TXT extends its managed scientific execution and Dataset services beyond the local process, while improving Preview preparation, Viewer discovery and the consistency of interactive scientific workspaces.",
+        "highlights": [
+          "Trusted compute-node providers use mutual TLS, per-Session authorization, verified input staging and the existing durable Script Job supervisor. Runs can be observed, cancelled and reconnected without accepting arbitrary remote shell commands.",
+          "Canonical Datasets can be consulted remotely through bounded typed ranges and hyperslabs with SHA-verified transport; downloading a complete local copy is a separate, explicit operation.",
+          "Dataset Preview prepares standard scientific representations asynchronously, offers progress and cancellation, and retains a disposable verified cache. Editing presentation settings leaves the last successful frame visible until Render.",
+          "The grouped catalog presents distinct scientific artwork for 30 Viewer providers, with persisted presentation availability. Shared Viewer GUI controls and Replicate/Curve Workbench dialogs reuse established CORE authorities."
+        ],
+        "caveat": "Compute-node acceptance used separately running Linux client/agent/Supervisor processes over localhost TLS, not two physical machines. Large Preview preparation can still take time; Windows GUI acceptance and advanced shared-covariance intervals are not claimed."
+      },
+      "it": {
+        "title": "Nodi di calcolo remoti e ambiente scientifico più reattivo",
+        "intro": "GX-TXT estende l'esecuzione scientifica gestita e i servizi Dataset oltre il processo locale, migliorando la preparazione di Preview, la ricerca dei Viewer e la coerenza dei Workspace interattivi.",
+        "highlights": [
+          "I provider dei nodi di calcolo usano TLS mutuale, autorizzazioni per Session, trasferimento verificato degli input e il supervisore Script Jobs esistente. Esecuzioni, log e annullamento restano gestiti senza consentire comandi shell remoti arbitrari.",
+          "I Dataset canonici possono essere consultati da remoto tramite intervalli e hyperslab tipizzati con trasporto verificato tramite SHA; la copia locale completa richiede un'operazione esplicita.",
+          "Dataset Preview prepara le rappresentazioni scientifiche in modo asincrono, con avanzamento, annullamento e cache verificata eliminabile. Modificare i controlli lascia visibile l'ultimo frame valido finché non si sceglie Render.",
+          "Il catalogo raggruppa 30 provider Viewer, ciascuno con immagini scientifiche dedicate e disponibilità persistente. I comandi GUI condivisi e i dialoghi Replicate/Curve Workbench riutilizzano le autorità CORE."
+        ],
+        "caveat": "I nodi di calcolo sono stati verificati con processi Linux separati e TLS su localhost, non tra due macchine fisiche. La preparazione iniziale di Preview può richiedere tempo; non si dichiarano test GUI Windows né intervalli avanzati di covarianza condivisa."
+      },
+      "doc": "docs/api/SCIENTIFIC_EXECUTION_API_v1.md"
+    },
     {
       "id": "102",
       "sha": "93d326af356ce1bc9237e93d0ebff8c0f87f75ee",
