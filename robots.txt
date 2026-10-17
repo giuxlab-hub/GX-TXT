@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://giuxlab-hub.github.io/GX-TXT/sitemap.xml

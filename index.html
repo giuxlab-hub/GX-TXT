@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0c131d">
+  <title>GX-TXT — Experimental data, analysis and reproducible scientific work</title>
+  <meta name="description" content="GX-TXT is an open-source desktop workbench that keeps instrument measurements, scientific Datasets, analyses, Python/Octave scripts, plots and provenance together. Developed by Giux-Lab.">
+  <meta name="author" content="Giux-Lab">
+  <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/">
+  <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/">
+  <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="assets/style.css">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="GX-TXT / Giux-Lab">
+  <meta property="og:title" content="GX-TXT — From measurements to traceable results">
+  <meta property="og:description" content="An open-source desktop environment for experimental data, scripts, analysis and scientific visualization.">
+  <meta property="og:url" content="https://giuxlab-hub.github.io/GX-TXT/">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "GX-TXT",
+    "url": "https://giuxlab-hub.github.io/GX-TXT/",
+    "codeRepository": "https://github.com/giuxlab-hub/GX-TXT",
+    "softwareHelp": "https://gxtxt.giux-lab.it/",
+    "applicationCategory": "ScienceApplication",
+    "operatingSystem": "GNU/Linux",
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "author": {
+      "@type": "Organization",
+      "name": "Giux-Lab",
+      "url": "https://giux-lab.it/"
+    },
+    "description": "Open-source desktop environment for experimental Datasets, numerical analysis, scientific plots and retained Session provenance."
+  }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header>
+    <div class="wrap header">
+      <a class="brand" href="./" aria-label="GX-TXT home">
+        <span class="logo" aria-hidden="true">GX</span>
+        <span><strong>GX-TXT</strong><small>Scientific workbench</small></span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a href="#workflow">Workflow</a>
+        <a href="#resources">Resources</a>
+        <a href="#projects">Lab projects</a>
+        <a href="https://giux-lab.it/" rel="me">Giux-Lab ↗</a>
+      </nav>
+      <div class="lang" aria-label="Language selection">
+        <a href="./" hreflang="en" lang="en" aria-current="page">EN</a>
+        <span aria-hidden="true">/</span>
+        <a href="it/" hreflang="it" lang="it">IT</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div>
+        <div class="tag">Open-source · GNU/Linux · Scientific experiments</div>
+        <h1 id="hero-title">From raw measurements to <span>traceable results.</span></h1>
+        <p class="lead">GX-TXT brings oscilloscope captures, spectra, curves, images and laboratory files into one scientific Session. Keep the original data, run analyses, publish derived Datasets and see exactly how each result was produced.</p>
+        <div class="buttons">
+          <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT">Explore the source <span aria-hidden="true">↗</span></a>
+          <a class="button secondary" href="https://gxtxt.giux-lab.it/">Read the online handbook <span aria-hidden="true">↗</span></a>
+        </div>
+        <p class="footnote"><span class="dot" aria-hidden="true"></span>Active beta development · GPL-3.0-or-later · Developed by <a href="https://giux-lab.it/" rel="author">Giux-Lab</a></p>
+      </div>
+      <div class="instrument" aria-label="Illustrative scientific signal trace and provenance panel">
+        <div class="windowtop"><i></i><i></i><i></i><small>session / analysis / plot</small></div>
+        <div class="metrics">
+          <div class="metric"><small>DATA SOURCE</small><b>instrument.capture</b></div>
+          <div class="metric"><small>VARIABLE ID</small><b>signal.voltage</b></div>
+          <div class="metric"><small>ANALYSIS</small><b>spectral + fitting</b></div>
+          <div class="metric"><small>PROVENANCE</small><b>preserved ✓</b></div>
+        </div>
+        <div class="plot">
+          <div class="plothead"><span>SCIENTIFIC PLOT / 2D</span><span>t [s] · U [V]</span></div>
+          <svg viewBox="0 0 510 245" aria-hidden="true" focusable="false">
+            <defs><clipPath id="plotClip"><rect x="16" y="8" width="478" height="210" rx="3"></rect></clipPath></defs>
+            <g class="tracegrid">
+              <path d="M16 8V218M96 8V218M176 8V218M256 8V218M336 8V218M416 8V218M494 8V218"></path>
+              <path d="M16 8H494M16 50H494M16 92H494M16 134H494M16 176H494M16 218H494"></path>
+            </g>
+            <g clip-path="url(#plotClip)">
+              <path class="trace2" d="M16 140 C35 117 50 93 66 96 S98 158 120 151 S153 92 174 89 S215 157 232 158 S265 94 286 90 S325 164 344 157 S382 84 401 89 S441 163 461 155 S490 120 510 94"></path>
+              <path class="trace1" d="M16 162 C29 163 36 141 51 114 S79 78 95 84 S118 118 131 151 S155 187 173 174 S194 123 213 105 S245 102 263 132 S291 180 308 176 S331 123 353 102 S381 90 400 125 S428 176 446 165 S476 102 495 89"></path>
+              <circle class="pulse" cx="353" cy="102" r="5"></circle>
+            </g>
+          </svg>
+          <div class="plotfoot"><span>source rows retained</span><span>derived result → canonical Dataset</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="workflow" aria-labelledby="workflow-title">
+      <div class="wrap">
+        <div class="sectionintro">
+          <div class="tag">The scientific workflow</div>
+          <h2 id="workflow-title">One experiment. One connected record.</h2>
+          <p>Measurements, scripts, results and observations stay in the same project context instead of becoming unrelated files across separate applications.</p>
+        </div>
+        <div class="steps">
+          <article class="step"><span class="number">01 / ACQUIRE</span><h3>Bring in measurements</h3><p>Import instrument CSV files, tabular data, audio, images, documents and other scientific inputs.</p></article>
+          <article class="step"><span class="number">02 / STRUCTURE</span><h3>Keep scientific identity</h3><p>Canonical Datasets preserve stable Variable IDs, units, metadata, source links and Session provenance.</p></article>
+          <article class="step"><span class="number">03 / ANALYZE</span><h3>Use the tools you need</h3><p>Combine numerical operations, statistics, spectra, fitting and registered Python or GNU Octave scripts.</p></article>
+          <article class="step"><span class="number">04 / EXPLORE</span><h3>Interpret and reproduce</h3><p>Use 2D/3D plots, interactive Viewers and saved Workspaces without losing original measurements.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="resources" aria-labelledby="resources-title">
+      <div class="wrap">
+        <div class="sectionintro">
+          <div class="tag">GX-TXT resources</div>
+          <h2 id="resources-title">Code, documentation and examples.</h2>
+          <p>Start with the project overview, inspect the software source, or move straight to the framework documentation and worked examples.</p>
+        </div>
+        <div class="cards">
+          <a class="card" href="https://github.com/giuxlab-hub/GX-TXT"><span class="label">Source / GPLv3+</span><h3>GX-TXT on GitHub</h3><p>The public framework source, development history, module implementations and licensing information.</p><span class="link">Browse repository ↗</span></a>
+          <a class="card" href="https://gxtxt.giux-lab.it/"><span class="label">Documentation</span><h3>Online handbook</h3><p>Concepts and procedures for working with Sessions, Datasets, plots, modules and scripts.</p><span class="link">Open documentation ↗</span></a>
+          <a class="card" href="https://giux-lab.it/en/2026/10/13/gx-txt-experimental-data-analysis-software/"><span class="label">Developer's notebook</span><h3>Why GX-TXT exists</h3><p>The laboratory problems behind the project, from fragmented measurements to traceable analysis.</p><span class="link">Read the introduction ↗</span></a>
+          <a class="card" href="https://github.com/giuxlab-hub/GX-TXT/tree/main/docs/api"><span class="label">Framework interfaces</span><h3>Public CORE APIs</h3><p>Documented boundaries for Datasets, metadata, scientific calculations, publication and Viewers.</p><span class="link">Explore API documents ↗</span></a>
+          <a class="card" href="https://github.com/giuxlab-hub/GX-TXT/tree/main/docs/guides/tutorials_dev097"><span class="label">Learning by doing</span><h3>Scientific tutorials</h3><p>Worked source examples for large Datasets, signal analysis, 3D terrain and residual validation.</p><span class="link">See tutorial sources ↗</span></a>
+          <a class="card" href="https://github.com/giuxlab-hub/GX-TXT/blob/main/VERSION.txt"><span class="label">Development release</span><h3>Current source version</h3><p>The framework is under active development. The repository version file identifies the latest published source.</p><span class="link">Check version ↗</span></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section related" id="projects" aria-labelledby="projects-title">
+      <div class="wrap">
+        <div class="sectionintro">
+          <div class="tag">Related work at Giux-Lab</div>
+          <h2 id="projects-title">The laboratory beyond the software.</h2>
+          <p>GX-TXT belongs to a wider collection of hands-on projects in electronics, instrumentation and scientific computation. These are separate projects documented by the same developer.</p>
+        </div>
+        <div class="cards">
+          <a class="card" href="https://giux-lab.it/en/progetti/giux-calclab-en/"><span class="label">Scientific computing</span><h3>Giux-CalcLab</h3><p>A browser-accessible scientific computing project, beginning with ngspice circuit simulation, a schematic editor and a waveform viewer.</p><span class="link">View project ↗</span></a>
+          <a class="card" href="https://giux-lab.it/en/progetti/gx-lii-2-bode-loop-gain-measurement-test-bench/"><span class="label">Test bench / measurements</span><h3>GX LII-2</h3><p>Experimental Bode and loop-gain measurements with an injection transformer, oscilloscope, LTspice comparisons and GNU Octave.</p><span class="link">View project ↗</span></a>
+          <a class="card" href="https://giux-lab.it/en/progetti/gx-txt-ir-remote-tester-signal-analysis-protocol-identification/"><span class="label">Electronics / IR</span><h3>IR remote tester GX-TXT-v3</h3><p>A separate hardware project that studies infrared reception, analog amplification and protocol timing with real measurements.</p><span class="link">View project ↗</span></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="developer-title">
+      <div class="wrap developer">
+        <div>
+          <div class="tag">Official developer website</div>
+          <h2 id="developer-title">Giux-Lab</h2>
+          <p>Experimental electronics, measurement methods, technical articles and software developed for real laboratory work.</p>
+        </div>
+        <a class="button primary" href="https://giux-lab.it/">Visit giux-lab.it ↗</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div><p><strong>GX-TXT</strong> — developed by <a href="https://giux-lab.it/" rel="author">Giux-Lab</a>.</p><p>Open-source software · GNU GPL-3.0-or-later · Development release.</p></div>
+      <div class="links"><a href="https://github.com/giuxlab-hub/GX-TXT">Source</a><a href="https://gxtxt.giux-lab.it/">Manual</a><a href="https://giux-lab.it/">Developer</a><a href="it/" hreflang="it" lang="it">Italiano</a></div>
+    </div>
+  </footer>
+</body>
+</html>
