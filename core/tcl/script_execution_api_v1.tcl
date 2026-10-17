@@ -5,9 +5,10 @@
 namespace eval ::GX {
     variable scriptExecutionApiVersion 1
 }
+source [file join [file dirname [info script]] script_callable_v1.tcl]
 
 proc ::GX::scriptExecutionApiInfo {} {
-    return [dict create api_name SCRIPT_EXECUTION_API_v1 api_version 1 language Octave languages {Octave Python} operations {list describe run}]
+    return [dict create api_name SCRIPT_EXECUTION_API_v1 api_version 1 language Octave languages {Octave Python} operations {list describe run callable_list callable_describe current_callable job_submit job_wait}]
 }
 
 proc ::GX::scriptRegistrySourceName {language} {
@@ -51,7 +52,7 @@ proc ::GX::scriptRegistryPath {scope id {session ""}} {
 proc ::GX::scriptRegistryDefaults {} {
     return [dict create id "" name "" language Octave scope "" description "" version 1.0.0 \
         revision 1 sha256 "" required_apis "" declared_apis "" explicit_apis "" source_scope "" source_id "" source_sha256 "" \
-        created_at "" updated_at "" parameters [dict create]]
+        created_at "" updated_at "" parameters [dict create] callables [dict create]]
 }
 
 proc ::GX::scriptRegistryValidate {metadata} {
@@ -78,6 +79,7 @@ proc ::GX::scriptRegistryValidate {metadata} {
         dict set params $name $descriptor
     }
     dict set m parameters $params
+    dict set m callables [scriptRegistryCallablesValidate [dict get $m callables]]
     return $m
 }
 
@@ -121,6 +123,11 @@ proc ::GX::scriptRegistryWrite {metadata code {session ""}} {
             putKV $ch $key [dict get $m $key]
         }
         putKV $ch parameter_ids [join [lsort -dictionary [dict keys [dict get $m parameters]]] {;}]
+        putKV $ch callable_ids [join [lsort -dictionary [dict keys [dict get $m callables]]] {;}]
+        dict for {name declaration} [dict get $m callables] {
+            puts $ch "\n\[callable.$name\]"
+            foreach key {entrypoint contract declaration} {putKV $ch $key [dict get $declaration $key]}
+        }
         dict for {name descriptor} [dict get $m parameters] {
             puts $ch "\n\[parameter.$name\]"
             foreach key {type required default description values min max alpha allow_inherit} {if {[dict exists $descriptor $key]} {putKV $ch $key [dict get $descriptor $key]}}
@@ -149,6 +156,17 @@ proc ::GX::scriptRegistryRead {scope id {session ""}} {
         dict set params $name $descriptor
     }
     dict set m parameters $params
+    set callables {}
+    foreach name [splitList [expr {[dict exists $ini script.callable_ids] ? [dict get $ini script.callable_ids] : ""}]] {
+        set declaration {}
+        foreach key {entrypoint contract declaration} {
+            if {![dict exists $ini callable.$name.$key]} {error {Registered callable metadata is incomplete}}
+            dict set declaration $key [dict get $ini callable.$name.$key]
+        }
+        if {[dict exists $callables $name]} {error {Duplicate registered callable ID}}
+        dict set callables $name $declaration
+    }
+    dict set m callables $callables
     set m [scriptRegistryValidate $m]
     set source [file join $dir [scriptRegistrySourceName [dict get $m language]]]
     if {![file isfile $source]} { error "Registered script '$scope:$id' is incomplete." }
@@ -261,11 +279,12 @@ proc ::GX::scriptExecutionParameters {metadata supplied} {
     return $out
 }
 
-proc ::GX::scriptExecutionPrepare {reference parameters {session ""} {runtimeTemplate ""} {moduleOutputDir ""}} {
+proc ::GX::scriptExecutionPrepare {reference parameters {session ""} {runtimeTemplate ""} {moduleOutputDir ""} {invocation {}}} {
     if {$session eq ""} { set session $::GX::currentSession }
     if {$session eq "" || ![file isdirectory $session]} { error "Open a Session before running a registered script." }
     set session [file normalize $session]
     set m [scriptRegistryDescribe $reference $session]
+    if {$invocation ne {}} {set invocation [scriptCallableInvocationValidate $reference $invocation $session]}
     set language [dict get $m language]
     set moduleId [scriptAnalysisModule $language]
     set extension [expr {$language eq "Python" ? ".py" : ".m"}]
@@ -296,6 +315,7 @@ proc ::GX::scriptExecutionPrepare {reference parameters {session ""} {runtimeTem
         }
     }
     set requiredApis [join [lsort -unique [concat [splitList [dict get $m required_apis]] [splitList $extraApis]]] {;}]
+    if {$invocation ne {}} {set requiredApis [join [lsort -unique [concat [splitList $requiredApis] [list [dict get $invocation consumer_api]]]] {;}]}
     set snapshot [file join $outDir registered_script$extension]
     file copy -- [dict get $m source_path] $snapshot
     if {[scriptRegistryHash $snapshot] ne [dict get $m sha256]} { error "Script snapshot changed during execution preparation." }
@@ -322,6 +342,10 @@ proc ::GX::scriptExecutionPrepare {reference parameters {session ""} {runtimeTem
             puts $ch "\n\[script_parameter.$key\]"
             putKV $ch type [dict get [dict get $m parameters $key] type]
             putKV $ch value [dict get $values $key]
+        }
+        if {$invocation ne {}} {
+            puts $ch "\n\[registered_callable\]"
+            dict for {key value} $invocation {putKV $ch $key $value}
         }
     } finally { close $ch }
     if {$language eq "Python"} {

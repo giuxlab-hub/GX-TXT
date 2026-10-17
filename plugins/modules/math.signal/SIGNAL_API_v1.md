@@ -1,6 +1,6 @@
 # SIGNAL_API_v1
 
-Provider: `math.signal` 1.2.0. API ID/version: `SIGNAL_API_v1`/1. This service supplies reusable signal and LTI mathematics for imported or measured data. It produces values and diagnostics; Dataset publication belongs to the existing GX-TXT Publication API. GNU Octave 9.4 and installed signal/control packages are the current backend. Operations are serial and create no worker pool.
+Provider: `math.signal` 1.3.0. API ID/version: `SIGNAL_API_v1`/1. This service supplies reusable signal and LTI mathematics for imported or measured data. It produces values and diagnostics; Dataset publication belongs to the existing GX-TXT Publication API. GNU Octave 9.4 and installed signal/control packages are the current backend. Operations are serial and create no worker pool.
 
 ## Public bindings and discovery
 
@@ -12,6 +12,19 @@ Provider: `math.signal` 1.2.0. API ID/version: `SIGNAL_API_v1`/1. This service s
 The Tcl and Script Bridge bindings use typed nodes. An array is `{kind=array, shape=[rows,columns,...], real=[values in column-major order], imaginary=[optional matching values]}`. Other nodes are `{kind=empty}`, `{kind=text,value=...}`, `{kind=cell,items=[nodes]}`, and `{kind=struct,fields={name:node}}`. Results use real/imaginary pairs (`value_real`, `value_imaginary`) and explicit numerical fields. Dimensions in array nodes are positive; NaN/Inf inputs are rejected. Units are caller-owned except explicit `time`, `frequency_hz`, and rate fields. The API never guesses sampling intervals.
 
 ## Operations
+
+The additive Tcl `captured_statistical_columns` capability exposes
+`::GX::SignalAPIv1::callCaptured document_id operation a b c context ?options?
+?provenance?`. It resolves the public `statisticalContract` and runs the same
+Signal operation once, using binary input and managed captured output columns.
+For spectra, supply actual `x_unit` and (for paired estimates) `y_unit`. The result
+contains remaining scalar/control `values`, `types`, `captured_statistics` and
+bounded `transport` byte counts. Vector fields have type `captured_column`; read
+their actual values through CORE `resourceBindingTable`. Prototype samples are
+never substituted for output vectors. Preserve the binding under a saved/live
+Document or publication reference. The Document must already exist. Python and
+Octave Jobs can use the ordinary Signal call with CORE `from_numeric` and
+`store_columns` on its existing arrays; no estimator rerun is needed.
 
 Every row uses the common signature `(family, action, a, b, c, options)`. Optional operands are `[]` in direct Octave or an empty typed node through the Bridge. Direct Octave accepts ordinary numeric arrays and structs. The operation IDs are `family.action` in `api/operations_v1.tsv`.
 
@@ -78,3 +91,92 @@ The public v1 API and complete default results are retained. Large arrays use
 scoped binary buffers and a per-job Octave context through the existing provider
 bindings. The public Script Bridge and Dataset API contracts specify shape, dtype,
 resource limits, optional Signal uniform grids/result projection and output bindings.
+
+## dev097 descriptive signal summary
+
+`quality.basic` delegates to public `NUMERIC_API_v1.signal_summary`. Existing
+`rms`, `peak`, `peak_to_peak`, `crest_factor`, `dc_real` and `dc_imaginary` fields
+retain their identities. `n`, `input_kind` and `method` identify the supplied
+population and calculation. RMS and peak use complex magnitudes; peak-to-peak
+is the range of the real component. DC is split into real and imaginary means.
+An all-zero input now returns its valid zero RMS and DC, with NaN crest factor,
+instead of rejecting the entire result. No sampling standard error is inferred.
+
+Capture the returned facts with the public CORE statistical API:
+`from_numeric('math.numeric.signal_summary','signal_summary',raw,{y_unit:unit})`.
+The actual response unit must be declared. CORE owns definitions, units,
+availability, reports and publication metadata; `numeric_fields` exposes each
+legacy field with its canonical quantity. Other Signal statistical families use their own registered contracts described
+below.
+
+`quality.snr` now delegates to Numeric `signal_snr`; `quality.spectrum` and
+`quality.harmonics` delegate to `signal_spectrum_quality`. Historical result keys
+and Signal error identifiers remain. Harmonics now also returns the complete
+quality receipt needed for shared interpretation. Existing raw-bin power fields
+keep their numerical convention; use CORE's definitions instead of labeling them
+physical mean-square power. The two SNR methods have separate registered models.
+`numeric_field_elements(result,'harmonic_powers')` exposes ordered harmonic IDs
+and squared response units. ENOB is a conditional ideal-quantizer convention.
+
+`events.period` and `time_metric.pulse` delegate their detected crossings to
+Numeric `event_period` and `pulse_timing`. Existing crossing extraction, result
+keys and complete-width selection remain. Results add actual event/interval
+counts and the estimator method. Repeated detected times are retained, including
+zero intervals. A single reference interval now has NaN sample jitter instead of
+the former misleading zero; the mean period, width and duty remain available.
+Capture through CORE `from_numeric` using the matching Numeric model/operation
+and actual `x_unit=s`. Frequency is reciprocal mean period, duty is ratio of
+means, and neither quantity establishes a sampling confidence interval.
+
+`generate.colored_noise` uses Numeric's public `array_reduce/std_sample` for its
+sample-spread normalization. The seeded spectrum, unchanged DC component,
+amplitude scaling and saved/restored caller RNG state retain their prior meaning.
+It does not center the generated signal or claim a measured noise uncertainty.
+
+`correlation.auto`, `.cross` and `.delay` delegate to Numeric
+`signal_correlation`. Existing conjugation, lag sign, full vector fields,
+normalizations and first-maximum tie policy are retained. An explicitly supplied
+second sequence remains honored for all three actions; an empty second sequence
+selects autocorrelation. The result adds bounded count/peak/method facts for
+CORE capture with model/operation `math.numeric.signal_correlation` /
+`signal_correlation`, and actual first/second signal units `x_unit`/`y_unit`.
+`delay_seconds` remains omitted without `sample_rate`. Rates must now be finite
+as well as positive. Coefficient normalization is stable for extreme finite
+scales; it remains uncentered. CORE does not present the legacy first-lag value
+of an all-zero correlation as a resolved delay. Spectral estimators use the per-bin contracts below.
+
+`spectral.window_metrics` now delegates to Numeric `window_metrics`, retaining
+its three existing result keys and adding coefficient count, sample rate and
+method facts. CORE capture uses `x_unit=1` for dimensionless window weights.
+Coherent gain retains its sign; power gain uses denominator N, and ENBW is in
+hertz. Scale-stable ENBW remains available when squared gain is outside binary64.
+The other spectral actions use the per-bin contracts below.
+
+## dev097 spectral estimates and CORE discovery
+
+All seven spectral estimators delegate to public Numeric `signal_*` operations
+and retain their existing vector fields. Native Welch semantics are explicit,
+with caller compatibility state restored. Paired spectra share one computation
+and grid, including mixed real/complex pairs. Periodogram removes no mean; Welch
+removes the global mean over the used segment span. Existing Signal defaults,
+conjugation `Y*conj(X)` and density/transfer identities are preserved. Zero-energy
+windows now reject explicitly; zero ratio denominators remain undefined.
+
+Script Bridge operation `statistical_contract('spectral.frf_h1')` returns the
+actual `numerical_operation`, `model_id` and `semantics_api`; the same discovery
+covers quality, correlation, event/pulse and window results. Tcl exposes
+`::GX::SignalAPIv1::statisticalContract operation` and
+`::GX::SignalAPIv1::interpretResult operation raw context ?provenance?`.
+Python and Octave use the returned identity with the public CORE
+`from_numeric`, `from_numeric_columns` or `bind_columns` operations. Discovery
+and interpretation perform no numerical computation. Ordinary filters do not
+claim statistical-result contracts.
+
+Spectral interpretation is per frequency bin. Select scalar bin values while
+retaining common counts/method fields, or use bounded columns. For large spectra,
+publish frequency/real/imaginary arrays with a CORE Dataset-local column binding;
+its prototype is an example bin, not a summary. Use CORE `numeric_fields` for
+units and availability. First/second signal units are `x_unit`/`y_unit`; the
+frequency coordinate always has Hz units. Full spectral arrays remain on the
+scientific binary channel. See the Numeric and CORE API pages for estimator,
+normalization, segment and publication contracts.

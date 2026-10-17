@@ -1,5 +1,9 @@
 # Native 3D Viewer changes
 
+## 0.9.6
+
+- Debian package host now resolves the bundled library through `$ORIGIN/../lib`, removing an absolute development-build RPATH. Public IDs, cache data and scientific algorithms are unchanged.
+
 ## 0.9.4
 
 - Retry a renderer that fails during OpenGL or GLX initialization once with Mesa llvmpipe on non-Windows systems. Preserve hardware rendering as the first attempt and show the active software mode in Viewer status.

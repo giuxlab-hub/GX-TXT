@@ -10,7 +10,9 @@ from pathlib import Path
 import numpy as np
 
 MAX_BYTES = 512 * 1024 * 1024
-DTYPES = {"float32": "<f4", "float64": "<f8"}
+DTYPES = {name: np.dtype(name).newbyteorder('<').str for name in (
+    'bool', 'int8', 'uint8', 'int16', 'uint16', 'int32', 'uint32',
+    'int64', 'uint64', 'float32', 'float64', 'complex64', 'complex128')}
 
 def shape_checked(shape, itemsize=8):
     if not isinstance(shape, (list, tuple)) or not 1 <= len(shape) <= 16:
@@ -21,10 +23,16 @@ def shape_checked(shape, itemsize=8):
     if count * itemsize > MAX_BYTES: raise ValueError("binary payload exceeds 512 MiB limit")
     return count
 
-def read_buffer(root, descriptor):
-    """Validate control metadata and no-follow owner-local file before mapping."""
-    if descriptor.get('version') != 1 or descriptor.get('order') != 'F' or descriptor.get('endian') != 'little':
+def open_buffer(root, descriptor):
+    """Return a validated owner-local descriptor FD, dtype and element count.
+
+    The caller owns the FD. Validation does not materialize numerical values.
+    """
+    version = descriptor.get('version')
+    if version not in (1, 2) or descriptor.get('order') != 'F' or descriptor.get('endian') != 'little':
         raise ValueError('unsupported binary descriptor version/order/endian')
+    if version == 1 and descriptor.get('dtype') not in ('float32', 'float64'):
+        raise ValueError('descriptor v1 supports only float32/float64')
     dtype=DTYPES.get(descriptor.get('dtype'))
     if dtype is None: raise ValueError('unsupported binary dtype')
     count=shape_checked(descriptor['shape'],np.dtype(dtype).itemsize)
@@ -37,19 +45,50 @@ def read_buffer(root, descriptor):
     try:
         import stat
         s=os.fstat(fd)
-        if not stat.S_ISREG(s.st_mode) or s.st_size != size or s.st_uid != os.getuid(): raise ValueError('invalid binary resource owner/type/size')
-        # One bounded byte buffer, with no per-element Python object expansion.
-        with os.fdopen(fd,'rb',closefd=False) as stream: raw=stream.read(size+1)
-        if len(raw)!=size: raise ValueError('binary payload length changed')
+        if not stat.S_ISREG(s.st_mode) or s.st_size != size or (hasattr(os,'getuid') and s.st_uid != os.getuid()): raise ValueError('invalid binary resource owner/type/size')
+    except BaseException:
+        os.close(fd)
+        raise
+    return fd, dtype, count
+
+def validate_buffer(root, descriptor):
+    fd, _, _ = open_buffer(root, descriptor)
+    os.close(fd)
+
+def wire_descriptor(descriptor):
+    """Normalize exact integral JSON dimensions emitted by Octave.
+
+    JSON numbers such as 2e6 are integers in the array contract. Fractional,
+    nonfinite, boolean and text dimensions remain invalid; no truncation.
+    """
+    result = dict(descriptor)
+    shape = result.get('shape')
+    if not isinstance(shape, list): raise ValueError('binary wire shape must be an array')
+    result['shape'] = [int(x) if isinstance(x,float) and math.isfinite(x) and x.is_integer() else x for x in shape]
+    return result
+
+def read_buffer(root, descriptor):
+    """Read one writable, bounded numeric allocation after owner validation."""
+    fd, dtype, count = open_buffer(root, descriptor)
+    try:
+        # One writable, bounded numeric allocation. No intermediate bytes
+        # object, per-element Python objects, or copy in the receiving client.
+        with os.fdopen(fd,'rb',closefd=False) as stream:
+            array=np.fromfile(stream,dtype=dtype,count=count)
+            extra=stream.read(1)
+        if array.size!=count or extra: raise ValueError('binary payload length changed')
     finally: os.close(fd)
-    return np.frombuffer(raw,dtype=dtype).reshape(descriptor['shape'],order='F')
+    return array.reshape(descriptor['shape'],order='F')
 
 def write_buffer(root, array):
-    array=np.asarray(array,dtype='<f8');shape=list(array.shape) or [1,1]
+    array=np.asarray(array)
+    dtype=array.dtype.name
+    if dtype not in DTYPES: raise ValueError('unsupported binary dtype')
+    array=np.asarray(array,dtype=DTYPES[dtype]);shape=list(array.shape) or [1,1]
     if len(shape)==1:shape.append(1)
-    count=shape_checked(shape);name=uuid.uuid4().hex+'.bin';path=Path(root)/name
+    count=shape_checked(shape,array.dtype.itemsize);name=uuid.uuid4().hex+'.bin';path=Path(root)/name
     with path.open('xb') as stream:stream.write(array.tobytes(order='F'))
-    return dict(version=1,dtype='float64',endian='little',order='F',shape=shape,count=count,byte_count=count*8,resource_id=name)
+    return dict(version=2,dtype=dtype,endian='little',order='F',shape=shape,count=count,byte_count=count*array.dtype.itemsize,resource_id=name)
 
 def native(value):
     """Turn a Signal typed node into native data, preserving column order."""
@@ -92,7 +131,9 @@ class Worker:
             self.root=Path(self.resource['path'])
         except ImportError:
             self.root=Path(tempfile.mkdtemp(prefix='gxtxt-scientific-'))
-        self.stats=dict(starts=1,calls=0,input_binary_bytes=0,output_binary_bytes=0,control_bytes=0,worker_seconds=0,decode_seconds=0,compute_seconds=0,encode_seconds=0)
+        self.forward_resources = os.environ.get('GXTXT_BRIDGE_TYPED_DESCRIPTORS') == '1' and bool(os.environ.get('GXTXT_BRIDGE_WORKSPACE'))
+        self.output_root = Path(os.environ['GXTXT_BRIDGE_WORKSPACE']) if self.forward_resources else self.root
+        self.stats=dict(starts=1,calls=0,input_binary_bytes=0,input_forwarded_bytes=0,output_binary_bytes=0,output_forwarded_bytes=0,control_bytes=0,worker_seconds=0,decode_seconds=0,compute_seconds=0,encode_seconds=0)
         self.log=(self.root/'worker.log').open('w')
         framework=Path(__file__).resolve().parents[2]
         command=host.config.get('runtime','octave_cmd',fallback='') or shutil.which('octave-cli') or shutil.which('octave')
@@ -103,11 +144,21 @@ class Worker:
         # Local process backend only. Worker stays in the supervisor-owned job
         # process group. Future Windows uses the common Job API/Job Objects;
         # remote dispatch and a second worker pool are intentionally excluded.
-        self.process=subprocess.Popen([command,'--quiet','--no-gui',str(framework/'core/octave/gxtxt_scientific_binary_worker_v1.m'),str(framework),str(self.root)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=self.log,text=True,encoding='utf-8',env=env)
+        self.process=subprocess.Popen([command,'--quiet','--no-gui',str(framework/'core/octave/gxtxt_scientific_binary_worker_v1.m'),str(framework),str(self.root),str(self.output_root)],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=self.log,text=True,encoding='utf-8',env=env)
 
     def pack(self,value):
-        from gxtxt_script_bridge_server import NumericArray
+        from gxtxt_script_bridge_server import NumericArray, ResourceNumericArray
+        if isinstance(value, ResourceNumericArray) and self.forward_resources:
+            validate_buffer(value.root, value.descriptor)
+            self.stats['input_forwarded_bytes'] += value.descriptor['byte_count']
+            return {'kind':'binary', 'source':'execution', 'descriptor':value.descriptor}
         if isinstance(value,NumericArray):value=np.asarray(value.values).reshape(value.shape,order='F')
+        # The legacy number node is binary64 in Octave. Preserve large integer
+        # scalar identities through the existing typed buffer contract instead.
+        if isinstance(value,(int,np.integer)) and not isinstance(value,(bool,np.bool_)) and abs(int(value))>2**53:
+            integer=int(value)
+            if not -(2**63)<=integer<2**64:raise ValueError('integer scalar exceeds the int64/uint64 transport range')
+            value=np.asarray([[integer]],dtype=np.int64 if integer<0 else np.uint64)
         if isinstance(value,np.ndarray):
             d=write_buffer(self.root,value);self.stats['input_binary_bytes']+=d['byte_count'];return {'kind':'binary','descriptor':d}
         if isinstance(value,dict):return {'kind':'struct','fields':{k:self.pack(v) for k,v in value.items()}}
@@ -117,10 +168,15 @@ class Worker:
         raise ValueError('unsupported scientific transport value')
 
     def unpack(self,value):
-        from gxtxt_script_bridge_server import NumericArray
+        from gxtxt_script_bridge_server import NumericArray, ResourceNumericArray
         k=value['kind']
         if k=='binary':
-            d=value['descriptor'];array=read_buffer(self.root,d);self.stats['output_binary_bytes']+=d['byte_count'];return NumericArray(array.ravel(order='F'),d['shape'])
+            d=wire_descriptor(value['descriptor'])
+            self.stats['output_binary_bytes']+=d['byte_count']
+            if self.forward_resources:
+                self.stats['output_forwarded_bytes'] += d['byte_count']
+                return ResourceNumericArray.from_descriptor(self.output_root, d)
+            array=read_buffer(self.root,d);return NumericArray(array.ravel(order='F'),d['shape'])
         if k=='struct':return {key:self.unpack(v) for key,v in value['fields'].items()}
         if k=='cell':return [self.unpack(x) for x in value['items']]
         if k=='text':return value['value']

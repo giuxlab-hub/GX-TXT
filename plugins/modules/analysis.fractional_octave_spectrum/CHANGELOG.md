@@ -1,3 +1,13 @@
+# dev097 / 1.2.0
+
+- Numeric owns RMS/level calculation; CORE owns interpretation, units and reports.
+- Both per-band compact semantics and the power summary accompany publication.
+- Zero band power retains an undefined finite-level state; all-zero runs finish
+  with valid power/RMS plots and an explicitly unavailable dB variant.
+- Earlier finite dB images move into owned analysis history without byte changes.
+- Preserved band integration and scientific identities; declared Numeric and
+  Plot Dataset dependencies. Tested actual modules and both Script Job languages.
+
 # Changelog
 
 ## 1.1.0

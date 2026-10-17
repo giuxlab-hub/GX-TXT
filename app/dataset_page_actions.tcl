@@ -107,6 +107,7 @@ proc ::GX::datasetPageBuildViews {} {
         {Rename active Dataset...} datasetRenameSelectedFromGui
         {Delete active Dataset...} datasetDeleteSelectedFromGui
         {Export active Dataset ZIP...} portableResourceGuiExportDataset
+        {Coordinate units / magnification / calibration...} datasetCoordinatesOpenSelected
     } {$f.bar.actionsMenu add command -label $title -command [list ::GX::datasetPageAction {*}$command]}
     $f.bar.actionsMenu add separator
     $f.bar.actionsMenu add command -label "Import Dataset ZIP..." -command [list ::GX::portableResourceGuiImport dataset]
@@ -181,7 +182,7 @@ proc ::GX::datasetPageRenderSections {mode datasetId} {
         $widget state [expr {$imported?"!disabled":"disabled"}]
     }
     $f.bar.actionsMenu entryconfigure 0 -state [expr {$mode in {imported pending single}?"normal":"disabled"}]
-    for {set i 1} {$i<9} {incr i} {$f.bar.actionsMenu entryconfigure $i -state [expr {$imported?"normal":"disabled"}]}
+    for {set i 1} {$i<10} {incr i} {$f.bar.actionsMenu entryconfigure $i -state [expr {$imported?"normal":"disabled"}]}
     $f.metadata.table delete [$f.metadata.table children {}]
     $f.views.technical.table delete [$f.views.technical.table children {}]
     $f.temporalSets.table delete [$f.temporalSets.table children {}]

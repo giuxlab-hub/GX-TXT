@@ -43,24 +43,18 @@ Do not bind `magnitude_dBc` as the amplitude input. THD requires linear amplitud
 
 ## 4. Numerical-service integration
 
-Version 1.1.0 depends on protected CORE `math.numeric` and discovers `NUMERIC_API_v1` through the standard module dependency runtime bridge.
+Version 1.2.0 discovers protected CORE `math.numeric` / `NUMERIC_API_v1` through
+the standard dependency bridge. Public `harmonic_peak_quality` owns the complete
+retained local-bin peak selection and THD calculation. `harmonic_components`
+owns identified component levels and frequency errors. The module configures
+these public operations and publishes their existing canonical columns.
 
-Reusable generic operations are delegated to the public numerical service:
-
-- frequency-grid validation and nominal spacing through `grid_info`;
-- finite/non-negative amplitude summary through `statistics`;
-- maximum values used inside configured peak-search regions through `statistics`;
-- sum-of-squares reduction used by the THD formula through `statistics`.
-
-The following remain deliberately module-specific scientific semantics:
-
-- automatic versus explicit fundamental selection;
-- local bin search around expected integer harmonics;
-- fundamental-relative dBc and percent interpretation;
-- THD definition and reporting;
-- harmonic Dataset publication and provenance.
-
-The module does not implement a private FFT, private statistics framework or private peak-analysis service.
+CORE `STATISTICAL_RESULT_SEMANTICS_API_v1` owns interpretation, units, availability
+and reporting. Publication includes the captured summary and a Dataset-local
+component binding, sealed against its actual payload and Variable schemas.
+Reports read those validated columns. The existing realmin floor for component
+dBc is explicit; a finite floored level does not claim a positive physical
+amplitude. Zero THD has no finite logarithmic THD level.
 
 ## 5. Fundamental detection
 

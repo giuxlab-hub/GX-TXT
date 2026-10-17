@@ -29,10 +29,12 @@ function out = gxtxt_numeric_model_call_v1(operation, mode, operands, model, unu
       case 'nonlinear_fit'
         if(numel(operands)!=3),error('GXTXT:Numeric:InvalidArguments','nonlinear fit needs X, Y and initial parameters');endif
         callback=@(p,x) model_fit(model,x,p);
+        if(strcmp(model.kind,'expression')||!isfield(options,'solver')||any(strcmp(options.solver,{'auto','ceres'}))),callback=model;endif
         out=gxtxt_numeric_v1(operation,callback,operands{1},operands{2},operands{3},options);
       case 'dataset_nonlinear_fit'
         if(numel(operands)!=5),error('GXTXT:Numeric:InvalidArguments','Dataset nonlinear fit needs Session, Dataset ID, X/Y variable IDs and initial parameters');endif
         callback=@(p,x) model_fit(model,x,p);
+        if(strcmp(model.kind,'expression')||!isfield(options,'solver')||any(strcmp(options.solver,{'auto','ceres'}))),callback=model;endif
         out=gxtxt_numeric_v1(operation,operands{1},operands{2},operands{3},operands{4},callback,operands{5},options);
       case {'root_find','minimize_1d','minimize'}
         if(numel(operands)!=1),error('GXTXT:Numeric:InvalidArguments','root/minimize model call needs one data operand');endif
@@ -64,6 +66,7 @@ endfunction
 function value=model_fit(model,x,p)
   p=p(:);x=x(:);
   switch(model.kind)
+    case 'linear',value=p(1)+p(2)*x;
     case 'polynomial_fit',value=polyval(p(:).',x);
     case 'exponential'
       if(numel(p)!=3),error('GXTXT:Numeric:DimensionMismatch','exponential model needs amplitude, rate and offset');endif

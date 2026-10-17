@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0 — GX-TXT 0.9.8.10-dev-097
+
+- Use generic CORE propagation/summary semantics for output, reports and metadata.
+- Reuse weighted-summary uncertainty; remove the redundant one-parameter fit.
+- Require explicit Gaussian known-sigma assumptions for reduced chi-squared.
+- Preserve Dataset, graph, summary row and legacy report identities; add states,
+  reasons and CORE quantity IDs, with undefined singleton sample spread.
+
 ## 1.0.1 — GX-TXT 0.9.8.05
 
 - Uses public plot.dataset variants and shared uncertainty and reduction services.

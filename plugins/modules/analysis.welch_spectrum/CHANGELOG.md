@@ -1,3 +1,11 @@
+## 1.2.0 — dev097 candidate
+
+- Final aggregation uses public Numeric and versioned CORE interpretation.
+- Captured statistics accompany publication, reports and cache-only rendering.
+- Zero PSD has undefined finite dB and peak states; unavailable graphs preserve
+  the prior owned artifact in history.
+- Scientific Dataset/Variable identities and segment normalization are retained.
+
 # Changelog
 
 ## 1.1.0

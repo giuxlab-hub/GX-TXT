@@ -25,7 +25,24 @@ proc ::GX::OctaveScriptEditorUI::_editorModified {} {
     }
 }
 
-proc ::GX::OctaveScriptEditorUI::_propertyModified {} { _setModified 1 }
+proc ::GX::OctaveScriptEditorUI::_propertyModified {name element operation} {
+    variable ui
+    variable propertyValues
+    if {$element ni {scope scriptId name description arguments}} return
+    set value $ui($element)
+    if {![dict exists $propertyValues $element] || [dict get $propertyValues $element] ne $value} {
+        dict set propertyValues $element $value
+        _setModified 1
+    }
+}
+proc ::GX::OctaveScriptEditorUI::_watchProperties {} {
+    variable ui
+    variable propertyValues
+    set propertyValues {}
+    foreach key {scope scriptId name description arguments} {dict set propertyValues $key $ui($key)}
+    catch {trace remove variable ui write ::GX::OctaveScriptEditorUI::_propertyModified}
+    trace add variable ui write ::GX::OctaveScriptEditorUI::_propertyModified
+}
 
 proc ::GX::OctaveScriptEditorUI::_scheduleRefresh {} {
     variable ui
@@ -126,6 +143,7 @@ proc ::GX::OctaveScriptEditorUI::_confirmAbandon {} {
 
 proc ::GX::OctaveScriptEditorUI::_loadDocument {documentId} {
     variable ui
+    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken)]} {return 0}
     if {![_confirmAbandon]} { return 0 }
     if {[catch {set full [::GX::OctaveScriptEditor::workspaceRead $documentId]} failure]} {
         tk_messageBox -parent $ui(window) -icon error -title "Open failed" -message $failure
@@ -200,6 +218,7 @@ proc ::GX::OctaveScriptEditorUI::_new {} {
 
 proc ::GX::OctaveScriptEditorUI::_save {} {
     variable ui
+    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken)]} {return 0}
     set name [string trim $ui(name)]
     if {$name eq ""} {
         tk_messageBox -parent $ui(window) -icon error -title "Script name" -message "Script name is required."
@@ -222,6 +241,7 @@ proc ::GX::OctaveScriptEditorUI::_save {} {
 
 proc ::GX::OctaveScriptEditorUI::_saveCopy {} {
     variable ui
+    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken)]} {return 0}
     if {$ui(scope) eq "legacy"} {set ui(scope) session}
     set name [string trim $ui(name)]
     if {$name eq ""} { set name "Untitled script" }
@@ -246,6 +266,7 @@ proc ::GX::OctaveScriptEditorUI::_saveCopy {} {
 
 proc ::GX::OctaveScriptEditorUI::_registerLegacy {scope} {
     variable ui
+    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken)]} {return 0}
     if {![string match legacy:* $ui(currentId)]} {
         tk_messageBox -parent $ui(window) -icon info -message "Select a legacy Interactive Document to convert."
         return
@@ -260,6 +281,7 @@ proc ::GX::OctaveScriptEditorUI::_registerLegacy {scope} {
 
 proc ::GX::OctaveScriptEditorUI::_delete {} {
     variable ui
+    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken)]} {return 0}
     if {$ui(currentId) eq ""} return
     set answer [tk_messageBox -parent $ui(window) -icon warning -type yesno -default no -title "Delete script" -message "Delete '$ui(name)' ($ui(currentId))?"]
     if {$answer ne "yes"} return
@@ -334,6 +356,11 @@ proc ::GX::OctaveScriptEditorUI::_copyId {} {
     clipboard append -displayof $ui(window) $ui(currentId)
     set ui(status) "Copied document ID $ui(currentId)"
     after 1200 ::GX::OctaveScriptEditorUI::_updateStatus
+}
+
+proc ::GX::OctaveScriptEditorUI::_run {} {
+    variable ui
+    ::GX::scriptWorkspaceOpenEditorRunner $ui(window) $ui(currentId) $ui(modified) ::GX::OctaveScriptEditorUI::_save $ui(currentSha) $ui(sessionToken)
 }
 
 proc ::GX::OctaveScriptEditorUI::_find {{direction forward}} {
@@ -455,11 +482,69 @@ proc ::GX::OctaveScriptEditorUI::_close {} {
     catch {destroy $ui(window)}
 }
 
+proc ::GX::OctaveScriptEditorUI::_buildMenus {w} {
+    ttk::frame $w.toolbar -padding {8 4}
+    pack $w.toolbar -side top -fill x
+    foreach {key label} {file File edit Edit run Run help Help} {
+        ttk::menubutton $w.toolbar.$key -text $label -menu $w.toolbar.$key.menu
+        menu $w.toolbar.$key.menu -tearoff 0 -postcommand [list ::GX::OctaveScriptEditorUI::_menuState $key]
+    }
+    set m $w.toolbar.file.menu
+    foreach {label shortcut command} {
+        New Ctrl+N _new
+        {Import .m...} Ctrl+O _import
+        Save Ctrl+S _save
+        {Save copy...} {} _saveCopy
+        {Export .m...} {} _export
+        Delete {} _delete
+        {Copy ID} {} _copyId
+    } {$m add command -label $label -accelerator $shortcut -command ::GX::OctaveScriptEditorUI::$command}
+    $m add separator
+    $m add command -label Close -command ::GX::OctaveScriptEditorUI::_close
+    set m $w.toolbar.edit.menu
+    foreach {label shortcut operation} {Undo Ctrl+Z undo Redo Ctrl+Y redo Cut Ctrl+X cut Copy Ctrl+C copy Paste Ctrl+V paste {Select all} Ctrl+A select_all} {
+        $m add command -label $label -accelerator $shortcut -command [list ::GX::uiTextEdit $w $operation]
+    }
+    $m add separator
+    $m add command -label Find -accelerator Ctrl+F -command [list focus $w.p.center.find.e]
+    $m add command -label {Find next} -accelerator F3 -command {::GX::OctaveScriptEditorUI::_find forward}
+    $m add command -label {Find previous} -accelerator Shift+F3 -command {::GX::OctaveScriptEditorUI::_find backward}
+    $m add command -label {Go to line...} -accelerator Ctrl+G -command ::GX::OctaveScriptEditorUI::_gotoLineDialog
+    set m $w.toolbar.run.menu
+    $m add command -label {Open Script Runner...} -command ::GX::OctaveScriptEditorUI::_run
+    $m add command -label {Script Library...} -command ::GX::scriptLibraryDialog
+    $m add command -label {Script Jobs Manager...} -command ::GX::scriptJobsDialog
+    $m add command -label {Register legacy as Session...} -command {::GX::OctaveScriptEditorUI::_registerLegacy session}
+    $m add command -label {Register legacy as User...} -command {::GX::OctaveScriptEditorUI::_registerLegacy user}
+    $w.toolbar.help.menu add command -label {Script Bridge help} -command ::GX::OctaveScriptEditorUI::_bridgeHelp
+    ::GX::uiMenuRowAttach $w.toolbar [list $w.toolbar.file $w.toolbar.edit $w.toolbar.run $w.toolbar.help]
+}
+proc ::GX::OctaveScriptEditorUI::_menuState {group} {
+    variable ui
+    set m $ui(window).toolbar.$group.menu
+    if {$group eq "edit"} {
+        set index 0
+        foreach operation {undo redo cut copy paste select_all} {
+            $m entryconfigure $index -state [expr {[::GX::uiTextEditCan $ui(window) $operation] ? "normal" : "disabled"}]
+            incr index
+        }
+    } elseif {$group eq "file"} {
+        foreach index {5 6} {$m entryconfigure $index -state [expr {$ui(currentId) eq {} ? "disabled" : "normal"}]}
+        set legacy [string match legacy:* $ui(currentId)]
+        $m entryconfigure 2 -state [expr {$legacy ? "disabled" : "normal"}]
+    } elseif {$group eq "run"} {
+        set legacy [string match legacy:* $ui(currentId)]
+        foreach index {3 4} {$m entryconfigure $index -state [expr {$legacy ? "normal" : "disabled"}]}
+    }
+}
+
 proc ::GX::OctaveScriptEditorUI::_build {} {
     variable ui
     variable window
+    catch {trace remove variable ui write ::GX::OctaveScriptEditorUI::_propertyModified}
     set w $window
     set ui(window) $w
+    set ui(sessionToken) [::GX::interactiveDocumentSessionToken]
     set ui(currentId) ""
     set ui(currentSha) ""
     set ui(modified) 0
@@ -479,31 +564,7 @@ proc ::GX::OctaveScriptEditorUI::_build {} {
     wm minsize $w 900 560
     wm protocol $w WM_DELETE_WINDOW ::GX::OctaveScriptEditorUI::_close
 
-    ttk::frame $w.toolbar -padding {8 6}
-    pack $w.toolbar -side top -fill x
-    set column 0
-    foreach spec {
-        {new New ::GX::OctaveScriptEditorUI::_new}
-        {import {Import .m...} ::GX::OctaveScriptEditorUI::_import}
-        {save Save ::GX::OctaveScriptEditorUI::_save}
-        {copy {Save copy} ::GX::OctaveScriptEditorUI::_saveCopy}
-        {export {Export .m...} ::GX::OctaveScriptEditorUI::_export}
-        {delete Delete ::GX::OctaveScriptEditorUI::_delete}
-        {copyid {Copy ID} ::GX::OctaveScriptEditorUI::_copyId}
-    } {
-        lassign $spec name label cmd
-        ttk::button $w.toolbar.$name -text $label -command $cmd
-        grid $w.toolbar.$name -row 0 -column $column -sticky w -padx {0 5} -pady {0 4}
-        incr column
-    }
-    ttk::button $w.toolbar.registerSession -text "Register legacy as Session..." -command {::GX::OctaveScriptEditorUI::_registerLegacy session}
-    ttk::button $w.toolbar.registerUser -text "Register legacy as User..." -command {::GX::OctaveScriptEditorUI::_registerLegacy user}
-    grid $w.toolbar.registerSession -row 1 -column 0 -columnspan 2 -sticky w -padx {0 5}
-    grid $w.toolbar.registerUser -row 1 -column 2 -columnspan 2 -sticky w -padx {0 5}
-    ttk::button $w.toolbar.goto -text "Go to line..." -command ::GX::OctaveScriptEditorUI::_gotoLineDialog
-    ttk::button $w.toolbar.help -text "Bridge help" -command ::GX::OctaveScriptEditorUI::_bridgeHelp
-    grid $w.toolbar.goto -row 1 -column 4 -sticky w -padx {0 5}
-    grid $w.toolbar.help -row 1 -column 5 -sticky w -padx {0 5}
+    _buildMenus $w
 
     ttk::panedwindow $w.p -orient horizontal
     pack $w.p -side top -fill both -expand 1 -padx 8 -pady {0 6}
@@ -542,8 +603,6 @@ proc ::GX::OctaveScriptEditorUI::_build {} {
     grid $w.p.center.props.nl $w.p.center.props.ne $w.p.center.props.al $w.p.center.props.ae -sticky ew -padx {0 6}
     grid columnconfigure $w.p.center.props 1 -weight 1
     grid columnconfigure $w.p.center.props 3 -weight 1
-    bind $w.p.center.props.ne <KeyRelease> ::GX::OctaveScriptEditorUI::_propertyModified
-    bind $w.p.center.props.ae <KeyRelease> ::GX::OctaveScriptEditorUI::_propertyModified
 
     ttk::frame $w.p.center.desc
     pack $w.p.center.desc -side top -fill x -pady {0 5}
@@ -551,7 +610,6 @@ proc ::GX::OctaveScriptEditorUI::_build {} {
     ttk::entry $w.p.center.desc.e -textvariable ::GX::OctaveScriptEditorUI::ui(description)
     pack $w.p.center.desc.l -side left -padx {0 6}
     pack $w.p.center.desc.e -side left -fill x -expand 1
-    bind $w.p.center.desc.e <KeyRelease> ::GX::OctaveScriptEditorUI::_propertyModified
 
     ttk::frame $w.p.center.edit
     pack $w.p.center.edit -side top -fill both -expand 1
@@ -616,7 +674,7 @@ gxtxt_context
 
 Execution
 
-Save a Session script here, then select its session: ID in Octave Script Analysis. User scripts appear in Script Library and can be assigned to a Session. Legacy documents can be registered explicitly. The analysis run executes an exact snapshot and records its SHA-256.
+Save a Session script here, then select its session: ID in Octave Script Analysis. User scripts appear in Script Library and can be assigned to a Session. Legacy documents can be registered explicitly. Run > Open Script Runner opens the existing dialog without submitting a Job. The analysis run executes an exact snapshot and records its SHA-256.
 
 The bridge is not a sandbox.}
     $w.p.right.ref configure -state disabled
@@ -633,6 +691,9 @@ The bridge is not a sandbox.}
     bind $w <F3> {::GX::OctaveScriptEditorUI::_find forward; break}
     bind $w <Shift-F3> {::GX::OctaveScriptEditorUI::_find backward; break}
 
+    ::GX::uiTextEditingAttach $w [list $ui(text) $w.p.center.props.ie $w.p.center.props.ne $w.p.center.desc.e $w.p.center.find.e $w.p.center.props.ae]
+    bind $w.p.center.find.e <Escape> [list focus $ui(text)]
+    _watchProperties
     _refreshDocuments
     set docs [$ui(tree) children {}]
     if {[llength $docs]} { _loadDocument [lindex $docs 0] } else { _new }

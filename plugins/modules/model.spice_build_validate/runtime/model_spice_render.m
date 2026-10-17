@@ -104,7 +104,7 @@ function D=spice_publish(session,c)
       v=NaN(n,1);v(strcmp(roles,role_ids{r}))=c.input_family(idx(strcmp(roles,role_ids{r})));
       cols(end+1,:)={['family_' role_ids{r}],v,'derived'};
     endfor
-    id=['spice.plot.' key];spice_table(session,id,cols);
+    id=['spice.plot.' key];spice_table(session,id,cols,c);
     present={};relative_roles={};for r=1:3
       mask=strcmp(roles,role_ids{r});
       if(any(mask)),present{end+1}=role_ids{r};endif
@@ -117,12 +117,12 @@ function D=spice_publish(session,c)
   if(isempty(idx)),error('model.spice_build_validate: no verification rows for parity');endif
   a=c.analytical_y(idx);s=c.spice_y(idx);D.parity_min=min([a(:);s(:)]);D.parity_max=max([a(:);s(:)]);
   if(D.parity_max<=D.parity_min),D.parity_min-=1;D.parity_max+=1;endif
-  D.parity='spice.plot.parity';spice_table(session,D.parity,{'analytical',a(:),'independent';'spice',s(:),'derived'});
-  D.identity='spice.plot.identity';spice_table(session,D.identity,{'analytical',[D.parity_min;D.parity_max],'independent';'identity',[D.parity_min;D.parity_max],'reference'});
-  D.empty='spice.plot.empty';spice_table(session,D.empty,{'x',[0;1],'independent';'y',[0;1],'reference'});
+  D.parity='spice.plot.parity';spice_table(session,D.parity,{'analytical',a(:),'independent';'spice',s(:),'derived'},c);
+  D.identity='spice.plot.identity';spice_table(session,D.identity,{'analytical',[D.parity_min;D.parity_max],'independent';'identity',[D.parity_min;D.parity_max],'reference'},c);
+  D.empty='spice.plot.empty';spice_table(session,D.empty,{'x',[0;1],'independent';'y',[0;1],'reference'},c);
   if(isfield(c,'domain_vertices')&&isnumeric(c.domain_vertices)&&rows(c.domain_vertices)>=3&&columns(c.domain_vertices)>=2)
     v=c.domain_vertices(:,1:2);D.boundary='spice.plot.boundary';
-    spice_table(session,D.boundary,{'model_x',[v(:,1);v(1,1)],'independent';'model_family',[v(:,2);v(1,2)],'derived'});
+    spice_table(session,D.boundary,{'model_x',[v(:,1);v(1,1)],'independent';'model_family',[v(:,2);v(1,2)],'derived'},c);
     D.has_boundary=true;
   endif
 endfunction
@@ -140,9 +140,10 @@ function s=spice_name(c,profile,which)
   endif
   s=c.(field);
 endfunction
-function spice_table(session,id,cols)
-  opts=struct('storage','auto','replace_owned',true,'producer_version','3', ...
+function spice_table(session,id,cols,c)
+  opts=struct('storage','auto','replace_owned',true,'producer_version','5', ...
     'provenance','SPICE verification graph display data');
+  if(isfield(c,'statistical_results')),opts.statistical_results=c.statistical_results;endif
   P=struct();opened=false;finalized=false;
   try
     P=gxtxt_publication_v2_open(session,'model.spice_build_validate',id,'table.generic',opts);opened=true;

@@ -1,7 +1,7 @@
 function analysis_statistics_descriptive_main(args,framework_root)
 % Production descriptive-statistics workflow using public GX-TXT APIs only.
 % SPDX-License-Identifier: GPL-3.0-or-later
-  module_id='analysis.statistics.descriptive'; module_version='1.1.0';
+  module_id='analysis.statistics.descriptive'; module_version='1.2.0';
   publication_open=false; publication_finalized=false; P=struct();
   sample_publication_open=false; sample_publication_finalized=false; PS=struct();
   config_path=arg_value(args,'--config','');
@@ -47,7 +47,7 @@ function analysis_statistics_descriptive_main(args,framework_root)
     numeric=discover_numeric_api(framework_root,module_id);
     variables=resolve_variables(cfg,variable_tokens,source_dataset_id,module_id);
     gxtxt_progress_stage('statistics','Computing descriptive statistics','determinate',numel(variables));
-    rows=empty_rows(); warnings={}; selected_values=cell(1,numel(variables));
+    rows=empty_rows(); warnings={}; selected_values=cell(1,numel(variables)); statistical_results=struct();
     for i=1:numel(variables)
       V=variables(i);
       values=read_selected_variable(cfg,V.variable_id,selection,source_dataset_id,module_id);
@@ -58,9 +58,20 @@ function analysis_statistics_descriptive_main(args,framework_root)
       if(n_valid<1),error('%s: variable %s has no finite observations',module_id,V.name);endif
       opts=struct('nonfinite',nonfinite_policy);
       S=feval(numeric.function_name,'statistics',values,opts);
+      context=struct('y_unit',V.unit,'sampling_model','independent_observations','mean_se_model','sampling', ...
+        'assumptions',{{'Sampling standard error is conditional on independent observations with finite variance'}});
+      interpreted=gxtxt_statistics_v1('from_numeric','math.numeric.summary','statistics',S,context,struct(), ...
+        struct('producer',module_id,'source_dataset_id',source_dataset_id,'source_variable_id',V.variable_id));
+      statistical_results.(sprintf('variable_%d',i))=interpreted;
       Q=struct('probabilities',[],'quantiles',[],'definition','');
-      if(!isempty(percentile_probabilities)),Q=feval(numeric.function_name,'quantiles',values,percentile_probabilities,opts);endif
-      rows=append_standard_rows(rows,V,S,n_total,n_valid,n_excluded);
+      if(!isempty(percentile_probabilities))
+        Q=feval(numeric.function_name,'quantiles',values,percentile_probabilities,opts);
+        quantile_result=gxtxt_statistics_v1('from_numeric','math.numeric.summary','quantiles',Q,context,struct(), ...
+          struct('producer',module_id,'source_dataset_id',source_dataset_id,'source_variable_id',V.variable_id));
+        statistical_results.(sprintf('quantiles_%d',i))=quantile_result;
+        Q.quantiles=quantile_result.quantities.quantiles.value;
+      endif
+      rows=append_standard_rows(rows,V,interpreted,n_total,n_valid,n_excluded);
       rows=append_percentile_rows(rows,V,Q,n_total,n_valid,n_excluded);
       if(n_valid<2),warnings{end+1}=sprintf('%s (%s): sample variance, sample standard deviation and standard error are undefined for one valid observation.',V.name,V.variable_id);endif
       gxtxt_progress_update(i,numel(variables),'statistics',sprintf('Computed %d / %d variables',i,numel(variables)));
@@ -74,6 +85,7 @@ function analysis_statistics_descriptive_main(args,framework_root)
       'notes','Long-form descriptive statistics. Row-level unit and unit_power preserve dimensional meaning; source Dataset is unchanged.');
     popts.source_dataset_ids={source_dataset_id};
     popts.source_variable_ids=source_variable_ids;
+    popts.statistical_results=statistical_results;
     popts.provenance=sprintf('%s; selection=%s; nonfinite=%s',popts.provenance,selection_id(selection),nonfinite_policy);
     P=gxtxt_publication_v2_open(session,module_id,output_dataset_id,'table.generic',popts); publication_open=true;
     P=gxtxt_publication_v2_declare_dimension(P,'result',0,true);
@@ -241,21 +253,15 @@ function rows=append_standard_rows(rows,V,S,n_total,n_valid,n_excluded)
   rows=add_row(rows,V,'count',n_total,true,0,n_total,n_valid,n_excluded);
   rows=add_row(rows,V,'valid_count',n_valid,true,0,n_total,n_valid,n_excluded);
   rows=add_row(rows,V,'excluded_nonfinite_count',n_excluded,true,0,n_total,n_valid,n_excluded);
-  rows=add_row(rows,V,'minimum',S.min,true,1,n_total,n_valid,n_excluded);
-  rows=add_row(rows,V,'maximum',S.max,true,1,n_total,n_valid,n_excluded);
-  rows=add_row(rows,V,'range',S.range,true,1,n_total,n_valid,n_excluded);
-  rows=add_row(rows,V,'mean',S.mean,true,1,n_total,n_valid,n_excluded);
-  rows=add_row(rows,V,'median',S.median,true,1,n_total,n_valid,n_excluded);
-  rows=add_row(rows,V,'variance_sample',S.variance_sample,isfinite(S.variance_sample),2,n_total,n_valid,n_excluded);
-  rows=add_row(rows,V,'standard_deviation_sample',S.std_sample,isfinite(S.std_sample),1,n_total,n_valid,n_excluded);
-  rows=add_row(rows,V,'variance_population',S.variance_population,true,2,n_total,n_valid,n_excluded);
-  rows=add_row(rows,V,'standard_deviation_population',S.std_population,true,1,n_total,n_valid,n_excluded);
-  sem=NaN; if(n_valid>1),sem=S.std_sample/sqrt(n_valid);endif
-  rows=add_row(rows,V,'standard_error_mean',sem,isfinite(sem),1,n_total,n_valid,n_excluded);
-  rows=add_row(rows,V,'q1',S.q25,true,1,n_total,n_valid,n_excluded);
-  rows=add_row(rows,V,'q3',S.q75,true,1,n_total,n_valid,n_excluded);
-  rows=add_row(rows,V,'iqr',S.iqr,true,1,n_total,n_valid,n_excluded);
-  rows=add_row(rows,V,'rms',S.rms,true,1,n_total,n_valid,n_excluded);
+  mapping={'minimum','minimum';'maximum','maximum';'range','range';'mean','mean';'median','median'; ...
+    'variance_sample','variance';'standard_deviation_sample','standard_deviation'; ...
+    'variance_population','variance_population';'standard_deviation_population','standard_deviation_population'; ...
+    'standard_error_mean','standard_error_mean';'q1','quartile_1';'q3','quartile_3';'iqr','interquartile_range';'rms','root_mean_square'};
+  for i=1:size(mapping,1)
+    item=S.quantities.(mapping{i,2});defined=strcmp(item.status,'value');value=NaN;if(defined),value=item.value;endif
+    power=1;if(iscell(item.unit)&&numel(item.unit)==3&&strcmp(item.unit{1},'power')),power=str2double(item.unit{3});endif
+    rows=add_row(rows,V,mapping{i,1},value,defined,power,n_total,n_valid,n_excluded);
+  endfor
 endfunction
 
 function rows=append_percentile_rows(rows,V,Q,n_total,n_valid,n_excluded)

@@ -1,4 +1,4 @@
-# Native2D Presentation Export 1.0.0
+# Native2D Presentation Export 1.0.1
 
 This installable provider offers Export PNG and Export SVG through the shared
 Workbench Extension API. It renders a Native2D presentation snapshot, including
@@ -15,3 +15,10 @@ The provider can be installed, disabled or removed through Plugin Install and
 the Modules browser. A viewer discovers compatible exporter actions; it does
 not define the available formats itself. Runtime requirements are Python 3,
 Python Tk's Tcl list decoder, and Python Cairo for PNG.
+
+Version 1.0.1 preserves centered text anchors, compound-part direction markers
+and optional explicit `point_markers` in the shared snapshot. A host can supply
+actual source/control points separately from sampled curve paths, avoiding markers
+that would falsely identify every display sample as a scientific source point.
+Workbench supplies its visible palette, visibility and display style along with
+converted axis/tick labels; these do not change Native or Dataset coordinates.

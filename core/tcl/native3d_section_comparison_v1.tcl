@@ -38,7 +38,8 @@ proc ::GX::native3DGeometryCompareSections {token request} {
         native2DEnsure;set native [::GX::Native2D::core scene]
         set reference [_native3DSectionCurve $native [dict get [lindex $resources 0] contours]]
         set derived [_native3DSectionCurve $native [dict get [lindex $resources 1] contours]]
-        set compared [::GX::Native2D::core compare_geometry $native $reference $derived [datasetPublicationV2DictDefault $request sample_budget 257]]
+        set unit [dict get $request working_unit]
+        set compared [native2DComparison $native $reference $derived geometry [datasetPublicationV2DictDefault $request sample_budget 257] [list $unit $unit] [list $unit $unit] [dict create producer core.native3d reference [dict get $request base] target [dict get $request tool] coordinate_space section_plane_xy plane [dict get $request plane] section_tolerance [dict get $request tolerance]]]
         if {[native3DGeometrySceneInfo $token] ne $before} {error "Native3D document changed during section comparison"}
         set rows {};set index 0
         foreach row [dict get $compared rows] {lassign $row position signed distance a b;lappend rows [dict create sample_index [incr index] position $position signed_residual $signed distance $distance source $a projected $b]}

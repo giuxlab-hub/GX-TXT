@@ -1,15 +1,10 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Established build entry delegates to the single CORE CMake target.
 set -euo pipefail
-framework=${1:?usage: build_native.sh <framework-root>}
-module_dir=$(cd -- "$(dirname -- "$0")" && pwd)
-lib_dir="$framework/core/native3d/lib"
-test -f "$lib_dir/libgx3de.so"
-mkdir -p "$module_dir/bin"
-g++ -std=c++17 -O2 -fPIC -shared -Wall -Wextra -Werror \
-  $(pkg-config --cflags tcl) \
-  -I"$framework/core/native3d/include" \
-  -I"$framework/core/native3d" \
-  "$module_dir/native/gx3de_viewer_tcl.cpp" \
-  -L"$lib_dir" -lgx3de $(pkg-config --libs tcl) \
-  -Wl,-rpath,'$ORIGIN/../../../../core/native3d/lib' \
-  -o "$module_dir/bin/libgx3de_viewer_tcl.so"
+framework=${1:?usage: build_native.sh <framework-root> <new-build-directory>}
+build_dir=${2:?provide a separate new build directory}
+test ! -e "$build_dir"
+cmake -S "$framework/core/native3d" -B "$build_dir" -DCMAKE_BUILD_TYPE=Release -DGX3DE_BUILD_TCL_VIEWER=ON
+cmake --build "$build_dir" --target gx3de_viewer_tcl --parallel
+# Install through the CORE project after reviewing the build. No plugin-local copy.

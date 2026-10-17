@@ -1,7 +1,12 @@
 cmake_minimum_required(VERSION 3.12)
 project(gxtxt_native2d VERSION 0.9.8 LANGUAGES C)
 
-add_library(gx2d gx2d.c)
+# Numeric owns shared reductions; Native2D owns matching/projection geometry.
+set(GXTXT_NUMERIC_REDUCTION_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/../../plugins/modules/math.numeric/api/c/gxtxt_numeric_reductions_v1.h")
+if(NOT EXISTS "${GXTXT_NUMERIC_REDUCTION_HEADER}")
+  message(FATAL_ERROR "Native2D requires the public NUMERIC_API_v1 C binding from the matching framework")
+endif()
+add_library(gx2d gx2d.c "${GXTXT_NUMERIC_REDUCTION_HEADER}")
 target_compile_features(gx2d PUBLIC c_std_99)
 target_include_directories(gx2d PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 if(WIN32 AND BUILD_SHARED_LIBS)

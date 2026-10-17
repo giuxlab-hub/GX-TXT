@@ -42,6 +42,20 @@ These provisions are in the [Copernicus DEM license](https://dataspace.copernicu
 
 The private document-extraction test generator includes two PDFs without public redistribution permission and is excluded. The author's *Occhi sul Molo* WAV and independent generator are permitted in this public source distribution. The scientific software modules and their public APIs remain part of the framework.
 
+## Native solver source and Debian notices
+
+The scientific fitting runtime includes a native Ceres Solver 2.2.0 adapter using
+Eigen 3.4.0. Their upstream licenses remain distinct from the GPL-licensed
+GX-TXT adapter. The redistributable source archives are provided under
+`third_party/source/` together with SHA-256 hashes. Ceres carries
+BSD-3-Clause and bundled component notices; Eigen includes MPL-2.0 and
+BSD-3-Clause material. This section does not relicense these sources.
+
+See the [native solver license matrix](docs/legal/THIRD_PARTY_LICENSE_MATRIX_dev097.md),
+[Debian rebuild instructions](docs/legal/DEBIAN_NATIVE_REBUILD_dev097.md),
+[solver source bill of materials](docs/legal/NATIVE_SOLVER_SOURCE_SBOM_dev097.json),
+and [Debian runtime notices](docs/legal/debian-runtime-notices/).
+
 ## Redistribution guidance
 
 - Preserve per-file SPDX statements, copyright notices, notice directories, licenses and source attribution.

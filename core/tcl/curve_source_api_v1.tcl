@@ -2,7 +2,7 @@
 # Backend-neutral Dataset curve identity, exact access and bounded display.
 namespace eval ::GX::CurveSource {variable serial 0;variable records;array set records {}}
 proc ::GX::curveSourceApiInfo {} {
-    return [dict create api_id CURVE_SOURCE_API_v1 api_version 1 operations {open describe dataset_identity validate_snapshot display display_cache_store display_cache_restore page locate_rows open_stream close_stream close} chunk_rows_max 65536 display_budget_max 65536 display_policy ordered_xy_extrema_per_source_row_bucket scientific_authority canonical_dataset display_is_scientific_data 0 continuity_policies {source_row_adjacency}]
+    return [dict create api_id CURVE_SOURCE_API_v1 api_version 1 operations {open describe dataset_identity validate_snapshot validate_point_mask display display_cache_store display_cache_restore page locate_rows open_stream close_stream close} chunk_rows_max 65536 display_budget_max 65536 display_policy ordered_xy_extrema_per_source_row_bucket scientific_authority canonical_dataset display_is_scientific_data 0 continuity_policies {source_row_adjacency}]
 }
 proc ::GX::curveSourceDatasetIdentity {session dataset} {
     if {[file normalize $session] ne [file normalize [sessionInspectionCurrentSession]]} {error {Curve Source identity belongs to another active Session}}
@@ -280,6 +280,10 @@ proc ::GX::curveSourceClose {token} {
     if {[dict get $record view] ne ""} {datasetTransformCloseView [dict get $record view]}
     unset records($token)
 }
+proc ::GX::curveSourcePointMaskValidate {mask} {
+    _curveSourceValidatePointMask $mask
+    return validated
+}
 proc ::GX::_curveSourceValidatePointMask {mask} {
     if {$mask eq {}} return
     foreach field [dict keys $mask] {if {$field ni {api_id base_selected regions manual_rows}} {error "Unknown exact point selection field '$field'"}}
@@ -306,7 +310,8 @@ proc ::GX::_curveSourceMaskPacked {packed mask} {
     binary scan [dict get $packed source_rows] wu* rows
     set parameters {};set parameterBytes "";set position 0
     if {[dict exists $packed parameter]} {binary scan [dict get $packed parameter] q* parameters}
-    set xy "";set mapping "";set count 0
+    set companionBytes {};if {[dict exists $packed companions]} {dict for {role bytes} [dict get $packed companions] {dict set companionBytes $role ""}}
+    set xy "";set mapping "";set excluded "";set count 0
     set overrides [dict get $mask manual_rows];set regions [dict get $mask regions]
     foreach {x y} $coordinates row $rows {
         set selected [dict get $mask base_selected]
@@ -318,27 +323,41 @@ proc ::GX::_curveSourceMaskPacked {packed mask} {
         if {$selected} {
             append xy [binary format q2 [list $x $y]];append mapping [binary format w $row];incr count
             if {[dict exists $packed parameter]} {append parameterBytes [binary format q [lindex $parameters $position]]}
-        }
+            dict for {role bytes} $companionBytes {dict append companionBytes $role [string range [dict get $packed companions $role] [expr {8*$position}] [expr {8*$position+7}]]}
+        } else {append excluded [binary format w $row]}
         incr position
     }
-    set result [dict create xy $xy source_rows $mapping row_count $count]
+    set result [dict create xy $xy source_rows $mapping unselected_source_rows $excluded row_count $count]
     if {[dict exists $packed parameter]} {dict set result parameter $parameterBytes}
+    if {[dict size $companionBytes]} {dict set result companions $companionBytes}
     return $result
 }
-proc ::GX::curveSourceWithNumericInput {token consumer {pointMask {}} {progress ""} {parameterVariable ""}} {
+proc ::GX::curveSourceWithNumericInput {token consumer {pointMask {}} {progress ""} {parameterVariable ""} {companionVariables {}}} {
     # Host adapter API: the consumer sees only newly owned temporary Numeric
     # input, never a Dataset/provider path. The files exist for this call only.
     set record [_curveSourceRequire $token];set request [dict get $record request]
     _curveSourceValidatePointMask $pointMask
+    if {[dict size $companionVariables]>7} {error {Numeric input supports at most seven named companion variables}}
+    dict for {role variable} $companionVariables {
+        datasetPublicationV2ValidateId variable $role;datasetPublicationV2ValidateId variable $variable
+        if {$role eq "__parameter"} {error {Reserved numeric companion role}}
+    }
     native2DEnsure
+    if {"numeric_row_audit" ni [dict get [::GX::Native2D::core api_info] capabilities]} {error {The loaded Native2D adapter lacks exact preprocessing row audit; restart with the matching CORE adapter}}
+    if {[dict size $companionVariables]&&"numeric_companions" ni [dict get [::GX::Native2D::core api_info] capabilities]} {error {The loaded Native2D adapter lacks exact companion-column transport; restart with the matching CORE adapter}}
     set xy [file tempfile xyPath];set mapping [file tempfile rowPath]
     set gaps [file tempfile gapPath];fconfigure $gaps -translation binary -encoding binary
     fconfigure $xy -translation binary -encoding binary
     fconfigure $mapping -translation binary -encoding binary
     set selectedXY "";set selectedRows "";set selectedXYPath "";set selectedRowsPath ""
     set parameter "";set parameterPath "";set selectedParameter "";set selectedParameterPath ""
-    set stream "";set scene [::GX::Native2D::core scene]
+    set companionChannels {};set companionPaths {};set selectedCompanionChannels {};set selectedCompanionPaths {};set companionDescriptors {}
+    set auditChannels {};set auditPaths {};set stream "";set scene [::GX::Native2D::core scene]
     try {
+        foreach field {input_source_rows nonfinite_source_rows unselected_source_rows} {
+            set channel [file tempfile path];fconfigure $channel -translation binary -encoding binary
+            dict set auditChannels $field $channel;dict set auditPaths ${field}_file $path
+        }
         if {$pointMask ne {}} {
             set selectedXY [file tempfile selectedXYPath];set selectedRows [file tempfile selectedRowsPath]
             fconfigure $selectedXY -translation binary -encoding binary;fconfigure $selectedRows -translation binary -encoding binary
@@ -348,20 +367,43 @@ proc ::GX::curveSourceWithNumericInput {token consumer {pointMask {}} {progress 
             set parameter [file tempfile parameterPath];fconfigure $parameter -translation binary -encoding binary
             if {$pointMask ne {}} {set selectedParameter [file tempfile selectedParameterPath];fconfigure $selectedParameter -translation binary -encoding binary}
         }
+        dict for {role variable} $companionVariables {
+            set channel [file tempfile path];fconfigure $channel -translation binary -encoding binary
+            dict set companionChannels $role $channel;dict set companionPaths $role $path
+            if {$pointMask ne {}} {set channel [file tempfile path];fconfigure $channel -translation binary -encoding binary;dict set selectedCompanionChannels $role $channel;dict set selectedCompanionPaths $role $path}
+        }
         set ids [list [dict get $request x_variable_id] [dict get $request y_variable_id]]
         set lineage [dict get $record lineage_variable]
         if {$lineage ne ""} {lappend ids $lineage}
         if {$parameterVariable ne ""&&$parameterVariable ni $ids} {lappend ids $parameterVariable}
+        dict for {role variable} $companionVariables {if {$variable ni $ids} {lappend ids $variable}}
         set stream [curveSourceOpenStream $token $ids 65536]
+        set streamVariables [dict get [tableStreamMetadata $stream] variables]
+        dict for {role variable} $companionVariables {
+            foreach descriptor $streamVariables {if {[dict get $descriptor variable_id] eq $variable} {dict set companionDescriptors $role [dict create variable_id $variable variable_descriptor $descriptor format float64_le file [dict get $companionPaths $role]];break}}
+            if {![dict exists $companionDescriptors $role]} {error "Exact stream lacks companion variable '$variable'"}
+        }
         set count 0;set total 0;set trainingCount 0;set previousFinite 1
         while {1} {
             set chunk [tableStreamNext $stream];set columns [dict get $chunk columns]
             set sourceRows [expr {$lineage eq "" ? "" : [_curveSourceNativeColumn [lindex $columns 2]]}]
             set parameterArgument {}
             if {$parameterVariable ne ""} {set parameterArgument [list [_curveSourceNativeColumn [lindex $columns [lsearch -exact $ids $parameterVariable]]]]}
-            set packed [::GX::Native2D::core numeric_pack $scene [_curveSourceNativeColumn [lindex $columns 0]] [_curveSourceNativeColumn [lindex $columns 1]] $sourceRows [expr {[dict get $request start]+$total}] {*}$parameterArgument]
+            if {[dict size $companionVariables]} {
+                set companionColumns {}
+                dict for {role variable} $companionVariables {dict set companionColumns $role [_curveSourceNativeColumn [lindex $columns [lsearch -exact $ids $variable]]]}
+                if {$parameterVariable ne ""} {dict set companionColumns __parameter [lindex $parameterArgument 0]}
+                set packed [::GX::Native2D::core numeric_pack_columns $scene [_curveSourceNativeColumn [lindex $columns 0]] [_curveSourceNativeColumn [lindex $columns 1]] $sourceRows [expr {[dict get $request start]+$total}] $companionColumns]
+                if {$parameterVariable ne ""} {
+                    set bytes [dict get $packed companions __parameter];binary scan $bytes q* values
+                    foreach value $values {if {![string is double -strict $value]||[catch {expr {abs($value)<Inf}} finite]||!$finite} {error {Numeric parameters must be finite for every finite XY pair}}}
+                    dict set packed parameter $bytes;dict unset packed companions __parameter
+                }
+            } else {set packed [::GX::Native2D::core numeric_pack $scene [_curveSourceNativeColumn [lindex $columns 0]] [_curveSourceNativeColumn [lindex $columns 1]] $sourceRows [expr {[dict get $request start]+$total}] {*}$parameterArgument]}
             puts -nonewline $xy [dict get $packed xy];puts -nonewline $mapping [dict get $packed source_rows]
+            foreach field {input_source_rows nonfinite_source_rows} {puts -nonewline [dict get $auditChannels $field] [dict get $packed $field]}
             if {$parameter ne ""} {puts -nonewline $parameter [dict get $packed parameter]}
+            dict for {role channel} $companionChannels {puts -nonewline $channel [dict get $packed companions $role]}
             set gapBytes [dict get $packed break_before]
             if {[dict get $packed row_count]>0&&!$previousFinite} {set gapBytes [string replace $gapBytes 0 0 [binary format c 1]]}
             puts -nonewline $gaps $gapBytes
@@ -369,8 +411,10 @@ proc ::GX::curveSourceWithNumericInput {token consumer {pointMask {}} {progress 
             if {$pointMask ne {}} {
                 set chosen [_curveSourceMaskPacked $packed $pointMask]
                 puts -nonewline $selectedXY [dict get $chosen xy];puts -nonewline $selectedRows [dict get $chosen source_rows]
+                puts -nonewline [dict get $auditChannels unselected_source_rows] [dict get $chosen unselected_source_rows]
                 incr trainingCount [dict get $chosen row_count]
                 if {$selectedParameter ne ""} {puts -nonewline $selectedParameter [dict get $chosen parameter]}
+                dict for {role channel} $selectedCompanionChannels {puts -nonewline $channel [dict get $chosen companions $role]}
             }
             incr count [dict get $packed row_count];incr total [dict get $chunk row_count]
             if {$progress ne ""} {
@@ -381,12 +425,25 @@ proc ::GX::curveSourceWithNumericInput {token consumer {pointMask {}} {progress 
         }
         close $xy;set xy "";close $mapping;set mapping "";close $gaps;set gaps ""
         if {$parameter ne ""} {close $parameter;set parameter ""}
+        dict for {role channel} $companionChannels {close $channel};set companionChannels {}
+        dict for {role channel} $auditChannels {close $channel};set auditChannels {}
         set diagnostics [tableStreamDiagnostics $stream]
         curveSourceCloseStream $token $stream;set stream ""
         _curveSourceRequire $token
         if {$count<2} {error "Numeric input needs at least two finite XY pairs"}
         set input [dict create api_id CURVE_SOURCE_NUMERIC_INPUT_v1 source_id [dict get $record source_id] row_count $count exact_rows $total finite_policy omit_nonfinite_pairs xy_format interleaved_float64_le source_rows_format uint64_le xy_file $xyPath source_rows_file $rowPath break_before_file $gapPath break_before_format uint8 diagnostics $diagnostics]
+        set sourceDescriptor [curveSourceDescribe $token]
+        set originalCount [dict get $record metadata row_count]
+        if {[dict get $record lineage_variable] ne ""} {
+            # Read canonical metadata only; never repeat the filtered data pass.
+            set stream [tableStreamOpenDataset [dict get $record session] [dict get $request dataset_id] [list [dict get $request x_variable_id]] 1]
+            try {set originalCount [dict get [tableStreamMetadata $stream] row_count]} finally {tableStreamClose $stream;set stream ""}
+        }
+        set selectedCount [expr {$pointMask eq {}?$count:$trainingCount}]
+        dict set input preprocessing [dict create schema gxtxt.curve_source_preprocessing.v1 source $sourceDescriptor original_count $originalCount original_count_status [expr {$originalCount<0?"unavailable":"value"}] filtered_count $total finite_count $count selected_count $selectedCount nonfinite_count [expr {$total-$count}] selection_excluded_count [expr {$count-$selectedCount}] finite_policy omit_nonfinite_pairs duplicate_policy preserve_observations order_policy preserve_stream_order source_request $request row_identity_kind [dict get $sourceDescriptor row_identity_kind] selection_descriptor $pointMask]
+        set input [dict merge $input $auditPaths]
         if {$parameterVariable ne ""} {dict set input parameter_file $parameterPath;dict set input parameter_format float64_le;dict set input parameter_variable_id $parameterVariable}
+        if {[dict size $companionDescriptors]} {dict set input companion_columns $companionDescriptors}
         if {$pointMask ne {}} {
             close $selectedXY;set selectedXY "";close $selectedRows;set selectedRows ""
             if {$trainingCount<2} {error "Select at least two finite exact source points"}
@@ -394,6 +451,7 @@ proc ::GX::curveSourceWithNumericInput {token consumer {pointMask {}} {progress 
             # Training represents independent samples, with its own row map.
             dict set input training [dict replace [dict remove $input break_before_file break_before_format] xy_file $selectedXYPath source_rows_file $selectedRowsPath row_count $trainingCount selection_descriptor $pointMask]
             if {$selectedParameter ne ""} {close $selectedParameter;set selectedParameter "";dict set input training parameter_file $selectedParameterPath}
+            dict for {role channel} $selectedCompanionChannels {close $channel;dict set input training companion_columns $role file [dict get $selectedCompanionPaths $role]};set selectedCompanionChannels {}
         }
         return [uplevel #0 [list {*}$consumer $input]]
     } finally {
@@ -404,10 +462,15 @@ proc ::GX::curveSourceWithNumericInput {token consumer {pointMask {}} {progress 
         if {$selectedRows ne ""} {close $selectedRows}
         if {$parameter ne ""} {close $parameter}
         if {$selectedParameter ne ""} {close $selectedParameter}
+        dict for {role channel} $companionChannels {close $channel}
+        dict for {role channel} $selectedCompanionChannels {close $channel}
+        dict for {role channel} $auditChannels {close $channel}
         if {$stream ne ""} {curveSourceCloseStream $token $stream}
         ::GX::Native2D::core destroy $scene
         file delete -force -- $xyPath $rowPath $gapPath
         foreach path [list $selectedXYPath $selectedRowsPath $parameterPath $selectedParameterPath] {if {$path ne ""} {file delete -force -- $path}}
+        foreach path [concat [dict values $companionPaths] [dict values $selectedCompanionPaths]] {file delete -force -- $path}
+        foreach path [dict values $auditPaths] {file delete -force -- $path}
     }
 }
 

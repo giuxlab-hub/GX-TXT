@@ -161,3 +161,12 @@ No new public API family or independent settings file is introduced: dev095
 lacks a generic Viewer command registrar, so these host operations extend the
 existing Configuration authority. The unknown-Viewer fixture demonstrates use
 without a CORE branch for any module ID.
+
+## dev097 selective presentation persistence
+
+The existing `configurationSave ?fields? ?apply=1?` defaults preserve its full-save
+behavior. A nonempty list limits persistence to those registered User/module
+fields; other previously saved values remain intact and unrelated pending values
+are not committed. `apply=0` writes through the same atomic Configuration owner
+without reapplying runtime, storage or resource defaults. Runner view preferences
+use `{scripts.job_presentation} 0`; they never own or configure Job execution.

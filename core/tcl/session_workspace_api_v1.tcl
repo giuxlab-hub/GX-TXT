@@ -3,7 +3,7 @@
 # registry. Its ID, generation, transaction and resource lifetime remain CORE's.
 namespace eval ::GX::SessionWorkspace {variable providers {};variable views {};variable refreshTimer {}}
 proc ::GX::sessionWorkspaceApiInfo {} {
-    return [dict create api_id SESSION_WORKSPACE_API_v1 api_version 1 operations {list get create update rename delete validate note_read note_write preview_set export import} managed_destinations 1]
+    return [dict create api_id SESSION_WORKSPACE_API_v1 api_version 1 operations {list get create update rename delete validate note_read note_write preview_set export import resource_copy_tree} managed_destinations 1]
 }
 proc ::GX::sessionWorkspaceProviderRegister {provider descriptor} {
     variable ::GX::SessionWorkspace::providers
@@ -126,6 +126,42 @@ proc ::GX::managedResourceWrite {document metadata bytes} {
         set resource [interactiveDocumentResourceFinalize $writer];set writer {}
         return $resource
     } finally {if {$writer ne {}} {interactiveDocumentResourceAbort $writer}}
+}
+# Reuse the portable Workspace collector/remapper: preserve exact untouched text
+# and adopt every nested resource once, including resources inside metadata.
+proc ::GX::managedResourceCopyTree {document value} {
+    sessionWorkspaceGet $document
+    if {[string bytelength $value]>16777216} {error {Resource tree exceeds the 16 MiB Workspace payload bound}}
+    set references {};_workspacePackageReferences $value 0 references
+    set mapping {}
+    dict for {sha reference} $references {dict set mapping $sha [managedResourceCopy $document $reference]}
+    return [_workspaceRemapResources $value $mapping 0]
+}
+# Convert before Tcl crosses tkinter: a dual string/list object otherwise
+# becomes a Python tuple, which discards its original scientific text spacing.
+proc ::GX::sessionWorkspaceResourceCopyTreeUtf8 {document value} {
+    return [encoding convertto utf-8 [managedResourceCopyTree $document $value]]
+}
+proc ::GX::managedResourceCopy {document reference} {
+    # A retained Job result can be adopted by another real Workspace without
+    # borrowing the producing Document's generation or deriving private paths.
+    set info [interactiveDocumentResourceInfo $reference]
+    set reader [interactiveDocumentResourceOpenReader $reference]
+    set writer {}
+    try {
+        set writer [interactiveDocumentResourceOpenWriter $document [dict get $info metadata]]
+        while {1} {
+            set page [interactiveDocumentResourceNext $reader 1048576]
+            interactiveDocumentResourceAppend $writer [dict get $page bytes]
+            if {[dict get $page eof]} break
+        }
+        set result [interactiveDocumentResourceFinalize $writer];set writer {}
+        if {[dict get $result sha256] ne [dict get $info sha256]||[dict get $result size_bytes]!=[dict get $info size_bytes]} {error {Resource content changed during ownership transfer}}
+        return $result
+    } finally {
+        interactiveDocumentResourceCloseReader $reader
+        if {$writer ne {}} {interactiveDocumentResourceAbort $writer}
+    }
 }
 proc ::GX::sessionWorkspacePreviewSet {id reference} {
     sessionWorkspacePromote $id
@@ -264,7 +300,17 @@ proc ::GX::_workspaceRemapResources {value mapping depth} {
         return [dict merge [dict get $mapping $sha] [dict create metadata [_workspaceRemapResources [dict get $value metadata] $mapping [expr {$depth+1}]]]]
     }
     if {[catch {llength $value} n]||$n==0} {return $value}
-    set result {};foreach item $value {if {$item eq $value} {return $value};lappend result [_workspaceRemapResources $item $mapping [expr {$depth+1}]]}
+    set result {};set changed 0
+    foreach item $value {
+        if {$item eq $value} {return $value}
+        set remapped [_workspaceRemapResources $item $mapping [expr {$depth+1}]]
+        if {$remapped ne $item} {set changed 1}
+        lappend result $remapped
+    }
+    # Untouched strings and structured receipts retain their exact original
+    # representation. Parsing arbitrary scientific text as a Tcl list must not
+    # rewrite quotes, braces, whitespace or the CORE interpretation signature.
+    if {!$changed} {return $value}
     return $result
 }
 proc ::GX::sessionWorkspaceImport {resource {name {}}} {
@@ -410,7 +456,68 @@ proc ::GX::managedResourceWriteBase64 {document metadata encoded} {
     return [managedResourceWrite $document $metadata $bytes]
 }
 proc ::GX::managedResourceReadBase64 {reference start count} {return [binary encode base64 -maxlen 0 [interactiveDocumentResourceReadChunk $reference $start $count]]}
-proc ::GX::managedResourceApiInfo {} {return [dict create api_id MANAGED_RESOURCE_API_v1 api_version 1 operations {write read info} write_bytes_max 4194304 read_bytes_max 1048576 arbitrary_paths 0]}
+proc ::GX::managedResourceNumericWidths {} {
+    return {bool 1 int8 1 uint8 1 int16 2 uint16 2 int32 4 uint32 4 int64 8 uint64 8 float32 4 float64 8 complex64 8 complex128 16}
+}
+proc ::GX::managedResourceNumericOwner {document} {
+    _documentResourceRoot $document
+    return [_documentResourceOwnerGeneration $document]
+}
+proc ::GX::managedResourceImportNumeric {document generation path metadata} {
+    if {[managedResourceNumericOwner $document] ne $generation} {error {Numeric resource owner generation changed}}
+    foreach key {format dtype endian order columns row_count} {if {![dict exists $metadata $key]} {error "Numeric resource metadata requires $key"}}
+    set widths [managedResourceNumericWidths];set dtype [dict get $metadata dtype]
+    if {![dict exists $widths $dtype]||[dict get $metadata endian] ne "little"||[dict get $metadata order] ne "C"} {error {Unsupported numeric resource dtype/order/endian}}
+    set columns [dict get $metadata columns];set rows [dict get $metadata row_count];set count [llength $columns]
+    if {$count<1||$count>128||[llength [lsort -unique $columns]]!=$count||![string is entier -strict $rows]||$rows<0} {error {Numeric resource needs 1..128 distinct columns and a nonnegative row count}}
+    foreach column $columns {if {[string trim $column] eq {}||[regexp {[\x00-\x1f]} $column]} {error {Numeric column identities must be nonempty single-line text}}}
+    switch [dict get $metadata format] {
+        gxtxt.numeric_matrix_le_v1 {}
+        float64_interleaved_le {if {$dtype ne "float64"} {error {Interleaved binary64 resources require float64 values}}}
+        uint64_le {if {$dtype ne "uint64"||$count!=1} {error {Exact row resources require one uint64 column}}}
+        native2d.uint8_break_before_v1 {
+            if {$dtype ne "uint8"||$columns ne {break_before}||$rows<1} {error {Native2D gaps need a nonempty uint8 break_before column}}
+            dict set metadata point_count $rows
+        }
+        native2d.float64_xy_le_v1 {
+            if {$dtype ne "float64"||$columns ne {x y}||$rows<1} {error {Native2D geometry needs nonempty float64 X/Y columns}}
+            dict set metadata point_count $rows
+        }
+        default {error {Unsupported typed numeric resource format}}
+    }
+    set bytes [expr {$rows*$count*[dict get $widths $dtype]}]
+    if {$bytes>536870912||![file isfile $path]||[file type $path] eq "link"||[file size $path]!=$bytes} {error {Numeric resource payload differs from its bounded declared shape}}
+    return [interactiveDocumentResourceImportNumeric $document $path $metadata]
+}
+proc ::GX::managedResourceNumericPage {reference start count} {
+    set info [interactiveDocumentResourceInfo $reference];set metadata [dict get $info metadata]
+    if {![string is entier -strict $start]||![string is entier -strict $count]||$start<0||$count<0||$count>65536} {error {Numeric resource pages require a nonnegative start and 0..65536 rows}}
+    set format [dict get $metadata format];set width 8
+    switch $format {
+        gxtxt.numeric_matrix_le_v1 {
+            set dtype [dict get $metadata dtype];set widths [managedResourceNumericWidths]
+            if {![dict exists $widths $dtype]||[dict get $metadata endian] ne "little"||[dict get $metadata order] ne "C"} {error {Unsupported numeric resource dtype/order/endian}}
+            set width [dict get $widths $dtype];set columns [dict get $metadata columns]
+        }
+        float64_interleaved_le {set dtype float64;set columns [dict get $metadata columns]}
+        native2d.float64_xy_le_v1 {set dtype float64;set columns {x y}}
+        uint64_le {set dtype uint64;set columns {value}}
+        native2d.uint8_break_before_v1 {set dtype uint8;set width 1;set columns {value}}
+        default {error "Resource format '$format' has no declared fixed-width numeric page contract"}
+    }
+    set nc [llength $columns]
+    if {$nc<1||$nc>128||[llength [lsort -unique $columns]]!=$nc} {error {Numeric resource columns must have 1..128 unique identities}}
+    set size [dict get $info size_bytes];set stride [expr {$width*$nc}]
+    if {$size%$stride} {error {Numeric resource size differs from its declared row width}}
+    set total [expr {$size/$stride}]
+    if {[dict exists $metadata row_count]&&[dict get $metadata row_count]!=$total} {error {Numeric resource row count differs from its owned payload}}
+    if {$start>$total} {error {Numeric resource page starts outside the resource}}
+    set n [expr {min($count,$total-$start)}]
+    if {$n*$stride>1048576} {error {Numeric resource pages may contain at most 1 MiB; request fewer rows}}
+    set bytes [interactiveDocumentResourceReadChunk $reference [expr {$start*$stride}] [expr {$n*$stride}]]
+    return [dict create schema gxtxt.numeric_resource_page.v1 dtype $dtype endian little order C columns $columns start $start row_count $n total_rows $total source_sha256 [dict get $info sha256] bytes $bytes]
+}
+proc ::GX::managedResourceApiInfo {} {return [dict create api_id MANAGED_RESOURCE_API_v1 api_version 1 operations {write read info copy write_numeric read_numeric} write_bytes_max 4194304 read_bytes_max 1048576 numeric_write_bytes_max 536870912 numeric_page_rows_max 65536 numeric_dtypes [dict keys [managedResourceNumericWidths]] arbitrary_paths 0]}
 proc ::GX::noteDocumentApiInfo {} {return [dict create api_id NOTE_DOCUMENT_API_v1 api_version 1 operations {read write} storage UTF-8.md editor GX-Markup graphical_editor host_only]}
 
 # Compare immutable subtrees before traversing them. Camera-only updates keep

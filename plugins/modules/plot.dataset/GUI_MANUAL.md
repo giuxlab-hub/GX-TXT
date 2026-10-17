@@ -1,5 +1,43 @@
 # Scientific Dataset Plot: GUI guide
 
+## Dataset coordinate presentation
+
+Use **Dataset coordinates…** in Dataset Preview to choose each Variable's display
+unit, persistent view factor and source-unit pivot. Render or rerender the Plot to
+use the current settings. Plot preparation retains canonical values and exact row
+identity. Numerical calibration is not applied by plotting; materialize an explicit
+Derived Dataset first when calibrated numerical values are intended.
+
+A non-default Dataset display unit supplies the automatic graph unit choice.
+Explicit graph units take precedence. Explicit graph bounds, including a bound on
+any shared-X panel, take precedence over Dataset magnification for that axis.
+Choosing **source** preserves original numbers/units even with a declared sensor
+relation. Missing coordinate settings retain the previous automatic-unit behavior.
+Axes with several series need compatible physical units. Conflicting Dataset unit
+preferences require an explicit graph unit; conflicting magnification/pivots require
+matching policies, separate axes/panels, or explicit graph bounds.
+
+Single/dual-Y plots, linked panels, distribution value axes and XYZ plots share
+these rules. Magnification changes fitted limits once; it never scales points or
+error bars. Repeated rerender starts from retained canonical buffers. Error and
+band Variables keep their own declared relations; uncertainty displacement requires
+an affine relation. Level magnitudes do not have a unique signed inverse: combine
+nonidentity Dataset magnification with a linear level scale, or set explicit graph
+limits. Logarithmic axes reject a magnified range crossing zero.
+
+Affine coordinate offsets are retained in region-selection metadata. A nonlinear
+coordinate graph remains viewable, but source region selection explicitly refuses
+an unavailable scalar inverse. Per-Variable relations disable the old source-row
+range optimization so that a different inverse cannot silently discard rows.
+
+Detached Clones capture coordinate snapshots with their canonical data. Later
+source policy changes do not alter them; relocated rendering needs no source
+Session. Native3D Plot preview uses the same displayed XYZ points, limits and
+aspect as the static graph. Its caption reports Dataset factors/pivots and unapplied
+calibration. A metadata-only policy edit requires static rerender before preview.
+Independent retained Viewer representations continue to own their canonical
+geometry and separate presentation state.
+
 `plot.dataset` creates 2D and 3D graphs from canonical GX-TXT Datasets. This
 guide covers graph setup, the Series editor, family curves, value filters,
 rendering, and export. For the scientific data model and public APIs, see the
@@ -169,6 +207,19 @@ source to `audit.longform` and choose `primary.x_s` for X,
 by material. This path uses the Analysis bindings; it does not require the 2D
 Series editor.
 
+### Matrix surface bindings
+
+For a canonical grid, choose rank-one X/Y axes and rank-two Z with exact Y/X
+shape and dimension identities. Select surface or mesh. Axes must be strictly
+monotonic and all displayed source cells finite; missing cells are reported,
+never interpolated. Use auto or stride for bounded display reduction. Family
+is not a matrix-grid binding. Optional color must share the exact Z dimensions.
+
+In Fitter, **Fit → Physical surface fit…** accepts either measured XYZ points
+or an explicit grid, fits a physical formula, and publishes a sampled model to a
+new Dataset. **Open published grid in3D** opens its persistent Variant using the
+same Plot/Native3D owners. See the [surface guide](../../../docs/api/FITTER_SURFACE_v1.md).
+
 ## Save, inspect, and export
 
 Click **Save Config**, then **Run enabled analyses**. Open **Plots** and select
@@ -184,7 +235,8 @@ The rectangle-selection graph has its own Series configuration. Region
 Selection semantics are described separately from Series editing in the
 [module README](README.md#region-selection-compatibility).
 
-## Dataset selection, caching and shared graphics
+<a id="stabilization-in-3130-dev-051"></a>
+## Dataset choices and scoped refresh
 
 Series Dataset selection is a dropdown of registered Session Datasets with their contract/count context; optional manual ID remains available for advanced entry. Family/secondary/filter variable choice lazily loads distinct values. Reopening unchanged choices uses a Session/source/schema cache; **Refresh values** explicitly rescans. Lists are bounded at 2,000 values; use typed predicates for high-cardinality data. Dataset content/schema changes and Session changes invalidate the applicable entries.
 
@@ -194,7 +246,8 @@ Use **Axes...** for `auto`/`xy_equal` 2-D aspect, the existing 3-D aspect modes 
 
 **Export Graph ZIP... / Import Graph ZIP...** transfer an individual scientific or rendered graph into a new Detached Clone; the import review explains dependency collisions and scientific/rendered-only modes. See the [resource guide](../../../docs/guides/PORTABLE_RESOURCE_EXPORT_IMPORT.md). Save Config and reopen the Session to verify persisted controls.
 
-## Compact read-only Native3D preview
+<a id="3131--dev087-compact-preview"></a>
+## Compact 3D preview
 
 Plots ⟳ 3D opens the existing exact XYZ Variant in the shared read-only CORE host.
 Arrows rotate; ■ restores the initial camera; Exit restores the original static PNG.
@@ -203,7 +256,8 @@ Document or Dataset. Scientific axis ticks/layout and log/reversed axes have the
 limits documented in PLOT_DATASET_3D_API_v1. The persistent Viewer commands stay explicit.
 
 
-## Native3D preview controls and high-resolution export
+<a id="dev087-manual-acceptance-scientific-figure-correction"></a>
+## Scientific 3D figure export
 
 `native3DPreviewAcquire` retains its existing shared DatasetViewer host/worker and
 RAM frame. Plots' eligibility control is a placed canvas child, with no layout row;

@@ -1,15 +1,15 @@
 # Numerical Statistics Demo — Manual
 
 Plugin ID: `demo.numeric.statistics`  
-Plugin version: `1.0.1`  
-Framework: current GX-TXT public scientific APIs  
+Plugin version: `1.1.0`  
+Reference framework: `GX-TXT 0.9.8.10-dev-097`  
 License: GNU GPL v3 or later
 
 ## 1. Purpose
 
 This plugin is a compact demonstration/reference consumer of GX-TXT's public numerical architecture. It demonstrates statistics on a Canonical Dataset through `math.numeric` / `NUMERIC_API_v1`, publishes reusable derived Datasets, writes a human-readable report and renders an automatic graph.
 
-It is a demonstration, not a replacement for the independent production statistical analysis modules.
+The production descriptive, grouped and correlation modules provide additional workflows.
 
 ## 2. Public GX-TXT APIs used
 
@@ -22,6 +22,7 @@ The implementation uses only public framework paths relevant to the task:
 - Dataset Selection API v1 for optional X-range filtering;
 - Table Stream API v3 for bounded source inspection and graph-series preparation;
 - `NUMERIC_API_v1` from `math.numeric` for all statistical calculations;
+- CORE `STATISTICAL_RESULT_SEMANTICS_API_v1` for interpretation, units, status/reason fields and report formatting;
 - Dataset Publication API v2 for both derived Datasets;
 - Graph Provider / shared graphics helpers for automatic PNG output;
 - Plugin Install API v1;
@@ -29,7 +30,7 @@ The implementation uses only public framework paths relevant to the task:
 
 No CORE code is modified by this plugin.
 
-## 3. Statistical capabilities provided by NUMERIC_API
+## 3. Statistical capabilities used in dev097
 
 The public `math.numeric` API provides descriptive statistics, quantiles and weighted statistics, including Dataset-aware descriptive and weighted operations.
 
@@ -57,7 +58,7 @@ Weighted statistics return:
 - reliability-weight unbiased variance/std where defined;
 - weighted RMS.
 
-Standalone statistical covariance/correlation operations are not exposed by the current `NUMERIC_API_v1`. Covariance objects present in fitting and uncertainty-propagation APIs are different capabilities. This demo therefore has no covariance/correlation mode.
+This demo exposes descriptive and relative-weighted modes. Covariance and correlation are public Numeric operations used by the corresponding production modules. Quartiles come from the same Numeric statistics result, without a redundant quantile operation.
 
 ## 4. Session Generator
 
@@ -161,7 +162,7 @@ Minimum, maximum, range, sum, mean, median, standard deviation, RMS and quantile
 
 Variance is published/reported with the squared-unit expression, for example `V^2`. GX-TXT's Unit Registry parser supports simple powers; no false unchanged `V` metadata is assigned to variance.
 
-Counts and effective sample size are dimensionless. Weighted sum carries `value*weight` units when the Weight variable itself is not dimensionless. Correlation is not produced because no public correlation operation is exposed in this framework version.
+Counts and effective sample size are dimensionless. Weighted sum carries `value*weight` units when the Weight variable itself is not dimensionless. This demo does not produce correlation.
 
 ## 12. Derived Datasets
 
@@ -180,7 +181,10 @@ Schema:
 | `statistic` | string | Stable statistic name |
 | `value` | float64 | Computed numeric value |
 | `unit` | string | Per-statistic scientific unit |
-| `definition` | string | Definition/convention note |
+| `definition` | string | CORE label and estimator/convention note |
+| `status` | string | CORE value / undefined / unavailable / not_applicable / error state |
+| `reason` | string | CORE explanation for a non-value state |
+| `quantity_id` | string | Canonical CORE quantity identity; blank for input bookkeeping counts |
 
 A long-form schema is used because different statistics have different units. The numeric `value` column therefore does not falsely claim one common unit; the per-row `unit` field carries the correct unit.
 
@@ -207,6 +211,8 @@ Publication records include:
 - explicit non-finite policy;
 - public numerical API identity.
 
+Both Datasets retain validated `analysis.statistical_results` metadata. Non-value statistics use NaN placeholders and explicit status/reason fields; a singleton sample variance is undefined while its population variance is zero. Relative weight units remain explicit, including value*weight units for weighted sums.
+
 The source Dataset is never modified.
 
 ## 14. Report
@@ -226,9 +232,9 @@ The source Dataset is never modified.
 - Dataset Metadata availability;
 - published Dataset IDs;
 - graph output;
-- the documented absence of standalone covariance/correlation operations.
+- CORE conditions and reasons for non-value quantities.
 
-`statistics_metrics.ini` provides a compact machine-readable run summary.
+`statistics_metrics.ini` retains existing numeric keys and adds `.statistical_status`, `.statistical_quantity`, `.statistical_label`, `.statistical_reason` and `.statistical_unit` companions from CORE.
 
 ## 15. Automatic graph
 
@@ -244,22 +250,13 @@ Published Datasets are ordinary registered Canonical Datasets and remain address
 
 ## 17. Tests
 
-The package contains:
+The integrated dev097 validator is `validation/integrated_dev097/statistics_demo.tcl` in the framework workspace. It checks descriptive and weighted ordinary/singleton cases, original row identities, CORE metadata, units, machine-readable status, Session reopen, source preservation and one canonical plot. `statistics_bridge.tcl ... supervised` exercises the shared scalar-row API through both actual Script Job languages. Development receipts are recorded separately from final frozen-candidate acceptance; test presence alone is not a PASS claim.
 
-```text
-tests/test_static.py
-tests/test_framework_integration.tcl
-```
-
-Coverage includes deterministic generator data, normal/constant/signed/single-value/non-finite numerical semantics, explicit weighted behavior, package installation, generator import, Canonical Dataset import, stable variable resolution, API capability discovery, Selection persistence and real Octave execution when available.
-
-Runtime-dependent checks are reported as `SKIP` when GNU Octave is absent; no PASS is fabricated.
-
-Numerical and GUI checks require the configured GNU Octave and Tk runtime.
+The unchanged portable generator also remains part of the final integrated generator campaign.
 
 ## 18. Known limitations
 
-- No standalone covariance/correlation mode because GX-TXT 0.9.7.82 does not expose those public statistical operations.
+- Descriptive and relative-weighted modes only; use the corresponding production modules for covariance or correlation.
 - No regression; that belongs to `demo.numeric.regression`.
 - No histogram is generated because this demo does not require a new graph type or any patch to `plot.dataset`.
 - Only normal X-range Dataset Selection is supported by the descriptor for this reference demo.

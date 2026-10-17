@@ -8,30 +8,54 @@ Incompatible or semantic identity-only conversions reject the request. The same
 descriptor is available to both Script Bridge languages as `conversion_plan`.
 Dataset Transform persists and applies this descriptor only on explicit request.
 
+`unitRegistryAffinePlan source target ?source_override?` (Script Bridge:
+`affine_plan`) adds an `affine` boolean to this descriptor. When the registered
+formula syntax establishes an affine coordinate relation algebraically, it also
+returns finite `scale` and `offset` such that `target = scale * source + offset`.
+It supports intrinsic prefixes, affine units and declared affine formulas,
+including variable-specific relations. It never infers linearity by sampling.
+Unsupported/nonlinear expressions return `affine=false` with a reason and no
+coefficients; callers must use pointwise conversion. Invalid domains, incompatible
+dimensions, nonfinite coefficients and a collapsed coordinate dimension reject.
+Identity conversions preserve even opaque units without a guessed relation.
+The classification is conservative and expresses the mathematical relation;
+floating-point evaluation order can differ from pointwise conversion. It does
+not establish that an arbitrary input value is finite or within a formula's
+representable numerical range. Coordinate consumers must validate their data.
+
+`unitFormulaProgram formula` (Script Bridge: `formula_program`) returns the
+registered parser's arithmetic tree in `program_version=1`, `tree=<node>`.
+A node is a list: `x`, `number <finite binary64 constant>`, or an operation with
+one/two child nodes. Operations follow the restricted grammar below; unary signs
+are `unary+`/`unary-`. Programs are bounded to depth 64 and 4096 nodes. Both Script
+languages receive nested cells/lists with the same operation/operand order.
+CORE bulk consumers use `core/python/gxtxt_unit_program_v1.py` to decode and
+compile this program once. Dataset Transform consumes that parsed program
+with the canonical unary/power precedence. The canonical grammar is unchanged:
+`-x^2` means `(-x)^2`; use `-(x^2)` to negate the square, and `x^2^3` means `x^(2^3)`.
+
 SPDX-License-Identifier: GPL-3.0-or-later
 
-Introduced in GX-TXT 0.9.7.7. This public API is distinct from Semantic
-Registry API v1. Unit is a numeric/presentation symbol, not a scientific role.
+Unit Registry API v1 is distinct from Semantic Registry API v1. A unit is a
+numeric or presentation symbol; a Semantic role identifies scientific meaning.
 
-## Audit of the preexisting unit system
+<a id="audit-of-the-preexisting-unit-system"></a>
+## Intrinsic units and opaque symbols
 
-Before this API, Tcl's Unit Selector used
-`core/tcl/scientific_plot_framework_api_v1.tcl`:
-`unitTclSingle`, `unitTclDimensionKey`, `unitTclCompatible`, and a
-hardcoded candidate list. Octave's Unit/Dimension API v1 used
-`core/octave/units/gxtxt_unit_parse.m`, `gxtxt_unit_compatible.m`, and
-`gxtxt_unit_convert.m`. Both handled base A/V/s/Hz/Ohm/W/J/K/mol/m/g,
-SI prefixes, min/h/day and simple products/divisions/powers. Octave
-conversion used scale ratios of matching dimension vectors. The plot
-display scaler selected time units or SI prefixes when recognized; an
-unrecognized unit was left as-is for auto display. There was no public
-plugin registration or persisted custom conversion definition.
+CORE Tcl uses `unitTclSingle`, `unitTclDimensionKey` and `unitTclCompatible`;
+CORE Octave uses `gxtxt_unit_parse`, `gxtxt_unit_compatible` and
+`gxtxt_unit_convert`. Both support base A/V/s/Hz/Ohm/W/J/K/mol/m/g, SI prefixes,
+min/h/day and simple products, divisions and integer powers. The exact token
+`1` is a neutral dimensionless factor, including reciprocal units such as
+`1/s` and `1/ms`. For example, `1/ms` converts to Hz with scale 1000.
+The original unit string is retained; parsing does not rename stored units.
 
-FS/dB/dBFS were added as identity-only level units in 0.9.7.1; ppm/pH
-were added by explicit hardcoded identity cases in 0.9.7.3. These remain
-opaque by default. All symbols, including previously unknown ones, now
-support identity `foo -> foo`. No implicit ppm→mg/L or pH→concentration
-conversion exists.
+Intrinsic conversion uses scale ratios of matching dimensions. Plot auto display
+selects recognized time units or SI prefixes and retains unrecognized symbols.
+Plugins and Variables can supply explicit persisted custom conversions.
+FS, dB, dBFS, ppm and pH are identity-only units by default. All symbols support
+identity conversion `foo -> foo`. There is no implicit ppm to mg/L or pH to
+concentration relation.
 
 ## Tcl API
 
@@ -115,11 +139,12 @@ The framework sets `GXTXT_UNIT_REGISTRY_FILE` when running or rerendering
 standard modules. The file is a derived session view of active plugin
 definitions and per-variable custom relations. Consumers call the public
 helpers; they do not parse registry internals. The generic CORE plot
-metadata now computes both scale and offset for affine conversions.
+metadata computes both scale and offset for affine conversions.
 Auto display retains opaque/custom units; explicit display conversion
 requires a declared relation or compatible intrinsic dimensions.
 
-## CORE elapsed-duration scale definitions (v0.9.7.60)
+<a id="core-elapsed-duration-scale-definitions-v09760"></a>
+## CORE elapsed-duration scale definitions
 
 Elapsed Time Requested-Unit API v1 keeps canonical elapsed-time values in
 seconds and uses this registry for explicit consumer conversions. Existing
@@ -173,3 +198,78 @@ validates explicit conversion relations; identity conversion alone does not prov
 that an unregistered symbol is understood. Exact Curve Dataset publication reuses
 these existing operations before staging, preserving supported opaque labels and
 rejecting unsupported expressions without a private unit parser or new authority.
+
+<a id="bounded-in-process-coordinate-conversion-integrated-dev097"></a>
+## Bounded in-process coordinate conversion
+
+`unitRegistryConvertValues source target values ?source_override?` converts at
+most 4096 finite binary64 coordinate/control values in the calling Tcl process.
+It uses `unitRegistryConversionPlan` and the existing registration grammar,
+including intrinsic, affine and explicit nonlinear relations. An optional
+per-variable override has the same three-field contract as `conversion_plan`.
+The global registry and Dataset values are not modified. Source/target identity
+without an override preserves the original finite binary64 values.
+
+`unitFormulaEvaluate formula value` evaluates the same parsed arithmetic tree
+used to validate registration. No script evaluation, string substitution or
+external numerical process is used. The existing grammar treats unary signs as
+atoms: `-x^2` means `(-x)^2`; exponentiation is right-associative. These semantics
+match `gxtxt_unit_formula_eval` and are not replaced by another language's
+operator precedence.
+
+Inputs, formula intermediates and outputs must be finite and real. Domain
+errors, overflowing conversions and integers not exactly representable in
+binary64 are rejected. Empty input remains empty; negative zero is preserved.
+Use the existing Dataset Transform/typed array surfaces for large scientific
+arrays. The existing Script `convert` operation retains its established bulk
+Octave behavior.
+
+Both Script Bridge languages expose the additive operation:
+
+```python
+gxtxt_api_call('UNIT_REGISTRY_API_v1', 'convert_values',
+               [values, 'Hz', 'kHz'])
+```
+
+The optional fourth argument is the variable-specific override. Scalar or
+array shape follows the existing Bridge numeric conventions, and the bound is
+checked before a binary resource is materialized. Complex and logical arrays
+are rejected. This API supports scientific axis presentation; it does not
+change the length-only semantics of `unitRegistryConvertCoordinates`.
+<a id="declared-inverse-affine-planning-dev097"></a>
+### Declared inverse affine planning
+
+`unitRegistryAffinePlan source target ?sourceOverride? ?direction?` accepts
+`forward` (default) or `inverse`. Script `affine_plan` has the same final optional
+argument. Inverse classification uses the target's declared forward formula and
+the source Variable's declared inverse formula; it does not assume reciprocal
+coefficients. Results include `direction`, `input_unit`, `output_unit`, and the
+existing `affine`, `scale`, `offset`, `reason` contract. A nonlinear declaration
+remains non-affine. Formula authors must still declare a consistent inverse and
+valid domain; classification cannot prove those physical claims.
+
+## Differential units
+
+`unitRegistryDifferentialRatioPlan numerator denominator ?target?` is the public
+CORE owner for differential units. Python/Octave call `differential_ratio_plan`
+on UNIT_REGISTRY_API_v1 with two or three arguments. The versioned
+`gxtxt.differential_unit_plan.v1` result declares `status=value|unavailable`,
+`output_unit`, `dimension_key`, an explanatory `reason` and the offset policy.
+Only a value result has a finite nonzero `scale` and numerator/denominator/output
+basis records. Each basis names its registered unit, canonical unit, dimensions,
+scale and affine offset. Multiply a numerical differential ratio by `scale` to
+express it in `output_unit`; for example V/mA to Ohm has scale 1000.
+
+An omitted target uses CORE's canonical dimension product. Compatible prefixes
+and registered affine conversions are supported. Affine offsets cancel only
+for differentials: this plan must never convert absolute coordinate values.
+Nonlinear conversions, unknown units, semantic units and incompatible requested
+units return unavailable without an invented scale. No unit registry is modified.
+String fields remain strings and scale/offset fields remain numeric in both
+Script Bridge languages, independent of Tcl's internal object representation.
+
+
+Canonical symbol `1` is explicitly registered by CORE as an intrinsic
+dimensionless unit. Unit Selector, definition/list, compatible conversion and
+Python/Octave bindings share that same registration. It is distinct from an
+undeclared empty unit and does not permit conversion to a dimensioned quantity.

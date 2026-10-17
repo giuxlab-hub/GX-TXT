@@ -74,30 +74,20 @@ proc ::GX::scriptJobsDialog {} {
     set scriptJobsBusy 0
     toplevel $w;wm title $w {GX-TXT — Script Jobs};wm geometry $w 1280x760
     wm minsize $w 760 500
+    wm protocol $w WM_DELETE_WINDOW ::GX::scriptJobsClose
+    bind $w <Destroy> [list ::GX::scriptJobsDestroyed %W]
     ttk::label $w.intro -text {Local jobs continue after GX-TXT closes. Double-click a script to inspect that exact execution and complete log.}
     pack $w.intro -side top -anchor w -padx 8 -pady 5
-    ttk::frame $w.actions;pack $w.actions -side top -fill x
-    foreach {name label command} {
-        refresh Refresh scriptJobsRefresh cancel {Cancel selected} scriptJobsCancelSelected
-        details {Open execution details} scriptJobsOpenSelected rerun {Rerun selected…} scriptJobsRerunSelected
-        copy {Copy Script ID} scriptJobsCopySelected recover {Reconnect / recover} scriptJobsRecover
-    } {ttk::button $w.actions.$name -text $label -command [list ::GX::$command];pack $w.actions.$name -side left -padx 4}
-    set scriptJobsUi(limit) 1
-    ttk::label $w.actions.limitlabel -text {Concurrent jobs}
-    ttk::spinbox $w.actions.limit -from 1 -to 8 -width 4 -textvariable ::GX::scriptJobsUi(limit)
-    ttk::button $w.actions.apply -text Apply -command ::GX::scriptJobsApplyPolicy
-    ttk::button $w.actions.policy -text {Resource policy…} -command ::GX::scriptJobsPolicyDialog
-    pack $w.actions.limitlabel $w.actions.limit $w.actions.apply $w.actions.policy -side left -padx 4
-    bind $w.actions <Configure> {::GX::uiFieldControlsLayout %W %w}
+    scriptJobsBuildMenus $w
     ttk::panedwindow $w.split -orient vertical
     pack $w.split -fill both -expand 1 -padx 5 -pady 5
     ttk::frame $w.split.list;ttk::frame $w.split.preview
     $w.split add $w.split.list -weight 2;$w.split add $w.split.preview -weight 2
     grid rowconfigure $w.split.list 0 -weight 1;grid columnconfigure $w.split.list 0 -weight 1
-    ttk::treeview $w.jobs -columns {reference language version revision state started finished duration session jobid} -show {tree headings} -selectmode browse -height 10
-    $w.jobs heading #0 -text {Script name};$w.jobs column #0 -width 220 -minwidth 140 -stretch 0
+    ttk::treeview $w.jobs -columns {reference language version revision state started finished duration session jobid} -show {tree headings} -selectmode extended -height 10
+    $w.jobs heading #0 -text {Script name} -command {::GX::scriptJobsSort name};$w.jobs column #0 -width 220 -minwidth 140 -stretch 0
     foreach {key title width} {reference {Registered Script ID} 260 language Language 75 version Version 85 revision Revision 75 state State 95 started Started 155 finished Finished 155 duration Duration 110 session Session 200 jobid {Job ID} 350} {
-        $w.jobs heading $key -text $title;$w.jobs column $key -width $width -minwidth 60 -stretch 0
+        $w.jobs heading $key -text $title -command [list ::GX::scriptJobsSort $key];$w.jobs column $key -width $width -minwidth 60 -stretch 0
     }
     ttk::scrollbar $w.split.list.sy -command [list $w.jobs yview]
     ttk::scrollbar $w.split.list.sx -orient horizontal -command [list $w.jobs xview]
@@ -107,6 +97,7 @@ proc ::GX::scriptJobsDialog {} {
     bind $w.jobs <<TreeviewSelect>> ::GX::scriptJobsSelection
     bind $w.jobs <Double-1> {::GX::scriptJobsDoubleClick %y}
     bind $w.jobs <Return> ::GX::scriptJobsOpenSelected
+    bind $w.jobs <Button-3> {::GX::scriptJobsContext %y %X %Y}
     ttk::frame $w.split.preview.bar;pack $w.split.preview.bar -fill x
     ttk::label $w.split.preview.bar.label -text {Selected execution — 16 KiB log snapshot; open details for complete log / live output}
     ttk::button $w.split.preview.bar.copy -text {Copy details} -command [list ::GX::scriptJobTextCopyAll $w.details]
@@ -117,6 +108,11 @@ proc ::GX::scriptJobsDialog {} {
     set scriptJobsUi(selected) {};set scriptJobsUi(previewGeneration) 0
     set scriptJobsUi(status) {Connecting…}
     ttk::label $w.status -textvariable ::GX::scriptJobsUi(status);pack $w.status -side bottom -fill x -padx 5
+    set preferences [scriptJobPresentationGet]
+    set scriptJobsUi(workspace) [dict get $preferences current_id]
+    set scriptJobsUi(view) [dict get $preferences last_view]
+    set scriptJobsUi(offset) 0;set scriptJobsUi(generation) 0
+    scriptJobsApplyView
     scriptJobsRecover
     scriptJobAsync [scriptJobCommand configure] {} ::GX::scriptJobsPolicyLoaded
     scriptJobsRefresh
@@ -130,15 +126,31 @@ proc ::GX::scriptJobsRefresh {} {
     if {![winfo exists .gxtxtScriptJobs] || $scriptJobsBusy} return
     if {[info exists ::GX::scriptJobsUi(timer)]} {after cancel $::GX::scriptJobsUi(timer)}
     set scriptJobsBusy 1
-    scriptJobAsync [scriptJobCommand list] {} [list ::GX::scriptJobsReceived $::GX::scriptJobsUiEpoch]
+    set request [scriptJobViewRequest [scriptJobsCaptureView] $::GX::scriptJobsUi(offset)]
+    set watched {};dict for {id state} $::GX::scriptJobsSeen {if {$state in {QUEUED PREPARING RUNNING FINALIZING}} {lappend watched $id}}
+    dict set request watched_ids $watched
+    scriptJobAsync [scriptJobCommand view_list] $request [list ::GX::scriptJobsReceived $::GX::scriptJobsUiEpoch $::GX::scriptJobsUi(generation)]
 }
-proc ::GX::scriptJobsReceived {epoch response} {
+proc ::GX::scriptJobsReceived {epoch generation response} {
     variable scriptJobsBusy;variable scriptJobsUi;variable scriptJobsSeen
     set w .gxtxtScriptJobs
     if {![winfo exists $w] || $epoch!=$::GX::scriptJobsUiEpoch} return
     set scriptJobsBusy 0
+    if {$generation!=$scriptJobsUi(generation)} {scriptJobsRefresh;return}
     if {![dict get $response ok]} {set scriptJobsUi(status) [dict get $response error]} else {
-        set jobs [dict get $response result];set scriptJobsUi(records) $jobs
+        set page [dict get $response result];set jobs [dict get $page jobs]
+        foreach stateRecord [dict get $page lifecycle] {
+            set id [dict get $stateRecord id];set state [dict get $stateRecord state]
+            if {[dict exists $scriptJobsSeen $id] && [dict get $scriptJobsSeen $id] ne $state && $state in {COMPLETED FAILED CANCELLED INTERRUPTED} && $::GX::currentSession ne {} && [file normalize $::GX::currentSession] eq [dict get $stateRecord session]} {
+                catch {loadDatasetRegistry $::GX::currentSession};catch {refreshResults};catch {refreshGraphs}
+            }
+            dict set scriptJobsSeen $id $state
+        }
+        set scriptJobsUi(page) $page;set scriptJobsUi(offset) [dict get $page offset];set scriptJobsUi(records) $jobs
+        set previousSelection [$w.jobs selection];set previousY [lindex [$w.jobs yview] 0]
+        set wanted [lmap job $jobs {dict get $job id}]
+        foreach id [$w.jobs children {}] {if {$id ni $wanted} {$w.jobs delete $id}}
+        set rowIndex 0
         foreach job $jobs {
             set id [dict get $job id];set state [dict get $job state]
             set values [list [scriptJobField $job reference] [scriptJobField $job language] [scriptJobField $job script_version] [scriptJobField $job script_revision] $state [scriptJobTime [scriptJobStart $job]] [scriptJobTime [scriptJobField $job finished {}]] [scriptJobDuration $job] [scriptJobSessionName $job] $id]
@@ -146,10 +158,7 @@ proc ::GX::scriptJobsReceived {epoch response} {
             if {[$w.jobs exists $id]} {
                 if {[$w.jobs item $id -values] ne $values || [$w.jobs item $id -text] ne $name} {$w.jobs item $id -text $name -values $values}
             } else {$w.jobs insert {} end -id $id -text $name -values $values}
-            if {[dict exists $scriptJobsSeen $id] && [dict get $scriptJobsSeen $id] ne $state && $state in {COMPLETED FAILED CANCELLED INTERRUPTED} && $::GX::currentSession ne {} && [file normalize $::GX::currentSession] eq [dict get $job session]} {
-                catch {loadDatasetRegistry $::GX::currentSession};catch {refreshResults};catch {refreshGraphs}
-            }
-            dict set scriptJobsSeen $id $state
+            $w.jobs move $id {} $rowIndex;incr rowIndex
             if {$scriptJobsUi(selected) eq $id} {
                 # Only terminal-state transitions replace the bounded preview.
                 # Polling unrelated jobs leaves selection, scroll and focus alone.
@@ -159,7 +168,18 @@ proc ::GX::scriptJobsReceived {epoch response} {
                 set scriptJobsUi(selectedState) $state
             }
         }
-        set scriptJobsUi(status) "[llength $jobs] recent jobs. Full registered IDs remain available by horizontal scroll, Copy ID and execution details."
+        $w.jobs selection set [lmap id $previousSelection {if {$id ni $wanted} continue;set id}]
+        $w.jobs yview moveto $previousY
+        if {[info exists scriptJobsUi(restoreSelection)]} {
+            set id $scriptJobsUi(restoreSelection);unset scriptJobsUi(restoreSelection)
+            if {$id in $wanted} {$w.jobs selection set $id}
+            $w.jobs xview moveto [dict get $scriptJobsUi(view) xscroll]
+            $w.jobs yview moveto [dict get $scriptJobsUi(view) yscroll]
+        }
+        scriptJobsSelection
+        set first [expr {[llength $jobs] ? [dict get $page offset]+1 : 0}]
+        set scope [dict get $scriptJobsUi(view) scope]
+        set scriptJobsUi(status) "Showing $first–[expr {[dict get $page offset]+[llength $jobs]}] of [dict get $page matching] matching; [dict get $page hidden_scoped] hidden / [dict get $page total_scoped] in scope; [dict get $page total_stored] stored. Scope: $scope. Filter: $scriptJobsUi(filter)."
     }
     scriptJobsActionsRefresh
     set scriptJobsUi(timer) [after 1000 ::GX::scriptJobsRefresh]
@@ -167,19 +187,19 @@ proc ::GX::scriptJobsReceived {epoch response} {
 proc ::GX::scriptJobsSelection {} {
     variable scriptJobsUi
     set w .gxtxtScriptJobs
+    if {![winfo exists $w]} return
     set selected [$w.jobs selection]
     scriptJobsActionsRefresh
-    if {$selected eq {} || $selected eq $scriptJobsUi(selected) || ![info exists scriptJobsUi(records)]} return
+    if {[llength $selected]!=1} {
+        set scriptJobsUi(selected) {};incr scriptJobsUi(previewGeneration)
+        unset -nocomplain scriptJobsUi(selectedState) scriptJobsUi(previewLog)
+        scriptJobTextReplace $w.details [expr {[llength $selected]>1 ? "[llength $selected] Jobs selected. History actions apply to exact Job IDs." : "Select an execution to inspect its retained log."}] 1
+        return
+    }
+    set selected [lindex $selected 0]
+    if {$selected eq $scriptJobsUi(selected) || ![info exists scriptJobsUi(records)]} return
     set scriptJobsUi(selected) $selected
     foreach job $scriptJobsUi(records) {if {[dict get $job id] eq $selected} {set scriptJobsUi(selectedState) [dict get $job state];scriptJobsPreviewLoad $job;break}}
-}
-proc ::GX::scriptJobsActionsRefresh {} {
-    set w .gxtxtScriptJobs
-    if {![winfo exists $w]} return
-    set selected [$w.jobs selection];set state {}
-    if {[info exists ::GX::scriptJobsUi(records)]} {foreach job $::GX::scriptJobsUi(records) {if {[dict get $job id] eq $selected} {set state [dict get $job state];break}}}
-    $w.actions.cancel state [expr {$state in {QUEUED PREPARING RUNNING FINALIZING} ? "!disabled" : "disabled"}]
-    $w.actions.rerun state [expr {$state in {COMPLETED FAILED CANCELLED INTERRUPTED} ? "!disabled" : "disabled"}]
 }
 proc ::GX::scriptJobsRerunSelected {} {
     set selected [.gxtxtScriptJobs.jobs selection]
@@ -226,7 +246,7 @@ proc ::GX::scriptJobsDoubleClick {y} {
     set t .gxtxtScriptJobs.jobs;set id [$t identify row 0 $y]
     if {$id ne {}} {$t selection set $id;scriptJobDetailsWindow $id}
 }
-proc ::GX::scriptJobsOpenSelected {} {set id [.gxtxtScriptJobs.jobs selection];if {$id ne {}} {scriptJobDetailsWindow $id}}
+proc ::GX::scriptJobsOpenSelected {} {set id [.gxtxtScriptJobs.jobs selection];if {[llength $id]==1} {scriptJobDetailsWindow [lindex $id 0]}}
 proc ::GX::scriptJobsCopySelected {} {
     set id [.gxtxtScriptJobs.jobs selection]
     foreach job $::GX::scriptJobsUi(records) {if {[dict get $job id] eq $id} {scriptJobClipboard [scriptJobField $job reference];return}}
@@ -236,8 +256,10 @@ proc ::GX::scriptJobsActionDone {response} {
     scriptJobsRefresh
 }
 proc ::GX::scriptJobsCancelSelected {} {
-    set selected [.gxtxtScriptJobs.jobs selection]
-    if {$selected ne {}} {scriptJobAsync [scriptJobCommand cancel $selected] {} ::GX::scriptJobsActionDone}
+    set records [scriptJobsSelectedRecords]
+    if {![llength $records]} return
+    foreach record $records {if {[dict get $record state] ni {QUEUED PREPARING RUNNING FINALIZING}} {return}}
+    foreach record $records {scriptJobAsync [scriptJobCommand cancel [dict get $record id]] {} ::GX::scriptJobsActionDone}
 }
 proc ::GX::scriptJobsApplyPolicy {} {
     scriptJobAsync [scriptJobCommand configure max_jobs=$::GX::scriptJobsUi(limit)] {} ::GX::scriptJobsActionDone
@@ -280,3 +302,5 @@ proc ::GX::scriptRunFit {} {
 }
 
 source [file join [file dirname [info script]] script_job_details_surface.tcl]
+
+source [file join [file dirname [info script]] script_jobs_presentation.tcl]

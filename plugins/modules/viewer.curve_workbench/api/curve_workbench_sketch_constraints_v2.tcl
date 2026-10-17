@@ -188,7 +188,7 @@ proc ::GX::CurveWorkbench::_constraintCommit {w id spec} {
         foreach key {a b axis} {if {[dict exists $spec $key]&&[dict get $spec $key]==[dict get $r native]} {lappend unitsFor $logical}}
     }
     foreach logical $unitsFor {if {[dict get [_record $w $logical] native]==[dict get $spec a]&&[dict get [_record $w $logical] locked]&&![::GX::datasetPublicationV2DictDefault $spec driven 0]} {error {Geometry is read-only. Unlock the retained primitive or use Representation to convert the Dataset first.}}}
-    _cadUnits $w [lsort -unique $unitsFor]
+    _constraintCoordinateGuard $w $spec
     set affected [_sketchAffected $w [lsort -unique $unitsFor]];set before [_snapshotIds $w $affected];set undo $st($w,undo);set redo $st($w,redo)
     set native [expr {$id eq {}?0:[dict get $st($w,constraints) $id native]}]
     if {[dict exists $spec annotation]&&[dict get $spec placed]} {
@@ -229,6 +229,7 @@ proc ::GX::CurveWorkbench::_dimensionPreview {w x y} {
             if {![dict exists $options $st($w,dimForced)]} {error {unsupported dimension selection}}
             set spec [dict get $options $st($w,dimForced)]
         }
+        _constraintCoordinateGuard $w $spec
         set g [::GX::Native2D::core sketch_dimension_preview $st($w,scene) $spec $p]
     } reason]} {
         _draw $w
@@ -241,7 +242,8 @@ proc ::GX::CurveWorkbench::_dimensionPreview {w x y} {
     _draw $w;_dimensionDraw $w $g $spec #237a6a dimension_preview
 }
 proc ::GX::CurveWorkbench::_dimensionText {w spec value driven} {
-    set kind [dict get $spec kind];set unit [_dimensionUnit $w $spec]
+    set kind [dict get $spec kind];set unit [dict get [_dimensionCoordinateInfo $w $spec] display_unit]
+    set value [_dimensionDisplayedValue $w $spec $value]
     set prefix [expr {$kind eq "radius"?"R ":$kind eq "diameter"?"Ø ":$kind eq "lock_x"?"X ":$kind eq "lock_y"?"Y ":$kind in {angle axis_angle}?"∠ ":{}}]
     set text "$prefix[format %.5g $value] $unit";if {$driven} {set text "($text)"};return $text
 }
@@ -261,20 +263,21 @@ proc ::GX::CurveWorkbench::_inlineOpen {w spec annotation {id {}}} {
     if {[winfo exists $w.inline]} {destroy $w.inline}
     set st($w,dimSpec) $spec;set st($w,dimAnnotation) $annotation;set st($w,dimExisting) $id
     ttk::frame $w.inline -padding 5 -relief ridge -borderwidth 2
-    set st($w,inlineValue) [format %.9g [dict get $spec value]]
-    if {$id ne {}&&[dict exists $st($w,constraints) $id expression]} {set st($w,inlineValue) [dict get $st($w,constraints) $id expression]}
-    ttk::label $w.inline.title -text "[_constraintTitle [dict get $spec kind]] · $st($w,sketchUnit) (angle: rad)"
+    set st($w,inlineValue) [format %.9g [_dimensionDisplayedValue $w $spec [dict get $spec value]]]
+    set st($w,inlineCoordinateIds) [dict keys $st($w,curves)];set st($w,inlineCoordinateKey) [_coordinateControlKey $w $st($w,inlineCoordinateIds)]
+    if {$id ne {}&&[dict exists $st($w,constraints) $id expression]&&![string is double -strict [dict get $st($w,constraints) $id expression]]} {set st($w,inlineValue) [dict get $st($w,constraints) $id expression]}
+    ttk::label $w.inline.title -text "[_constraintTitle [dict get $spec kind]] · [dict get [_dimensionCoordinateInfo $w $spec] display_unit]"
     ttk::entry $w.inline.value -width 18 -textvariable ::GX::CurveWorkbench::st($w,inlineValue)
     ttk::button $w.inline.commit -text {✓ Enter} -command [list ::GX::CurveWorkbench::_inlineCommit $w]
     ttk::button $w.inline.reference -text {Create as reference} -command [list ::GX::CurveWorkbench::_inlineCommit $w 1]
-    ttk::label $w.inline.message -text {Parameter name, formula, or numeric value with compatible unit.} -wraplength 270
+    ttk::label $w.inline.message -text "Numbers use the displayed unit. An explicit unit is accepted. Parameter formulas retain native [dict get [_dimensionCoordinateInfo $w $spec] native_unit] coordinates." -wraplength 270
     pack $w.inline.title -fill x;pack $w.inline.value $w.inline.commit -side top -fill x
     pack $w.inline.message -fill x
     lassign [::GX::Native2D::core device $st($w,scene) $annotation] x y
     set x [expr {max(10,min($x,[winfo width $w.right.viewport.canvas]-295))}];set y [expr {max(10,min($y+18,[winfo height $w.right.viewport.canvas]-170))}]
     place $w.inline -in $w.right.viewport.canvas -x $x -y $y -width 280;raise $w.inline
     set imageMeasurement 0
-    foreach field {a b} {if {[dict exists $spec $field]&&[::GX::Native2D::core image_get $st($w,scene) [dict get $spec $field]] ne {}} {set imageMeasurement 1}}
+    foreach field {a b} {if {[dict exists $spec $field]&&[dict get $spec $field]!=0&&[::GX::Native2D::core image_get $st($w,scene) [dict get $spec $field]] ne {}} {set imageMeasurement 1}}
     if {$imageMeasurement} {
         $w.inline.commit configure -text {Add reference measurement} -command [list ::GX::CurveWorkbench::_inlineCommit $w 1]
         $w.inline.message configure -text {Measure the calibrated graphic. Recalibrate it to change its physical scale.}
@@ -289,12 +292,9 @@ proc ::GX::CurveWorkbench::_inlineCommit {w {reference 0}} {
     if {$st($w,token) ne [::GX::interactiveDocumentSessionToken]} {_sketchIdle $w {Session changed — select current geometry again.};return}
     set spec $st($w,dimSpec);set text [string trim $st($w,inlineValue)]
     if {[catch {
-        _save $w;set token [_parameterBind $w];set expression $text
-        if {[catch {set value [::GX::parameterEvaluate $token $text]} diagnostic]} {
-            if {![regexp {^([+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?)\s+([A-Za-z][A-Za-z0-9_/^-]*)$} $text -> value unit]} {error $diagnostic}
-            set target [_dimensionUnit $w $spec];::GX::unitRegistryConversionPlan $unit $target
-            set value [expr {$value*[::GX::unitRegistryIntrinsicScale $unit]/[::GX::unitRegistryIntrinsicScale $target]}];set expression $value
-        }
+        _coordinateControlCheck $w $st($w,inlineCoordinateIds) $st($w,inlineCoordinateKey)
+        _save $w;set parsed [_dimensionInput $w $spec $text]
+        set value [dict get $parsed value];set expression [dict get $parsed expression]
         dict set spec value $value;dict set spec annotation $st($w,dimAnnotation);dict set spec placed 1;dict set spec driven $reference
         set id [_constraintCommit $w $st($w,dimExisting) $spec]
         dict set st($w,constraints) $id expression $expression
@@ -532,7 +532,7 @@ proc ::GX::CurveWorkbench::_cadToolChoice {w} {
 proc ::GX::CurveWorkbench::_dimensionUnit {w spec} {
     variable st
     if {[dict get $spec kind] in {angle axis_angle}} {return rad}
-    dict for {id record} $st($w,curves) {if {[dict get $record native]==[dict get $spec a]} {return [lindex [_coordinateUnits $record] 0]}}
+    dict for {id record} $st($w,curves) {if {[dict get $record native]==[dict get $spec a]} {return [lindex [_coordinateUnits $record] [expr {[dict get $spec kind] in {lock_y vertical_distance}?1:0}]]}}
     return $st($w,sketchUnit)
 }
 proc ::GX::CurveWorkbench::_drawRelationships {w} {

@@ -1,4 +1,4 @@
-function P=pd_prepare_3d(info,cfg,opts,plot_type)
+function P=pd_prepare_3d(info,cfg,opts,plot_type,runtime_config)
 % Prepare one generic XYZ/C dataset. No scientific interpolation is performed.
 % SPDX-License-Identifier: GPL-3.0-or-later
   if(isempty(info.z)),error('plot.dataset: the enabled 3D graph requires a Z binding');endif
@@ -15,7 +15,11 @@ function P=pd_prepare_3d(info,cfg,opts,plot_type)
     error('plot.dataset: Color C is not supported by %s; clear Color or choose scatter3/surface/mesh/trisurf',plot_type);
   endif
   if(any(strcmp(plot_type,{'surface','mesh','contour3','heatmap'})))
-    [groups,stats]=pd_prepare_3d_gridded_stream(info,opts,plot_type);
+    if(isfield(info.z_meta,'rank')&&info.z_meta.rank==2)
+      [groups,stats]=pd_prepare_3d_canonical_grid(info,opts,runtime_config);
+    else
+      [groups,stats]=pd_prepare_3d_gridded_stream(info,opts,plot_type);
+    endif
     mode='gridded';
   else
     [groups,stats]=prepare_scattered(info,opts,plot_type);

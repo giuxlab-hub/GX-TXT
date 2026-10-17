@@ -1,3 +1,9 @@
+# 1.2.0 — dev097 statistical ownership
+
+- Delegate the retained estimator to public Numeric and interpret once through CORE.
+- Preserve scientific Dataset/Variable identities, add captured metadata and validated reports.
+-
+
 # Changelog
 
 ## 1.1.0

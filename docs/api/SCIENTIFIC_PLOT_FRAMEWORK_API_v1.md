@@ -6,6 +6,20 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 This document is the integration map for generic scientific plot plugins. It does not define a `plot.dataset` implementation.
 
+## dev097 Debian local Qt context
+
+Call `gxtxt_setup_graphics()` before creating Octave figures. For Qt on a local
+Unix display (`:N`, `:N.S`, or `unix:N`), CORE selects direct GLX by setting
+`LIBGL_ALWAYS_INDIRECT=0` in the rendering process. This prevents stale remote-X
+shell settings from causing Qt6 PNG export to crash. Toolkit choice, figure
+visibility, scientific values, raster sizing and atomic export remain governed
+by their existing APIs. GNUplot and remote-display environment policy are
+unchanged. The returned setup record and log add `context_policy`, whose values
+are `local_direct` or `inherited`. No Session/Workspace schema migration occurs.
+Qt PNG export preserves the configured figure RGB background and restores the
+caller's `inverthardcopy` property afterward. Transparent Qt PNG still rejects
+explicitly; it does not replace a previously successful output file.
+
 ## dev-047 graph presentation additions
 
 The same per-graph Axes override state now includes `background=#RRGGBB` or

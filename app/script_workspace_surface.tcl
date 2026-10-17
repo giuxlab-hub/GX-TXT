@@ -129,6 +129,40 @@ proc ::GX::rebuildNativeAnalysisGui {} {
     scriptWorkspaceRefreshChoices
 }
 
+proc ::GX::scriptWorkspaceEditorSessionValid {parent token} {
+    if {$::GX::currentSession eq {} || $token ne [interactiveDocumentSessionToken]} {
+        tk_messageBox -parent $parent -icon error -title {Editor Session changed} -message {The editor belongs to a different or closed Session. Export any unsaved buffer if needed, then reopen the editor in the intended Session before saving, deleting, registering or opening its Runner.}
+        return 0
+    }
+    return 1
+}
+proc ::GX::scriptWorkspaceOpenEditorRunner {parent reference dirty saveCommand expectedSha sessionToken} {
+    if {![scriptWorkspaceEditorSessionValid $parent $sessionToken]} {return 0}
+    if {![regexp {^(session|user):.+$} $reference]} {
+        tk_messageBox -parent $parent -icon info -title {Open Script Runner} -message {Save or explicitly register this script in Session or User scope first. Existing legacy documents remain unchanged. Run > Script Library is available for other registered scripts.}
+        return 0
+    }
+    if {[catch {set metadata [scriptRegistryDescribe $reference]} failure]} {
+        tk_messageBox -parent $parent -icon error -title {Registered script unavailable} -message $failure
+        return 0
+    }
+    if {$dirty} {
+        set message {This editor has unsaved changes. Yes: save changes and open the Runner. No: open the last saved revision and keep the editor changes. Cancel: return to editing. Opening the Runner does not submit a Job.}
+        if {[dict get $metadata sha256] ne $expectedSha} {append message { The registered source also changed outside this editor: saving requires a reload; No opens the newer saved source shown in the Runner.}}
+        set answer [tk_messageBox -parent $parent -icon question -type yesnocancel -default cancel -title {Choose the Runner revision} -message $message]
+        switch -- $answer {
+            yes {if {![uplevel #0 $saveCommand]} {return 0}}
+            no {}
+            default {return 0}
+        }
+    } elseif {[dict get $metadata sha256] ne $expectedSha} {
+        set answer [tk_messageBox -parent $parent -icon warning -type okcancel -default cancel -title {Saved revision changed} -message {The registered source changed since this editor loaded it. Open the Runner for the newer saved revision? Its SHA and metadata will be shown before any Job can be submitted. The editor buffer remains unchanged.}]
+        if {$answer ne "ok"} {return 0}
+    }
+    scriptWorkspaceRunDialog $reference
+    return 1
+}
+
 proc ::GX::scriptWorkspaceRunDialog {{reference {}} {previous {}}} {
     variable scriptRunUi
     if {$reference eq {}} {set reference $::GX::scriptWorkspaceChoice}

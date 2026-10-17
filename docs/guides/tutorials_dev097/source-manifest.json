@@ -1,0 +1,136 @@
+{
+  "target": "0.9.8.10-dev-097",
+  "status": "SHA-256 inventory of the public GX-TXT 0.9.8.10-dev-097 tutorial assets",
+  "artifacts": [
+    {
+      "path": "large-data/spectrum.png",
+      "sha256": "2d63578efb5b969d0f9460b288f6dd7905a0a9ff46170a228cd37fa643080305",
+      "source": "published tutorial asset: large-data/spectrum.png"
+    },
+    {
+      "path": "stft/reconstruction.png",
+      "sha256": "c7eb972d17fb62e92a9f710a0f6d08fa9d1bd94b5ed004273d6597930d261a2b",
+      "source": "published tutorial asset: stft/reconstruction.png"
+    },
+    {
+      "path": "stft/spectrogram.png",
+      "sha256": "e955f21c3b0df3bca2572ee83e526071d45e0460d605f55f21da7fc7ed10361e",
+      "source": "published tutorial asset: stft/spectrogram.png"
+    },
+    {
+      "path": "terrain-3d/surface.png",
+      "sha256": "425492e247a7253afa398cf4cb1f67da9df6abacb457f6b095a9c8e9378af670",
+      "source": "published tutorial asset: terrain-3d/surface.png"
+    },
+    {
+      "path": "terrain-3d/mesh.png",
+      "sha256": "a536e764051a10ec39e99b2f0d08ff1454256a9110f82768f4281b510ee57962",
+      "source": "published tutorial asset: terrain-3d/mesh.png"
+    },
+    {
+      "path": "residual-validation/families.png",
+      "sha256": "1e2f0edcdba5953a6d67db59cc685ba229109bf1e8322d24cf1165cf6b8790fa",
+      "source": "published tutorial asset: residual-validation/families.png"
+    },
+    {
+      "path": "residual-validation/profile-rmse.png",
+      "sha256": "a6ad388538dcfd1f189ff52a7751278f60e1a99a3e1c34a88f99d2e63c9d3a74",
+      "source": "published tutorial asset: residual-validation/profile-rmse.png"
+    },
+    {
+      "path": "terrain-3d/terrain_profiles_raw.csv",
+      "sha256": "a773c512ba6865c830e1f62dfd658005401e55e30faa32d17cfde28ee4877bfd",
+      "source": "published tutorial asset: terrain-3d/terrain_profiles_raw.csv"
+    },
+    {
+      "path": "terrain-3d/terrain_profiles_raw.metadata.txt",
+      "sha256": "792e0dcae17bb9ef991488fd2d96e174989ee1e660773c9f49cfce7eed46c766",
+      "source": "published tutorial asset: terrain-3d/terrain_profiles_raw.metadata.txt"
+    },
+    {
+      "path": "residual-validation/terrain_profiles_raw.csv",
+      "sha256": "a773c512ba6865c830e1f62dfd658005401e55e30faa32d17cfde28ee4877bfd",
+      "source": "published tutorial asset: residual-validation/terrain_profiles_raw.csv"
+    },
+    {
+      "path": "residual-validation/terrain_profiles_raw.metadata.txt",
+      "sha256": "792e0dcae17bb9ef991488fd2d96e174989ee1e660773c9f49cfce7eed46c766",
+      "source": "published tutorial asset: residual-validation/terrain_profiles_raw.metadata.txt"
+    },
+    {
+      "path": "residual-validation/EXPECTED_RESULTS.md",
+      "sha256": "10432806a8454de5a4ecfc339136b54bf621ae142e951ffd0245ee49b1ff8b93",
+      "source": "published tutorial asset: residual-validation/EXPECTED_RESULTS.md"
+    },
+    {
+      "path": "large-data/01_generate_large_noisy_signal.py",
+      "sha256": "3adcb62509d6b9ef2272ae377480d9e2f3207a1eee80cb5cf254d3194009f0d7",
+      "source": "published tutorial asset: large-data/01_generate_large_noisy_signal.py"
+    },
+    {
+      "path": "large-data/02_stream_large_dataset_summary.py",
+      "sha256": "9eaffe0f8a5511e08327ab7a7b5461a0710564adf0d42fc9ef3adb2d2d589806",
+      "source": "published tutorial asset: large-data/02_stream_large_dataset_summary.py"
+    },
+    {
+      "path": "large-data/03_fourier_signal_api.py",
+      "sha256": "3f03b210f20b61c0f8f8070b8ae21ce7732dc78bf4d57df4974bd54418b9c083",
+      "source": "published tutorial asset: large-data/03_fourier_signal_api.py"
+    },
+    {
+      "path": "large-data/04_parallel_fft_policy_benchmark_v2.py",
+      "sha256": "750762f39f8066859730285bfd78e38648a4dc5ce2f58359bb31ce78e8f064b0",
+      "source": "published tutorial asset: large-data/04_parallel_fft_policy_benchmark_v2.py"
+    },
+    {
+      "path": "stft/01_generate_nonstationary_signal.py",
+      "sha256": "e874413372208b529d5ad1878d9cb34ff17195e307d9505676f6cc4012c7bda3",
+      "source": "published tutorial asset: stft/01_generate_nonstationary_signal.py"
+    },
+    {
+      "path": "stft/02_stft_inverse_publish.py",
+      "sha256": "532ef89c49c0ac661d6811fadf0c3b76706375dfddb28f8b73f3fde4fea9e436",
+      "source": "published tutorial asset: stft/02_stft_inverse_publish.py"
+    },
+    {
+      "path": "stft/03_plot_stft_diagnostics_v3.py",
+      "sha256": "9bdeab494bacff7a06d19f5062ea46a94d7df5a51307bcad03865f44a03f6801",
+      "source": "published tutorial asset: stft/03_plot_stft_diagnostics_v3.py"
+    },
+    {
+      "path": "stft/04_verify_after_session_reopen.py",
+      "sha256": "c6cce42ee4b8da52c5f3f65f2207f2630dda671a987531d9d6569ad54d849c2d",
+      "source": "published tutorial asset: stft/04_verify_after_session_reopen.py"
+    },
+    {
+      "path": "terrain-3d/tutorial_terrain_fit_dev097.py",
+      "sha256": "5c6578df5f79cd5f06e8688a6f8a9facb7d86b1aa1101220870708667c943e74",
+      "source": "published tutorial asset: terrain-3d/tutorial_terrain_fit_dev097.py"
+    },
+    {
+      "path": "terrain-3d/02_render_surface_v3.py",
+      "sha256": "7b4f8830b9712f1a3cdbbee86b79288db94f5e00c4a0cafbf8dff3bd141ebcc0",
+      "source": "published tutorial asset: terrain-3d/02_render_surface_v3.py"
+    },
+    {
+      "path": "terrain-3d/03_build_mesh_scene_v3.py",
+      "sha256": "b8f31b06a7fd55449eb27664cb4ebae361bf9948a39b1bb9f8889d1d2f3b114b",
+      "source": "published tutorial asset: terrain-3d/03_build_mesh_scene_v3.py"
+    },
+    {
+      "path": "terrain-3d/04_verify_after_reopen.py",
+      "sha256": "ed43a4b140ed3437cde3a95ba01aa5785c10eb85b9b683f5942746cc739a34a1",
+      "source": "published tutorial asset: terrain-3d/04_verify_after_reopen.py"
+    },
+    {
+      "path": "residual-validation/tutorial_residual_validate_dev097.py",
+      "sha256": "8a39f3304f2b246df3b83de10db285ac1e5ef206ce27161299de6fbef2f361c6",
+      "source": "published tutorial asset: residual-validation/tutorial_residual_validate_dev097.py"
+    },
+    {
+      "path": "residual-validation/02_plot_fit_validation_v3.py",
+      "sha256": "dffdb5cbb7f7958d5a8d8616f221aa018404809a5ac286a9f7ed94ac28915d3c",
+      "source": "published tutorial asset: residual-validation/02_plot_fit_validation_v3.py"
+    }
+  ]
+}

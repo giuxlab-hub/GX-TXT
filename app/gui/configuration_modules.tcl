@@ -18,7 +18,7 @@ proc ::GX::configurationInstalledPlugins {} {
             set state Installed;set health Available
             if {$id ne [file tail [file dirname $descriptor]]} {set health {Descriptor identity mismatch}}
             if {$type eq "module" && [moduleField $id descriptor ""] ne ""} {
-                set state [expr {[moduleIsEnabled $id] ? "Enabled" : "Disabled"}]
+                set state [moduleOperationalState $id]
                 set missing {}
                 foreach dependency [splitList [moduleField $id depends ""]] {
                     if {[moduleField $dependency descriptor ""] eq ""} {lappend missing $dependency}
@@ -136,6 +136,11 @@ proc ::GX::configurationModulesSelect {} {
     pack $parent.identity -fill x -pady 4
     bind $parent <Configure> [list ::GX::configurationModulesResize $parent %w %h]
     if {$type eq "module"} {
+        if {[moduleOperationalClass $id] eq "SELECTABLE_PROVIDER"} {
+            ttk::button $parent.activation -text [expr {[moduleIsEnabled $id] ? "Disable provider" : "Enable provider"}] \
+                -command [list ::GX::configurationModuleProviderToggle $id]
+            pack $parent.activation -anchor w -pady 4
+        }
         set scope user
         if {[dict exists $::GX::ConfigurationEditor::contexts $parent.editor] && [dict get $::GX::ConfigurationEditor::contexts $parent.editor module] eq $id} {set scope [dict get $::GX::ConfigurationEditor::contexts $parent.editor scope]}
         if {![winfo exists $parent.editor]} {ttk::frame $parent.editor}
@@ -149,6 +154,14 @@ proc ::GX::configurationModulesSelect {} {
 proc ::GX::configurationModulesDocumentation {} {
     variable ::GX::ConfigurationModules::selected
     if {[string match module:* $selected]} {documentationBrowserOpenModule [string range $selected 7 end]} else {.top.nb select .top.nb.help;documentationBrowserPopulate}
+}
+proc ::GX::configurationModuleProviderToggle {id} {
+    if {[moduleOperationalClass $id] ne "SELECTABLE_PROVIDER"} {error "Provider activation is not applicable to '$id'"}
+    moduleSetEnabled $id [expr {![moduleIsEnabled $id]}]
+    configurationModulesReload
+    refreshModuleCatalog
+    refreshAnalysisStatus
+    refreshManifestPreview
 }
 
 proc ::GX::configurationModulesResize {parent width {height {}}} {

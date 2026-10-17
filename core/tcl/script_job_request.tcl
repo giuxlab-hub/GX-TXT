@@ -29,7 +29,8 @@ if {[catch {
         dict set binding namespace $namespace
         dict set inputs $alias $binding
     }
-    set prepared [::GX::scriptExecutionPrepare $reference [dict get $request parameters] $session [dict get $request runtime_template] [dict get $request module_output]]
+    set invocation [expr {[dict exists $request callable_invocation] ? [dict get $request callable_invocation] : {}}]
+    set prepared [::GX::scriptExecutionPrepare $reference [dict get $request parameters] $session [dict get $request runtime_template] [dict get $request module_output] $invocation]
     dict for {key value} $prepared {set $key $value}
     set output [dict get $request output]
     if {[dict exists $output dataset_id] && [dict get $output dataset_id] ne {}} {
@@ -53,6 +54,7 @@ if {[catch {
         }
     } finally {close $ch}
     set effective [dict create language $language runtime_executable [lindex $command 0]]
+    if {$invocation ne {}} {dict set effective registered_callable $invocation}
     set runtimeFields [::GX::parseIni $runtime]
     dict for {key value} $runtimeFields {
         if {[string match config.* $key] && $key ni {config.script_file config.script_name}} {dict set effective $key $value}

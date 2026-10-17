@@ -5,12 +5,13 @@ function fp=pd_series_prep_fingerprint(session,G,aux,reduction,target,threshold,
   if(strcmp(reduction,'none')||(strcmp(reduction,'auto')&&isfield(G,'dataset_row_count')&&isfinite(G.dataset_row_count)&&G.dataset_row_count<=threshold))
     target=0;threshold=0;
   endif
-  p={'PLOT_DATASET_SERIES_PREP_V1',G.dataset_id,G.x_variable_id,G.y_variable_id, ...
+  p={'PLOT_DATASET_SERIES_PREP_V2',G.dataset_id,G.x_variable_id,G.y_variable_id, ...
      G.secondary_variable_id,G.ordering_variable_id,G.alignment_mode,G.manual_offset_seconds, ...
      G.x_unit,G.x_value_kind,G.x_value_format,G.x_semantic_role,G.x_time_reference,G.x_time_origin, ...
      reduction,target,threshold};
   if(isfield(G,'source_row_ordinals')&&!isempty(G.source_row_ordinals)),p=[p {'exact_source_rows',sprintf('%.0f,',G.source_row_ordinals)}];endif
   for i=1:numel(aux),p{end+1}=aux{i};endfor
+  optional=pd_uncertainty_aux_ids(presentation,G);p=[p {'uncertainty_finite_runs_v1',numel(optional)} optional];
   for i=1:numel(G.row_filters)
     f=G.row_filters{i};p{end+1}=f.filter_variable_id;p{end+1}=f.predicate;p{end+1}=f.dtype;
     for name={'value','lower','upper'}

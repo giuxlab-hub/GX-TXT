@@ -1,4 +1,16 @@
-## 1.2.2
+## 1.3.0
+
+- Use Numeric and the public CORE statistics API for grouped mean intervals,
+  Pearson correlation, MAD and fit reporting; persist compact records in every
+  derived and plotting Dataset.
+- Replace the private t approximation with Numeric quantiles and retain genuine
+  untruncated interval bounds. Label time-aggregate intervals as conditional.
+- Interpret estimated SEM fit weights as relative, preserving canonical IDs and
+  source measurements. Preserve descriptive QC/MAD teaching conventions.
+- Load the plotting helper's fixed framework entry at global scope without
+  dynamic statistical dispatch.
+
+## 1.2.20
 
 - Publish automatic graphs through Plot Dataset API v3 and commit current Session state through Session Persistence API v1.
 

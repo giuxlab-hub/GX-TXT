@@ -3,7 +3,7 @@
 from gxtxt_script_bridge_server import BridgeError, NumericArray
 
 _ARGS = {
-    "api_info": [], "open": ["request"], "describe": ["source"], "validate_snapshot": ["descriptor"],
+    "api_info": [], "dataset_identity": ["dataset_id"], "open": ["request"], "describe": ["source"], "validate_snapshot": ["descriptor"],
     "display": ["source"], "page": ["source", "start", "count"],
     "locate_rows": ["source", "source_rows"],
     "open_stream": ["source", "variable_ids", "chunk_rows", "options"],
@@ -45,6 +45,8 @@ def invoke(host, operation, args):
     if operation not in _ARGS or len(args) != len(_ARGS[operation]):
         raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "Invalid Curve Source arguments")
     state = _state(host)
+    if operation == "dataset_identity":
+        return host.as_dict(host.call("::GX::curveSourceDatasetIdentity", host.session, args[0]))
     if operation == "api_info":
         result = host.as_dict(host.call("::GX::curveSourceApiInfo"))
         result["operations"] = host.as_list(result["operations"])

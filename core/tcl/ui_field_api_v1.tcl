@@ -11,7 +11,7 @@ namespace eval ::GX::UiField {
     variable formStatus
 }
 proc ::GX::uiFieldApiInfo {} {
-    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldFormCreate uiMenuPopup uiMenuWorkarea uiMenuRowAttach}]
+    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldFormCreate uiFieldFormSectionEnabled uiMenuPopup uiMenuWorkarea uiMenuRowAttach}]
 }
 proc ::GX::uiFieldColor {value {withAlpha 0}} {
     set opacity 1.0
@@ -331,6 +331,14 @@ proc ::GX::uiFieldFormLayout {window width} {
     }
     $window.status configure -wraplength $wrap
 }
+proc ::GX::uiFieldFormSectionEnabled {window section enabled} {
+    variable ::GX::UiField::forms
+    set enabled [uiFieldNormalize {type boolean} $enabled]
+    set notebook $window.viewport.content.sections;set tab $notebook.$section
+    if {![dict exists $forms $window]||![winfo exists $notebook]||$tab ni [$notebook tabs]} {error {Unknown form section}}
+    $notebook tab $tab -state [expr {$enabled?"normal":"disabled"}]
+    return $enabled
+}
 proc ::GX::uiFieldFormSee {window widget} {
     if {![winfo exists $window.viewport]} return
     set notebook $window.viewport.content.sections
@@ -359,8 +367,8 @@ proc ::GX::uiFieldFormApply {window} {
             dict set values $key [uiFieldNormalize $descriptor $formValues($window,$key)]
         }
         uplevel #0 [list {*}[dict get $form apply] $values]
-    } message]} {set formStatus($window) $message;return 0}
-    set formStatus($window) "Applied."
+    } message]} {if {[dict exists $forms $window]&&[winfo exists $window]} {set formStatus($window) $message};return 0}
+    if {[dict exists $forms $window]&&[winfo exists $window]} {set formStatus($window) "Applied."}
     return 1
 }
 proc ::GX::uiFieldFormDestroy {window actual} {
@@ -594,6 +602,7 @@ proc ::GX::_uiFieldInspectionColumnsApply {tree} {
 }
 
 source [file join [file dirname [info script]] ui_menu_api_v1.tcl]
+source [file join [file dirname [info script]] ui_text_editing_v1.tcl]
 
 proc ::GX::uiFieldFormSectionLayout {window} {
     set notebook $window.viewport.content.sections

@@ -19,43 +19,177 @@ proc ::GX::unitFormulaValidate {formula} {
 }
 proc ::GX::unitFormulaParseSum {tokens indexVar} {
     upvar 1 $indexVar i
-    unitFormulaParseProduct $tokens i
+    set node [unitFormulaParseProduct $tokens i]
     while {$i < [llength $tokens] && [lindex $tokens $i] in {+ -}} {
-        incr i; unitFormulaParseProduct $tokens i
+        set op [lindex $tokens $i];incr i
+        set node [list $op $node [unitFormulaParseProduct $tokens i]]
     }
+    return $node
 }
 proc ::GX::unitFormulaParseProduct {tokens indexVar} {
     upvar 1 $indexVar i
-    unitFormulaParsePower $tokens i
+    set node [unitFormulaParsePower $tokens i]
     while {$i < [llength $tokens] && [lindex $tokens $i] in {* /}} {
-        incr i; unitFormulaParsePower $tokens i
+        set op [lindex $tokens $i];incr i
+        set node [list $op $node [unitFormulaParsePower $tokens i]]
     }
+    return $node
 }
 proc ::GX::unitFormulaParsePower {tokens indexVar} {
     upvar 1 $indexVar i
-    unitFormulaParseAtom $tokens i
+    set node [unitFormulaParseAtom $tokens i]
     if {$i < [llength $tokens] && [lindex $tokens $i] eq "^"} {
-        incr i; unitFormulaParsePower $tokens i
+        incr i;set node [list ^ $node [unitFormulaParsePower $tokens i]]
     }
+    return $node
 }
 proc ::GX::unitFormulaParseAtom {tokens indexVar} {
     upvar 1 $indexVar i
     if {$i >= [llength $tokens]} { error "Incomplete conversion formula" }
     set tok [lindex $tokens $i]; incr i
-    if {$tok in {+ -}} { unitFormulaParseAtom $tokens i; return }
+    if {$tok in {+ -}} {return [list unary$tok [unitFormulaParseAtom $tokens i]]}
     if {$tok eq "("} {
-        unitFormulaParseSum $tokens i
+        set node [unitFormulaParseSum $tokens i]
         if {$i >= [llength $tokens] || [lindex $tokens $i] ne ")"} { error "Unclosed conversion formula" }
-        incr i; return
+        incr i; return $node
     }
     if {$tok in {log log10 exp sqrt}} {
         if {$i >= [llength $tokens] || [lindex $tokens $i] ne "("} { error "Function requires parentheses" }
-        incr i; unitFormulaParseSum $tokens i
+        incr i;set node [unitFormulaParseSum $tokens i]
         if {$i >= [llength $tokens] || [lindex $tokens $i] ne ")"} { error "Unclosed conversion function" }
-        incr i; return
+        incr i; return [list $tok $node]
     }
-    if {$tok eq "x" || [string is double -strict $tok]} { return }
+    if {$tok eq "x"} {return [list x]}
+    if {[string is double -strict $tok]} {return [list number $tok]}
     error "Unknown formula token: $tok"
+}
+proc ::GX::_unitFormulaTree {formula} {
+    set compact [unitFormulaValidate $formula]
+    set tokens [regexp -all -inline {(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?|[A-Za-z_][A-Za-z_0-9]*|[()+*/^-]} $compact]
+    set index 0;return [unitFormulaParseSum $tokens index]
+}
+proc ::GX::_unitFiniteValue {value} {
+    if {[catch {expr {double($value)}} result]||[catch {expr {abs($result)<Inf}} finite]||!$finite} {error {Unit conversion requires finite real binary64 values}}
+    if {[string is entier -strict $value]&&[expr {entier($result)}]!=$value} {error {Integer coordinate cannot be represented exactly as binary64}}
+    return $result
+}
+proc ::GX::_unitFormulaEvaluateTree {node x} {
+    set op [lindex $node 0]
+    if {$op eq "x"} {return $x}
+    if {$op eq "number"} {return [_unitFiniteValue [lindex $node 1]]}
+    set a [_unitFormulaEvaluateTree [lindex $node 1] $x]
+    if {[llength $node]==3} {set b [_unitFormulaEvaluateTree [lindex $node 2] $x]}
+    switch -- $op {
+        + {set v [expr {$a+$b}]}
+        - {set v [expr {$a-$b}]}
+        * {set v [expr {$a*$b}]}
+        / {set v [expr {$a/$b}]}
+        ^ {set v [expr {pow($a,$b)}]}
+        unary+ {set v $a}
+        unary- {set v [expr {-$a}]}
+        log {set v [expr {log($a)}]}
+        log10 {set v [expr {log10($a)}]}
+        exp {set v [expr {exp($a)}]}
+        sqrt {set v [expr {sqrt($a)}]}
+        default {error {Unknown Unit Registry formula node}}
+    }
+    return [_unitFiniteValue $v]
+}
+proc ::GX::unitFormulaEvaluate {formula value} {
+    # Same parsed grammar as registration; no script evaluation/interpolation.
+    return [_unitFormulaEvaluateTree [_unitFormulaTree $formula] [_unitFiniteValue $value]]
+}
+proc ::GX::_unitFormulaProgramNode {node depth counterName} {
+    upvar 1 $counterName counter
+    if {$depth>64||[incr counter]>4096} {error {Unit formula program exceeds bounded complexity}}
+    set op [lindex $node 0]
+    if {$op eq "x"} {return x}
+    if {$op eq "number"} {return [list number [_unitFiniteValue [lindex $node 1]]]}
+    set result [list $op]
+    foreach child [lrange $node 1 end] {lappend result [_unitFormulaProgramNode $child [expr {$depth+1}] counter]}
+    return $result
+}
+proc ::GX::unitFormulaProgram {formula} {
+    set counter 0
+    return [dict create program_version 1 tree [_unitFormulaProgramNode [_unitFormulaTree $formula] 0 counter]]
+}
+proc ::GX::unitRegistryConvertValues {source target values {sourceOverride {}}} {
+    if {[llength $values]>4096} {error {Bounded Unit Registry conversion accepts at most 4096 values; use Dataset Transform for scientific arrays}}
+    set plan [unitRegistryConversionPlan $source $target $sourceOverride]
+    if {$source eq $target&&![dict size $sourceOverride]} {return [lmap value $values {_unitFiniteValue $value}]}
+    set forward [_unitFormulaTree [dict get $plan source_to_canonical]]
+    set inverse [_unitFormulaTree [dict get $plan target_from_canonical]]
+    set ratio [_unitFiniteValue [dict get $plan base_scale_ratio]];set result {}
+    foreach value $values {
+        set canonical [_unitFormulaEvaluateTree $forward [_unitFiniteValue $value]]
+        set scaled [_unitFiniteValue [expr {$canonical*$ratio}]]
+        lappend result [_unitFormulaEvaluateTree $inverse $scaled]
+    }
+    return $result
+}
+proc ::GX::_unitFormulaAffineTree {node} {
+    # Algebraic classification of the registered grammar, never sampled fitting.
+    # Empty means no globally affine expression was established by these rules.
+    set op [lindex $node 0]
+    if {$op eq "x"} {return {1.0 0.0}}
+    if {$op eq "number"} {return [list 0.0 [_unitFiniteValue [lindex $node 1]]]}
+    set a [_unitFormulaAffineTree [lindex $node 1]]
+    if {$a eq {}} {return {}}
+    lassign $a af ao
+    if {[llength $node]==3} {
+        set b [_unitFormulaAffineTree [lindex $node 2]];if {$b eq {}} {return {}}
+        lassign $b bf bo
+    }
+    switch -- $op {
+        + {set factor [expr {$af+$bf}];set offset [expr {$ao+$bo}]}
+        - {set factor [expr {$af-$bf}];set offset [expr {$ao-$bo}]}
+        unary+ {return $a}
+        unary- {set factor [expr {-$af}];set offset [expr {-$ao}]}
+        * {
+            if {$af!=0&&$bf!=0} {return {}}
+            set factor [expr {$af*$bo+$bf*$ao}];set offset [expr {$ao*$bo}]
+        }
+        / {
+            if {$bf!=0} {return {}}
+            set factor [expr {$af/$bo}];set offset [expr {$ao/$bo}]
+        }
+        ^ {
+            if {$bf!=0} {return {}}
+            if {$bo==1} {return $a}
+            if {$af!=0} {return {}}
+            set factor 0.0;set offset [_unitFormulaEvaluateTree $node 0.0]
+        }
+        log - log10 - exp - sqrt {
+            if {$af!=0} {return {}}
+            set factor 0.0;set offset [_unitFormulaEvaluateTree $node 0.0]
+        }
+        default {error {Unknown Unit Registry formula node}}
+    }
+    return [list [_unitFiniteValue $factor] [_unitFiniteValue $offset]]
+}
+proc ::GX::unitRegistryAffinePlan {source target {sourceOverride {}} {direction forward}} {
+    if {$direction ni {forward inverse}} {error {Affine plan direction must be forward or inverse}}
+    set plan [unitRegistryConversionPlan $source $target $sourceOverride]
+    dict set plan direction $direction
+    dict set plan input_unit [expr {$direction eq "forward"?$source:$target}]
+    dict set plan output_unit [expr {$direction eq "forward"?$target:$source}]
+    if {$source eq $target&&![dict size $sourceOverride]} {return [dict merge $plan {affine 1 scale 1.0 offset 0.0 reason {}}]}
+    set first [dict get $plan source_to_canonical];set last [dict get $plan target_from_canonical]
+    set ratio [dict get $plan base_scale_ratio]
+    if {$direction eq "inverse"} {
+        set a [dict get $plan source_definition];set b [dict get $plan target_definition]
+        set first [expr {[dict get $b canonical_unit] eq {}?"x":[dict get $b to_canonical]}]
+        set last [expr {[dict get $a canonical_unit] eq {}?"x":[dict get $a from_canonical]}]
+        set ratio [_unitFiniteValue [expr {1.0/$ratio}]]
+    }
+    set forward [_unitFormulaAffineTree [_unitFormulaTree $first]]
+    set inverse [_unitFormulaAffineTree [_unitFormulaTree $last]]
+    if {$forward eq {}||$inverse eq {}} {return [dict merge $plan {affine 0 reason {Registered formulas do not establish a global affine conversion; use pointwise Unit Registry conversion}}]}
+    lassign $forward af ao;lassign $inverse bf bo
+    set scale [_unitFiniteValue [expr {$af*$ratio*$bf}]]
+    set offset [_unitFiniteValue [expr {$ao*$ratio*$bf+$bo}]]
+    if {$scale==0} {error {Unit conversion collapses its coordinate dimension}}
+    return [dict merge $plan [dict create affine 1 scale $scale offset $offset reason {}]]
 }
 
 proc ::GX::unitRegistryRegister {symbol definition} {
@@ -140,6 +274,7 @@ proc ::GX::unitRegistryLoadCore {} {
         set kind [expr {$symbol in {FS dB dBFS ppm pH} ? "opaque" : "intrinsic"}]
         unitRegistryRegister $symbol [dict create conversion_kind $kind description "CORE unit"]
     }
+    unitRegistryRegister 1 [dict create label Dimensionless conversion_kind intrinsic description {Explicit dimensionless physical coordinate or ratio}]
     unitRegistryRegister mol/L [dict create conversion_kind opaque description "Molar concentration base for explicit relations"]
     unitRegistryRegister mmol/L [dict create conversion_kind scale canonical_unit mol/L scale 0.001 description "Millimolar concentration"]
     unitRegistryRegister °C [dict create label Celsius conversion_kind affine canonical_unit K scale 1 offset 273.15 description "Celsius temperature"]
@@ -190,6 +325,7 @@ proc ::GX::unitRegistryIntrinsicScale {unit} {
         set ch [string index $unit $pos]
         if {$ch eq "*"} {set sign 1;incr pos;continue}
         if {$ch eq "/"} {set sign -1;incr pos;continue}
+        if {[regexp {^1($|[*/])} [string range $unit $pos end]]} {incr pos;set sign 1;continue}
         regexp {^([A-Za-z]+)(?:\^([+-]?[0-9]+))?} [string range $unit $pos end] whole symbol power
         if {$power eq ""} {set power 1}
         set factor [lindex [unitTclSingle $symbol] 0]
@@ -198,6 +334,56 @@ proc ::GX::unitRegistryIntrinsicScale {unit} {
     }
     if {$scale<=0 || $scale==Inf} {error "Unit scale is outside the numeric range"}
     return $scale
+}
+proc ::GX::_unitDifferentialBasis {unit} {
+    if {[string length $unit]>128||[string trim $unit] eq {}} {error {An explicit bounded unit is required; use 1 for dimensionless}}
+    set definition [unitRegistryDefinition $unit]
+    set canonical [dict get $definition canonical_unit]
+    set affineScale 1.0
+    set offset 0.0
+    if {$canonical eq {}} {set canonical $unit} else {
+        set plan [unitRegistryAffinePlan $unit $canonical]
+        if {![dict get $plan affine]} {error {A nonlinear registered unit needs a point-dependent differential conversion}}
+        set affineScale [dict get $plan scale];set offset [dict get $plan offset]
+    }
+    set key [unitTclDimensionKey $canonical]
+    if {[string match semantic:* $key]} {error {Semantic level units have no declared linear differential ratio}}
+    set scale [_unitFiniteValue [expr {$affineScale*[unitRegistryIntrinsicScale $canonical]}]]
+    if {$scale==0} {error {Unit differential scale is not representable}}
+    return [dict create unit $unit canonical_unit $canonical dimension_key $key scale $scale affine_offset $offset]
+}
+proc ::GX::unitRegistryDifferentialRatioPlan {numerator denominator {target {}}} {
+    set result [dict create schema gxtxt.differential_unit_plan.v1 status unavailable numerator_unit $numerator denominator_unit $denominator requested_unit $target output_unit {} dimension_key {} reason {} offset_policy {Affine offsets cancel in differentials; this plan is not an absolute-value conversion}]
+    try {
+        set top [_unitDifferentialBasis $numerator];set bottom [_unitDifferentialBasis $denominator]
+        set dimensions {}
+        foreach basis [list $top $bottom] sign {1 -1} {
+            set key [dict get $basis dimension_key]
+            if {$key eq "1"} continue
+            foreach term [split $key ,] {
+                lassign [split $term :] base power
+                dict incr dimensions $base [expr {$sign*$power}]
+            }
+        }
+        set labels {};set keys {}
+        foreach base [lsort [dict keys $dimensions]] {
+            set power [dict get $dimensions $base]
+            if {$power==0} continue
+            lappend keys "$base:$power"
+            lappend labels [expr {$power==1?$base:"$base^$power"}]
+        }
+        set key [join $keys ,];set canonical [join $labels *]
+        if {$canonical eq {}} {set key 1;set canonical 1}
+        if {$target eq {}} {set target $canonical}
+        set output [_unitDifferentialBasis $target]
+        if {[dict get $output dimension_key] ne $key} {error {Requested differential output unit has incompatible dimensions}}
+        set scale [_unitFiniteValue [expr {[dict get $top scale]/[dict get $bottom scale]/[dict get $output scale]}]]
+        if {$scale==0} {error {Differential ratio scale underflows}}
+        return [dict merge $result [dict create status value output_unit $target dimension_key $key scale $scale numerator_basis $top denominator_basis $bottom output_basis $output]]
+    } on error {message options} {
+        dict set result reason $message
+        return $result
+    }
 }
 proc ::GX::unitRegistryConversionPlan {source target {sourceOverride {}}} {
     set a [unitRegistryDefinition $source];set b [unitRegistryDefinition $target]

@@ -2,7 +2,7 @@
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
-The dev096 candidate adds optional `source_row_ordinals`: a sorted set of at
+Optional `source_row_ordinals` is a sorted set of at
 most 200000 distinct exact nonnegative row integers through 2^53−1. Empty means
 unrestricted. This field persists with a series and restricts its prepared
 display after normal CORE row filters. It never derives scientific rows from
@@ -11,7 +11,7 @@ exact row restriction to return validated observed tuple plans without creating
 series or touching a manifest. Its optional ninth host argument is a cooperative
 progress callback; the existing eight-argument Script Bridge exposes data only.
 
-Introduced in GX-TXT 0.9.7.8. This is an additive Graph Provider binding
+This is an additive Graph Provider binding
 contract for independent series from different canonical datasets. It does
 not change Graph Provider IDs or run scientific analysis.
 
@@ -65,7 +65,9 @@ future explicit alignment choice. The loader reports them without
 applying a shift. Different time units are converted by the existing
 Unit API when requested. This keeps original points intact.
 
-## GX-TXT 0.9.7.11 optional variant argument
+<a id="gx-txt-09711-optional-variant-argument"></a>
+
+## Optional variant argument
 
 The final variant_id argument is optional in graphSeriesSet, graphSeriesRemove, graphSeriesIds, graphSeriesResolve and graphSeriesList. Empty/omitted means the original base graph. A nonempty ID must name an existing Plot Module variant of the declared graph; one series ID may occur in different variants without collision. Manifest and runtime add optional variant_id to each graph_series.N section. Older records load as base series.
 
@@ -79,7 +81,9 @@ The Octave helper accepts gxtxt_graph_series_load(runtime_cfg, graph_id, chunk_r
 
 For base calls, setting an excluded Use=no variable retains the historical rejection. For a variant, the stable ID binding can be saved while Use=no; resolving/rendering reports that it is unavailable. Re-enabling recoverable data makes the same ID usable again. No binding is changed into a name binding.
 
-## GX-TXT 0.9.7.13: enabled state, order and shared editor
+<a id="gx-txt-09713-enabled-state-order-and-shared-editor"></a>
+
+## Enabled state, order and shared editor
 
 `enabled=1` is the default for old manifests and for a new series. `enabled=0`
 retains dataset/variable IDs, axis, label and alignment configuration in the
@@ -106,7 +110,9 @@ active series, including the existing temporal alignment intent. It does
 not infer scientific compatibility or apply alignment. Renaming a variable
 changes the resolved name while its dataset-scoped ID remains stable.
 
-## GX-TXT 0.9.7.21: read-only snapshot and editor extensions
+<a id="gx-txt-09721-read-only-snapshot-and-editor-extensions"></a>
+
+## Read-only snapshot and editor extensions
 
 `graphSeriesSnapshot module graph series_id ?variant_id?` returns the persistent
 generic Graph Series fields plus stable module, graph, variant and series
@@ -118,7 +124,9 @@ extension receives this generic snapshot but stores all provider-specific
 properties independently. Graph Series API v1 has no new provider fields and
 remains authoritative for its existing generic fields.
 
-## GX-TXT 0.9.8.06: source row filters and family expansion
+<a id="gx-txt-09806-source-row-filters-and-family-expansion"></a>
+
+## Source row filters and family expansion
 
 `row_filters` is an optional list of dictionaries on a Graph Series. Each
 filter binds a stable `filter_variable_id` in the same Dataset and has one
@@ -129,6 +137,15 @@ are `exact_equal`, `not_equal`, `less_than`, `less_equal`, `greater_than`,
 `in_set` accepts `values` as a Tcl list; `between_inclusive` accepts `lower`
 and `upper`; the other comparison predicates accept `value`. Exact source
 values are stored separately from labels and display formats.
+
+Integer and boolean identities use their declared dtype and exact range. CORE
+normalizes accepted numeric filter literals into decimal values before runtime
+serialization. Table Stream's typed integer columns remain exact through Tcl and
+Octave predicates, grouped Plot preparation, Script clients and scientific source
+grouping. Adjacent int64/uint64 values above 2^53 are distinct members. Ambiguous
+historical rounded scientific notation for integer filters requires explicit
+review; it is never guessed or used to rewrite scientific data or stable IDs.
+Float members retain finite binary64 equality; text remains exact text.
 
 ```tcl
 set member [dict create filter_variable_id v0003 predicate exact_equal value 7]
@@ -168,7 +185,9 @@ explicit `none` reduction can retain the full selected data in memory;
 `auto`, `minmax`, and `stride` provide bounded display reduction. No member
 CSV files are created.
 
-## Script Bridge operations (GX-TXT dev-037)
+<a id="script-bridge-operations-gx-txt-dev-037"></a>
+
+## Script Bridge operations
 
 Graph Series bindings use stable module/graph/Variant and Series IDs. `variant_id` is optional and defaults to the base graph; `list` also accepts optional `include_disabled`, default `0` (active Series only). `expand_groups` defaults `options` to an empty dictionary. Mutations persist in the Session Manifest. Resolved results from `set`, `list`, `resolve`, and `snapshot` omit the private canonical Dataset `path`; the Dataset identity and public variable IDs remain. `expand_groups` creates ordinary persistent Series using the public grouped-Series API. Both Octave/MATLAB and Python call these names through `gxtxt_api_call(API_ID, operation, arguments)`. Arguments are positional and are passed to the named public Tcl procedure.
 
@@ -185,7 +204,9 @@ Graph Series bindings use stable module/graph/Variant and Series IDs. `variant_i
 
 `set` accepts public Graph Series fields; `move` accepts `-1` or `1`; `remove` returns an empty string. The Series editor remains a host GUI action. Nested Tcl dictionaries and lists are converted recursively for script clients.
 
-## Unbound preparation (dev077)
+<a id="unbound-preparation-dev077"></a>
+
+## Unbound preparation
 
 A disabled series with an empty Dataset ID is reusable preparation, retained through
 pruning, save and reopen. Resolve/list-with-disabled returns a descriptor with empty

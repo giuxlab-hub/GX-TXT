@@ -5,10 +5,42 @@ SPDX-License-Identifier: GPL-3.0-or-later
 Registered Python and GNU Octave scripts launched from Run or Analysis execute
 under one local durable supervisor. Tk owns neither calculations nor process
 lifetime. Closing the GUI detaches it; Script Jobs reconnects on the next launch.
-The host compatibility `scriptExecutionRun` remains synchronous for existing
-headless callers. GUI surfaces use `scriptJobSubmit` and fileevent callbacks.
+The legacy host `scriptExecutionRun` runs synchronously and records a Session
+execution directly, without creating a durable Supervisor Job. Use `scriptJobSubmit`
+when Supervisor admission, cancellation and Jobs-history visibility are required. GUI surfaces use `scriptJobSubmit` and fileevent callbacks.
 
 ## Host operations
+
+### Owned child waits
+
+`::GX::scriptJobWait id ?timeoutSeconds=60? ?cancelCommand?` waits through the
+existing CORE supervisor while keeping host events responsive. The optional
+host-only cancellation command is a trusted command prefix returning a boolean.
+Python/Octave use `SCRIPT_EXECUTION_API_v1.job_submit` and `job_wait` through the
+common Script façade. The returned state is the actual terminal Job state;
+`wait_cancel_requested` records whether this wait requested cancellation.
+
+A supervised submission records `parent_job_id` only after the supervisor proves
+the caller belongs to that live parent's kernel process tree and start identity.
+The public `describe` result exposes `waiting_for_job` while a wait lease exists.
+A parent may yield its execution slot only to its own same-Session child. The
+configured worker limit and canonical Job states remain unchanged. Waiting
+parents retain memory reservations; their execution/thread slots are available
+to their child, which takes priority over unrelated queued roots. At most eight
+active nested waits are allowed. A still-active child cannot have its wait lease
+released through the normal completion path.
+
+Timeouts and requested cancellation drain the child. Failure, interruption or
+cancellation of a parent cancels owned descendants; successful asynchronous
+parent completion preserves its children. The supervisor retires stale caller
+leases using process start identities. The journal adds a separate `job_waits`
+table and an optional parent identity for new nested Jobs; historical records,
+states, output reservations and scientific results retain their existing meaning.
+Independent root submissions retain their established deduplication identity;
+new nested submissions include their parent to prevent cross-parent aliasing.
+
+The Fitter uses this owner for registered manual evaluation, so a public Script
+client does not deadlock behind its own queued callable under a one-worker policy.
 
 - `scriptJobSubmit reference parameters ?options? ?callback?` snapshots source,
   resolves effective typed defaults, captures the canonical Session and queues a
@@ -96,3 +128,85 @@ only from immutable runtime metadata. `launched_at` captures worker spawn;
 existing `started` retains its preparation meaning. Never-launched exit code is N/A.
 Complete log access is bounded/paged; missing, expired or unsafe sources diagnose
 that exact execution. No arbitrary file-read operation is exposed to scripts.
+
+## dev097 reversible history and user-local Runner Workspaces
+
+The existing Job API adds host-only view operations. `scriptJobViewList view ?offset?`
+returns `jobs`, `total_stored`, `total_scoped`, `hidden_scoped`, `matching`, `offset`,
+`limit` and view-independent `lifecycle` updates. Pages contain at most 500 records;
+counts cover all matching stored Jobs. Existing `scriptJobList` keeps its 100-recent
+record contract. The GUI uses nonblocking `view_list` over the existing stdin/Tcl
+protocol and rejects outdated responses after view/history changes. Lifecycle
+observation remains independent of filters so Dataset refresh is not lost.
+
+`scriptJobViewDefault` and `scriptJobViewValidate` describe the bounded layout:
+Session `scope` (absolute path or `all`), `filter` (All/Active/Finished/Failed/Hidden),
+`show_hidden`, sort/order, visible columns/widths, geometry, pane/scroll fractions
+and optional selected Job ID. A Session filter reads the Job journal; it neither
+opens nor accesses the selected Session's files. Stale selection is discarded.
+
+`scriptJobHistoryHide ids` validates every exact immutable Job ID against the
+Supervisor before committing a single preference change. Only COMPLETED, FAILED,
+CANCELLED and INTERRUPTED Jobs are eligible. A mixed invalid/active selection fails
+atomically. `scriptJobHistoryRestore ids` removes only those visibility flags.
+`scriptJobHistoryCandidates view` returns eligible finished IDs under explicit
+scope and filter for a separately confirmed mass hide. At most 20,000 IDs can be
+hidden; larger selections require a narrower scope. Active records remain visible
+even if an invalid/stale stored filter contains their IDs. Cancellation is unchanged.
+
+Presentation is version 1 under `scripts.job_presentation` in the existing user
+Configuration file. Hidden IDs are global across Runner layouts for that account;
+no Journal record, source revision, log, execution directory or Dataset is deleted,
+rewritten or copied. Inspection, logs and Session run summaries still resolve hidden
+executions. Malformed persisted preferences yield diagnosed defaults while the
+original file remains available for review. Writes use Configuration's atomic writer.
+
+`scriptJobWorkspaceSave id name view` creates a stable layout ID when `id` is empty,
+or updates that ID. `scriptJobWorkspaceOpen id`, `scriptJobWorkspaceRename id name`
+and `scriptJobWorkspaceDelete id` manage named view records in the same Configuration
+field. `scriptJobViewRemember view ?id?` persists the last context. Workspace names
+are unique; up to 128 layouts are supported. These are user-local layouts available
+without an open Session. Session scientific Workspaces remain under
+`SESSION_WORKSPACE_API_v1` and Interactive Document ownership. Runner layout operations
+persist only their Configuration field and do not apply runtime/resource policy.
+
+Jobs, History, View, Workspace, Settings and Help are native menu groups. History
+supports multi-selection, scoped finished cleanup, Include hidden and Restore.
+View supplies filters, scope, columns and pages; column headings sort the full
+query before pagination. Workspace offers New/Open/Save/Save As/Rename/Manager/Close,
+with its active name in the OS title. Closing a workspace resets view context;
+closing the Jobs window persists its last view. Neither action submits or cancels
+an execution. Resource policy has its existing separate explicit Apply/Save action.
+
+## Registered callable Jobs (dev097, Linux/Debian)
+
+`scriptJobSubmit reference parameters options ?callback?` accepts additive
+`options.callable_invocation` with exactly these seven fields: `callable_id`,
+`source_sha256`, `revision`, `declaration_sha256`, `consumer_api`,
+`consumer_operation`, `payload_json`. The first four pin a reviewed declaration
+from the existing Script Registry. Changed identity refuses before execution.
+The payload is bounded one-line JSON control data (at most 1 MiB); scientific
+arrays belong in public Dataset/resource transport. A consumer commonly receives
+an encoded scientific recipe string. Its public API is added to preflight.
+
+Invocation identity participates in Job deduplication. The original source
+snapshot remains byte-identical; the existing language runner registers its
+entrypoint and calls the consumer with a live handle and decoded payload.
+Cancellation, process ownership, queue limits and GUI-independent lifetime use
+the same supervisor as ordinary scripts. A submission without this option has
+its existing behavior even when the source has callable declarations.
+
+Successful consumers return a bounded inert control receipt: at most 4096 nodes,
+depth 16 and 1 MiB; typed result arrays are at most 64 finite real values. Large
+scientific results must be retained through their public owner and returned as
+references. `registered_callable_result.json` records that result plus exact
+source/declaration/consumer identity. It is created only after successful consumer
+return. Failed or cancelled Jobs never expose a verified success receipt through
+the Job inspector, including cancellation during final receipt handling.
+
+Existing `scriptJobInspect` and `scriptExecutionInspectRun` validate that receipt
+against the immutable invocation and verified source snapshot, exposing
+`registered_callable`, `callable_validation`, and `callable_result`. Inspection
+uses owned, bounded, non-symlink files in the exact Session run directory. It
+works on archived Sessions without consulting today's Script Registry. A corrupt
+or missing completed receipt produces diagnostics and an invalid status.

@@ -3,6 +3,7 @@
 from gxtxt_script_bridge_server import BridgeError
 
 _COMMANDS = {
+    "resource_copy_tree": ("::GX::sessionWorkspaceResourceCopyTreeUtf8", ["workspace_id", "payload_utf8"]),
     "list": ("::GX::sessionWorkspaceList", []),
     "get": ("::GX::sessionWorkspaceGet", ["workspace_id"]),
     "create": ("::GX::sessionWorkspaceCreate", ["provider_id", "name", "payload_utf8"]),
@@ -49,6 +50,8 @@ def invoke(host, operation, args):
         raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "Invalid Workspace arguments")
     command, _ = _COMMANDS[operation]
     raw = host.call(command, *args)
+    if operation == "resource_copy_tree":
+        return bytes(raw).decode("utf-8")
     if operation == "list":
         return [receipt(host, item) for item in host.as_list(raw)]
     if operation == "delete":

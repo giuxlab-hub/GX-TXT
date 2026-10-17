@@ -144,3 +144,12 @@ The module fails explicitly for missing Dataset, no selected variable, duplicate
 ## Limitations
 
 This module is not grouped statistics, distribution analysis, correlation, outlier detection, weighted statistics, regression or fitting. It does not perform local unit conversion and does not combine variables into a shared statistic. Ordinary numeric variables are summarized in their declared source unit; elapsed-time values follow the CORE canonical-seconds contract. Because variables are summarized independently, selecting variables with incompatible units is valid and never causes them to be combined or compared.
+
+## Statistical interpretation (dev097)
+
+Published results include the public `STATISTICAL_RESULT_SEMANTICS_API_v1`
+record, with units, statuses, reasons and source identity. Numeric computes all
+estimates. Sampling standard errors assume independent observations with finite
+variance; they do not establish Gaussian noise or confidence intervals. A single
+finite observation has no estimated sample spread or sampling standard error.
+Existing output variable IDs remain unchanged.

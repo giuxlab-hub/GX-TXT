@@ -15,5 +15,16 @@ function W=pd_2d_preparation_window(cfg,graph,V,G)
       return;
     endif
   endfor
+  session=strtrim(gxtxt_ini_get(cfg,'runtime.session',''));
+  if(!isempty(session))
+    lifetime=gxtxt_presentation_scope_v1(session);
+    context=gxtxt_api_call('DATASET_METADATA_API_v1','coordinate_read',{ds});
+    if(isfield(context.variables,xid)&&!isempty(context.variables.(xid).source.canonical_unit))
+      % The old range optimizer understands registry units, not a declared
+      % per-Variable relation. Read canonical data normally and crop only the
+      % rendered view; never discard rows using a different inverse relation.
+      W.enabled=false;W.range_safe=false;W.reason='declared_coordinate_relation';return;
+    endif
+  endif
   W.range_safe=true;W.reason='shared_x_binding';
 endfunction

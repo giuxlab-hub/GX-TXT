@@ -1,7 +1,7 @@
 function analysis_statistics_correlation_main(args,framework_root)
 % Pairwise covariance/correlation workflow through GX-TXT public APIs.
 % SPDX-License-Identifier: GPL-3.0-or-later
-  module_id='analysis.statistics.correlation';module_version='1.0.1';
+  module_id='analysis.statistics.correlation';module_version='1.1.0';
   publication_open=false;P=struct();
   config_path=argument(args,'--config','');
   if(isempty(config_path)),error('%s: --config is required',module_id);endif
@@ -12,6 +12,8 @@ function analysis_statistics_correlation_main(args,framework_root)
   if(isempty(source_id)),source_id=strtrim(gxtxt_ini_get(cfg,'dataset.id',''));endif
   if(isempty(session)||isempty(outdir)||isempty(source_id)),error('%s: Session, output directory and source Dataset are required',module_id);endif
   if(exist(outdir,'dir')!=7),mkdir(outdir);endif
+  execution=struct('script_name',module_id,'script_sha256',hash('sha256',fileread([mfilename('fullpath') '.m'])),'arguments_raw','');
+  gxtxt_script_bridge_start(config_path,execution);bridge_cleanup=onCleanup(@() gxtxt_script_bridge_stop());
   gxtxt_progress_start('prepare','Preparing covariance and correlation','indeterminate');
   try
     variable_tokens=repeatable_variables(cfg);
@@ -47,7 +49,7 @@ function analysis_statistics_correlation_main(args,framework_root)
       'pearson',cell(pair_count,1),'spearman',cell(pair_count,1), ...
       'pearson_status',cell(pair_count,1),'spearman_status',cell(pair_count,1));
     gxtxt_progress_stage('compute','Computing pairwise numerical results','determinate',pair_count);
-    row=0;
+    row=0;statistical_results=struct();
     for i=1:n_variables
       for j=1:n_variables
         row+=1;x=matrix(:,i);y=matrix(:,j);
@@ -56,14 +58,27 @@ function analysis_statistics_correlation_main(args,framework_root)
         x=x(valid);y=y(valid);n_valid=numel(x);
         cov_sample=NaN;cov_population=NaN;pearson=NaN;spearman=NaN;
         p_status='insufficient_observations';s_status='insufficient_observations';
+        cov=struct('n_valid',n_valid);pear=struct('n_valid',n_valid,'method','pearson');spear=struct('n_valid',n_valid,'method','spearman');
         if(n_valid>=2)
-          cov=gxtxt_numeric_v1('covariance',x,y,struct('nonfinite','error'));
-          pear=gxtxt_numeric_v1('correlation',x,y,struct('method','pearson','nonfinite','error'));
-          spear=gxtxt_numeric_v1('correlation',x,y,struct('method','spearman','nonfinite','error'));
+          cov=gxtxt_analysis_numeric_call('covariance',x,y,struct('nonfinite','error'));
+          pear=gxtxt_analysis_numeric_call('correlation',x,y,struct('method','pearson','nonfinite','error'));
+          spear=gxtxt_analysis_numeric_call('correlation',x,y,struct('method','spearman','nonfinite','error'));
           cov_sample=cov.covariance_sample;cov_population=cov.covariance_population;
           pearson=pear.correlation;spearman=spear.correlation;
           p_status=pear.status;s_status=spear.status;
         endif
+        context=struct('x_unit',variables(i).unit,'y_unit',variables(j).unit, ...
+          'x_variable_id',variables(i).variable_id,'y_variable_id',variables(j).variable_id);
+        provenance=struct('producer',module_id,'source_dataset_id',source_id,'missing_policy',policy);
+        cs=gxtxt_statistics_v1('from_numeric','math.numeric.summary','covariance',cov,context,struct(),provenance);
+        ps=gxtxt_statistics_v1('from_numeric','math.numeric.summary','correlation',pear,context,struct(),provenance);
+        ss=gxtxt_statistics_v1('from_numeric','math.numeric.summary','correlation',spear,context,struct(),provenance);
+        statistical_results.(sprintf('pair%d_covariance',row))=cs;
+        statistical_results.(sprintf('pair%d_pearson',row))=ps;
+        statistical_results.(sprintf('pair%d_spearman',row))=ss;
+        cv=gxtxt_statistics_values_v1(cs);pv=gxtxt_statistics_values_v1(ps);sv=gxtxt_statistics_values_v1(ss);
+        cov_sample=cv.covariance_sample;cov_population=cv.covariance_population;
+        pearson=pv.correlation;spearman=sv.correlation;
         pairs(row)=struct('left_index',i,'right_index',j, ...
           'left_id',variables(i).variable_id,'right_id',variables(j).variable_id, ...
           'left_name',variables(i).name,'right_name',variables(j).name, ...
@@ -81,6 +96,7 @@ function analysis_statistics_correlation_main(args,framework_root)
       'provenance',sprintf('%s %s; source=%s; missing_policy=%s; nonfinite=%s; selection=%s',module_id,module_version,source_id,policy,nonfinite,selection_id(selection)), ...
       'notes','Ordered variable pairs; covariance in source unit products; correlations dimensionless.');
     opts.source_dataset_ids={source_id};opts.source_variable_ids=ids;
+    opts.statistical_results=statistical_results;
     P=gxtxt_publication_v2_open(session,module_id,output_id,'table.generic',opts);publication_open=true;
     P=gxtxt_publication_v2_declare_dimension(P,'pair',0,true);
     P=declare_num(P,'left_index','Left variable index','index','int32','');
@@ -135,7 +151,7 @@ function analysis_statistics_correlation_main(args,framework_root)
     endif
     write_graph_manifest(fullfile(outdir,'automatic_graphs.ini'),graph_count,graph_id,variant_id,graph_artifact);
     write_summary(fullfile(outdir,'correlation_summary.ini'),module_id,module_version,source_id,output_id,selection,policy,nonfinite,variables,n_selected,sum(listwise_mask),pair_count,graph_count,P.provider);
-    write_report(fullfile(outdir,'correlation_report.txt'),source_id,output_id,selection,policy,nonfinite,variables,pairs,pub_diag,pub_result);
+    write_report(fullfile(outdir,'correlation_report.txt'),source_id,output_id,selection,policy,nonfinite,variables,pairs,pub_diag,pub_result,statistical_results);
     gxtxt_progress_complete('done',sprintf('Published %d variable pairs and %d heatmap',pair_count,graph_count));
     fprintf('[%s] source=%s output=%s variables=%d pairs=%d graphs=%d\n',module_id,source_id,output_id,n_variables,pair_count,graph_count);
   catch err
@@ -228,13 +244,16 @@ function write_summary(path,module_id,version,source_id,output_id,selection,poli
     fclose(fid);
   end_unwind_protect
 endfunction
-function write_report(path,source_id,output_id,selection,policy,nonfinite,variables,pairs,pub_diag,pub_result)
+function write_report(path,source_id,output_id,selection,policy,nonfinite,variables,pairs,pub_diag,pub_result,statistical_results)
   fid=fopen(path,'w');if(fid<0),error('analysis.statistics.correlation: cannot create report');endif
   unwind_protect
     fprintf(fid,'GX-TXT Covariance and Correlation\nSource Dataset: %s\nResult Dataset: %s\nSelection: %s\nMissing policy: %s\nNaN / Inf: %s\nVariables: %d\nPairs: %d\n',source_id,output_id,selection_id(selection),policy,nonfinite,numel(variables),numel(pairs));
-    fprintf(fid,'\nLeft | Right | N valid | Sample covariance | Pearson | Spearman\n');
     for i=1:numel(pairs)
-      p=pairs(i);fprintf(fid,'%s | %s | %d | %.12g %s | %.12g | %.12g\n',clean_line(p.left_name),clean_line(p.right_name),p.n_valid,p.covariance_sample,clean_line(p.covariance_unit),p.pearson,p.spearman);
+      p=pairs(i);fprintf(fid,'\n%s / %s\n',clean_line(p.left_name),clean_line(p.right_name));
+      fprintf(fid,'%s\n%s\n%s\n', ...
+        gxtxt_statistics_v1('report',statistical_results.(sprintf('pair%d_covariance',i)),{'n','covariance_sample','covariance_population'}), ...
+        gxtxt_statistics_v1('report',statistical_results.(sprintf('pair%d_pearson',i)),{'correlation'}), ...
+        gxtxt_statistics_v1('report',statistical_results.(sprintf('pair%d_spearman',i)),{'correlation'}));
     endfor
     fprintf(fid,'\nPublication diagnostics available: %d\nFinalized: %d\n',isstruct(pub_diag),isstruct(pub_result));
   unwind_protect_cleanup

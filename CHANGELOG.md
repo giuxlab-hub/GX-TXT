@@ -7,6 +7,17 @@ For current interface contracts consult the API references under [docs/api](docs
 
 ## 0.9.8.10 - development revisions
 
+### 0.9.8.10-dev-097
+
+- Extend public CORE statistical-result semantics across analysis modules, Numeric operations, fitting, scientific viewers and registered Python/Octave consumers, with explicit units, assumptions, applicability and unavailable-result states.
+- Expand retained scientific fitting with correlated observation covariance/GLS, bootstrap and profile inference, implicit and rational response models, complex and surface responses, Akima/explicit-knot splines, bounded model suggestions and physical plausibility review; preserve source rows and retained result identities.
+- Add reusable CORE/Numeric scientific coordinate and unit declarations, transformations and display plans shared by Dataset Preview, Plot Dataset, Curve Workbench and 3D viewers. Presentation settings leave source scientific coordinates unchanged.
+- Extend managed binary/Script Bridge transport for typed scientific arrays, exact integer handling, complex representations and logical shapes; use public registration and resource ownership rather than standalone module-owned execution paths.
+- Integrate digitization uncertainty review and calibrated publication provenance with shared Numeric covariance and Fitter consumption; distinguish declared pixel localization, calibration and physical uncertainty instead of inferring it from image resolution.
+- Improve data-preserving Session overview access and shared graph presentation. Plot Dataset and other viewers reuse canonical data, identity guards and appropriate retained presentation caches.
+- Provide reproducible large-data, STFT, 3D terrain and residual-validation tutorial sources, plus an independent synthetic calibrated Curve Digitization Session generator.
+- Distribute native solver rebuild information, Ceres/Eigen source archives and applicable Debian/upstream license notices for the supported Linux runtime.
+
 ### 0.9.8.10-dev-096
 
 - Sessions Jobs exposes registered job inspection and reviewed historical reruns, preserving original job logs and identities.

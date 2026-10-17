@@ -7,6 +7,13 @@ stable `dataset_id + variable_id` model from API v2. The existing
 `datasetVariableSchema` operation keeps its v2 result fields. New consumers use
 `datasetVariableSchemaV3` and `datasetVariableV3ById`.
 
+Registry loading completes the available v2/v3 read projections before CORE
+captures its concurrency baseline. The v2 projection preserves declared v3
+schemas. Inspection therefore creates no apparent unsaved schema edit; a parent
+can refresh a Dataset replaced by a child Job. Genuine conflicting edits still
+fail compare-and-swap. Loading a legacy schema adds in-memory defaults without
+rewriting its scientific payload, persisted descriptor or stable identities.
+
 ## Additive fields
 
 | Field | Meaning |

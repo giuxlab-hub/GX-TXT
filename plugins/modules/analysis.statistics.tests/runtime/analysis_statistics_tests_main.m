@@ -1,7 +1,7 @@
 function analysis_statistics_tests_main(args,framework_root)
 % Focused hypothesis-test workflow using public NUMERIC_API primitives.
 % SPDX-License-Identifier: GPL-3.0-or-later
-  module_id='analysis.statistics.tests';version='1.0.1';
+  module_id='analysis.statistics.tests';version='1.1.0';
   config_path=argument(args,'--config','');
   if(isempty(config_path)),error('%s: --config is required',module_id);endif
   cfg=gxtxt_ini_read(config_path);
@@ -58,11 +58,23 @@ function analysis_statistics_tests_main(args,framework_root)
     endif
     gxtxt_progress_stage('compute','Computing public hypothesis test','indeterminate');
     result=gxtxt_numeric_v1('hypothesis_test',method,x,y,struct('mu0',mu0,'alternative',alternative,'confidence',confidence,'nonfinite',policy));
+    statistics=gxtxt_statistics_v1('from_numeric','math.numeric.hypothesis','hypothesis_test',result, ...
+      struct('y_unit',first_unit),struct(),struct('producer',module_id,'source_dataset_id',source_id, ...
+        'first_variable_id',first_id,'second_variable_id',second_id));
+    V=gxtxt_statistics_values_v1(statistics);
+    for mapping={'statistic','test_statistic';'degrees_of_freedom','test_degrees_of_freedom';'p_value','p_value'; ...
+                 'estimate','test_estimate';'null_value','null_value';'ci_lower','ci_lower';'ci_upper','ci_upper';'effect_size','effect_size'}'
+      result.(mapping{1})=V.(mapping{2});
+    endfor
+    interval_status=statistics.quantities.ci_lower.status;
+    if(strcmp(interval_status,'value')),result.ci_status='defined';
+    elseif(strcmp(interval_status,'not_applicable')),result.ci_status='not_defined_for_rank_test';
+    else result.ci_status=interval_status;endif
     opts=struct('storage','auto','replace_owned',true,'producer_version',version, ...
       'source','GX-TXT Hypothesis Tests', ...
       'provenance',sprintf('%s %s; source=%s; first=%s; second=%s; selection=%s; method=%s; alternative=%s; confidence=%.12g; mu0=%.12g; nonfinite=%s',module_id,version,source_id,first_id,second_id,selection_id(selection),method,alternative,confidence,mu0,policy), ...
       'notes','Method, pairing, variance assumption and alternative were explicitly selected.');
-    opts.source_dataset_ids={source_id};opts.source_variable_ids=ids;
+    opts.source_dataset_ids={source_id};opts.source_variable_ids=ids;opts.statistical_results=struct('test',statistics);
     gxtxt_progress_stage('publish','Publishing test result Dataset','indeterminate');
     P=gxtxt_publication_v2_open(session,module_id,output_id,'table.generic',opts);opened=true;
     P=gxtxt_publication_v2_declare_dimension(P,'test',0,true);
@@ -77,10 +89,10 @@ function analysis_statistics_tests_main(args,framework_root)
       'p_value','p-value','float64','1','derived',result.p_value; ...
       'alternative','Alternative hypothesis','string','','category',{result.alternative}; ...
       'confidence','Confidence level','float64','1','derived',result.confidence; ...
-      'null_value','Null mean or difference','float64',estimate_unit(method,first_unit),'reference',result.null_value; ...
-      'estimate','Mean, mean difference or rank statistic','float64',estimate_unit(method,first_unit),'derived',result.estimate; ...
-      'ci_lower','Confidence interval lower bound','float64',estimate_unit(method,first_unit),'derived',result.ci_lower; ...
-      'ci_upper','Confidence interval upper bound','float64',estimate_unit(method,first_unit),'derived',result.ci_upper; ...
+      'null_value','Null mean or difference','float64',statistics.quantities.test_estimate.unit,'reference',result.null_value; ...
+      'estimate','Mean, mean difference or rank statistic','float64',statistics.quantities.test_estimate.unit,'derived',result.estimate; ...
+      'ci_lower','Confidence interval lower bound','float64',statistics.quantities.test_estimate.unit,'derived',result.ci_lower; ...
+      'ci_upper','Confidence interval upper bound','float64',statistics.quantities.test_estimate.unit,'derived',result.ci_upper; ...
       'ci_status','Confidence interval status','string','','category',{result.ci_status}; ...
       'effect_size','Effect size','float64','1','derived',result.effect_size; ...
       'effect_name','Effect size name','string','','category',{result.effect_name}; ...
@@ -92,12 +104,12 @@ function analysis_statistics_tests_main(args,framework_root)
     endfor
     P=gxtxt_publication_v2_append(P,'test',data(:,[1,6]));
     [P,published]=gxtxt_publication_v2_finalize(P);opened=false;
-    write_summary(fullfile(outdir,'tests_summary.ini'),source_id,first_id,second_id,first_unit,output_id,selection,result);
-    write_report(fullfile(outdir,'tests_report.txt'),source_id,first_id,second_id,first_unit,output_id,selection,result);
+    write_summary(fullfile(outdir,'tests_summary.ini'),source_id,first_id,second_id,first_unit,output_id,selection,result,statistics);
+    write_report(fullfile(outdir,'tests_report.txt'),source_id,first_id,second_id,first_unit,output_id,selection,result,statistics);
     fid=fopen(fullfile(outdir,'automatic_graphs.ini'),'w');if(fid<0),error('%s: cannot write graph manifest',module_id);endif
     fprintf(fid,'[automatic_graphs]\ncount=0\nprovider=plot.dataset\n');fclose(fid);
-    gxtxt_progress_complete('done',sprintf('Published %s test with p=%.6g',method,result.p_value));
-    fprintf('[%s] source=%s output=%s method=%s p=%.12g\n',module_id,source_id,output_id,method,result.p_value);
+    gxtxt_progress_complete('done',sprintf('Published %s test: %s',method,gxtxt_statistics_v1('report',statistics,{'p_value'}))); 
+    fprintf('[%s] source=%s output=%s method=%s\n%s\n',module_id,source_id,output_id,method,gxtxt_statistics_v1('report',statistics,{'p_value'}));
   catch err
     if(opened),try P=gxtxt_publication_v2_abort(P);catch;end_try_catch,endif
     try gxtxt_progress_fail('failed','Hypothesis test failed; see log');catch;end_try_catch
@@ -133,26 +145,27 @@ endfunction
 function id=selection_id(selection)
   id='none';if(isfield(selection,'enabled')&&selection.enabled&&isfield(selection,'id')),id=selection.id;endif
 endfunction
-function unit=estimate_unit(method,source_unit)
-  if(any(strcmp(method,{'mann_whitney','signed_rank'}))),unit='1';else unit=source_unit;endif
-endfunction
-function write_summary(path,source_id,first_id,second_id,unit,output_id,selection,R)
+
+function write_summary(path,source_id,first_id,second_id,unit,output_id,selection,R,statistics)
   fid=fopen(path,'w');if(fid<0),error('analysis.statistics.tests: cannot write summary');endif
   unwind_protect
-    fprintf(fid,'[meta]\nmodule_id=analysis.statistics.tests\nmodule_version=1.0.1\napi=NUMERIC_API_v1\n');
+    fprintf(fid,'[meta]\nmodule_id=analysis.statistics.tests\nmodule_version=1.1.0\napi=NUMERIC_API_v1\n');
     fprintf(fid,'\n[source]\ndataset_id=%s\nfirst_variable_id=%s\nsecond_variable_id=%s\nunit=%s\nselection_id=%s\n',source_id,first_id,second_id,unit,selection_id(selection));
-    fprintf(fid,'\n[test]\nmethod=%s\nalternative=%s\nconfidence=%.12g\nnonfinite_policy=%s\nstatistic=%.17g\ndegrees_of_freedom=%.17g\np_value=%.17g\nn_valid_first=%d\nn_valid_second=%d\nci_status=%s\neffect_name=%s\napproximation=%s\n',R.method,R.alternative,R.confidence,R.nonfinite_policy,R.statistic,R.degrees_of_freedom,R.p_value,R.n_x,R.n_y,R.ci_status,R.effect_name,R.approximation);
+    fprintf(fid,'\n[test]\nmethod=%s\nalternative=%s\nconfidence=%.12g\nnonfinite_policy=%s\nn_valid_first=%d\nn_valid_second=%d\nci_status=%s\neffect_name=%s\napproximation=%s\n',R.method,R.alternative,R.confidence,R.nonfinite_policy,R.n_x,R.n_y,R.ci_status,R.effect_name,R.approximation);
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',statistics,struct('statistic','test_statistic','degrees_of_freedom','test_degrees_of_freedom','p_value','p_value','ci_lower','ci_lower','ci_upper','ci_upper')));
     fprintf(fid,'\n[output]\ndataset_id=%s\n',output_id);
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect
 endfunction
-function write_report(path,source_id,first_id,second_id,unit,output_id,selection,R)
+function write_report(path,source_id,first_id,second_id,unit,output_id,selection,R,statistics)
   fid=fopen(path,'w');if(fid<0),error('analysis.statistics.tests: cannot write report');endif
   unwind_protect
     fprintf(fid,'GX-TXT Hypothesis Tests\nSource Dataset: %s\nFirst variable: %s\nSecond variable: %s\nUnit: %s\nSelection: %s\nOutput Dataset: %s\n',source_id,first_id,second_id,unit,selection_id(selection),output_id);
-    fprintf(fid,'Method: %s\nAlternative: %s\nConfidence: %.6g\nNaN / Inf: %s\nInput counts: %d, %d\nValid counts: %d, %d\nStatistic: %.12g\nDegrees of freedom: %.12g\np-value: %.12g\n',R.method,R.alternative,R.confidence,R.nonfinite_policy,R.n_input_x,R.n_input_y,R.n_x,R.n_y,R.statistic,R.degrees_of_freedom,R.p_value);
-    fprintf(fid,'Estimate: %.12g\nConfidence interval: [%.12g, %.12g] (%s)\nEffect size: %.12g (%s)\np-value method: %s\n',R.estimate,R.ci_lower,R.ci_upper,R.ci_status,R.effect_size,R.effect_name,R.approximation);
+    fprintf(fid,'Method: %s\nAlternative: %s\nConfidence: %.6g\nNaN / Inf: %s\nInput counts: %d, %d\nValid counts: %d, %d\n',R.method,R.alternative,R.confidence,R.nonfinite_policy,R.n_input_x,R.n_input_y,R.n_x,R.n_y);
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('report',statistics,{'test_statistic','test_degrees_of_freedom','p_value','test_estimate','ci_lower','ci_upper','effect_size'}));
+    fprintf(fid,'Conditional assumptions:\n');for assumption=statistics.assumptions(:)',fprintf(fid,'- %s\n',assumption{1});endfor
+
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect

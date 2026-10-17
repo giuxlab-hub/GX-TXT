@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 
 from gxtxt_script_bridge_server import BridgeError, NumericArray
+from gxtxt_unit_program_v1 import decode_program
 
 REGISTRATION = {
     "api_id": "UNIT_REGISTRY_API_v1", "api_version": 1,
@@ -17,20 +18,28 @@ REGISTRATION = {
         "definition": {"name": "definition", "summary": "Read a registered unit definition", "argument_convention": "unit symbol", "result_convention": "definition struct"},
         "compatible": {"name": "compatible", "summary": "Test conversion compatibility", "argument_convention": "source unit, target unit", "result_convention": "logical scalar"},
         "convert": {"name": "convert", "summary": "Convert numeric values using registered unit definitions", "argument_convention": "numeric scalar or array, source unit, target unit", "result_convention": "numeric scalar or array"},
+        "convert_values": {"name": "convert_values", "summary": "Convert up to 4096 finite binary64 coordinate/control values in process", "argument_convention": "values, source, target, optional source_override", "result_convention": "numeric scalar or array"},
         "conversion_plan": {"name": "conversion_plan", "summary": "Read the effective explicit unit conversion definition", "argument_convention": "source unit, target unit", "result_convention": "conversion descriptor"},
+        "affine_plan": {"name": "affine_plan", "summary": "Classify the declared forward or inverse conversion algebraically", "argument_convention": "source, target, optional source_override, optional direction", "result_convention": "conversion descriptor with affine flag and finite scale/offset when established"},
+        "differential_ratio_plan": {"name":"differential_ratio_plan", "summary":"CORE unit plan for differential numerator/denominator, including affine offset cancellation", "argument_convention":"numerator unit, denominator unit, optional output unit", "result_convention":"versioned value/unavailable plan; finite scale only when established"},
+        "formula_program": {"name": "formula_program", "summary": "Read the Unit Registry parsed formula program", "argument_convention": "formula", "result_convention": "versioned arithmetic tree"},
     },
 }
 _ARGUMENTS = {
     "list": [], "definition": [("unit", "unit symbol")],
     "compatible": [("source", "unit symbol"), ("target", "unit symbol")],
     "convert": [("values", "numeric scalar/vector/matrix"), ("source", "unit symbol"), ("target", "unit symbol")],
+    "convert_values": [("values", "bounded numeric scalar/vector/matrix"), ("source", "unit symbol"), ("target", "unit symbol"), ("source_override", "optional variable conversion struct")],
     "conversion_plan": [("source", "unit symbol"), ("target", "unit symbol"), ("source_override", "optional variable conversion struct")],
+    "affine_plan": [("source", "unit symbol"), ("target", "unit symbol"), ("source_override", "optional variable conversion struct"), ("direction", "optional forward/inverse")],
+    "differential_ratio_plan": [("numerator", "unit symbol"), ("denominator", "unit symbol"), ("target", "optional output unit")],
+    "formula_program": [("formula", "registered formula grammar string")],
 }
 for _name, _fields in _ARGUMENTS.items():
     _operation = REGISTRATION["operations"][_name]
-    _operation["arguments"] = [{"name": name, "kind": kind, "required": name != "source_override"} for name, kind in _fields]
+    _operation["arguments"] = [{"name": name, "kind": kind, "required": name not in ("source_override", "direction") and not (_name == "differential_ratio_plan" and name == "target")} for name, kind in _fields]
     _operation["result_contract"] = _operation["result_convention"]
-    _operation["unit_behavior"] = "Registry-defined compatible conversion" if _name == "convert" else "Registry symbols"
+    _operation["unit_behavior"] = "Registry-defined compatible conversion" if _name in ("convert", "convert_values") else "Registry symbols"
 
 
 def _definition(host, symbol):
@@ -66,6 +75,8 @@ def _convert(host, values, source, target):
 
 
 def invoke(host, operation, args):
+    if operation == "formula_program" and len(args) == 1:
+        return decode_program(host, host.call("::GX::unitFormulaProgram", args[0]))
     if operation == "list" and not args:
         return host.as_list(host.call("::GX::unitRegistryList"))
     if operation == "definition" and len(args) == 1:
@@ -75,10 +86,49 @@ def invoke(host, operation, args):
     if operation == "convert" and len(args) == 3:
         values, source, target = args
         return _convert(host, values, source, target)
-    if operation == "conversion_plan" and len(args) in (2, 3):
-        plan = host.as_dict(host.call("::GX::unitRegistryConversionPlan", *args))
+    if operation == "convert_values" and len(args) in (3, 4):
+        values, source, target = args[:3]
+        if isinstance(values, NumericArray):
+            count = 1
+            for length in values.shape:
+                count *= int(length)
+            if count > 4096 or values.dtype.startswith("complex") or values.dtype == "bool":
+                raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "convert_values requires at most 4096 real elements")
+            shape, data = values.shape, NumericArray(values.values, [count, 1], dtype=values.dtype)
+        elif isinstance(values, (int, float)) and not isinstance(values, bool):
+            shape, data = None, [values]
+        else:
+            raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "convert_values requires a bounded numeric scalar or array")
+        override = args[3] if len(args) == 4 else {}
+        converted = [float(v) for v in host.as_list(host.call("::GX::unitRegistryConvertValues", source, target, data, override))]
+        return converted[0] if shape is None else NumericArray(converted, shape)
+    if operation == "differential_ratio_plan" and len(args) in (2, 3):
+        plan = host.as_dict(host.call("::GX::unitRegistryDifferentialRatioPlan", *args))
+        # Tcl may retain a list internal representation for a textual enum.
+        # Preserve the public schema's string fields, independently of shimmering.
+        for name in ("schema", "status", "numerator_unit", "denominator_unit",
+                     "requested_unit", "output_unit", "dimension_key", "reason", "offset_policy"):
+            plan[name] = str(host.tcl.call("format", "%s%s", plan[name], ""))
+        if plan["status"] == "value":
+            plan["scale"] = float(plan["scale"])
+            for name in ("numerator_basis", "denominator_basis", "output_basis"):
+                basis = host.as_dict(plan[name])
+                for number in ("scale", "affine_offset"):
+                    basis[number] = float(basis[number])
+                for text in ("unit", "canonical_unit", "dimension_key"):
+                    basis[text] = str(host.tcl.call("format", "%s%s", basis[text], ""))
+                plan[name] = basis
+        return plan
+    if operation in ("conversion_plan", "affine_plan") and (len(args) in (2, 3) or operation == "affine_plan" and len(args) == 4):
+        command = "::GX::unitRegistryAffinePlan" if operation == "affine_plan" else "::GX::unitRegistryConversionPlan"
+        plan = host.as_dict(host.call(command, *args))
         for name in ("source_definition", "target_definition"):
             plan[name] = host.as_dict(plan[name])
         plan["base_scale_ratio"] = float(plan["base_scale_ratio"])
+        if operation == "affine_plan":
+            plan["affine"] = bool(int(plan["affine"]))
+            for name in ("scale", "offset"):
+                if name in plan:
+                    plan[name] = float(plan[name])
         return plan
     raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", f"invalid {operation} arguments for UNIT_REGISTRY_API_v1")

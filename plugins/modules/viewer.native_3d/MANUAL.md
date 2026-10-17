@@ -142,3 +142,5 @@ GX-TXT code is GPL-3.0-or-later. This component uses VTK (BSD-3-Clause), Open
 CASCADE Technology (LGPL-2.1 with OCCT exception), OpenSSL (Apache-2.0) and
 system graphics libraries. The exact binary dependency and license notices
 belong with each platform package.
+
+Debian package 0.9.6 uses the library next to the installed module. Rebuilds must use CMake install output, which applies `$ORIGIN/../lib`; do not package a build-tree host. See `docs/legal/DEBIAN_NATIVE_REBUILD_dev097.md` in the framework.

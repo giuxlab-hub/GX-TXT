@@ -7,7 +7,7 @@ function out=demo_environmental_numeric(operation,varargin)
     provider=strtrim(gxtxt_ini_get(cfg,[prefix 'module_id'],''));version=strtrim(gxtxt_ini_get(cfg,[prefix 'api_version'],''));
     entry=strtrim(gxtxt_ini_get(cfg,[prefix 'octave_entrypoint'],''));candidate=strtrim(gxtxt_ini_get(cfg,[prefix 'octave_function'],''));
     caps=strsplit(strrep(gxtxt_ini_get(cfg,[prefix 'capabilities'],''),',',';'),';');caps=cellfun(@strtrim,caps,'UniformOutput',false);
-    required={'descriptive_statistics','linear_reductions','linear_regression','smoothing'};
+    required={'descriptive_statistics','linear_reductions','linear_regression','smoothing','hypothesis_tests','correlation','robust_mad','elementwise_binary'};
     if(!strcmp(provider,'math.numeric')||!strcmp(version,'1')||isempty(candidate)||exist(entry,'file')!=2||!all(ismember(required,caps)))
       error('demo.environmental.levoglucosan_campaign: public NUMERIC_API_v1 binding is unavailable');
     endif

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.0 — dev097
+
+- Shared CORE editor controls and Runner integration.
+- Reconciled module, package and current producer identities for this release.
+
+## Framework dev097
+
+- Replaced two toolbar rows with File/Edit/Run/Help using CORE menu layout.
+- Added focus-local UTF-8 selection and atomic paste/undo through shared CORE text controls; property edits track actual values.
+- Reused CORE Runner from both languages with explicit dirty-buffer revision choice, no automatic Job submission and a stale-Session guard.
+
 SPDX-License-Identifier: GPL-3.0-or-later
 
 ## 1.3.0

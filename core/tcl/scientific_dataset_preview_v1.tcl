@@ -4,7 +4,7 @@
 proc ::GX::scientificDatasetPreviewVariableLabel {id variableId} {
     set variable [datasetVariableById $id $variableId]
     set label [dict get $variable canonical]
-    if {[dict get $variable unit] ne {}} {append label " ([dict get $variable unit])"}
+    if {[dict get $variable unit] ne {}} {append label " (source [dict get $variable unit])"}
     append label " — $variableId"
     return $label
 }
@@ -37,6 +37,8 @@ proc ::GX::scientificDatasetPreviewControls {id axes} {
         }
         ttk::button $bar.axes.apply -text Render -command ::GX::datasetPreviewRender
         pack $bar.axes.apply -side left -padx 6
+        ttk::button $bar.axes.coordinates -text {Dataset coordinates…} -command ::GX::scientificDatasetPreviewCoordinateEditor
+        pack $bar.axes.coordinates -side left -padx 4
         ttk::button $bar.axes.xyz -text {⟳ 3D XYZ} -command ::GX::native3DPreviewXYZActivate
         pack $bar.axes.xyz -side left -padx 4
         bind $bar.axes <Configure> {::GX::uiFieldControlsLayout %W %w}
@@ -87,4 +89,10 @@ proc ::GX::scientificDatasetArrayPreview {id output} {
         $large copy $small -zoom $scale $scale;$large write $output -format png
     } finally {image delete $small $large}
     return "[dict get $v canonical] ([dict get $v unit]); exact storage plane starts $starts, counts $counts. Range $lo to $hi. Gray = nonfinite; nearest-cell display, no interpolation. Coordinate IDs: [dict get $v coordinate_variable_ids]. Open Dataset for coordinate axes and explicit planes."
+}
+
+proc ::GX::scientificDatasetPreviewCoordinateEditor {} {
+    lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] mode id
+    if {$mode ne "imported"||$id eq {}} {error {Select a canonical scientific Dataset}}
+    datasetCoordinateEditorOpen $id .
 }

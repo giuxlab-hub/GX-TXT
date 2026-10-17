@@ -1,11 +1,11 @@
 # demo.numeric.smoothing
 
 `demo.numeric.smoothing` is an external GX-TXT numerical reference plugin for
-GX-TXT 0.9.7.72. It demonstrates Dataset-native smoothing through the public
+GX-TXT 0.9.8.10-dev-097. It demonstrates Dataset-native smoothing through the public
 `math.numeric` `NUMERIC_API_v1` service.
 
 The plugin uses the public `dataset_smooth` operation with the methods actually
-advertised by GX-TXT 0.9.7.72:
+advertised by GX-TXT 0.9.8.10-dev-097:
 
 - moving mean;
 - moving median;
@@ -34,3 +34,9 @@ See `MANUAL.md` for the complete reproducible GUI workflow and scientific
 interpretation.
 
 License: GNU GPL v3 or later.
+
+
+Version 1.1.0 uses CORE `STATISTICAL_RESULT_SEMANTICS_API_v1` to interpret and
+report existing pointwise errors. The result metadata records physical units,
+applicability and comparison/subset identities. These descriptive errors do not
+establish regression parameter uncertainty or sampling-inference claims.

@@ -195,3 +195,17 @@ The complete profile/plane/extrude, transforms/gizmos/group/alignment/constraint
 Compare supports complete surfaces and sections in an explicit common plane. Section reports store captured contours, plane origin/normal/U axis, chaining tolerance, working units and bounded plane-XY projected distances; unit conversion makes old results stale until Refresh. Sampled RMS/Hausdorff are explicitly sampled science, independent of display LOD; closest section/curve policies are recorded.
 
 Export geometry… discovers the official STEP/STL/VTP exporter and its shared tessellation quality/resource limits. Native/OCCT/VTK writes complete world geometry with declared units; a `.gxtxt.json` sidecar records logical identity, role, source provenance/SHA and tessellation. Atomic create-only publication rejects geometry or sidecar collisions without overwriting either file. Publish selected as Dataset… uses the same official provider and normal Dataset APIs, preserving the requested public ID (`model.cad` for STEP; `geometry.mesh` for STL/VTP). Reference/construction objects are excluded by default. The normal generic Native3D Viewer and Workbench Dataset intake consume the real published ID/SHA with explicit unit conversion, preserving canonical bytes. Restore reconstructs authoritative presentation layers before restoring measurement markers, including a Session saved only through the Workbench.
+
+### dev097 comparison reports
+
+Surface and section comparisons show shared CORE statistical labels and units.
+The reported RMS and Hausdorff values describe the explicitly sampled vertices or
+section points and the recorded projection/tessellation policy. They do not imply
+regression inference or continuous-surface extrema. A saved historical receipt
+without versioned semantics stays visible as **Refresh required**; refresh it
+before publishing a new scientific report.
+
+New section exports keep the `position` and `signed_residual` variable IDs and
+values. Their labels now state the actual meaning: physical section path distance
+in the working unit and unsigned nearest-curve distance. The latter retains its
+legacy field name for compatibility. Existing published Datasets are unchanged.

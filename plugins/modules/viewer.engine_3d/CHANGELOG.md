@@ -1,3 +1,8 @@
+## 0.1.5 — dev097
+
+- Canonical CORE native loader and removal of duplicated packaged native implementation.
+- Reconciled module, package and current producer identities for this release.
+
 ## 0.1.4
 
 Compatible adapter update for the dev071 CORE-owned rendering and scientific decoder services. Requires framework dev071 or newer.

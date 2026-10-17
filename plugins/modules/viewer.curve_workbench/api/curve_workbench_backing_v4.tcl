@@ -21,17 +21,18 @@ proc ::GX::CurveWorkbench::_persistCurve {w record} {
 # frame conversion through Native affine math before adopting a read-only actor.
 proc ::GX::CurveWorkbench::_restoreSourceFrame {w record native} {
     variable st
-    if {![dict exists $record working_unit]} return
-    set target [dict get $record working_unit];set factors {}
+    if {![dict exists $record working_unit]&&![dict exists $record coordinate_units]} return
+    set targets [_coordinateUnits $record];set sources {}
     foreach axis {x y} {
         set variable [dict get $record $axis];set source [dict get [::GX::datasetVariableById [dict get $record source] $variable] unit]
         if {$source eq {}} {set source [::GX::datasetPublicationV2DictDefault [::GX::datasetPublicationV2DictDefault $record source_assumed_units {}] $variable {}]}
         if {$source eq {}} {error {The saved Dataset coordinate frame requires its explicit source-unit assumption}}
-        ::GX::unitRegistryConversionPlan $source $target
-        lappend factors [expr {[::GX::unitRegistryIntrinsicScale $source]/[::GX::unitRegistryIntrinsicScale $target]}]
+        lappend sources $source
     }
-    lassign $factors fx fy
-    if {$fx!=1||$fy!=1} {::GX::Native2D::core affine $st($w,scene) [list $native] [list $fx 0 0 $fy 0 0] 0}
+    set plan [::GX::native2DComparisonFrame x $sources $sources [dict create output_units $targets]]
+    set matrix [dict get $plan reference_matrix]
+    lassign $matrix a b c d tx ty
+    if {$a!=1||$b!=0||$c!=0||$d!=1||$tx!=0||$ty!=0} {::GX::Native2D::core affine $st($w,scene) [list $native] $matrix 0}
 }
 proc ::GX::CurveWorkbench::_restoreDatasetBinding {w record input} {
     variable st

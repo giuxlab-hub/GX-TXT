@@ -2,7 +2,8 @@ function demo_numeric_uncertainty_main(args, framework_root)
 % Demonstrate public GX-TXT uncertainty and weighting services on Dataset variables.
 % SPDX-License-Identifier: GPL-3.0-or-later
   module_id = 'demo.numeric.uncertainty';
-  module_version = '1.0.1';
+  module_version = '1.1.0';
+  semantics_scope=gxtxt_statistics_scope_v1();
   publication_open = false;
   publication_finalized = false;
   P = struct();
@@ -58,6 +59,10 @@ function demo_numeric_uncertainty_main(args, framework_root)
     endif
 
     numeric = discover_numeric_api(framework_root, module_id);
+    noise_model=lower(strtrim(gxtxt_ini_get(cfg,'config.noise_model','unspecified')));
+    if(!any(strcmp(noise_model,{'unspecified','independent_gaussian_known_sigma'}))),error('%s: invalid noise model',module_id);endif
+    context=struct('y_unit',value_unit,'weight_unit',aux_unit,'sampling_model','independent_observations','noise_model',noise_model);
+    provenance_core=struct('producer',module_id,'source_dataset_id',source_dataset_id,'source_variable_ids',[value_id ';' aux_id]);
     metadata = read_optional_metadata(cfg);
 
     gxtxt_progress_stage('load_dataset', 'Reading selected value and uncertainty/weight variables', 'indeterminate');
@@ -71,10 +76,10 @@ function demo_numeric_uncertainty_main(args, framework_root)
     if (strcmp(nonfinite_policy, 'error') && excluded_nonfinite > 0)
       % Invoke the public service to preserve its documented non-finite rejection semantics.
       if (strcmp(interpretation, 'explicit_weight'))
-        feval(numeric.function_name, 'weighted_statistics', raw_values, raw_aux, struct('nonfinite','error'));
+        gxtxt_numeric_v1('weighted_statistics', raw_values, raw_aux, struct('nonfinite','error'));
       else
-        feval(numeric.function_name, 'statistics', raw_values, struct('nonfinite','error'));
-        feval(numeric.function_name, 'propagate_uncertainty', ones(1,input_count)/input_count, raw_aux, struct('input_kind','standard_uncertainty'));
+        gxtxt_numeric_v1('statistics', raw_values, struct('nonfinite','error'));
+        gxtxt_numeric_v1('propagate_uncertainty', ones(1,input_count)/input_count, raw_aux, struct('input_kind','standard_uncertainty'));
       endif
     endif
     values = raw_values(finite_pair); aux = raw_aux(finite_pair);
@@ -82,40 +87,30 @@ function demo_numeric_uncertainty_main(args, framework_root)
     if (finite_pair_count < 1), error('%s: no finite value/auxiliary pairs remain', module_id); endif
 
     gxtxt_progress_stage('numeric', 'Running public uncertainty-aware numerical operations', 'determinate', 3);
-    ordinary = feval(numeric.function_name, 'statistics', values, struct('nonfinite','error'));
+    ordinary = gxtxt_numeric_v1('statistics', values, struct('nonfinite','error'));
     gxtxt_progress_update(1, 3, 'numeric', 'Public descriptive reference complete');
 
-    estimator_uncertainty = NaN;
-    weighted = struct();
-    ls_result = struct();
+    ordinary_core=gxtxt_statistics_v1('from_numeric','math.numeric.summary','statistics',ordinary,context,struct(),provenance_core);
+    records=struct('ordinary',ordinary_core);estimator_core=struct();weighted_core=struct();
     if (strcmp(interpretation, 'standard_uncertainty'))
-      % The Jacobian is the derivative of the arithmetic mean with respect to
-      % each independent measurement. NUMERIC_API_v1 performs all uncertainty
-      % propagation from this point onward.
+      % The Jacobian states the arithmetic-mean transformation. Numeric owns
+      % propagation; CORE owns its output identities and conditional meaning.
       J = ones(1, finite_pair_count) / finite_pair_count;
-      propagated = feval(numeric.function_name, 'propagate_uncertainty', J, aux, struct('input_kind','standard_uncertainty'));
-      estimator_uncertainty = double(propagated.standard_uncertainty(1));
-      [stat_names, stat_values, stat_units, stat_definitions] = uncertainty_summary(ordinary, estimator_uncertainty, input_count, finite_pair_count, excluded_nonfinite, value_unit);
-      used_mask = true(size(values));
-      used_values = values; used_aux = aux;
-      operation_text = 'statistics + propagate_uncertainty';
+      propagated = gxtxt_numeric_v1('propagate_uncertainty', J, aux, struct('input_kind','standard_uncertainty'));
+      output_unit=value_unit;if(isempty(output_unit)),output_unit='unspecified';endif
+      propagation_context=struct('output_ids',{{'arithmetic_mean'}},'output_units',{{output_unit}},'output_index',1);
+      estimator_core=gxtxt_statistics_v1('from_numeric','math.numeric.propagation','propagate_uncertainty',propagated,propagation_context,struct(),provenance_core);
+      records.propagation=estimator_core;
+      used_values=values;
+      operation_text='statistics + propagate_uncertainty';
     else
-      weighted = feval(numeric.function_name, 'weighted_statistics', values, aux, struct('nonfinite','error'));
-      used_mask = aux > 0;
-      used_values = values(used_mask); used_aux = aux(used_mask);
-      if (strcmp(weight_semantics, 'inverse_variance'))
-        A = ones(numel(values), 1);
-        ls_result = feval(numeric.function_name, 'least_squares', A, values, aux, struct('nonfinite','error','weight_semantics','inverse_variance','has_intercept',false));
-        if (abs(double(ls_result.coefficients(1)) - double(weighted.mean)) > 1e-11 * max(1, abs(double(weighted.mean))))
-          error('%s: public least-squares and weighted-statistics estimates disagree', module_id);
-        endif
-        estimator_uncertainty = double(ls_result.standard_errors(1));
-        operation_text = 'weighted_statistics + least_squares(inverse_variance)';
-      else
-        operation_text = 'weighted_statistics(relative weights)';
-      endif
-      [stat_names, stat_values, stat_units, stat_definitions] = weight_summary(ordinary, weighted, estimator_uncertainty, input_count, finite_pair_count, excluded_nonfinite, value_unit, aux_unit, weight_semantics, ls_result);
+      weighted=gxtxt_numeric_v1('weighted_statistics',values,aux,struct('nonfinite','error','weight_semantics',weight_semantics));
+      weighted_core=gxtxt_statistics_v1('from_numeric','math.numeric.summary','weighted_statistics',weighted,context,struct(),provenance_core);
+      records.weighted=weighted_core;estimator_core=weighted_core;
+      used_values=values(aux>0);
+      operation_text=['weighted_statistics(' weight_semantics ')'];
     endif
+    [stat_names,stat_values,stat_units,stat_definitions,stat_statuses,stat_reasons,stat_quantities]=summary_rows(ordinary_core,estimator_core,interpretation,weight_semantics,input_count,finite_pair_count,excluded_nonfinite);
     gxtxt_progress_update(2, 3, 'numeric', 'Public uncertainty/weight operation complete');
 
     if (isempty(used_values)), error('%s: no observations remain after the public weight policy', module_id); endif
@@ -129,13 +124,15 @@ function demo_numeric_uncertainty_main(args, framework_root)
     popts = struct('storage','auto','replace_owned',true,'producer_version',module_version, ...
       'source_dataset_ids',{{source_dataset_id}},'source_variable_ids',{source_ids},'source',source_dataset_id, ...
       'provenance',provenance,'notes','Long-form uncertainty/weight summary produced only through public math.numeric operations.');
+    popts.statistical_results=records;
     P = gxtxt_publication_v2_open(session, module_id, output_dataset_id, 'table.generic', popts); publication_open = true;
     P = gxtxt_publication_v2_declare_dimension(P, 'result', 0, true);
     P = declare_text(P, 'quantity', 'quantity', 'category');
     P = declare_numeric(P, 'value', 'value', 'derived', '');
     P = declare_text(P, 'unit', 'unit', 'category');
     P = declare_text(P, 'definition', 'definition', 'category');
-    P = gxtxt_publication_v2_append(P, 'result', {'quantity',stat_names; 'value',stat_values; 'unit',stat_units; 'definition',stat_definitions});
+    for field={'status','reason','quantity_id'},P=declare_text(P,field{1},field{1},'category');endfor
+    P = gxtxt_publication_v2_append(P, 'result', {'quantity',stat_names; 'value',stat_values; 'unit',stat_units; 'definition',stat_definitions;'status',stat_statuses;'reason',stat_reasons;'quantity_id',stat_quantities});
     [P, publication_diag] = gxtxt_publication_v2_diagnostics(P);
     [P, publication_result] = gxtxt_publication_v2_finalize(P); publication_finalized = true; publication_open = false;
     gxtxt_progress_update(1, 1, 'publish', 'Published uncertainty result Dataset');
@@ -144,6 +141,7 @@ function demo_numeric_uncertainty_main(args, framework_root)
       'source_dataset_ids',{{source_dataset_id}},'source_variable_ids',{source_ids},'source',source_dataset_id, ...
       'provenance',[provenance '; purpose=graph_series'], ...
       'notes','Included measurements and public central estimates for Plot.dataset.');
+    series_opts.statistical_results=records;
     PS=gxtxt_publication_v2_open(session,module_id,series_dataset_id,'table.generic',series_opts);series_publication_open=true;
     PS=gxtxt_publication_v2_declare_dimension(PS,'sample',0,true);
     PS=declare_series_numeric(PS,'sample_index','independent','1','');
@@ -151,20 +149,20 @@ function demo_numeric_uncertainty_main(args, framework_root)
     PS=declare_series_numeric(PS,'aux','auxiliary',aux_unit,'sample_index');
     PS=declare_series_numeric(PS,'ordinary_reference','reference',value_unit,'sample_index');
     series_items={'sample_index',indices;'value',values;'aux',aux; ...
-      'ordinary_reference',ones(numel(values),1)*double(ordinary.mean)};
+      'ordinary_reference',ones(numel(values),1)*ordinary_core.quantities.mean.value};
     if(strcmp(interpretation,'explicit_weight'))
       PS=declare_series_numeric(PS,'weighted_reference','reference',value_unit,'sample_index');
-      series_items(end+1,:)={'weighted_reference',ones(numel(values),1)*double(weighted.mean)};
+      series_items(end+1,:)={'weighted_reference',ones(numel(values),1)*weighted_core.quantities.mean.value};
     endif
     PS=gxtxt_publication_v2_append(PS,'sample',series_items);
     [PS,series_result]=gxtxt_publication_v2_finalize(PS);series_publication_finalized=true;series_publication_open=false;
 
     write_metrics(fullfile(outdir,'uncertainty_metrics.ini'), module_id, module_version, source_dataset_id, output_dataset_id, ...
       value_id, aux_id, value_name, aux_name, value_unit, aux_unit, interpretation, weight_semantics, nonfinite_policy, selection_id, ...
-      input_count, finite_pair_count, excluded_nonfinite, source_provider, numeric, ordinary, weighted, estimator_uncertainty, metadata, P.provider);
+      input_count, finite_pair_count, excluded_nonfinite, source_provider, numeric, ordinary_core, estimator_core, metadata, P.provider);
     write_report(fullfile(outdir,'uncertainty_report.txt'), module_id, module_version, source_dataset_id, output_dataset_id, ...
       value_id, aux_id, value_name, aux_name, value_unit, aux_unit, interpretation, weight_semantics, nonfinite_policy, selection_id, ...
-      input_count, finite_pair_count, excluded_nonfinite, numeric, operation_text, ordinary, weighted, ls_result, estimator_uncertainty, ...
+      input_count, finite_pair_count, excluded_nonfinite, numeric, operation_text, records, ...
       metadata, stat_names, stat_values, stat_units, publication_diag, publication_result);
 
     save(fullfile(outdir,'render_cache.mat'), 'series_dataset_id','value_name','value_unit','interpretation','weight_semantics','output_dataset_id');
@@ -229,31 +227,39 @@ function api=discover_numeric_api(root,module_id)
   if(!any(strcmp(ids,'NUMERIC_API_v1'))),error('%s: NUMERIC_API_v1 is not advertised',module_id);endif
   ver=strtrim(gxtxt_ini_get(d,'public_api.NUMERIC_API_v1.api_version',''));if(!strcmp(ver,'1')),error('%s: unsupported NUMERIC_API_v1 version: %s',module_id,ver);endif
   caps=split_list(gxtxt_ini_get(d,'public_api.NUMERIC_API_v1.capabilities',''));
-  required={'descriptive_statistics','weighted_statistics','linear_least_squares','uncertainty_propagation','dataset_selection','stable_variable_identity'};
+  required={'descriptive_statistics','weighted_statistics','uncertainty_propagation','dataset_selection','stable_variable_identity'};
   for k=1:numel(required),if(!any(strcmp(caps,required{k}))),error('%s: NUMERIC_API_v1 capability missing: %s',module_id,required{k});endif,endfor
   entry=strtrim(gxtxt_ini_get(d,'public_api.NUMERIC_API_v1.octave_entrypoint',''));fn=strtrim(gxtxt_ini_get(d,'public_api.NUMERIC_API_v1.octave_function',''));
   if(isempty(entry)||isempty(fn)),error('%s: incomplete NUMERIC_API_v1 Octave binding',module_id);endif
   entry_path=fullfile(fileparts(descriptor),entry);if(exist(entry_path,'file')!=2),error('%s: advertised NUMERIC_API_v1 entrypoint missing',module_id);endif
   addpath(fileparts(entry_path));if(exist(fn,'file')!=2),error('%s: advertised NUMERIC_API_v1 function unavailable',module_id);endif
+  if(!strcmp(fn,'gxtxt_numeric_v1')),error('%s: unsupported public Numeric binding',module_id);endif
   api=struct('name','NUMERIC_API_v1','api_version',ver,'function_name',fn,'entrypoint',entry);
 endfunction
 
-function [names,vals,units,defs]=uncertainty_summary(R,u_mean,input_count,valid_count,excluded,unit)
-  names={'input_count';'valid_pair_count';'excluded_nonfinite_count';'arithmetic_mean';'standard_uncertainty_of_mean';'std_population';'std_sample'};
-  vals=[input_count;valid_count;excluded;R.mean;u_mean;R.std_population;R.std_sample];
-  units={'1';'1';'1';unit;unit;unit;unit};
-  defs={'Rows after Dataset Selection';'Finite value/standard-uncertainty pairs used';'Pairs excluded by explicit NaN/Inf policy';'Arithmetic mean from public statistics operation';'First-order propagated standard uncertainty of arithmetic mean from public propagate_uncertainty operation';'Population standard deviation of measured values';'Sample standard deviation of measured values'};
-endfunction
-
-function [names,vals,units,defs]=weight_summary(R,W,u_est,input_count,valid_count,excluded,value_unit,weight_unit,semantics,LS)
-  names={'input_count';'finite_pair_count';'excluded_nonfinite_count';'positive_weight_count';'sum_weights';'effective_sample_size';'ordinary_mean';'weighted_mean';'weighted_std_population';'weighted_std_unbiased'};
-  vals=[input_count;valid_count;excluded;W.n_positive;W.sum_weights;W.effective_n;R.mean;W.mean;W.std_population;W.std_unbiased];
-  units={'1';'1';'1';'1';weight_unit;'1';value_unit;value_unit;value_unit;value_unit};
-  defs={'Rows after Dataset Selection';'Finite value/weight pairs before public zero-weight removal';'Pairs excluded by explicit NaN/Inf policy';'Positive-weight observations used by public weighted_statistics';'Sum of explicit statistical weights';'Effective sample size reported by public weighted_statistics';'Ordinary arithmetic mean of the same finite pairs';'Weighted arithmetic mean from public weighted_statistics';'Population weighted standard deviation';'Reliability-weight unbiased weighted standard deviation'};
-  if(strcmp(semantics,'inverse_variance'))
-    names{end+1,1}='weighted_estimate_standard_error'; vals(end+1,1)=u_est; units{end+1,1}=value_unit; defs{end+1,1}='Coefficient standard error from public one-parameter least_squares with explicit inverse-variance weight semantics';
-    names{end+1,1}='reduced_chi_squared'; vals(end+1,1)=LS.reduced_chi_squared; units{end+1,1}='1'; defs{end+1,1}='Reduced chi-squared reported by public least_squares under inverse-variance semantics';
+function [names,vals,units,defs,statuses,reasons,quantities]=summary_rows(R,U,mode,semantics,input_count,valid_count,excluded)
+  bookkeeping=struct('input_count',input_count,'valid_pair_count',valid_count,'finite_pair_count',valid_count,'excluded_nonfinite_count',excluded);
+  notes=struct('input_count','Rows after Dataset Selection','valid_pair_count','Finite value/uncertainty pairs','finite_pair_count','Finite value/weight pairs before zero-weight removal','excluded_nonfinite_count','Pairs omitted by the explicit nonfinite policy');
+  if(strcmp(mode,'standard_uncertainty'))
+    names={'input_count';'valid_pair_count';'excluded_nonfinite_count';'arithmetic_mean';'standard_uncertainty_of_mean';'std_population';'std_sample'};
+    rows=gxtxt_statistics_v1('scalar_rows',R,struct('arithmetic_mean','mean','std_population','standard_deviation_population','std_sample','standard_deviation'));
+    extra=gxtxt_statistics_v1('scalar_rows',U,struct('standard_uncertainty_of_mean','standard_uncertainty'));rows=[rows(:);extra(:)];
+  else
+    names={'input_count';'finite_pair_count';'excluded_nonfinite_count';'positive_weight_count';'sum_weights';'effective_sample_size';'ordinary_mean';'weighted_mean';'weighted_std_population';'weighted_std_unbiased'};
+    mapping=struct('positive_weight_count','n','sum_weights','sum_weights','effective_sample_size','effective_n','weighted_mean','mean','weighted_std_population','standard_deviation_population','weighted_std_unbiased','standard_deviation');
+    if(strcmp(semantics,'inverse_variance'))
+      names=[names;{'weighted_estimate_standard_error';'reduced_chi_squared'}];
+      mapping.weighted_estimate_standard_error='measurement_standard_error_mean';mapping.reduced_chi_squared='reduced_chi_squared';
+    endif
+    rows=gxtxt_statistics_v1('scalar_rows',R,struct('ordinary_mean','mean'));extra=gxtxt_statistics_v1('scalar_rows',U,mapping);rows=[rows(:);extra(:)];
   endif
+  indexed=struct();for k=1:numel(rows),row=rows{k};indexed.(row.id)=row;endfor
+  vals=zeros(numel(names),1);units=cell(size(names));defs=cell(size(names));statuses=cell(size(names));reasons=cell(size(names));quantities=cell(size(names));
+  for k=1:numel(names)
+    name=names{k};
+    if(isfield(bookkeeping,name)),vals(k)=bookkeeping.(name);units{k}='1';defs{k}=notes.(name);statuses{k}='value';reasons{k}='';quantities{k}='';
+    else row=indexed.(name);vals(k)=row.value;units{k}=row.unit_text;defs{k}=row.label;statuses{k}=row.status;reasons{k}=row.reason;quantities{k}=row.quantity;endif
+  endfor
 endfunction
 
 function P=declare_text(P,id,name,role)
@@ -272,17 +278,22 @@ function P=declare_series_numeric(P,id,role,unit,coordinate_id)
   P=gxtxt_publication_v2_declare_variable(P,id,spec);
 endfunction
 
-function write_metrics(path,id,ver,src,outid,vid,aid,vname,aname,vunit,aunit,mode,wsem,policy,selection_id,input_count,valid_count,excluded,provider,api,R,W,u_est,md,pub_provider)
+function write_metrics(path,id,ver,src,outid,vid,aid,vname,aname,vunit,aunit,mode,wsem,policy,selection_id,input_count,valid_count,excluded,provider,api,R,U,md,pub_provider)
   fid=fopen(path,'w');if(fid<0),error('%s: cannot write uncertainty_metrics.ini',id);endif
   fprintf(fid,'; GX-TXT demo.numeric.uncertainty metrics\n[module]\nid=%s\nversion=%s\nvalidation=PASS\n',id,ver);
   fprintf(fid,'\n[source]\ndataset_id=%s\nvalue_variable_id=%s\naux_variable_id=%s\nvalue_name=%s\naux_name=%s\nvalue_unit=%s\naux_unit=%s\nstorage_provider=%s\nselection_id=%s\ninput_count=%d\nvalid_pair_count=%d\nexcluded_nonfinite_count=%d\n',src,vid,aid,ini_escape(vname),ini_escape(aname),ini_escape(vunit),ini_escape(aunit),provider,selection_id,input_count,valid_count,excluded);
-  fprintf(fid,'\n[analysis]\ninput_interpretation=%s\nweight_semantics=%s\nnonfinite_policy=%s\nordinary_mean=%.17g\nestimator_standard_uncertainty=%.17g\n',mode,wsem,policy,R.mean,u_est);
-  if(strcmp(mode,'explicit_weight')),fprintf(fid,'weighted_mean=%.17g\nsum_weights=%.17g\neffective_sample_size=%.17g\n',W.mean,W.sum_weights,W.effective_n);endif
+  fprintf(fid,'\n[analysis]\ninput_interpretation=%s\nweight_semantics=%s\nnonfinite_policy=%s\n',mode,wsem,policy);
+  fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',R,struct('ordinary_mean','mean')));
+  if(strcmp(mode,'standard_uncertainty'))
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',U,struct('estimator_standard_uncertainty','standard_uncertainty')));
+  else
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',U,struct('estimator_standard_uncertainty','measurement_standard_error_mean','weighted_mean','mean','sum_weights','sum_weights','effective_sample_size','effective_n','reduced_chi_squared','reduced_chi_squared')));
+  endif
   fprintf(fid,'\n[numeric_api]\nname=%s\napi_version=%s\noctave_function=%s\n\n[metadata]\nresource_found=%d\n\n[output]\ndataset_id=%s\nstorage_provider=%s\n',api.name,api.api_version,api.function_name,double(logical(md.found)),outid,pub_provider);
   fclose(fid);
 endfunction
 
-function write_report(path,id,ver,src,outid,vid,aid,vname,aname,vunit,aunit,mode,wsem,policy,selection_id,input_count,valid_count,excluded,api,operation_text,R,W,LS,u_est,md,names,vals,units,pub_diag,pub_result)
+function write_report(path,id,ver,src,outid,vid,aid,vname,aname,vunit,aunit,mode,wsem,policy,selection_id,input_count,valid_count,excluded,api,operation_text,records,md,names,vals,units,pub_diag,pub_result)
   fid=fopen(path,'w');if(fid<0),error('%s: cannot write uncertainty_report.txt',id);endif
   fprintf(fid,'GX-TXT Numerical Uncertainty Demo\n=================================\n\nPlugin: %s %s\nSource Dataset: %s\nMeasured variable: %s (%s) [%s]\nAuxiliary variable: %s (%s) [%s]\n',id,ver,src,vname,vid,vunit,aname,aid,aunit);
   fprintf(fid,'Input interpretation: %s\nSelection: %s\nNaN / Inf policy: %s\nPublic numerical operation(s): %s\nInput count after Selection: %d\nFinite pair count: %d\nExcluded non-finite pairs: %d\n',mode,selection_text(selection_id),policy,operation_text,input_count,valid_count,excluded);
@@ -291,16 +302,17 @@ function write_report(path,id,ver,src,outid,vid,aid,vname,aname,vunit,aunit,mode
   else
     fprintf(fid,'\nWeight semantics\n----------------\nThe auxiliary variable is interpreted only as an explicit statistical weight. It is not reinterpreted as measurement uncertainty.\nConfigured weight semantics: %s\nNo sigma-to-weight conversion is performed by this plugin.\nPublic weighted_statistics rejects negative weights, discards zero weights, and requires at least one positive weight.\n',wsem);
     if(strcmp(wsem,'inverse_variance'))
-      fprintf(fid,'The uncertainty of the weighted estimate is the coefficient standard error returned by public least_squares with inverse_variance semantics. Reduced chi-squared is reported by the same public operation.\n');
+      fprintf(fid,'The known measurement uncertainty of the weighted mean is returned by public weighted_statistics under independent absolute inverse-variance assumptions. CORE exposes reduced chi-squared only when the independent Gaussian known-sigma noise model is explicitly selected.\n');
     else
       fprintf(fid,'Relative weights do not by themselves define absolute measurement uncertainty; this demo therefore does not label a fit-derived standard error as measurement uncertainty in relative mode.\n');
     endif
   endif
-  fprintf(fid,'\nComputed results\n----------------\n');for k=1:numel(names),fprintf(fid,'%-36s %.12g  %s\n',names{k},vals(k),units{k});endfor
-  fprintf(fid,'\nPublished Dataset\n-----------------\nDataset ID: %s\nLong-form schema: quantity, value, unit, definition\nProduced through Dataset Publication API v2 with source Dataset and stable source-variable provenance.\n',outid);
+  fprintf(fid,'\nCORE interpreted results\n------------------------\n');
+  labels=fieldnames(records);for k=1:numel(labels),fprintf(fid,'\n%s\n%s\n',labels{k},gxtxt_statistics_v1('report',records.(labels{k})));endfor
+  fprintf(fid,'\nPublished Dataset\n-----------------\nDataset ID: %s\nLong-form schema: quantity, value, unit, definition, status, reason, quantity_id\nProduced through Dataset Publication API v2 with source Dataset and stable source-variable provenance.\n',outid);
   fprintf(fid,'\nGraph\n-----\n01_uncertainty_measurements.png is produced through the normal Graph Provider/shared GX-TXT graphics path.\n');
   if(strcmp(mode,'standard_uncertainty')),fprintf(fid,'Measurement markers use the supplied standard uncertainty as Y error bars, with the ordinary mean reference line.\n');else,fprintf(fid,'The graph compares the ordinary and weighted central estimates; explicit statistical weights are not drawn as uncertainty error bars.\n');endif
-  fprintf(fid,'\nMetadata\n--------\nOptional Dataset Metadata resource present: %s\n\nKnown limitations\n-----------------\nGX-TXT 0.9.7.82 exposes no generic public operation that converts an arbitrary standard-uncertainty variable into inverse-variance weights. This plugin deliberately does not implement that conversion privately.\nStandard-uncertainty mode currently requires exactly matching unit strings rather than performing a private uncertainty-unit conversion.\nThis is a reference demo, not a GUM uncertainty-budget application.\n\nValidation: PASS\n',bool_text(md.found));
+  fprintf(fid,'\nMetadata\n--------\nOptional Dataset Metadata resource present: %s\n\nKnown limitations\n-----------------\nThis demo preserves the explicitly selected interpretation of the auxiliary variable; it does not convert supplied uncertainties into weights.\nStandard-uncertainty mode currently requires exactly matching unit strings rather than performing a private uncertainty-unit conversion.\nThis is a reference demo, not a GUM uncertainty-budget application.\n\nValidation: PASS\n',bool_text(md.found));
   fclose(fid);
 endfunction
 

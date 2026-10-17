@@ -12,6 +12,7 @@ function curve_replicate_analysis_main(args)
   if(isempty(config_path)), error('curve.replicate_analysis: --config is required'); endif
   cfg=read_ini(config_path);
   rep_numeric('bind',cfg);
+  statistical_scope=gxtxt_statistics_scope_v1();
   outdir=strtrim(ini_get(cfg,'runtime.output_dir',''));
   if(isempty(outdir)), error('curve.replicate_analysis: runtime.output_dir missing'); endif
   if(exist(outdir,'dir')!=7), mkdir(outdir); endif
@@ -104,11 +105,25 @@ function curve_replicate_analysis_main(args)
     endif
 
     progress_stage_safe('loading_sources','Loading canonical Dataset sources','determinate',n_sources);
-    sources=struct([]);
+    sampling_model=lower(strtrim(ini_get(cfg,'config.sampling_model','unspecified')));
+    if(!any(strcmp(sampling_model,{'unspecified','independent_traces'}))),error('curve.replicate_analysis: unknown sampling model');endif
+    sources=struct([]);reference_binding=struct();
     for si=1:n_sources
-      [rows,load_warnings]=read_bound_source(cfg,source_ids{si},x_name,y_name,family_name,replicate_name);
+      [rows,load_warnings,source_binding]=read_bound_source(cfg,source_ids{si},x_name,y_name,family_name,replicate_name);
       warnings=[warnings load_warnings];
-      s=struct(); s.index=si; s.label=source_labels{si}; s.dataset_id=source_dataset_ids{si}; s.path=['dataset:' source_dataset_ids{si}]; s.rows=rows;
+      if(si==1),reference_binding=source_binding;endif
+      for axis={'x','y','family'}
+        field=axis{1};unit_field=[field '_unit'];
+        if(strcmp(field,'family')&&!has_family),continue;endif
+        from=source_binding.(unit_field);target=reference_binding.(unit_field);
+        if(xor(isempty(from),isempty(target))),error('curve.replicate_analysis: source %s mixes declared and undeclared %s units',source_dataset_ids{si},field);endif
+        if(!strcmp(source_binding.([field '_time_origin']),reference_binding.([field '_time_origin']))||!strcmp(source_binding.([field '_time_reference']),reference_binding.([field '_time_reference'])))
+          error('curve.replicate_analysis: source %s has a different %s time origin/reference; normalize it through the public Dataset time conversion before combining curves',source_dataset_ids{si},field);
+        endif
+        rows.(field)=gxtxt_unit_convert(rows.(field),from,target);
+        if(any(!isfinite(rows.(field)))),error('curve.replicate_analysis: source-unit conversion produced nonfinite %s values',field);endif
+      endfor
+      s=struct(); s.index=si; s.label=source_labels{si}; s.dataset_id=source_dataset_ids{si}; s.path=['dataset:' source_dataset_ids{si}]; s.rows=rows;s.binding=source_binding;
       sources=append_struct(sources,s);
       progress_update_safe(si,n_sources,'loading_sources','Loading canonical Dataset sources');
     endfor
@@ -167,8 +182,13 @@ function curve_replicate_analysis_main(args)
       if(group_is_unlabelled_cloud(groups(gi),traces))
         [r,rw]=compute_group_cloud_statistics(groups(gi),traces);
       else
-        [r,rw]=compute_group_statistics(groups(gi),traces);
+        [r,rw]=compute_group_statistics(groups(gi),traces,sampling_model);
       endif
+      r.x_unit=reference_binding.x_unit;r.y_unit=reference_binding.y_unit;r.family_unit=reference_binding.family_unit;
+      provenance=struct('module_id','curve.replicate_analysis', ...
+        'source_dataset_ids',{source_dataset_ids},'source_bindings',{arrayfun(@(item)item.binding,sources,'UniformOutput',false)}, ...
+        'reference_x_unit',r.x_unit,'reference_y_unit',r.y_unit,'reference_family_unit',r.family_unit);
+      r.core_statistics=curve_replicate_capture(r.numeric_profile,r.y_unit,provenance);
       warnings=[warnings rw];
       results=append_struct(results,r);
       progress_update_safe(gi,numel(groups),'computing_statistics','Computing consensus and uncertainty statistics');
@@ -179,47 +199,48 @@ function curve_replicate_analysis_main(args)
     primary_dataset_id=strtrim(ini_get(cfg,'dataset.id',ini_get(cfg,'config.dataset_id','primary')));
     fit_outputs=build_fit_outputs(results,traces,fit_output_grid,fit_output_grid_points,consensus_center,primary_source_index);
 
+    reports=curve_replicate_reports(traces,results,source_dataset_ids,rep_numeric('function'));
     progress_stage_safe('writing_outputs','Writing scientific CSV and summary outputs','determinate',5);
     write_consensus(fullfile(outdir,'consensus_for_fitting.csv'),fit_outputs,x_name,family_name,y_name,has_family);
     progress_update_safe(1,5,'writing_outputs','Writing scientific CSV and summary outputs');
     write_uncertainty_profile(fullfile(outdir,'uncertainty_profile.csv'),results,x_name,family_name,has_family);
     progress_update_safe(2,5,'writing_outputs','Writing scientific CSV and summary outputs');
-    write_replicate_statistics(fullfile(outdir,'replicate_statistics.csv'),traces,has_family);
+    write_replicate_statistics(fullfile(outdir,'replicate_statistics.csv'),traces,has_family,reports.trace_csv);
     progress_update_safe(3,5,'writing_outputs','Writing scientific CSV and summary outputs');
-    write_source_statistics(fullfile(outdir,'source_statistics.csv'),results,traces,has_family);
+    write_source_statistics(fullfile(outdir,'source_statistics.csv'),results,has_family,reports);
     progress_update_safe(4,5,'writing_outputs','Writing scientific CSV and summary outputs');
     write_summary(fullfile(outdir,'replicate_analysis_summary.txt'),source_dataset_ids,source_labels,traces,results,warnings, ...
                   x_name,family_name,y_name,replicate_name,has_family,replicate_handling,replicate_origin,segmentation_method,min_trace_points, ...
                   reset_step_factor,reset_span_fraction,common_grid_method,grid_points,interpolation_method,consensus_center, ...
-                  fit_output_grid,fit_output_grid_points,fit_outputs,primary_dataset_id);
+                  fit_output_grid,fit_output_grid_points,fit_outputs,primary_dataset_id,reports);
     progress_update_safe(5,5,'writing_outputs','Writing scientific CSV and summary outputs');
 
     session=strtrim(ini_get(cfg,'runtime.session',''));D=struct();
     if(!isempty(session))
       progress_stage_safe('publishing_datasets','Publishing canonical curve and uncertainty Datasets','indeterminate',0);
       publication_sources=selected_dataset_ids(cfg,source_ids,primary_dataset_id);
-      D=curve_replicate_publish(session,publication_sources,traces,results,rep_numeric('function'));
+      D=curve_replicate_publish(session,publication_sources,traces,results,reports);
     endif
     % v15 Plot Dataset delegated graphics: the render cache carries the actual accepted
     % traces and statistical profiles. Plot Dataset is the render backend; producer-visible identity remains module-owned.
-    render_traces=traces;render_results=results;
+    render_traces=traces;render_results=results;core_statistics_schema='gxtxt.replicate_analysis.statistics.v1';
     stale_graph_manifest=fullfile(outdir,'automatic_graphs.ini');
     if(exist(stale_graph_manifest,'file')==2),unlink(stale_graph_manifest);endif
     progress_stage_safe('building_render_cache','Building render cache','indeterminate',0);
     save(fullfile(outdir,'render_cache.mat'),'render_traces','render_results','D','has_family','x_name','family_name','y_name','replicate_name', ...
          'source_dataset_ids','source_labels','replicate_handling','replicate_origin','segmentation_method','min_trace_points','reset_step_factor','reset_span_fraction', ...
          'common_grid_method','grid_points','interpolation_method','consensus_center','fit_output_grid','fit_output_grid_points', ...
-         'fit_outputs','primary_dataset_id','warnings');
+         'fit_outputs','primary_dataset_id','warnings','reports','core_statistics_schema');
 
     if(!isempty(session))
       curve_replicate_render_public(outdir,render_traces,render_results,D,has_family,x_name,family_name,y_name,cfg,config_path,'render');
     endif
 
     if(strcmp(segmentation_method,'unlabelled_point_cloud'))
-      fprintf('[curve.replicate_analysis] version=15.2 mode=unlabelled_point_cloud sources=%d clouds=%d groups=%d warnings=%d\n', ...
+      fprintf('[curve.replicate_analysis] version=15.3 mode=unlabelled_point_cloud sources=%d clouds=%d groups=%d warnings=%d\n', ...
               n_sources,numel(traces),numel(results),numel(warnings));
     else
-      fprintf('[curve.replicate_analysis] version=15.2 mode=%s sources=%d traces=%d groups=%d warnings=%d\n', ...
+      fprintf('[curve.replicate_analysis] version=15.3 mode=%s sources=%d traces=%d groups=%d warnings=%d\n', ...
               segmentation_method,n_sources,numel(traces),numel(results),numel(warnings));
     endif
     progress_complete_safe('completed','Replicate curve analysis completed');
@@ -373,7 +394,7 @@ function dataset_ids=selected_dataset_ids(cfg,source_ids,primary_dataset_id)
   if(isempty(dataset_ids)&&!isempty(primary_dataset_id)),dataset_ids={primary_dataset_id};endif
 endfunction
 
-function [rows,warnings]=read_bound_source(cfg,source_id,x_name,y_name,family_name,replicate_name)
+function [rows,warnings,binding]=read_bound_source(cfg,source_id,x_name,y_name,family_name,replicate_name)
   if(isempty(source_id)),error('curve.replicate_analysis: Analysis Source ID is required for framework Dataset access');endif
   warnings={};
   xid=source_variable_id(cfg,source_id,x_name,{'independent'},true);
@@ -383,6 +404,12 @@ function [rows,warnings]=read_bound_source(cfg,source_id,x_name,y_name,family_na
   ids={xid,yid};if(!isempty(fid)),ids{end+1}=fid;endif;if(!isempty(rid)),ids{end+1}=rid;endif
   ids=unique(ids,'stable');
   S=gxtxt_table_stream_open_source(cfg,source_id,ids,65536,struct('start',0,'count',-1,'require_direct',false,'numeric_transport','auto'));
+  binding=struct('dataset_id',S.dataset_id,'x_variable_id',xid,'y_variable_id',yid,'family_variable_id',fid);
+  for pair={{'x',xid},{'y',yid},{'family',fid}}
+    axis=pair{1}{1};id=pair{1}{2};schema=struct('unit','','time_origin','','time_reference','');
+    if(!isempty(id)),index=find(strcmp({S.schema.variable_id},id));if(numel(index)!=1),error('curve.replicate_analysis: missing bound schema');endif;schema=S.schema(index);endif
+    for field={'unit','time_origin','time_reference'},binding.([axis '_' field{1}])=schema.(field{1});endfor
+  endfor
   x=[];y=[];fam=[];rep={};rownum=[];ordinal=0;skipped=0;
   unwind_protect
     while(!S.eof)
@@ -614,7 +641,7 @@ function [t,ok,warning_text]=make_trace(source,x,y,family_value,has_family,repli
   % unique ascending X before interpolation. Exact duplicate X values are
   % collapsed by averaging Y.
   [ux,~,ic]=unique(x);
-  uy=accumarray(ic,y,[],@mean);
+  uy=zeros(size(ux));for k=1:numel(ux),uy(k)=rep_numeric('reduce_summary',y(ic==k),struct()).mean;endfor
   direction='ascending_normalized';
   duplicates_collapsed=original_points-numel(ux);
   if(numel(ux)<min_points)
@@ -702,108 +729,36 @@ function yes=group_is_unlabelled_cloud(g,traces)
 endfunction
 
 function [r,warnings]=compute_group_cloud_statistics(g,traces)
-  warnings={}; nx=numel(g.grid); nt=numel(g.trace_indices);
-  source_ids=zeros(1,nt); Y=NaN(nx,nt); local_sigma=NaN(nx,nt); local_n=NaN(nx,nt); raw_total=0;
+  warnings={};nx=numel(g.grid);nt=numel(g.trace_indices);
+  source_ids=zeros(1,nt);Y=NaN(nx,nt);local_sigma=NaN(nx,nt);local_n=NaN(nx,nt);raw_total=0;
   for k=1:nt
-    t=traces(g.trace_indices(k)); source_ids(k)=t.source_index; raw_total+=t.original_points;
-    for xi=1:nx
-      [Y(xi,k),local_sigma(xi,k),local_n(xi,k)]=local_cloud_estimate(t.x,t.y,g.grid(xi));
-    endfor
+    t=traces(g.trace_indices(k));source_ids(k)=t.source_index;raw_total+=t.original_points;
+    local=rep_numeric('local_cloud_fit',t.x,t.y,g.grid,struct());
+    Y(:,k)=local.local_mean;local_sigma(:,k)=local.local_sigma;local_n(:,k)=local.local_count;
   endfor
-  sources=unique(source_ids); ns=numel(sources);
-  if(any(!isfinite(Y(:))))
-    error('curve.replicate_analysis: unlabelled point-cloud local regression failed inside common domain for family %s',g.family_label);
-  endif
-  row=rep_numeric('matrix_statistics',Y,struct('dimension',2));y_mean=row.mean;y_median=row.median;
-  sigma_within=NaN(nx,1); sigma_between=NaN(nx,1); sigma_total=NaN(nx,1);
-  identifiable=(ns>=2 && all(isfinite(local_sigma(:))));
-  if(identifiable)
-    sigma_within=sqrt(rep_numeric('reduce_summary',local_sigma.^2,struct('dimension',2)).mean);
-    sigma_between=row.std_sample;
-    sigma_total=sqrt(sigma_within.^2 + sigma_between.^2);
-    y_std=sigma_total;
-  else
-    if(ns>=2), y_std=row.std_sample; else y_std=zeros(nx,1); endif
-    warnings{end+1}=sprintf('Family %s: unlabelled point-cloud variance components are not identifiable (sources=%d)',g.family_label,ns);
-  endif
-  % Standard error requires a count of statistically independent repeats.
-  % The raw cloud does not encode that count, therefore y_sem is unavailable.
-  y_sem=NaN(nx,1);
-  warnings{end+1}=sprintf('Family %s: using order-independent unlabelled point-cloud estimator; discrete replicate count and y_sem are not inferred.',g.family_label);
-  r=struct('family_value',g.family_value,'family_label',g.family_label,'trace_indices',g.trace_indices, ...
-           'x',g.grid,'Y',Y,'y_mean',y_mean,'y_median',y_median,'y_std',y_std,'y_sem',y_sem, ...
-           'n',nt,'n_sources',ns,'source_ids',source_ids,'sigma_within',sigma_within,'sigma_between',sigma_between,'sigma_total',sigma_total, ...
-           'variance_components_identifiable',identifiable,'x_min',g.x_min,'x_max',g.x_max, ...
-           'statistics_mode','unlabelled_point_cloud','replicate_count_known',false,'n_raw_points',raw_total,'local_n',local_n);
+  if(any(!isfinite(Y(:)))),error('curve.replicate_analysis: local cloud location is unavailable inside family %s',g.family_label);endif
+  profile=rep_numeric('replicate_summary',Y,source_ids,struct('mode','unlabelled_point_cloud','local_dispersion',local_sigma));
+  if(any(!profile.components_identifiable)),warnings{end+1}=sprintf('Family %s: source components unavailable at some coordinates; see captured CORE row states.',g.family_label);endif
+  warnings{end+1}=sprintf('Family %s: unlabelled point clouds do not establish independent repeat count or SEM.',g.family_label);
+  r=profile_result(g,traces,Y,source_ids,profile,local_n);
 endfunction
 
-function [mu,sigma,nlocal]=local_cloud_estimate(x,y,x0)
-  x=x(:); y=y(:); n=numel(x);
-  if(n<4), mu=NaN; sigma=NaN; nlocal=n; return; endif
-  % Local quadratic fit removes physical curve slope/curvature before the
-  % residual spread is interpreted as digitization repeatability.  The
-  % deterministic nearest-neighbour window depends only on the point cloud,
-  % never on CSV row order and never on an inferred replicate count.
-  k=round(1.5*sqrt(n)); k=max(10,k); k=min(25,k); k=min(n,k); nlocal=k;
-  d=abs(x-x0); tab=[d x y (1:n)']; [~,ord]=sortrows(tab,[1 2 3]); idx=ord(1:k);
-  xx=x(idx); yy=y(idx); z=xx-x0; dd=abs(z); dmax=max(dd);
-  if(!isfinite(dmax) || dmax<=0)
-    w=ones(k,1);
-  else
-    u=min(1,dd./dmax); w=(1-u.^3).^3; w=max(w,1e-6);
-  endif
-  A=[ones(k,1) z z.^2];
-  fit=rep_numeric('least_squares',A,yy,w,struct('rank_policy','minimum_norm'));
-  if(fit.rank==3 && fit.condition_number<1e6)
-    fitted=fit.predicted; mu=fit.coefficients(1);
-    p=3;
-  else
-    weighted=rep_numeric('weighted_statistics',yy,w,struct());mu=weighted.mean; fitted=mu*ones(k,1); p=1;
-  endif
-  resid=yy-fitted; sumw=sum(w); sumw2=sum(w.^2); neff=(sumw^2)/max(sumw2,eps);
-  dof=max(neff-p,1); v=(sum(w.*(resid.^2))/max(sumw,eps))*(neff/dof);
-  sigma=sqrt(max(v,0));
+function [r,warnings]=compute_group_statistics(g,traces,sampling_model)
+  warnings={};source_ids=zeros(1,columns(g.Y));
+  for k=1:numel(source_ids),source_ids(k)=traces(g.trace_indices(k)).source_index;endfor
+  profile=rep_numeric('replicate_summary',g.Y,source_ids,struct('sampling_model',sampling_model));
+  if(any(!profile.components_identifiable)),warnings{end+1}=sprintf('Family %s: labelled source variance components are unavailable; see CORE eligibility.',g.family_label);endif
+  r=profile_result(g,traces,g.Y,source_ids,profile,[]);
 endfunction
 
-function [r,warnings]=compute_group_statistics(g,traces)
-  warnings={}; Y=g.Y; n=columns(Y); nx=rows(Y);
-  row=rep_numeric('matrix_statistics',Y,struct('dimension',2));y_mean=row.mean;y_median=row.median;
-  if(n>=2), y_std=row.std_sample; else y_std=zeros(nx,1); endif
-  y_sem=y_std./sqrt(max(1,n));
-  source_ids=zeros(1,n);
-  for k=1:n, source_ids(k)=traces(g.trace_indices(k)).source_index; endfor
-  sources=unique(source_ids); ns=numel(sources);
-  sigma_within=NaN(nx,1); sigma_between=NaN(nx,1); sigma_total=NaN(nx,1);
-  identifiable=false;
-  counts=zeros(1,ns);
-  for si=1:ns, counts(si)=sum(source_ids==sources(si)); endfor
-  N=sum(counts); dfw=N-ns;
-  if(ns>=2 && dfw>0)
-    coeff=(N-sum(counts.^2)/N)/(ns-1);
-    if(coeff>0)
-      identifiable=true;
-      for xi=1:nx
-        vals=Y(xi,:); grand=y_mean(xi); ssw=0; ssb=0;
-        for si=1:ns
-          sv=vals(source_ids==sources(si)); sm=rep_numeric('reduce_summary',sv).mean;
-          ssw+=sum((sv-sm).^2); ssb+=numel(sv)*(sm-grand)^2;
-        endfor
-        msw=ssw/dfw; msb=ssb/(ns-1);
-        tau2=max(0,(msb-msw)/coeff);
-        sigma_within(xi)=sqrt(max(0,msw));
-        sigma_between(xi)=sqrt(tau2);
-        sigma_total(xi)=sqrt(msw+tau2);
-      endfor
-    endif
-  endif
-  if(!identifiable)
-    warnings{end+1}=sprintf('Family %s: within-source / between-source variance decomposition is not identifiable (sources=%d, traces=%d, within df=%d)',g.family_label,ns,n,dfw);
-  endif
+function r=profile_result(g,traces,Y,source_ids,profile,local_n)
   r=struct('family_value',g.family_value,'family_label',g.family_label,'trace_indices',g.trace_indices, ...
-           'x',g.grid,'Y',Y,'y_mean',y_mean,'y_median',y_median,'y_std',y_std,'y_sem',y_sem, ...
-           'n',n,'n_sources',ns,'source_ids',source_ids,'sigma_within',sigma_within,'sigma_between',sigma_between,'sigma_total',sigma_total, ...
-           'variance_components_identifiable',identifiable,'x_min',g.x_min,'x_max',g.x_max, ...
-           'statistics_mode','labelled_traces_anova','replicate_count_known',true,'n_raw_points',sum([traces(g.trace_indices).original_points]),'local_n',[]);
+    'x',g.grid,'Y',Y,'y_mean',profile.y_mean,'y_median',profile.y_median,'y_std',profile.y_std,'y_sem',profile.y_sem, ...
+    'n',profile.n,'n_sources',profile.n_sources,'source_ids',source_ids, ...
+    'sigma_within',profile.sigma_within,'sigma_between',profile.sigma_between,'sigma_total',profile.sigma_total, ...
+    'variance_components_identifiable',any(profile.components_identifiable),'x_min',g.x_min,'x_max',g.x_max, ...
+    'statistics_mode',profile.mode,'replicate_count_known',strcmp(profile.mode,'labelled_traces_anova'), ...
+    'n_raw_points',sum([traces(g.trace_indices).original_points]),'local_n',local_n,'numeric_profile',profile);
 endfunction
 
 function fit_outputs=build_fit_outputs(results,traces,method,grid_points,center,primary_source_index)
@@ -890,51 +845,42 @@ function write_uncertainty_profile(path,results,x_name,family_name,has_family)
   end_unwind_protect
 endfunction
 
-function write_replicate_statistics(path,traces,has_family)
+function write_replicate_statistics(path,traces,has_family,formatted)
   fid=fopen(path,'w'); if(fid<0), error('curve.replicate_analysis: cannot write %s',path); endif
   unwind_protect
     fprintf(fid,'source,source_path,family,replicate_id,replicate_index,n_points,x_min,x_max,y_mean,y_std,original_points,duplicates_collapsed,direction,representation\n');
     for i=1:numel(traces)
-      t=traces(i); s=rep_numeric('statistics',t.y(:),struct());
-      if(numel(t.y)>=2), ys=s.std_sample; else ys=0; endif
-      fprintf(fid,'%s,%s,%s,%s,%d,%d,%.17g,%.17g,%.17g,%.17g,%d,%d,%s,%s\n', ...
+      t=traces(i);
+      fprintf(fid,'%s,%s,%s,%s,%d,%d,%.17g,%.17g,%s,%d,%d,%s,%s\n', ...
               csv_escape(t.source_label),csv_escape(t.source_path),csv_escape(family_display(t.family_value,has_family)),csv_escape(t.replicate_id), ...
-              t.replicate_index,numel(t.x),min(t.x),max(t.x),s.mean,ys,t.original_points,t.duplicates_collapsed,csv_escape(t.direction),csv_escape(t.representation));
+              t.replicate_index,numel(t.x),min(t.x),max(t.x),formatted{i},t.original_points,t.duplicates_collapsed,csv_escape(t.direction),csv_escape(t.representation));
     endfor
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect
 endfunction
 
-function write_source_statistics(path,results,traces,has_family)
-  fid=fopen(path,'w'); if(fid<0), error('curve.replicate_analysis: cannot write %s',path); endif
+function write_source_statistics(path,results,has_family,reports)
+  fid=fopen(path,'w');if(fid<0),error('curve.replicate_analysis: cannot write %s',path);endif
   unwind_protect
     fprintf(fid,'source,family,n_replicates,n_points,n_grid,mean_bias,rms_deviation,max_abs_deviation,statistics_mode\n');
-    for gi=1:numel(results)
-      r=results(gi); srcs=unique(r.source_ids);
-      for si=1:numel(srcs)
-        sid=srcs(si); cols=find(r.source_ids==sid); sm=rep_numeric('reduce_summary',r.Y(:,cols),struct('dimension',2)).mean; d=sm-r.y_mean;
-        label=''; npoints=0;
-        for ti=r.trace_indices
-          if(traces(ti).source_index==sid), label=traces(ti).source_label; npoints+=traces(ti).original_points; endif
-        endfor
-        fprintf(fid,'%s,%s,',csv_escape(label),csv_escape(family_display(r.family_value,has_family)));
-        if(r.replicate_count_known), fprintf(fid,'%d',numel(cols)); endif
-        bias=rep_numeric('reduce_summary',d(:),struct()).mean;deviation=rep_numeric('statistics',d(:),struct()).rms;
-        fprintf(fid,',%d,%d,%.17g,%.17g,%.17g,%s\n',npoints,numel(r.x),bias,deviation,max(abs(d)),csv_escape(r.statistics_mode));
-      endfor
+    for i=1:numel(reports.source_rows)
+      row=reports.source_rows(i);r=results(row.family_index);
+      fprintf(fid,'%s,%s,',csv_escape(row.source_label),csv_escape(family_display(r.family_value,has_family)));
+      if(r.replicate_count_known),fprintf(fid,'%d',row.replicate_count);endif
+      fprintf(fid,',%d,%d,%s,%s\n',row.point_count,row.grid_count,reports.source_csv{i},csv_escape(r.statistics_mode));
     endfor
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect
 endfunction
 
-function write_summary(path,source_dataset_ids,source_labels,traces,results,warnings,x_name,family_name,y_name,replicate_name,has_family,replicate_handling,replicate_origin,segmentation_method,min_trace_points,reset_step_factor,reset_span_fraction,common_grid_method,grid_points,interpolation_method,consensus_center,fit_output_grid,fit_output_grid_points,fit_outputs,primary_dataset_id)
+function write_summary(path,source_dataset_ids,source_labels,traces,results,warnings,x_name,family_name,y_name,replicate_name,has_family,replicate_handling,replicate_origin,segmentation_method,min_trace_points,reset_step_factor,reset_span_fraction,common_grid_method,grid_points,interpolation_method,consensus_center,fit_output_grid,fit_output_grid_points,fit_outputs,primary_dataset_id,reports)
   fid=fopen(path,'w'); if(fid<0), error('curve.replicate_analysis: cannot write %s',path); endif
   unwind_protect
     fprintf(fid,'GX-TXT Replicate Curve Analysis\n');
     fprintf(fid,'Module: curve.replicate_analysis\n');
-    fprintf(fid,'Module version: 15.2\n');
+    fprintf(fid,'Module version: 15.3\n');
     fprintf(fid,'Scientific scope: replicated curves -> statistical characterization -> consensus + uncertainty\n');
     fprintf(fid,'Physical-model fitting: not performed\n\n');
     fprintf(fid,'Sources: %d\n',numel(source_dataset_ids));
@@ -980,22 +926,7 @@ function write_summary(path,source_dataset_ids,source_labels,traces,results,warn
     fprintf(fid,'  interpolation = %s; no extrapolation outside the intersection of source/trace domains\n',interpolation_method);
     fprintf(fid,'  consensus center for fit-ready CSV = %s\n',consensus_center);
     fprintf(fid,'  replication count / raw point count does not determine fit-output point count\n');
-    if(strcmp(segmentation_method,'unlabelled_point_cloud'))
-      fprintf(fid,'  source consensus = local linear regression on each source/family point cloud\n');
-      fprintf(fid,'  sigma_within = RMS local residual dispersion across sources\n');
-      fprintf(fid,'  sigma_between = sample SD of source consensus predictions\n');
-      fprintf(fid,'  sigma_total = sqrt(sigma_within^2 + sigma_between^2)\n');
-      fprintf(fid,'  y_std = sigma_total\n');
-      fprintf(fid,'  y_sem = unavailable because independent replicate count is not encoded\n');
-    else
-      fprintf(fid,'  y_std = sample standard deviation across interpolated traces\n');
-      fprintf(fid,'  y_sem = y_std / sqrt(n)\n');
-      fprintf(fid,'  variance components = one-way random-effects ANOVA by source with unequal-replicate correction\n');
-      fprintf(fid,'  sigma_within = sqrt(MS_within) when identifiable\n');
-      fprintf(fid,'  sigma_between = sqrt(max(0,(MS_between-MS_within)/n0)) when identifiable\n');
-      fprintf(fid,'  sigma_total = sqrt(sigma_within^2 + sigma_between^2) when identifiable\n');
-    endif
-    fprintf(fid,'  independent sigma_x = not estimated from final CSV coordinates alone\n\n');
+    fprintf(fid,'\nCORE statistical definitions and assumptions:\n%s\n\n',gxtxt_statistics_v1('report',results(1).core_statistics.binding));
     if(strcmp(segmentation_method,'unlabelled_point_cloud'))
       fprintf(fid,'Accepted source/family point clouds: %d\n',numel(traces));
     else
@@ -1016,14 +947,6 @@ function write_summary(path,source_dataset_ids,source_labels,traces,results,warn
         endif
       endif
       fprintf(fid,'  within/between identifiable = %s\n',bool_text(r.variance_components_identifiable));
-      valid_std=r.y_std(isfinite(r.y_std));
-      if(isempty(valid_std)),mean_std=NaN;max_std=NaN;
-      else mean_std=rep_numeric('reduce_summary',valid_std,struct()).mean;max_std=max(valid_std);endif
-      fprintf(fid,'  mean(y_std) = %.12g\n  max(y_std) = %.12g\n',mean_std,max_std);
-      if(r.variance_components_identifiable)
-        fprintf(fid,'  RMS(sigma_within) = %.12g\n  RMS(sigma_between) = %.12g\n  RMS(sigma_total) = %.12g\n', ...
-                finite_rms(r.sigma_within),finite_rms(r.sigma_between),finite_rms(r.sigma_total));
-      endif
       srcs=unique(r.source_ids);
       for si=1:numel(srcs)
         sid=srcs(si); label=''; npoints=0; nrep=0;
@@ -1037,15 +960,12 @@ function write_summary(path,source_dataset_ids,source_labels,traces,results,warn
         endif
       endfor
     endfor
+    for k=1:numel(reports.component_text),fprintf(fid,'\n%s\n',reports.component_text{k});endfor
     fprintf(fid,'\nWarnings/notes: %d\n',numel(warnings));
     for i=1:numel(warnings), fprintf(fid,'  - %s\n',warnings{i}); endfor
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect
-endfunction
-
-function r=finite_rms(v)
-  v=v(isfinite(v)); if(isempty(v)), r=NaN; else r=rep_numeric('statistics',v,struct()).rms; endif
 endfunction
 
 function write_csv_number(fid,v)
@@ -1104,7 +1024,7 @@ function out=rep_numeric(operation,varargin)
     if(!strcmp(provider,'math.numeric')||!strcmp(version,'1')||isempty(entry)||exist(entry,'file')!=2||isempty(candidate))
       error('curve.replicate_analysis: public NUMERIC_API_v1 runtime binding is unavailable');
     endif
-    for required={'interpolation','uniform_grid','descriptive_statistics','matrix_statistics','linear_reductions','linear_least_squares'}
+    for required={'interpolation','uniform_grid','descriptive_statistics','matrix_statistics','linear_reductions','linear_least_squares','local_cloud_fit','replicate_summary'}
       if(!any(strcmp(caps,required{1}))),error('curve.replicate_analysis: numeric capability missing: %s',required{1});endif
     endfor
     addpath(fileparts(entry));if(exist(candidate,'file')!=2),error('curve.replicate_analysis: numeric entrypoint is unavailable');endif

@@ -1,4 +1,9 @@
-## 1.0.2
+## 1.0.3 — dev097
+
+- Delegate both existing vector normalization choices to the public Numeric
+  provider, preserving scientific identities, units and zero-norm rejection.
+
+## 1.0.20
 
 - Open standalone runtime Session and inspect Dataset provenance through supported public APIs.
 

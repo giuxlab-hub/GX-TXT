@@ -1,0 +1,69 @@
+def _registered_response(u, p, spec):
+    # Execute only when the independent function is called, never during export.
+    import hashlib
+    from pathlib import Path
+    import subprocess
+    import sys
+    import tempfile
+    source = bytes.fromhex(spec['source_hex'])
+    if hashlib.sha256(source).hexdigest() != spec['source_sha256']:
+        raise ValueError('Retained executable source SHA mismatch')
+    if not len(u):
+        return np.empty(0)
+    with tempfile.TemporaryDirectory(prefix='gxtxt_independent_model_') as directory:
+        root = Path(directory)
+        (root/'source').write_bytes(source)
+        np.asarray(p, dtype='<f8').tofile(root/'parameters.bin')
+        np.asarray(u, dtype='<f8').tofile(root/'query.bin')
+        if spec['language'] == 'Python':
+            runner = '''import sys
+from pathlib import Path
+import numpy as np
+root=Path(sys.argv[1]);entry=sys.argv[2]
+ns={'__name__':'__independent_registered_model__','__file__':str(root/'source')}
+exec(compile((root/'source').read_bytes(),str(root/'source'),'exec'),ns)
+p=np.fromfile(root/'parameters.bin',dtype='<f8').reshape(-1,1)
+x=np.fromfile(root/'query.bin',dtype='<f8').reshape(-1,1)
+y=np.asarray(ns[entry](p,x))
+if y.shape!=x.shape or y.dtype.kind not in 'fiu' or np.iscomplexobj(y) or not np.all(np.isfinite(y)):
+ raise ValueError('Registered model must return finite real Nx1 responses')
+if y.dtype.kind in 'iu' and np.any(np.abs(y.astype(np.longdouble))>2**53):
+ raise ValueError('Integer model response is not exactly representable in binary64')
+np.asarray(y,dtype='<f8').tofile(root/'response.bin')
+'''
+            (root/'runner.py').write_text(runner, encoding='utf-8')
+            command = [sys.executable, '-I', str(root/'runner.py'), str(root), spec['entrypoint']]
+        else:
+            # The script marker preserves original local function definitions.
+            (root/'retained_callable_source.m').write_bytes(b'1;\n' + source)
+            runner = '''args=argv();root=args{1};entry=args{2};
+builtin('source',fullfile(root,'retained_callable_source.m'));
+f=fopen(fullfile(root,'parameters.bin'),'rb');p=fread(f,Inf,'double',0,'ieee-le');fclose(f);
+f=fopen(fullfile(root,'query.bin'),'rb');x=fread(f,Inf,'double',0,'ieee-le');fclose(f);
+y=feval(entry,p,x);
+if(!isnumeric(y)||!isreal(y)||!isequal(size(y),size(x))||any(!isfinite(y(:)))),error('Registered model must return finite real Nx1 responses');endif
+if(isa(y,'uint64')),bad_integer=any(y(:)>uint64(2^53));elseif(isinteger(y)),bad_integer=any(int64(y(:))>int64(2^53)|int64(y(:))<-int64(2^53));else bad_integer=false;endif
+if(bad_integer),error('Integer model response is not exactly representable in binary64');endif
+f=fopen(fullfile(root,'response.bin'),'wb');n=fwrite(f,double(y),'double',0,'ieee-le');fclose(f);
+if(n!=numel(x)),error('Incomplete model response');endif
+'''
+            (root/'runner.m').write_text(runner, encoding='utf-8')
+            command = ['octave-cli', '--quiet', '--no-gui', '--no-init-file', '--no-site-file',
+                       str(root/'runner.m'), str(root), spec['entrypoint']]
+        with (root/'execution.log').open('wb') as log:
+            try:
+                process = subprocess.run(command, cwd=root, stdin=subprocess.DEVNULL,
+                                         stdout=log, stderr=log, timeout=120, check=False)
+            except subprocess.TimeoutExpired as error:
+                raise RuntimeError('Independent model exceeded 120 seconds') from error
+        if process.returncode:
+            with (root/'execution.log').open('rb') as log:
+                detail = log.read(8192).decode('utf-8', errors='replace')
+            raise RuntimeError('Independent model execution failed: ' + detail)
+        path = root/'response.bin'
+        if not path.is_file() or path.stat().st_size != len(u)*8:
+            raise ValueError('Independent model returned a different response shape')
+        y = np.fromfile(path, dtype='<f8')
+        if not np.all(np.isfinite(y)):
+            raise ValueError('Independent model returned nonfinite responses')
+        return y

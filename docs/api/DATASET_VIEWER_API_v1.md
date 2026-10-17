@@ -1,4 +1,4 @@
-# CORE Dataset Viewer API v1 — dev071
+# CORE Dataset Viewer API v1
 
 This additive authority resolves canonical Dataset identity before choosing a
 consultation surface. It does not register a module/provider or require enabling
@@ -33,8 +33,9 @@ not. An unsupported/corrupt source receives a diagnostic, never a made-up graph.
 Schema v3 supplies names, types, units, dimensions and coordinate relationships.
 Curve Source owns finite-value handling, original ordering, source mapping and
 bounded reduction (4096 displayed points/trace). Up to 16 explicitly selected
-traces overlay only when their declared units agree. No automatic conversion,
-resampling, sorting, smoothing or canonical publication occurs. Families use
+traces overlay only when their declared units and coordinate presentation policies
+agree. Explicit Dataset display-unit conversion uses CORE. No resampling, sorting,
+smoothing or canonical publication occurs. Families use
 explicit CORE read-only filter views, independently rendered member traces.
 Shared filter discovery streams 2048 rows/chunk, with a 100000-row scan and 1024 distinct values per variable. Incomplete scans are labelled; only an explicit selection enables separate family curves.
 
@@ -81,7 +82,9 @@ channels, resample, play audio or imply physical calibration. Text inspection is
 bounded at 256 KiB and reports truncation.
 
 Open hosts bind Session lifetime and payload/schema/registry revision. A one-second
-watch closes stale windows; media children are reaped through process-pipe EOF.
+watch closes source/schema-stale windows; scientific coordinate-policy changes
+refresh retained display samples through CORE. Media children are reaped through
+process-pipe EOF.
 Closing cancels asynchronous work and removes temporary displays. No consultation
 UI contains a source edit, Save, Commit or publication path.
 
@@ -217,3 +220,61 @@ and filters with the rendered request, reloads changed selections, and otherwise
 fits the existing scene. Pan/zoom/resize preserve navigation. Scientific Preview
 receipts add `view_bounds`, `axis_aspect=auto` and combined `displayed_points`.
 Curve Source's ordered extrema/row/gap policies remain unchanged; no data conversion.
+
+
+## Persistent scientific coordinate presentation
+
+XY Preview and the full scientific Dataset viewer consume the verified coordinate
+context from [Dataset Metadata API](DATASET_METADATA_API_v1.md). Explicit compatible
+display units apply to shown points, ticks and readouts. Persistent per-variable
+magnification/pivot changes the fitted view range; it does not multiply the samples.
+The renderer calls the same bounded CORE snapshot conversion/view-range operations
+used by Workbench. Original canonical samples and source-row identities remain
+retained. Reprojection always starts from those original samples.
+
+`scientificDatasetPreview` adds `coordinate_presentation` with schema
+`gxtxt.scientific_coordinate_presentation.v1`, captured context, ordered Variable
+IDs, display units, view factors, canonical pivots, reference/display bounds and
+per-axis CORE range receipts. `calibration_applied=0` and
+`source_values_modified=0` distinguish presentation from numeric materialization.
+The PNG and receipt use the same final viewport. Repeated Render/Fit recomputes
+from the original fitted range, so magnification does not compound. In the full
+viewer, unchanged-policy refresh preserves additional transient zoom. A changed
+policy reprojects retained bounded samples and rebuilds its default viewport.
+
+Numeric calibration remains an explicit effective-coordinate/derived-Dataset
+operation. The status text states that it is not applied. Canonical table pages
+remain unchanged. Boolean axes outside the real-number coordinate API retain
+canonical display; no alternate numeric schema is fabricated. Shared-axis overlays
+require matching coordinate relations, display units, factors and pivots. Different
+policies must be inspected separately.
+
+Scientific windows tolerate only structured-metadata bookkeeping changes in the
+source stamp, then reread/validate the coordinate context. Actual source bytes,
+filesystem identity, canonical schema, Session lifetime and all other registry
+fields retain strict invalidation. Preview's existing metadata-inclusive cache
+signature triggers regeneration after a policy edit. The source selector labels
+identify source units explicitly; displayed units appear with the rendered axes.
+
+
+## dev097 direct XYZ coordinate policy
+
+Direct numerical XYZ reads `DATASET_METADATA_API_v1` once for its verified source.
+Its temporary VTP contains displayed units; retained canonical triples and original
+source rows remain unchanged. `xyzDisplayReceipt.coordinate_presentation` records
+`gxtxt.xyz_coordinate_presentation.v1`, captured context, per-axis reference/result
+ranges, policies and view transform, with calibration/source-mutation flags false.
+The public CORE snapshot operations own physical conversion and pivot/range.
+
+The normalized scientific cube uses increasing displayed ranges and a fixed
+camera. Per-axis magnification changes this view frame instead of multiplying
+source samples or refitting transformed geometry. Calibrated axes/grid and their
+labels use those same display units. Warm activation, camera reset and resize
+retain the existing scene; changed source/metadata requires a new activation.
+Numerical calibration stays explicit and is labelled unapplied. Existing bounded
+sampling/filter limitations remain unchanged.
+
+HMS readers return seconds regardless of the declared source h/min/s unit. The
+shared XY and XYZ consumers convert only their presentation buffers through the
+public elapsed-time API before using source-frame coordinate settings. Retained
+numeric samples remain seconds, including repeated reprojection.

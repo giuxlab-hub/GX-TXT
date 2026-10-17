@@ -97,13 +97,19 @@ proc ::GX::datasetViewerCheck {w} {
     if {[info exists state($w,sourceCheck)]} {
         if {[uplevel #0 $state($w,sourceCheck)] ne $state($w,sourceKey)} {error {Native3D preview source/configuration changed; activate again.}}
     }
-    if {[datasetViewerStamp $state($w,id) $state($w,path)] ne $state($w,stamp)} {error {Dataset revision changed; reopen it explicitly.}}
+    set current [datasetViewerStamp $state($w,id) $state($w,path)]
+    if {$current ne $state($w,stamp)} {
+        # Scientific display policy may change without touching the source or
+        # schema. Keep every other revision check, including filesystem identity.
+        if {![info exists state($w,coordinateContext)]||[scientificDatasetCoordinateSourceStamp $current] ne [scientificDatasetCoordinateSourceStamp $state($w,stamp)]} {error {Dataset revision changed; reopen it explicitly.}}
+        set state($w,stamp) $current
+    }
 }
 proc ::GX::datasetViewerWatch {w} {
     variable ::GX::DatasetViewer::state
     if {![info exists state($w,id)]} return
     if {[info exists state($w,previewChoice)]&&$state($w,previewChoice) ne $::GX::variableDatasetChoice} {datasetViewerClose $w;return}
-    if {[catch {datasetViewerCheck $w} reason]} {datasetViewerClose $w;setStatus $reason 100;return}
+    if {[catch {datasetViewerCheck $w;scientificDatasetViewerCoordinateRefresh $w} reason]} {datasetViewerClose $w;setStatus $reason 100;return}
     set state($w,watch) [after 1000 [list ::GX::datasetViewerWatch $w]]
 }
 proc ::GX::datasetViewerClose {w} {
@@ -274,7 +280,14 @@ proc ::GX::scientificDatasetViewerFit {w} {
     if {[catch {set selection [scientificDatasetViewerSelection $w]} reason]} {set state($w,status) $reason;return}
     if {![info exists state($w,plottedRequest)] || $state($w,plottedRequest) ne $selection} {scientificDatasetViewerPlot $w;return}
     if {$state($w,job) ne {}} return
-    if {$state($w,scene) ne {}} {::GX::Native2D::core fit $state($w,scene);scientificDatasetViewerDraw $w}
+    if {$state($w,scene) ne {}} {
+        ::GX::Native2D::core fit $state($w,scene)
+        if {[llength $state($w,series)]} {
+            set presentation [scientificDatasetCoordinateView $state($w,scene) [dict get [lindex $state($w,series) 0] display coordinate_presentation]]
+            set state($w,status) [scientificDatasetCoordinateNotice $presentation]
+        }
+        scientificDatasetViewerDraw $w
+    }
 }
 proc ::GX::scientificDatasetViewerAspect {w} {
     variable ::GX::DatasetViewer::state
@@ -448,11 +461,12 @@ proc ::GX::datasetInspectionRenderPreview {w choice} {
             set receipt [scientificDatasetPreviewFiltered $id [dict get $axes x] [dict get $axes y] $path $requests]
             if {$choice ne $::GX::variableDatasetChoice || $epoch!=$::GX::ui(previewEpoch) || $expected ne [datasetPreviewStamp]} return
             set ::GX::ui(previewMap,status) "[scientificDatasetFilterMode $::GX::ui(previewMap,dimensions) $::GX::ui(previewMap,filters) $::GX::ui(previewMap,separate)] — [dict get $receipt trace_count] trace(s), [dict get $receipt row_count] source rows"
-            foreach key {x y} {set v [datasetVariableV3ById $id [dict get $axes $key]];$w insert end "[string toupper $key]: [dict get $v canonical] ([dict get $v unit])   "}
+            foreach key {x y} {set vid [dict get $axes $key];set v [datasetVariableV3ById $id $vid];$w insert end "[string toupper $key]: [dict get $v canonical] ([scientificDatasetCoordinateLabel [dict get $receipt coordinate_presentation context] $vid])   "}
             $w insert end "\n"
             set previewImage [image create photo -file $path]
             $w image create end -image $previewImage
             $w insert end "\n[scientificDatasetFilterMode $::GX::ui(previewMap,dimensions) $::GX::ui(previewMap,filters) $::GX::ui(previewMap,separate)] — [dict get $receipt trace_count] trace(s)\nX: [dict get $axes x]   Y: [dict get $axes y]\nRows: [dict get $receipt row_count]; reduced display: [dict get $receipt reduced]. Original source ordering and gaps retained.\n"
+            $w insert end "[scientificDatasetCoordinateNotice [dict get $receipt coordinate_presentation]]\n"
             lassign [dict get $receipt view_bounds] x0 y0 x1 y1
             $w insert end "Independent axes — X view: [format %.8g $x0] .. [format %.8g $x1]; Y view: [format %.8g $y0] .. [format %.8g $y1]. [dict get $receipt displayed_points] drawn points.\n"
         } on error {message options} {if {$epoch==$::GX::ui(previewEpoch) && $expected eq [datasetPreviewStamp]} {$w insert end "Scientific preview unavailable: $message\n"}} finally {file delete -force $path}

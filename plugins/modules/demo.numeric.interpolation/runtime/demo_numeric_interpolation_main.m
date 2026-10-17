@@ -3,7 +3,7 @@ function demo_numeric_interpolation_main(args, framework_root)
 % SPDX-License-Identifier: GPL-3.0-or-later
 
   module_id = 'demo.numeric.interpolation';
-  module_version = '1.0.4';
+  module_version = '1.1.0';
   methods = {'linear','cubic','spline','pchip'};
   publication_open = false;
   publication_finalized = false;
@@ -79,13 +79,16 @@ function demo_numeric_interpolation_main(args, framework_root)
     endif
 
     numeric = discover_numeric_api(framework_root);
+    statistics_lifetime=gxtxt_statistics_scope_v1();
     gxtxt_progress_stage('numeric','Invoking NUMERIC_API_v1','indeterminate');
 
     grid = feval(numeric.function_name,'uniform_grid',x_source(1),x_source(end),query_count,struct('mode','count'));
     xq = double(grid.x(:));
     reference = sin(xq) + 0.1 .* xq;
     source_reference = sin(x_source) + 0.1 .* x_source;
-    source_reference_max_abs_error = max(abs(y_source - source_reference));
+    source_metric=feval(numeric.function_name,'residual_metrics',source_reference,y_source,struct());
+    source_reference_max_abs_error=source_metric.max_abs_error;
+    source_core=compare_result(source_metric,y_unit,module_id,'source_reference');
 
     source_serialization_tolerance = source_reference_tolerance(source_reference);
     interpolation_identity_tolerance = 1.0e-10 * max(1.0,max(abs(y_source)));
@@ -103,10 +106,12 @@ function demo_numeric_interpolation_main(args, framework_root)
       yq = double(R.yq(:));
       ys = double(S.yq(:));
       err = yq - reference;
-      identity_error = max(abs(ys - y_source));
-      max_abs_error = max(abs(err));
+      identity_metric=feval(numeric.function_name,'residual_metrics',y_source,ys,struct());
+      identity_error=identity_metric.max_abs_error;
+      identity_core=compare_result(identity_metric,y_unit,module_id,[method '_source_identity']);
       metric=feval(numeric.function_name,'residual_metrics',zeros(size(err)),err,struct());
-      rmse=metric.rmse;mean_abs_error=metric.mae;
+      max_abs_error=metric.max_abs_error;
+      interpreted=compare_result(metric,y_unit,module_id,[method '_analytical_reference']);
       pass_identity = (identity_error <= interpolation_identity_tolerance);
       if (strcmp(method,'linear'))
         pass_reference = (max_abs_error <= dense_reference_tolerance);
@@ -121,7 +126,7 @@ function demo_numeric_interpolation_main(args, framework_root)
       pass_method = pass_identity && pass_reference;
       all_pass = all_pass && pass_method;
       result.(method) = struct('y',yq,'error',err,'identity_error',identity_error, ...
-        'max_abs_error',max_abs_error,'rmse',rmse,'mean_abs_error',mean_abs_error, ...
+        'core',interpreted,'identity_core',identity_core, ...
         'pass_identity',pass_identity,'pass_reference',pass_reference, ...
         'reference_check',reference_check,'pass',pass_method);
     endfor
@@ -131,7 +136,9 @@ function demo_numeric_interpolation_main(args, framework_root)
     % interpolation share the documented contract and should agree to roundoff.
     RR = feval(numeric.function_name,'dataset_resample',session,source_dataset_id,x_id,y_id,xq, ...
       struct('method','linear','extrapolation','error'));
-    linear_resample_consistency_max_abs_error = max(abs(double(RR.y(:)) - result.linear.y));
+    consistency_metric=feval(numeric.function_name,'residual_metrics',result.linear.y,double(RR.y(:)),struct());
+    linear_resample_consistency_max_abs_error=consistency_metric.max_abs_error;
+    consistency_core=compare_result(consistency_metric,y_unit,module_id,'linear_resample_consistency');
     linear_resample_consistency_tolerance = 64.0 * eps(max(1.0,max(abs(result.linear.y))));
     linear_resample_consistency_pass = ...
       (linear_resample_consistency_max_abs_error <= linear_resample_consistency_tolerance);
@@ -147,6 +154,11 @@ function demo_numeric_interpolation_main(args, framework_root)
       'source','GX-TXT Numerical Examples / Interpolation', ...
       'provenance',sprintf('%s %s via NUMERIC_API_v1',module_id,module_version), ...
       'notes','Deterministic interpolation/resampling demonstration against y=sin(x)+0.1*x.');
+    popts.statistical_results=struct('source_reference',source_core,'linear_resample_consistency',consistency_core);
+    for k=1:numel(methods)
+      method=methods{k};popts.statistical_results.(method)=result.(method).core;popts.statistical_results.([method '_identity'])=result.(method).identity_core;
+    endfor
+    if(all_pass)
     P = gxtxt_publication_v2_open(session,module_id,output_dataset_id,'table.generic',popts);
     publication_open = true;
     % A multivariable table must be published through sequential append so the
@@ -183,26 +195,29 @@ function demo_numeric_interpolation_main(args, framework_root)
     [P,pub_result] = gxtxt_publication_v2_finalize(P);
     publication_finalized = true;
     publication_open = false;
+    else
+      P.provider='not_published';pub_diag=struct('status','validation_failed_before_publication');pub_result=struct('status','not_published');
+    endif
 
     write_metrics(fullfile(outdir,'interpolation_metrics.ini'),module_id,module_version, ...
       source_dataset_id,output_dataset_id,x_id,y_id,x_name,y_name,x_unit,y_unit,source_provider, ...
       numeric,query_count,x_source,grid,grid_info,source_reference_max_abs_error, ...
       source_serialization_tolerance,interpolation_identity_tolerance,linear_reference_bound, ...
       dense_reference_tolerance,linear_resample_consistency_max_abs_error, ...
-      linear_resample_consistency_tolerance,linear_resample_consistency_pass,result,all_pass,P.provider);
+      linear_resample_consistency_tolerance,linear_resample_consistency_pass,result,all_pass,source_core,consistency_core,P.provider);
     write_report(fullfile(outdir,'interpolation_report.txt'),module_id,module_version, ...
       source_dataset_id,output_dataset_id,x_id,y_id,x_name,y_name,x_unit,y_unit,numeric, ...
       query_count,x_source,grid_info,source_reference_max_abs_error,source_serialization_tolerance, ...
       interpolation_identity_tolerance,linear_reference_bound,dense_reference_tolerance, ...
       linear_resample_consistency_max_abs_error,linear_resample_consistency_tolerance, ...
-      linear_resample_consistency_pass,result,all_pass,P.provider,pub_diag,pub_result);
-
-    save(fullfile(outdir,'render_cache.mat'),'x_source','y_source','xq','reference','result', ...
-      'x_name','y_name','x_unit','y_unit','linear_reference_bound','methods','output_dataset_id','source_dataset_id','x_id','y_id');
+      linear_resample_consistency_pass,result,all_pass,source_core,consistency_core,P.provider,pub_diag,pub_result);
 
     if (!all_pass)
       error('%s: numerical validation failed; see interpolation_report.txt',module_id);
     endif
+
+    save(fullfile(outdir,'render_cache.mat'),'x_source','y_source','xq','reference','result', ...
+      'x_name','y_name','x_unit','y_unit','linear_reference_bound','methods','output_dataset_id','source_dataset_id','x_id','y_id');
 
     demo_numeric_interpolation_render(outdir,output_dataset_id,source_dataset_id,x_id,y_id,x_name,y_name,x_unit,y_unit,cfg);
 
@@ -216,6 +231,11 @@ function demo_numeric_interpolation_main(args, framework_root)
     try gxtxt_progress_fail('failed','Interpolation demonstration failed; see log for details'); catch; end_try_catch
     rethrow(err);
   end_try_catch
+endfunction
+
+function result=compare_result(raw,unit,producer,comparison_id)
+  result=gxtxt_statistics_v1('from_numeric','math.numeric.comparison','residual_metrics',raw, ...
+    struct('y_unit',unit,'sample_role','evaluation'),struct(),struct('producer',producer,'comparison_id',comparison_id));
 endfunction
 
 function P = declare_series(P,id,name,role,unit)
@@ -317,7 +337,7 @@ function out = split_list(s)
   out = out(!cellfun(@isempty,out));
 endfunction
 
-function write_metrics(path,module_id,module_version,source_dataset_id,output_dataset_id,x_id,y_id,x_name,y_name,x_unit,y_unit,source_provider,numeric,query_count,x_source,grid,grid_info,source_reference_max_abs_error,source_serialization_tolerance,interpolation_identity_tolerance,linear_reference_bound,dense_reference_tolerance,linear_resample_consistency_max_abs_error,linear_resample_consistency_tolerance,linear_resample_consistency_pass,result,all_pass,output_provider)
+function write_metrics(path,module_id,module_version,source_dataset_id,output_dataset_id,x_id,y_id,x_name,y_name,x_unit,y_unit,source_provider,numeric,query_count,x_source,grid,grid_info,source_reference_max_abs_error,source_serialization_tolerance,interpolation_identity_tolerance,linear_reference_bound,dense_reference_tolerance,linear_resample_consistency_max_abs_error,linear_resample_consistency_tolerance,linear_resample_consistency_pass,result,all_pass,source_core,consistency_core,output_provider)
   fid = fopen(path,'w'); if (fid < 0), error('%s: cannot write interpolation_metrics.ini',module_id); endif
   unwind_protect
     fprintf(fid,'; GX-TXT demo.numeric.interpolation metrics\n');
@@ -327,22 +347,25 @@ function write_metrics(path,module_id,module_version,source_dataset_id,output_da
     fprintf(fid,'\n[numeric_api]\nname=%s\napi_version=%s\noctave_function=%s\n',numeric.name,numeric.api_version,numeric.function_name);
     fprintf(fid,'\n[output]\ndataset_id=%s\ncontract=table.generic\nstorage_provider=%s\nquery_point_count=%d\nquery_step=%.17g\nquery_start=%.17g\nquery_stop=%.17g\n', ...
       output_dataset_id,output_provider,query_count,grid.step,grid.x(1),grid.x(end));
-    fprintf(fid,'\n[validation]\nreference_function=y=sin(x)+0.1*x\nsource_reference_max_abs_error=%.17g\nsource_serialization_tolerance=%.17g\ninterpolation_identity_tolerance=%.17g\nlinear_reference_bound=%.17g\ndense_reference_tolerance=%.17g\nlinear_resample_consistency_max_abs_error=%.17g\nlinear_resample_consistency_tolerance=%.17g\nlinear_resample_consistency_check=%s\n', ...
-      source_reference_max_abs_error,source_serialization_tolerance,interpolation_identity_tolerance,linear_reference_bound,dense_reference_tolerance, ...
-      linear_resample_consistency_max_abs_error,linear_resample_consistency_tolerance,pass_text(linear_resample_consistency_pass));
+    fprintf(fid,'\n[validation]\nreference_function=y=sin(x)+0.1*x\nsource_serialization_tolerance=%.17g\ninterpolation_identity_tolerance=%.17g\nlinear_reference_bound=%.17g\ndense_reference_tolerance=%.17g\nlinear_resample_consistency_tolerance=%.17g\nlinear_resample_consistency_check=%s\n', ...
+      source_serialization_tolerance,interpolation_identity_tolerance,linear_reference_bound,dense_reference_tolerance, ...
+      linear_resample_consistency_tolerance,pass_text(linear_resample_consistency_pass));
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',source_core,struct('source_reference_max_abs_error','max_abs_error')));
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',consistency_core,struct('linear_resample_consistency_max_abs_error','max_abs_error')));
     methods = {'linear','cubic','spline','pchip'};
     for k = 1:numel(methods)
       m = methods{k}; R = result.(m);
       if (strcmp(R.reference_check,'bounded')), reference_status=pass_text(R.pass_reference); else reference_status='DIAGNOSTIC_ONLY'; endif
-      fprintf(fid,'\n[method.%s]\nmax_abs_error=%.17g\nrmse=%.17g\nmean_abs_error=%.17g\nsource_point_max_abs_error=%.17g\nreference_check=%s\nsource_point_check=%s\nvalidation=%s\n', ...
-        m,R.max_abs_error,R.rmse,R.mean_abs_error,R.identity_error,reference_status,pass_text(R.pass_identity),pass_text(R.pass));
+      fprintf(fid,'\n[method.%s]\nreference_check=%s\nsource_point_check=%s\nvalidation=%s\n',m,reference_status,pass_text(R.pass_identity),pass_text(R.pass));
+      fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',R.core,struct('max_abs_error','max_abs_error','rmse','rmse','mean_abs_error','mae')));
+      fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',R.identity_core,struct('source_point_max_abs_error','max_abs_error')));
     endfor
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect
 endfunction
 
-function write_report(path,module_id,module_version,source_dataset_id,output_dataset_id,x_id,y_id,x_name,y_name,x_unit,y_unit,numeric,query_count,x_source,grid_info,source_reference_max_abs_error,source_serialization_tolerance,interpolation_identity_tolerance,linear_reference_bound,dense_reference_tolerance,linear_resample_consistency_max_abs_error,linear_resample_consistency_tolerance,linear_resample_consistency_pass,result,all_pass,output_provider,pub_diag,pub_result)
+function write_report(path,module_id,module_version,source_dataset_id,output_dataset_id,x_id,y_id,x_name,y_name,x_unit,y_unit,numeric,query_count,x_source,grid_info,source_reference_max_abs_error,source_serialization_tolerance,interpolation_identity_tolerance,linear_reference_bound,dense_reference_tolerance,linear_resample_consistency_max_abs_error,linear_resample_consistency_tolerance,linear_resample_consistency_pass,result,all_pass,source_core,consistency_core,output_provider,pub_diag,pub_result)
   fid = fopen(path,'w'); if (fid < 0), error('%s: cannot write interpolation_report.txt',module_id); endif
   unwind_protect
     fprintf(fid,'GX-TXT Numerical Interpolation Demo\n');
@@ -357,20 +380,19 @@ function write_report(path,module_id,module_version,source_dataset_id,output_dat
     fprintf(fid,'Query grid: %d uniformly spaced points from %.17g to %.17g\n',query_count,x_source(1),x_source(end));
     fprintf(fid,'Output Dataset: %s (table.generic; provider=%s)\n\n',output_dataset_id,output_provider);
     fprintf(fid,'Validation basis\n----------------\n');
-    fprintf(fid,'Source/reference max abs error: %.12g (tolerance %.12g)\n',source_reference_max_abs_error,source_serialization_tolerance);
+    fprintf(fid,'Source/reference check (tolerance %.12g)\n%s\n',source_serialization_tolerance,gxtxt_statistics_v1('report',source_core,{'n','max_abs_error'}));
     fprintf(fid,'Interpolation identity tolerance at source points: %.12g\n',interpolation_identity_tolerance);
     fprintf(fid,'Maximum source spacing h_max: %.12g\n',max(diff(x_source)));
     fprintf(fid,'Linear interpolation analytical bound h_max^2/8: %.12g\n',linear_reference_bound);
     fprintf(fid,'Dense-grid linear-reference acceptance envelope: %.12g\n',dense_reference_tolerance);
-    fprintf(fid,'Linear resample/interpolate consistency: %.12g (tolerance %.12g) %s\n\n', ...
-      linear_resample_consistency_max_abs_error,linear_resample_consistency_tolerance,pass_text(linear_resample_consistency_pass));
+    fprintf(fid,'Linear resample/interpolate consistency (tolerance %.12g): %s\n%s\n\n',linear_resample_consistency_tolerance,pass_text(linear_resample_consistency_pass),gxtxt_statistics_v1('report',consistency_core,{'n','max_abs_error'}));
     fprintf(fid,'Method diagnostics\n------------------\n');
     methods = {'linear','cubic','spline','pchip'};
     for k = 1:numel(methods)
       m = methods{k}; R = result.(m);
       if (strcmp(R.reference_check,'bounded')), refnote=['reference=' pass_text(R.pass_reference)]; else refnote='reference=DIAGNOSTIC_ONLY'; endif
-      fprintf(fid,'%-7s max_abs=%.12g  rmse=%.12g  mean_abs=%.12g  source_point_max_abs=%.12g  identity=%s  %s\n', ...
-        m,R.max_abs_error,R.rmse,R.mean_abs_error,R.identity_error,pass_text(R.pass_identity),refnote);
+      fprintf(fid,'%s; identity=%s; %s\n%s\nSource-point identity\n%s\n',m,pass_text(R.pass_identity),refnote, ...
+        gxtxt_statistics_v1('report',R.core,{'n','rmse','mae','max_abs_error'}),gxtxt_statistics_v1('report',R.identity_core,{'n','max_abs_error'}));
     endfor
     fprintf(fid,'\nOverall validation: %s\n',pass_text(all_pass));
     fprintf(fid,'Publication diagnostics: %s\n',to_text(pub_diag));

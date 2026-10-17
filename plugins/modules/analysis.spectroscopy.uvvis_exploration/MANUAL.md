@@ -1,4 +1,9 @@
-# UV/Vis Spectrum and Time-Series Exploration
+# UV/Vis Spectrum and Time-Series Exploration 1.0.3
+
+Vector normalization uses the public Numeric provider. `unit_vector` divides
+by the vector's Euclidean norm; `mean_center_unit_vector` first subtracts its
+mean. Zero-norm input is rejected. The processed normalized Dataset remains a
+dimensionless relative response; the original scientific Spectrum is preserved.
 
 This internal Analysis module has two explicit workflows. **Single spectrum** accepts a `spectrum.scientific` UV/Vis Dataset, converts valid absorbance or fractional/percent transmittance to absorbance, optionally subtracts a documented blank, and applies requested public NUMERIC API baseline, smoothing and normalization operations. It publishes a separate processed Dataset, detected peaks and response at the analyst's selected wavelength. Source and blank Datasets remain unchanged.
 

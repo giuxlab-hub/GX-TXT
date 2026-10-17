@@ -3,15 +3,21 @@
 # Nothing in a recipe is evaluated as Tcl or interpreted as a filesystem path.
 namespace eval ::GX::ScientificRecipe {variable hosts {}}
 proc ::GX::scientificRecipeApiInfo {} {
-    return [dict create api_id SCIENTIFIC_RECIPE_API_v1 api_version 1 operations {inspect validate geometry_state proposal export_python rebase} host_operations {scientificHistoryCreate scientificHistoryValidate scientificHistoryState scientificHistoryAppend scientificHistoryNavigate scientificHistoryBranch scientificHistoryViewerAttach scientificHistoryViewerRecord scientificHistoryViewerState scientificHistoryViewerEditable scientificHistoryViewerPrepareEdit scientificHistoryViewerChanged scientificHistoryViewerNavigate scientificHistoryViewerBrowse scientificHistoryViewerClear scientificHistoryStripFields scientificHistoryStripValidate scientificHistoryViewerStripSet scientificHistoryViewerStripToggle scientificHistoryViewerStrip scientificHistoryGroupedEntries scientificHistoryViewerDetails scientificHistoryViewerRefresh} format gxtxt.scientific_recipe.v1 maximum_bytes 8388608 maximum_steps 4096 implicit_publication 0]
+    return [dict create api_id SCIENTIFIC_RECIPE_API_v1 api_version 1 operations {inspect validate geometry_state proposal export_python rebase data_decode} host_operations {scientificHistoryCreate scientificHistoryValidate scientificHistoryState scientificHistoryAppend scientificHistoryNavigate scientificHistoryBranch scientificHistoryViewerAttach scientificHistoryViewerRecord scientificHistoryViewerState scientificHistoryViewerEditable scientificHistoryViewerPrepareEdit scientificHistoryViewerChanged scientificHistoryViewerNavigate scientificHistoryViewerBrowse scientificHistoryViewerClear scientificHistoryStripFields scientificHistoryStripValidate scientificHistoryViewerStripSet scientificHistoryViewerStripToggle scientificHistoryViewerStrip scientificHistoryGroupedEntries scientificHistoryViewerDetails scientificHistoryViewerRefresh} format gxtxt.scientific_recipe.v1 maximum_bytes 8388608 maximum_steps 4096 implicit_publication 0]
 }
 proc ::GX::scientificRecipeHostRegister {owner callbacks} {
     foreach key {capture validate replay} {if {![dict exists $callbacks $key]} {error "Recipe host requires $key"}}
     dict set ::GX::ScientificRecipe::hosts $owner $callbacks
 }
-proc ::GX::scientificRecipeDecode {encoded} {
+proc ::GX::scientificRecipeDataDecode {encoded expectedFormat} {
+    if {![regexp {^gxtxt\.[a-z0-9_.]+\.v[1-9][0-9]*$} $expectedFormat]} {error {Invalid versioned scientific recipe format}}
     if {[string length $encoded]>11184812} {error "Scientific recipe exceeds the 8 MiB limit"}
     if {[catch {encoding convertfrom utf-8 [binary decode base64 -strict $encoded]} recipe]||[catch {dict size $recipe}]} {error "Malformed inert scientific recipe"}
+    if {[string bytelength $recipe]>8388608||![dict exists $recipe format]||[dict get $recipe format] ne $expectedFormat} {error {Scientific recipe format or size differs from its declared contract}}
+    return $recipe
+}
+proc ::GX::scientificRecipeDecode {encoded} {
+    set recipe [scientificRecipeDataDecode $encoded gxtxt.scientific_recipe.v1]
     foreach key {format workbench_id required_apis plugin_versions base steps sources} {if {![dict exists $recipe $key]} {error "Recipe requires $key"}}
     if {[dict get $recipe format] ne "gxtxt.scientific_recipe.v1"||[llength [dict get $recipe steps]]>4096} {error "Unsupported scientific recipe format or step count"}
     _interactiveDocumentValidateOwner [dict get $recipe workbench_id] scientific_recipe

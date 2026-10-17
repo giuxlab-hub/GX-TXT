@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 — GX-TXT 0.9.8.10-dev-097
+
+- Uses the public declared-expression Ceres path with the original A/k/c scientific identities and source-derived units.
+- Retains validated CORE statistical metadata and formats statistical reports through the public API.
+- Preserves Dataset, graph and metric identities; explicitly identifies the legacy residual-DOF-scaled RMSE quantity.
+- Rejects a nonconverged fit before publication.
+
 ## 1.0.5
 
 - Aligned the installed README correction with a unique development package version.

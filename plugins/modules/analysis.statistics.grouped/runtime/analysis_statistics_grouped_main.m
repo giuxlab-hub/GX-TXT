@@ -1,7 +1,7 @@
 function analysis_statistics_grouped_main(args,framework_root)
 % Production grouped-statistics workflow using public GX-TXT APIs only.
 % SPDX-License-Identifier: GPL-3.0-or-later
-  module_id='analysis.statistics.grouped'; module_version='1.0.0';
+  module_id='analysis.statistics.grouped'; module_version='1.1.0';
   P=struct(); publication_open=false; publication_finalized=false;
   PP=struct(); plot_publication_open=false; plot_publication_finalized=false;
   config_path=arg_value(args,'--config','');
@@ -37,16 +37,19 @@ function analysis_statistics_grouped_main(args,framework_root)
     if(isempty(groups)),error('%s: no valid groups remain after Selection and group policy',module_id);endif
 
     gxtxt_progress_stage('statistics','Computing grouped statistics','determinate',numel(groups)*numel(values));
-    rows=empty_rows(); warnings={}; done=0;
+    rows=empty_rows(); warnings={}; done=0; statistical_results=struct();
     for gi=1:numel(groups)
       for vi=1:numel(values)
         vals=groups(gi).values{vi}; n_total=numel(vals); n_valid=sum(isfinite(vals)); n_excluded=n_total-n_valid;
         if(strcmp(nonfinite_policy,'error')&&n_excluded>0),error('%s: group %s, variable %s contains %d NaN/Inf observation(s); choose omit to exclude them explicitly',module_id,groups(gi).label,values(vi).name,n_excluded);endif
-        R=empty_stat_result();
-        if(n_valid>0)
-          S=feval(numeric.function_name,'statistics',vals,struct('nonfinite',nonfinite_policy));
-          R=stat_result_from_numeric(S,n_valid);
-        endif
+        S=feval(numeric.function_name,'statistics',vals,struct('nonfinite',nonfinite_policy,'empty_policy','undefined'));
+        context=struct('y_unit',values(vi).unit,'sampling_model','independent_observations','mean_se_model','sampling', ...
+          'assumptions',{{'Sampling standard error is conditional on independent observations within this group'}});
+        interpreted=gxtxt_statistics_v1('from_numeric','math.numeric.summary','statistics',S,context,struct(), ...
+          struct('producer',module_id,'source_dataset_id',source_dataset_id,'source_variable_id',values(vi).variable_id, ...
+            'group_variable_id',group.variable_id,'group_key',groups(gi).key));
+        statistical_results.(sprintf('group_%d_variable_%d',gi,vi))=interpreted;
+        R=stat_result_from_core(interpreted);
         rows(end+1)=make_row(groups(gi),group,values(vi),n_total,n_valid,n_excluded,R);
         if(n_valid==0),warnings{end+1}=sprintf('Group %s, %s: no finite observations; location and spread statistics are undefined.',groups(gi).label,values(vi).name);
         elseif(n_valid==1),warnings{end+1}=sprintf('Group %s, %s: sample standard deviation and standard error are undefined for one finite observation.',groups(gi).label,values(vi).name);endif
@@ -61,6 +64,7 @@ function analysis_statistics_grouped_main(args,framework_root)
       'source','GX-TXT grouped statistics','provenance',sprintf('%s %s via NUMERIC_API_v1',module_id,module_version), ...
       'notes','One row per group x measured variable. Source Dataset remains unchanged. Undefined sample-spread values are explicitly identified by sample_spread_defined.');
     popts.source_dataset_ids={source_dataset_id}; popts.source_variable_ids=source_variable_ids;
+    popts.statistical_results=statistical_results;
     popts.provenance=sprintf('%s; selection=%s; nonfinite=%s; missing_group=%s',popts.provenance,selection_id(selection),nonfinite_policy,missing_group_policy);
     P=gxtxt_publication_v2_open(session,module_id,output_dataset_id,'table.generic',popts); publication_open=true;
     P=gxtxt_publication_v2_declare_dimension(P,'result',0,true);
@@ -111,7 +115,7 @@ function analysis_statistics_grouped_main(args,framework_root)
       gxtxt_progress_stage('plot_data','Publishing grouped plot-support Dataset','indeterminate');
       plot_dataset_id=[output_dataset_id '.plot']; validate_dataset_id(plot_dataset_id,module_id,'Grouped plot Dataset ID');
       if(strcmp(plot_dataset_id,source_dataset_id)||strcmp(plot_dataset_id,output_dataset_id)),error('%s: grouped plot Dataset ID conflicts with another Dataset',module_id);endif
-      [PP,plot_provider]=publish_plot_dataset(session,module_id,module_version,plot_dataset_id,source_dataset_id,source_variable_ids,groups,values,rows,selection); plot_publication_finalized=true; plot_publication_open=false;
+      [PP,plot_provider]=publish_plot_dataset(session,module_id,module_version,plot_dataset_id,source_dataset_id,source_variable_ids,groups,values,rows,selection,statistical_results); plot_publication_finalized=true; plot_publication_open=false;
       gxtxt_progress_stage('graphs','Creating persistent grouped plot variants','indeterminate');
       graph_count=create_automatic_graphs(outdir,session,plot_dataset_id,group,groups,values,module_id);
     else
@@ -119,7 +123,7 @@ function analysis_statistics_grouped_main(args,framework_root)
     endif
 
     write_summary_ini(fullfile(outdir,'grouped_statistics_summary.ini'),module_id,module_version,source_dataset_id,output_dataset_id,plot_dataset_id,group,values,groups,selection,nonfinite_policy,missing_group_policy,selected_row_count,invalid_group_rows,numel(rows),numel(warnings),P.provider,plot_provider,graph_count);
-    write_report(fullfile(outdir,'grouped_statistics_report.txt'),module_id,module_version,source_dataset_id,output_dataset_id,plot_dataset_id,group,values,groups,rows,selection,nonfinite_policy,missing_group_policy,selected_row_count,invalid_group_rows,warnings,P.provider,plot_provider,graph_count,pub_diag,pub_result);
+    write_report(fullfile(outdir,'grouped_statistics_report.txt'),module_id,module_version,source_dataset_id,output_dataset_id,plot_dataset_id,group,values,groups,rows,selection,nonfinite_policy,missing_group_policy,selected_row_count,invalid_group_rows,warnings,P.provider,plot_provider,graph_count,pub_diag,pub_result,statistical_results);
     gxtxt_progress_complete('done',sprintf('Published %s (%d groups, %d variables, %d automatic graphs)',output_dataset_id,numel(groups),numel(values),graph_count));
     fprintf('[%s] version=%s source=%s output=%s groups=%d variables=%d graphs=%d provider=%s\n',module_id,module_version,source_dataset_id,output_dataset_id,numel(groups),numel(values),graph_count,P.provider);
   catch err
@@ -261,12 +265,13 @@ function api=discover_numeric_api(framework_root,module_id)
   api=struct('function_name',fn);
 endfunction
 
-function R=empty_stat_result()
-  R=struct('minimum',NaN,'maximum',NaN,'mean',NaN,'median',NaN,'standard_deviation',NaN,'standard_error',NaN,'q1',NaN,'q3',NaN,'iqr',NaN,'location_defined',false,'sample_spread_defined',false);
-endfunction
-function R=stat_result_from_numeric(S,n)
-  R=empty_stat_result(); R.minimum=S.min;R.maximum=S.max;R.mean=S.mean;R.median=S.median;R.q1=S.q25;R.q3=S.q75;R.iqr=S.iqr;R.location_defined=true;
-  if(n>1),R.standard_deviation=S.std_sample;R.standard_error=S.std_sample/sqrt(n);R.sample_spread_defined=true;endif
+function R=stat_result_from_core(interpreted)
+  V=gxtxt_statistics_values_v1(interpreted);
+  R=struct('minimum',V.minimum,'maximum',V.maximum,'mean',V.mean,'median',V.median, ...
+    'standard_deviation',V.standard_deviation,'standard_error',V.standard_error_mean, ...
+    'q1',V.quartile_1,'q3',V.quartile_3,'iqr',V.interquartile_range, ...
+    'location_defined',strcmp(interpreted.quantities.mean.status,'value'), ...
+    'sample_spread_defined',strcmp(interpreted.quantities.standard_error_mean.status,'value'));
 endfunction
 
 function rows=empty_rows()
@@ -279,13 +284,13 @@ endfunction
 function P=declare_string(P,id,name,role,dimension_id),P=gxtxt_publication_v2_declare_variable(P,id,struct('dtype','string','dimension_ids',dimension_id,'name',name,'unit','','semantic_role',role));endfunction
 function P=declare_numeric(P,id,name,role,dtype,unit,dimension_id),P=gxtxt_publication_v2_declare_variable(P,id,struct('dtype',dtype,'dimension_ids',dimension_id,'name',name,'unit',unit,'semantic_role',role));endfunction
 
-function [P,provider]=publish_plot_dataset(session,module_id,module_version,dataset_id,source_dataset_id,source_variable_ids,groups,values,rows,selection)
+function [P,provider]=publish_plot_dataset(session,module_id,module_version,dataset_id,source_dataset_id,source_variable_ids,groups,values,rows,selection,statistical_results)
   P=struct(); opened=false; finalized=false;
   try
     opts=struct('storage','auto','replace_owned',true,'producer_version',module_version,'source','GX-TXT grouped statistics plot support', ...
       'provenance',sprintf('%s %s automatic grouped-plot support; selection=%s',module_id,module_version,selection_id(selection)), ...
       'notes','One row per group. group_index is the numeric plotting coordinate; group_label preserves the original category. Statistical variables are in each source variable unit.');
-    opts.source_dataset_ids={source_dataset_id};opts.source_variable_ids=source_variable_ids;
+    opts.source_dataset_ids={source_dataset_id};opts.source_variable_ids=source_variable_ids;opts.statistical_results=statistical_results;
     P=gxtxt_publication_v2_open(session,module_id,dataset_id,'table.generic',opts);opened=true;P=gxtxt_publication_v2_declare_dimension(P,'group',0,true);
     P=declare_numeric(P,'group_index','Group index','independent','int64','','group');P=declare_string(P,'group_label','Group label','category','group');P=declare_numeric(P,'group_observation_count','Rows in group','count','int64','','group');
     items={'group_index',int64([groups.index]');'group_label',{groups.label}';'group_observation_count',int64([groups.observation_count]')};
@@ -422,7 +427,7 @@ function write_summary_ini(path,module_id,module_version,source_dataset_id,outpu
   unwind_protect_cleanup,fclose(fid);end_unwind_protect
 endfunction
 
-function write_report(path,module_id,module_version,source_dataset_id,output_dataset_id,plot_dataset_id,group,values,groups,rows,selection,nonfinite_policy,missing_group_policy,selected_rows,invalid_group_rows,warnings,provider,plot_provider,graph_count,pub_diag,pub_result)
+function write_report(path,module_id,module_version,source_dataset_id,output_dataset_id,plot_dataset_id,group,values,groups,rows,selection,nonfinite_policy,missing_group_policy,selected_rows,invalid_group_rows,warnings,provider,plot_provider,graph_count,pub_diag,pub_result,statistical_results)
   fid=fopen(path,'w');if(fid<0),error('%s: cannot write report',module_id);endif
   unwind_protect
     fprintf(fid,'GX-TXT Grouped Statistics\n=========================\n\nProducer: %s %s\nInput Dataset: %s\nOutput Dataset: %s\nStorage provider: %s\nGrouping variable: %s [%s]',module_id,module_version,source_dataset_id,output_dataset_id,provider,group.name,group.variable_id);if(!isempty(group.unit)),fprintf(fid,' (%s)',group.unit);endif;fprintf(fid,'\nSelection: %s\nNaN / Inf value policy: %s\nMissing / invalid group policy: %s\nSelected rows: %d\nRows excluded for invalid group: %d\nGroups: %d\nValue variables: %d\nAutomatic graph count: %d\n',selection_id(selection),nonfinite_policy,missing_group_policy,selected_rows,invalid_group_rows,numel(groups),numel(values),graph_count);
@@ -433,8 +438,8 @@ function write_report(path,module_id,module_version,source_dataset_id,output_dat
       fprintf(fid,'\nGroup %d: %s\n',groups(g).index,groups(g).label);
       for vi=1:numel(values)
         V=values(vi);idx=find([rows.group_index]==g & strcmp({rows.variable_id},V.variable_id),1);R=rows(idx);fprintf(fid,'  %s [%s]',V.name,V.variable_id);if(!isempty(V.unit)),fprintf(fid,' (%s)',V.unit);endif;fprintf(fid,'\n    rows=%d finite=%d excluded_nonfinite=%d\n',R.observation_count,R.count,R.excluded_count);
-        if(R.location_defined),fprintf(fid,'    min=%.17g max=%.17g mean=%.17g median=%.17g Q1=%.17g Q3=%.17g IQR=%.17g\n',R.minimum,R.maximum,R.mean,R.median,R.q1,R.q3,R.iqr);else fprintf(fid,'    location/range statistics=undefined\n');endif
-        if(R.sample_spread_defined),fprintf(fid,'    sample_std=%.17g SEM=%.17g\n',R.standard_deviation,R.standard_error);else fprintf(fid,'    sample_std=undefined SEM=undefined\n');endif
+        interpreted=statistical_results.(sprintf('group_%d_variable_%d',g,vi));
+        fprintf(fid,'%s\n',gxtxt_statistics_v1('report',interpreted,{'minimum','maximum','mean','median','quartile_1','quartile_3','interquartile_range','standard_deviation','standard_error_mean'}));
       endfor
     endfor
     fprintf(fid,'\nWarnings\n--------\n');if(isempty(warnings)),fprintf(fid,'None.\n');else for i=1:numel(warnings),fprintf(fid,'- %s\n',warnings{i});endfor,endif

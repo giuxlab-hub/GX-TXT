@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 — dev097
+
+- Public Numeric spectral-distribution operation owns the existing calculation.
+- Public CORE owns scalar definitions, units, applicability, reports and persisted metadata.
+- Preserved Dataset/Variable and metric identities, fixed duplicate legend units, and declared the existing Plot Dataset dependency.
+- Tested analytical spectra, Worksheet units, both real Script languages, 100,001-bin bounded interpretation, module publication, reopening and three plot outputs.
+
 ## 1.1.0
 
 - Added explicit `math.numeric` dependency and migrated generic grid/reduction operations to public `NUMERIC_API_v1`.

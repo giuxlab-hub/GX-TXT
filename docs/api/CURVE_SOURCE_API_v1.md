@@ -38,12 +38,18 @@ is implicitly published.
 
 `curveSourceDescribe token` returns logical identity, scientific source/schema
 fingerprints, row count, request and selected variable descriptors.
-Host-only `curveSourceDatasetIdentity session dataset_id` exposes the same
+`curveSourceDatasetIdentity session dataset_id` exposes the same
 existing identity calculation without opening a display token. The Session
 must be current. Result fields are `dataset_id`, `sha256`, `schema_identity`;
 the schema fingerprint excludes presentation-only labels/descriptions and
 retains scientific units/coordinate semantics. It grants no resource or exact
-stream authority. The Script Bridge remains unchanged.
+stream authority. Both Script Bridge languages expose
+`gxtxt_api_call('CURVE_SOURCE_API_v1', 'dataset_identity', [dataset_id])`
+(use `{dataset_id}` in Octave). They return the same three string fields for
+their bound Session; unknown Datasets fail explicitly. Standard Octave module
+runtimes can call `gxtxt_curve_source_dataset_identity_v1(session,dataset_id)`.
+That thin adapter calls this CORE owner and does not duplicate fingerprinting,
+open a display, mutate a registry, or widen the statistics service's authority.
 `curveSourceDisplay token` returns bounded points, exact zero-based source-row
 mapping, finite-source count/full bounds, reduction status and streaming
 diagnostics. Native C stores extrema of X and Y in ordered row buckets, retaining
@@ -65,7 +71,7 @@ event loop. The progress receipt includes the job ID for `curveSourceCancel`.
 Cancellation returns error code `GX CURVE_SOURCE CANCELLED`; hosts can treat that
 user action as an ordinary cancelled workflow. Cleanup precedes completion.
 
-The host adapter `curveSourceWithNumericInput token consumer ?point_mask? ?progress? ?parameter_variable_id?` streams exact
+The host adapter `curveSourceWithNumericInput token consumer ?point_mask? ?progress? ?parameter_variable_id? ?companion_variables?` streams exact
 finite XY pairs into temporary interleaved float64 little-endian input and an
 exact uint64 little-endian source-row map. It invokes the declared consumer
 while these owned files exist and removes them on return or failure. These
@@ -100,6 +106,22 @@ own owned `parameter_file` (`float64_le`), `parameter_format` and variable ID.
 Parameters must be finite for every finite XY pair; invalid parameters fail
 instead of silently discarding scientific rows. These files share staging
 lifetime and cleanup. No Dataset/provider paths are exposed.
+`companion_variables` optionally maps up to seven named roles to canonical
+Variable IDs. Its `companion_columns` result maps each role to an owned `file`,
+`format=float64_le`, `variable_id` and the actual stream's `variable_descriptor`.
+Full and selected inputs contain distinct aligned companion files. Filters,
+transforms, finite-XY exclusion and the exact selected source-row mask apply
+equally to these columns. Duplicate roles are impossible in the dictionary;
+`__parameter` is reserved for the unchanged parameter transport.
+
+Missing/nonfinite companion values and zero values stay attached to their rows.
+The consumer must explicitly validate their scientific role before calculation;
+transport never infers a missingness policy or silently removes a measured point.
+The existing optional parameter still requires finite values for every finite XY
+pair. Native packing accepts at most 65536 rows per chunk and converts supported
+numeric columns to float64, rejecting integer values outside its exact range.
+No complete source column is expanded into a Tcl value list. All companion files
+are closed and removed on normal return, consumer error or cancellation.
 Only a bounded chunk enters Tcl; the full selected set never becomes a GUI list.
 Native2D's read-only `selection_state scene object start count` supplies semantic
 regions and bounded manual point overrides, including during an active gesture.
@@ -125,7 +147,8 @@ streams, including complete tuple columns where requested.
 Unknown provider counts use a bounded counting pass before display ingestion.
 
 Both Script Bridge languages use provider `curve_source`. Operations are
-`api_info`, `open`, `describe`, `display`, `page`, `open_stream`, `close_stream`,
+`api_info`, `dataset_identity`, `open`, `describe`, `validate_snapshot`,
+`display`, `page`, `locate_rows`, `open_stream`, `close_stream`,
 `close`. Tokens belong to one script execution. Display `points` and page `rows`
 are typed N×2 numeric matrices. Source-row identities are integer cells, avoiding
 conversion to floating-point IDs. Normal Table Stream `close` also releases the
@@ -170,3 +193,36 @@ values retain the missing token. Integer coordinate validation remains exact;
 values above the established Native double precision range are rejected rather
 than rounded. Missing cells spanning 4096-row seams preserve the same path breaks
 as synchronous full-source display.
+
+
+`::GX::curveSourcePointMaskValidate mask` exposes the existing bounded
+`CURVE_SOURCE_POINT_MASK_v1` validator to public consumers. Original unsigned
+row identities, ordered add/subtract regions and manual row overrides retain
+their existing meanings; validation does not open or estimate a Dataset.
+
+## Exact preprocessing row audit
+
+The host-only Numeric input carries `preprocessing` with schema
+`gxtxt.curve_source_preprocessing.v1`: original_count and its availability,
+filtered_count (including the requested window), finite_count, selected_count,
+nonfinite_count, selection_excluded_count, the exact source descriptor/request,
+row_identity_kind and selection descriptor. Original count comes from canonical
+metadata for Dataset-row lineage, or the logical Transform view otherwise.
+Unknown provider counts remain explicitly unavailable; they are never invented.
+
+`input_source_rows_file` retains every filtered/window row before XY omission;
+`nonfinite_source_rows_file` retains exactly the omitted XY row IDs;
+`unselected_source_rows_file` retains finite rows excluded by the point mask.
+All three are bounded-stream uint64 little-endian files with the same owned
+callback lifetime as source_rows_file. Without a point mask the unselected file
+is empty. Native source ordinals use the existing nonnegative signed64 range;
+the uint64 storage representation does not widen that identity contract.
+
+CORE preserves observations (including repeated X) and stream order. Explicit
+source sorting/filtering/transform operations remain in source_request. Scientific
+model-specific sorting, duplicate rules, regional or measurement exclusions occur
+later and must be captured by that model consumer. The CORE receipt does not
+claim those later operations have already happened. An exact filtered exclusion
+set is the complement of input row IDs in the original identity range when that
+range is known; Transform-view identities retain their distinct source namespace.
+No source data are altered.

@@ -2,11 +2,11 @@
 
 ## Purpose
 
-This reference plugin demonstrates the uncertainty-aware capabilities that GX-TXT 0.9.7.82 actually exposes through `math.numeric` / `NUMERIC_API_v1`. It is not a complete GUM uncertainty-budget, calibration or metrology application.
+This reference plugin demonstrates the uncertainty-aware capabilities that GX-TXT 0.9.8.10-dev-097 exposes through `math.numeric` / `NUMERIC_API_v1`. It is not a complete GUM uncertainty-budget, calibration or metrology application.
 
 ## Installation
 
-Install `demo.numeric.uncertainty_1.0.0.zip` through the normal GX-TXT Plugin Install interface/API. The package requires GX-TXT 0.9.7.82 or later and the bundled `math.numeric` service.
+Install `demo.numeric.uncertainty_1.1.0.zip` through the normal GX-TXT Plugin Install interface/API. The package requires GX-TXT 0.9.8.10-dev-097 or later and the bundled `math.numeric` service.
 
 ## Demonstration Session
 
@@ -55,7 +55,7 @@ The public numerical path is:
 
 1. `statistics(values)` → ordinary mean of the finite paired observations;
 2. `weighted_statistics(values, weights)` → weighted mean, weighted spread, sum of weights and effective sample size;
-3. with `weight_semantics=inverse_variance`, `least_squares(ones, values, weights)` → coefficient standard error and reduced chi-squared using the public absolute inverse-variance covariance convention.
+3. with `weight_semantics=inverse_variance`, the same summary supplies the known measurement uncertainty of the weighted mean and its reduced sum of squared residuals. No auxiliary fit is run. CORE displays reduced chi-squared only after selecting `noise_model=independent_gaussian_known_sigma`; the default unspecified model returns `unavailable`, and zero residual DOF returns `undefined`.
 
 Public weighted statistics reject negative weights, discard zero weights, and require at least one positive weight.
 
@@ -77,8 +77,9 @@ The default output Dataset ID is `demo.numeric.uncertainty.result`. The Canonica
 - `value`
 - `unit`
 - `definition`
+- `status`, `reason`, `quantity_id` from CORE interpretation
 
-Standard-uncertainty mode publishes counts, arithmetic mean, propagated standard uncertainty of the mean, and value spread. Explicit-weight mode publishes counts, sum of weights, effective sample size, ordinary/weighted means and weighted spread; inverse-variance mode additionally publishes the public least-squares estimate standard error and reduced chi-squared.
+Standard-uncertainty mode publishes counts, arithmetic mean, propagated standard uncertainty of the mean, and value spread. Explicit-weight mode publishes counts, sum of weights, effective sample size, ordinary/weighted means and weighted spread; inverse-variance mode additionally publishes known measurement uncertainty and the explicitly qualified reduced chi-squared. Their legacy row IDs are preserved.
 
 The Dataset preserves normal producer/source-variable provenance and never modifies the source Dataset.
 
@@ -101,6 +102,22 @@ Normal module configuration, Analysis Source bindings, Selection identity and pu
 
 ## Known limitations
 
-GX-TXT 0.9.7.82 does not expose a generic public `standard uncertainty → inverse-variance weight` conversion operation. This plugin therefore does not implement one privately. Supply an explicit weight variable when weighted estimation is desired.
+Supply an explicit weight variable when weighted estimation is desired. The selected interpretation remains explicit; this demo never silently converts the uncertainty column.
 
 This demo does not provide a full uncertainty budget, Type A/Type B workflow, coverage-factor calculation, covariance editor, Monte Carlo propagation, calibration database or regression workbench.
+
+## CORE interpretation
+
+Both published Datasets include the validated ordinary summary and either the
+weighted summary or `math.numeric.propagation` record. Propagated uncertainty of
+the arithmetic mean assumes independent input measurements; its Jacobian is an
+exact affine transformation. The generic API also supports correlated input
+covariance and multiple named outputs with different units. This demo does not
+supply a covariance editor or claim a confidence level. A single observation can
+have a known supplied measurement uncertainty while its sample spread remains
+undefined. Known zero uncertainty remains zero; missing estimates use NaN with
+an explicit status and reason.
+
+Targeted dev097 checks use analytical synthetic cases, public API round trips,
+real Python/Octave Jobs and publication/reopen validation. The complete frozen
+candidate acceptance and generator campaign remain separate release gates.

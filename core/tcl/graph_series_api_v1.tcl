@@ -104,11 +104,12 @@ proc ::GX::graphSeriesNormalizeFilters {datasetId filters} {
         if {$numeric} {
             foreach key $required {
                 set values [expr {$key eq "values" ? [dict get $filter $key] : [list [dict get $filter $key]]}]
+                set canonical {}
                 foreach value $values {
-                    if {![string is double -strict $value] || [catch {set numericValue [expr {double($value)}]}] || [expr {abs($numericValue) == Inf}]} {
-                        error "Graph Series filter $key must contain finite numeric values"
-                    }
+                    if {[catch {graphSeriesCanonicalMember $dtype $value} item]} {error "Graph Series filter $key requires finite values in declared dtype $dtype; integer identities must be exact integers, not rounded scientific notation"}
+                    lappend canonical $item
                 }
+                if {$key eq "values"} {dict set filter $key $canonical} else {dict set filter $key [lindex $canonical 0]}
             }
         }
         if {$predicate eq "between_inclusive" && [dict get $filter lower] > [dict get $filter upper]} {
@@ -292,6 +293,12 @@ proc ::GX::graphSeriesList {moduleId graphId {variantId ""} {includeDisabled 0}}
 
 proc ::GX::graphSeriesCanonicalMember {dtype value} {
     if {$dtype eq "string"} {return $value}
+    if {[regexp {^(u?int)(8|16|32|64)$} $dtype -> kind bits]||$dtype eq "bool"} {
+        if {![string is entier -strict $value]} {error {Integer family identity must be an exact integer; ambiguous rounded historical values require explicit review}}
+        if {$dtype eq "bool"} {set minimum 0;set maximum 1} elseif {$kind eq "uint"} {set minimum 0;set maximum [expr {(1<<$bits)-1}]} else {set minimum [expr {-(1<<($bits-1))}];set maximum [expr {(1<<($bits-1))-1}]}
+        if {$value<$minimum||$value>$maximum} {error "Family identity exceeds declared $dtype range"}
+        return [expr {$value+0}]
+    }
     if {![string is double -strict $value] || [catch {set n [expr {double($value)}]}] || [expr {abs($n) == Inf}]} {
         error "Graph Series family member must be a finite numeric source value"
     }
@@ -347,24 +354,35 @@ proc ::GX::graphSeriesDistinctValues {datasetId variableId {chunkRows 4096} {ref
 
 proc ::GX::graphSeriesFilterRowMatch {filter value} {
     set predicate [dict get $filter predicate]
-    set numeric [expr {[dict get $filter dtype] ne "string"}]
-    if {$numeric && (![string is double -strict $value] || [catch {set value [expr {double($value)}]}])} {return 0}
+    set dtype [dict get $filter dtype];set numeric [expr {$dtype ne "string"}]
+    set finite 1
+    if {$numeric&&[catch {set value [graphSeriesCanonicalMember $dtype $value]}]} {set finite 0}
+    if {$predicate eq "is_finite"} {return [expr {$numeric&&$finite}]}
+    if {$predicate eq "is_nonfinite"} {return [expr {$numeric&&!$finite}]}
+    if {!$finite} {return 0}
+    set targets {}
+    foreach field {value lower upper} {
+        if {[dict exists $filter $field]} {
+            set target [dict get $filter $field]
+            if {$numeric} {set target [graphSeriesCanonicalMember $dtype $target]}
+            dict set targets $field $target
+        }
+    }
     switch -- $predicate {
-        exact_equal {return [expr {$numeric ? $value == double([dict get $filter value]) : $value eq [dict get $filter value]}]}
-        not_equal {return [expr {$numeric ? $value != double([dict get $filter value]) : $value ne [dict get $filter value]}]}
+        exact_equal {return [expr {$numeric ? $value == [dict get $targets value] : $value eq [dict get $targets value]}]}
+        not_equal {return [expr {$numeric ? $value != [dict get $targets value] : $value ne [dict get $targets value]}]}
         in_set {
             foreach candidate [dict get $filter values] {
-                if {$numeric ? $value == double($candidate) : $value eq $candidate} {return 1}
+                if {$numeric} {set candidate [graphSeriesCanonicalMember $dtype $candidate]}
+                if {$numeric ? $value == $candidate : $value eq $candidate} {return 1}
             }
             return 0
         }
-        less_than {return [expr {$value < double([dict get $filter value])}]}
-        less_equal {return [expr {$value <= double([dict get $filter value])}]}
-        greater_than {return [expr {$value > double([dict get $filter value])}]}
-        greater_equal {return [expr {$value >= double([dict get $filter value])}]}
-        between_inclusive {return [expr {$value >= double([dict get $filter lower]) && $value <= double([dict get $filter upper])}]}
-        is_finite {return [expr {abs($value) != Inf}]}
-        is_nonfinite {return [expr {abs($value) == Inf}]}
+        less_than {return [expr {$value < [dict get $targets value]}]}
+        less_equal {return [expr {$value <= [dict get $targets value]}]}
+        greater_than {return [expr {$value > [dict get $targets value]}]}
+        greater_equal {return [expr {$value >= [dict get $targets value]}]}
+        between_inclusive {return [expr {$value >= [dict get $targets lower] && $value <= [dict get $targets upper]}]}
     }
     return 0
 }

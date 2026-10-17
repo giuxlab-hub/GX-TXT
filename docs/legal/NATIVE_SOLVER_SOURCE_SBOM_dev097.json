@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "status": "SOURCE_AND_ADAPTER_REBUILD_VERIFIED_DEBIAN_INSTALL_PENDING",
+  "components": [
+    {
+      "component": "Ceres Solver",
+      "version": "2.2.0",
+      "license": "BSD-3-Clause AND Apache-2.0",
+      "source_url": "https://codeload.github.com/ceres-solver/ceres-solver/tar.gz/refs/tags/2.2.0",
+      "source_sha256": "12efacfadbfdc1bbfa203c236e96f4d3c210bed96994288b3ff0c8e7c6f350d4",
+      "modifications": "none",
+      "inclusion": "unmodified static PIC Ceres in Numeric Octave adapter",
+      "notes": "built-in miniglog is BSD-3-Clause; MIT examples excluded",
+      "distributed_source": "third_party/source/ceres-solver-2.2.0.tar.gz"
+    },
+    {
+      "component": "Eigen",
+      "version": "3.4.0",
+      "license": "MPL-2.0 AND BSD-3-Clause",
+      "source_url": "https://deb.debian.org/debian/pool/main/e/eigen3/eigen3_3.4.0.orig.tar.bz2",
+      "source_sha256": "b4c198460eba6f28d34894e3a5710998818515104d6e74e5cc331ce31e46e626",
+      "modifications": "none",
+      "inclusion": "unmodified headers; EIGEN_MPL2_ONLY enforced",
+      "notes": "LGPL-only headers cause a compile-time error; METIS and external BLAS support excluded",
+      "distributed_source": "third_party/source/eigen3_3.4.0.orig.tar.bz2"
+    }
+  ],
+  "excluded": [
+    "SuiteSparse",
+    "METIS",
+    "CUDA",
+    "LAPACK in Ceres",
+    "glog external",
+    "gflags",
+    "Abseil (not a dependency of the pinned 2.2.0 tree)",
+    "Ceres examples/benchmarks/tests"
+  ],
+  "pending": [
+    "frozen package and installed binary hash/loader verification"
+  ],
+  "adapter": {
+    "source": "plugins/modules/math.numeric/api/octave/gxtxt_numeric_ceres_native.cc",
+    "source_sha256": "e795b7d9b3a012afb39c6c6e9c5aeb5a4646c798f6808181bbda4fe8a4a4dc40",
+    "binary_sha256": "713da7d0de29e67e39e551fba23ed6961db6046546b67fe73b7bb739881e77b2",
+    "repeat_build": "byte-identical against verified dependency prefix",
+    "build_instructions": "DEBIAN_NATIVE_REBUILD_dev097.md"
+  }
+}

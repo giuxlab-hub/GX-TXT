@@ -11,7 +11,7 @@ demo.numeric.calculus
 Version:
 
 ```text
-1.0.0
+1.1.0
 ```
 
 `demo.numeric.calculus` is an independently installable GX-TXT analysis module. It demonstrates the public Dataset-aware calculus operations provided by `math.numeric` / `NUMERIC_API_v1`:
@@ -64,13 +64,13 @@ five automatic PNG graphs
 Reference and minimum framework version:
 
 ```text
-GX-TXT 0.9.7.72
+GX-TXT 0.9.8.10-dev-097
 ```
 
 The package manifest declares:
 
 ```text
-framework_min=0.9.7.72
+framework_min=0.9.8.10-dev-097
 ```
 
 The plugin is external. Installation must not modify or repackage GX-TXT itself.
@@ -87,7 +87,7 @@ Required public numerical API:
 NUMERIC_API_v1
 ```
 
-GX-TXT 0.9.7.72 advertises the capabilities used by this module:
+The public Numeric service advertises these capabilities:
 
 ```text
 integration
@@ -331,7 +331,7 @@ This prevents an arbitrary antiderivative constant from being mistaken for integ
 Release package:
 
 ```text
-demo.numeric.calculus_1.0.0.zip
+demo.numeric.calculus_1.1.0.zip
 ```
 
 Install through the normal GX-TXT GUI:
@@ -339,7 +339,7 @@ Install through the normal GX-TXT GUI:
 ```text
 Modules
 → Install plugin...
-→ select demo.numeric.calculus_1.0.0.zip
+→ select demo.numeric.calculus_1.1.0.zip
 ```
 
 After installation, remain in `Modules` and locate:
@@ -690,14 +690,14 @@ df_dx
 F
 ```
 
-Therefore version 1.0.0:
+This module:
 
 - does not read `metadata/ground_truth.txt`;
 - does not parse generator-library files;
 - does not require a metadata importer;
 - works completely when no generator metadata have been imported into Dataset Metadata.
 
-When a future generic metadata importer exposes additional scientific metadata through a public GX-TXT Dataset Metadata API, a later plugin version may use those values additively for richer provenance, displayed analytical expressions or additional consistency checks. Such metadata must remain optional: absence of imported metadata must not prevent numerical processing, publication or graph generation.
+Dataset Metadata APIs remain available to other consumers. This workflow takes its analytical references from bound Dataset variables and records its output interpretation as validated Dataset metadata.
 
 ## 16. Rerender and `plot.dataset`
 
@@ -709,7 +709,7 @@ render_cache.mat
 
 The module's rerender entry point reads this cache and can regenerate enabled Graph Provider PNG files without repeating differentiation, integration or Dataset publication.
 
-The published `demo.numeric.calculus.result` Dataset is a normal canonical GX-TXT Dataset and remains usable by `plot.dataset`. The integration test creates an additional `plot.dataset` graph from `derivative_exact` and `derivative_numeric` to verify this interoperability.
+The published `demo.numeric.calculus.result` Dataset is a normal canonical GX-TXT Dataset and remains usable by `plot.dataset`. Final integrated acceptance includes Dataset/plot interoperability and rerender checks.
 
 ## 17. Reproducibility, troubleshooting and limitations
 
@@ -770,8 +770,8 @@ Confirm that the five module graphs are enabled in the module graph controls and
 ### Limitations
 
 - The demo requires explicit analytical derivative and antiderivative reference variables for quantitative validation.
-- Version 1.0.0 supports an optional X-range Dataset Selection, not rectangle selection.
-- The plugin reports the algorithms supplied by GX-TXT 0.9.7.72; it does not provide alternate finite-difference or quadrature schemes.
+- The module supports an optional X-range Dataset Selection.
+- Numerical algorithms come from the public Numeric service.
 - The canonical generator defines no physical units. Unit propagation becomes visible when the same module is run on a compatible Dataset that carries units.
 - Imported generator metadata are optional and are not consumed by this release.
 
@@ -791,35 +791,29 @@ runtime/demo_numeric_calculus_main.m
 runtime/demo_numeric_calculus_render.m
 runtime/demo_numeric_calculus_rerender.m
 runtime/demo_numeric_calculus_rerender_main.m
-tests/README.md
-tests/test_static.py
-tests/test_publication_table.tcl
-tests/test_framework_integration.tcl
 ```
 
-The distributed tests cover:
+Validation scripts are cataloged in the integrated framework workspace under `validation/integrated_dev097`. Their observed development results are recorded separately from the final frozen-candidate acceptance campaign. The release evidence must report actual PASS, FAIL or blocked status for each required generator, plot, rerender and installation check.
 
-```text
-package descriptor validity
-Plugin Install API installation
-module discovery
-canonical Calculus Session generation
-source CSV hash and schema
-normal Acquisition import
-stable variable resolution
-NUMERIC_API_v1 capability discovery
-dataset_grid_info
-dataset_differentiate
-dataset_integrate
-dataset_cumulative_integrate
-analytical discretization checks
-Dataset Publication API v2
-published Dataset reopen/read-back
-five automatic Graph Provider artifacts
-cache-only rerender
-plot.dataset compatibility
-X-range Dataset Selection consistency
-```
+## Dev097 statistical interpretation and validation
 
-GNU Octave-dependent scientific checks require an installed numerical runtime.
-Verification must distinguish executed tests from unavailable-runtime skips.
+Version 1.1.0 requires GX-TXT 0.9.8.10-dev-097. The public CORE
+`STATISTICAL_RESULT_SEMANTICS_API_v1` owns interpretation of every numerical
+comparison. The Numeric descriptor `math.numeric.comparison` retains existing
+n-denominator RMSE, MAE, maximum absolute error and squared error sums with
+physical derivative/integral units. These errors do not estimate a regression
+or a sampling distribution; R², inferential DOF, covariance and chi-squared are
+not applicable to this comparison profile.
+
+The published Dataset retains four validated records: full derivative,
+derivative endpoints, derivative interior and cumulative integral. An empty
+interior (two source points) has `n=0`, `undefined` error quantities and NaN
+placeholders. Reports preserve all old numeric keys and add CORE quantity,
+status, unit and reason fields. No calculus estimate is recomputed for reporting.
+
+The integrated development validator `statistics_calculus_demo.tcl` checks
+quadratic analytical references on 17- and two-point grids, source SHA, physical
+units, publication/reopen and one derivative-error graph. CORE contract and real
+Python/Octave Script Job fixtures cover the shared descriptor separately.
+Development evidence is distinct from final generator and frozen-candidate
+acceptance; the complete five-graph generator workflow remains in that campaign.

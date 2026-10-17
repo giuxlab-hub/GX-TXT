@@ -59,3 +59,35 @@ serial and has a round trip for each evaluation; it suits researcher scale
 ODEs, fits and optimizations, but scripts should avoid tiny callbacks over
 millions of evaluations. Large numeric values use the existing binary typed
 transport. No process or interpreter is created per evaluation.
+
+In dev097, a declared callable in the existing Script Registry can be selected by
+a supervised Job. The runner registers its entrypoint after executing the exact
+source snapshot, invokes a declared public consumer, and releases the handle.
+`SCRIPT_EXECUTION_API_v1/current_callable` exposes its verified provenance and
+inert scientific declaration. Consumers retain results under Dataset/Workspace
+ownership, never the transient callback handle. See the Script Execution and
+Script Job APIs for the host submission and bounded receipt contract.
+
+## Bounded callback data lifetime (dev097)
+
+CORE host adapters may use `host.callback_argument(handle, numeric_array)` as a
+context manager for an unchanged argument across an evaluation sequence. The
+originating runtime receives its typed array once; subsequent calls refer to
+that execution-scoped argument. Python receives a read-only NumPy array; Octave
+uses its ordinary copy-on-write numeric value. Leaving the context releases the
+cached value, including on errors. Foreign or expired argument handles reject.
+This is an internal CORE transport contract, not a second public model registry.
+
+After a consumer materializes a callback result, it calls
+`host.release_callback_values(result)`. CORE sends only resource IDs back to the
+originating runtime, which deletes only matching files in its own callback-output
+allocation list. It does not delete original arguments or unrelated resources.
+General Script result descriptor ownership and binary versions remain unchanged.
+Callback caches and output files are also cleared by normal callback/runtime
+teardown; the existing Job Supervisor owns process-tree cancellation and cleanup.
+
+The existing Numeric callback fitting path uses these adapters: unchanged
+predictors are transported once, and each consumed prediction is released before
+the next evaluation. ODE, calculus and constrained vector results use the same
+output-release helper. Scientific algorithms and statistical interpretation do
+not move into CORE transport.

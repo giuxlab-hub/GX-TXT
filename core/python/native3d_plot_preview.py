@@ -32,6 +32,10 @@ for i,layer in enumerate(d['layers']):
 labels=d['axis_labels'];caption=str(d['title'])+'\n'+' · '.join(f'{a}: {label} [{limits[i][0]:.6g}, {limits[i][1]:.6g}]' for i,(a,label) in enumerate(zip('XYZ',labels)))
 if d['legend']:caption+='\n'+ ' · '.join(d['legend'])
 caption+='\n'+d['plot_type']+' · exact prepared graph'
+if d.get('coordinate_policies'):
+    caption+='\nDataset view: '+' · '.join(f'{axis.upper()} ×{policy["view_factor"]:g} about {policy["view_pivot"]:g} {policy["source"]["unit"]}' for axis,policy in d['coordinate_policies'].items())
+    caption+=' · numerical calibration is not applied'
+
 colorbar=dict(visible=d['colorbar_visible'],label=d['colorbar_label'],range=d['clim'],palette=['#'+''.join(f'{round(max(0,min(1,v))*255):02x}' for v in color) for color in d['colormap']])
 figure=dict(axes_grid_visible=1,colorbar_visible=d['colorbar_visible'],
     bounds_min=vector([limits[i][0]/dar[i] for i in range(3)]),

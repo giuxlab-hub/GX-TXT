@@ -26,15 +26,19 @@ function [result,paths] = gxtxt_script_bridge_internal(action, varargin)
       if(isempty(python)),python='python3';endif
       % A private local execution buffer scope; no caller-supplied data path.
       previous_scope=getenv('GXTXT_BRIDGE_WORKSPACE');buffer_scope=tempname();
+      previous_typed=getenv('GXTXT_BRIDGE_TYPED_DESCRIPTORS');previous_owner=getenv('GXTXT_BRIDGE_CLIENT_OWNS_RESOURCE');
       oldmask=umask(077);mkdir(buffer_scope);umask(oldmask);
       setenv('GXTXT_BRIDGE_WORKSPACE',buffer_scope);
+      setenv('GXTXT_BRIDGE_TYPED_DESCRIPTORS','1');setenv('GXTXT_BRIDGE_CLIENT_OWNS_RESOURCE','0');
       unwind_protect
         [in,out,pid]=popen2(python,{'-u',server,config});
       unwind_protect_cleanup
         setenv('GXTXT_BRIDGE_WORKSPACE',previous_scope);
+        setenv('GXTXT_BRIDGE_TYPED_DESCRIPTORS',previous_typed);setenv('GXTXT_BRIDGE_CLIENT_OWNS_RESOURCE',previous_owner);
       end_unwind_protect
       if(pid<0),error('GXTXT:ScriptBridge:Transport','cannot launch CORE bridge server');endif
       GXTXT_SCRIPT_BRIDGE_STATE=struct('active',true,'in',in,'out',out,'pid',pid,'callback_paths',{{}},'buffer_scope',buffer_scope);
+      GXTXT_SCRIPT_BRIDGE_STATE.callback_arrays=containers.Map('KeyType','char','ValueType','any');
       GXTXT_SCRIPT_CALLBACKS=containers.Map('KeyType','char','ValueType','any');
       request=struct('action','start','execution',execution);
       try
@@ -73,6 +77,11 @@ function [result,paths] = gxtxt_script_bridge_internal(action, varargin)
       if(isKey(GXTXT_SCRIPT_CALLBACKS,handle.gxtxt_callback_id))
         remove(GXTXT_SCRIPT_CALLBACKS,handle.gxtxt_callback_id);
       endif
+      constant_ids=keys(GXTXT_SCRIPT_BRIDGE_STATE.callback_arrays);
+      for k=1:numel(constant_ids)
+        entry=GXTXT_SCRIPT_BRIDGE_STATE.callback_arrays(constant_ids{k});
+        if(strcmp(entry.owner,handle.gxtxt_callback_id)),remove(GXTXT_SCRIPT_BRIDGE_STATE.callback_arrays,constant_ids{k});endif
+      endfor
     case 'pack'
       [result,paths]=pack_value(varargin{1},0);
     otherwise
@@ -116,27 +125,19 @@ function result=send_request(request)
   fclear(GXTXT_SCRIPT_BRIDGE_STATE.out);
   fputs(GXTXT_SCRIPT_BRIDGE_STATE.in,[payload sprintf('\n')]);
   fflush(GXTXT_SCRIPT_BRIDGE_STATE.in);
-  started=time();
-  while(true)
-    response=fgetl(GXTXT_SCRIPT_BRIDGE_STATE.out);
-    if(ischar(response)),break;endif
-    if(time()-started>3600)
-      error('GXTXT:ScriptBridge:Transport','CORE bridge server timed out');
-    endif
-    pause(0.01);fclear(GXTXT_SCRIPT_BRIDGE_STATE.out);
-  endwhile
+  response=read_response_frame();
   try envelope=jsondecode(response,'makeValidName',false);
   catch err,error('GXTXT:ScriptBridge:Transport','invalid CORE bridge response: %s',err.message);
   end_try_catch
-  while(isstruct(envelope)&&isfield(envelope,'event')&&strcmp(envelope.event,'callback_invoke'))
-    serve_callback(envelope);
-    started=time();
-    while(true)
-      response=fgetl(GXTXT_SCRIPT_BRIDGE_STATE.out);
-      if(ischar(response)),break;endif
-      if(time()-started>3600),error('GXTXT:ScriptBridge:Transport','CORE bridge server timed out');endif
-      pause(0.01);fclear(GXTXT_SCRIPT_BRIDGE_STATE.out);
-    endwhile
+  while(isstruct(envelope)&&isfield(envelope,'event'))
+    if(strcmp(envelope.event,'callback_invoke'))
+      serve_callback(envelope);
+    elseif(any(strcmp(envelope.event,{'callback_arguments_release','callback_buffers_release'})))
+      release_callback_storage(envelope);
+    else
+      error('GXTXT:ScriptCallback:Transport','Unknown callback lifecycle event');
+    endif
+    response=read_response_frame();
     try envelope=jsondecode(response,'makeValidName',false);
     catch err,error('GXTXT:ScriptBridge:Transport','invalid CORE bridge response: %s',err.message);
     end_try_catch
@@ -157,6 +158,61 @@ function result=send_request(request)
   result=unpack_value(envelope.value,0);
 endfunction
 
+function response=read_response_frame()
+  global GXTXT_SCRIPT_BRIDGE_STATE;
+  % popen2 returns a nonblocking read stream. fgets may return a partial line
+  % at EAGAIN, including a full 64 KiB pipe fragment. Only LF completes a frame.
+  started=time();parts={};bytes=0;limit=64*1024*1024;
+  while(true)
+    piece=fgets(GXTXT_SCRIPT_BRIDGE_STATE.out);
+    if(ischar(piece)&&!isempty(piece))
+      bytes+=numel(piece);
+      if(bytes>limit),error('GXTXT:ScriptBridge:Transport','CORE control response exceeds 64 MiB');endif
+      parts{end+1}=piece;
+      if(piece(end)==sprintf('\n'))
+        response=[parts{:}];response=response(1:end-1);return;
+      endif
+    endif
+    if(time()-started>3600),error('GXTXT:ScriptBridge:Transport','CORE bridge server timed out before a complete response frame');endif
+    % Clear the transient stream error before trying to read the next fragment.
+    fclear(GXTXT_SCRIPT_BRIDGE_STATE.out);
+    if(!ischar(piece)||isempty(piece)),pause(0.001);endif
+  endwhile
+endfunction
+
+function release_callback_storage(event)
+  global GXTXT_SCRIPT_BRIDGE_STATE;
+  ids=event.ids;if(ischar(ids)),ids={ids};endif
+  if(strcmp(event.event,'callback_arguments_release'))
+    for k=1:numel(ids)
+      if(isKey(GXTXT_SCRIPT_BRIDGE_STATE.callback_arrays,ids{k})),remove(GXTXT_SCRIPT_BRIDGE_STATE.callback_arrays,ids{k});endif
+    endfor
+  else
+    retained={};
+    for k=1:numel(GXTXT_SCRIPT_BRIDGE_STATE.callback_paths)
+      p=GXTXT_SCRIPT_BRIDGE_STATE.callback_paths{k};[parent,name,extension]=fileparts(p);
+      if(any(strcmp([name extension],ids))),unlink(p);else,retained{end+1}=p;endif
+    endfor
+    GXTXT_SCRIPT_BRIDGE_STATE.callback_paths=retained;
+  endif
+endfunction
+
+function value=callback_argument(wire,owner)
+  global GXTXT_SCRIPT_BRIDGE_STATE;
+  if(!strcmp(wire.kind,'callback_array')),value=unpack_value(wire,0);return;endif
+  id=wire.id;
+  if(isfield(wire,'value'))
+    if(isKey(GXTXT_SCRIPT_BRIDGE_STATE.callback_arrays,id)),error('GXTXT:ScriptCallback:Transport','Repeated constant argument definition');endif
+    value=unpack_value(wire.value,0);
+    if(!isnumeric(value)&&!islogical(value)),error('GXTXT:ScriptCallback:Transport','Constant argument is not numeric');endif
+    GXTXT_SCRIPT_BRIDGE_STATE.callback_arrays(id)=struct('owner',owner,'value',value);
+  endif
+  if(!isKey(GXTXT_SCRIPT_BRIDGE_STATE.callback_arrays,id)),error('GXTXT:ScriptCallback:Transport','Unknown constant callback argument');endif
+  entry=GXTXT_SCRIPT_BRIDGE_STATE.callback_arrays(id);
+  if(!strcmp(entry.owner,owner)),error('GXTXT:ScriptCallback:Transport','Foreign constant callback argument');endif
+  value=entry.value;
+endfunction
+
 function serve_callback(event)
   global GXTXT_SCRIPT_BRIDGE_STATE GXTXT_SCRIPT_CALLBACKS;
   id=event.id;
@@ -167,7 +223,7 @@ function serve_callback(event)
     raw=event.args;
     if(isstruct(raw)),raw=num2cell(raw);endif
     args=cell(1,numel(raw));
-    for k=1:numel(raw),args{k}=unpack_value(raw{k},0);endfor
+    for k=1:numel(raw),args{k}=callback_argument(raw{k},id);endfor
     value=feval(GXTXT_SCRIPT_CALLBACKS(id),args{:});
     [packed,paths]=pack_value(value,0);
     reply=struct('action','callback_result','id',id,'ok',true,'value',packed);
@@ -196,22 +252,15 @@ function [packed,paths]=pack_value(value,depth)
     if(strncmp(class(value),'uint',4)),decimal=sprintf('%u',value);
     else decimal=sprintf('%d',value);endif
     packed=struct('kind','integer_scalar','value',decimal);
-  elseif(isnumeric(value)&&isscalar(value))
+  elseif(isnumeric(value)&&isscalar(value)&&isreal(value))
     packed=struct('kind','numeric_scalar','value',num2str(value,17));
   elseif(isnumeric(value)||islogical(value))
     packed=struct('kind','numeric_array','shape',size(value));
-    if(numel(value)>10000)
+    if(numel(value)>64||!isa(value,'double')||!isreal(value))
       if(isstruct(GXTXT_SCRIPT_BRIDGE_STATE)&&isfield(GXTXT_SCRIPT_BRIDGE_STATE,'buffer_scope'))
-        path=tempname(GXTXT_SCRIPT_BRIDGE_STATE.buffer_scope);
-      else,path=tempname();endif
-      fid=fopen(path,'wb','ieee-le');
-      if(fid<0),error('GXTXT:ScriptBridge:Transport','cannot create numeric transport');endif
-      unwind_protect
-        fwrite(fid,double(value(:)),'double');
-      unwind_protect_cleanup
-        fclose(fid);
-      end_unwind_protect
-      packed.binary_path=path;paths={path};
+        packed.binary=gxtxt_binary_resource_v1('write',GXTXT_SCRIPT_BRIDGE_STATE.buffer_scope,value);
+        paths={fullfile(GXTXT_SCRIPT_BRIDGE_STATE.buffer_scope,packed.binary.resource_id)};
+      else,error('GXTXT:ScriptBridge:Transport','typed array requires an active managed Bridge');endif
     else
       packed.values=arrayfun(@(x)num2str(x,17),value(:),'UniformOutput',false);
     endif
@@ -241,16 +290,25 @@ function [packed,paths]=pack_value(value,depth)
   endif
 endfunction
 
-function value=unpack_value(wire,depth)
+function value=unpack_value(wire,depth,arrays)
+  global GXTXT_SCRIPT_BRIDGE_STATE;
+  if(nargin<3),arrays=containers.Map('KeyType','char','ValueType','any');endif
   if(depth>32),error('GXTXT:ScriptBridge:Transport','bridge result nesting exceeds 32');endif
   switch(wire.kind)
     case 'string',value=wire.value;
     case 'logical',value=logical(wire.value);
     case 'numeric_scalar',value=str2double(wire.value);
     case 'integer_scalar',value=unpack_integer(wire.value);
+    case 'numeric_array_ref'
+      if(!isfield(wire,'array_id')||!ischar(wire.array_id)||!isKey(arrays,wire.array_id)),error('GXTXT:ScriptBridge:Transport','unknown response array reference');endif
+      value=arrays(wire.array_id);
     case 'numeric_array'
       shape=double(wire.shape(:)');
-      if(isfield(wire,'binary_path'))
+      if(isfield(wire,'binary'))
+        if(!isequal(double(wire.binary.shape(:)'),shape)),error('GXTXT:ScriptBridge:Transport','binary result shape mismatch');endif
+        value=gxtxt_binary_resource_v1('read',GXTXT_SCRIPT_BRIDGE_STATE.buffer_scope,wire.binary);
+        unlink(fullfile(GXTXT_SCRIPT_BRIDGE_STATE.buffer_scope,wire.binary.resource_id));
+      elseif(isfield(wire,'binary_path'))
         fid=fopen(wire.binary_path,'rb','ieee-le');
         if(fid<0),error('GXTXT:ScriptBridge:Transport','cannot read numeric result transport');endif
         unwind_protect
@@ -265,21 +323,25 @@ function value=unpack_value(wire,depth)
         elseif(ischar(raw)),values=str2double(cellstr(raw));
         else values=double(raw(:));endif
       endif
-      value=reshape(values,shape);
+      if(!isfield(wire,'binary')),value=reshape(values,shape);endif
+      if(isfield(wire,'array_id'))
+        if(!ischar(wire.array_id)||isKey(arrays,wire.array_id)||arrays.Count>=65536),error('GXTXT:ScriptBridge:Transport','invalid response array identity');endif
+        arrays(wire.array_id)=value;
+      endif
     case 'cell'
       items=wire.items;value=cell(1,numel(items));
       for k=1:numel(items)
         if(iscell(items)),item=items{k};else item=items(k);endif
-        value{k}=unpack_value(item,depth+1);
+        value{k}=unpack_value(item,depth+1,arrays);
       endfor
     case 'struct'
       value=struct();names=fieldnames(wire.fields);
-      for k=1:numel(names),value.(names{k})=unpack_value(wire.fields.(names{k}),depth+1);endfor
+      for k=1:numel(names),value.(names{k})=unpack_value(wire.fields.(names{k}),depth+1,arrays);endfor
     case 'struct_array'
       items=wire.items;value=struct([]);
       for k=1:numel(items)
         if(iscell(items)),item=items{k};else item=items(k);endif
-        value(k)=unpack_value(item,depth+1);
+        value(k)=unpack_value(item,depth+1,arrays);
       endfor
     otherwise,error('GXTXT:ScriptBridge:Transport','unknown bridge value kind %s',wire.kind);
   endswitch

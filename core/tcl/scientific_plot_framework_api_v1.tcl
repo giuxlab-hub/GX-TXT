@@ -82,6 +82,8 @@ proc ::GX::unitTclDimensionKey {unit} {
         if {$ch eq "*"} {set sign 1; incr pos; continue}
         if {$ch eq "/"} {set sign -1; incr pos; continue}
         set rest [string range $unit $pos end]
+        # Literal dimensionless factors preserve reciprocal unit identities.
+        if {[regexp {^1($|[*/])} $rest]} {incr pos;set sign 1;continue}
         if {![regexp {^([A-Za-z]+)(?:\^([+-]?[0-9]+))?} $rest whole sym pw]} {error "Unsupported unit expression '$unit'"}
         if {$pw eq ""} {set pw 1}
         set pw [expr {$pw * $sign}]

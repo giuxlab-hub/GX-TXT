@@ -1,9 +1,10 @@
-function prepared=pd_prepare_2d_filtered_batch(session,G,aux_sets,requested,target,threshold,chunk_rows)
+function prepared=pd_prepare_2d_filtered_batch(session,G,aux_sets,requested,target,threshold,chunk_rows,optional_sets)
 % Prepare compatible filtered Graph Series in one bounded Dataset stream.
 % Each series keeps the same independent predicate and reducer semantics as
 % pd_prepare_2d_stream, including exact zero-based source-row identities.
 % SPDX-License-Identifier: GPL-3.0-or-later
   n=numel(G);if(n<2),error('plot.dataset: filtered batch requires multiple series');endif
+  if(nargin<8),optional_sets=repmat({{}},1,n);endif
   dataset_id=G(1).dataset_id;ids={};
   for k=1:n
     if(!strcmp(G(k).dataset_id,dataset_id)),error('plot.dataset: mixed-Dataset filtered batch');endif
@@ -21,9 +22,9 @@ function prepared=pd_prepare_2d_filtered_batch(session,G,aux_sets,requested,targ
     mode=lower(strtrim(requested{k}));if(!any(strcmp(mode,{'auto','none','stride','minmax'}))),mode='auto';endif
     if(strcmp(mode,'auto')),if(planned>threshold),mode='minmax';else mode='none';endif;endif
     effective{k}=mode;stride(k)=max(1,ceil(max(1,planned)/target));bucket_rows(k)=max(1,ceil(max(1,planned)/bucket_count));
-    a=cell(1,numel(aux_sets{k}));for j=1:numel(a),a{j}=[];endfor
+    a=cell(1,numel(aux_sets{k})+numel(optional_sets{k}));for j=1:numel(a),a{j}=[];endfor
     state{k}=struct('x',[],'y',[],'a',{a},'seq',[],'valid',0,'dropped',0,'filtered',0,'seen',0, ...
-      'bindex',-1,'bmin',[],'bmax',[],'first',[],'last',[],'x_numeric',false,'x_seen',false);
+      'bindex',-1,'bmin',[],'bmax',[],'first',[],'last',[],'x_numeric',false,'x_seen',false,'uncertainty_state',[]);
   endfor
   unwind_protect
     while(true)
@@ -39,9 +40,10 @@ function prepared=pd_prepare_2d_filtered_batch(session,G,aux_sets,requested,targ
             av{j}=av{j}(:);
           endfor
           finite_ok=isfinite(xv)&isfinite(yv);
-          for j=1:numel(av),if(isnumeric(av{j})),finite_ok&=isfinite(av{j});endif;endfor
+          for j=1:numel(av),if(isnumeric(av{j})&&!any(strcmp(optional_sets{k},aux_sets{k}{j}))),finite_ok&=isfinite(av{j});endif;endfor
           filter_ok=gxtxt_graph_series_filter_mask(ch,G(k).row_filters);idx=find(finite_ok&filter_ok);nv=numel(idx);
           S.valid+=nv;S.dropped+=ch.nrows-sum(finite_ok);S.filtered+=sum(finite_ok)-sum(finite_ok&filter_ok);
+          [av,S.uncertainty_state]=pd_uncertainty_rows(av,aux_sets{k},optional_sets{k},idx,S.uncertainty_state);
           if(nv>0)
             seqv=ch.offset+idx-1;
             if(isempty(S.first)),S.first=row(xv,yv,av,idx(1),seqv(1));endif
@@ -92,7 +94,8 @@ function prepared=pd_prepare_2d_filtered_batch(session,G,aux_sets,requested,targ
     prepared{k}=struct('x',S.x(:),'y',S.y(:),'source_row_indices',S.seq(:), ...
       'valid_rows',S.valid,'dropped_rows',S.dropped,'filter_dropped_rows',S.filtered,'window_filtered_rows',0, ...
       'display_rows',numel(S.x),'requested_reduction',requested{k},'effective_reduction',effective{k}, ...
-      'aux_ids',{aux_sets{k}},'aux_values',{S.a},'aux_meta',{aux_meta},'dataset_id',dataset_id, ...
+      'aux_ids',{aux_sets{k}},'aux_values',{S.a(1:numel(aux_sets{k}))},'aux_meta',{aux_meta},'dataset_id',dataset_id, ...
+      'uncertainty_variable_ids',{optional_sets{k}},'uncertainty_run_ids',{S.a(numel(aux_sets{k})+1:end)}, ...
       'stream_api_version',3,'storage_provider',provider,'source_row_count',row_count, ...
       'range_applied',false,'range_start',0,'range_count',planned,'range_mode',range_mode, ...
       'implicit_x',strcmpi(strtrim(xm.axis_kind),'uniform'),'x_payload_numeric',S.x_numeric, ...

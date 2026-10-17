@@ -5,12 +5,28 @@ function [S,chunk]=gxtxt_table_stream_v3_next(S)
   head=gxtxt_table_stream_v3_parts(gxtxt_table_stream_v3_readline(S.bridge_out,S.bridge_pid));bridge_error(head);
   if(numel(head)!=5||!strcmp(head{1},'CHUNK')),error('GXTXT:TableStream','Invalid Table Stream v3 chunk response');endif
   offset=str2double(head{2});nrows=str2double(head{3});eof=logical(str2double(head{4}));nvars=str2double(head{5});
-  values=cell(1,nvars);names=cell(1,nvars);ids=cell(1,nvars);dtypes=cell(1,nvars);transports=cell(1,nvars);
+  values=cell(1,nvars);names=cell(1,nvars);ids=cell(1,nvars);dtypes=cell(1,nvars);transports=cell(1,nvars);resources={};
+  missing_masks=cell(1,nvars);
+  % Consume the bounded frame before converting values. A rejected CSV value
+  % must not leave END queued as the acknowledgement of a later CLOSE/NEXT.
+  items=cell(1,nvars);
   for c=1:nvars
-    item=gxtxt_table_stream_v3_parts(gxtxt_table_stream_v3_readline(S.bridge_out,S.bridge_pid));bridge_error(item);
-    if(numel(item)<1||!(strcmp(item{1},'COL')||strcmp(item{1},'NCOL')||strcmp(item{1},'BCOL'))),error('GXTXT:TableStream','Invalid Table Stream v3 column response');endif
+    items{c}=gxtxt_table_stream_v3_parts(gxtxt_table_stream_v3_readline(S.bridge_out,S.bridge_pid));bridge_error(items{c});
+    if(numel(items{c})==15&&strcmp(items{c}{1},'RCOL')),resources{end+1}=items{c}{14};endif
+  endfor
+  ending=gxtxt_table_stream_v3_readline(S.bridge_out,S.bridge_pid);if(!strcmp(ending,'END')),error('GXTXT:TableStream','Invalid Table Stream v3 chunk terminator');endif
+  unwind_protect
+  for c=1:nvars
+    item=items{c};
+    if(numel(item)<1||!any(strcmp(item{1},{'COL','NCOL','BCOL','RCOL'}))),error('GXTXT:TableStream','Invalid Table Stream v3 column response');endif
     ids{c}=gxtxt_table_stream_v3_decode(item{2});names{c}=gxtxt_table_stream_v3_decode(item{3});dtypes{c}=gxtxt_table_stream_v3_decode(item{4});
-    if(strcmp(item{1},'BCOL'))
+    if(strcmp(item{1},'RCOL'))
+      if(numel(item)!=15),error('GXTXT:TableStream','Invalid managed binary Table Stream column');endif
+      d=struct('version',str2double(item{8}),'dtype',dtypes{c},'endian',item{9},'order',item{10},'shape',parse_shape(gxtxt_table_stream_v3_decode(item{11})),'count',str2double(item{12}),'byte_count',str2double(item{13}),'resource_id',item{14});
+      if(d.count!=nrows),error('GXTXT:TableStream','Managed binary column length mismatch');endif
+      values{c}=gxtxt_binary_resource_v1('read',gxtxt_table_stream_v3_decode(item{15}),d);
+      transports{c}='managed_binary';
+    elseif(strcmp(item{1},'BCOL'))
       if(numel(item)!=11),error('GXTXT:TableStream','Invalid typed binary Table Stream column response');endif
       endian=item{8};shape_text=gxtxt_table_stream_v3_decode(item{9});block_count=str2double(item{10});
       if(block_count!=nrows),error('GXTXT:TableStream','Typed binary Table Stream column length mismatch');endif
@@ -25,14 +41,21 @@ function [S,chunk]=gxtxt_table_stream_v3_next(S)
         if(strcmp(item{1},'NCOL')),raw=pieces(:);
         else raw=cellfun(@gxtxt_table_stream_v3_decode,pieces(:),'uniformoutput',false);endif
       endif
-      values{c}=typed_values(raw,dtypes{c});
+      [values{c},missing_masks{c}]=typed_values(raw,dtypes{c});
       transports{c}='values';
     endif
   endfor
-  ending=gxtxt_table_stream_v3_readline(S.bridge_out,S.bridge_pid);if(!strcmp(ending,'END')),error('GXTXT:TableStream','Invalid Table Stream v3 chunk terminator');endif
+  unwind_protect_cleanup
+  for k=1:numel(resources)
+    fputs(S.bridge_in,['RELEASE' sprintf('\t') resources{k} sprintf('\n')]);fflush(S.bridge_in);
+    released=gxtxt_table_stream_v3_readline(S.bridge_out,S.bridge_pid);
+    if(!strcmp(released,'RELEASED')),bridge_error(gxtxt_table_stream_v3_parts(released));error('GXTXT:TableStream','Invalid resource release response');endif
+  endfor
+  end_unwind_protect
   if(!isequal(ids,S.selected_variable_ids)),error('GXTXT:TableStream','Table Stream v3 variable order changed');endif
   S.row_number=offset+nrows;S.eof=eof;
   chunk=struct('api_version',3,'dataset_id',S.dataset_id,'names',{names},'variable_ids',{ids},'dtypes',{dtypes},'transports',{transports},'values',{values},'nrows',nrows,'row_count',nrows,'offset',offset,'start',offset,'first_row',offset+1,'last_row',offset+nrows,'eof',eof,'schema',S.schema);
+  chunk.missing_masks=missing_masks;
 endfunction
 
 function values=binary_values(payload,dtype,endian,shape_text,expected)
@@ -67,31 +90,28 @@ function dims=parse_shape(text)
   if(any(!isfinite(dims))||any(dims<0)||any(dims!=fix(dims))),error('GXTXT:TableStream','Invalid typed binary shape');endif
 endfunction
 
-function values=typed_values(raw,dtype)
+function [values,missing]=typed_values(raw,dtype)
+  missing=[];
   if(strcmp(dtype,'string')),values=raw;return;endif
   if(isempty(raw))
-    if(strcmp(dtype,'bool')),values=false(0,1);elseif(strcmp(dtype,'float32')),values=single(zeros(0,1));else values=zeros(0,1);endif
+    if(strcmp(dtype,'bool')),values=false(0,1);elseif(strcmp(dtype,'float32')),values=single(zeros(0,1));elseif(any(strcmp(dtype,{'float16','float64'}))),values=zeros(0,1);else values=cast(zeros(0,1),dtype);endif
     return;
   endif
-  if(strcmp(dtype,'uint64')),values=cellfun(@parse_uint64,raw);values=values(:);return;endif
-  if(strcmp(dtype,'int64')),values=cellfun(@parse_int64,raw);values=values(:);return;endif
+  if(any(strcmp(dtype,{'uint64','int64'}))),values=gxtxt_table_integer_values_v1(raw,dtype);values=values(:);return;endif
   numeric=str2double(raw);
-  if(any(isnan(numeric)&!strcmpi(raw,'nan'))),error('GXTXT:TableStream','Provider value is incompatible with dtype %s',dtype);endif
-  if(strcmp(dtype,'bool')),values=logical(numeric);
+  absent=cellfun('isempty',raw); % Canonical CSV tokens are already trimmed.
+  float=any(strcmp(dtype,{'float16','float32','float64'}));
+  nan_token=strcmpi(raw,'nan')|strcmpi(raw,'+nan')|strcmpi(raw,'-nan');
+  if(any(isnan(numeric)&!nan_token&!(absent&float))),error('GXTXT:TableStream','Provider value is incompatible with dtype %s',dtype);endif
+  if(any(absent)),missing=logical(absent(:));endif
+  if(strcmp(dtype,'bool'))
+    if(any(!isfinite(numeric)|!(numeric==0|numeric==1))),error('GXTXT:TableStream','Provider value is incompatible with dtype bool');endif
+    values=logical(numeric);
   elseif(strcmp(dtype,'float64')||strcmp(dtype,'float16')),values=double(numeric);
   elseif(strcmp(dtype,'float32')),values=single(numeric);
-  else values=cast(numeric,dtype);endif
-endfunction
-function value=parse_uint64(text)
-  if(isempty(text)||any(text<'0'|text>'9')),error('GXTXT:TableStream','Provider value is incompatible with dtype uint64');endif
-  value=uint64(0);for k=1:numel(text),value=value*uint64(10)+uint64(text(k)-'0');endfor
-endfunction
-function value=parse_int64(text)
-  negative=!isempty(text)&&text(1)=='-';if(negative),digits=text(2:end);elseif(!isempty(text)&&text(1)=='+'),digits=text(2:end);else digits=text;endif
-  magnitude=parse_uint64(digits);
-  limit=uint64(9223372036854775807);
-  if(negative&&magnitude==limit+uint64(1)),value=intmin('int64');
-  elseif(magnitude>limit),error('GXTXT:TableStream','Provider value is outside dtype int64');
-  elseif(negative),value=-int64(magnitude);else value=int64(magnitude);endif
+  else
+    if(any(!isfinite(numeric)|numeric!=fix(numeric)|numeric<double(intmin(dtype))|numeric>double(intmax(dtype)))),error('GXTXT:TableStream','Provider value is outside dtype %s',dtype);endif
+    values=cast(numeric,dtype);
+  endif
 endfunction
 function bridge_error(parts),if(numel(parts)>=2&&strcmp(parts{1},'ERROR')),error('GXTXT:TableStream','%s',gxtxt_table_stream_v3_decode(parts{2}));endif;endfunction

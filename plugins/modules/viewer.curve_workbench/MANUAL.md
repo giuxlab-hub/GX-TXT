@@ -1,4 +1,7 @@
-## Drawing paths and reopening Workspaces
+# Curve Workbench
+
+<a id="workbench-2112-gx-txt-dev-067"></a>
+## Continuous placement and protected restore
 
 Spline instructions appear once beside live coordinates. Click an existing
 line/branch defining point to finish the current Path placement; the tool stays
@@ -6,7 +9,8 @@ ready for another Path until Escape. Existing Workspaces without a CAD
 block reopen normally. If restoration genuinely fails, the original saved
 Workspace remains protected and the status shows its cause.
 
-## Connected paths, constraints and parameter formulas
+<a id="workbench-2110-gx-txt-dev-065"></a>
+## Branched paths and parameters
 
 Paths retain branched networks and shared junctions. Click an existing defining
 point while drawing to connect automatically. Select exact internal segments with
@@ -20,7 +24,8 @@ is managed in the Session page dropdown. Workspace Actions invokes this same edi
 Core documentation: `docs/api/CORE_PARAMETER_SERVICE_v1.md` and
 `docs/api/NATIVE_2D_GEOMETRY_API_v1.md` in the installed framework.
 
-## Grid and Spline controls
+<a id="curve-workbench--dev-063-square-grid-and-path-spline-arms"></a>
+## Square grid and Path Spline arms
 
 A new Workspace opens with a visible grid and equal X/Y visual scale. The
 initial vertical extent is 20 grid units, with extra horizontal room adapted
@@ -34,7 +39,8 @@ for a standalone Spline and a Spline inside a composed Path. The Path stays one
 object; Separate is unnecessary. Endpoint knots expose only their existing side.
 See the [Dataset navigation guide](../../../docs/help/datasets.md).
 
-## Pivots and constituent editing
+<a id="curve-workbench--dev-062-pivot-and-editable-path"></a>
+## Pivot and editable Path
 
 Activate Transform/Pivot even with no selected curves. Click empty canvas to
 place the pivot, or drag the gizmo center. Select the intended curve afterward;
@@ -47,14 +53,16 @@ its defining-handle row and apply X/Y. Shared Path junctions remain connected.
 Exact primitive definitions stay authoritative; Separate is optional for
 making independent copies, not required for editing a Path.
 
-## Toolbar and selection modes
+<a id="curve-workbench--dev-061-icon-placement"></a>
+## Viewport tool placement
 
 Select and Transform/Pivot appear in the compact pictographic toolbar directly
 above the canvas. Left-click activates the existing tool; right-click Select
 chooses a selection mode and right-click Transform/Pivot chooses Translate or
 Rotate. The upper mixed command and sketch bars have no duplicate buttons.
 
-## Joining, separating and selecting paths
+<a id="curve-workbench--dev-060-path-and-selection-correction"></a>
+## Path and selection
 
 The main and sketch toolbars use the shared arrow glyph for Select. The main
 glyph's right-click menu chooses selection mode. Join Path (`j`) consumes a
@@ -63,9 +71,10 @@ exact Polyline, Spline, Bézier, Arc or other supported constituent definitions.
 Internal coincident junctions become part of the Path topology; constraints to
 outside geometry prevent Join. Undo restores the source objects and internal
 relations. Separate exact constituents creates editable copies while preserving
-the Path. See [Viewers guide](../../../docs/help/viewers.md).
+the Path.
 
-## Drawing and canvas interactions
+<a id="curve-workbench--dev-059-consolidated-interaction"></a>
+## Creation and interaction
 
 **Create → Line** draws one continuous retained path. Click the start, then each
 successive vertex; Enter or Finish commits it. Two vertices make one segment.
@@ -75,8 +84,8 @@ Use **Modify → Split selected Path / entity…** or **Join Path…** (`j`).
 Heterogeneous endpoint-connected primitives retain exact definitions; disconnected
 or closed primitives use **Combine / Compound…** (`Shift+j`). Sources remain
 available. **Separate exact constituents** creates editable copies. See
-[Workbench manual](../../../docs/help/viewers.md) for sampling,
-Dataset promotion, command configuration and the namespace browser.
+the current creation and Workspace controls for sampling, Dataset promotion,
+command configuration and the namespace browser.
 
 **Select** addresses every visible included curve, regardless of origin. The active
 row is the property focus. Fit Selected includes all semantically selected logical
@@ -116,11 +125,12 @@ asynchronously through the existing calibrated Native plan; canvas interaction
 remains responsive. Named workspaces, notes, previews, symmetry, tangents, context
 menus and Settings retain the workflows below.
 
+<a id="current23-sketch-constraints-and-dimensions-dev-054"></a>
 ## Sketch constraints and dimensions
 
 Draw using **Create**, then click bodies/segments or defining handles to select. Ctrl adds references; Shift subtracts. **Constraints** applies a supported relationship to the current selection; **Start constraint tool** selects a tool before selecting its geometry. The tool hint states what to select next; Esc cancels to Select. Native2D drives the retained component and preserves compatible relationships through later handle/gizmo edits. Unsupported selections produce a clear message. Fix locks a complete selected body, or the selected control; **Unfix** removes its Fixed relationships.
 
-Use **Dimension** (D), select a line/round primitive, point or two compatible references, move the pointer to preview the dimension and choose orientation/side, then click to place it. Enter a number in the small canvas editor and press Enter. Optional compatible suffixes such as `0.25 cm` use Unit Registry conversion; angles use rad and may use compatible angle units. Plain numeric input is supported; parameter expressions use the CORE Parameter Service in supported dimension editors. No internal IDs or indexes are required.
+Use **Dimension** (D), select a line/round primitive, point or two compatible references, move the pointer to preview the dimension and choose orientation/side, then click to place it. Enter a number in the small canvas editor and press Enter. Optional compatible suffixes such as `0.25 cm` use Unit Registry conversion; angles use rad and may use compatible angle units. Plain numeric input and declared Workspace parameter expressions use the shared Parameter Service. No internal IDs or indexes are required.
 
 Linear types include horizontal/vertical/aligned point distances, line length, point-line distance and parallel-line separation. Angular types include two-line angle and line angle to X. Circular types are R/Ø. Select a defining point for X/Y position to sketch origin. The Constraints menu can choose a specific type; the Dimension tool infers it. Witnesses, arrows, arcs, notation, unit and readable value are drawn before committing and remain associated with the geometry.
 
@@ -134,7 +144,10 @@ Tangency supports finite line/circle/arc, circle/arc pairs (including internal b
 
 The solver is local and bounded:64 objects,256 parameters,1024 residual slots and100 iterations. Singular, unsupported or nonconvergent cases reject atomically. Local rank is not a global uniqueness proof, and legacy/generic components are explicitly marked partial analysis. All Dataset rows, source bytes, retained definitions, conversion paths, publication, units, Undo/Redo and recovery continue to use their existing authorities. See the public [Native2D Geometry API](../../../docs/api/NATIVE_2D_GEOMETRY_API_v1.md) and [CORE implementation notes](../../../core/native2d/README.md).
 
-## Scientific recipes and Workspace operations
+The sections below also describe the advanced forms; the inline Dimension tool and retained component constraints above are the ordinary workflow.
+
+<a id="curve-workbench-220"></a>
+## Scientific curve workflows
 
 Sketch → **Scientific Recipe Recorder…** records one structured geometry-state
 operation per accepted edit/drag, with original parameters, stable IDs, units
@@ -509,7 +522,8 @@ Choose a different reference and the `geometry` method, then Compare. Native2D e
 Publish deviations… creates an explicitly named Dataset containing query/projected XY pairs, unsigned distances, sampled path and indices, with source/fingerprint/units/policy metadata. Geometry edits make the receipt stale and clear its presentation; Compare again before publishing. Measurements… also offers geometric RMS, sampled Hausdorff, length/closed-area difference and closest-curve distance with configurable 6–4096 scientific samples. Use its shared explicit Refresh, one Undo, stale/missing inspection and normal report publication.
 
 
-## Native2D selection and complete-data behavior
+<a id="task-9-dev-052-final-behavior"></a>
+## Scientific interaction behavior
 
 The point table and canvas preserve one logical point selection. Repeated/rapid row clicks coalesce to the newest selection at idle. An active Native gesture retains the pending selection until release/cancellation; its generation and owner are checked before applying it. Table refresh does not recursively rebuild the selection scene. Ctrl/Shift selects multiple points; one selected point populates X/Y. Dataset row identities draw red locator rings; pure Native geometry has no Dataset row. The sidebar scrolls vertically; Tab scrolls the focused point/numeric/composition control into view. Publication controls wrap with labels at narrow widths and larger fonts.
 
@@ -518,7 +532,8 @@ Coordinates chooses Cartesian, polar or both; Arrangement chooses a concatenated
 Polar output uses the shared Native frame: origin, theta-zero, CW/CCW and degrees/radians. Radius uses the working length unit, angle uses deg/rad; origin has an explicit theta_defined0 mask and a zero placeholder. Normalization covers one positive full turn without implicit unwrapping. Source Preview opens the real public Dataset ID. Missing/stale sources are visible; saved owned local geometry remains available. Source-tuple publication rejects missing/stale dependencies until you explicitly reload/restore them. No automatic geometry replacement occurs.
 
 
-## CAD Workspace
+<a id="dev-053-cad-workspace"></a>
+## CAD workspace
 
 ### Objects in one workspace
 
@@ -536,7 +551,7 @@ Pointer motion displays a transient Native preview; circle/arc previews show a r
 
 Select geometry, then **Constraints**, or right-click on the canvas. Native2D offers structurally compatible relationships only. Select two line bodies/segments for Parallel/Perpendicular/Angle; two defining controls for Coincident/Distance; a round body for Radius/Diameter; two round bodies for Concentric/Equal Radius; point control plus body for Point-on-curve. Horizontal/Vertical, locks, equal length, midpoint, collinear, supported line/circle tangent and symmetry use the same native model.
 
-The Native retained-component solver drives supported relationships and compatible later edits atomically. Tangent covers supported line/circle/arc and Bézier/Spline joins; Curvature / G2 uses actual supported endpoint continuity. Unsupported combinations report a reason. The Sketch Palette reports truthful bounded local rank/DOF status, with singular/global analysis limits. Fixed/locked conflicts restore a clean idle state.
+The Native retained component solver drives supported relationships and compatible later edits atomically. Tangent covers supported line/circle/arc and Bézier/Spline joins; Curvature / G2 uses actual supported endpoint continuity. Unsupported combinations report a reason. The Sketch Palette reports truthful bounded local rank/DOF status, with singular/global analysis limits. Fixed/locked conflicts restore a clean idle state.
 
 Use Dimension, select geometry, move the pointer to preview witnesses, click to place, then enter a numeric value and optional compatible unit inline. Double-click edits a driving value; driven/reference values are read-only, associated measurements. Over-constraining creation offers reference mode. Drag the annotation to change presentation only. Show Constraints / Show Dimensions are in the internal Sketch Palette.
 
@@ -563,17 +578,17 @@ Use the unit chooser/Working units dialog and existing Unit Registry. Geometry c
 
 Save workspace and close normally. Existing Interactive Documents/owned resources/recovery persist mixed types, definitions/transforms, constraints/dimensions, Dataset bindings, roles, names and conversion provenance. Transient tool/hover/incomplete previews are excluded. Reopen in a fresh process and continue exact parameter editing. Keyboard focus, numeric forms, Enter/Space/Esc, scroll-to-focused controls and wrapping toolbars provide alternatives to mouse input.
 
-Original validation screenshots are not included in this source distribution.
+<a id="dev-055-drawing-and-compact-controls"></a>
+### Drawing and compact controls
 
-### Drawing tools and compact controls
-
-Line creates separate connected retained segments continuously; click successive endpoints, then Esc or Finish. Click a chain's initial/intermediate defining endpoint for semantic closure. Polyline and Spline remain separate primitives; Enter/Finish completes them. Endpoint coincidence does not mean periodic spline topology. Placed defining controls and attachment feedback remain visible. Single Points are filled dots even when deselected.
+Line creates one connected retained Path continuously; click successive endpoints, then Esc or Finish. Click a chain's initial/intermediate defining endpoint for semantic closure. Polyline and Spline remain separate primitives; Enter/Finish completes them. Endpoint coincidence does not mean periodic spline topology. Placed defining controls and attachment feedback remain visible. Single Points are filled dots even when deselected.
 
 Objects contains selection operations including explicit Show/Hide; they cover the full current selection in one Undo. Points/ranges contains the existing scientific point/range operations. View contains Pan, Fit, Source Dataset Preview and More scientific controls. All existing source, range, composition, measurement, comparison, fitting, representation and publication workflows remain available. Compact Constraints groups Directions, Connections, Shape, Fixing and Dimensional, with corresponding tool-first cascades.
 
 For multiple selected publishable objects, Publish selected curve(s) publishes all of them through the chosen Coordinates/Arrangement. Publish selection offers One structured Dataset or Separate Dataset outputs. Review every separate Dataset ID before Publish reviewed batch. All ID collisions are checked before any output starts; the status lists the actual output IDs. Retained outputs use explicit uniform parameter sampling and preserve exact definition/provenance for reconstruction. Sources remain unchanged.
 
-## Remote X11 behavior
+<a id="remote-x11-in-dev-066"></a>
+## Remote X11
 
 Viewport icons, tool instructions and the publication footer are visible on an
 idle forwarded display. The initial window reserves space for native decorations
@@ -584,6 +599,7 @@ Ordinary network latency is expected. No local-Xorg performance equivalence is
 required. Retained geometry, constraints, parameters and Save Workspace follow
 the existing scientific and Session authorities.
 
+<a id="description-and-persistent-history-gx-txt-dev073"></a>
 ## Description and persistent History
 
 The bottom strip offers **Description | History**. Description shows the current
@@ -624,7 +640,8 @@ recovered. The strip is a projection of the saved CORE recipe, not a second hist
 database or a global Session Undo stack.
 
 
-## Direction markers and reference graphics
+<a id="dev092-contextual-directions-and-reference-graphics"></a>
+## Contextual directions and reference graphics
 
 Right-click a Path to show or hide its arrow, flip its direction or edit its marker
 properties. For a compound/network, right-click the individual subpath: visibility,
@@ -652,6 +669,7 @@ Background and Polar/advanced. Apply validates all values; field reset and grid
 reset retain their existing scope. Escape returns to Select. Pressed buttons
 follow the active controller, including keyboard actions and History browsing.
 
+<a id="clear-history-and-shared-configuration-2151"></a>
 ## Clear History and shared configuration
 
 **Workspace → Clear History…** validates a checkpoint of the complete current
@@ -676,3 +694,141 @@ form. Conflicting/reserved keys reject. Saving either surface updates a running
 Workbench immediately; a dirty editor retains its draft and reports conflicts.
 Reload/discard explicitly reconciles it. User defaults survive restart; Session
 scope remains independent and can reset to inherit the current User default.
+
+<a id="scientific-comparison-reports-dev097"></a>
+### Scientific comparison reports
+
+Use **X** for a vertical response difference, including plots whose axes have
+unlike dimensions (for example V and mA). The signed residual is reference Y
+minus target Y at reference X. Compatible coordinate units are normalized by CORE;
+a folded X curve requires a different explicitly chosen comparison.
+
+**Path** compares equal normalized path positions; **geometry** measures sampled
+nearest-curve distances. Those Euclidean modes require a common physical X/Y
+unit, including mm/m axes converted before distance evaluation. Reports distinguish directional and pooled results and preserve scientific
+sampling policy. They make no R-squared, DOF or parameter-uncertainty claim.
+Comparison publication includes the reusable CORE statistical records. Changing
+coordinate units invalidates cached comparisons. An older saved receipt gains
+current semantics on comparison refresh without changing its source geometry.
+<a id="dev097-scientific-coordinate-integration--development-checkpoint"></a>
+## Scientific coordinate integration
+
+**View → Axis display units…** selects X and Y independently through compatible
+CORE conversions. Choices belong to the named Workspace. **Use Dataset defaults**
+removes those overrides. **View → Dataset coordinates…** opens the shared editor
+for persistent display defaults, per-Variable magnification/pivot and explicit
+calibration. Saving calibration does not change Workbench calculations or samples;
+the shared editor offers explicit Derived Dataset creation when desired.
+
+Ticks, pointer coordinates, point tables/handles, numeric point edits and X-range
+selection use the chosen display units. Edits convert back to the Native frame.
+The view policy identifies its Dataset basis; Fit captures a canonical reference
+range and applies magnification once. Subsequent pan/zoom is transient view state,
+retained by Workspace save/reopen. Changing only display units preserves it.
+Changing magnification recomputes from the saved reference. Source Dataset bytes,
+units and stable Variable IDs stay unchanged. Source/schema mismatch prevents
+applying new Dataset policy to frozen geometry and shows the reason.
+
+Unlike physical X/Y axes offer X-based signed Y residuals and axis spans; raw
+geometric path/length choices are unavailable. Publication preserves scientific
+coordinates and records display choices separately, including explicit flags that
+display conversion and effective calibration were not applied to stored output.
+
+**Grid / view…** shows origins and spacing in the selected affine display units;
+Apply maps them back through the declared inverse conversion. A stale form rejects
+Apply after a source, display-context or active-curve change. Polar controls require
+a common physical frame. Nonlinear display relations retain explicitly labelled
+geometry grid units because a uniform displayed spacing would be misleading.
+Rotation remains in geometry coordinates.
+
+**Export sketch…** captures converted ticks and axis labels, visible curve colors,
+points-only mode and actual source/control markers. The SVG and PNG share the same
+snapshot; neither changes geometry or materializes a Dataset. Compound direction
+markers and centered labels are retained. Export is a frozen presentation captured
+when the chooser opens; reopen the chooser after changing the view.
+
+Variable-specific nonlinear normalization requires an explicit Dataset Transform.
+Unbound scientific unit declarations and some dimension/transform controls are
+not available; the supported axis and comparison surfaces are described here.
+
+Comparisons use the target's selected axis display units for X matching; geometric
+comparisons use its X display unit on both compatible axes. Changing that display
+choice refreshes the comparison through CORE. Receipts/publication preserve both
+source units and actual evaluation matrices. Residual plots show those units;
+highlight points map back to each original Native frame. Selecting **Geometric
+length** on mm/m data normalizes both axes before the Native metric calculation.
+Readable menu labels preserve the existing saved metric IDs.
+
+
+New Dataset sources enter an existing compatible working axis frame when the
+CORE can establish positive affine unit conversions. Different physical axes
+remain in separate viewports: selecting a curve switches frames and restores
+that frame's pan/zoom. Curve-list state and the viewport notice identify hidden
+frames. Source values, units and stable Dataset/Variable IDs are unchanged.
+View → Align Dataset working axes explicitly changes an existing untouched
+binding's working frame; Undo/Redo and Workspace reopen retain its conversion.
+Historical Workspaces are not silently converted. Custom Variable formulas need
+explicit Dataset Transform normalization before physical comparison/alignment.
+Whole-Workspace physical unit conversion preserves pan/zoom, including legacy
+explicit assumptions for missing source units. Assumptions remain recorded in
+Workspace provenance and public CORE presentation receipts; they do not change
+canonical Dataset declarations. Geometric metric values follow the active X
+display unit after CORE normalization. Opaque/undeclared units do not enable
+physical length/area controls. Scientific declarations for unbound geometry and independent coordinate
+controls are described below.
+
+## Accepted Fitter models
+
+Fitter’s **Results → Transfer selected model to Workbench…** creates a separate
+named Workspace. The curve label states **exact retained model** or **sampled approximation**. X and Y keep independent units. Editable geometry and the
+immutable imported scientific model are separate: editing the curve does not
+refit data or update the captured coefficients, uncertainty or provenance.
+The Workspace owns copies of the model resources and supports ordinary portable
+export/import. See [exact transfer and limits](../../../docs/api/FITTER_WORKBENCH_TRANSFER_v1.md).
+
+
+## Declaring scientific axis meaning
+
+Use **Create → Scientific point curve…** in a new Workspace to enter actual
+physical XY points, independent registered units and the reason those units
+describe the data. Use **Modify → Declare scientific axis meaning…** for an
+existing original unbound curve or a Dataset source with missing units. Choose
+`1` explicitly for dimensionless coordinates. A declaration leaves the numerical
+values unchanged; **Axis display units…** instead converts compatible displayed
+values, while **Physical scale…** changes geometry. These are separate actions.
+
+The declaration and previous meaning stay in scientific History/provenance.
+Known Dataset units cannot be relabelled incompatibly: use their legitimate
+Unit Registry conversion or create a normalized derived Dataset. Missing source
+units remain missing in the original Dataset schema; the explicit Workspace
+assumption is retained on reopen and publication. Existing constraints and
+dependent curves prevent reinterpretation of their parent frame. Metric CAD
+primitives retain their own working units. A scientific Hz/V curve has no physical
+Euclidean length; Compare uses signed response residuals.
+
+
+## Scientific transform and dimension entries
+
+**Move…** accepts X and Y displacements in their independently selected display
+units: on a Hz/V curve displayed as kHz/mV, entering1 and2 moves native geometry
+by1000Hz and0.002V. **Pivot…** uses displayed coordinate values. **Physical scale…**
+uses dimensionless factors about that native pivot. Changing display units does
+not change geometry. The operation records displayed inputs and the actual native
+transform separately. Reopening a form is required after its coordinate context
+changes.
+
+Horizontal/vertical dimensions and X/Y coordinate locks use the corresponding
+axis unit. Inline numeric entries use the displayed unit; an explicit compatible
+unit is also accepted. Retained parameter formulas continue to use the native
+coordinate unit stated in the editor. Numeric values are stored canonically, so
+changing display units or reopening cannot multiply a driving dimension again.
+Offsets apply to coordinate locks, never to displacement or distance. A nonlinear
+display relation cannot define a constant displacement: choose a linear display
+unit or explicitly normalize the Dataset.
+
+Metric rotation, reflection and Euclidean dimensions require a common native
+unit on both axes. Compatible geometry may still use independent display units;
+reflection-axis points convert back to the native frame before Native2D acts.
+The toolbar's **CAD length unit** controls a common length frame; use **Axis
+display units…** for scientific X/Y choices. Exact primitive parameters identify
+local native units explicitly because their retained world transform is separate.

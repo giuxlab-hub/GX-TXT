@@ -36,10 +36,14 @@ def _manifest(host, value):
     if "member_outputs" in raw["output"]: raw["output"]["member_outputs"] = _dict(host, raw["output"]["member_outputs"])
     raw["schema_policy"] = _dict(host, raw["schema_policy"])
     options = _dict(host, raw["options"])
-    for name in ("rename", "display_labels", "target_units", "family_units", "metadata"):
+    for name in ("rename", "display_labels", "target_units", "family_units", "metadata", "metadata_overrides", "baseline_options", "smoothing_options"):
         if name in options: options[name] = _dict(host, options[name])
-    for name in ("variable_ids", "reorder", "family_axes", "members", "source_member_ids"):
+    for name in ("variable_ids", "reorder", "family_axes", "members", "source_member_ids", "calibration_variable_ids"):
         if name in options: options[name] = host.as_list(options[name])
+    if 'logarithms' in options:
+        options['logarithms'] = [_dict(host, item) for item in host.as_list(options['logarithms'])]
+        for item in options['logarithms']: item['reference'] = float(item['reference'])
+    if "expected_coordinate_revision" in options: options["expected_coordinate_revision"]=int(options["expected_coordinate_revision"])
     for name in ("ranges", "keys"):
         if name in options: options[name] = [host.as_list(item) for item in host.as_list(options[name])]
     if "matrix" in options: options["matrix"] = NumericArray(host.as_list(options["matrix"]))
@@ -58,8 +62,39 @@ def _manifest(host, value):
     return raw
 
 
+def _log_transform(host, value):
+    result = _dict(host, value)
+    result['reference'] = float(result['reference'])
+    return result
+
+
+def _smoothing_receipt(host,value):
+    receipt=_dict(host,value)
+    for key in ('options','estimator'):receipt[key]=_dict(host,receipt[key])
+    for key in ('original_n','smoothed_n','omitted_n'):receipt[key]=int(receipt[key])
+    for key in ('window','degree','robust_iterations'):
+        if key in receipt['options']:receipt['options'][key]=float(receipt['options'][key])
+    for key in ('window','degree','original_count','robust_iterations','robust_iterations_completed','robust_zero_weight_count','maximum_work_units','robust_scale'):
+        if key in receipt['estimator']:receipt['estimator'][key]=float(receipt['estimator'][key])
+    return receipt
+
+
 def _report(host, value):
     raw = _dict(host, value)
+    if 'logarithm_receipt' in raw:
+        receipt = _dict(host, raw['logarithm_receipt'])
+        receipt['transforms'] = [_log_transform(host, v) for v in host.as_list(receipt['transforms'])]
+        for key in ('row_count', 'chunk_limit'): receipt[key] = int(receipt[key])
+        raw['logarithm_receipt'] = receipt
+    if 'baseline_receipt' in raw:
+        receipt = _dict(host, raw['baseline_receipt'])
+        for key in ('options', 'estimator'):
+            receipt[key] = _dict(host, receipt[key])
+        for key in ('original_n', 'estimated_n', 'omitted_n'):
+            receipt[key] = int(receipt[key])
+        raw['baseline_receipt'] = receipt
+    if 'smoothing_receipt' in raw:
+        raw['smoothing_receipt']=_smoothing_receipt(host,raw['smoothing_receipt'])
     for name in ("api_version", "row_count", "max_input_chunk_rows", "sqlite_cache_bytes"):
         if name in raw: raw[name] = int(raw[name])
     if "valid" in raw: raw["valid"] = bool(int(raw["valid"]))
@@ -79,6 +114,15 @@ def _report(host, value):
         conversion["base_scale_ratio"] = float(conversion["base_scale_ratio"])
         conversions.append(conversion)
     raw["conversions"] = conversions
+    calibrations = host.as_list(raw.get("calibrations", ()))
+    raw["calibrations"] = []
+    for item in calibrations:
+        item=host.as_dict(item)
+        for key in ("factor", "input_origin", "output_origin"):
+            item[key]=float(item[key])
+        item["identity"]=bool(int(item["identity"]))
+        item["coordinate_revision"]=int(item["coordinate_revision"])
+        raw["calibrations"].append(item)
     assumptions = host.as_list(raw.get("unit_assumptions", ()))
     raw["unit_assumptions"] = []
     for item in assumptions:
@@ -159,6 +203,27 @@ def invoke(host, operation, args):
         if not raw: return {}
         raw["manifest"] = _manifest(host, raw["manifest"])
         raw["effective"] = _report(host, raw["effective"])
+        if 'logarithm_lineage' in raw:
+            lineage = []
+            for item in host.as_list(raw['logarithm_lineage']):
+                item = _dict(host, item)
+                item['transform'] = _log_transform(host, item['transform'])
+                item['inverse_eligible'] = bool(int(item['inverse_eligible']))
+                lineage.append(item)
+            raw['logarithm_lineage'] = lineage
+        if "baseline_lineage" in raw:
+            lineage = []
+            for item in host.as_list(raw["baseline_lineage"]):
+                item = _dict(host, item);receipt = _dict(host, item['correction'])
+                for key in ('options', 'estimator'): receipt[key] = _dict(host, receipt[key])
+                for key in ('original_n', 'estimated_n', 'omitted_n'): receipt[key] = int(receipt[key])
+                item['correction'] = receipt;lineage.append(item)
+            raw['baseline_lineage'] = lineage
+        if "smoothing_lineage" in raw:
+            lineage = []
+            for item in host.as_list(raw["smoothing_lineage"]):
+                item = _dict(host, item);item['smoothing']=_smoothing_receipt(host,item['smoothing']);lineage.append(item)
+            raw['smoothing_lineage'] = lineage
         raw["metadata_conflicts"] = host.as_list(raw["metadata_conflicts"])
         return raw
     raise BridgeError("GXTXT:ScriptBridge:UnknownOperation", operation)

@@ -1,7 +1,7 @@
 # GX-TXT Interactive Curve Builder API v1
 # SPDX-License-Identifier: GPL-3.0-or-later
 namespace eval ::GX::InteractiveCurveBuilder {
-    variable version 1.1.0
+    variable version 1.2.0
     variable windows
     variable ui
 }
@@ -264,7 +264,28 @@ proc ::GX::InteractiveCurveBuilder::evaluate {rows mode method {degree 2} {sampl
             dict set result fits $axis [dict get $evaluated fit]
         } else {dict set result $axis $evaluated}
     }
+    dict set result statistical_results [_interpretStatistics $result]
     return $result
+}
+proc ::GX::InteractiveCurveBuilder::_interpretStatistics {preview} {
+    set method [dict get $preview method]
+    if {$method ni {line polynomial}} {return {}}
+    set operation [expr {$method eq "line"?"linear_regression":"polynomial_fit"}]
+    set model [expr {$method eq "line"?"math.numeric.linear":"math.numeric.polynomial"}]
+    set units [dict get $preview units]
+    set independent [expr {[dict get $preview mode] eq "2d"&&![dict exists $preview x]?"x":"t"}]
+    set sources {};foreach row [dict get $preview source_rows] {set id [dict get $row dataset_id];if {$id ni $sources} {lappend sources $id}}
+    set results {}
+    dict for {axis raw} [dict get $preview fits] {
+        set context [dict create orientation y_of_x x_unit [dict get $units $independent] y_unit [dict get $units $axis] constraints none coefficient_space original_physical noise_model unspecified sample_role training]
+        dict set results $axis [::GX::StatisticsV1::fromNumeric $model $operation $raw $context [dict get $preview diagnostics $axis] [dict create producer viewer.interactive_curve_builder method $method independent_axis $independent response_axis $axis source_dataset_ids $sources]]
+    }
+    return $results
+}
+proc ::GX::InteractiveCurveBuilder::_statisticsText {preview} {
+    set lines {}
+    dict for {axis result} [_interpretStatistics $preview] {lappend lines "$axis: [::GX::StatisticsV1::report $result {n rmse r_squared} ]"}
+    return [join $lines {; }]
 }
 
 proc ::GX::InteractiveCurveBuilder::_variable {writer id unit semanticRole coordinateRole} {
@@ -273,6 +294,15 @@ proc ::GX::InteractiveCurveBuilder::_variable {writer id unit semanticRole coord
 proc ::GX::InteractiveCurveBuilder::publish {preview datasetId {displayName ""}} {
     set session [_session]
     if {![dict exists $preview source_rows] || ![llength [dict get $preview source_rows]]} {error "Build a curve preview first."}
+    set statistics [_interpretStatistics $preview]
+    if {[dict exists $preview statistical_results]} {
+        if {[lsort [dict keys [dict get $preview statistical_results]]] ne [lsort [dict keys $statistics]]} {error {Curve Builder statistical result identities changed; preview again}}
+        dict for {axis expected} $statistics {
+            set actual [dict get $preview statistical_results $axis]
+            ::GX::StatisticsV1::validate $actual
+            if {[dict get $actual request] ne [dict get $expected request]} {error {Curve Builder numerical facts and interpreted result differ; preview again}}
+        }
+    }
     set rows [dict get $preview source_rows]
     set checkedSources {};set checkedSchema {}
     foreach row $rows {
@@ -296,7 +326,8 @@ proc ::GX::InteractiveCurveBuilder::publish {preview datasetId {displayName ""}}
     }
     set mode [dict get $preview mode]
     set provenance "Interactive Curve Builder [dict get $preview method]; mode=$mode; parameter=[dict get $preview parameter_mode]; source_rows=[join $identities ,]"
-    set definition [dict create dataset_id $datasetId contract table.generic storage csv producer_version 1.1.0 source "Interactive Curve Builder" provenance $provenance notes $displayName source_dataset_ids $sources source_variable_ids $bindings]
+    set definition [dict create dataset_id $datasetId contract table.generic storage csv producer_version 1.2.0 source "Interactive Curve Builder" provenance $provenance notes $displayName source_dataset_ids $sources source_variable_ids $bindings]
+    if {$statistics ne {}} {dict set definition structured_metadata [::GX::StatisticsV1::publicationMetadata $statistics]}
     set plan [::GX::datasetPublicationV2Prepare $session viewer.interactive_curve_builder $definition]
     set writer ""
     try {
@@ -333,6 +364,7 @@ proc ::GX::InteractiveCurveBuilder::publish {preview datasetId {displayName ""}}
         curve_builder.source_rows [join $identities {;}] \
         curve_builder.target_coordinates [join [dict get $preview target] {;}] \
         curve_builder.units $units]
+    if {$statistics ne {}} {set metadata [dict merge $metadata [::GX::StatisticsV1::publicationMetadata $statistics]]}
     if {[dict exists $preview diagnostics]} {dict set metadata curve_builder.diagnostics [dict get $preview diagnostics]}
     set filterBindings {};set sourceFingerprints {}
     foreach row $rows {
@@ -609,12 +641,7 @@ proc ::GX::InteractiveCurveBuilder::_uiPreview {w} {
         for {set i 0} {$i < $n && $i < 500} {incr i} {
             $tree insert {} end -values [list [lindex [dict get $preview target] $i] [expr {[dict exists $preview x] ? [lindex [dict get $preview x] $i] : ""}] [lindex [dict get $preview y] $i] [expr {[dict exists $preview z] ? [lindex [dict get $preview z] $i] : ""}]]
         }
-        set diagnostic ""
-        if {[dict exists $preview diagnostics]} {
-            dict for {axis d} [dict get $preview diagnostics] {
-                append diagnostic "$axis: RMSE [expr {[dict exists $d rmse] ? [dict get $d rmse] : "n/a"}]  "
-            }
-        }
+        set diagnostic [_statisticsText $preview]
         set ui($w,status) "Preview: $n target points from [dict get $preview source_count] selected source rows. $diagnostic"
         _uiGraphPreview $w $preview
     } err]} {_uiError $w $err}

@@ -17,7 +17,7 @@ proc ::GX::datasetSchemaSplitNames {raw} {
     return $names
 }
 
-proc ::GX::datasetSchemaCsvSplit {line separator} {
+proc ::GX::datasetSchemaCsvSplit {line separator {channel {}}} {
     # The common unquoted scientific row can be tokenized by Tcl's native
     # splitter; keep the full state machine for quoted CSV fields.
     if {[string first {"} $line] < 0} { return [split $line $separator] }
@@ -33,6 +33,12 @@ proc ::GX::datasetSchemaCsvSplit {line separator} {
         } elseif {$c eq "\"" && $buf eq ""} {
             set quoted 1
         } else { append buf $c }
+        if {$i==$n-1&&$quoted&&$channel ne {}} {
+            if {[gets $channel continuation]<0} {error {Unterminated quoted CSV field}}
+            # Continue the same parser state, without rescanning the growing
+            # prefix. Embedded physical newlines belong to the text field.
+            set line "\n$continuation";set n [string length $line];set i -1
+        }
     }
     if {$quoted} { error "Unterminated quoted CSV field" }
     lappend out $buf
@@ -143,18 +149,30 @@ proc ::GX::datasetSchemaEnsure {session id} {
     }
     if {$isTextTable && $canonical ne "" && [file isfile $canonical]} { datasetSchemaInferValues $id $canonical }
     if {[llength [info commands ::GX::semanticRegistryInfer]]} { datasetSchemaInferSemantics $id }
-    set datasetRegistry($id,variable_schema_api_version) 2
+    # v2 projection must not downgrade an already declared additive v3 schema.
+    if {[datasetField $id variable_schema_api_version {}] ne "3"} {
+        set datasetRegistry($id,variable_schema_api_version) 2
+    }
 }
 
 proc ::GX::datasetSchemaInferValues {id path} {
     variable datasetRegistry
+    # Publication v2 already supplies authoritative typed Variable declarations.
+    # Re-inference can overwrite them and cannot parse embedded record newlines
+    # with this legacy bounded line sampler. Canonical access owns those records.
+    if {[datasetField $id publication_api_version {}] eq "2"} {return}
+    set pending 0
+    for {set j 1} {$j<=[datasetField $id var_count 0]} {incr j} {
+        if {[datasetField $id var${j}_enabled 0]&&[datasetField $id var${j}_value_inferred {}] eq {}} {set pending 1;break}
+    }
+    if {!$pending} {return}
     set sep [datasetField $id canonical_delimiter comma]
     set char [expr {$sep eq "tab" ? "\t" : ($sep eq "semicolon" ? ";" : ",")}]
     set names [datasetSchemaSplitNames [datasetField $id variables [datasetField $id columns ""]]]
     set fd [open $path r]; fconfigure $fd -encoding utf-8 -translation auto
     gets $fd header
-    set rows {}; while {[llength $rows] < 25 && [gets $fd line] >= 0} { if {[string trim $line] ne ""} { lappend rows [datasetSchemaCsvSplit $line $char] } }
-    close $fd
+    set rows {}
+    try {while {[llength $rows] < 25 && [gets $fd line] >= 0} {if {[string trim $line] ne ""} {lappend rows [datasetSchemaCsvSplit $line $char $fd]}}} finally {close $fd}
     set n [datasetField $id var_count 0]
     for {set j 1} {$j <= $n} {incr j} {
         if {![datasetField $id var${j}_enabled 0]} continue
@@ -257,7 +275,12 @@ proc ::GX::datasetVariableResolve {id token} {
 
 proc ::GX::loadDatasetRegistry {session} {
     set ids [loadDatasetRegistry_v1_before_schema $session]
-    foreach id $ids { datasetSchemaEnsure $session $id }
+    foreach id $ids {
+        datasetSchemaEnsure $session $id
+        # Capture the authority baseline only after all available read-time
+        # projections. A later inspection must not look like a pending edit.
+        if {[info commands ::GX::datasetSchemaEnsureV3] ne {}} {datasetSchemaEnsureV3 $session $id}
+    }
     if {[info commands ::GX::datasetAuthorityLoaded] ne {}} {datasetAuthorityLoaded $session}
     return $ids
 }
@@ -276,6 +299,12 @@ proc ::GX::datasetVariableSchemaUpdate {id changes} {
     if {$currentSession eq "" || ![file isdirectory $currentSession]} { error "Open a session before editing dataset schema" }
     loadDatasetRegistry $currentSession
     if {[datasetField $id id ""] eq ""} { error "Unknown dataset: $id" }
+    set coordinatePrior {}
+    if {[_datasetCoordinateStored $currentSession $id] ne {}} {
+        # A stale preexisting context stays stale. Only a verified context can
+        # follow the schema owner's controlled cosmetic/column regeneration.
+        catch {datasetCoordinateRead $currentSession $id;set coordinatePrior [_datasetCoordinateStored $currentSession $id]}
+    }
     set before [array get datasetRegistry "$id,*"]
     set bindingBefore [array get ::GX::moduleBinding]
     set bindingIdBefore [array get ::GX::moduleBindingIdentity]
@@ -449,6 +478,7 @@ proc ::GX::datasetVariableSchemaUpdate {id changes} {
         set datasetRegistry($id,semantic_roles) [join $roles ";"]
         datasetSchemaEnsure $currentSession $id
         saveDatasetRegistry $currentSession
+        _datasetCoordinateSchemaRebind $currentSession $id $coordinatePrior
         datasetSchemaRefreshBindings $id $old
         datasetSchemaRefreshVariableConfigs $id $old
         writeManifest $manifestPath

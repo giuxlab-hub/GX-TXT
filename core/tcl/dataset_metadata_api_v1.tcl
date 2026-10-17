@@ -11,6 +11,8 @@ namespace eval ::GX {
     variable datasetMetadataEditorKey ""
 }
 
+source [file join [file dirname [info script]] dataset_coordinate_context_v1.tcl]
+
 proc ::GX::_datasetMetadataStem {datasetId} {
     set stem [sanitize $datasetId]
     if {$stem eq ""} { set stem dataset }
@@ -255,7 +257,9 @@ proc ::GX::datasetMetadataWrite {session datasetId metadata} {
     }
     set normalized {}
     dict for {key value} $metadata {dict set normalized [_datasetMetadataUserKey $key] $value}
-    set private [_datasetMetadataFilter [_datasetMetadataReadAll $session $datasetId] 1]
+    set before [_datasetMetadataReadAll $session $datasetId]
+    ::GX::StatisticsV1::validateMetadataReplacement [_datasetMetadataFilter $before 0] $normalized
+    set private [_datasetMetadataFilter $before 1]
     return [_datasetMetadataWriteAll $session $datasetId [dict merge $normalized $private]]
 }
 

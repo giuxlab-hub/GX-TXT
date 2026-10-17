@@ -23,6 +23,58 @@ set ::GX::DatasetCurveFit::commandCatalog [dict create preview [dict create labe
 dict for {widget label} [::GX::DatasetCurveFit::_commandWidgets] {dict set ::GX::DatasetCurveFit::commandCatalog [string map {. _} $widget] [dict create label $label default {}]}
 foreach {id label} {translation {Input translation / shift positive…} configuration {Panels / Configuration…} panels_reset {Restore default panel layout} timeline {Show History timeline} strip {Show Description / History strip} workspace_new {New Workspace…} workspace_open {Open Workspace…} workspace_duplicate {Save as / Duplicate…} workspace_rename {Rename Workspace…} workspace_manager {Session Workspaces…} workspace_close {Close Workspace} workspace_delete {Delete Workspace…} workspace_clear_history {Clear History…} selection_replace {Rectangle Replace mode} selection_add {Rectangle Add mode} selection_subtract {Rectangle Subtract mode} source_activate {Activate selected source}} {dict set ::GX::DatasetCurveFit::commandCatalog $id [dict create label $label default {}]}
 dict set ::GX::DatasetCurveFit::commandCatalog history_details [dict create label {Description / History details…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog statistics_settings [dict create label {Statistical assumptions and intervals…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog covariance_settings [dict create label {Correlated observation covariance…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog covariance_details [dict create label {Full covariance fit details…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog measurement_details [dict create label {Training measurement details…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog model_comparison [dict create label {Compare accepted models…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog parameter_correlation [dict create label {Parameter correlation…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog solver_details [dict create label {Solver diagnostics…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog profile_settings [dict create label {Profile likelihood settings…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog profile_details [dict create label {Profile likelihood…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog bootstrap_settings [dict create label {Parameter bootstrap settings…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog bootstrap_details [dict create label {Parameter bootstrap…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog residual_source [dict create label {Residuals vs source coordinate} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog residual_predicted [dict create label {Residuals vs predicted response} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog residual_sequence [dict create label {Residual sequence diagnostics…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog influence_details [dict create label {Linear influence…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog prediction_details [dict create label {Response interval details…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog solver_settings [dict create label {Solver settings…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog component_settings [dict create label {Model components…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog complex_settings [dict create label {Joint complex responses…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog surface_workflow [dict create label {Physical surface fit…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog knot_settings [dict create label {Knots / boundaries…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog rational_settings [dict create label {Rational / Padé model…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog implicit_settings [dict create label {Implicit equation and branch…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog formula_settings [dict create label {Safe formula…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog parameter_settings [dict create label {Initial parameters and manual curve…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog region_settings [dict create label {Joint regions…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog baseline_settings [dict create label {Baseline correction…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog recipe_python [dict create label {Export selected fit rerun (Python)…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog recipe_octave [dict create label {Export selected fit rerun (Octave)…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog template_save [dict create label {Save selected fit as template…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog template_apply [dict create label {Apply fit template…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog retained_query [dict create label {Query selected model and derivatives…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog model_export [dict create label {Export selected model (Python, Octave, LaTeX)…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog registered_settings [dict create label {Registered Python/Octave model…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog registered_declare [dict create label {Declare Script Library model…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog registered_cancel [dict create label {Cancel registered model Job} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog smoothing_settings [dict create label {Smoothing selection…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog smoothing_details [dict create label {Smoothing diagnostics…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog log_settings [dict create label {Logarithmic fitting…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog log_publish [dict create label {Publish physical log-response result…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog log_details [dict create label {Log-response interpretation…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog parameter_dataset [dict create label {Publish accepted parameter Dataset…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog family_sources [dict create label {Independent family sources…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog global_family [dict create label {Global family fit…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog global_family_results [dict create label {Global family results…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog smooth_source [dict create label {Smooth into a separate Dataset…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog scientific_report [dict create label {Scientific report…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog model_card [dict create label {Model documentation…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog physical_plausibility [dict create label {Physical plausibility review…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog derived_properties [dict create label {Derived physical properties…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog model_workbench [dict create label {Transfer selected model to Workbench…} default {}]
+dict set ::GX::DatasetCurveFit::commandCatalog model_suggestions [dict create label {Model suggestions…} default {}]
 ::GX::viewerCommandCatalogRegister viewer.dataset_curve_fit $::GX::DatasetCurveFit::commandCatalog modules.dataset_curve_fit.shortcuts
 
 proc ::GX::DatasetCurveFit::_translationMetadata {key result} {
@@ -77,6 +129,7 @@ proc ::GX::DatasetCurveFit::_invalidateSelectionPreview {w} {
 }
 proc ::GX::DatasetCurveFit::_invalidateSettings {w} {
     variable state
+    _parameterClear $w
     # Persist invalidation in scientific working state as well as button state;
     # otherwise reopening or restoring History could re-enable a stale Preview.
     _disposePreview $w

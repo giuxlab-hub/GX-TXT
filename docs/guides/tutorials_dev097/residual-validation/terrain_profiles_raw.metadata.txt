@@ -1,0 +1,38 @@
+# GX-TXT portable Dataset Metadata
+# Import this into the Metadata editor of the imported raw Dataset, review, then Save.
+data.synthetic=true
+demo.type=python_script_terrain_flow
+demo.domain=synthetic_terrain
+terrain.coordinate_system=local_cartesian
+terrain.surface_quantity=elevation
+terrain.x_unit=m
+terrain.y_unit=m
+terrain.z_unit=m
+terrain.x_min_m=0
+terrain.x_max_m=80
+terrain.x_step_m=1
+terrain.y_min_m=0
+terrain.y_max_m=50
+terrain.profile_axis=y
+terrain.profile_count=11
+terrain.profile_points=81
+terrain.profile_spacing_m=5
+terrain.noise_sigma_m=0.6
+terrain.random_seed=20261004
+family.variable=profile_id
+family.coordinate_variable=profile_y_m
+binding.x=x_m
+binding.y=y_m
+binding.z=z_m
+binding.family=profile_id
+model.type=quartic_terrain_surface
+model.total_degree=4
+model.equation=z=180+0.30*u-0.22*v+0.018*u^2+0.030*v^2-0.016*u*v-0.00020*u^3+0.00015*u^2*v-0.00012*u*v^2+0.000006*u^4+0.000010*v^4-0.000005*u^2*v^2, u=x-40, v=y-25
+fit.model=polynomial_total_degree
+fit.degree=4
+fit.grid_nx=81
+fit.grid_ny=51
+fit.output_dataset_id=tutorial.terrain_surface_fit
+presentation.surface_plot_type=surface
+presentation.mesh_plot_type=mesh
+interactive.target=native_3d

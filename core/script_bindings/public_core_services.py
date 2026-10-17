@@ -44,6 +44,7 @@ SERVICES = {
         "preparation": ("Read reusable unbound Experiment preparation", [], "preparation dictionary with serialized nested definitions", "::GX::sessionExperimentPreparationRead", "dict"),
     }),
     "SCIENTIFIC_RECIPE_API_v1": (1, "scientific_recipe", "docs/api/SCIENTIFIC_RECIPE_API_v1.md", {
+        "data_decode": ("Decode a bounded inert versioned recipe envelope without executing or validating its owner's scientific payload", [_arg("encoded", "string"), _arg("expected_format", "string")], "dictionary with owner-specific nested data serialized", "::GX::scientificRecipeDataDecode", "dict"),
         "inspect": ("Inspect an inert recorded scientific recipe", [_arg("encoded", "string")], "recipe descriptor", "::GX::scientificRecipeInspect", "dict"),
         "validate": ("Validate required APIs, plugins, sources and complete geometry", [_arg("encoded", "string")], "validation receipt", "::GX::scientificRecipeValidate", "dict"),
         "proposal": ("Prepare a validated transactional Workbench replay proposal", [_arg("encoded", "string")], "structured action proposal", "::GX::scientificRecipeProposal", "recipe_proposal"),
@@ -100,6 +101,8 @@ SERVICES = {
         "read": ("Read public documentation", [_arg("document_id", "string")], "UTF-8 text", "::GX::documentationBrowserRead", "string"),
     }),
     "MODULE_API_v1": (1, "module", "docs/api/MODULE_API_v1.md", {
+        "operational_class": ("Read operational module class independently of package protection", [_arg("module_id", "string")], "operational class", "::GX::moduleOperationalClass", "string"),
+        "operational_info": ("Inspect availability, analysis eligibility and package protection", [_arg("module_id", "string")], "typed module classification", "::GX::moduleOperationalInfo", "module_info"),
         "public_api_ids": ("Discover module-declared public API IDs", [_arg("module_id", "string")], "cell of API IDs", "::GX::modulePublicApiIds", "list"),
     }),
     "GRAPH_SERIES_API_v1": (1, "graph_series", "docs/api/GRAPH_SERIES_API_v1.md", {
@@ -212,6 +215,11 @@ def invoke_api(host, api_id, operation, args):
         api_id == "GRAPH_METADATA_API_v1" and operation in {"write", "update", "unset"} or
         api_id == "LEVEL_SCALE_API_v1" and operation == "set"):
         host.persist_manifest(f"{api_id}/{operation}")
+    if conversion == "module_info":
+        result = host.as_dict(result)
+        for key in ("core_protected", "always_available", "analysis_enableable", "run_eligible", "enabled"):
+            result[key] = bool(int(result[key]))
+        return result
     if conversion == "integer":
         return int(result)
     if conversion == "empty":

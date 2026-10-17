@@ -35,6 +35,7 @@ _stderr = None
 _callbacks = {}
 _in_callback = False
 _callback_temporary = []
+_callback_arrays = {}
 _buffer_root = None
 _buffer_resource = None
 _buffer_manager = None
@@ -60,21 +61,25 @@ def _pack(value, temporary, depth=0):
         return {"kind": "numeric_scalar", "value": format(value, ".17g")}
     if isinstance(value, str):
         return {"kind": "string", "value": value}
+    if _np is not None and isinstance(value, complex):
+        value = _np.asarray(value).reshape(1, 1)
     if _np is not None and isinstance(value, _np.ndarray):
-        if value.dtype.kind not in "biuf":
-            raise TypeError("GX-TXT numeric arrays need boolean, integer, or floating values")
-        array = _np.asarray(value, dtype="<f8")
+        if value.dtype.kind not in "biufc":
+            raise TypeError("GX-TXT numeric arrays need boolean, integer, floating or complex values")
+        array = _np.asarray(value)
         shape = list(array.shape)
         if array.ndim == 1:
             shape.append(1)
         result = {"kind": "numeric_array", "shape": shape}
-        if array.size > 10000:
+        if array.size > 64 or array.dtype.name != 'float64':
             if _buffer_root is not None:
                 from gxtxt_scientific_binary_v1 import write_buffer
                 descriptor = write_buffer(_buffer_root, array)
                 temporary.append(str(_buffer_root / descriptor["resource_id"]))
                 result["binary"] = descriptor
                 return result
+            if array.dtype.name != 'float64':
+                raise GXTXTBridgeError('GXTXT:ScriptBridge:Transport', 'typed arrays require an active managed Bridge')
             fd, path = tempfile.mkstemp(prefix="gxtxt-script-argument-", suffix=".bin")
             with os.fdopen(fd, "wb") as stream:
                 stream.write(array.tobytes(order="F"))
@@ -90,10 +95,15 @@ def _pack(value, temporary, depth=0):
     raise TypeError(f"GX-TXT cannot transport {type(value).__name__}")
 
 
-def _unpack(wire, depth=0):
+def _unpack(wire, depth=0, arrays=None):
+    if arrays is None: arrays = {}
     if depth > 32:
         raise GXTXTBridgeError("GXTXT:ScriptBridge:Transport", "result nesting exceeds 32")
     kind = wire["kind"]
+    if kind == 'numeric_array_ref':
+        if wire.get('array_id') not in arrays:
+            raise GXTXTBridgeError('GXTXT:ScriptBridge:Transport', 'unknown response array reference')
+        return arrays[wire['array_id']]
     if kind == "string":
         return wire["value"]
     if kind == "logical":
@@ -112,9 +122,9 @@ def _unpack(wire, depth=0):
             descriptor = wire["binary"]
             if descriptor.get("shape") != list(shape):
                 raise GXTXTBridgeError("GXTXT:ScriptBridge:Transport", "binary result shape mismatch")
-            array = read_buffer(_buffer_root, descriptor).copy()
+            array = read_buffer(_buffer_root, descriptor)
             (_buffer_root / descriptor["resource_id"]).unlink()
-            return array
+            return _remember_array(wire, array, arrays)
         if "binary_path" in wire:
             path = Path(wire["binary_path"])
             try:
@@ -127,15 +137,24 @@ def _unpack(wire, depth=0):
         else:
             values = [float(v) for v in wire["values"]]
         if _np is not None:
-            return _np.asarray(values, dtype=float).reshape(shape, order="F")
+            return _remember_array(wire, _np.asarray(values, dtype=float).reshape(shape, order="F"), arrays)
         if len(shape) == 2 and shape[1] > 1:
-            return [[values[row + shape[0] * col] for col in range(shape[1])] for row in range(shape[0])]
-        return list(values)
+            return _remember_array(wire, [[values[row + shape[0] * col] for col in range(shape[1])] for row in range(shape[0])], arrays)
+        return _remember_array(wire, list(values), arrays)
     if kind in ("cell", "struct_array"):
-        return [_unpack(v, depth + 1) for v in wire["items"]]
+        return [_unpack(v, depth + 1, arrays) for v in wire["items"]]
     if kind == "struct":
-        return {k: _unpack(v, depth + 1) for k, v in wire["fields"].items()}
+        return {k: _unpack(v, depth + 1, arrays) for k, v in wire["fields"].items()}
     raise GXTXTBridgeError("GXTXT:ScriptBridge:Transport", f"unknown result kind {kind}")
+
+
+def _remember_array(wire, value, arrays):
+    if 'array_id' in wire:
+        key = wire['array_id']
+        if not isinstance(key, str) or key in arrays or len(arrays) >= 65536:
+            raise GXTXTBridgeError('GXTXT:ScriptBridge:Transport', 'invalid response array identity')
+        arrays[key] = value
+    return value
 
 
 def _request(action, **fields):
@@ -155,6 +174,9 @@ def _request(action, **fields):
             if response.get("event") == "callback_invoke":
                 _serve_callback(response)
                 continue
+            if response.get('event') in ('callback_arguments_release', 'callback_buffers_release'):
+                _release_callback_storage(response)
+                continue
             break
     except (BrokenPipeError, OSError, ValueError, RuntimeError) as exc:
         raise GXTXTBridgeError("GXTXT:ScriptBridge:Transport", str(exc)) from exc
@@ -166,6 +188,38 @@ def _request(action, **fields):
     return _unpack(response["value"])
 
 
+def _release_callback_storage(event):
+    ids = set(event['ids'])
+    if event['event'] == 'callback_arguments_release':
+        for identifier in ids:
+            _callback_arrays.pop(identifier, None)
+    else:
+        retained = []
+        for path in _callback_temporary:
+            if Path(path).name in ids:
+                Path(path).unlink(missing_ok=True)
+            else:
+                retained.append(path)
+        _callback_temporary[:] = retained
+
+
+def _callback_argument(wire, owner):
+    if wire.get('kind') != 'callback_array':
+        return _unpack(wire)
+    identifier = wire['id']
+    if 'value' in wire:
+        if identifier in _callback_arrays:
+            raise GXTXTBridgeError('GXTXT:ScriptCallback:Transport', 'Repeated constant argument definition')
+        value = _unpack(wire['value'])
+        if _np is None or not isinstance(value, _np.ndarray):
+            raise GXTXTBridgeError('GXTXT:ScriptCallback:Transport', 'Constant argument is not a typed numeric array')
+        value.setflags(write=False)
+        _callback_arrays[identifier] = (owner, value)
+    if identifier not in _callback_arrays or _callback_arrays[identifier][0] != owner:
+        raise GXTXTBridgeError('GXTXT:ScriptCallback:Transport', 'Unknown or foreign constant callback argument')
+    return _callback_arrays[identifier][1]
+
+
 def _serve_callback(event):
     global _in_callback
     identifier = event.get("id", "")
@@ -175,7 +229,7 @@ def _serve_callback(event):
         if function is None:
             raise GXTXTBridgeError("GXTXT:ScriptCallback:UnknownCallback", "callback is no longer registered")
         _in_callback = True
-        result = function(*[_unpack(arg) for arg in event["args"]])
+        result = function(*[_callback_argument(arg, identifier) for arg in event["args"]])
         payload = {"action": "callback_result", "id": identifier, "ok": True,
                    "value": _pack(result, temporary)}
     except BaseException as exc:
@@ -205,6 +259,7 @@ def _activate(runtime_path, execution):
     environment = os.environ.copy()
     environment["GXTXT_BRIDGE_WORKSPACE"] = str(_buffer_root)
     environment["GXTXT_BRIDGE_TYPED_DESCRIPTORS"] = "1"
+    environment["GXTXT_BRIDGE_CLIENT_OWNS_RESOURCE"] = "1"
     _stderr = open(runtime_path.parent / "bridge.log", "w", encoding="utf-8")
     _process = subprocess.Popen([sys.executable, "-u", str(server), str(runtime_path)],
                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -235,6 +290,7 @@ def _deactivate():
             _process.wait(timeout=5)
     finally:
         _callbacks.clear()
+        _callback_arrays.clear()
         for path in _callback_temporary:
             Path(path).unlink(missing_ok=True)
         _callback_temporary.clear()
@@ -332,6 +388,9 @@ def gxtxt_callback_release(handle):
         raise TypeError("callback release requires a CallbackHandle")
     _request("callback_release", id=handle.id)
     _callbacks.pop(handle.id, None)
+    for identifier, (owner, value) in list(_callback_arrays.items()):
+        if owner == handle.id:
+            del _callback_arrays[identifier]
 
 
 __all__ = ["GXTXTBridgeError", "gxtxt_bridge_info", "gxtxt_context", "gxtxt_api_list",

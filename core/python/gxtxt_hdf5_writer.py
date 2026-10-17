@@ -55,13 +55,26 @@ def binary_values(np: Any, target_dtype: Any, source_dtype_text: str, endian: st
     source=np.frombuffer(raw,dtype=source_dtype,count=count)
     if target_dtype.kind in {"S","U","O"}: raise ValueError("Binary numeric block is incompatible with string dtype")
     native=source.astype(source.dtype.newbyteorder("="),copy=False)
+    return convert_values(np, native, target_dtype)
+
+def convert_values(np, native, target_dtype):
+    """One schema-requested conversion; reject range loss before casting."""
+    if native.dtype.kind=='c' and target_dtype.kind!='c':
+        raise ValueError('Complex values require a complex target dtype')
     if target_dtype.kind=="b":
         if native.dtype.kind!="b" and not np.all((native==0)|(native==1)): raise ValueError("Values are incompatible with dtype bool")
     elif target_dtype.kind in {"i","u"}:
         if native.dtype.kind=="f" and (not np.all(np.isfinite(native)) or not np.all(native==np.trunc(native))):
             raise ValueError(f"Values are incompatible with dtype {target_dtype}")
         info=np.iinfo(target_dtype)
-        if native.size and (np.any(native<info.min) or np.any(native>info.max)): raise ValueError(f"Values are outside dtype {target_dtype}")
+        if native.dtype.kind=='f':
+            outside=np.any(native<info.min) or np.any(native>=int(info.max)+1)
+        elif native.dtype.kind=='u':
+            outside=np.any(native>np.uint64(info.max)) if info.max<np.iinfo(native.dtype).max else False
+        else:
+            source_info=np.iinfo(native.dtype) if native.dtype.kind=='i' else None
+            outside=source_info is not None and ((info.min>source_info.min and np.any(native<info.min)) or (info.max<source_info.max and np.any(native>info.max)))
+        if outside: raise ValueError(f"Values are outside dtype {target_dtype}")
     try: return native.astype(target_dtype,copy=False)
     except Exception as exc: raise ValueError(f"Values are incompatible with dtype {target_dtype}: {exc}") from exc
 
@@ -73,6 +86,7 @@ class Writer:
         self.h5py=h5py; self.np=np; self.path=path; self.file=h5py.File(path,"w")
         self.elements_written=0; self.max_request_elements=0; self.append_calls=0; self.hyperslab_elements_written=0
         self.binary_blocks=0; self.binary_bytes=0; self.created:dict[str,str]={}
+        self.resource_blocks=0;self.resource_bytes=0
     def emit(self,*parts:Any)->None: print("\t".join(str(part) for part in parts),flush=True)
     def record(self,count:int,hyperslab:bool=False)->None:
         self.elements_written+=count; self.max_request_elements=max(self.max_request_elements,count)
@@ -99,15 +113,32 @@ class Writer:
         source_dtype,endian,shape_text,encoded=parts[start:start+4]
         values=binary_values(self.np,ds.dtype,source_dtype,endian,shape_text,encoded,expected)
         self.binary_blocks+=1;self.binary_bytes+=len(base64.b64decode(encoded));return values
+    def decode_resource(self,parts,start,ds,expected):
+        from pathlib import Path
+        from gxtxt_scientific_binary_v1 import read_buffer
+        fields=[unb64(x) for x in parts[start:]]
+        if len(fields)!=9:raise ValueError('Invalid resource write descriptor')
+        version,dtype,endian,order,shape,count,size,id,root=fields
+        scope=os.environ.get('GXTXT_BRIDGE_WORKSPACE')
+        if not scope or Path(root).resolve()!=Path(scope).resolve():raise ValueError('Resource write escaped its delegated execution scope')
+        d=dict(version=int(version),dtype=dtype,endian=endian,order=order,shape=split_ints(shape),count=int(count),byte_count=int(size),resource_id=id)
+        if d['count']!=expected:raise ValueError('Resource write count mismatch')
+        values=read_buffer(scope,d)
+        if ds.dtype.kind in {'S','U','O'}:raise ValueError('Numeric resource cannot write a string variable')
+        values=convert_values(self.np,values,ds.dtype)
+        self.resource_blocks+=1;self.resource_bytes+=d['byte_count']
+        return values
     def write(self,parts:list[str],binary:bool=False)->None:
         locator=unb64(parts[1]);shape=split_shape(unb64(parts[2]));ds=self.dataset(locator)
         if tuple(ds.shape)!=shape:raise ValueError(f"Complete write shape mismatch: expected {ds.shape}, received {shape}")
-        count=math.prod(shape) if shape else 1;values=self.decode_block(parts,3,ds,count) if binary else parse_values(self.np,ds.dtype,parts[3],count)
-        ds[...]=values.reshape(shape);self.record(count);self.emit("OK","WRITTEN",count)
+        count=math.prod(shape) if shape else 1;values=self.decode_resource(parts,3,ds,count) if binary=='resource' else self.decode_block(parts,3,ds,count) if binary else parse_values(self.np,ds.dtype,parts[3],count)
+        ds[...]=values.reshape(shape,order='F' if binary=='resource' else 'C');self.record(count);self.emit("OK","WRITTEN",count)
     def range_write(self,parts:list[str],binary:bool=False)->None:
         locator=unb64(parts[1]);start=int(parts[2]);ds=self.dataset(locator)
         if ds.ndim!=1:raise ValueError("Range write requires a rank-1 variable")
-        if binary:
+        if binary=='resource':
+            count=int(unb64(parts[8]));values=self.decode_resource(parts,3,ds,count).reshape(-1,order='F')
+        elif binary:
             block_shape=split_shape(parts[5]);count=math.prod(block_shape) if block_shape else 1;values=self.decode_block(parts,3,ds,count)
         else:
             text=unb64(parts[3]);count=0 if text=="" else len(text.split("\x1f"));values=parse_values(self.np,ds.dtype,parts[3],count)
@@ -119,8 +150,8 @@ class Writer:
         if len(block_shape)!=ds.ndim:raise ValueError("Append block rank mismatch")
         for idx,size in enumerate(block_shape):
             if idx!=axis and size!=ds.shape[idx]:raise ValueError("Append block shape mismatch")
-        count=math.prod(block_shape) if block_shape else 1;values=self.decode_block(parts,4,ds,count) if binary else parse_values(self.np,ds.dtype,parts[4],count)
-        old=ds.shape[axis];shape=list(ds.shape);shape[axis]+=block_shape[axis];ds.resize(tuple(shape));target=[slice(None)]*ds.ndim;target[axis]=slice(old,shape[axis]);ds[tuple(target)]=values.reshape(block_shape)
+        count=math.prod(block_shape) if block_shape else 1;values=self.decode_resource(parts,4,ds,count) if binary=='resource' else self.decode_block(parts,4,ds,count) if binary else parse_values(self.np,ds.dtype,parts[4],count)
+        old=ds.shape[axis];shape=list(ds.shape);shape[axis]+=block_shape[axis];ds.resize(tuple(shape));target=[slice(None)]*ds.ndim;target[axis]=slice(old,shape[axis]);ds[tuple(target)]=values.reshape(block_shape,order='F' if binary=='resource' else 'C')
         self.append_calls+=1;self.record(count);self.emit("OK","APPENDED",block_shape[axis],count,";".join(str(x) for x in ds.shape))
     def hyperslab(self,parts:list[str],binary:bool=False)->None:
         locator=unb64(parts[1]);starts=split_ints(unb64(parts[2]));counts=split_ints(unb64(parts[3]));ds=self.dataset(locator)
@@ -129,9 +160,9 @@ class Writer:
         for size,start,count in zip(ds.shape,starts,counts):
             if start<0 or count<0 or start+count>size:raise ValueError("Hyperslab is outside the variable")
             slices.append(slice(start,start+count))
-        count=math.prod(counts) if counts else 1;values=self.decode_block(parts,4,ds,count) if binary else parse_values(self.np,ds.dtype,parts[4],count)
-        ds[tuple(slices)]=values.reshape(tuple(counts));self.record(count,True);self.emit("OK","WRITTEN",count)
-    def stats(self)->None:self.emit("OK","STATS",os.getpid(),self.elements_written,self.max_request_elements,self.append_calls,self.hyperslab_elements_written,self.binary_blocks,self.binary_bytes)
+        count=math.prod(counts) if counts else 1;values=self.decode_resource(parts,4,ds,count) if binary=='resource' else self.decode_block(parts,4,ds,count) if binary else parse_values(self.np,ds.dtype,parts[4],count)
+        ds[tuple(slices)]=values.reshape(tuple(counts),order='F' if binary=='resource' else 'C');self.record(count,True);self.emit("OK","WRITTEN",count)
+    def stats(self)->None:self.emit("OK","STATS",os.getpid(),self.elements_written,self.max_request_elements,self.append_calls,self.hyperslab_elements_written,self.binary_blocks,self.binary_bytes,self.resource_blocks,self.resource_bytes)
     def validate(self)->None:
         self.file.flush()
         for variable_id,locator in self.created.items():
@@ -151,12 +182,16 @@ def main()->int:
                 if command=="CREATE":writer.create(parts)
                 elif command=="WRITE":writer.write(parts)
                 elif command=="BWRITE":writer.write(parts,True)
+                elif command=="RWRITE":writer.write(parts,'resource')
                 elif command=="RANGE":writer.range_write(parts)
                 elif command=="BRANGE":writer.range_write(parts,True)
+                elif command=="RRANGE":writer.range_write(parts,'resource')
                 elif command=="APPEND":writer.append(parts)
                 elif command=="BAPPEND":writer.append(parts,True)
+                elif command=="RAPPEND":writer.append(parts,'resource')
                 elif command=="HYPER":writer.hyperslab(parts)
                 elif command=="BHYPER":writer.hyperslab(parts,True)
+                elif command=="RHYPER":writer.hyperslab(parts,'resource')
                 elif command=="FLUSH":writer.file.flush();writer.emit("OK","FLUSHED")
                 elif command=="VALIDATE":writer.validate()
                 elif command=="STATS":writer.stats()

@@ -21,7 +21,7 @@ namespace eval ::GX {
 }
 
 proc ::GX::datasetCapabilityNames {} {
-    return {read_full read_selected_variables row_range_read random_access chunk_read hyperslab_read multidimensional groups implicit_axis typed_binary_read}
+    return {read_full read_selected_variables row_range_read random_access chunk_read hyperslab_read multidimensional groups implicit_axis typed_binary_read managed_binary_read}
 }
 
 proc ::GX::datasetStorageProviderRegister {provider commandPrefix capabilities} {
@@ -442,6 +442,46 @@ proc ::GX::datasetAccessReadHyperslabBinary {handle variableId starts counts} {
     return [datasetAccessProviderCall $handle read_hyperslab_binary $variableId $starts $counts]
 }
 
+# Bounded resources from the same canonical provider. Tcl carries descriptors,
+# never the numeric payload. Legacy values/Base64 operations stay available.
+proc ::GX::datasetAccessReadRangeResource {handle variableIds start count} {
+    if {![string is entier -strict $start] || $start<0 || ![string is entier -strict $count] || $count<0} {error {Resource reads require bounded nonnegative integer ranges}}
+    set ids [datasetAccessNormalizeVariableIds $handle $variableIds]
+    if {![dict get [datasetAccessCapabilities $handle] managed_binary_read]} {return [datasetAccessReadRange $handle $ids $start $count]}
+    set schema {};foreach v [dict get [datasetAccessMetadata $handle] variables] {dict set schema [dict get $v variable_id] $v}
+    set physical {};set fallback {}
+    foreach id $ids {
+        set v [dict get $schema $id]
+        if {[dict get $v rank]!=1} {error {Range reads require rank-1 variables}}
+        if {[dict get $v dtype] in [datasetBinaryTransportDtypes] && [dict get $v axis_kind] ne "uniform"} {lappend physical $id} else {lappend fallback $id}
+    }
+    set result {}
+    if {[llength $physical]} {set result [datasetAccessProviderCall $handle read_range_resource $physical $start $count]}
+    if {[llength $fallback]} {set result [dict merge $result [datasetAccessReadRange $handle $fallback $start $count]]}
+    return $result
+}
+proc ::GX::datasetAccessReadHyperslabResource {handle variableId starts counts} {
+    set variableId [lindex [datasetAccessNormalizeVariableIds $handle [list $variableId]] 0]
+    if {![dict get [datasetAccessCapabilities $handle] managed_binary_read]} {error {Dataset provider has no managed binary resources}}
+    return [datasetAccessProviderCall $handle read_hyperslab_resource $variableId $starts $counts]
+}
+proc ::GX::datasetAccessReleaseResource {handle resourceId} {
+    return [datasetAccessProviderCall $handle release_resource $resourceId]
+}
+proc ::GX::datasetBinaryResourceValidate {resource {expectedCount -1}} {
+    foreach field {version dtype endian order shape count byte_count resource_id resource_root} {if {![dict exists $resource $field]} {error "Incomplete binary resource: $field"}}
+    if {[dict get $resource version]!=2 || [dict get $resource endian] ne "little" || [dict get $resource order] ne "F"} {error {Unsupported binary resource descriptor}}
+    set dtype [dict get $resource dtype];set width [datasetBinaryTransportWidth $dtype]
+    set count [datasetBinaryShapeCount [dict get $resource shape]]
+    if {$count!=[dict get $resource count] || ($expectedCount>=0 && $count!=$expectedCount) || $count*$width!=[dict get $resource byte_count] || $count*$width>536870912} {error {Binary resource shape/count/size mismatch}}
+    if {![regexp {^[a-f0-9]{32}\.bin$} [dict get $resource resource_id]]} {error {Invalid binary resource identity}}
+    set root [dict get $resource resource_root]
+    if {[file pathtype $root] ne "absolute" || ![file isdirectory $root] || [file type $root] eq "link"} {error {Invalid binary resource scope}}
+    set path [file join $root [dict get $resource resource_id]]
+    if {![file isfile $path] || [file type $path] ne "file" || [file size $path]!=[dict get $resource byte_count]} {error {Invalid binary resource file}}
+    return $resource
+}
+
 proc ::GX::datasetAccessDiagnostics_before_storage_policy {handle} {
     return [datasetAccessProviderCall $handle diagnostics]
 }
@@ -580,8 +620,10 @@ proc ::GX::csvStorageProvider {operation token args} {
 }
 
 proc ::GX::csvStorageTypedValue {variable raw} {
-    set raw [string trim $raw " \t\r\n\""]
+    # CSV syntax quotes have already been decoded by datasetSchemaCsvSplit.
+    # Quotes that survive that parser are scientific text, not delimiters.
     if {[dict get $variable dtype] eq "string" || [dict get $variable value_kind] eq "text"} { return $raw }
+    set raw [string trim $raw " \t\r\n"]
     # Preserve a missing CSV field separately from a source NaN token.
     # Consumers such as Worksheet must be able to retain that distinction.
     if {$raw eq ""} { return "" }
@@ -617,25 +659,28 @@ proc ::GX::csvStorageProviderReadRange {token variableIds start count} {
         set variable [datasetVariableV3ById $datasetId $variableId]
         set position [dict get $variable canonical_position]
         if {![string is integer -strict $position] || $position < 1} { error "Variable $variableId is not physically present in CSV storage" }
-        dict set variables $variableId [dict create variable $variable column [expr {$position-1}] values {}]
+        dict set variables $variableId [dict create variable $variable column [expr {$position-1}]]
+        set columnValues($variableId) {}
     }
     set fd $csvProviderState($token,fd)
     if {$fd eq "" || $start < $csvProviderState($token,next_row)} {
         if {$fd ne ""} { close $fd }
         set fd [open $path r]; fconfigure $fd -encoding utf-8 -translation auto
         gets $fd header
+        if {[string first {"} $header]>=0} {datasetSchemaCsvSplit $header $delimiter $fd}
         set csvProviderState($token,fd) $fd
         set csvProviderState($token,next_row) 0
     }
     set row $csvProviderState($token,next_row);set taken 0;set skipped 0
     while {$row < $start && [gets $fd line] >= 0} {
         if {[string trim $line] eq ""} continue
+        if {[string first {"} $line]>=0} {datasetSchemaCsvSplit $line $delimiter $fd}
         incr row;incr skipped
     }
     while {$count < 0 || $taken < $count} {
         if {[gets $fd line] < 0} break
         if {[string trim $line] eq ""} continue
-        set fields [datasetSchemaCsvSplit $line $delimiter]
+        set fields [datasetSchemaCsvSplit $line $delimiter $fd]
         foreach variableId $variableIds {
             set item [dict get $variables $variableId]
             set column [dict get $item column]
@@ -647,8 +692,10 @@ proc ::GX::csvStorageProviderReadRange {token variableIds start count} {
             } else {
                 set raw ""
             }
-            dict lappend item values [csvStorageTypedValue [dict get $item variable] $raw]
-            dict set variables $variableId $item
+            # Keep the growing list unshared. Extracting it from a dictionary
+            # and replacing that dictionary each row copies the entire prefix
+            # on every append (quadratic work inside a bounded chunk).
+            lappend columnValues($variableId) [csvStorageTypedValue [dict get $item variable] $raw]
         }
         incr row; incr taken
     }
@@ -661,7 +708,7 @@ proc ::GX::csvStorageProviderReadRange {token variableIds start count} {
     foreach variableId $variableIds {
         set item [dict get $variables $variableId]
         set variable [dict get $item variable]
-        dict set out $variableId [dict create dtype [dict get $variable dtype] shape $taken values [dict get $item values] start $start count $taken synthesized 0]
+        dict set out $variableId [dict create dtype [dict get $variable dtype] shape $taken values $columnValues($variableId) start $start count $taken synthesized 0]
     }
     return $out
 }
@@ -739,7 +786,9 @@ proc ::GX::hdf5ProviderDataResponse {channel expected} {
     set shape [datasetB64Decode [lindex $parts 3]]
     set count [lindex $parts 4]
     set encoded [datasetB64Decode [lindex $parts 5]]
-    set values [expr {$encoded eq "" ? {} : [split $encoded "\u001f"]}]
+    # Preserve text/numeric cell representations (including a singleton NaN).
+    # expr coerces a one-element result to a number and rejects NaN.
+    if {$encoded eq ""} {set values {}} else {set values [split $encoded "\u001f"]}
     if {[llength $values] != $count} { error "HDF5 provider returned an inconsistent element count" }
     return [dict create dtype $dtype shape $shape values $values count $count synthesized 0]
 }
@@ -757,6 +806,15 @@ proc ::GX::hdf5ProviderBinaryDataResponse {channel} {
     return [dict create dtype $dtype shape $shape binary_block $block count $count synthesized 0 transport typed_binary]
 }
 
+proc ::GX::hdf5ProviderResourceDataResponse {channel} {
+    set parts [hdf5ProviderReadLine $channel]
+    if {[lindex $parts 1] ne "RDATA" || [llength $parts]!=12} {error {Invalid HDF5 managed binary response}}
+    lassign [lrange $parts 2 end] version dtype endian order shape count bytes id root sourceShape
+    set resource [dict create version $version dtype $dtype endian $endian order $order shape $shape count $count byte_count $bytes resource_id $id resource_root [datasetB64Decode $root]]
+    datasetBinaryResourceValidate $resource $count
+    return [dict create dtype $dtype shape $sourceShape binary_resource $resource count $count synthesized 0 transport managed_binary]
+}
+
 proc ::GX::hdf5StorageProvider {operation token args} {
     variable hdf5ProviderState
     variable hdf5ProviderCounter
@@ -767,7 +825,7 @@ proc ::GX::hdf5StorageProvider {operation token args} {
             set helper [file join $scriptDir core python gxtxt_hdf5_provider.py]
             if {![file isfile $helper]} { error "HDF5 provider helper is missing" }
             set python [runtimeToolRequired python]
-            set command [list | $python -u $helper --file [dict get $context path]]
+            set command [list | $python -u $helper --file [dict get $context path] --session [dict get $context session]]
             if {[catch {set channel [open $command r+]} failure]} { error "HDF5 provider could not start: $failure" }
             # Python text stdout uses CRLF on Windows; normalize incoming
             # protocol records while keeping LF requests on the worker input.
@@ -808,6 +866,30 @@ proc ::GX::hdf5StorageProvider {operation token args} {
             }
             return $out
         }
+        read_range_resource {
+            lassign $args variableIds start count
+            set channel $hdf5ProviderState($token,channel);set out {}
+            foreach variableId $variableIds {
+                set locator [hdf5ProviderLocator $token $variableId]
+                puts $channel "RREAD\t[datasetB64Encode $locator]\t$start\t$count";flush $channel
+                set item [hdf5ProviderResourceDataResponse $channel];dict set item start $start;dict set out $variableId $item
+            }
+            return $out
+        }
+        read_hyperslab_resource {
+            lassign $args variableId starts counts
+            set channel $hdf5ProviderState($token,channel);set locator [hdf5ProviderLocator $token $variableId]
+            puts $channel "RHYPER\t[datasetB64Encode $locator]\t[datasetB64Encode [join $starts {;}]]\t[datasetB64Encode [join $counts {;}]]";flush $channel
+            set item [hdf5ProviderResourceDataResponse $channel];dict set item starts $starts;dict set item counts $counts;return $item
+        }
+        release_resource {
+            set id [lindex $args 0]
+            if {![regexp {^[a-f0-9]{32}\.bin$} $id]} {error {Invalid Dataset resource identity}}
+            set channel $hdf5ProviderState($token,channel);puts $channel "RELEASE\t$id";flush $channel
+            set response [hdf5ProviderReadLine $channel]
+            if {[lindex $response 1] ne "RELEASED"} {error {Invalid Dataset resource release response}}
+            return 1
+        }
         read_hyperslab {
             lassign $args variableId starts counts
             set channel $hdf5ProviderState($token,channel)
@@ -833,7 +915,11 @@ proc ::GX::hdf5StorageProvider {operation token args} {
             puts $channel STATS; flush $channel
             set parts [hdf5ProviderReadLine $channel]
             if {[lindex $parts 1] ne "STATS" || [llength $parts] != 10} { error "Invalid HDF5 diagnostics response" }
-            return [dict create process_id [lindex $parts 2] metadata_payload_elements [lindex $parts 3] payload_elements_read [lindex $parts 4] prefix_elements_scanned [lindex $parts 5] max_request_elements [lindex $parts 6] binary_blocks_read [lindex $parts 7] binary_bytes_read [lindex $parts 8] text_values_serialized [lindex $parts 9]]
+            set result [dict create process_id [lindex $parts 2] metadata_payload_elements [lindex $parts 3] payload_elements_read [lindex $parts 4] prefix_elements_scanned [lindex $parts 5] max_request_elements [lindex $parts 6] binary_blocks_read [lindex $parts 7] binary_bytes_read [lindex $parts 8] text_values_serialized [lindex $parts 9]]
+            puts $channel RSTATS;flush $channel;set raw [hdf5ProviderReadLine $channel]
+            if {[lindex $raw 1] ne "RSTATS" || [llength $raw]!=9} {error {Invalid HDF5 resource diagnostics}}
+            foreach key {resources_written raw_bytes_written layout_copy_bytes serialization_copy_bytes provider_read_seconds resource_encode_seconds peak_outstanding_bytes} value [lrange $raw 2 end] {dict set result $key $value}
+            return $result
         }
         close {
             if {![info exists hdf5ProviderState($token,channel)]} { return }
@@ -848,4 +934,4 @@ proc ::GX::hdf5StorageProvider {operation token args} {
 }
 
 ::GX::datasetStorageProviderRegister csv ::GX::csvStorageProvider [dict create read_full 1 read_selected_variables 1 row_range_read 1 random_access 0 chunk_read 1 hyperslab_read 0 multidimensional 0 groups 0 implicit_axis 1]
-::GX::datasetStorageProviderRegister hdf5 ::GX::hdf5StorageProvider [dict create read_full 1 read_selected_variables 1 row_range_read 1 random_access 1 chunk_read 1 hyperslab_read 1 multidimensional 1 groups 1 implicit_axis 1 typed_binary_read 1]
+::GX::datasetStorageProviderRegister hdf5 ::GX::hdf5StorageProvider [dict create read_full 1 read_selected_variables 1 row_range_read 1 random_access 1 chunk_read 1 hyperslab_read 1 multidimensional 1 groups 1 implicit_axis 1 typed_binary_read 1 managed_binary_read 1]

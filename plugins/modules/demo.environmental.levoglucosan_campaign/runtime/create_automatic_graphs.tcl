@@ -21,16 +21,6 @@ proc ::LevoglucosanDemoPlot::findRoot {} {
     error "Cannot locate the GX-TXT root from [info script]."
 }
 
-proc ::LevoglucosanDemoPlot::sourceFramework {root} {
-    set pipeline [file join $root gxtxt_pipeline.tcl]
-    if {![file isfile $pipeline]} { error "GX-TXT pipeline entry point does not exist: $pipeline" }
-    # Source the framework at global scope. Sourcing from inside this namespace
-    # procedure would make unqualified framework globals such as argv0 local to
-    # this procedure and break the source-safe entry-point check.
-    set ::argv0 __not_main__
-    uplevel #0 [list source $pipeline]
-}
-
 proc ::LevoglucosanDemoPlot::siteNames {} {
     return [list "Cagliari metropolitan" "Gonnostramatza / Marmilla" "Nuoro / Barbagia" "Olbia / Gallura"]
 }
@@ -61,7 +51,7 @@ proc ::LevoglucosanDemoPlot::buildSpecs {fireEvent fireStart fireEnd uncertainty
     dict set panel axes y_left [dict create label "Levoglucosan in aqueous extract" display_unit ppm min 0]
     set series {}
     lappend series [dict create id gon_confidence dataset_id demo.environmental.levoglucosan.daily.site2 \
-        x_variable_id day_of_year y_variable_id mean_ppm axis left kind band label "Gonnostramatza 95% CI" \
+        x_variable_id day_of_year y_variable_id mean_ppm axis left kind band label "Gonnostramatza conditional 95% CI" \
         band [dict create lower_variable_id ci95_lower_ppm upper_variable_id ci95_upper_ppm draw_center 0] \
         style [dict create opacity 0.13]]
     for {set s 1} {$s <= 4} {incr s} {
@@ -74,7 +64,7 @@ proc ::LevoglucosanDemoPlot::buildSpecs {fireEvent fireStart fireEnd uncertainty
     lappend specs [dict create group seasonality slug 01_full_year_daily.png title [dict get $spec title] spec $spec]
 
     # 2. Monthly means with true CI variables supplied through the public error binding.
-    set spec [newSinglePanelSpec "Monthly levoglucosan means with 95% confidence intervals"]
+    set spec [newSinglePanelSpec "Monthly levoglucosan means with conditional 95% confidence intervals"]
     set panel [lindex [dict get $spec panels] 0]
     dict set panel axes x [dict create label "Month number" min 1 max 12]
     dict set panel axes y_left [dict create label "Monthly mean levoglucosan" display_unit ppm min 0]
@@ -89,7 +79,7 @@ proc ::LevoglucosanDemoPlot::buildSpecs {fireEvent fireStart fireEnd uncertainty
     lappend specs [dict create group seasonality slug 02_monthly_errorbars.png title [dict get $spec title] spec $spec]
 
     # 3. Strongest generated wildfire event, with daily triplicate-mean CI and event interval.
-    set spec [newSinglePanelSpec "Selected synthetic wildfire event - daily means and 95% CI"]
+    set spec [newSinglePanelSpec "Selected synthetic wildfire event - daily means and conditional 95% CI"]
     set panel [lindex [dict get $spec panels] 0]
     set xmin [expr {max(1, int($fireStart)-2)}]
     set xmax [expr {min(365, int($fireEnd)+2)}]
@@ -171,7 +161,7 @@ proc ::LevoglucosanDemoPlot::buildSpecs {fireEvent fireStart fireEnd uncertainty
     lappend specs [dict create group spatial slug 07_geographic_site_comparison.png title [dict get $spec title] spec $spec]
 
     # 8. Measurement-uncertainty teaching view: all three replicates plus mean and Student-t CI.
-    set spec [newSinglePanelSpec "Technical triplicates, daily mean, and 95% CI - site $uncertaintySite"]
+    set spec [newSinglePanelSpec "Technical triplicates, daily mean, and conditional 95% CI - site $uncertaintySite"]
     set panel [lindex [dict get $spec panels] 0]
     dict set panel axes x [dict create label "Day of year" min $uncertaintyStart max $uncertaintyEnd]
     dict set panel axes y_left [dict create label "Levoglucosan in aqueous extract" display_unit ppm min 0]
@@ -179,7 +169,7 @@ proc ::LevoglucosanDemoPlot::buildSpecs {fireEvent fireStart fireEnd uncertainty
         [dict create id replicate_1 dataset_id demo.environmental.levoglucosan.uncertainty_demo x_variable_id day_of_year y_variable_id replicate_1_ppm axis left kind scatter label "Technical replicate 1"] \
         [dict create id replicate_2 dataset_id demo.environmental.levoglucosan.uncertainty_demo x_variable_id day_of_year y_variable_id replicate_2_ppm axis left kind scatter label "Technical replicate 2"] \
         [dict create id replicate_3 dataset_id demo.environmental.levoglucosan.uncertainty_demo x_variable_id day_of_year y_variable_id replicate_3_ppm axis left kind scatter label "Technical replicate 3"] \
-        [dict create id daily_mean dataset_id demo.environmental.levoglucosan.uncertainty_demo x_variable_id day_of_year y_variable_id daily_mean_ppm axis left kind line_marker label "Daily triplicate mean (95% CI)" \
+        [dict create id daily_mean dataset_id demo.environmental.levoglucosan.uncertainty_demo x_variable_id day_of_year y_variable_id daily_mean_ppm axis left kind line_marker label "Daily triplicate mean (conditional 95% CI)" \
             y_error [dict create mode symmetric variable_id daily_ci95_half_width_ppm] style [dict create line_width 2.0]]]
     dict set panel series $series
     dict set spec panels [list $panel]
@@ -294,7 +284,6 @@ proc ::LevoglucosanDemoPlot::main {argv} {
 
     set root [findRoot]
     cd $root
-    sourceFramework $root
     ::GX::defaults
     ::GX::loadModuleCatalog
     ::GX::openSessionPath $session
@@ -328,6 +317,9 @@ proc ::LevoglucosanDemoPlot::main {argv} {
 }
 
 if {[file normalize $::argv0] eq [file normalize [info script]]} {
+    # Source the fixed framework entry at global scope before the helper main.
+    set ::argv0 __not_main__
+    source [file join [::LevoglucosanDemoPlot::findRoot] gxtxt_pipeline.tcl]
     if {[catch {::LevoglucosanDemoPlot::main $::argv} err opts]} {
         puts stderr "FAIL demo.environmental.levoglucosan_campaign automatic graphs: $err"
         if {[dict exists $opts -errorinfo]} { puts stderr [dict get $opts -errorinfo] }

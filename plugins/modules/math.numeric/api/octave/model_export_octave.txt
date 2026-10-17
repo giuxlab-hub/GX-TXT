@@ -1,0 +1,47 @@
+function y=piecewise(u,knots,c,normalized)
+  knots=knots(:);i=min(lookup(knots,u),numel(knots)-1);i=max(i,1);
+  z=u-knots(i);if(normalized),z=z./(knots(i+1)-knots(i));endif
+  y=((c(i,1).*z+c(i,2)).*z+c(i,3)).*z+c(i,4);
+endfunction
+function y=voigt(x,sigma,gamma)
+  if(any(sigma(:)<=0)||any(gamma(:)<0)),error('Invalid Voigt widths');endif
+  z=(x+1i*gamma)./(sigma*sqrt(2));y=real(erfcx(-1i*z))./(sigma*sqrt(2*pi));
+endfunction
+function y=logistic(x)
+  e=exp(-abs(x));y=e./(1+e);positive=x>=0;y(positive)=1./(1+e(positive));
+endfunction
+function y=positive(x)
+  y=max(x,0);
+endfunction
+function y=exprel(x)
+  y=zeros(size(x));small=abs(x)<1e-4;z=x(small);
+  y(small)=1+z.*(.5+z.*(1/6+z.*(1/24+z.*(1/120+z/720))));
+  moderate=!small & x<50;y(moderate)=expm1(x(moderate))./x(moderate);
+  large=x>=50;y(large)=exp(x(large)-log(x(large))).*(-expm1(-x(large)));
+endfunction
+function y=shockley(voltage,si,vt,rs)
+  [err,voltage,si,vt,rs]=common_size(voltage,si,vt,rs);
+  if(err||any(si(:)<=0)||any(vt(:)<=0)||any(rs(:)<0)),error('Invalid diode parameters');endif
+  y=zeros(size(voltage));
+  for k=1:numel(y)
+    b=voltage(k)/vt(k);z=rs(k)*si(k)/vt(k);u=b;
+    if(rs(k)>0&&b!=0)
+      low=min(b,0);high=max(b,0);
+      if(b>0),high=min(b,log1p(b/z));u=high;else high=min(0,b+z);u=min(high,b/(1+z));endif
+      converged=false;
+      for iteration=1:4096
+        if(u<-.5),term=z*exp(u);rhs=b+z;else term=z*expm1(u);rhs=b;endif
+        f=u+term-rhs;
+        if(abs(f)<=4*eps*max([abs(rhs),abs(u),abs(term)])),converged=true;break;endif
+        if(f>0),high=u;else low=u;endif
+        following=u-f/(1+z*exp(u));
+        if(following==u),converged=true;break;endif
+        if(!(following>low&&following<high)),following=low+(high-low)/2;endif
+        if(following==u),converged=true;break;endif
+        u=following;
+      endfor
+      if(!converged),error('Diode evaluation did not converge');endif
+    endif
+    y(k)=si(k)*expm1(u);
+  endfor
+endfunction

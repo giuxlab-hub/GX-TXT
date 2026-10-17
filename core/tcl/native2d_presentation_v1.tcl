@@ -88,7 +88,14 @@ proc ::GX::native2DCanvasDrawObject {canvas object background {tags {}}} {
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Renderer-neutral presentation data. No Tk item inspection or geometry math.
 proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
-    foreach key [dict keys $options] {if {$key ni {point_budget x_label y_label title legend object_labels font_size include_construction_reference}} {error "Unknown Native2D snapshot option '$key'"}}
+    foreach key [dict keys $options] {if {$key ni {point_budget x_label y_label x_tick_labels y_tick_labels title legend object_labels font_size include_construction_reference}} {error "Unknown Native2D snapshot option '$key'"}}
+    foreach axis {x y} {
+        if {[dict exists $options ${axis}_tick_labels]} {
+            set labels [dict get $options ${axis}_tick_labels]
+            if {[llength $labels]!=6} {error {Snapshot tick labels require exactly six values per axis}}
+            foreach label $labels {if {[string length $label]>256} {error {Snapshot tick label exceeds 256 characters}}}
+        }
+    }
     set budget [datasetPublicationV2DictDefault $options point_budget 4096]
     if {![string is entier -strict $budget]||$budget<6||$budget>65536} {error "Snapshot point budget must be 6..65536"}
     set font [datasetPublicationV2DictDefault $options font_size 14]
@@ -120,8 +127,11 @@ proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
         if {$x==0} {set x 0};if {$y==0} {set y 0}
         lassign [::GX::Native2D::core device $scene [list $x $y0]] px unused
         lassign [::GX::Native2D::core device $scene [list $x0 $y]] unused py
-        lappend texts [dict create position [list $px [expr {$height-$bottom+14}]] text [format %.5g $x] anchor n rotation 0 font_size $font color $textColor]
-        lappend texts [dict create position [list [expr {$left-7}] $py] text [format %.5g $y] anchor e rotation 0 font_size $font color $textColor]
+        set xt [format %.5g $x];set yt [format %.5g $y]
+        if {[dict exists $options x_tick_labels]} {set xt [lindex [dict get $options x_tick_labels] $i]}
+        if {[dict exists $options y_tick_labels]} {set yt [lindex [dict get $options y_tick_labels] $i]}
+        lappend texts [dict create position [list $px [expr {$height-$bottom+14}]] text $xt anchor n rotation 0 font_size $font color $textColor]
+        lappend texts [dict create position [list [expr {$left-7}] $py] text $yt anchor e rotation 0 font_size $font color $textColor]
     }
     foreach {key position anchor rotation} [list x_label [list [expr {($left+$width-$right)/2}] [expr {$height-12}]] s 0 y_label [list 14 [expr {($top+$height-$bottom)/2}]] center 90 title [list [expr {$width/2}] 5] n 0] {
         set text [datasetPublicationV2DictDefault $options $key ""]

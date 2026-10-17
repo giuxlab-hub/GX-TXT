@@ -345,6 +345,29 @@ proc ::GX::PlotDataset3DAPIv1::previewExportCommand {plotRef output} {
         set value [expr {$binding eq {}?{}:"primary.[dict get $binding name]"}]
         if {[dict exists $saved bindings.$role] && [dict get $saved bindings.$role] ne $value} {error "Graph $role binding changed since the static render; rerender before preview."}
     }
+    # Dataset view policy belongs to the successful static-render snapshot.
+    # A metadata-only edit must not silently present the old cache as current.
+    set coordinateReceipt [file join [dict get $artifacts output_dir] coordinate_presentation.ini]
+    set coordinateState {};if {[file isfile $coordinateReceipt]} {set coordinateState [::GX::parseIni $coordinateReceipt]}
+    set seen {}
+    foreach role {x y z family color} {
+        set binding [::GX::plotVariantResolvedBinding plot.dataset plot.dataset.xyz [dict get $ref variant_id] $role]
+        if {$binding eq {}} continue
+        set id [dict get $binding dataset_id];if {$id in $seen} continue;lappend seen $id
+        set context [::GX::datasetCoordinateRead $::GX::currentSession $id]
+        set matched 0
+        if {[dict exists $coordinateState coordinate_presentation.count]} {
+            if {![dict exists $coordinateState coordinate_presentation.api_version]||[dict get $coordinateState coordinate_presentation.api_version] ne "1"} {error {Unsupported coordinate render receipt; rerender the graph.}}
+            set count [dict get $coordinateState coordinate_presentation.count]
+            if {![string is integer -strict $count]||$count<0||$count>1024} {error {Invalid coordinate render receipt; rerender the graph.}}
+            for {set i 1} {$i<=$count} {incr i} {
+                if {[dict get $coordinateState dataset.$i.id] ne $id} continue
+                if {[dict get $coordinateState dataset.$i.revision] ne [dict get $context revision]||[dict get $coordinateState dataset.$i.source_sha256] ne [dict get $context source_sha256]} {error {Dataset coordinate settings changed since static render; rerender before preview.}}
+                set matched 1;break
+            }
+        }
+        if {!$matched&&[dict get $context revision]>0} {error {Static graph has no current Dataset coordinate receipt; rerender before preview.}}
+    }
     # Reuse the exact configuration that produced the retained static graph.
     # The prepared cache and runtime are read only, including legacy Sessions.
     set envmap [::GX::plotEnv plot.dataset]

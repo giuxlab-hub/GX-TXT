@@ -303,6 +303,13 @@ display domain. Conflicting explicit `axis.x` unit/scale/range declarations
 across panels are rejected rather than silently choosing one panel as
 authority.
 
+When an automatic log X range contains fewer than three visible decade ticks,
+the renderer labels visible subdivisions (or bounded logarithmically spaced
+positions for a very narrow range). This applies after Dataset coordinate view
+limits, without changing data, units or bounds. Explicit stored tick positions
+and labels take priority over `major_step`; an explicit major step disables the
+automatic subdivision-label fallback.
+
 For 2D plots, `axis.x.major_step` is a positive number or blank. On a log10 X
 axis, `1` places major ticks one decade apart (`0.01`, `0.1`, `1`, `10`, ...);
 on a linear axis it is a linear display-unit step. `axis.x.minor_grid` is

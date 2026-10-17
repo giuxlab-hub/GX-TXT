@@ -1,6 +1,6 @@
 # Sardinia Levoglucosan Campaign Demo
 
-`demo.environmental.levoglucosan_campaign` 1.2.1 is an external scientific demonstration plugin for GX-TXT.
+`demo.environmental.levoglucosan_campaign` 1.3.0 is an external scientific demonstration plugin for GX-TXT.
 
 Reusable regression, smoothing and summary statistics use the runtime-advertised public `math.numeric` API; the campaign's site, fire and quality-control rules remain in this module. Its fourteen graphs use persistent public Plot.dataset variants.
 
@@ -59,3 +59,27 @@ The source and generated observations are synthetic and are explicitly marked as
 See `MANUAL.md` for the complete workflow, output definitions, scientific assumptions, literature basis, configuration options, and validation status.
 
 License: GNU GPL v3 or later.
+
+## Statistical interpretation in 1.3.0
+
+Daily, monthly, seasonal and annual summaries now retain the public CORE
+statistical table, stable row identities, units and conditional assumptions in
+every derived or plotting Dataset. Numeric supplies each mean, SD, SEM and exact
+Student-t quantile once. Reported confidence limits are the untruncated interval;
+the earlier lower-limit clipping and private t approximation are removed.
+Canonical Dataset and variable IDs are unchanged. Original Sessions and earlier
+release artifacts are not rewritten; rerunning explicitly updates this module's
+owned derived outputs as before.
+
+Daily intervals assume independent Gaussian technical errors. Monthly, seasonal
+and annual teaching intervals additionally assume independent daily observations;
+seasonal/fire structure can violate that assumption. No empirical coverage or
+causal claim is made. Graph labels identify these conditional intervals.
+
+Correlations use the public Pearson estimator directly, with CORE zero-variance
+semantics. Fire regressions use relative SEM-derived weights, not known absolute
+sigma. The descriptive anomaly score retains the earlier normalization
+`max(1.4826 * raw MAD, 1e-9)` and QC retains `100 * SD / max(mean, 1e-12)`; these
+are teaching conventions without a probability or universal acceptance claim.
+MAD and arithmetic are performed through Numeric. CORE records preserve median
+and MAD meaning, units and the raw scaling convention.

@@ -72,6 +72,12 @@ def decode(snapshot):
             marker = record(obj["marker"]); marker_style = record(obj["marker_style"])
             line([numbers(marker["tail"]), numbers(marker["tip"])], rgba(marker_style["color"]), marker_style["line_width"])
             line([numbers(marker["head_left"]), numbers(marker["tip"]), numbers(marker["head_right"])], rgba(marker_style["color"]), marker_style["line_width"])
+        for point in seq(obj.get("point_markers", "")):
+            primitives.append(("glyph", numbers(point), color, 1, 3.))
+        for raw_marker in seq(obj.get("part_markers", "")):
+            entry = record(raw_marker); marker = record(entry["geometry"]); marker_style = record(entry["style"])
+            line([numbers(marker["tail"]), numbers(marker["tip"])], rgba(marker_style["color"]), marker_style["line_width"])
+            line([numbers(marker["head_left"]), numbers(marker["tip"]), numbers(marker["head_right"])], rgba(marker_style["color"]), marker_style["line_width"])
     for raw in seq(snapshot.get("legend_primitives", "")):
         legend = record(raw)
         line([numbers(legend["a"]), numbers(legend["b"])], rgba(legend["color"]), legend["width"], legend["style"])
@@ -104,6 +110,7 @@ def svg(frame):
             else: child(group, "circle", dict(attrs, cx=x, cy=y, r=radius))
     child(root, "rect", dict(zip(("x", "y", "width", "height"), clip), fill="none", stroke="#8393A5"))
     for (x,y), content, anchor, rotation, fontsize, color in texts:
+        if anchor == "center": anchor = ""
         attrs = {"x": x, "y": y, "fill": css(color), "fill-opacity": color[3], "font-family": "sans-serif", "font-size": fontsize, "text-anchor": "end" if "e" in anchor else "start" if "w" in anchor else "middle", "dominant-baseline": "hanging" if "n" in anchor else "text-after-edge" if "s" in anchor else "central"}
         if rotation: attrs["transform"] = "rotate(%g %g %g)" % (-rotation, x, y)
         child(root, "text", attrs).text = content
@@ -132,6 +139,7 @@ def png(frame, scale, path):
             else: c.arc(x,y,radius,0,2*math.pi);c.fill()
     c.restore();c.set_dash(());c.set_line_width(1);c.set_source_rgb(.514,.576,.647);c.rectangle(*clip);c.stroke()
     for (x,y),content,anchor,rotation,fontsize,color in texts:
+        if anchor == "center": anchor = ""
         c.save();c.translate(x,y);c.rotate(-math.radians(rotation));c.set_source_rgba(*color);c.select_font_face("sans-serif");c.set_font_size(fontsize)
         xb,yb,tw,th,_,_=c.text_extents(content)
         dx=-xb-tw if "e" in anchor else -xb if "w" in anchor else -xb-tw/2

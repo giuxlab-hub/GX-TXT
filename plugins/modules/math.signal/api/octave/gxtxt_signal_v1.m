@@ -57,21 +57,14 @@ endfunction
 function out=correlation_action(action,x,y,c,opts)
   valid(x,'first signal');if(isempty(y)),y=x;else valid(y,'second signal');endif;x=x(:);y=y(:);
   if(!any(strcmp(action,{'auto','cross','delay'}))),error('GXTXT:Signal:UnknownOperation','unknown correlation action');endif
-  r=conv(x,flipud(conj(y)));lags=(-(numel(y)-1):numel(x)-1)';mode=opt(opts,'normalization','none');
-  switch(mode)
-    case 'biased',r=r/max(numel(x),numel(y));
-    case 'unbiased'
-      overlap=max(0,min(numel(x),numel(y)+lags)-max(1,1+lags)+1);
-      r=r./overlap;
-    case 'coefficient',scale=sqrt(sum(abs(x).^2)*sum(abs(y).^2));if(scale==0),error('GXTXT:Signal:ZeroEnergy','cannot normalize zero-energy signal');endif;r=r/scale;
-    case 'none'
-    otherwise,error('GXTXT:Signal:InvalidPolicy','unknown correlation normalization');
-  endswitch
-  out=split(r);out.lags=lags(:);[~,index]=max(abs(r));out.delay_samples=lags(index);
-  if(isfield(opts,'sample_rate'))
-    if(!isscalar(opts.sample_rate)||opts.sample_rate<=0),error('GXTXT:Signal:InvalidSampleRate','sample rate must be positive');endif
-    out.delay_seconds=out.delay_samples/opts.sample_rate;
-  endif
+  options=struct();for key={'normalization','sample_rate'}
+    if(isfield(opts,key{1})),options.(key{1})=opts.(key{1});endif
+  endfor
+  try out=gxtxt_numeric_v1('signal_correlation',x,y,options);
+  catch err
+    err.identifier=strrep(err.identifier,'GXTXT:Numeric:','GXTXT:Signal:');rethrow(err);
+  end_try_catch
+  if(!isfield(opts,'sample_rate')),out=rmfield(out,'delay_seconds');endif
 endfunction
 function out=filter_action(action,model,x,state,opts)
   if(!isstruct(model)||(!isfield(model,'numerator')&&!isfield(model,'sos'))),error('GXTXT:Signal:InvalidModel','filter model requires numerator or SOS');endif
@@ -347,24 +340,25 @@ function out=response_action(action,model,axis,input,opts)
 endfunction
 function out=spectral_action(action,x,y,fs,opts)
   valid(x,'signal');valid(fs,'sample rate');if(!isscalar(fs)||fs<=0),error('GXTXT:Signal:InvalidSampleRate','positive sample rate required');endif
-  x=x(:);nfft=opt(opts,'nfft',max(256,2^nextpow2(numel(x))));window=opt(opts,'window',hamming(min(numel(x),nfft)));overlap=opt(opts,'overlap',0.5);
-  switch(action)
-    case 'window_metrics'
-      if(any(imag(x)!=0)||sum(x)==0),error('GXTXT:Signal:InvalidWindow','window must be real with nonzero sum');endif
-      out=struct('coherent_gain',sum(x)/numel(x),'equivalent_noise_bandwidth_hz',fs*sum(x.^2)/(sum(x)^2),'power_gain',sum(x.^2)/numel(x));
-    case 'periodogram',[p,f]=periodogram(x,window,nfft,fs);out=split(p,'psd');out.frequency_hz=f;
-    case 'welch',[p,f]=pwelch(x,window,overlap,nfft,fs);out=split(p,'psd');out.frequency_hz=f;
-    case 'asd',[p,f]=pwelch(x,window,overlap,nfft,fs);out=struct('asd',sqrt(real(p)),'frequency_hz',f);
-    case {'cross_psd','coherence','frf_h1','frf_h2'}
-      valid(y,'second signal');y=y(:);if(numel(y)!=numel(x)),error('GXTXT:Signal:DimensionMismatch','signals must have equal length');endif
-      [pxx,f]=pwelch(x,window,overlap,nfft,fs);pyy=pwelch(y,window,overlap,nfft,fs);pxy=cpsd(x,y,window,overlap,nfft,fs);
-      switch(action)
-        case 'cross_psd',v=pxy;case 'coherence',v=abs(pxy).^2./(pxx.*pyy);
-        case 'frf_h1',v=pxy./pxx;case 'frf_h2',v=pyy./conj(pxy);
-      endswitch
-      out=split(v);out.frequency_hz=f;
-    otherwise,error('GXTXT:Signal:UnknownOperation','unknown spectral action');
-  endswitch
+  if(strcmp(action,'window_metrics'))
+    try out=gxtxt_numeric_v1('window_metrics',x,fs);
+    catch err
+      err.identifier=strrep(err.identifier,'GXTXT:Numeric:','GXTXT:Signal:');rethrow(err);
+    end_try_catch
+    return;
+  endif
+  options=struct();for key={'window','overlap','nfft'}
+    if(isfield(opts,key{1})),options.(key{1})=opts.(key{1});endif
+  endfor
+  try
+    if(any(strcmp(action,{'periodogram','welch','asd'})))
+      out=gxtxt_numeric_v1(['signal_' action],x,fs,options);
+    elseif(any(strcmp(action,{'cross_psd','coherence','frf_h1','frf_h2'})))
+      out=gxtxt_numeric_v1(['signal_' action],x,y,fs,options);
+    else error('GXTXT:Signal:UnknownOperation','Unknown spectral action');endif
+  catch err
+    err.identifier=strrep(err.identifier,'GXTXT:Numeric:','GXTXT:Signal:');rethrow(err);
+  end_try_catch
 endfunction
 function out=stft_action(action,x,window,hop,opts)
   valid(window,'window');w=window(:);valid(hop,'hop');if(!isscalar(hop)||hop!=fix(hop)||hop<1||hop>numel(w)),error('GXTXT:Signal:InvalidHop','hop must be integer within window length');endif
@@ -398,23 +392,18 @@ function out=quality_action(action,x,y,fs,opts)
   valid(x,'signal');x=x(:);
   switch(action)
     case 'basic'
-      rms_value=sqrt(mean(abs(x).^2));if(rms_value==0),error('GXTXT:Signal:ZeroEnergy','crest factor is undefined for a zero signal');endif
-      out=struct('rms',rms_value,'peak',max(abs(x)),'peak_to_peak',max(real(x))-min(real(x)),'crest_factor',max(abs(x))/rms_value,'dc_real',real(mean(x)),'dc_imaginary',imag(mean(x)));
-    case 'snr',valid(y,'noise');if(numel(x)!=numel(y)),error('GXTXT:Signal:DimensionMismatch','signal and noise lengths differ');endif;out=struct('snr_db',10*log10(sum(abs(x).^2)/sum(abs(y).^2)));
-    case 'harmonics'
-      r=quality_action('spectrum',x,y,fs,opts);
-      out=struct('thd',r.thd,'thd_db',20*log10(r.thd),'harmonic_powers',r.harmonic_powers);
-    case 'spectrum'
-      valid(fs,'sample rate');if(!isreal(x)||!isscalar(fs)||fs<=0),error('GXTXT:Signal:InvalidSampleRate','real signal and positive sample rate required');endif
-      n=numel(x);f0=opt(opts,'fundamental_hz',[]);if(isempty(f0)||f0<=0||f0>=fs/2),error('GXTXT:Signal:InvalidFrequency','fundamental_hz must lie below Nyquist');endif
-      fundamental_bin=f0*n/fs;if(abs(fundamental_bin-round(fundamental_bin))>1e-6),error('GXTXT:Signal:NoncoherentSampling','spectrum quality requires coherent fundamental sampling');endif
-      X=fft(x);power=abs(X(1:floor(n/2)+1)).^2;index=round(fundamental_bin)+1;signal_power=power(index);
-      if(signal_power==0),error('GXTXT:Signal:ZeroEnergy','fundamental bin has zero power');endif
-      spurs=power;spurs(1)=0;spurs(index)=0;harmonic_indices=[];
-      for k=2:floor((fs/2)/f0),harmonic_indices(end+1)=round(k*fundamental_bin)+1;endfor
-      harmonic_indices=unique(harmonic_indices);distortion=sum(power(harmonic_indices));noise_and_distortion=sum(spurs);noise=max(0,noise_and_distortion-distortion);
-      noise_bins=spurs;noise_bins(harmonic_indices)=0;noise_floor=median(noise_bins(noise_bins>0));if(isempty(noise_floor)),noise_floor=0;endif
-      out=struct('fundamental_power',signal_power,'dc_power',power(1),'harmonic_powers',power(harmonic_indices),'noise_power',noise,'noise_floor_power_per_bin',noise_floor,'noise_floor_db_relative',10*log10(noise_floor/signal_power),'distortion_power',distortion,'thd',sqrt(distortion/signal_power),'thd_plus_n',sqrt(noise_and_distortion/signal_power),'snr_db',10*log10(signal_power/noise),'sinad_db',10*log10(signal_power/noise_and_distortion),'sfdr_db',10*log10(signal_power/max(spurs)),'enob_bits',(10*log10(signal_power/noise_and_distortion)-1.76)/6.02);
+      out=gxtxt_numeric_v1('signal_summary',x);
+    case {'snr','harmonics','spectrum'}
+      try
+        if(strcmp(action,'snr')),out=gxtxt_numeric_v1('signal_snr',x,y);
+        else
+          quality_options=struct();if(isfield(opts,'fundamental_hz')),quality_options.fundamental_hz=opts.fundamental_hz;endif
+          out=gxtxt_numeric_v1('signal_spectrum_quality',x,fs,quality_options);
+        endif
+      catch err
+        % Preserve Signal's existing public error namespace after owner migration.
+        err.identifier=strrep(err.identifier,'GXTXT:Numeric:','GXTXT:Signal:');rethrow(err);
+      end_try_catch
     otherwise,error('GXTXT:Signal:UnknownOperation','unknown quality action');
   endswitch
 endfunction
@@ -444,7 +433,9 @@ function out=events_action(action,time,x,other,opts)
   endif
   switch(action)
     case 'crossings',out=struct('time',crossing,'count',numel(crossing));
-    case 'period',if(numel(crossing)<2),error('GXTXT:Signal:InsufficientEvents','at least two crossings required');endif;out=struct('period',mean(diff(crossing)),'frequency_hz',1/mean(diff(crossing)),'crossing_times',crossing);
+    case 'period'
+      if(numel(crossing)<2),error('GXTXT:Signal:InsufficientEvents','at least two crossings required');endif
+      out=gxtxt_numeric_v1('event_period',crossing);out.crossing_times=crossing;
     case 'delay',valid(other,'second signal');r=events_action('crossings',time,other,[],opts);if(isempty(crossing)||isempty(r.time)),error('GXTXT:Signal:InsufficientEvents','both channels require a crossing');endif;out=struct('delay_seconds',r.time(1)-crossing(1));
     otherwise,error('GXTXT:Signal:UnknownOperation','unknown event action');
   endswitch
@@ -519,12 +510,11 @@ function out=time_metric_action(action,t,y,other,opts)
       rising=events_action('crossings',t,y,[],struct('threshold',threshold,'direction','rising'));
       falling=events_action('crossings',t,y,[],struct('threshold',threshold,'direction','falling'));
       if(numel(rising.time)<2||isempty(falling.time)),error('GXTXT:Signal:InsufficientEvents','pulse metrics require repeated rising and falling crossings');endif
-      periods=diff(rising.time);widths=[];for k=1:numel(rising.time)-1
-        next=falling.time(find(falling.time>rising.time(k),1,'first'));
-        if(!isempty(next)&&next<rising.time(k+1)),widths(end+1)=next-rising.time(k);endif
-      endfor
-      if(isempty(widths)),error('GXTXT:Signal:InsufficientEvents','no complete pulse width');endif
-      out=struct('period_seconds',mean(periods),'frequency_hz',1/mean(periods),'pulse_width_seconds',mean(widths),'duty_cycle',mean(widths)/mean(periods),'jitter_std_seconds',std(periods));
+      try out=gxtxt_numeric_v1('pulse_timing',rising.time,falling.time);
+      catch err
+        if(!isempty(strfind(err.message,'No complete pulse width'))),error('GXTXT:Signal:InsufficientEvents','no complete pulse width');endif
+        rethrow(err);
+      end_try_catch
     otherwise,error('GXTXT:Signal:UnknownOperation','unknown time metric');
   endswitch
 endfunction

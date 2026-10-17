@@ -1,4 +1,9 @@
-## 1.1.2
+## 1.2.0 — dev097
+
+- Public CORE calibration interpretation with preserved source concentrations and physical units.
+- Reconciled module, package and current producer identities for this release.
+
+## 1.1.20
 
 - Open standalone runtime Session and inspect Dataset provenance through supported public APIs.
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env tclsh
-# Replicate Curve Analysis v15.2 -> Plot Dataset v3 backend bridge.
+# Replicate Curve Analysis v15.3 -> Plot Dataset v3 backend bridge.
+# The v152 filename and persisted provider keys remain compatibility identities.
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 # The producer-visible graph remains curve.replicate_analysis. Rendering is
@@ -228,8 +229,15 @@ proc genericSeriesToPlotSpec {graphId variantId s runtime} {
     set out [dict create id $sid dataset_id [dict get $s dataset_id] \
         x_variable_id [dict get $s x_variable_id] y_variable_id [dict get $s y_variable_id] \
         axis [dict get $s axis] label [dict get $s label] enabled [dict get $s enabled] order [dict get $s order]]
-    foreach f {family_variable_id secondary_variable_id ordering_variable_id row_filters} {
+    foreach f {family_variable_id secondary_variable_id ordering_variable_id row_filters source_row_ordinals} {
         if {[dict exists $s $f] && [dict get $s $f] ne ""} {dict set out $f [dict get $s $f]}
+    }
+    # Optional Family is absent, not a fabricated numeric family. Retain the
+    # trace identity grouping while omitting the unbound auxiliary dimension.
+    if {[string trim [rv $runtime bindings family ""]] eq ""&&[dict get $s dataset_id] in {curve.replicate.traces curve.replicate.profiles}} {
+        foreach field {family_variable_id secondary_variable_id} {
+            if {[dict exists $out $field]&&[dict get $out $field] eq "family_value"} {dict unset out $field}
+        }
     }
     if {[dict exists $s family_variable_id] && [dict get $s family_variable_id] ne ""} {
         dict set out family_label_prefix [dict get $s label]
@@ -307,7 +315,45 @@ proc genericSeriesToPlotSpec {graphId variantId s runtime} {
     return $out
 }
 
-proc buildPlotSpec {graphId variantId runtime} {
+proc seriesHasFiniteRows {session series} {
+    # Presentation eligibility only: no estimates or statistical policy here.
+    # Read canonical selected observations with the public Graph Series predicates.
+    set dataset [dict get $series dataset_id]
+    set ids [list [dict get $series x_variable_id] [dict get $series y_variable_id]]
+    foreach field {family_variable_id secondary_variable_id ordering_variable_id} {
+        if {[dict exists $series $field]&&[dict get $series $field] ne ""} {lappend ids [dict get $series $field]}
+    }
+    if {[dict exists $series bar_bounds]} {lappend ids {*}[dict values [dict get $series bar_bounds]]}
+    set finite {}
+    foreach id [lsort -unique $ids] {
+        set dtype [dict get [::GX::datasetVariableV3ById $dataset $id] dtype]
+        if {$dtype ne "string"} {lappend finite [dict create filter_variable_id $id predicate is_finite dtype $dtype]}
+    }
+    set filters {}
+    if {[dict exists $series row_filters]} {set filters [::GX::graphSeriesNormalizeFilters $dataset [dict get $series row_filters]]}
+    foreach filter $filters {lappend ids [dict get $filter filter_variable_id]}
+    set selected {}
+    if {[dict exists $series source_row_ordinals]} {foreach row [dict get $series source_row_ordinals] {dict set selected $row 1}}
+    set stream [::GX::tableStreamOpenDataset $session $dataset [lsort -unique $ids] 512 {numeric_transport values}]
+    try {
+        while {1} {
+            set chunk [::GX::tableStreamNext $stream];set values [dict get $chunk values]
+            for {set i 0} {$i<[dict get $chunk row_count]} {incr i} {
+                if {[dict size $selected]&&![dict exists $selected [expr {[dict get $chunk offset]+$i}]]} continue
+                set valid 1
+                foreach filter [concat $finite $filters] {
+                    if {![::GX::graphSeriesFilterRowMatch $filter [lindex [dict get $values [dict get $filter filter_variable_id]] $i]]} {set valid 0;break}
+                }
+                if {$valid} {return 1}
+            }
+            if {[dict get $chunk eof]} {return 0}
+        }
+    } finally {::GX::tableStreamClose $stream}
+}
+
+proc buildPlotSpec {graphId variantId runtime omittedName} {
+    upvar 1 $omittedName omitted
+    set omitted {}
     set psec "plot.$graphId"
     set title [rv $runtime $psec title "Replicate Curve Analysis"]
     set axes [dict create]
@@ -322,7 +368,8 @@ proc buildPlotSpec {graphId variantId runtime} {
         if {![catch {set members [datasetFamilyMembers curve.replicate.family_summary family_index family_value]}] && [llength $members]} {
             set pos {}; set labels {}; set i 0
             foreach rec $members {
-                incr i; lappend pos $i; lappend labels [dict get $rec label]
+                incr i; lappend pos $i
+                if {[string trim [rv $runtime bindings family ""]] eq ""} {lappend labels {All curves}} else {lappend labels [dict get $rec label]}
             }
             dict set xa tick_positions [join $pos ";"]
             dict set xa tick_labels [join $labels ";"]
@@ -336,11 +383,36 @@ proc buildPlotSpec {graphId variantId runtime} {
     set series {}
     foreach s $sourceSeries {
         set prepared [genericSeriesToPlotSpec $graphId $variantId $s $runtime]
-        foreach expanded [expandFamilyBandSeries $prepared] {lappend series $expanded}
+        foreach expanded [expandFamilyBandSeries $prepared] {
+            if {[seriesHasFiniteRows $::GX::currentSession $expanded]} {lappend series $expanded} else {lappend omitted [dict get $expanded id]}
+        }
     }
     set panel [dict create id main axes $axes series $series annotations {}]
     return [dict create schema PLOT_DATASET_PLOTSPEC_v2 graph_type cartesian_2d graph_id plot.dataset.xy \
         title $title defaults [dict create style [dict create]] panels [list $panel] output [dict create]]
+}
+
+proc writeGraphStatus {outdir aliasFile graphId variantId status omitted count reason} {
+    file mkdir $outdir
+    set path [file join $outdir "[file rootname $aliasFile].status.ini"]
+    set temp "$path.[pid].tmp";set fd [open $temp {WRONLY CREAT EXCL}]
+    try {
+        puts $fd {[graph_status]}
+        foreach {key value} [list api_version 1 graph_id $graphId variant_id $variantId render_status $status rendered_series $count omitted_series $omitted reason $reason statistical_semantics_api STATISTICAL_RESULT_SEMANTICS_API_v1] {::GX::putKV $fd $key $value}
+    } finally {close $fd}
+    file rename -force -- $temp $path
+    return $path
+}
+
+proc preserveUnavailableArtifact {outdir aliasFile} {
+    set stem [file rootname $aliasFile];set candidates [list $aliasFile "$stem.svg" "$stem.pdf" [file join .gxtxt_plotmeta "$stem.ini"]]
+    set history ""
+    foreach relative $candidates {
+        set path [file join $outdir $relative];if {![file isfile $path]} continue
+        if {$history eq ""} {set history [file join $outdir previous_graphs "[clock microseconds]_[pid]"];file mkdir $history}
+        set destination [file join $history $relative];file mkdir [file dirname $destination]
+        file rename -- $path $destination
+    }
 }
 
 proc copyArtifactAndMetadata {artifact target} {
@@ -378,6 +450,14 @@ if {[catch {
     set manifest [file join $session metadata manifest.ini]
     if {[file isfile $manifest]} {::GX::loadManifest $manifest}
     ::GX::loadDatasetRegistry $session
+    set statisticalDataset [dict get {curve.replicate.overlay curve.replicate.traces curve.replicate.consensus_uncertainty curve.replicate.profiles curve.replicate.uncertainty_components curve.replicate.profiles curve.replicate.family_summary curve.replicate.family_summary} $graphId]
+    set statistics [::GX::datasetMetadataRead $session $statisticalDataset]
+    if {![dict exists $statistics analysis.statistical_results]} {error {Replicate result lacks captured CORE meaning; recalculate before rendering}}
+    ::GX::StatisticsV1::validateMetadata $statistics
+    ::GX::sessionInspectionDatasetPayload $statisticalDataset $session
+    dict for {record result} [dict get $statistics analysis.statistical_results] {
+        if {[dict get $result schema] eq "gxtxt.statistical_result.column_binding.v1"} {::GX::StatisticsV1::bindingTable $session $statisticalDataset $record 0 1}
+    }
 
     # Activate the producer's Series extension (headless-safe) and seed the
     # standard Graph Series if this is the first v15 render.
@@ -389,7 +469,18 @@ if {[catch {
     ::GX::CurveRepGraphicsV1::ensureSeries $graphId $producerVariant
 
     ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
-    set spec [buildPlotSpec $graphId $producerVariant $runtime]
+    set spec [buildPlotSpec $graphId $producerVariant $runtime omitted]
+    set renderedCount [llength [dict get [lindex [dict get $spec panels] 0] series]]
+    set reason ""
+    if {[llength $omitted]} {set reason {No finite observations satisfy the omitted Series bindings and filters; captured CORE results retain statistical availability and assumptions.}}
+    if {!$renderedCount} {
+        preserveUnavailableArtifact $outdir $aliasFile
+        set statusPath [writeGraphStatus $outdir $aliasFile $graphId $producerVariant unavailable $omitted 0 $reason]
+        ::GX::writeManifest $manifest
+        puts [join [list UNAVAILABLE [enc $reason] [enc $statusPath]] \t]
+        flush stdout
+        exit 0
+    }
     set providerScope [expr {$producerVariant eq "" ? "base" : $producerVariant}]
     set providerKey "curve.replicate_analysis:v15.2:$graphId:$providerScope"
     set ref [::GX::PlotDatasetAPIv3::upsertPlotFromSpec curve.replicate_analysis $providerKey $spec]
@@ -435,6 +526,7 @@ if {[catch {
 
     set target [file join [file normalize $outdir] $aliasFile]
     copyArtifactAndMetadata $artifact $target
+    writeGraphStatus $outdir $aliasFile $graphId $producerVariant rendered $omitted $renderedCount $reason
 
     # The provider Variant is a backend implementation detail. Keep its
     # persistent PlotSpec/cache but remove the rendered PNG/geometry so the

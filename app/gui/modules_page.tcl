@@ -16,10 +16,12 @@ proc ::GX::buildModulesPage {} {
     grid columnconfigure $f.header 0 -weight 1
     ttk::frame $f.filters
     set ::GX::moduleCoreFilter All
+    if {$::GX::moduleKindFilter ni {All Analysis}} {set ::GX::moduleKindFilter All}
+    if {$::GX::moduleGroupFilter ni [linsert [::GX::moduleGroups] 0 All]} {set ::GX::moduleGroupFilter All}
     ttk::label $f.filters.sl -text "Search"
     ttk::entry $f.filters.search -textvariable ::GX::moduleSearch -width 18
     ttk::label $f.filters.kl -text "Type"
-    ttk::combobox $f.filters.kind -textvariable ::GX::moduleKindFilter -values {All Acquisition Analysis {Measurement automation}} -state readonly -width 16
+    ttk::combobox $f.filters.kind -textvariable ::GX::moduleKindFilter -values {All Analysis} -state readonly -width 16
     ttk::label $f.filters.gl -text "Group"
     ttk::combobox $f.filters.group -textvariable ::GX::moduleGroupFilter -values [linsert [::GX::moduleGroups] 0 All] -state readonly -width 20
     ttk::combobox $f.filters.core -textvariable ::GX::moduleCoreFilter -values {All CORE Non-CORE} -state readonly -width 9

@@ -71,6 +71,17 @@ function gxtxt_print_png_atomic(fig, target, dpi)
       unwind_protect_cleanup
         if(exist(raw,'file')==2),unlink(raw);endif
       end_unwind_protect
+    elseif(strcmpi(toolkit,'qt'))
+      % Qt print otherwise replaces the configured figure background with
+      % white. Preserve the same explicit color contract as the other CORE
+      % renderers, restoring the caller's figure on success or export error.
+      prior_hardcopy=get(fig,'inverthardcopy');
+      unwind_protect
+        set(fig,'inverthardcopy','off');
+        print(fig,tmp,'-dpng',sprintf('-r%d',round(dpi)));
+      unwind_protect_cleanup
+        set(fig,'inverthardcopy',prior_hardcopy);
+      end_unwind_protect
     else
       print(fig,tmp,'-dpng',sprintf('-r%d',round(dpi)));
     endif

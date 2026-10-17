@@ -45,7 +45,22 @@ proc ::GX::DatasetCurveFit::_geometricMetricUnit {key} {
 }
 proc ::GX::DatasetCurveFit::_uiFitOptions {w} {
     variable state
-    set options [dict create smoothing_lambda $state($w,smoothing) period $state($w,period) orientation $state($w,orientation)]
+    set options [dict create influence_diagnostics $state($w,influenceDiagnostics) smoothing_lambda $state($w,smoothing) period $state($w,period) orientation $state($w,orientation) noise_model $state($w,noiseModel) confidence $state($w,confidence) prediction_band $state($w,predictionBand)]
+    if {$state($w,covarianceSettings) ne {}} {dict set options covariance $state($w,covarianceSettings)}
+    if {$state($w,profileSettings) ne {}} {dict set options profile $state($w,profileSettings)}
+    if {$state($w,bootstrapSettings) ne {}} {dict set options bootstrap $state($w,bootstrapSettings)}
+    if {$state($w,model) in {akima bspline}} {dict set options knot_options [::GX::datasetPublicationV2DictDefault $state($w,knotSettings) $state($w,model) {}]}
+    if {$state($w,model) eq "smoothing_spline"} {dict set options smoothing_options $state($w,smoothingSettings)}
+    if {$state($w,model) eq "registered"} {dict set options registered_model [expr {[info exists state($w,registeredModel)]?$state($w,registeredModel):{}}]}
+    if {$state($w,model) eq "components"} {dict set options component_recipe $state($w,componentRecipe)}
+    if {$state($w,model) eq "rational"} {dict set options rational_recipe $state($w,rationalRecipe);dict set options rational_extrapolation $state($w,rationalExtrapolation)}
+    if {$state($w,model) eq "formula"} {dict set options formula_recipe $state($w,formulaRecipe)}
+    if {$state($w,model) eq "implicit"} {dict set options implicit_recipe $state($w,implicitRecipe);dict set options implicit_branch $state($w,implicitBranch)}
+    if {$state($w,model) eq "complex_response"} {dict set options complex_recipe $state($w,complexRecipe);dict set options complex_data $state($w,complexData)}
+    if {$state($w,model) eq "regions"} {dict set options region_recipe $state($w,regionRecipe)}
+    foreach field {predictionSigma predictionWeights} option {prediction_sigma prediction_weights} {if {$state($w,$field) ne {}} {dict set options $option $state($w,$field)}}
+    if {$state($w,measurementKind) ne "none"} {dict set options measurement [dict create kind $state($w,measurementKind) variable_id $state($w,measurementVariable) independent_variable_id $state($w,measurementIndependentVariable) nonfinite $state($w,measurementMissing)]}
+    if {($state($w,model) in {exponential power_law gaussian components regions formula rational implicit complex_response registered}||($state($w,model) in {linear polynomial}&&$state($w,measurementKind) eq "sigma_xy"))&&[dict exists $state($w,solverSettings) $state($w,model)]} {dict set options solver_options [dict get $state($w,solverSettings) $state($w,model)]}
     foreach axis {u v} upper {U V} {dict set options translation_$axis [dict create mode $state($w,translation${upper}Mode) delta $state($w,translation${upper}Delta)]}
     if {$state($w,orientation) eq "r_of_theta"} {dict set options polar_frame $state($w,polarFrame)}
     if {$state($w,model) in {parametric_polynomial parametric_spline}} {
@@ -103,11 +118,32 @@ proc ::GX::DatasetCurveFit::_swapFormulaAxes {text} {
     return [string map {__GX_CURVE_AXIS__ y} $text]
 }
 proc ::GX::DatasetCurveFit::formula {result} {
+    if {[dict get $result model] eq "complex_response"} {
+        set lines [list {Complex physical responses; one shared Cartesian covariance objective.}]
+        foreach channel [dict get $result options complex_recipe channels] {lappend lines "[dict get $channel id] ([dict get $channel unit]): ([dict get $channel real_expression]) + i*([dict get $channel imaginary_expression])"}
+        lappend lines "Display: [dict get $result options complex_data display channel_id] / [dict get $result options complex_data display projection]. Phase residuals are wrapped diagnostics, not an additional objective term."
+        return [join $lines \n]
+    }
+    if {[dict get $result model] eq "rational"} {
+        set summary [dict get $result statistical_results training context rational]
+        return "Physical [dict get $result orientation]: [dict get $result numeric_model_state formula_declaration original_expression]\nDenominator constant one; no factor cancellation. Declared predictor domain [dict get $summary domain_receipt domain] [dict get $summary predictor_unit]. Rational least-squares approximation; inference is conditional on the declared degrees and response noise."
+    }
+    if {[dict get $result model] eq "implicit"} {
+        set recipe [dict get $result options implicit_recipe];set branch [dict get $result options implicit_branch]
+        return "0 = [dict get $recipe formula expression]\nSymbols x and y denote the original physical X and Y axes. Residual mode: [dict get $recipe residual_mode].\nDeclared [dict get $result orientation] branch, response bracket [dict get $branch bracket], independent domain [dict get $branch independent_domain]. Local roots are checked; global uniqueness is not certified."
+    }
+    if {[dict get $result model] eq "formula"} {
+        set orientation [::GX::datasetPublicationV2DictDefault $result orientation y_of_x]
+        if {$orientation eq "x_of_y"} {set independent Y;set response X} else {set independent X;set response Y}
+        # Keep authored symbols literal: a parameter may legitimately be named
+        # y. Axis swapping must never rewrite its scientific identity.
+        return "Physical $response = [dict get $result numeric_model_state formula_declaration original_expression]\nPredictor x denotes physical $independent; other symbols retain their declared parameter identities."
+    }
     set text [_formulaBase $result]
     set orientation [::GX::datasetPublicationV2DictDefault $result orientation y_of_x]
     if {$orientation eq "r_of_theta"} {regsub -all {\my\M} $text R text;regsub -all {\mx\M} $text theta text}
     if {$orientation eq "x_of_y"} {set text [_swapFormulaAxes $text]}
-    if {[dict get $result model] in {pchip smoothing_spline fourier}} {set text "[expr {$orientation eq "x_of_y" ? "X=f(Y)" : "Y=f(X)"}]: $text"}
+    if {[dict get $result model] in {pchip smoothing_spline akima bspline fourier}} {set text "[expr {$orientation eq "x_of_y" ? "X=f(Y)" : "Y=f(X)"}]: $text"}
     if {[dict exists $result translation]} {
         set mapping [dict get $result translation]
         if {[dict get $mapping u mode] eq "off" && [dict get $mapping v mode] eq "off" && [dict get $mapping u delta]==0 && [dict get $mapping v delta]==0} {return $text}
@@ -129,7 +165,7 @@ proc ::GX::DatasetCurveFit::_disposePreview {key} {
     _disposeReport $state($key,scene) $state($key,preview)
 }
 proc ::GX::DatasetCurveFit::_disposeReport {scene report} {
-    foreach field {fitted_native residual_native} {if {[dict exists $report $field]} {::GX::Native2D::core delete $scene [dict get $report $field]}}
+    foreach field {fitted_native residual_native prediction_lower_native prediction_upper_native} {if {[dict exists $report $field]} {::GX::Native2D::core delete $scene [dict get $report $field]}}
 }
 rename ::GX::DatasetCurveFit::loadSource ::GX::DatasetCurveFit::loadSource_v1
 proc ::GX::DatasetCurveFit::loadSource {key dataset x y filters {transformManifest {}} {expectedIdentities {}}} {
@@ -299,12 +335,20 @@ proc ::GX::DatasetCurveFit::_numericSource {key model degree initial scope selec
     set hostKey [expr {[info exists state($key,loading)]&&$state($key,loading) ? $key : ""}]
     set parameter [::GX::datasetPublicationV2DictDefault $options parameter_variable_id ""]
     if {$parameter ne ""} {set parameterDescriptor [::GX::datasetVariableV3ById $state($key,dataset) $parameter]}
+    if {$model eq "complex_response"} {dict set options complex_binding [_complexBinding $key $options $training]}
+    set covariance [_covarianceBinding $key $model $options $training]
+    if {$covariance ne {}} {dict set options covariance_binding $covariance;dict set options prediction_context covariance_unit [dict get $covariance covariance_unit]}
+    set measurement [_measurementBinding $key $model $options $training]
+    if {$measurement ne {}} {dict set options measurement_binding $measurement}
     set result [_runNumeric $model $degree $initial $training $input $domain $options $state($key,scene) $state($key,documentId) $hostKey]
+    if {[dict exists $options parameter_context]} {return $result}
+    if {$measurement ne {}} {dict set result measurement_binding $measurement}
     if {$parameter ne ""} {dict set result parameter_variable_descriptor $parameterDescriptor}
     return $result
 }
 proc ::GX::DatasetCurveFit::_selectionDescriptor {key} {
     variable state
+    if {[info exists state($key,recipePointMask)]} {return $state($key,recipePointMask)}
     set descriptor [::GX::Native2D::core selection_state $state($key,selectionScene) $state($key,selectionObject) 0 [llength $state($key,rows)]]
     set overrides {}
     foreach pair [dict get $descriptor manual] {lassign $pair index mode;dict set overrides [lindex $state($key,rows) $index] $mode}
@@ -329,7 +373,7 @@ proc ::GX::DatasetCurveFit::_restoreSelectionDescriptor {key descriptor} {
     }
 }
 proc ::GX::DatasetCurveFit::_numericNativeResult {scene document temporary input report} {
-    set fitted "";set residual ""
+    set fitted "";set residual "";set boundaries {}
     try {
         if {[::GX::datasetPublicationV2DictDefault $report model_state_storage inline] eq "document_resource"} {
             dict set report model_state_resource [::GX::interactiveDocumentResourceImportNumeric $document [file join $temporary model_state.json] [dict create format gxtxt.numeric_curve_model_json_v1 encoding utf-8 model [dict get $report model]]]
@@ -338,6 +382,7 @@ proc ::GX::DatasetCurveFit::_numericNativeResult {scene document temporary input
         ::GX::Native2D::core object_style $scene $fitted {visible 0 selectable 0}
         set sampled [::GX::Native2D::core object_sample $scene $fitted 4096]
         dict set report fitted [dict get $sampled points]
+        dict set report fitted_indices [dict get $sampled point_indices]
         dict set report fitted_native $fitted
         dict set report fitted_breaks [dict get $sampled breaks]
         set stride [::GX::datasetPublicationV2DictDefault $report residual_stride 4]
@@ -352,9 +397,21 @@ proc ::GX::DatasetCurveFit::_numericNativeResult {scene document temporary input
         dict set report residual [dict get $page rows];dict set report residual_rows [dict get $page source_rows]
         dict set report exact_source_rows [dict get $input row_count]
         dict set report display_is_scientific_data 0
+        if {[file exists [file join $temporary prediction.bin.gaps]]} {
+            dict set report prediction_gap_resource [::GX::interactiveDocumentResourceImportNumeric $document [file join $temporary prediction.bin.gaps] [dict create format native2d.uint8_break_before_v1 role prediction_boundary_gaps disposable 1 scientific_authority 0]]
+        }
+        foreach boundary {lower upper} {
+            set path [file join $temporary prediction.bin.$boundary]
+            if {![file exists $path]} continue
+            set native [_predictionLoadBoundary $scene $path [file join $temporary prediction.bin.gaps]]
+            lappend boundaries $native
+            ::GX::Native2D::core object_style $scene $native {visible 0 selectable 0 locked 1 color {0.09 0.64 0.29 1} line_width 1.25 line_style 1 marker 0}
+            dict set report prediction_${boundary}_native $native
+            dict set report prediction_${boundary}_resource [::GX::interactiveDocumentNative2DStore $document $scene $native [dict create role prediction_${boundary}_boundary disposable 1 scientific_authority 0]]
+        }
         return $report
     } on error {message options} {
-        foreach id [list $fitted $residual] {if {$id ne ""} {::GX::Native2D::core delete $scene $id}}
+        foreach id [concat [list $fitted $residual] $boundaries] {if {$id ne ""} {::GX::Native2D::core delete $scene $id}}
         return -options $options $message
     }
 }
@@ -370,7 +427,24 @@ proc ::GX::DatasetCurveFit::_numericResidualPage {report start count} {
 }
 proc ::GX::DatasetCurveFit::_residualColumns {w report} {
     variable state
+    if {[dict get $report model] eq "complex_response"} {
+        set names [split [dict get $report residual_columns] ,];set columns [linsert $names 0 row]
+        $w.right.residuals.table configure -columns $columns
+        $w.right.residuals.table heading row -text {Original source row};$w.right.residuals.table column row -width 135 -stretch 0
+        foreach column $names unit [_complexResidualUnits $report] {
+            $w.right.residuals.table heading $column -text "[string map {_ { }} $column] ($unit)"
+            $w.right.residuals.table column $column -width 185 -stretch 0
+        }
+        return
+    }
     set geometric [dict get $report parametric]
+    if {[dict get $report model] eq "implicit"} {
+        $w.right.residuals.table configure -columns {row x observed fitted residual}
+        foreach {column heading} {row {Original source row} x {Source X} observed {Source Y} fitted {Equation value f(X,Y,p)} residual {Equation residual: zero minus f}} {
+            $w.right.residuals.table heading $column -text $heading;$w.right.residuals.table column $column -width [expr {$column in {fitted residual}?240:135}] -stretch 1
+        }
+        return
+    }
     if {[dict get $report orientation] eq "r_of_theta"} {
         set columns {row x observed fitted residual radius theta};$w.right.residuals.table configure -columns $columns
         foreach {column heading} {row {Original source row} x {Source X} observed {Source Y} fitted {Fitted radius} residual {Radial residual (observed − fitted)} radius {Observed radius} theta Theta} {

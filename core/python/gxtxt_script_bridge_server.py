@@ -34,6 +34,26 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.modules.setdefault("gxtxt_script_bridge_server", sys.modules[__name__])
 
 
+class CallbackArgument:
+    """One consumer-owned constant inside a live callback evaluation sequence."""
+    def __init__(self, reference, value):
+        self.owner = reference.identifier
+        self.value = value
+        self.identifier = uuid.uuid4().hex
+        self.sent = False
+        self.active = True
+
+
+def _callback_resource_ids(value):
+    if isinstance(value, ResourceNumericArray):
+        return {value.descriptor['resource_id']}
+    if isinstance(value, dict):
+        return set().union(*(_callback_resource_ids(v) for v in value.values()))
+    if isinstance(value, (list, tuple)):
+        return set().union(*(_callback_resource_ids(v) for v in value))
+    return set()
+
+
 class BridgeError(Exception):
     def __init__(self, identifier: str, message: str):
         super().__init__(message)
@@ -41,16 +61,83 @@ class BridgeError(Exception):
 
 
 class NumericArray:
-    def __init__(self, values, shape=None):
-        self.values = np.asarray(values, dtype="<f8").reshape(-1) if np is not None else [float(v) for v in values]
+    def __init__(self, values, shape=None, dtype=None):
+        # Legacy list adapters describe double vectors. Typed source buffers
+        # carry their own dtype; scientific casts belong to the math owner.
+        if np is not None:
+            if dtype is None and not isinstance(values, np.ndarray): dtype = '<f8'
+            if dtype == 'bool' and not isinstance(values, np.ndarray):
+                # NumPy considers every nonempty string true, including "0".
+                tokens = [str(v).lower() for v in values]
+                if any(v not in ('0', '1', 'false', 'true') for v in tokens):
+                    raise ValueError('invalid canonical boolean token')
+                values = [v in ('1', 'true') for v in tokens]
+            self.values = np.asarray(values, dtype=dtype).reshape(-1)
+            self.dtype = self.values.dtype.name
+        else:
+            if dtype not in (None, 'float64', '<f8'):
+                raise BridgeError('GXTXT:ScriptBridge:Dependency', 'typed arrays require NumPy')
+            self.values = [float(v) for v in values]; self.dtype = 'float64'
         self.shape = list(shape if shape is not None else [len(self.values), 1])
         if math.prod(self.shape) != len(self.values):
             raise ValueError("numeric array shape does not match its values")
 
 
+def numeric_column_tokens(values, dtype):
+    """Adapt canonical text cells without conflating missing cells with NaN.
+
+    Float placeholders are NaN and the optional exact missing mask accompanies
+    the array. Integer and boolean columns require nonmissing representable
+    values; there is no fabricated integer sentinel.
+    """
+    missing = [str(v).strip() == '' for v in values]
+    mask = None
+    if any(missing):
+        if dtype not in ('float32', 'float64'):
+            raise BridgeError('GXTXT:ScriptBridge:Transport', 'Missing integer/boolean cells need a nullable storage contract')
+        values = ['nan' if absent else value for value, absent in zip(values, missing)]
+        mask = NumericArray(missing, dtype='bool')
+    return NumericArray(values, dtype=dtype), mask
+
+
 class CallbackRef:
     def __init__(self, identifier):
         self.identifier = identifier
+
+
+class ResourceNumericArray(NumericArray):
+    """CORE-owned lazy buffer; a response can forward it without materializing."""
+    def __init__(self, host, resource):
+        resource = host.as_dict(resource)
+        descriptor = {k:resource[k] for k in ('dtype','endian','order','resource_id')}
+        descriptor.update({k:int(resource[k]) for k in ('version','count','byte_count')})
+        descriptor['shape'] = [int(x) for x in str(resource['shape']).split(';')]
+        self._initialize(resource['resource_root'], descriptor)
+
+    @classmethod
+    def from_descriptor(cls, root, descriptor):
+        value = cls.__new__(cls)
+        value._initialize(root, descriptor)
+        return value
+
+    def _initialize(self, root, descriptor):
+        scope = os.environ.get('GXTXT_BRIDGE_WORKSPACE')
+        if not scope or Path(root).resolve() != Path(scope).resolve():
+            raise BridgeError('GXTXT:ScriptBridge:Transport', 'Dataset buffer is outside the execution scope')
+        from gxtxt_scientific_binary_v1 import validate_buffer
+        validate_buffer(root, descriptor)
+        self.root = Path(scope)
+        self.shape = list(descriptor['shape'])
+        self.dtype = descriptor['dtype']
+        self.descriptor = dict(descriptor, shape=self.shape)
+        self._values = None
+
+    @property
+    def values(self):
+        if self._values is None:
+            from gxtxt_scientific_binary_v1 import read_buffer
+            self._values = read_buffer(self.root, self.descriptor).ravel(order='F')
+        return self._values
 
 
 def decode_value(value):
@@ -70,15 +157,15 @@ def decode_value(value):
     if kind == "numeric_array":
         shape = [int(x) for x in value["shape"]]
         if "binary" in value:
-            from gxtxt_scientific_binary_v1 import read_buffer
+            from gxtxt_scientific_binary_v1 import wire_descriptor
+            descriptor = wire_descriptor(value['binary'])
             root = os.environ.get("GXTXT_BRIDGE_WORKSPACE")
-            if not root or value["binary"].get("shape") != shape:
+            if not root or descriptor.get("shape") != value['shape']:
                 raise BridgeError("GXTXT:ScriptBridge:Transport", "binary argument scope or shape mismatch")
-            array = read_buffer(root, value["binary"])
-            return NumericArray(array.ravel(order="F"), shape)
+            return ResourceNumericArray.from_descriptor(root, descriptor)
         if "binary_path" in value:
             path = Path(value["binary_path"])
-            if path.is_symlink() or not path.is_file() or path.stat().st_uid != os.getuid():
+            if path.is_symlink() or not path.is_file() or (hasattr(os, 'getuid') and path.stat().st_uid != os.getuid()):
                 raise BridgeError("GXTXT:ScriptBridge:Transport", "legacy numeric resource owner/type mismatch")
             scope = os.environ.get("GXTXT_BRIDGE_WORKSPACE")
             if scope and path.parent.resolve() != Path(scope).resolve():
@@ -99,15 +186,25 @@ def decode_value(value):
     raise BridgeError("GXTXT:ScriptBridge:Transport", f"unsupported bridge value kind {kind}")
 
 
-def encode_value(value):
+def encode_value(value, arrays=None):
+    if arrays is None: arrays = {}
     if isinstance(value, NumericArray):
-        result = {"kind": "numeric_array", "shape": value.shape}
-        if len(value.values) > 10000:
+        key = id(value)
+        if key in arrays:
+            return {'kind': 'numeric_array_ref', 'array_id': arrays[key]}
+        array_id = str(len(arrays)); arrays[key] = array_id
+        result = {"kind": "numeric_array", "shape": value.shape, 'array_id': array_id}
+        if isinstance(value, ResourceNumericArray) and os.environ.get('GXTXT_BRIDGE_TYPED_DESCRIPTORS') == '1':
+            result['binary'] = value.descriptor
+            return result
+        if len(value.values) > 64 or value.dtype != 'float64':
             scope = os.environ.get("GXTXT_BRIDGE_WORKSPACE")
             if scope and np is not None and os.environ.get("GXTXT_BRIDGE_TYPED_DESCRIPTORS") == "1":
                 from gxtxt_scientific_binary_v1 import write_buffer
                 result["binary"] = write_buffer(scope, value.values.reshape(value.shape, order="F"))
                 return result
+            if value.dtype != 'float64':
+                raise BridgeError('GXTXT:ScriptBridge:Transport', 'typed result requires descriptor-capable client')
             fd, path = tempfile.mkstemp(prefix="gxtxt-script-result-", suffix=".bin", dir=scope)
             with os.fdopen(fd, "wb") as stream:
                 stream.write(value.values.tobytes() if np is not None else struct.pack("<" + "d" * len(value.values), *value.values))
@@ -124,9 +221,9 @@ def encode_value(value):
     if isinstance(value, str):
         return {"kind": "string", "value": value}
     if isinstance(value, dict):
-        return {"kind": "struct", "fields": {str(k): encode_value(v) for k, v in value.items()}}
+        return {"kind": "struct", "fields": {str(k): encode_value(v, arrays) for k, v in value.items()}}
     if isinstance(value, (tuple, list)):
-        return {"kind": "cell", "items": [encode_value(v) for v in value]}
+        return {"kind": "cell", "items": [encode_value(v, arrays) for v in value]}
     raise BridgeError("GXTXT:ScriptBridge:Transport", f"unsupported provider result type {type(value).__name__}")
 
 
@@ -139,8 +236,11 @@ class Host:
         self.config.optionxform = str
         with self.runtime_path.open(encoding="utf-8") as stream:
             self.config.read_file(stream)
+        self.core_service = self.config.get("runtime", "core_service", fallback="")
+        if self.core_service not in ("", "statistical_result_semantics", "scientific_presentation"):
+            raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "unknown stateless CORE service")
         self.session = self.config.get("runtime", "session", fallback="")
-        if not self.session or not Path(self.session).is_dir():
+        if (self.session and not Path(self.session).is_dir()) or (not self.core_service and not self.session):
             raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "runtime Session is unavailable")
         self.module_id = self.config.get("runtime", "module_id", fallback="")
         self.run_id = self.config.get("runtime", "run_id", fallback="") or uuid.uuid4().hex
@@ -152,10 +252,11 @@ class Host:
             self.tcl.call("::GX::defaults")
             self.tcl.call("::GX::loadModuleCatalog")
             self.tcl.call("set", "::GX::currentSession", self.session)
-            manifest = Path(self.session) / "metadata" / "manifest.ini"
-            if manifest.is_file():
-                self.tcl.call("::GX::loadManifest", str(manifest))
-            self.tcl.call("::GX::loadDatasetRegistry", self.session)
+            if not self.core_service or (self.core_service == "scientific_presentation" and self.session):
+                manifest = Path(self.session) / "metadata" / "manifest.ini"
+                if manifest.is_file():
+                    self.tcl.call("::GX::loadManifest", str(manifest))
+                self.tcl.call("::GX::loadDatasetRegistry", self.session)
             self.tcl.call("set", "::GX::currentSession", self.session)
             # Tcl writes to the process descriptor directly; Python's
             # redirect_stdout cannot protect the JSON response channel.
@@ -177,7 +278,7 @@ class Host:
         self.handles = {}
         self._bridge_resource = None
         scope = os.environ.get("GXTXT_BRIDGE_WORKSPACE")
-        if scope and os.environ.get("GXTXT_BRIDGE_TYPED_DESCRIPTORS") != "1":
+        if scope and os.environ.get("GXTXT_BRIDGE_CLIENT_OWNS_RESOURCE") != "1":
             try:
                 from gxtxt_resource_manager import ResourceManager
                 self._bridge_resource_manager = ResourceManager()
@@ -186,11 +287,18 @@ class Host:
             except ImportError:
                 pass
         self.callbacks = set()
+        self.callback_resources = set()
         self._discover()
 
     def _discover(self):
         files = list(sorted((ROOT / "core" / "script_bindings").glob("*.py")))
         files += list(sorted((ROOT / "plugins" / "modules").glob("*/api/script_bridge_binding.py")))
+        if self.core_service:
+            # Same registration and invocation as real Jobs, without Session
+            # creation, callback registration or a numerical worker.
+            files = [ROOT / "core" / "script_bindings" / "statistical_result_semantics.py"]
+            if self.core_service == "scientific_presentation":
+                files.append(ROOT / "core" / "script_bindings" / "dataset_metadata.py")
         for index, path in enumerate(files):
             name = f"gxtxt_script_binding_{index}"
             spec = importlib.util.spec_from_file_location(name, path)
@@ -202,6 +310,13 @@ class Host:
             for registration in registrations:
                 descriptor = dict(registration)
                 api_id = descriptor["api_id"]
+                if self.core_service == "scientific_presentation" and api_id == "STATISTICAL_RESULT_SEMANTICS_API_v1":
+                    descriptor["operations"] = {key: value for key, value in descriptor["operations"].items() if key != "store_columns"}
+                if self.core_service == "scientific_presentation" and api_id == "DATASET_METADATA_API_v1":
+                    allowed = {"coordinate_snapshot_values", "coordinate_snapshot_view_range", "coordinate_snapshot_affine_plan"}
+                    if self.session:
+                        allowed.update({"coordinate_read", "coordinate_inspect", "coordinate_validate"})
+                    descriptor["operations"] = {key: value for key, value in descriptor["operations"].items() if key in allowed}
                 if api_id in self.bindings:
                     raise BridgeError("GXTXT:ScriptBridge:Transport", f"duplicate script binding {api_id}")
                 for key in ("api_version", "provider_kind", "provider_id", "documentation_ref", "operations"):
@@ -264,10 +379,11 @@ class Host:
             return value
         if isinstance(value, NumericArray):
             flat = value.values
+            text_number = (lambda x: str(int(x))) if value.dtype.startswith(('int', 'uint')) or value.dtype == 'bool' else (lambda x: '-0.0' if value.dtype.startswith('float') and x == 0 and math.copysign(1.0, float(x)) < 0 else format(x, '.17g'))
             if len(value.shape) == 2 and value.shape[0] > 1 and value.shape[1] > 1:
                 rows, columns = value.shape
-                return tuple(tuple(format(flat[r + rows * c], ".17g") for c in range(columns)) for r in range(rows))
-            return tuple(format(v, ".17g") for v in flat)
+                return tuple(tuple(text_number(flat[r + rows * c]) for c in range(columns)) for r in range(rows))
+            return tuple(text_number(v) for v in flat)
         if isinstance(value, dict):
             fields = []
             for key, item in value.items():
@@ -277,6 +393,8 @@ class Host:
             return tuple(self.tcl_arg(item) for item in value)
         if isinstance(value, bool):
             return "1" if value else "0"
+        if isinstance(value, float) and value == 0 and math.copysign(1.0, value) < 0:
+            return "-0.0"
         if isinstance(value, float) and math.isfinite(value) and value.is_integer():
             return str(int(value))
         return str(value)
@@ -424,13 +542,48 @@ class Host:
             if hasattr(module, "cleanup"):
                 module.cleanup(self)
 
+    def _callback_event(self, event):
+        sys.__stdout__.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
+        sys.__stdout__.flush()
+
+    @contextlib.contextmanager
+    def callback_argument(self, reference, value):
+        if not isinstance(reference, CallbackRef) or reference.identifier not in self.callbacks:
+            raise BridgeError('GXTXT:ScriptCallback:UnknownCallback', 'Cannot retain an argument for an expired callback')
+        if not isinstance(value, NumericArray):
+            raise BridgeError('GXTXT:ScriptCallback:InvalidArguments', 'Constant callback arguments must be typed numeric arrays')
+        argument = CallbackArgument(reference, value)
+        try:
+            yield argument
+        finally:
+            argument.active = False
+            if argument.sent:
+                self._callback_event({'event': 'callback_arguments_release', 'ids': [argument.identifier]})
+
+    def release_callback_values(self, value):
+        # Only the originating client deletes files it allocated for callback
+        # outputs. Borrowed arguments and unrelated scientific resources remain.
+        ids = _callback_resource_ids(value) & self.callback_resources
+        if ids:
+            self._callback_event({'event': 'callback_buffers_release', 'ids': sorted(ids)})
+            self.callback_resources.difference_update(ids)
+
     def invoke_callback(self, reference, *args):
         if not isinstance(reference, CallbackRef) or reference.identifier not in self.callbacks:
             raise BridgeError("GXTXT:ScriptCallback:UnknownCallback", "callback is unknown, released, or belongs to another execution")
-        event = {"event": "callback_invoke", "id": reference.identifier,
-                 "args": [encode_value(arg) for arg in args]}
-        sys.__stdout__.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
-        sys.__stdout__.flush()
+        encoded = []
+        for arg in args:
+            if isinstance(arg, CallbackArgument):
+                if not arg.active or arg.owner != reference.identifier:
+                    raise BridgeError('GXTXT:ScriptCallback:InvalidArguments', 'Constant argument belongs to another callback')
+                wire = {'kind': 'callback_array', 'id': arg.identifier}
+                if not arg.sent:
+                    wire['value'] = encode_value(arg.value)
+                    arg.sent = True
+                encoded.append(wire)
+            else:
+                encoded.append(encode_value(arg))
+        self._callback_event({"event": "callback_invoke", "id": reference.identifier, "args": encoded})
         if not select.select([sys.stdin], [], [], 120)[0]:
             self.callbacks.discard(reference.identifier)
             raise BridgeError("GXTXT:ScriptCallback:Timeout", "callback evaluation timed out")
@@ -445,7 +598,9 @@ class Host:
             if not response.get("ok"):
                 raise BridgeError(response.get("identifier", "GXTXT:ScriptCallback:Error"),
                                   response.get("message", "callback failed"))
-            return decode_value(response["value"])
+            result = decode_value(response["value"])
+            self.callback_resources.update(_callback_resource_ids(result))
+            return result
         except (ValueError, KeyError) as exc:
             raise BridgeError("GXTXT:ScriptCallback:Transport", str(exc)) from exc
 
@@ -457,10 +612,15 @@ def main():
     active = False
     execution = None
     for line in sys.stdin:
+        # A new top-level request follows the client's cleanup of all previous
+        # callback output files. Keep no stale lease identifiers between calls.
+        host.callback_resources.clear()
         request = {}
         try:
             request = json.loads(line)
             action = request.get("action", "")
+            if host.core_service and action not in ("start","stop","info","list","require","has","describe","has_operation","call"):
+                raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "stateless CORE service does not expose execution or callback actions")
             if action == "start":
                 if active:
                     raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "bridge is already active")
@@ -487,10 +647,19 @@ def main():
                 value = True
             elif action == "info":
                 value = {"api_id": "OCTAVE_SCRIPT_BRIDGE_API_v1", "api_version": 1,
-                         "transport_version": 1, "active": True,
+                         "transport_version": 2, "binary_descriptor_versions": [1, 2], "active": True,
                          "callback_api_id": "SCRIPT_CALLBACK_API_v1", "callback_api_version": 1,
                          "supported_languages": ["Octave", "Python"],
                          "registered_api_count": len(host.bindings)}
+                value["execution_profile"] = "stateless_core_service" if host.core_service else "module_execution"
+                value["callbacks_supported"] = not bool(host.core_service)
+                value['callback_constant_arguments'] = not bool(host.core_service)
+                value['callback_output_release'] = not bool(host.core_service)
+                if host.core_service:
+                    value["session_bound"] = bool(host.session)
+                    value["core_service"] = host.core_service
+                    value.pop("callback_api_id")
+                    value.pop("callback_api_version")
             elif action == "context":
                 value = host.context(execution)
             elif action == "list":

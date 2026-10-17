@@ -9,5 +9,4 @@ addpath(fullfile(framework_root,'core','octave','analysis'));
 addpath(fullfile(framework_root,'core','octave','io'));
 addpath(fullfile(framework_root,'core','octave','util'));
 addpath(fullfile(framework_root,'core','octave','units'));
-addpath(fullfile(framework_root,'plugins','modules','math.numeric','api','octave'));
 analysis_regression_main(argv(),framework_root);

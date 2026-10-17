@@ -73,8 +73,11 @@ function write_mapping(fid,ax,which)
   fprintf(fid,'%s_display_unit=%s\n',which,get_app_str(ax,['gxtxt_' which '_display_unit'],''));
   fprintf(fid,'%s_display_to_source_scale=%.17g\n',which,get_app_num(ax,['gxtxt_' which '_display_to_source_scale'],1));
   fprintf(fid,'%s_display_to_source_offset=%.17g\n',which,get_app_num(ax,['gxtxt_' which '_display_to_source_offset'],0));
+  fprintf(fid,'%s_transform=%s\n',which,get_app_str(ax,['gxtxt_' which '_transform'],'affine'));
+  fprintf(fid,'%s_coordinate_view_status=%s\n',which,get_app_str(ax,['gxtxt_' which '_coordinate_view_status'],'identity'));
+  fprintf(fid,'%s_coordinate_view_factor=%.17g\n',which,get_app_num(ax,['gxtxt_' which '_coordinate_view_factor'],1));
+  fprintf(fid,'%s_coordinate_view_pivot=%.17g\n',which,get_app_num(ax,['gxtxt_' which '_coordinate_view_pivot'],0));
   if(any(strcmp(which,{'y','z'})))
-    fprintf(fid,'%s_transform=%s\n',which,get_app_str(ax,['gxtxt_' which '_transform'],'affine'));
     for f={'scale','quantity_kind','amplitude_basis','reference_value','reference_unit','zero_policy'}
       name=f{1};fprintf(fid,'%s_level_%s=%s\n',which,name,get_app_str(ax,['gxtxt_' which '_level_' name],''));
     endfor

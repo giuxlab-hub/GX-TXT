@@ -36,7 +36,9 @@ gx3de_result gx3de_compare_geometry(gx3de_object* reference,gx3de_object* target
             for(auto point:sources[direction]->mesh->vertices)vertices[direction].push_back(apply(matrix,point));
         }
         result.reference_vertices=vertices[0].size();result.target_vertices=vertices[1].size();
-        long double total_squared=0,reference_squared=0,reference_sum=0;result.closest_sampled=std::numeric_limits<double>::infinity();
+        gx_numeric_residual_accumulator_v1 reductions[2];
+        gx_numeric_residual_init_v1(&reductions[0]);gx_numeric_residual_init_v1(&reductions[1]);
+        result.closest_sampled=std::numeric_limits<double>::infinity();
         for(unsigned direction=0;direction<2;++direction) {
             uint64_t count=std::min<uint64_t>(spec->sample_budget,vertices[direction].size());
             if(direction==0)result.reference_samples=count;else result.target_samples=count;
@@ -45,16 +47,20 @@ gx3de_result gx3de_compare_geometry(gx3de_object* reference,gx3de_object* target
             std::vector<double> distances;std::vector<gx3de_vec3> projected;std::string error;
             if(!gx3de_backend::vtk_surface_query_batch(vertices[1-direction],sources[1-direction]->mesh->triangles,queries,distances,projected,error))return GX3DE_DEGENERATE;
             for(size_t i=0;i<queries.size();++i) {
-                double distance=distances[i];total_squared+=static_cast<long double>(distance)*distance;
-                result.hausdorff_sampled=std::max(result.hausdorff_sampled,distance);
-                if(direction==0){reference_squared+=static_cast<long double>(distance)*distance;reference_sum+=distance;result.reference_max=std::max(result.reference_max,distance);}
+                double distance=distances[i];
+                if(gx_numeric_residual_push_v1(&reductions[direction],distance)!=GX_NUMERIC_OK_V1)return GX3DE_RANGE;
                 if(distance<result.closest_sampled){result.closest_sampled=distance;result.closest_source=direction==0?queries[i]:projected[i];result.closest_target=direction==0?projected[i]:queries[i];}
                 output.push_back({indices[i],direction,0,queries[i],projected[i],distance});
             }
         }
-        result.reference_rms=std::sqrt(static_cast<double>(reference_squared/result.reference_samples));
-        result.reference_mean=static_cast<double>(reference_sum/result.reference_samples);
-        result.symmetric_rms=std::sqrt(static_cast<double>(total_squared/output.size()));
+        gx_numeric_residual_result_v1 reference_facts{},pooled_facts{};
+        gx_numeric_residual_accumulator_v1 pooled;
+        if(gx_numeric_residual_finish_v1(&reductions[0],&reference_facts)!=GX_NUMERIC_OK_V1||
+           gx_numeric_residual_merge_v1(&reductions[0],&reductions[1],&pooled)!=GX_NUMERIC_OK_V1||
+           gx_numeric_residual_finish_v1(&pooled,&pooled_facts)!=GX_NUMERIC_OK_V1)return GX3DE_RANGE;
+        result.reference_rms=reference_facts.rmse;result.reference_mean=reference_facts.mean_absolute;
+        result.reference_max=reference_facts.max_absolute;result.symmetric_rms=pooled_facts.rmse;
+        result.hausdorff_sampled=pooled_facts.max_absolute;
         double areas[2]={},volumes[2]={};uint32_t defined[2]={};
         for(unsigned direction=0;direction<2;++direction) {
             gx3de_mesh_diagnostics mesh{};mesh.struct_size=sizeof(mesh);

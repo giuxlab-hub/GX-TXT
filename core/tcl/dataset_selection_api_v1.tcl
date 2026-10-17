@@ -251,6 +251,7 @@ proc ::GX::datasetSelectionForPlot {moduleId graphKey} {
 }
 
 proc ::GX::datasetSelectionSourceToDisplay {geom axis value} {
+    if {[dict exists $geom axis.1.${axis}_transform] && [dict get $geom axis.1.${axis}_transform] ne "affine"} {error "Region selection cannot invert the rendered $axis coordinate relation."}
     set sk "axis.1.${axis}_display_to_source_scale"
     set ok "axis.1.${axis}_display_to_source_offset"
     set scale [expr {[dict exists $geom $sk] ? [dict get $geom $sk] : 1.0}]
@@ -357,8 +358,8 @@ proc ::GX::datasetSelectionResolveAxisBinding {moduleId graphId axis {variantId 
 }
 
 proc ::GX::datasetSelectionDisplayToSource {geom axis value} {
-    if {$axis eq "y" && [dict exists $geom axis.1.y_transform] && [dict get $geom axis.1.y_transform] ne "affine"} {
-        error "Y region selection is unavailable for transformed level scales."
+    if {[dict exists $geom axis.1.${axis}_transform] && [dict get $geom axis.1.${axis}_transform] ne "affine"} {
+        error "Region selection cannot invert the rendered $axis coordinate relation."
     }
     set sk "axis.1.${axis}_display_to_source_scale"
     set ok "axis.1.${axis}_display_to_source_offset"

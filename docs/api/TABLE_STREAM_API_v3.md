@@ -1,7 +1,46 @@
 # Table Stream API v3
 
+CSV numeric blanks remain distinct from source NaN tokens. For floating columns,
+the typed Octave and Script Bridge adapters expose a NaN placeholder plus an
+exact missing-cell mask: standalone Octave uses `chunk.missing_masks{column}`;
+Script Bridge uses `chunk.columns[column].missing_mask`. An absent/empty mask
+means no missing text cells in that column. Explicit NaN and infinities are not
+marked missing. Empty string variables remain exact empty strings. This does
+not add provider null-mask support for HDF5 or alter canonical source tokens.
+Missing integer/boolean cells remain errors because these array types have no
+nullable sentinel. Fractional/overflowing integer values and booleans other
+than zero/one are rejected rather than truncated or saturated.
+
+The Octave helper `gxtxt_table_integer_values_v1(raw,dtype)` converts exact decimal
+text/cell arrays or existing typed integer values to the declared integer dtype
+(including bool). It checks bounds before arithmetic or casts; fractional,
+overflowing and floating inputs beyond their exact integer range refuse. Table
+Stream int64/uint64 text decoding and Graph Series predicates share this owner.
+Use `gxtxt_table_chunk_column` for scientific grouping identities. The convenience
+`gxtxt_table_chunk_numeric` returns a double numeric view and must not be used to
+identify large integer family members.
+
 Introduced in GX-TXT 0.9.7.25. Table Stream API v3 is the table-shaped,
 backend-neutral streaming facade over Canonical Dataset API v2.
+
+Dev097 supports `numeric_transport=resource` for explicit Tcl consumers in
+addition to `values` and legacy `auto` Base64 transport. Eligible HDF5 columns
+then contain a managed `binary_resource`, with source dtype/shape and exact row
+offset retained; other variables keep the canonical values fallback. Release
+raw resources with `tableStreamReleaseResource stream resource_id`, or close the
+stream before abandoning its provider-owned buffers. Ordinary Python/Octave
+Bridge callers select this path automatically and receive typed arrays, with
+the execution owner handling release. Both `values` and `columns[].values`
+remain available; repeated array payloads are transferred once per response.
+Resource byte/column counters and provider stage diagnostics are additive.
+The standalone Octave Dataset stream defaults to managed resources in dev097;
+explicit `numeric_transport=auto` retains the legacy Base64 path. Numeric's
+Dataset operations request the managed path. Octave decodes each resource with
+the shared CORE descriptor helper and acknowledges its release before returning
+the chunk. Integer text fallback retains exact int64/uint64 limits and rejects
+overflow; empty numeric columns retain their declared class.
+See `CANONICAL_DATASET_API_v2.md` and `SCIENTIFIC_BINARY_TRANSPORT_v2.md` for scope,
+backpressure, decoding and lifetime rules.
 
 ```text
 consumer

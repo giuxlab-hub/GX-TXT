@@ -5,13 +5,18 @@ proc ::GX::CurveWorkbench::_comparisonEvaluate {w config} {
     variable st
     set reference [dict get $config reference];set target [dict get $config target];set method [dict get $config method]
     if {![dict exists $st($w,curves) $reference]||![dict exists $st($w,curves) $target]||$reference eq $target} {error {Comparison needs distinct valid reference and target curves}}
-    if {$method eq "geometry"} {return [_geometricComparisonEvaluate $w $reference $target 257]}
+    set options [_coordinateComparisonOptions $w $reference $target $method]
+    if {$method eq "geometry"} {
+        set record [_geometricComparisonEvaluate $w $reference $target 257 $options]
+        dict set record coordinate_presentation_signature [_coordinateComparisonSignature $w $config]
+        return $record
+    }
     lassign [_evaluatedObject $w $reference] a temporaryA
     try {
         lassign [_evaluatedObject $w $target] b temporaryB
-        try {set receipt [::GX::Native2D::core compare_lod $st($w,scene) $a $b $method 4096]} finally {if {$temporaryB} {::GX::Native2D::core delete $st($w,scene) $b}}
+        try {set receipt [::GX::native2DComparison $st($w,scene) $a $b $method 4096 [_coordinateUnits [_record $w $reference]] [_coordinateUnits [_record $w $target]] [dict create producer viewer.curve_workbench reference $reference target $target evaluated_representation [_comparisonRepresentation $w $reference $target]] $options]} finally {if {$temporaryB} {::GX::Native2D::core delete $st($w,scene) $b}}
     } finally {if {$temporaryA} {::GX::Native2D::core delete $st($w,scene) $a}}
-    return [dict create definition $config fingerprints [dict create $reference [_measurementFingerprint $w $reference] $target [_measurementFingerprint $w $target]] receipt $receipt]
+    return [dict create definition $config fingerprints [dict create $reference [_measurementFingerprint $w $reference] $target [_measurementFingerprint $w $target]] receipt $receipt coordinate_presentation_signature [_coordinateComparisonSignature $w $config]]
 }
 proc ::GX::CurveWorkbench::_comparisonRefresh {w} {
     variable st
@@ -19,7 +24,7 @@ proc ::GX::CurveWorkbench::_comparisonRefresh {w} {
         set st($w,residual) {};set st($w,comparisonText) {Comparison inactive};_drawResidual $w;return
     }
     set config $st($w,comparisonConfig);set record $st($w,comparisonRecord)
-    if {$record eq {}||[_measurementState $w $record] ne "current"} {
+    if {$record eq {}||[_measurementState $w $record] ne "current"||![dict exists $record receipt statistics]||![dict exists $record coordinate_presentation_signature]||[dict get $record coordinate_presentation_signature] ne [_coordinateComparisonSignature $w $config]} {
         if {[catch {set record [_comparisonEvaluate $w $config]} message]} {
             set st($w,comparisonEnabled) 0;set st($w,residual) {};set st($w,comparisonText) "Comparison inactive: $message";_drawResidual $w;return
         }
@@ -39,7 +44,7 @@ proc ::GX::CurveWorkbench::_compare {w} {
     set record [_comparisonEvaluate $w $config];set before [_snapshotIds $w {}]
     set st($w,comparisonConfig) $config;set st($w,comparisonRecord) $record;set st($w,comparisonEnabled) 1
     _comparisonRefresh $w;_history $w $before {};_draw $w
-    set st($w,status) $st($w,comparisonText)
+    set st($w,status) "$st($w,comparisonText): [::GX::StatisticsV1::report [dict get $record receipt statistics reference] {n rmse mae max_abs_error}]"
     return [dict get $record receipt]
 }
 proc ::GX::CurveWorkbench::_comparisonToggle {w} {
@@ -74,4 +79,13 @@ proc ::GX::CurveWorkbench::_comparisonMethodChanged {w} {
     variable st
     set st($w,comparisonEnabled) 0;set st($w,comparisonConfig) {};set st($w,comparisonRecord) {}
     _comparisonRefresh $w;_save $w
+}
+
+proc ::GX::CurveWorkbench::_comparisonRepresentation {w reference target} {
+    set result {}
+    foreach id [list $reference $target] {
+        set record [_record $w $id]
+        dict set result $id [dict create representation [dict get $record representation] evaluation [expr {[dict get $record representation] eq "spline" ? "spline_16_subdivisions_per_span" : "native_vertices"}]]
+    }
+    return $result
 }

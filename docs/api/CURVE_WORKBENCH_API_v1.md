@@ -55,3 +55,67 @@ uses bounded clipped native primitives; the host does not invent grid geometry.
 
 See the [manual](../../plugins/modules/viewer.curve_workbench/MANUAL.md) and
 [Native2D API](../../core/native2d/README.md).
+
+`importFitGeometry name transfer` is the headless provider payload adapter for
+`gxtxt.fitter_workbench_transfer.v1`. It validates retained Native2D geometry and
+independent axis units, creates a new Workspace and adopts the archived model
+resources. Scripts use the end-to-end Fitter `result_workbench` operation; no Tk
+window is required. [Transfer contract](FITTER_WORKBENCH_TRANSFER_v1.md).
+
+`openFitTransfer workspace_id` is a host-only GUI adapter: ordinary Session
+Workspace opening plus a visible exact/sampled notice. Scripts use the headless
+transfer and Workspace API operations.
+
+
+## Explicit scientific coordinate declarations
+
+Tcl `::GX::CurveWorkbench::createCoordinateCurve window name points units rationale`
+creates one exact Native point curve in the live Session Workspace. `points`
+contains2–65536 finite XY pairs; `units` contains independent X/Y registered
+physical units, including canonical`1` for dimensionless coordinates. It returns
+the stable logical curve ID. No example observations are invented.
+
+`::GX::CurveWorkbench::declareCoordinates window ids units rationale` records an
+explicit interpretation of original unbound geometry or missing-unit Dataset
+columns without changing numeric values. It returns
+`gxtxt.coordinate_declaration.v1`, units, rationale, curve_ids,
+`numeric_values_changed=0` and `source_dataset_modified=0`. Rationale is a
+nonempty single line of at most1024 characters. The current Session is checked.
+
+Known source units and established source assumptions cannot be relabelled to
+incompatible meanings. Parent/derived dependencies, constraints, locked unbound
+geometry and metric primitives are guarded. Read-only original Dataset bindings
+retain their lock: a missing-unit assumption changes only Workspace meaning.
+One canonical Variable cannot receive two different axis declarations.
+
+Each record keeps ordered `coordinate_declarations`, previous units and ordinary
+operations provenance. Dataset assumptions use stable Variable IDs in existing
+`source_assumed_units`; source schema/values remain unchanged. The actual
+`coordinate_units` owner feeds CAD validation, comparison, publication and
+reconstruction. Undo/Redo and normal Workspace persistence use existing owners.
+Native/API publication consumers see physical units and explicit provenance;
+Python/Octave read/convert the published data through public Dataset and Unit
+Registry APIs. This live-window API does not expose a separate headless fitting
+or numerical implementation.
+
+
+## Coordinate-aware controls and persisted native semantics
+
+Move/Pivot/Physical scale forms reuse `DATASET_METADATA_API_v1` coordinate snapshot
+conversion and `UNIT_REGISTRY_API_v1` affine plans. They preserve existing
+Native2D operation semantics and canonical constraint values. Translation/scaling
+accept independent physical axes in a common working frame; metric rotation and
+reflection require equal native axis units. Multiple targets use the first
+selected curve's displayed coordinate basis. Captured coordinate keys prevent
+stale form application. `parameters.presentation_input` records the entered
+values, basis and coordinate context alongside the actual native parameters.
+No existing operation ID or saved scientific coordinate is renamed.
+
+Dimension forms show the applicable X/Y unit and convert numeric input before
+Native2D evaluation. Existing symbolic parameter bindings stay in native units;
+the inline editor states this explicitly. Persisted numeric expressions are
+canonical. Coordinate locks include affine offsets; dimension differences and
+translations use only the shared plan's scale. Nonlinear constant-displacement
+requests are rejected. Physical geometry, source bytes and canonical Variable
+metadata remain distinct from display state. Existing Script consumers continue
+to use the public Native/Dataset/Unit APIs; no new private unit engine is exposed.

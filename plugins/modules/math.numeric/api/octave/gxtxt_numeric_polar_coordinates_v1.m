@@ -3,10 +3,10 @@
 function out=gxtxt_numeric_polar_coordinates_v1(operation,a,b,options)
   if(nargin<4),options=struct();endif
   if(!isstruct(options)||!isscalar(options)),error('GXTXT:Numeric','polar frame must be a scalar options structure');endif
-  allowed={'origin','theta_zero','clockwise','angle_unit','unwrap_policy','angle_cut'};
+  allowed={'origin','theta_zero','clockwise','angle_unit','unwrap_policy','angle_cut','radius_derivative'};
   if(any(!ismember(fieldnames(options),allowed))),error('GXTXT:Numeric','unknown polar coordinate option');endif
   frame=struct('origin',[0,0],'theta_zero',0,'clockwise',false,'angle_unit','rad','unwrap_policy','cut','angle_cut',0);
-  for key=fieldnames(options).',frame.(key{1})=options.(key{1});endfor
+  for key=fieldnames(options).',if(!strcmp(key{1},'radius_derivative')),frame.(key{1})=options.(key{1});endif;endfor
   if(!isnumeric(frame.origin)||numel(frame.origin)!=2||any(!isfinite(frame.origin(:)))||!isnumeric(frame.theta_zero)||!isscalar(frame.theta_zero)||!isfinite(frame.theta_zero))
     error('GXTXT:Numeric','polar origin and theta-zero direction must be finite');
   endif
@@ -20,6 +20,7 @@ function out=gxtxt_numeric_polar_coordinates_v1(operation,a,b,options)
   factor=1;if(strcmp(frame.angle_unit,'deg')),factor=180/pi;endif
   period=2*pi*factor;direction=1;if(frame.clockwise),direction=-1;endif
   if(!isfinite(frame.angle_cut+period)||frame.angle_cut+period<=frame.angle_cut),error('GXTXT:Numeric','polar cut cannot represent its angular period');endif
+  if(isfield(options,'radius_derivative')&&!strcmp(operation,'cartesian_coordinates')),error('GXTXT:Numeric','Radius derivative applies only to Cartesian curve conversion');endif
   if(strcmp(operation,'polar_coordinates'))
     dx=a-frame.origin(1);dy=b-frame.origin(2);radius=hypot(dx,dy);
     if(any(!isfinite(radius))),error('GXTXT:Numeric','polar radius exceeds finite numeric range');endif
@@ -38,5 +39,13 @@ function out=gxtxt_numeric_polar_coordinates_v1(operation,a,b,options)
     x=frame.origin(1)+b.*cos(angle);y=frame.origin(2)+b.*sin(angle);
     if(any(!isfinite(x))||any(!isfinite(y))),error('GXTXT:Numeric','Cartesian polar output exceeds finite numeric range');endif
     out=struct('x',x,'y',y,'points',[x,y],'frame',frame);
+    if(isfield(options,'radius_derivative'))
+      derivative=options.radius_derivative;
+      if(!isnumeric(derivative)||!isreal(derivative)||!isvector(derivative)||numel(derivative)!=numel(a)),error('GXTXT:Numeric','Radius derivatives must align with the requested angular values');endif
+      derivative=derivative(:);angular_rate=direction/factor;
+      out.tangent_x=derivative.*cos(angle)-b.*sin(angle)*angular_rate;
+      out.tangent_y=derivative.*sin(angle)+b.*cos(angle)*angular_rate;
+      out.tangent_valid=isfinite(out.tangent_x)&isfinite(out.tangent_y);
+    endif
   else,error('GXTXT:Numeric','unknown polar coordinate conversion');endif
 endfunction

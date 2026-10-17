@@ -3,6 +3,7 @@ function pd_render_2d(outdir,cfg,P,graph,file_name)
 % Graph Series are the only scientific 2D binding authority. PlotSpec v2
 % supplies presentation and auxiliary bindings only.
 % SPDX-License-Identifier: GPL-3.0-or-later
+  lifetime=[];if(any(arrayfun(@(S) isfield(S.x_meta,'coordinate_context')||isfield(S.meta,'coordinate_context'),P.series))),lifetime=gxtxt_presentation_scope_v1();endif
   pcfg=gxtxt_plot_config();series=P.series;n=numel(series);
   left=find(strcmp({series.axis},'left'));right=find(strcmp({series.axis},'right'));
   if(isempty(left)),error('plot.dataset: at least one left-axis Graph Series is required');endif
@@ -19,10 +20,10 @@ function pd_render_2d(outdir,cfg,P,graph,file_name)
   endif
 
   xdu=pd_x_display_unit(P,cfg,graph);
-  lvals=cell(1,numel(left));lunits=cell(1,numel(left));for j=1:numel(left),lvals{j}=series(left(j)).data.y;lunits{j}=series(left(j)).meta.unit;endfor
+  lvals=cell(1,numel(left));lunits=cell(1,numel(left));for j=1:numel(left),lvals{j}=series(left(j)).data.y;lunits{j}=series(left(j)).meta;endfor
   ymode=effective_axis_unit(V,'y_left',axis_mode(cfg,graph,'y'),core_axis_state,core_axis_enabled);[ydu,~]=pd_common_display_unit(lvals,lunits,ymode,'Y Left axis');
   y2du='';if(!isempty(right))
-    rvals=cell(1,numel(right));runits=cell(1,numel(right));for j=1:numel(right),rvals{j}=series(right(j)).data.y;runits{j}=series(right(j)).meta.unit;endfor
+    rvals=cell(1,numel(right));runits=cell(1,numel(right));for j=1:numel(right),rvals{j}=series(right(j)).data.y;runits{j}=series(right(j)).meta;endfor
     y2mode=effective_axis_unit(V,'y_right',axis_mode(cfg,graph,'y2'),core_axis_state,core_axis_enabled);[y2du,~]=pd_common_display_unit(rvals,runits,y2mode,'Y Right axis');
   endif
 
@@ -42,7 +43,7 @@ function pd_render_2d(outdir,cfg,P,graph,file_name)
   handles=[];labels={};xfactor_meta=1;yfactor_meta=1;y2factor_meta=1;color_cursor=0;
   for k=1:n
     S=series(k);ax=ax1;target_y=ydu;level=ylevel;if(strcmp(S.axis,'right')),ax=ax2;target_y=y2du;level=y2level;endif
-    [xd,~,xf]=pd_convert_display(S.data.x,S.x_meta.unit,xdu,'X');[yraw,~,yf]=pd_convert_display(S.data.y,S.meta.unit,target_y,['Y ' S.axis]);[yd,level_label]=gxtxt_level_scale_apply(yraw,target_y,level);
+    [xd,~,xf]=pd_convert_display(S.data.x,S.x_meta,xdu,'X');[yraw,~,yf]=pd_convert_display(S.data.y,S.meta,target_y,['Y ' S.axis]);[yd,level_label]=gxtxt_level_scale_apply(yraw,target_y,level);
     if(strcmp(S.axis,'right')),if(!isempty(level_label)),y2level_label=level_label;endif;else if(!isempty(level_label)),ylevel_label=level_label;endif;endif
     if(k==1),xfactor_meta=xf;endif;if(strcmp(S.axis,'left')&&k==left(1)),yfactor_meta=yf;endif;if(!isempty(right)&&strcmp(S.axis,'right')&&k==right(1)),y2factor_meta=yf;endif
 
@@ -55,7 +56,7 @@ function pd_render_2d(outdir,cfg,P,graph,file_name)
     endif
     color_cursor+=1;auto_color=palette(mod(color_cursor-1,rows(palette))+1,:);st=resolve_style(S,V,kind,graph_lw,graph_ms,auto_color);
 
-    hband=[];if(isfield(S.presentation,'band')&&!isempty(fieldnames(S.presentation.band))),[blo,bhi]=band_values(S,idx,1:numel(idx),target_y,level);hband=draw_band(ax,xp,blo,bhi,st,kind);endif
+    hband=[];if(isfield(S.presentation,'band')&&!isempty(fieldnames(S.presentation.band))),[blo,bhi,bruns]=band_values(S,idx,1:numel(idx),target_y,level);hband=draw_band(ax,xp,blo,bhi,st,kind,bruns);endif
     hbase=[];
     if(strcmp(kind,'band'))
       draw_center=true;if(isfield(S.presentation.band,'draw_center')),draw_center=parse_bool(S.presentation.band.draw_center,true);endif;if(draw_center),hbase=draw_trace(ax,xp,yp,'line',st);endif
@@ -76,15 +77,25 @@ function pd_render_2d(outdir,cfg,P,graph,file_name)
   title_txt=presentation_value(cfg,graph,'title',gxtxt_ini_get(cfg,['plot.' graph '.title'],'auto'));xl=presentation_value(cfg,graph,'x_label',gxtxt_ini_get(cfg,['plot.' graph '.x_label'],'auto'));yl=presentation_value(cfg,graph,'y_label',gxtxt_ini_get(cfg,['plot.' graph '.y_label'],'auto'));y2l=presentation_value(cfg,graph,'y2_label',gxtxt_ini_get(cfg,['plot.' graph '.y2_label'],'auto'));
   xl=v2_axis_label(V,'x',xl);yl=v2_axis_label(V,'y_left',yl);y2l=v2_axis_label(V,'y_right',y2l);
   if(is_auto(title_txt)),if(n==1),title_txt=sprintf('%s vs %s',display_name(series(1).name),display_name(P.x_name));else title_txt=sprintf('Scientific dataset vs %s',display_name(P.x_name));endif;endif
-  if(is_auto(xl)),xl=axis_label(display_name(P.x_name),xdu);endif;xl=display_axis_label(xl,P.x_meta.unit,xdu);
+  if(is_auto(xl)),xl=axis_label(display_name(P.x_name),xdu);endif;xl=pd_display_axis_label(xl,P.x_meta.unit,xdu);
   if(is_auto(yl)),if(numel(left)==1),yl=axis_label(display_name(series(left(1)).name),ydu);else yl=axis_label('Y Left',ydu);endif;endif
-  yl=display_axis_label(yl,series(left(1)).meta.unit,ydu);if(!isempty(ylevel_label)),yl=[yl ' (' ylevel_label ')'];endif
+  yl=pd_display_axis_label(yl,series(left(1)).meta.unit,ydu);if(!isempty(ylevel_label)),yl=[yl ' (' ylevel_label ')'];endif
   axes(ax1);gxtxt_plot_text('xlabel',xl);gxtxt_plot_text('ylabel',yl);gxtxt_plot_text('title',title_txt);
-  if(!isempty(right)),if(is_auto(y2l)),if(numel(right)==1),y2l=axis_label(display_name(series(right(1)).name),y2du);else y2l=axis_label('Y Right',y2du);endif;endif;y2l=display_axis_label(y2l,series(right(1)).meta.unit,y2du);if(!isempty(y2level_label)),y2l=[y2l ' (' y2level_label ')'];endif;axes(ax2);gxtxt_plot_text('ylabel',y2l);endif
+  if(!isempty(right)),if(is_auto(y2l)),if(numel(right)==1),y2l=axis_label(display_name(series(right(1)).name),y2du);else y2l=axis_label('Y Right',y2du);endif;endif;y2l=pd_display_axis_label(y2l,series(right(1)).meta.unit,y2du);if(!isempty(y2level_label)),y2l=[y2l ' (' y2level_label ')'];endif;axes(ax2);gxtxt_plot_text('ylabel',y2l);endif
 
   gxtxt_plot_apply_graph_axes(ax1,pcfg,graph,{},cfg);apply_v2_axes(V,ax1,ax2,core_axis_state);
+  finalize_bar_baselines(fig);
   pad_default_marker_x(ax1,series,V,cfg,graph,xdu,graph_kind);
-  if(!isempty(right)),try gxtxt_plot_sync_overlay_axes(fig);catch;end_try_catch;endif
+  pd_coordinate_axis_metadata(ax1,'x',series(1).x_meta,xdu);
+  pd_coordinate_axis_metadata(ax1,'y',series(left(1)).meta,ydu);
+  pd_coordinate_view(ax1,'x',{series.x_meta},xdu,cfg,graph,'x',V.axes.x);
+  pd_coordinate_view(ax1,'y',{series(left).meta},ydu,cfg,graph,'y',V.axes.y_left,'',ylevel);
+  if(!isempty(right))
+    pd_coordinate_axis_metadata(ax2,'y',series(right(1)).meta,y2du);
+    pd_coordinate_view(ax2,'y',{series(right).meta},y2du,cfg,graph,'y2',V.axes.y_right,'',y2level);
+    try gxtxt_plot_sync_overlay_axes(fig);catch;end_try_catch;
+  endif
+  apply_log_x_grid(ax1,V.axes.x,'x');
   % Single-panel manual margins use the same per-plot layout authority as a
   % stack. Absolute positions are rebuilt from the stored values on every
   % render, so rerender never compounds a previous calculated rectangle.
@@ -130,7 +141,7 @@ function pd_render_2d_distribution(outdir,cfg,P,graph,file_name,V,mode,core_axis
   if(V.enabled&&isfield(V,'multi_panel')&&V.multi_panel),error('plot.dataset: distribution kinds require one single panel');endif
   series=P.series;n=numel(series);if(any(strcmp({series.axis},'right'))),error('plot.dataset: distribution kinds use only the left axis');endif
   pcfg=gxtxt_plot_config();values=cell(1,n);units=cell(1,n);
-  for k=1:n,values{k}=series(k).data.y;units{k}=series(k).meta.unit;endfor
+  for k=1:n,values{k}=series(k).data.y;units{k}=series(k).meta;endfor
   unit_mode=effective_axis_unit(V,'y_left',axis_mode(cfg,graph,'y'),core_axis_state,core_axis_enabled);
   [value_unit,~]=pd_common_display_unit(values,units,unit_mode,'Distribution value axis');
   fig=gxtxt_plot_new_figure(pcfg);ax=axes('parent',fig);set(ax,'tag','gxtxt_primary_axis');hold(ax,'on');
@@ -138,7 +149,7 @@ function pd_render_2d_distribution(outdir,cfg,P,graph,file_name,V,mode,core_axis
   graph_lw=parse_line_width(gxtxt_ini_get(cfg,['plot.' graph '.line_width'],'inherit'),pcfg.line_width);graph_ms=parse_positive(gxtxt_ini_get(cfg,['plot.' graph '.marker_size'],'4'),4);
   handles=[];labels={};box_labels=cell(1,n);normalization='count';factor_meta=1;
   for k=1:n
-    S=series(k);[sample,~,factor]=pd_convert_display(S.data.y,S.meta.unit,value_unit,'Distribution value');sample=sample(isfinite(sample));
+    S=series(k);[sample,~,factor]=pd_convert_display(S.data.y,S.meta,value_unit,'Distribution value');sample=sample(isfinite(sample));
     if(isempty(sample)),error('plot.dataset: distribution series %s has no finite samples',S.series_id);endif
     if(k==1),factor_meta=factor;endif
     st=resolve_style(S,V,mode,graph_lw,graph_ms,palette(mod(k-1,rows(palette))+1,:));h=[];
@@ -170,6 +181,14 @@ function pd_render_2d_distribution(outdir,cfg,P,graph,file_name,V,mode,core_axis
   endif
   axes(ax);gxtxt_plot_text('xlabel',xl);gxtxt_plot_text('ylabel',yl);gxtxt_plot_text('title',title_txt);
   gxtxt_plot_apply_graph_axes(ax,pcfg,graph,{},cfg);apply_v2_axes(V,ax,[],core_axis_state);apply_single_panel_layout_overrides(ax,[],cfg,graph);draw_v2_annotations(V,ax,[]);
+  if(strcmp(mode,'histogram'))
+    pd_coordinate_axis_metadata(ax,'x',series(1).meta,value_unit);
+    pd_coordinate_view(ax,'x',{series.meta},value_unit,cfg,graph,'x',V.axes.x);
+    apply_log_x_grid(ax,V.axes.x,'x');
+  else
+    pd_coordinate_axis_metadata(ax,'y',series(1).meta,value_unit);
+    pd_coordinate_view(ax,'y',{series.meta},value_unit,cfg,graph,'y',V.axes.y_left);
+  endif
   legend_mode=lower(strtrim(gxtxt_ini_get(cfg,['plot.' graph '.legend_content'],'auto')));if(strcmp(legend_mode,'auto')),legend_mode='series';endif
   legend_handle=[];if(!isempty(labels)&&!strcmp(legend_mode,'none')),legend_handle=gxtxt_plot_legend(handles,labels,pcfg,graph,cfg);endif
   target=fullfile(outdir,file_name);gxtxt_print_png_atomic(fig,target,pcfg.dpi);pd_print_extra(fig,target,V);close(fig);
@@ -225,8 +244,9 @@ function pd_render_2d_multipanel(outdir,cfg,P,graph,file_name,V,core_axis_state,
   if(!any(strcmp(legend_mode,{'none','series'}))),legend_mode='series';endif
 
   fig=gxtxt_plot_new_figure(pcfg);
+  panel_y_units=cell(1,np);panel_y2_units=cell(1,np);
   primary=zeros(1,np);right_axes=cell(1,np);panel_names=cell(1,np);legend_handles=cell(1,np);legend_series_handles=cell(1,np);legend_series_labels=cell(1,np);
-  palette=lines(max(7,n));xmeta_factor=1;
+  palette=lines(max(7,n+family_group_total(series)));xmeta_factor=1;
   % Multi-panel X uses the same merged PlotSpec X authority as single-panel.
   % pd_plotspec_v2() already validates/merges the shared-X declaration into
   % V.axes.x; do not maintain a second renderer-local X configuration path.
@@ -252,23 +272,32 @@ function pd_render_2d_multipanel(outdir,cfg,P,graph,file_name,V,core_axis_state,
 
     ydu='';y2du='';ylevel=gxtxt_level_scale_config(cfg,graph,'y');y2level=gxtxt_level_scale_config(cfg,graph,'y2');ylevel_label='';y2level_label='';
     if(!isempty(lidx))
-      vals=cell(1,numel(lidx));units=cell(1,numel(lidx));for j=1:numel(lidx),vals{j}=series(lidx(j)).data.y;units{j}=series(lidx(j)).meta.unit;endfor
+      vals=cell(1,numel(lidx));units=cell(1,numel(lidx));for j=1:numel(lidx),vals{j}=series(lidx(j)).data.y;units{j}=series(lidx(j)).meta;endfor
       ymode=effective_panel_axis_unit(panel,'y_left',axis_mode(cfg,graph,'y'),core_axis_state,core_axis_enabled);[ydu,~]=pd_common_display_unit(vals,units,ymode,sprintf('Panel %s Y Left axis',panel.id));
     endif
     if(!isempty(ridx))
-      vals=cell(1,numel(ridx));units=cell(1,numel(ridx));for j=1:numel(ridx),vals{j}=series(ridx(j)).data.y;units{j}=series(ridx(j)).meta.unit;endfor
+      vals=cell(1,numel(ridx));units=cell(1,numel(ridx));for j=1:numel(ridx),vals{j}=series(ridx(j)).data.y;units{j}=series(ridx(j)).meta;endfor
       y2mode=effective_panel_axis_unit(panel,'y_right',axis_mode(cfg,graph,'y2'),core_axis_state,core_axis_enabled);[y2du,~]=pd_common_display_unit(vals,units,y2mode,sprintf('Panel %s Y Right axis',panel.id));
     endif
 
-    handles=[];labels={};yfactor_meta=1;y2factor_meta=1;
+    panel_y_units{pi}=ydu;panel_y2_units{pi}=y2du;
+    handles=[];labels={};yfactor_meta=1;y2factor_meta=1;color_cursor=0;
     for jj=1:numel(idxs)
       k=idxs(jj);S=series(k);ax=primary(pi);target_y=ydu;level=ylevel;if(strcmp(S.axis,'right')),ax=ax2;target_y=y2du;level=y2level;endif
-      [xd,~,xf]=pd_convert_display(S.data.x,S.x_meta.unit,xdu,'X');[yraw,~,yf]=pd_convert_display(S.data.y,S.meta.unit,target_y,['Y ' S.axis]);[yd,level_label]=gxtxt_level_scale_apply(yraw,target_y,level);
+      [xd,~,xf]=pd_convert_display(S.data.x,S.x_meta,xdu,'X');[yraw,~,yf]=pd_convert_display(S.data.y,S.meta,target_y,['Y ' S.axis]);[yd,level_label]=gxtxt_level_scale_apply(yraw,target_y,level);
       if(pi==1&&jj==1),xmeta_factor=xf;endif
       if(strcmp(S.axis,'right')),if(!isempty(level_label)),y2level_label=level_label;endif;if(k==ridx(1)),y2factor_meta=yf;endif;else if(!isempty(level_label)),ylevel_label=level_label;endif;if(!isempty(lidx)&&k==lidx(1)),yfactor_meta=yf;endif;endif
       xp=xd;yp=yd;ypr=yraw;rowidx=(1:numel(xp))';ord=(1:numel(xp))';if(strcmp(order_mode,'sort_x')&&!(isfield(S.data,'ordering_variable_id')&&!isempty(S.data.ordering_variable_id))),[xp,ord]=sort(xp);yp=yp(ord);ypr=ypr(ord);rowidx=rowidx(ord);endif
-      kind=series_kind(S,graph_kind);auto_color=palette(mod(k-1,rows(palette))+1,:);st=resolve_style(S,V,kind,graph_lw,graph_ms,auto_color);
-      hband=[];if(isfield(S.presentation,'band')&&!isempty(fieldnames(S.presentation.band))),[blo,bhi]=band_values(S,rowidx,1:numel(rowidx),target_y,level);hband=draw_band(ax,xp,blo,bhi,st,kind);endif
+      kind=series_kind(S,graph_kind);
+      if(has_family_group(S))
+        % The same prepared rows and family owner serve single and stacked
+        % panels. Never join the end of one family to the start of another.
+        [fh,fl,color_cursor]=draw_family_series(ax,S,V,xp,yp,rowidx,kind,graph_lw,graph_ms,palette,color_cursor,legend_mode);
+        handles=[handles fh];labels=[labels fl];
+        continue;
+      endif
+      auto_color=palette(mod(k-1,rows(palette))+1,:);st=resolve_style(S,V,kind,graph_lw,graph_ms,auto_color);
+      hband=[];if(isfield(S.presentation,'band')&&!isempty(fieldnames(S.presentation.band))),[blo,bhi,bruns]=band_values(S,rowidx,1:numel(rowidx),target_y,level);hband=draw_band(ax,xp,blo,bhi,st,kind,bruns);endif
       hbase=[];
       if(strcmp(kind,'band'))
         draw_center=true;if(isfield(S.presentation.band,'draw_center')),draw_center=parse_bool(S.presentation.band.draw_center,true);endif;if(draw_center),hbase=draw_trace(ax,xp,yp,'line',st);endif
@@ -289,10 +318,10 @@ function pd_render_2d_multipanel(outdir,cfg,P,graph,file_name,V,core_axis_state,
     yl='auto';y2l='auto';if(pi==1),yl=presentation_value(cfg,graph,'y_label',gxtxt_ini_get(cfg,['plot.' graph '.y_label'],'auto'));y2l=presentation_value(cfg,graph,'y2_label',gxtxt_ini_get(cfg,['plot.' graph '.y2_label'],'auto'));endif
     yl=panel_axis_label(panel,'y_left',yl);y2l=panel_axis_label(panel,'y_right',y2l);
     if(is_auto(yl)),if(numel(lidx)==1),yl=axis_label(display_name(series(lidx(1)).name),ydu);else yl=axis_label('Y Left',ydu);endif;endif
-    if(!isempty(lidx)),yl=display_axis_label(yl,series(lidx(1)).meta.unit,ydu);endif
+    if(!isempty(lidx)),yl=pd_display_axis_label(yl,series(lidx(1)).meta.unit,ydu);endif
     if(!isempty(ylevel_label)),yl=[yl ' (' ylevel_label ')'];endif
     axes(primary(pi));if(!isempty(lidx)),gxtxt_plot_text('ylabel',yl);endif
-    if(!isempty(ridx)),if(is_auto(y2l)),if(numel(ridx)==1),y2l=axis_label(display_name(series(ridx(1)).name),y2du);else y2l=axis_label('Y Right',y2du);endif;endif;y2l=display_axis_label(y2l,series(ridx(1)).meta.unit,y2du);if(!isempty(y2level_label)),y2l=[y2l ' (' y2level_label ')'];endif;axes(ax2);gxtxt_plot_text('ylabel',y2l);endif
+    if(!isempty(ridx)),if(is_auto(y2l)),if(numel(ridx)==1),y2l=axis_label(display_name(series(ridx(1)).name),y2du);else y2l=axis_label('Y Right',y2du);endif;endif;y2l=pd_display_axis_label(y2l,series(ridx(1)).meta.unit,y2du);if(!isempty(y2level_label)),y2l=[y2l ' (' y2level_label ')'];endif;axes(ax2);gxtxt_plot_text('ylabel',y2l);endif
     ptitle=panel_title_text(panel);if(!isempty(ptitle)),axes(primary(pi));gxtxt_plot_text('title',ptitle);endif
 
     legend_series_handles{pi}=handles;legend_series_labels{pi}=labels;
@@ -313,6 +342,7 @@ function pd_render_2d_multipanel(outdir,cfg,P,graph,file_name,V,core_axis_state,
   for pi=1:np
     panel=V.panels(pi);apply_panel_axes(panel,shared_x,primary(pi),right_axes{pi},core_axis_state,cfg,graph);
   endfor
+  finalize_bar_baselines(fig);
   try gxtxt_plot_sync_overlay_axes(fig);catch;end_try_catch
 
   % Graph title is global; the X label appears only on the bottom panel.
@@ -320,7 +350,7 @@ function pd_render_2d_multipanel(outdir,cfg,P,graph,file_name,V,core_axis_state,
   if(is_auto(title_txt)),title_txt=sprintf('Scientific dataset vs %s',display_name(P.x_name));endif
   if(V.title_present&&!is_auto(V.title)),title_txt=V.title;endif
   % Same label resolution as the working single-panel path.
-  xl=v2_axis_label(V,'x',xl);if(is_auto(xl)),xl=axis_label(display_name(P.x_name),xdu);endif;xl=display_axis_label(xl,P.x_meta.unit,xdu);
+  xl=v2_axis_label(V,'x',xl);if(is_auto(xl)),xl=axis_label(display_name(P.x_name),xdu);endif;xl=pd_display_axis_label(xl,P.x_meta.unit,xdu);
   axes(primary(end));gxtxt_plot_text('xlabel',xl);
   % The bottom xlabel participates in the native axes inset only after it is
   % created.  One final geometry pass reserves that room without changing X.
@@ -333,6 +363,28 @@ function pd_render_2d_multipanel(outdir,cfg,P,graph,file_name,V,core_axis_state,
   % final size. Creating it here would make an above-panel legend compete for
   % the same provisional band.
 
+  % All panels now share their final reference X range. Apply each policy once.
+  for pi=1:np
+    panel=V.panels(pi);idxs=panel_series_indices(series,panel.series_ids);
+    lidx=idxs(strcmp({series(idxs).axis},'left'));ridx=idxs(strcmp({series(idxs).axis},'right'));
+    pd_coordinate_axis_metadata(primary(pi),'x',series(1).x_meta,xdu);
+    if(pi==1)
+      pd_coordinate_view(primary(pi),'x',{series.x_meta},xdu,cfg,graph,'x',V.axes.x);
+    else
+      for field={'coordinate_view_status','coordinate_reference_range'}
+        key=['gxtxt_x_' field{1}];if(isappdata(primary(1),key)),setappdata(primary(pi),key,getappdata(primary(1),key));endif
+      endfor
+    endif
+    if(!isempty(lidx))
+      pd_coordinate_axis_metadata(primary(pi),'y',series(lidx(1)).meta,panel_y_units{pi});
+      pd_coordinate_view(primary(pi),'y',{series(lidx).meta},panel_y_units{pi},cfg,graph,'y',panel.axes.y_left,panel.id,gxtxt_level_scale_config(cfg,graph,'y'));
+    endif
+    if(!isempty(ridx))
+      pd_coordinate_axis_metadata(right_axes{pi},'y',series(ridx(1)).meta,panel_y2_units{pi});
+      pd_coordinate_view(right_axes{pi},'y',{series(ridx).meta},panel_y2_units{pi},cfg,graph,'y2',panel.axes.y_right,panel.id,gxtxt_level_scale_config(cfg,graph,'y2'));
+    endif
+  endfor
+  for pi=1:np,apply_log_x_grid(primary(pi),shared_x,'x');endfor
   % Computed annotations are graph data overlays; apply them independently to
   % each panel without changing panel membership or series identity.
   annotations={};if(primary_matches_series(cfg,P)),annotations=gxtxt_data_annotations_from_runtime(cfg,'primary');endif
@@ -1080,14 +1132,24 @@ function h=draw_trace(ax,x,y,kind,st)
   try if(strcmpi(st.marker_fill,'full')&&!strcmp(mk,'none')),set(h,'markerfacecolor',st.color);elseif(strcmpi(st.marker_fill,'none')&&!strcmp(mk,'none')),set(h,'markerfacecolor','none');endif;catch;end_try_catch
 endfunction
 function h=draw_bar(ax,x,y,pres,st,S,idx,ord,target_x,target_y,level)
+  % Numeric baselines are source-Y quantities; auto is display zero. Keep
+  % baseline geometry independent of Octave bar-series axis listeners, which
+  % otherwise silently replace zero/one baselines when the scale changes.
+  baseline=0;
+  if(isfield(pres,'bar_baseline'))
+    value=str2double(strtrim(pres.bar_baseline));
+    if(isfinite(value))
+      [value,~,~]=pd_convert_display(value,S.meta,target_y,'Bar baseline');
+      [baseline,~]=gxtxt_level_scale_apply(value,target_y,level);
+      if(!isscalar(baseline)||!isfinite(baseline)),error('plot.dataset: bar baseline must be finite after display and level conversion for series %s',S.series_id);endif
+    endif
+  endif
+  state=struct('baseline',baseline,'values',y,'interval',false);
   if(isfield(pres,'bar_bounds')&&!isempty(fieldnames(pres.bar_bounds)))
     [lo,hi]=bar_bounds_values(S,idx,ord,target_x);
     if(numel(lo)!=numel(y)||numel(hi)!=numel(y)),error('plot.dataset: bar X bounds length mismatch for series %s',S.series_id);endif
     if(any(!isfinite(lo))||any(!isfinite(hi))||any(hi<=lo)),error('plot.dataset: bar X bounds must be finite with lower < upper for series %s',S.series_id);endif
-    if(strcmp(get(ax,'xscale'),'log')&&any(lo<=0)),error('plot.dataset: logarithmic X interval bars require positive lower bounds for series %s',S.series_id);endif
-    raw_baseline=0;if(isfield(pres,'bar_baseline')),q=strtrim(pres.bar_baseline);v=str2double(q);if(isfinite(v)),raw_baseline=v;endif;endif
-    [bd,~,~]=pd_convert_display(raw_baseline,S.meta.unit,target_y,'Bar baseline');[baseline,~]=gxtxt_level_scale_apply(bd,target_y,level);baseline=baseline(1);
-    if(strcmp(get(ax,'yscale'),'log')&&baseline<=0),pos=y(isfinite(y)&y>0);if(isempty(pos)),error('plot.dataset: logarithmic bar plot has no positive values');endif;baseline=min(pos)/2;endif
+    state.interval=true;state.lower_x=lo;state.series_id=S.series_id;
     h=[];hold_state=ishold(ax);hold(ax,'on');
     for bi=1:numel(y)
       if(!isfinite(y(bi))),continue;endif
@@ -1096,23 +1158,54 @@ function h=draw_bar(ax,x,y,pres,st,S,idx,ord,target_x,target_y,level)
       % the exact Dataset-bound interval geometry.
       xx=[lo(bi) lo(bi) hi(bi) hi(bi) lo(bi)];yy=[baseline y(bi) y(bi) baseline baseline];
       hb=plot(ax,xx,yy,'-','color',st.color,'linewidth',max(0.5,st.line_width));
+      setappdata(hb,'pd_bar_baseline',state);
       if(isempty(h)),h=hb;else h(end+1)=hb;endif %#ok<AGROW>
     endfor
     if(!hold_state),hold(ax,'off');endif
     return;
   endif
   w=0.8;if(isfield(pres,'bar_width')),q=strtrim(pres.bar_width);v=str2double(q);if(isfinite(v)&&v>0),w=v;endif;endif
-  h=bar(ax,x,y,w,'facecolor',st.color,'edgecolor',st.color);try set(h,'facealpha',st.opacity);catch;end_try_catch
+  [xx,yy]=bar(x,y,w,'basevalue',baseline);
+  h=patch('parent',ax,'xdata',xx,'ydata',yy,'facecolor',st.color,'edgecolor',st.color,'facealpha',st.opacity);
+  setappdata(h,'pd_bar_baseline',state);
+endfunction
+function finalize_bar_baselines(fig)
+  % Axis authority is resolved after traces are drawn, for both single and
+  % multiple panels. Apply logarithmic safeguards using that final state.
+  for h=findall(fig)(:)'
+    if(!isappdata(h,'pd_bar_baseline')),continue;endif
+    state=getappdata(h,'pd_bar_baseline');ax=ancestor(h,'axes');baseline=state.baseline;
+    if(state.interval&&strcmp(get(ax,'xscale'),'log')&&any(state.lower_x<=0)),error('plot.dataset: logarithmic X interval bars require positive lower bounds for series %s',state.series_id);endif
+    if(strcmp(get(ax,'yscale'),'log')&&baseline<=0)
+      positive=state.values(isfinite(state.values)&state.values>0);
+      if(isempty(positive)),error('plot.dataset: logarithmic bar plot has no positive values');endif
+      baseline=min(positive)/2;if(baseline==0),baseline=min(positive);endif
+    endif
+    values=get(h,'ydata');
+    if(state.interval),values([1 4 5])=baseline;else values([1 4],:)=baseline;endif
+    set(h,'ydata',values);
+  endfor
 endfunction
 function [lo,hi]=bar_bounds_values(S,idx,ord,target)
   b=S.presentation.bar_bounds;[lv,lm]=aux_data(S,b.lower_variable_id,idx,ord);[uv,um]=aux_data(S,b.upper_variable_id,idx,ord);lu='';uu='';if(isfield(lm,'unit')),lu=lm.unit;endif;if(isfield(um,'unit')),uu=um.unit;endif
-  [lo,~,~]=pd_convert_display(lv,lu,target,'Bar X lower');[hi,~,~]=pd_convert_display(uv,uu,target,'Bar X upper');
+  [lo,~,~]=pd_convert_display(lv,lm,target,'Bar X lower');[hi,~,~]=pd_convert_display(uv,um,target,'Bar X upper');
 endfunction
-function h=draw_band(ax,x,lo,hi,st,kind)
-  if(isempty(x)),h=[];return;endif
-  good=isfinite(x)&isfinite(lo)&isfinite(hi);x=x(good);lo=lo(good);hi=hi(good);if(isempty(x)),h=[];return;endif
-  xx=[x(:);flipud(x(:))];yy=[lo(:);flipud(hi(:))];alpha=0.18;if(isfinite(st.opacity)&&st.opacity<1),alpha=st.opacity;endif
-  h=patch('parent',ax,'xdata',xx,'ydata',yy,'facecolor',st.color,'edgecolor','none');try set(h,'facealpha',alpha);catch;end_try_catch
+function h=draw_band(ax,x,lo,hi,st,kind,runs)
+  h=[];if(isempty(x)),return;endif
+  x=x(:);lo=lo(:);hi=hi(:);good=isfinite(x)&isfinite(lo)&isfinite(hi);
+  % Run identities survive display reduction, which may omit every missing
+  % row. Never join distinct finite runs even when displayed bounds are finite.
+  boundary=[true;any(diff(runs,1,1)!=0,2)];
+  starts=find(good&([true;!good(1:end-1)]|boundary));
+  ends=find(good&([!good(2:end);true]|[boundary(2:end);true]));
+  alpha=0.18;if(isfinite(st.opacity)&&st.opacity<1),alpha=st.opacity;endif
+  for k=1:numel(starts)
+    idx=starts(k):ends(k);if(numel(idx)<2),continue;endif
+    xx=[x(idx);flipud(x(idx))];yy=[lo(idx);flipud(hi(idx))];
+    p=patch('parent',ax,'xdata',xx,'ydata',yy,'facecolor',st.color,'edgecolor','none');
+    try set(p,'facealpha',alpha);catch;end_try_catch
+    if(isempty(h)),h=p;else set(p,'handlevisibility','off');endif
+  endfor
 endfunction
 
 function tf=has_error(pres,name),tf=false;if(isfield(pres,name)),e=pres.(name);if(isfield(e,'mode')),tf=!strcmpi(strtrim(e.mode),'none');endif;endif;endfunction
@@ -1133,12 +1226,24 @@ function d=aux_display_delta(S,id,idx,ord,target,label)
   [v,m]=aux_data(S,id,idx,ord);u='';if(isfield(m,'unit')),u=m.unit;endif
   if(isempty(strtrim(u))&&isempty(strtrim(target))),d=abs(v);return;endif
   if(isempty(strtrim(u))),error('plot.dataset: %s variable %s has no unit metadata',label,id);endif
-  try z=gxtxt_unit_convert(zeros(size(v)),u,target);q=gxtxt_unit_convert(v,u,target);catch err,error('plot.dataset: cannot convert %s variable %s from %s to %s: %s',label,id,u,target,err.message);end_try_catch
+  if(isfield(m,'coordinate_context'))
+    plan=gxtxt_api_call('DATASET_METADATA_API_v1','coordinate_snapshot_affine_plan',{m.coordinate_context,m.variable_id,u,struct('mode','canonical','unit',target)});
+    if(!plan.affine),error('plot.dataset: uncertainty %s requires an affine physical displacement relation',id);endif
+  endif
+  try z=pd_convert_display(zeros(size(v)),m,target,label);q=pd_convert_display(v,m,target,label);catch err,error('plot.dataset: cannot convert %s variable %s from %s to %s: %s',label,id,u,target,err.message);end_try_catch
   d=abs(q-z);
 endfunction
-function [lo,hi]=band_values(S,idx,ord,target,level)
+function [lo,hi,runs]=band_values(S,idx,ord,target,level)
   b=S.presentation.band;[lv,lm]=aux_data(S,b.lower_variable_id,idx,ord);[uv,um]=aux_data(S,b.upper_variable_id,idx,ord);lu='';uu='';if(isfield(lm,'unit')),lu=lm.unit;endif;if(isfield(um,'unit')),uu=um.unit;endif
-  [lr,~,~]=pd_convert_display(lv,lu,target,'Band lower');[ur,~,~]=pd_convert_display(uv,uu,target,'Band upper');[lo,~]=gxtxt_level_scale_apply(lr,target,level);[hi,~]=gxtxt_level_scale_apply(ur,target,level);
+  [lr,~,~]=pd_convert_display(lv,lm,target,'Band lower');[ur,~,~]=pd_convert_display(uv,um,target,'Band upper');[lo,~]=gxtxt_level_scale_apply(lr,target,level);[hi,~]=gxtxt_level_scale_apply(ur,target,level);
+  runs=ones(numel(lo),2);optional=pd_uncertainty_aux_ids(S.presentation,S.data);ids={b.lower_variable_id,b.upper_variable_id};
+  for k=1:2
+    if(!any(strcmp(optional,ids{k}))),continue;endif
+    if(!isfield(S.data,'uncertainty_variable_ids')),error('plot.dataset: uncertainty cache predates finite-run tracking; recalculate before rendering');endif
+    j=find(strcmp(S.data.uncertainty_variable_ids,ids{k}),1);
+    if(isempty(j)),error('plot.dataset: uncertainty binding changed; recalculate before rendering');endif
+    v=S.data.uncertainty_run_ids{j}(idx);runs(:,k)=v(ord);
+  endfor
 endfunction
 function [v,m]=aux_data(S,id,idx,ord)
   j=find(strcmp(S.data.aux_ids,id),1);if(isempty(j)),error('plot.dataset: PlotSpec auxiliary variable %s is not present in prepared cache for series %s',id,S.series_id);endif
@@ -1190,7 +1295,7 @@ function pad_default_marker_x(ax,series,V,cfg,graph,display_unit,default_kind)
     kind=series_kind(series(k),default_kind);
     marked=marked||any(strcmp(kind,{'scatter','line_marker','errorbar','bar'}));
     if(isempty(series(k).data.x)),continue;endif
-    xv=pd_convert_display(series(k).data.x,series(k).x_meta.unit,display_unit,'X');
+    xv=pd_convert_display(series(k).data.x,series(k).x_meta,display_unit,'X');
     xv=xv(isfinite(xv));if(isempty(xv)),continue;endif
     lo=min(lo,min(xv));hi=max(hi,max(xv));
   endfor
@@ -1217,9 +1322,13 @@ endfunction
 function apply_log_x_grid(ax,a,which)
 % PlotSpec owns the major X step for both scales and log subdivisions.
   if(!strcmp(which,'x')),return;endif
+  % Explicit saved tick positions and labels remain authoritative over a step.
+  custom=isfield(a,'tick_positions')&&isfield(a,'tick_labels');
+  if(custom),apply_axis_ticks(ax,a,which);endif
+  old=findall(ax,'tag','gxtxt_log_x_minor_grid');if(!isempty(old)),delete(old);endif
   if(!strcmp(get(ax,'xscale'),'log'))
     step=NaN;if(isfield(a,'major_step')),step=str2double(a.major_step);endif
-    if(isfinite(step)&&step>0)
+    if(!custom&&isfinite(step)&&step>0)
       lim=get(ax,'xlim');first=ceil((lim(1)-step*1e-10)/step)*step;
       last=floor((lim(2)+step*1e-10)/step)*step;
       ticks=first:step:last;if(!isempty(ticks)),set(ax,'xtick',ticks);endif
@@ -1229,7 +1338,26 @@ function apply_log_x_grid(ax,a,which)
   lim=get(ax,'xlim');if(any(!isfinite(lim))||lim(1)<=0||lim(2)<=lim(1)),return;endif
   step=NaN;if(isfield(a,'major_step')),step=str2double(a.major_step);endif
   [major,minor]=pd_log_x_grid_positions(lim,step);
-  if(!isempty(major)),set(ax,'xtick',major);endif
+  if(!custom)
+    % Recompute our fallback against final coordinate-policy bounds. A previous
+    % pass must not leave manual ticks outside a narrowed or shifted viewport.
+    if(isappdata(ax,'gxtxt_auto_log_x_ticks'))
+      set(ax,'xtickmode','auto','xticklabelmode','auto');rmappdata(ax,'gxtxt_auto_log_x_ticks');
+    endif
+    if(isfinite(step)&&step>0)
+      if(!isempty(major)),set(ax,'xtick',major);endif
+    else
+      ticks=get(ax,'xtick');ticks=ticks(ticks>=lim(1)&ticks<=lim(2));
+      if(numel(ticks)<3)
+        ticks=unique([ticks(:)' minor]);
+        if(numel(ticks)<2),ticks=logspace(log10(lim(1)),log10(lim(2)),5);endif
+        if(numel(ticks)>9),ticks=ticks(unique(round(linspace(1,numel(ticks),9))));endif
+        labels=arrayfun(@(v) sprintf('%.6g',v),ticks,'UniformOutput',false);
+        if(numel(unique(labels))!=numel(labels)),labels=arrayfun(@(v) sprintf('%.17g',v),ticks,'UniformOutput',false);endif
+        set(ax,'xtick',ticks,'xticklabel',labels);setappdata(ax,'gxtxt_auto_log_x_ticks',true);
+      endif
+    endif
+  endif
   if(!isfield(a,'minor_grid')||!strcmpi(strtrim(a.minor_grid),'auto')),return;endif
   tag='';try tag=lower(strtrim(get(ax,'tag')));catch;end_try_catch
   if(!isempty(strfind(tag,'overlay_yaxis'))),return;endif
@@ -1354,14 +1482,7 @@ endfunction
 
 function s=series_label(S,unit),if(!isempty(strtrim(S.label))),s=S.label;else s=display_name(S.name);endif;if(!isempty(unit)),s=[s ' [' unit ']'];endif;endfunction
 function s=axis_label(name,unit),s=name;if(!isempty(unit)),s=[s ' [' unit ']'];endif;endfunction
-function label=display_axis_label(label,source_unit,display_unit)
-  source_unit=strtrim(source_unit);display_unit=strtrim(display_unit);
-  if(isempty(source_unit)||strcmp(source_unit,display_unit)),return;endif
-  suffix=[' [' source_unit ']'];
-  if(numel(label)<numel(suffix)||!strcmp(label(end-numel(suffix)+1:end),suffix)),return;endif
-  label=label(1:end-numel(suffix));
-  if(!isempty(display_unit)),label=[label ' [' display_unit ']'];endif
-endfunction
+
 function s=display_name(s),s=strrep(s,'_',' ');endfunction
 function tf=is_auto(s),tf=isempty(strtrim(s))||strcmpi(strtrim(s),'auto');endfunction
 function tf=parse_bool(s,d),if(islogical(s)),tf=s;return;endif;q=lower(strtrim(s));if(any(strcmp(q,{'1','true','yes','on'}))),tf=true;elseif(any(strcmp(q,{'0','false','no','off'}))),tf=false;else tf=d;endif;endfunction

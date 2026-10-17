@@ -3,13 +3,14 @@
 proc ::GX::CurveWorkbench::_measurementFingerprint {w id} {
     variable st
     set record [_record $w $id];set geometry {}
-    foreach key {samples sketch_definition sketch_samples geometry_resource row_resource gap_resource source_descriptor source_request operations working_unit source_assumed_units representation} {
+    foreach key {samples sketch_definition sketch_samples geometry_resource row_resource gap_resource source_descriptor source_request operations working_unit sketch_units source_assumed_units source x y representation} {
         if {[dict exists $record $key]} {
             set value [dict get $record $key]
             if {$key in {geometry_resource row_resource gap_resource}} {set identity {};foreach field {sha256 size_bytes} {if {[dict exists $value $field]} {dict set identity $field [dict get $value $field]}};set value $identity}
             dict set geometry $key $value
         }
     }
+    dict set geometry coordinate_units [_coordinateUnits $record]
     if {[info exists st($w,geometryFingerprint,$id)]&&[lindex $st($w,geometryFingerprint,$id) 0] eq $geometry} {return [lindex $st($w,geometryFingerprint,$id) 1]}
     set sha [::GX::datasetStorageSha256Text [_session] $geometry];set st($w,geometryFingerprint,$id) [list $geometry $sha];return $sha
 }
@@ -129,7 +130,7 @@ proc ::GX::CurveWorkbench::_measurementPublishApply {w token ids values} {
         lappend rows $row;incr bytes [string bytelength $row]
         dict for {object binding} [dict get $record sources] {lappend sources [dict get $binding dataset_id]}
     }
-    set definition [dict create dataset_id $requested contract table.generic storage [dict get $values storage] expected_rows [llength $rows] expected_bytes $bytes producer_version 2.10.0 source_dataset_ids [lsort -unique $sources] provenance [dict create operation native2d_measurement_report records [lmap id $ids {dict get $st($w,measurements) $id}]] structured_metadata [dict create dataset.display_name $requested inspection.kind native2d_measurements inspection.value_units_column unit inspection.anchor_specification_encoding tcl_list_dict_data_v1 inspection.source_dataset_id_policy none_unless_dataset_source]]
+    set definition [dict create dataset_id $requested contract table.generic storage [dict get $values storage] expected_rows [llength $rows] expected_bytes $bytes producer_version [::GX::moduleField viewer.curve_workbench version] source_dataset_ids [lsort -unique $sources] provenance [dict create operation native2d_measurement_report records [lmap id $ids {dict get $st($w,measurements) $id}]] structured_metadata [dict create dataset.display_name $requested inspection.kind native2d_measurements inspection.value_units_column unit inspection.anchor_specification_encoding tcl_list_dict_data_v1 inspection.source_dataset_id_policy none_unless_dataset_source]]
     set plan [::GX::datasetPublicationV2Prepare [_session] viewer.curve_workbench $definition];set writer {}
     try {
         set writer [::GX::datasetPublicationV2OpenWriter $plan];::GX::datasetPublicationV2DeclareDimension $writer row 0 {extendible 1}

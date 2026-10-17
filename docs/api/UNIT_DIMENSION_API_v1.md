@@ -80,6 +80,7 @@ U = gxtxt_unit_parse(unit)
 tf = gxtxt_unit_compatible(a,b)
 out = gxtxt_unit_convert(value,from_unit,to_unit)
 key = gxtxt_unit_dimension_key(unit)
+receipt = gxtxt_unit_expression_dimensions_v1(expression, symbol_units, output_unit, unknown_parameter_ids)
 ```
 
 ## Strict expressions
@@ -100,11 +101,25 @@ When `strict_units=1`:
 - every referenced numeric series must have unit metadata;
 - `+`/`-` require compatible dimensions;
 - `*` and `/` combine dimensions;
-- `^` requires an integer literal exponent;
+- integer constant powers carry dimensions; variable or noninteger powers require a dimensionless base and exponent;
 - if `unit=` is declared, the result is converted to that compatible unit;
 - incompatible arithmetic is an execution error.
 
 Without `strict_units=1`, units remain metadata as in earlier releases.
+
+## Formula dimensions and parameter units
+
+`gxtxt_unit_expression_dimensions_v1` uses the same controlled expression grammar
+as strict Scientific Analysis and declared Numeric formulas. It validates known
+symbol dimensions and can infer up to128 unknown parameter units when the
+structural constraints determine them uniquely. Inferred units use canonical
+base symbols; explicit compatible parameter units retain their chosen scales.
+It does not evaluate observations, fit parameters or prove identifiability.
+Unknown/inconsistent or noninteger inferred dimensions are refused. Referenced
+symbols require metadata; unrelated Dataset metadata remains irrelevant.
+The same generic receipt is exposed to both Script languages and Tcl as
+`NUMERIC_API_v1.expression_dimensions`. The [safe formula contract](FIT_FORMULA_v1.md) specifies bounds, conversion scales,
+immutable receipts and real Script calls through `NUMERIC_API_v1`.
 
 ## Explicit conversion
 
@@ -143,3 +158,9 @@ out = gxtxt_elapsed_time_convert(values,target_unit)
 ```
 
 It validates compatibility with `s` and delegates to `gxtxt_unit_convert(values,'s',target_unit)`. Unit Registry API v1 supplies the exact Julian-year (`a`), `ka`, and `Ma` scale definitions in normal `standard_octave` runtimes. See `ELAPSED_TIME_REQUESTED_UNIT_API_v1.md`.
+
+Empirical power-law coefficient units depend on the fitted exponent and the
+captured coordinate-unit basis. Their versioned interpretation is documented in
+[CORE statistical semantics](STATISTICAL_RESULT_SEMANTICS_API_v1.md#conditional-power-law-parameter-units).
+The strict formula constructor continues to require a dimensionless variable-
+power base; an explicit fixed reference x0 supplies that physical normalization.

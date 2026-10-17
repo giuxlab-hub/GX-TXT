@@ -3,7 +3,7 @@ function analysis_harmonic_analysis_main(args)
 % Generic reusable numerical reductions are provided by public NUMERIC_API_v1.
 % SPDX-License-Identifier: GPL-3.0-or-later
   module_id = 'analysis.harmonic_analysis';
-  module_version = '1.1.0';
+  module_version = '1.2.0';
   P = struct();
   publication_open = false;
   publication_finalized = false;
@@ -24,6 +24,7 @@ function analysis_harmonic_analysis_main(args)
   endif
 
   root = framework_root();
+  statistical_scope=gxtxt_statistics_scope_v1(session);
   numeric = discover_numeric_api(cfg, module_id);
   discover_plot_service(root, module_id);
   gxtxt_progress_start('prepare', 'Preparing harmonic analysis', 'indeterminate');
@@ -86,85 +87,26 @@ function analysis_harmonic_analysis_main(args)
       error('%s: spectrum must contain at least three bins', module_id);
     endif
 
-    grid = feval(numeric.function_name, 'grid_info', freq, struct('nonfinite', 'error'));
-    if (!isfield(grid, 'strict_monotonic') || !grid.strict_monotonic || !strcmp(grid.direction, 'increasing'))
-      error('%s: frequency coordinate must be strictly increasing', module_id);
-    endif
-    df = grid.step_median;
-    if (!isfinite(df) || df <= 0)
-      error('%s: cannot determine a positive frequency spacing', module_id);
-    endif
-    if (freq(1) < 0)
-      error('%s: one-sided harmonic analysis requires a non-negative frequency axis', module_id);
-    endif
-
-    amp_stats = feval(numeric.function_name, 'statistics', amp, struct('nonfinite', 'error'));
-    if (amp_stats.min < 0)
-      error('%s: amplitude spectrum must be non-negative', module_id);
-    endif
-
-    gxtxt_progress_stage('harmonics', 'Detecting fundamental and harmonics', 'determinate', max_harm);
-    if (strcmp(mode, 'auto_peak'))
-      start_idx = dc_bins + 2;
-      if (start_idx > numel(amp)), start_idx = numel(amp); endif
-      [fund_idx, fund_amp] = range_max_index(amp, start_idx, numel(amp), numeric.function_name);
-      if (!isfinite(fund_amp) || fund_amp <= 0)
-        error('%s: automatic fundamental search found no positive spectral peak', module_id);
-      endif
-    else
-      fund_idx = local_peak_index(freq, amp, explicit_f, guard, numeric.function_name);
-      fund_amp = amp(fund_idx);
-      if (fund_amp <= 0)
-        error('%s: explicit fundamental search resolved to a non-positive amplitude', module_id);
-      endif
-    endif
-
-    f0 = freq(fund_idx);
-    highest_frequency = freq(end);
-    orders = [];
-    expected = [];
-    detected = [];
-    amplitudes = [];
-    errors = [];
-
-    for k = 1:max_harm
-      target = k * f0;
-      if (target > highest_frequency + 0.5 * df)
-        break;
-      endif
-      idx = local_peak_index(freq, amp, target, guard, numeric.function_name);
-      orders(end+1, 1) = k;
-      expected(end+1, 1) = target;
-      detected(end+1, 1) = freq(idx);
-      amplitudes(end+1, 1) = amp(idx);
-      errors(end+1, 1) = freq(idx) - target;
-      gxtxt_progress_update(k, max_harm, 'harmonics', sprintf('Processed harmonic order %d', k));
-    endfor
-
-    if (isempty(orders) || orders(1) != 1)
-      error('%s: fundamental could not be represented in harmonic result', module_id);
-    endif
-
-    amplitudes(1) = fund_amp;
-    detected(1) = f0;
-    errors(1) = 0;
-    safe_amplitudes = amplitudes;
-    safe_amplitudes(safe_amplitudes < realmin) = realmin;
-    amplitude_dbc = 20 * log10(safe_amplitudes / fund_amp);
-    amplitude_percent = 100 * amplitudes / fund_amp;
-
-    if (numel(amplitudes) > 1)
-      sq_stats = feval(numeric.function_name, 'statistics', amplitudes(2:end).^2, struct('nonfinite', 'error'));
-      thd_ratio = sqrt(sq_stats.sum) / fund_amp;
-    else
-      thd_ratio = 0;
-    endif
-    thd_percent = 100 * thd_ratio;
-    if (thd_ratio > 0)
-      thd_db = 20 * log10(thd_ratio);
-    else
-      thd_db = -Inf;
-    endif
+    gxtxt_progress_stage('harmonics','Detecting fundamental and harmonics through public Numeric','indeterminate');
+    options=struct('fundamental_mode',mode,'max_harmonic',max_harm,'search_half_width_bins',guard,'exclude_dc_bins',dc_bins);
+    if(strcmp(mode,'explicit')),options.fundamental_frequency=explicit_f;endif
+    quality=feval(numeric.function_name,'harmonic_peak_quality',freq,amp,options);
+    df=quality.df;f0=quality.f0;fund_amp=quality.fund_amp;
+    orders=quality.component_order;expected=quality.component_expected_frequency;detected=quality.component_frequency;
+    errors=quality.component_frequency_error;amplitudes=quality.component_amplitude;
+    amplitude_dbc=quality.component_level_db;amplitude_percent=quality.component_percent;
+    thd_ratio=quality.thd_ratio;thd_percent=quality.thd_pct;thd_db=quality.thd_db;
+    context=struct('x_unit',f_unit,'y_unit',a_unit);
+    stat_provenance=struct('source_dataset_id',source_dataset_id,'source_frequency_variable_id',f_id,'source_amplitude_variable_id',a_id);
+    statistics=gxtxt_statistics_v1('from_numeric','math.numeric.harmonic_peak_quality','harmonic_peak_quality',quality,context,struct(),stat_provenance);
+    mapping=gxtxt_statistics_v1('numeric_field_map','harmonic_components');first=struct();
+    for key=fieldnames(mapping)',name=key{1};first.(name)=quality.(name)(1);endfor
+    first.component_method=quality.component_method;first.component_level_floor=quality.component_level_floor;
+    prototype=gxtxt_statistics_v1('from_numeric','math.numeric.harmonic_components','harmonic_components',first,context,struct(),stat_provenance);
+    bound=struct('harmonic_order','harmonic_order','harmonic_expected_frequency','expected_frequency', ...
+      'harmonic_frequency','detected_frequency','harmonic_frequency_error','frequency_error', ...
+      'harmonic_amplitude','amplitude','harmonic_level_db','amplitude_dbc','harmonic_amplitude_percent','amplitude_percent');
+    binding=gxtxt_statistics_v1('bind_columns',prototype,bound,numel(orders));
 
     provenance = sprintf('%s %s; source spectrum=%s; fundamental_mode=%s; f0=%.17g; max_harmonic=%d; search_half_width_bins=%d', ...
       module_id, module_version, source_dataset_id, mode, f0, max_harm, guard);
@@ -175,6 +117,7 @@ function analysis_harmonic_analysis_main(args)
       'source', source_dataset_id, ...
       'provenance', provenance, ...
       'notes', 'Integer-harmonic peak measurements derived from an existing amplitude spectrum; source spectrum is not recomputed or modified.');
+    popts.statistical_results=struct('quality',statistics,'components',binding);
 
     gxtxt_progress_stage('publish', 'Publishing harmonic result Dataset', 'determinate', numel(orders));
     P = gxtxt_publication_v2_open(session, module_id, output_dataset_id, 'table.generic', popts);
@@ -199,15 +142,19 @@ function analysis_harmonic_analysis_main(args)
     [P, pub_result] = gxtxt_publication_v2_finalize(P);
     publication_finalized = true;
     publication_open = false;
+    component_tables={};
+    for start=0:512:(numel(orders)-1)
+      component_tables{end+1}=gxtxt_statistics_v1('binding_table',output_dataset_id,'components',start,min(512,numel(orders)-start));
+    endfor
 
     write_metrics(fullfile(outdir, 'harmonic_analysis_metrics.ini'), module_id, module_version, ...
       source_dataset_id, output_dataset_id, f_id, a_id, f_name, a_name, f_unit, a_unit, ...
       source_provider, mode, f0, fund_amp, max_harm, guard, dc_bins, numel(orders), ...
-      thd_ratio, thd_percent, thd_db, P.provider);
+      thd_ratio, thd_percent, thd_db, P.provider, statistics);
     write_report(fullfile(outdir, 'harmonic_analysis_report.txt'), module_id, module_version, ...
       source_dataset_id, output_dataset_id, f_name, f_id, f_unit, a_name, a_id, a_unit, ...
       mode, f0, fund_amp, orders, expected, detected, errors, amplitudes, amplitude_dbc, ...
-      amplitude_percent, thd_ratio, thd_percent, thd_db, guard, pub_diag, pub_result);
+      amplitude_percent, thd_ratio, thd_percent, thd_db, guard, pub_diag, pub_result, statistics, component_tables);
 
     dbc_stats = feval(numeric.function_name, 'statistics', amplitude_dbc, struct('nonfinite', 'error'));
     db_baseline = dbc_stats.min - 3;
@@ -217,10 +164,9 @@ function analysis_harmonic_analysis_main(args)
     copy_graph_artifacts(graphs, outdir, module_id);
     write_graph_manifest(fullfile(outdir, 'automatic_graphs.ini'), graphs);
 
-    gxtxt_progress_complete('done', sprintf('Published %s with %d harmonic order(s); THD %.6g %%', ...
-      output_dataset_id, numel(orders), thd_percent));
-    fprintf('[%s] version=%s source=%s output=%s f0=%.12g harmonics=%d thd_percent=%.12g validation=PASS\n', ...
-      module_id, module_version, source_dataset_id, output_dataset_id, f0, numel(orders), thd_percent);
+    gxtxt_progress_complete('done',sprintf('Published %s with %d harmonic order(s)',output_dataset_id,numel(orders)));
+    fprintf('[%s] version=%s source=%s output=%s harmonics=%d validation=PASS\n',module_id,module_version,source_dataset_id,output_dataset_id,numel(orders));
+    fprintf('%s\n',gxtxt_statistics_v1('report',statistics,{'amplitude_thd_ratio','amplitude_thd_percent','amplitude_thd_level'}));
   catch err
     if (publication_open && !publication_finalized)
       try
@@ -281,29 +227,6 @@ function [f, a, provider] = read_spectrum(cfg, fid, aid)
     f = vertcat(fc{:});
     a = vertcat(ac{:});
   endif
-endfunction
-
-function [idx, value] = range_max_index(values, lo, hi, numeric_api)
-  if (lo < 1 || hi > numel(values) || lo > hi)
-    error('analysis.harmonic_analysis: invalid peak-search range');
-  endif
-  part = values(lo:hi);
-  S = feval(numeric_api, 'statistics', part, struct('nonfinite', 'error'));
-  value = S.max;
-  rel = find(part == value, 1, 'first');
-  if (isempty(rel))
-    error('analysis.harmonic_analysis: public numerical maximum could not be mapped to a source bin');
-  endif
-  idx = lo + rel - 1;
-endfunction
-
-function idx = local_peak_index(freq, amp, target, guard, numeric_api)
-  [~, nearest] = min(abs(freq - target));
-  lo = nearest - guard;
-  if (lo < 1), lo = 1; endif
-  hi = nearest + guard;
-  if (hi > numel(amp)), hi = numel(amp); endif
-  [idx, ~] = range_max_index(amp, lo, hi, numeric_api);
 endfunction
 
 function api = discover_numeric_api(cfg, module_id)
@@ -421,7 +344,7 @@ function n = parse_int(raw, minv, maxv, module_id, name)
 endfunction
 
 function write_metrics(path, id, ver, src, outid, fid, aid, fname, aname, funit, aunit, ...
-    src_provider, mode, f0, A0, max_h, guard, dc, n_h, thd_ratio, thd_pct, thd_db, out_provider)
+    src_provider, mode, f0, A0, max_h, guard, dc, n_h, thd_ratio, thd_pct, thd_db, out_provider, statistics)
   fh = fopen(path, 'w');
   if (fh < 0), error('%s: cannot write metrics', id); endif
   unwind_protect
@@ -430,9 +353,10 @@ function write_metrics(path, id, ver, src, outid, fid, aid, fname, aname, funit,
     fprintf(fh, '\n[source]\ndataset_id=%s\nfrequency_variable_id=%s\namplitude_variable_id=%s\n', src, fid, aid);
     fprintf(fh, 'frequency_name=%s\namplitude_name=%s\nfrequency_unit=%s\namplitude_unit=%s\nstorage_provider=%s\n', ...
       ini_escape(fname), ini_escape(aname), ini_escape(funit), ini_escape(aunit), src_provider);
-    fprintf(fh, '\n[analysis]\nfundamental_mode=%s\nfundamental_frequency=%.17g\nfundamental_amplitude=%.17g\n', mode, f0, A0);
+    fprintf(fh,'\n[analysis]\nfundamental_mode=%s\n',mode);
+    fprintf(fh,'%s\n',gxtxt_statistics_v1('ini_report',statistics,struct('fundamental_frequency','spectrum_reference_frequency','fundamental_amplitude','spectrum_reference_amplitude')));
     fprintf(fh, 'max_harmonic=%d\nsearch_half_width_bins=%d\nexclude_dc_bins=%d\nresolved_harmonics=%d\n', max_h, guard, dc, n_h);
-    fprintf(fh, 'thd_ratio=%.17g\nthd_percent=%.17g\nthd_db=%.17g\n', thd_ratio, thd_pct, thd_db);
+    fprintf(fh,'%s\n',gxtxt_statistics_v1('ini_report',statistics,struct('thd_ratio','amplitude_thd_ratio','thd_percent','amplitude_thd_percent','thd_db','amplitude_thd_level')));
     fprintf(fh, '\n[output]\ndataset_id=%s\nstorage_provider=%s\n', outid, out_provider);
   unwind_protect_cleanup
     fclose(fh);
@@ -441,26 +365,22 @@ endfunction
 
 function write_report(path, id, ver, src, outid, fname, fid, funit, aname, aid, aunit, ...
     mode, f0, A0, orders, expected, detected, errors, amps, dbc, pct, thd_ratio, thd_pct, thd_db, ...
-    guard, pub_diag, pub_result)
+    guard, pub_diag, pub_result, statistics, component_tables)
   fh = fopen(path, 'w');
   if (fh < 0), error('%s: cannot write report', id); endif
   unwind_protect
     fprintf(fh, 'GX-TXT Harmonic Analysis\n========================\n\n');
     fprintf(fh, 'Plugin: %s %s\nSource spectrum Dataset: %s\n', id, ver, src);
     fprintf(fh, 'Frequency: %s (%s) [%s]\nAmplitude: %s (%s) [%s]\n', fname, fid, funit, aname, aid, aunit);
-    fprintf(fh, 'Fundamental mode: %s\nResolved fundamental: %.12g %s\nFundamental amplitude: %.12g %s\n', ...
-      mode, f0, funit, A0, aunit);
+    fprintf(fh,'Fundamental mode: %s\n',mode);
+    fprintf(fh,'%s\n',gxtxt_statistics_v1('report',statistics,{'spectrum_reference_frequency','spectrum_reference_amplitude'}));
     fprintf(fh, 'Local search half-width: %d bin(s)\n\n', guard);
-    fprintf(fh, 'Harmonic table\n--------------\n');
-    fprintf(fh, 'Order  Expected [%s]    Detected [%s]    Error [%s]       Amplitude [%s]    dBc          %% fundamental\n', ...
-      funit, funit, funit, aunit);
-    for k = 1:numel(orders)
-      fprintf(fh, '%-6d %-17.10g %-17.10g %-17.10g %-17.10g %-12.6g %-12.6g\n', ...
-        orders(k), expected(k), detected(k), errors(k), amps(k), dbc(k), pct(k));
+    fprintf(fh,'Harmonic components from validated Dataset-local columns\n');
+    for k=1:numel(component_tables)
+      table=component_tables{k};
+      fprintf(fh,'%s\n',gxtxt_statistics_v1('table_report',table,table.row_ids,{'harmonic_order','harmonic_expected_frequency','harmonic_frequency','harmonic_frequency_error','harmonic_amplitude','harmonic_level_db','harmonic_amplitude_percent'}));
     endfor
-    fprintf(fh, '\nTHD\n---\nTHD ratio: %.12g\nTHD: %.12g %%\nTHD: %.12g dB\n', thd_ratio, thd_pct, thd_db);
-    fprintf(fh, ['\nDefinition: sqrt(sum(H2^2 ... Hn^2)) / H1 using the detected peak amplitudes published in this result. ' ...
-      'Only integer harmonics up to the configured maximum and available one-sided frequency range are included.\n']);
+    fprintf(fh,'%s\n',gxtxt_statistics_v1('report',statistics,{'amplitude_thd_ratio','amplitude_thd_percent','amplitude_thd_level'}));
     fprintf(fh, '\nPublished Dataset\n-----------------\nDataset ID: %s\nContract: table.generic\n', outid);
     fprintf(fh, 'Columns: harmonic_order, expected_frequency, detected_frequency, frequency_error, amplitude, amplitude_dBc, amplitude_percent\n');
     fprintf(fh, '\nPublication diagnostics: %s\nPublication result: %s\n', pub_diag, pub_result);

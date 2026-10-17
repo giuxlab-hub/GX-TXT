@@ -7,8 +7,8 @@ for regression and polynomial fitting through the public numerical architecture.
 
 ```text
 Plugin ID: demo.numeric.regression
-Version: 1.0.0
-Reference framework: GX-TXT 0.9.7.72
+Version: 1.1.0
+Reference framework: GX-TXT 0.9.8.10-dev-097
 Required service: math.numeric
 Public numerical API: NUMERIC_API_v1
 ```
@@ -31,7 +31,7 @@ Session Generator
 
 ## 2. GX-TXT requirement and installation model
 
-The package targets GX-TXT `0.9.7.72`. It is independently installable and does
+The package targets GX-TXT `0.9.8.10-dev-097`. It is independently installable and does
 not modify or repackage the framework.
 
 Install it from the GX-TXT plugin UI using:
@@ -43,7 +43,7 @@ Install plugin...
 Select:
 
 ```text
-demo.numeric.regression_1.0.0.zip
+demo.numeric.regression_1.1.0.zip
 ```
 
 After installation, module discovery must expose:
@@ -56,7 +56,7 @@ under the numerical examples analysis group.
 
 ## 3. Public NUMERIC_API_v1 capabilities used
 
-GX-TXT 0.9.7.72 exposes the following relevant capabilities and operations:
+The public Numeric service supplies these fitting capabilities:
 
 ```text
 linear_least_squares
@@ -73,16 +73,10 @@ The plugin calls these public Octave dispatcher operations where applicable:
 ```text
 dataset_polynomial_fit
 polynomial_evaluate
-linear_regression
-least_squares
-statistics
+residual_metrics
 ```
 
-`dataset_polynomial_fit` is the Dataset-aware canonical fitting operation. A
-separate `dataset_linear_regression` operation does not exist in GX-TXT
-0.9.7.72; linear regression is therefore represented as degree-1 Dataset
-polynomial fitting and is cross-checked against the public low-level
-`linear_regression` and `least_squares` operations.
+`dataset_polynomial_fit` performs the selected fit once per OLS/WLS objective. Linear mode preserves the established degree-one polynomial identity. Public `residual_metrics` returns the unweighted residual measures. CORE `STATISTICAL_RESULT_SEMANTICS_API_v1` interprets these existing results and supplies parameter identities, units, applicability, statuses and report text.
 
 ## 4. Session Generators
 
@@ -392,7 +386,11 @@ inverse_variance
 ```
 
 With inverse-variance semantics, coefficient covariance is not rescaled by the
-fitted residual variance and the API reports reduced chi-square.
+fitted residual variance. Reduced chi-squared is applicable only when the declared noise model is `independent_gaussian_known_sigma`. A weight binding alone does not establish Gaussian independent errors.
+
+### Declared measurement-noise model
+
+Choose `unspecified` (default), `independent_gaussian_known_sigma`, or `independent_gaussian_estimated_variance` to state the assumptions of the scientific workflow. CORE records the choice. An unspecified model does not acquire a Gaussian applicability claim.
 
 ## 10. Ordinary least squares
 
@@ -404,16 +402,7 @@ dataset_polynomial_fit
 
 with no weight variable. This is ordinary least squares.
 
-In linear mode, the degree-1 coefficients are also cross-checked through:
-
-```text
-linear_regression
-least_squares
-```
-
-using the same public data values. The comparison verifies consistency between
-the convenience regression operation, the general least-squares foundation and
-the Dataset-aware polynomial-fit path.
+Runtime code checks dimensions and public polynomial evaluation without repeating fits. Independent analytical OLS/WLS expectations are checked by the integrated development validator.
 
 ## 11. Weighted least squares
 
@@ -426,9 +415,6 @@ weight_variable_id = selected stable weight variable_id
 
 and the selected weight semantics.
 
-In linear mode, weighted results are again cross-checked against the public
-`linear_regression` and `least_squares` operations.
-
 A sigma binding alone does not silently become a weight. Weighted fitting is
 activated only by an explicit statistical weight variable. This preserves the
 scientific distinction between uncertainty and weighting.
@@ -436,7 +422,7 @@ scientific distinction between uncertainty and weighting.
 ## 12. Polynomial fitting
 
 Polynomial mode invokes `dataset_polynomial_fit` at the configured degree.
-GX-TXT 0.9.7.72 solves in centered/scaled X coordinates by default and returns
+Numeric solves in centered/scaled X coordinates by default and returns
 coefficients transformed back into the original X polynomial basis.
 
 Coefficient order is descending polynomial power. A cubic result is therefore:
@@ -545,8 +531,7 @@ partial derived Dataset.
 
 The module also publishes `<output_dataset_id>.coefficients` with coefficient
 index, OLS estimates and standard errors, and WLS estimates and standard errors
-when present. The coefficient graph uses this Dataset. Polynomial coefficient
-units vary by power, so that graph labels its Y axis as mixed units.
+when present. It additionally retains `parameter_id`, per-row `unit`, and OLS/WLS uncertainty status/reason columns from CORE. Both Datasets carry validated `analysis.statistical_results` metadata. Constant-response R² and zero-DOF standard errors remain explicit non-value states, with NaN placeholders. Polynomial coefficient units vary by power; the existing coefficient graph labels its axis accordingly.
 
 ## 16. Automatic graphs
 
@@ -629,7 +614,7 @@ coefficient estimates and standard errors
 residual plots
 R² / adjusted R²
 unweighted residual RMSE / MAE
-reduced chi-square under inverse-variance semantics
+reduced chi-square under declared independent Gaussian absolute-sigma semantics
 reference-curve agreement
 ```
 
@@ -738,6 +723,7 @@ DATASET_VARIABLE_SCHEMA_API_v3
 TABLE_STREAM_API_v3
 DATASET_PUBLICATION_API_v2
 NUMERIC_API_v1
+STATISTICAL_RESULT_SEMANTICS_API_v1
 PROGRESS_API_v1
 GRAPH_PROVIDER_API_v1
 PLOT_DATASET_API_v2 (all six automatic graphs and user editing)
@@ -760,9 +746,6 @@ runtime/demo_numeric_regression_main.m
 runtime/demo_numeric_regression_render.m
 runtime/demo_numeric_regression_rerender.m
 runtime/demo_numeric_regression_rerender_main.m
-tests/README.md
-tests/test_static.py
-tests/test_framework_integration.tcl
 ```
 
 The required weighted Session Generator is distributed separately as:
@@ -773,19 +756,6 @@ gxtxt_numerical_examples_weighted_regression_1.0.0.zip
 
 ## 25. Validation strategy and limitations
 
-The package tests verify real GX-TXT installation/discovery, stock and external
-Session generation, Dataset import, stable variable resolution, Dataset Metadata
-runtime transport and `NUMERIC_API_v1` capability discovery in all environments.
-When GNU Octave is available, they additionally execute real Dataset-aware OLS
-and WLS polynomial fitting, the installed plugin, Dataset publication, automatic
-PNG rendering and Dataset-backed rerender.
+The integrated targeted validator `validation/integrated_dev097/statistics_regression_demo.tcl` exercises the actual module with ordinary, constant and saturated data, analytical coefficient/covariance references, explicit Gaussian applicability, both Dataset publications, source preservation, Session reopen and one coefficient plot. Development receipts remain separate from the frozen-candidate acceptance campaign. The existence of this validator does not itself claim a PASS.
 
-The plugin does not perform robust regression, generalized linear models,
-orthogonal-distance regression or Bayesian fitting because those are not public
-`NUMERIC_API_v1` regression operations in GX-TXT 0.9.7.72.
-
-Polynomial coefficient units are not synthesized because `math.numeric` does not
-invent those compound units. Fitted/residual series preserve the source Y unit.
-The coefficient graph explicitly labels its axis as mixed units. Coefficient
-estimates and standard errors are also published in `<output_dataset_id>.coefficients`;
-their numeric values remain editable through the public Plot Variant.
+The demo exposes ordinary and weighted polynomial regression. Other Numeric workflows expose declared nonlinear models and robust losses. Polynomial coefficient identities and compound physical units come from CORE in the original X basis; fitted/residual series retain the source Y unit. Published coefficient data remain addressable through normal Dataset and Plot Variant APIs.

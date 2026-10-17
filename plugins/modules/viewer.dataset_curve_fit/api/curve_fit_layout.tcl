@@ -20,8 +20,8 @@ proc ::GX::DatasetCurveFit::_layoutPrepare {w} {
     bind $w.left.viewport.content <Configure> [list $w.left.viewport configure -scrollregion [list 0 0 %w %h]]
     pack $w.left.scroll -side right -fill y;pack $w.left.viewport -fill both -expand 1
     dict for {group field} [_panelFields] {ttk::labelframe $w.left.viewport.content.$group -text [dict get $field label] -padding 4}
-    ttk::frame $w.right.plot;ttk::frame $w.right.residuals;ttk::frame $w.right.report
-    pack $w.right.report -side bottom -fill x
+    ttk::frame $w.right.plot;ttk::frame $w.right.residuals;canvas $w.right.report -height 200 -width 1 -highlightthickness 0
+    _reportViewportCreate $w
     pack $w.right.residuals -side bottom -fill x
     pack $w.right.plot -fill both -expand 1
 }
@@ -55,7 +55,58 @@ proc ::GX::DatasetCurveFit::_layout {w} {
         pack $button -side left -padx 3
     }
     $w.menus.fit.menu add separator
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu model_card
     ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu translation
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu statistics_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu bootstrap_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu profile_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu solver_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu smoothing_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu component_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu formula_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu knot_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu rational_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu implicit_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu complex_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu surface_workflow
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu parameter_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu region_settings
+    foreach command {registered_settings registered_declare registered_cancel} {::GX::viewerCommandMenuAdd $w $w.menus.fit.menu $command}
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu covariance_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu model_suggestions
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu baseline_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu smooth_source
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu log_settings
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu log_publish
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu log_details
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu family_sources
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu global_family
+    ::GX::viewerCommandMenuAdd $w $w.menus.fit.menu template_apply
+    $w.menus.results.menu add separator
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu parameter_dataset
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu global_family_results
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu parameter_correlation
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu solver_details
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu prediction_details
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu scientific_report
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu smoothing_details
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu covariance_details
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu measurement_details
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu model_comparison
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu residual_source
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu residual_predicted
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu residual_sequence
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu influence_details
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu bootstrap_details
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu profile_details
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu retained_query
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu physical_plausibility
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu derived_properties
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu model_workbench
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu model_export
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu recipe_python
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu recipe_octave
+    ::GX::viewerCommandMenuAdd $w $w.menus.results.menu template_save
     $w.menus.view.menu add separator
     ::GX::viewerCommandMenuAdd $w $w.menus.view.menu configuration
     ::GX::viewerCommandMenuAdd $w $w.menus.view.menu panels_reset
@@ -85,7 +136,7 @@ proc ::GX::DatasetCurveFit::_layout {w} {
     pack $p.filters.controls.add $p.filters.controls.remove -side bottom -fill x
     foreach widget {remove zoomin zoomout reset help} {pack forget $p.selection.body.$widget}
     foreach widget {settings coordinates} {pack forget $p.presentation.body.$widget}
-    bind $w.right.report <Configure> [list $w.right.report.result configure -wraplength %w]
+    bind $w.right.report <Configure> [list ::GX::DatasetCurveFit::_reportWidth $w %w]
     ttk::label $w.footer.coordinateReadout -textvariable ::GX::DatasetCurveFit::state($w,coordinates)
     pack $w.footer.coordinateReadout -fill x
     $w.footer.status configure -wraplength 950;$w.right.report.result configure -wraplength 650
@@ -97,6 +148,8 @@ proc ::GX::DatasetCurveFit::_layout {w} {
         foreach widget [winfo children $parent] {pack forget $widget;grid forget $widget}
         bind $parent <Configure> [list ::GX::native2DToolbarLayout $parent %w $widgets]
     }
+    foreach area {body parameters} {bind $w.left.viewport.content.settings.$area <Configure> [list ::GX::DatasetCurveFit::_settingsControlsLayout $w $area %w]}
+    _reportScrollBindings $w
     _residualPanelLayout $w
     foreach child [::GX::_viewerCommandsDescendants $w.left] {
         bind $child <Button-4> +[list $w.left.viewport yview scroll -3 units]

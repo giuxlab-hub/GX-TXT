@@ -442,8 +442,35 @@ It is an implementation state contract for this plugin, not a replacement for pu
 
 ## Companion-module integration
 
-Curve Digitalizer 1.2.1 provides `CURVE_DIGITIZER_COMPANION_API_v1` for tightly coupled tools such as Curve Trace Assistant. The authoritative state remains the existing `gxtxt.curve_digitizer.configuration` Interactive Document. Companion modules do not create their own project file or duplicate calibration.
+Curve Digitalizer provides `CURVE_DIGITIZER_COMPANION_API_v1` for tightly coupled tools such as Curve Trace Assistant. The authoritative state remains the existing `gxtxt.curve_digitizer.configuration` Interactive Document. Companion modules do not create their own project file or duplicate calibration.
 
 The API exposes stable configuration and curve identities, resolves the associated Image Dataset through public Dataset APIs, verifies the stored source SHA-256, and can append accepted pixel points to a selected curve. Pixel-to-scientific conversion is performed by the same Curve Digitalizer calibration model used by manual points.
 
 Companion writes are guarded by both the live Session token and the expected Interactive Document SHA-256. If another window or module changed the configuration, the write is rejected and the caller must reload.
+
+## Pixel and calibration uncertainty
+
+Open **Publish → Pixel / calibration uncertainty**. Choose an explicit pixel
+distribution and X/Y scales, or independent physical standard uncertainties as
+an override. Supply the twelve calibration standard uncertainties in the order
+shown and explain the evidence or override. Zero fixes that calibration input.
+Save and review before publishing; changes to points, calibration or declaration
+require a fresh review. Historical configurations default to no uncertainty.
+
+The common report explains first-order propagation, shared calibration and X/Y
+correlation. Publication adds stable point IDs, sigma_x, sigma_y and covariance_xy
+without changing x/y/curve/point_index identities. Standard uncertainty columns
+use the physical axis units. A pixel width is never silently called sigma.
+
+Fitter can use response sigma or actual both-axis ODR when the public CORE plan
+allows it. Shared calibration requires correlated covariance; diagonal ODR cannot
+represent within-point X/Y correlation. The dialog can publish an original-order
+full X or Y covariance Dataset (up to512 points). Select its covariance Variable
+in Fitter's full-covariance settings. This response-only GLS ignores predictor
+uncertainty; its report preserves that qualification. A physical override is an
+explicit replacement model. It does not erase the original calibration.
+
+Review supports up to4096 original points and retains shared factors without
+quadratic storage. Calibration, image hash, point order and numerical state remain
+owned Session resources through publication, save/reopen and Script consumers.
+See [the versioned API contract](../../../docs/api/DIGITIZATION_UNCERTAINTY_v1.md).

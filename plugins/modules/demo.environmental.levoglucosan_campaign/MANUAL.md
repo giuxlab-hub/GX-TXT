@@ -1,10 +1,10 @@
 # Sardinia Levoglucosan Campaign Demo — User and Scientific Manual
 
 **Plugin:** `demo.environmental.levoglucosan_campaign`  
-**Plugin version:** `1.2.1`  
+**Plugin version:** `1.3.0`  
 **Bundled Session Generator:** `sardinia_levoglucosan_campaign`  
 **Generator version:** `1.1.1`  
-**GX-TXT:** `0.9.7.77` or later  
+**GX-TXT:** `0.9.8.10-dev-097` or later  
 **License:** GNU GPL v3 or later
 
 ---
@@ -505,7 +505,7 @@ The module evaluates:
 - levoglucosan vs active-fire distance;
 - fire-day vs ordinary summer behavior.
 
-Weighted linear regressions use inverse-variance weights based on daily SEM where appropriate.
+Weighted linear regressions use relative weights proportional to inverse squared estimated daily SEM. Estimated SEM is not known absolute measurement sigma; these fits do not claim a calibrated chi-square distribution.
 
 Correlation/regression in the synthetic observations is reported as a relationship, not as an independent causal proof.
 
@@ -576,7 +576,7 @@ Up to twelve graphs are produced, depending on the selected groups.
    Four-site daily mean time series over days 1..365. One confidence band demonstrates uncertainty without rendering hundreds of individual error bars.
 
 2. `02_monthly_errorbars.png`  
-   Monthly means with true 95% CI variables used as error bars.
+   Monthly means with conditional, untruncated Student-t 95% CI variables used as error bars.
 
 4. `04_seasonal_site_comparison.png`  
    Site comparison across winter, spring, summer non-fire, summer fire and autumn categories.
@@ -894,3 +894,27 @@ session_generators/
 ```
 
 Install the plugin through the normal GX-TXT Plugin Install API / user interface. Do not copy files into CORE manually.
+
+## Statistical interpretation in 1.3.0
+
+Daily, monthly, seasonal and annual summaries now retain the public CORE
+statistical table, stable row identities, units and conditional assumptions in
+every derived or plotting Dataset. Numeric supplies each mean, SD, SEM and exact
+Student-t quantile once. Reported confidence limits are the untruncated interval;
+the earlier lower-limit clipping and private t approximation are removed.
+Canonical Dataset and variable IDs are unchanged. Original Sessions and earlier
+release artifacts are not rewritten; rerunning explicitly updates this module's
+owned derived outputs as before.
+
+Daily intervals assume independent Gaussian technical errors. Monthly, seasonal
+and annual teaching intervals additionally assume independent daily observations;
+seasonal/fire structure can violate that assumption. No empirical coverage or
+causal claim is made. Graph labels identify these conditional intervals.
+
+Correlations use the public Pearson estimator directly, with CORE zero-variance
+semantics. Fire regressions use relative SEM-derived weights, not known absolute
+sigma. The descriptive anomaly score retains the earlier normalization
+`max(1.4826 * raw MAD, 1e-9)` and QC retains `100 * SD / max(mean, 1e-12)`; these
+are teaching conventions without a probability or universal acceptance claim.
+MAD and arithmetic are performed through Numeric. CORE records preserve median
+and MAD meaning, units and the raw scaling convention.

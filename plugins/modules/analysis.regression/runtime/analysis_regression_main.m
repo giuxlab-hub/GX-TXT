@@ -1,7 +1,7 @@
 function analysis_regression_main(args,framework_root)
 % Production linear/polynomial regression through public GX-TXT services.
 % SPDX-License-Identifier: GPL-3.0-or-later
-  module_id='analysis.regression';version='1.0.1';
+  module_id='analysis.regression';version='1.1.0';
   config_path=argument(args,'--config','');
   if(isempty(config_path)),error('%s: --config is required',module_id);endif
   cfg=gxtxt_ini_read(config_path);
@@ -11,6 +11,9 @@ function analysis_regression_main(args,framework_root)
   if(isempty(source_id)),source_id=strtrim(gxtxt_ini_get(cfg,'dataset.id',''));endif
   if(isempty(session)||isempty(outdir)||isempty(source_id)),error('%s: Session, output directory and source Dataset are required',module_id);endif
   if(exist(outdir,'dir')!=7),mkdir(outdir);endif
+  execution=struct('script_name',module_id,'script_sha256',hash('sha256',fileread([mfilename('fullpath') '.m'])),'arguments_raw','');
+  gxtxt_script_bridge_start(config_path,execution);
+  bridge_cleanup=onCleanup(@() gxtxt_script_bridge_stop());
   gxtxt_progress_start('prepare','Preparing regression','indeterminate');
   try
     [x_id,x_unit]=resolve_numeric(cfg,source_id,gxtxt_ini_get(cfg,'config.x_variable',''));
@@ -75,8 +78,8 @@ function analysis_regression_main(args,framework_root)
         if(any(converted(finite)<=0)),error('%s: measurement uncertainty must be strictly positive',module_id);endif
         weight=NaN(size(second));
         if(any(finite))
-          square=gxtxt_numeric_v1('array_binary','power',converted(finite),2);
-          inverse=gxtxt_numeric_v1('array_binary','divide',1,square.values);
+          square=gxtxt_analysis_numeric_call('array_binary','power',converted(finite),2);
+          inverse=gxtxt_analysis_numeric_call('array_binary','divide',1,square.values);
           weight(finite)=inverse.values;
         endif
         if(any(!isfinite(weight(finite)))||any(weight(finite)<=0)),error('%s: inverse-variance weights are outside finite range',module_id);endif
@@ -95,16 +98,28 @@ function analysis_regression_main(args,framework_root)
     gxtxt_progress_stage('compute','Running public numerical regression','indeterminate');
     options=struct('rank_policy',rank_policy,'weight_semantics',numeric_weight_semantics(weight_model),'nonfinite','error');
     if(strcmp(fit_model,'linear'))
-      options.intercept=true;fit=gxtxt_numeric_v1('linear_regression',x,y,weight,options);
+      options.intercept=true;fit=gxtxt_analysis_numeric_call('linear_regression',x,y,weight,options);
       powers=[0;1];
     else
-      options.center_scale=true;fit=gxtxt_numeric_v1('polynomial_fit',x,y,degree,weight,options);
+      options.center_scale=true;fit=gxtxt_analysis_numeric_call('polynomial_fit',x,y,degree,weight,options);
       powers=(degree:-1:0)';
     endif
     if(numel(fit.predicted)!=numel(x)||numel(fit.residuals)!=numel(x))
       error('%s: NUMERIC_API fit output is not row-aligned',module_id);
     endif
-    metrics=gxtxt_numeric_v1('residual_metrics',y,fit.predicted,struct());
+    metrics=gxtxt_analysis_numeric_call('residual_metrics',y,fit.predicted,struct());
+    context=struct('orientation','y_of_x','x_unit',x_unit,'y_unit',y_unit, ...
+      'x_variable_id',x_id,'y_variable_id',y_id,'constraints','none');
+    context.noise_model=gxtxt_ini_get(cfg,'config.noise_model','unspecified');
+    operation='linear_regression';if(strcmp(fit_model,'polynomial')),operation='polynomial_fit';endif
+    statistics=gxtxt_statistics_v1('from_numeric',['math.numeric.' fit_model],operation,fit,context,metrics,struct('producer',module_id));
+    interpreted=gxtxt_statistics_values_v1(statistics);
+    fit.standard_errors=interpreted.standard_errors;fit.covariance=interpreted.covariance;
+    fit.r_squared=interpreted.r_squared;fit.adjusted_r_squared=interpreted.adjusted_r_squared;
+    fit.reduced_chi_squared=interpreted.reduced_chi_squared;
+    % Preserve the historical field ID while giving its actual meaning. The
+    % descriptive n-denominator RMSE remains residual_rmse in this Dataset.
+    fit.rmse=interpreted.weighted_residual_standard_deviation;
     [curve_x,order]=sort(x);curve_y=fit.predicted(order);
     coefficient_units=cell(numel(powers),1);
     for i=1:numel(powers),coefficient_units{i}=coefficient_unit(y_unit,x_unit,powers(i));endfor
@@ -120,6 +135,7 @@ function analysis_regression_main(args,framework_root)
       'provenance',sprintf('%s %s; source=%s; x=%s; y=%s; weight=%s; selection=%s; model=%s; degree=%d; weight_model=%s; nonfinite=%s; rank_policy=%s',module_id,version,source_id,x_id,y_id,weight_id,selection_id(selection),fit_model,degree,weight_model,policy,rank_policy), ...
       'notes','Fit and residual rows preserve one-based source-row identity; coefficient units vary by power.');
     opts.source_dataset_ids={source_id};opts.source_variable_ids=ids;
+    opts.statistical_results=struct('training',statistics);
     fit_id=[prefix '.fit'];curve_id=[prefix '.curve'];coeff_id=[prefix '.coefficients'];cov_id=[prefix '.covariance'];metrics_id=[prefix '.metrics'];
     sse_unit=squared_unit(y_unit);fit_rmse_unit=y_unit;
     if(strcmp(weight_model,'inverse_variance_uncertainty')),sse_unit='1';fit_rmse_unit='1';endif
@@ -159,7 +175,7 @@ function analysis_regression_main(args,framework_root)
       'condition_number','Design condition number','float64','1','derived',fit.condition_number; ...
       'r_squared','R squared','float64','1','derived',fit.r_squared; ...
       'adjusted_r_squared','Adjusted R squared','float64','1','derived',fit.adjusted_r_squared; ...
-      'rmse','Fit RMSE','float64',fit_rmse_unit,'derived',fit.rmse; ...
+      'rmse',statistics.quantities.weighted_residual_standard_deviation.label,'float64',fit_rmse_unit,'derived',fit.rmse; ...
       'residual_rmse','Unweighted residual RMSE','float64',y_unit,'derived',metrics.rmse; ...
       'mae','Mean absolute error','float64',y_unit,'derived',metrics.mae; ...
       'max_abs_error','Maximum absolute error','float64',y_unit,'derived',metrics.max_abs_error; ...
@@ -177,10 +193,16 @@ function analysis_regression_main(args,framework_root)
       endfor
     endif
     write_manifest(fullfile(outdir,'automatic_graphs.ini'),graphs);
-    write_summary(fullfile(outdir,'regression_summary.ini'),source_id,x_id,y_id,weight_id,prefix,selection,fit_model,degree,weight_model,policy,rank_policy,n_input,n_nonfinite,n_zero_weight,fit,metrics,numel(graphs));
-    write_report(fullfile(outdir,'regression_report.txt'),source_id,x_id,y_id,weight_id,x_unit,y_unit,selection,fit_model,degree,weight_model,policy,fit,metrics,coefficient_units);
+    write_summary(fullfile(outdir,'regression_summary.ini'),source_id,x_id,y_id,weight_id,prefix,selection,fit_model,degree,weight_model,policy,rank_policy,n_input,n_nonfinite,n_zero_weight,fit.status,statistics,numel(graphs));
+    write_report(fullfile(outdir,'regression_report.txt'),source_id,x_id,y_id,weight_id,x_unit,y_unit,selection,fit_model,degree,weight_model,policy,statistics);
+    fid=fopen(fullfile(outdir,'statistical_results.tcldict'),'w');if(fid<0),error('Cannot write statistical result contract');endif
+    unwind_protect
+      fprintf(fid,'%s\n',gxtxt_statistics_v1('publication_metadata',opts.statistical_results));
+    unwind_protect_cleanup
+      fclose(fid);
+    end_unwind_protect
     gxtxt_progress_complete('done',sprintf('Published regression fit with %d coefficients and %d graphs',numel(powers),numel(graphs)));
-    fprintf('[%s] source=%s model=%s degree=%d valid=%d r2=%.12g graphs=%d\n',module_id,source_id,fit_model,degree,numel(x),fit.r_squared,numel(graphs));
+    fprintf('[%s] source=%s model=%s degree=%d valid=%d graphs=%d\n%s\n',module_id,source_id,fit_model,degree,numel(x),numel(graphs),gxtxt_statistics_v1('report',statistics));
   catch err
     try gxtxt_progress_fail('failed','Regression failed; see log');catch;end_try_catch
     rethrow(err);
@@ -283,24 +305,26 @@ function write_manifest(path,graphs)
     fclose(fid);
   end_unwind_protect
 endfunction
-function write_summary(path,source_id,x_id,y_id,weight_id,prefix,selection,model,degree,weight_model,policy,rank_policy,n_input,n_nonfinite,n_zero_weight,F,M,graphs)
+function write_summary(path,source_id,x_id,y_id,weight_id,prefix,selection,model,degree,weight_model,policy,rank_policy,n_input,n_nonfinite,n_zero_weight,status,statistics,graphs)
   fid=fopen(path,'w');if(fid<0),error('analysis.regression: cannot write summary');endif
   unwind_protect
-    fprintf(fid,'[meta]\nmodule_id=analysis.regression\nmodule_version=1.0.1\napi=NUMERIC_API_v1\n');
+    fprintf(fid,'[meta]\nmodule_id=analysis.regression\nmodule_version=1.1.0\napi=NUMERIC_API_v1\n');
     fprintf(fid,'\n[source]\ndataset_id=%s\nx_variable_id=%s\ny_variable_id=%s\nweight_variable_id=%s\nselection_id=%s\n',source_id,x_id,y_id,weight_id,selection_id(selection));
-    fprintf(fid,'\n[fit]\nmodel=%s\ndegree=%d\nweight_model=%s\nnonfinite_policy=%s\nrank_policy=%s\nn_input=%d\nn_valid=%d\nn_nonfinite=%d\nn_zero_weight=%d\nrank=%d\ndof=%d\ncondition_number=%.17g\nr_squared=%.17g\nadjusted_r_squared=%.17g\nrmse=%.17g\nresidual_rmse=%.17g\nmae=%.17g\nmax_abs_error=%.17g\nstatus=%s\n',model,degree,weight_model,policy,rank_policy,n_input,F.n,n_nonfinite,n_zero_weight,F.rank,F.dof,F.condition_number,F.r_squared,F.adjusted_r_squared,F.rmse,M.rmse,M.mae,M.max_abs_error,F.status);
+    fprintf(fid,'\n[fit]\nmodel=%s\ndegree=%d\nweight_model=%s\nnonfinite_policy=%s\nrank_policy=%s\nn_input=%d\nn_nonfinite=%d\nn_zero_weight=%d\nstatus=%s\n',model,degree,weight_model,policy,rank_policy,n_input,n_nonfinite,n_zero_weight,status);
+    mapping=struct('n_valid','n','rank','rank','dof','dof','condition_number','condition_number','r_squared','r_squared', ...
+      'adjusted_r_squared','adjusted_r_squared','rmse','weighted_residual_standard_deviation','residual_rmse','rmse','mae','mae','max_abs_error','max_abs_error');
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',statistics,mapping));
     fprintf(fid,'\n[output]\nprefix=%s\nautomatic_graph_count=%d\n',prefix,graphs);
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect
 endfunction
-function write_report(path,source_id,x_id,y_id,weight_id,xunit,yunit,selection,model,degree,weight_model,policy,F,M,units)
+function write_report(path,source_id,x_id,y_id,weight_id,xunit,yunit,selection,model,degree,weight_model,policy,statistics)
   fid=fopen(path,'w');if(fid<0),error('analysis.regression: cannot write report');endif
   unwind_protect
     fprintf(fid,'GX-TXT Regression\nSource Dataset: %s\nX: %s (%s)\nY: %s (%s)\nWeight variable: %s\nSelection: %s\nModel: %s, degree %d\nWeight model: %s\nNaN / Inf: %s\n',source_id,x_id,xunit,y_id,yunit,weight_id,selection_id(selection),model,degree,weight_model,policy);
-    fprintf(fid,'\nCoefficient | Estimate | Standard error | Unit\n');
-    for i=1:numel(F.coefficients),fprintf(fid,'%d | %.12g | %.12g | %s\n',i,F.coefficients(i),F.standard_errors(i),units{i});endfor
-    fprintf(fid,'\nR²: %.12g  Adjusted R²: %.12g\nFit RMSE: %.12g  Residual RMSE: %.12g  MAE: %.12g  Max abs error: %.12g\nRank: %d  DOF: %d  Condition: %.12g  Status: %s\n',F.r_squared,F.adjusted_r_squared,F.rmse,M.rmse,M.mae,M.max_abs_error,F.rank,F.dof,F.condition_number,F.status);
+    fprintf(fid,'\n%s\n\n%s\n',gxtxt_statistics_v1('parameter_report',statistics), ...
+      gxtxt_statistics_v1('report',statistics,{'n','rmse','residual_standard_deviation','mae','max_abs_error','r_squared','adjusted_r_squared','rank','dof','condition_number','reduced_chi_squared'}));
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect

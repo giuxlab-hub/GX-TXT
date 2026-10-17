@@ -1,6 +1,7 @@
 """Provider-owned bounded Table Stream v3 Script Bridge binding."""
 # SPDX-License-Identifier: GPL-3.0-or-later
-from gxtxt_script_bridge_server import BridgeError, NumericArray
+from gxtxt_script_bridge_server import BridgeError, NumericArray, ResourceNumericArray, numeric_column_tokens
+import os
 
 REGISTRATION = {
     "api_id": "TABLE_STREAM_API_v3", "api_version": 3,
@@ -36,7 +37,7 @@ def invoke(host, operation, args):
         if len(args) not in (3, 4) or not isinstance(args[0], str) or not isinstance(args[1], list):
             raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "open_dataset requires Dataset ID, variable IDs and chunk rows")
         options = dict(args[3]) if len(args) == 4 and isinstance(args[3], dict) else {}
-        options["numeric_transport"] = "values"
+        options["numeric_transport"] = 'resource' if os.environ.get('GXTXT_BRIDGE_TYPED_DESCRIPTORS') == '1' else 'values'
         token = str(host.call("::GX::tableStreamOpenDataset", host.session, args[0], args[1], int(args[2]), options))
         _streams(host).add(token)
         return token
@@ -52,8 +53,15 @@ def invoke(host, operation, args):
         columns = [host.as_dict(item) for item in host.as_list(raw["columns"])]
         for column in columns:
             variable_id = column["variable_id"]
-            entries = host.as_list(values[variable_id])
-            typed = [str(v) for v in entries] if column["dtype"] == "string" else NumericArray(entries)
+            if 'binary_resource' in column:
+                typed = ResourceNumericArray(host, column.pop('binary_resource'))
+            else:
+                entries = host.as_list(values[variable_id])
+                if column["dtype"] == "string":
+                    typed = [str(v) for v in entries]
+                else:
+                    typed, missing = numeric_column_tokens(entries, column['dtype'])
+                    if missing is not None: column['missing_mask'] = missing
             values[variable_id] = typed
             column["values"] = typed
         raw["values"] = values
@@ -62,7 +70,10 @@ def invoke(host, operation, args):
         return raw
     if operation == "diagnostics":
         raw = host.as_dict(host.call("::GX::tableStreamDiagnostics", token))
-        raw.pop("provider", None)
+        if 'provider' in raw:
+            raw['provider'] = host.as_dict(raw['provider'])
+            if 'storage' in raw['provider']:
+                raw['provider']['storage'] = host.as_dict(raw['provider']['storage'])
         return raw
     if operation == "close":
         source_state = host.handles.get("curve_source", {})

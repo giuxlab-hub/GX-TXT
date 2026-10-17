@@ -4,8 +4,13 @@
 proc ::GX::CurveWorkbench::_cadState {w} {
     variable st
     _identitySync $w
+    set coordinatePresentation $st($w,coordinatePresentation)
     set state [dict create publication_arrangement [expr {[info exists st($w,publicationArrangement)] ? $st($w,publicationArrangement) : "table"}] publication_representation [expr {[info exists st($w,publicationRepresentation)] ? $st($w,publicationRepresentation) : "cartesian"}] groups $st($w,groups) next_group $st($w,nextGroup) active $st($w,active) selection $st($w,objectSelection) target_group $st($w,cadGroup) target_scope $st($w,cadTarget) tool $st($w,cadTool) object_snap $st($w,cadObjectSnap) pivot [::GX::Native2D::core pivot $st($w,scene)] gizmo [::GX::Native2D::core gizmo $st($w,scene)]]
     foreach property {grid presentation view_requested} {dict set state $property [::GX::Native2D::core $property $st($w,scene)]}
+    dict set state coordinate_presentation $coordinatePresentation
+    dict set state coordinate_view $st($w,coordinateView)
+    dict set state coordinate_frame_views $st($w,coordinateFrameViews)
+    dict set state coordinate_metric $st($w,metric)
     if {[info exists st($w,planarContext)]} {dict set state planar_context $st($w,planarContext)}
     dict set state bridge_tolerance $st($w,bridgeTolerance)
     if {$st($w,active) ne ""&&$st($w,selectionObject) ne ""} {dict set state point_selection [_pointSelectionDescriptor $w]}
@@ -61,6 +66,12 @@ proc ::GX::CurveWorkbench::_cadState {w} {
 
 proc ::GX::CurveWorkbench::_cadRestoreState {w state} {
     variable st
+    set st($w,coordinatePresentation) [::GX::datasetPublicationV2DictDefault $state coordinate_presentation {}]
+    set st($w,coordinateView) [::GX::datasetPublicationV2DictDefault $state coordinate_view {}]
+    set st($w,coordinateFrameViews) [::GX::datasetPublicationV2DictDefault $state coordinate_frame_views {}]
+    unset -nocomplain st($w,coordinateFrameKey)
+    set st($w,coordinateCache) {}
+    set st($w,metric) [::GX::datasetPublicationV2DictDefault $state coordinate_metric length]
     unset -nocomplain st($w,planarContext)
     if {[dict exists $state planar_context]} {set st($w,planarContext) [dict get $state planar_context]}
     unset -nocomplain st($w,sketchDataset)
@@ -154,7 +165,7 @@ proc ::GX::CurveWorkbench::_cadRestoreState {w state} {
     } elseif {$st($w,compareMethod) eq "geometry"} {set st($w,residual) {}}
     if {$st($w,active) ne {}} {
         set units [_coordinateUnits [_record $w $st($w,active)]]
-        if {[lindex $units 0] ne {}&&[lindex $units 0] eq [lindex $units 1]} {set st($w,sketchUnit) [lindex $units 0]}
+        if {[lindex $units 0] ne {}&&[lindex $units 0] eq [lindex $units 1]&&![catch {::GX::unitRegistryConversionPlan [lindex $units 0] m}]} {set st($w,sketchUnit) [lindex $units 0]}
     }
     if {[dict exists $state viewport_preferences]} {
         dict for {key value} [dict get $state viewport_preferences] {set st($w,$key) $value}

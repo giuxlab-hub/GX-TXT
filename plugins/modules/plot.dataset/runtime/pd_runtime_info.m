@@ -43,4 +43,15 @@ function m=pd_meta(cfg,varname)
   try
     [u,r,q]=gxtxt_analysis_source_variable_meta(cfg,'primary',varname);m=q;m.unit=strtrim(u);m.semantic_role=strtrim(r);
   catch;m.name=varname;end_try_catch
+  % Preserve the authoritative dimensional schema in this consumer projection.
+  m.rank=1;m.shape=[];m.dimension_ids={};
+  if(!isfield(m,'variable_id')),return;endif
+  n=str2double(gxtxt_ini_get(cfg,'analysis_source.primary.variable_count','0'));
+  for i=1:n
+    prefix=sprintf('analysis_source.primary.variable.%d.',i);
+    if(!strcmp(gxtxt_ini_get(cfg,[prefix 'variable_id'],''),m.variable_id)),continue;endif
+    m.rank=str2double(gxtxt_ini_get(cfg,[prefix 'rank'],'1'));
+    m.shape=str2double(strsplit(gxtxt_ini_get(cfg,[prefix 'shape'],''),';'));
+    m.dimension_ids=strsplit(gxtxt_ini_get(cfg,[prefix 'dimension_ids'],''),';');break;
+  endfor
 endfunction

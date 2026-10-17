@@ -32,7 +32,8 @@ static gx2d_status comparison_project(const gx2d_scene *s,const object *o,const 
     return isfinite(best)?GX2D_OK:GX2D_RANGE;
 }
 gx2d_status gx2d_compare_geometry(const gx2d_scene *s,gx2d_id a_id,gx2d_id b_id,size_t budget,gx2d_geometry_comparison *out,gx2d_residual *rows,size_t capacity){
-    const object *a=cobj(s,a_id),*b=cobj(s,b_id);comparison_sample sa={0},sb={0};gx2d_geometry_comparison result={0};gx2d_residual *staged=NULL;gx2d_metrics ma,mb;gx2d_status code;size_t i,path_cut=0;long double sum=0,square=0,b_square=0;double b_max=0,closest=DBL_MAX,path=0;gx2d_segment_hit hit;
+    const object *a=cobj(s,a_id),*b=cobj(s,b_id);comparison_sample sa={0},sb={0};gx2d_geometry_comparison result={0};gx2d_residual *staged=NULL;gx2d_metrics ma,mb;gx2d_status code;size_t i,path_cut=0;gx_numeric_residual_accumulator_v1 stats_a,stats_b,stats_all;gx_numeric_residual_result_v1 facts_a,facts_all;double closest=DBL_MAX,path=0;gx2d_segment_hit hit;
+    gx_numeric_residual_init_v1(&stats_a);gx_numeric_residual_init_v1(&stats_b);
     if(!s||!out||budget<6||budget>4096)return GX2D_INVALID;if(!a||!b)return GX2D_NOT_FOUND;if(s->dragging)return GX2D_BUSY;
     code=comparison_sample_make(s,a,budget,&sa);if(code!=GX2D_OK)goto done;code=comparison_sample_make(s,b,budget,&sb);if(code!=GX2D_OK)goto done;
     if(rows&&capacity<sa.count){code=GX2D_RANGE;goto done;}
@@ -43,17 +44,18 @@ gx2d_status gx2d_compare_geometry(const gx2d_scene *s,gx2d_id a_id,gx2d_id b_id,
         code=comparison_project(s,b,&sb,result.projection_exact_b,sa.points[i],&hit);if(code!=GX2D_OK)goto done;
         while(path_cut<sa.ncuts&&sa.cuts[path_cut]+1<i)++path_cut;
         if(i&&!(path_cut<sa.ncuts&&sa.cuts[path_cut]+1==i))path+=dist(sa.points[i-1],sa.points[i]);
-        staged[i]=(gx2d_residual){path,hit.distance,hit.distance,sa.points[i],hit.point};sum+=hit.distance;square+=(long double)hit.distance*hit.distance;
-        if(hit.distance>result.max_absolute){result.max_absolute=hit.distance;result.max_index=i;}
+        staged[i]=(gx2d_residual){path,hit.distance,hit.distance,sa.points[i],hit.point};if(gx_numeric_residual_push_v1(&stats_a,hit.distance)!=GX_NUMERIC_OK_V1){code=GX2D_RANGE;goto done;}
         if(hit.distance<closest){closest=hit.distance;result.closest_a=sa.points[i];result.closest_b=hit.point;}
     }
     for(i=0;i<sb.count;++i){
         code=comparison_project(s,a,&sa,result.projection_exact_a,sb.points[i],&hit);if(code!=GX2D_OK)goto done;
-        b_square+=(long double)hit.distance*hit.distance;b_max=fmax(b_max,hit.distance);
+        if(gx_numeric_residual_push_v1(&stats_b,hit.distance)!=GX_NUMERIC_OK_V1){code=GX2D_RANGE;goto done;}
         if(hit.distance<closest){closest=hit.distance;result.closest_a=hit.point;result.closest_b=sb.points[i];}
     }
-    result.mean_absolute=(double)(sum/sa.count);result.rmse=sqrt((double)(square/sa.count));result.symmetric_rmse=sqrt((double)((square+b_square)/(sa.count+sb.count)));
-    result.hausdorff_sampled=fmax(result.max_absolute,b_max);result.closest_distance=closest;
+    if(gx_numeric_residual_finish_v1(&stats_a,&facts_a)!=GX_NUMERIC_OK_V1||gx_numeric_residual_merge_v1(&stats_a,&stats_b,&stats_all)!=GX_NUMERIC_OK_V1||gx_numeric_residual_finish_v1(&stats_all,&facts_all)!=GX_NUMERIC_OK_V1){code=GX2D_RANGE;goto done;}
+    result.max_absolute=facts_a.max_absolute;result.max_index=(size_t)facts_a.max_index;
+    result.mean_absolute=facts_a.mean_absolute;result.rmse=facts_a.rmse;result.symmetric_rmse=facts_all.rmse;
+    result.hausdorff_sampled=facts_all.max_absolute;result.closest_distance=closest;
     /* Exact closest-boundary pairs are available for supported finite geometry;
      * the pair budget is checked before fallback to the explicit sample policy. */
     {gx2d_measurement closest_result={0};code=measurement_object_distance(s,a,b,1000000,&closest_result);

@@ -2,6 +2,172 @@
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
+## Octave presentation adapter (dev097, version 1)
+
+`lifetime = gxtxt_presentation_scope_v1(session_path)` opens a caller-owned CORE
+service with public coordinate reads and snapshot operations. Omitting the Session
+exposes only snapshot operations. The `scientific_presentation` service profile
+also supplies statistical interpretation through its existing public binding,
+excluding `store_columns`. Dataset writes, module bindings and callbacks are not
+registered in this profile. Ordinary real Script Jobs retain their complete
+registration; the scope borrows their active Bridge and never stops that owner.
+A conflicting Session or an active statistics-only service is rejected explicitly.
+Clearing an owned lifetime stops its process and releases its transport buffers.
+The existing `gxtxt_statistics_scope_v1` profile is unchanged.
+
+```octave
+lifetime = gxtxt_presentation_scope_v1(session_path);
+c = gxtxt_api_call('DATASET_METADATA_API_v1','coordinate_read',{'dataset_id'});
+[shown, receipt] = gxtxt_coordinate_values_v1(c,'variable_id',original_values);
+[viewport, view_receipt] = gxtxt_coordinate_view_v1(c,'variable_id',fitted_bounds);
+```
+
+`gxtxt_coordinate_values_v1(context, variable_id, values, options, optional_native_unit)` delegates
+classification to `coordinate_snapshot_affine_plan`. CORE applies established
+coefficients to display buffers; nonlinear relations use chunks of at most4096
+finite elements through `coordinate_snapshot_values`. Options and defaults are
+those of that public operation. Canonical mode is the default; numerical
+calibration requires explicit effective mode. Inverse mode accepts displayed
+values. Optional `native_unit` identifies an already normalized runtime frame (for
+example elapsed-time seconds when the source declares hours); the same public
+affine plan or bounded inverse/forward snapshot operations avoid double conversion.
+Shape and nonfinite gap positions are retained. Exact identity retains
+the input storage class, including distinct int64/uint64 values beyond binary64
+precision. Nonidentity presentation returns float64 and reports input/output
+classes; integer display may therefore be approximate. This adapter never
+materializes or replaces canonical scientific arrays. Finite overflow is an error.
+
+`gxtxt_coordinate_view_v1(context, variable_id, fitted_display_bounds,
+optional_display_unit)` delegates inverse conversion, canonical view range and
+forward conversion to the same public owner. It excludes numerical calibration.
+Apply it once to a newly fitted reference, never to the preceding magnified range.
+Factor1 preserves the original display endpoints exactly. Its receipt distinguishes
+source and displayed reference/result bounds, pivot and factor. Captured snapshots
+remain explicitly `snapshot_only`; they do not assert a current source revision.
+
+Plot Dataset3.18 consumes these helpers for canonical caches, current-policy
+rerender and detached snapshots. Direct Dataset XYZ uses the same public Tcl
+snapshot operations and a view-owned calibrated frame; canonical triples remain
+unchanged. HMS consumers respect the public numeric boundary in seconds before
+applying source-unit pivots.
+
+## Coordinate context extension (dev097, schema 1)
+
+CORE stores optional coordinate settings under
+`_gxtxt.framework.coordinate_context_v1` in this same resource. There is no
+second Dataset settings store. The owning sidecar supplies Dataset identity;
+the value stores `schema_version`, monotonic `revision`, `source_sha256`, and
+`variables` keyed by stable Variable IDs. Names and display labels are not keys.
+Each Variable entry records its source unit/dtype/value-format semantics plus:
+
+| Field | Meaning |
+|---|---|
+| `display_unit` | Compatible re-expression of coordinates, using Unit Registry and any declared Variable relation. |
+| `view_factor`, `view_pivot` | Positive magnification about a pivot in canonical source coordinates. |
+| `calibration_factor`, `input_origin`, `output_origin` | Explicit effective coordinate: `output_origin + calibration_factor * (canonical - input_origin)`, in the source unit. |
+
+View magnification, display units and calibration are independent. Saving settings
+does not change source values, source units, ordinary Table Stream reads, or opt
+calculations into calibration. Missing settings mean identity. Unknown units can
+retain identity; a different display unit requires a declared compatible relation.
+
+Public Tcl operations (prefix `::GX::`):
+
+```tcl
+datasetCoordinateRead $session $datasetId
+datasetCoordinateInspect $session $datasetId
+datasetCoordinateUpdate $session $datasetId $variableUpdates $expectedRevision
+datasetCoordinateReset $session $datasetId $expectedRevision
+datasetCoordinateValidate $session $datasetId $storedContext
+datasetCoordinateValues $session $datasetId $variableId $values ?options?
+datasetCoordinateViewRange $session $datasetId $variableId $canonicalReferenceRange
+datasetCoordinateSnapshotValues $resolvedContext $variableId $values ?options?
+datasetCoordinateSnapshotViewRange $resolvedContext $variableId $canonicalReferenceRange
+datasetCoordinateSnapshotAffinePlan $resolvedContext $variableId $nativeUnit ?options?
+```
+
+Both Script Bridge languages expose these through `DATASET_METADATA_API_v1` as
+`coordinate_read`, `coordinate_inspect`, `coordinate_update`, `coordinate_reset`,
+`coordinate_validate`, `coordinate_values`, `coordinate_view_range`,
+`coordinate_snapshot_values`, `coordinate_snapshot_view_range` and
+`coordinate_snapshot_affine_plan`, omitting
+the Session argument. Updates map Variable IDs to changed fields. Revision zero
+means no persistent context; write/reset require the observed revision, reject
+conflicting editors, and increment it atomically through Dataset Authority.
+Returned read contexts include `dataset_id`, `persistent`, and identity entries
+for other real numeric Variables. Validation accepts the stored four-field
+context; remove the two receipt fields when validating a read result.
+
+`coordinate_values` accepts at most 4096 finite, exactly representable binary64
+inputs and preserves Script array shape. Its options are `mode=canonical|effective`
+(default canonical), `unit=display|source|<explicit unit>` (default display), and
+`direction=forward|inverse` (default forward). Forward applies explicit calibration
+first, then display conversion. Inverse uses the declared inverse unit relation
+first, then reverses calibration, suitable for editing displayed coordinates.
+Formula authors remain responsible for their declared invertible domain. No
+view magnification is applied to coordinate numbers. Larger scientific arrays
+belong to Dataset Transform, not this bounded readout API.
+
+`coordinate_view_range` returns `pivot + (endpoint-pivot)/factor` for two increasing
+canonical reference endpoints. A consumer persists its reference range and the
+applied context revision, and applies changed settings once to that reference;
+it must not compound settings on an already magnified viewport. Transient pan/zoom
+is separate. Multi-Dataset consumers must explicitly choose their viewport basis.
+Identity magnification returns the canonical endpoints directly. Effective
+calibration with factor one and equal input/output origins also preserves values
+directly, including signed zero; neither operation introduces pivot cancellation.
+
+Source-bound read/application verifies actual payload SHA and declared source semantics.
+Changed payloads or unit/dtype/value-format declarations cause an error;
+`coordinate_inspect` reports the reason and revision without applying stale state.
+Reset can adopt a legitimate registered source revision, but cannot conceal a
+payload/registry hash mismatch. Generic metadata replacement preserves this
+framework-owned field, and ordinary/private-module writes cannot forge it.
+Portable Dataset/Session copies preserve the same payload and Variable bindings;
+Dataset-ID changes use the sidecar identity. Verified schema-owner regeneration
+can rebind cosmetic canonical-name or enabled-column changes and advance revision.
+Scientific parsing/unit changes remain stale until explicitly reset/redefined.
+
+The `coordinate_snapshot_*` operations evaluate an explicitly supplied resolved
+read context without Dataset IO. They return `verification=snapshot_only`, never
+a claim that the current source still matches. Source-bound values/view operations
+return `verification=source_verified`. Snapshot operations validate the envelope
+and selected Variable settings, use the current public Unit Registry, and have
+the same finite-value/shape bounds. They are suitable for repeated pointer, tick
+and small point-table presentation against frozen geometry. Consumers must capture
+the context with a verified read at source binding/reload, match its payload SHA
+and Variable IDs to their geometry, and invalidate/reload it on relevant source,
+schema, settings or unit-definition changes. Passing a modified snapshot cannot
+write metadata or authorize calibration materialization. Snapshots can continue
+describing old frozen geometry after the live Dataset changes; this is explicit.
+
+`coordinate_snapshot_affine_plan` composes the declared inverse relation from an
+explicit Native geometry unit, optional effective calibration, and the display
+relation through the same Unit Registry grammar. Options are the same mode/unit/
+direction choices as values. It returns `affine=1` with finite `scale`/`offset`
+only when algebraic classification succeeds; otherwise `affine=0` with a reason.
+No sample fitting is used. Inverse direction follows declared inverse formulas.
+The receipt says `snapshot_only` and identifies its input/output units. This is
+for Native grid/frame presentation; pointwise values remain the authority when
+no finite global affine representation exists.
+
+Values and affine-plan options also accept `source_unit_assumption`: an explicit,
+registered nonopaque unit for a source Variable whose unit is empty. This cannot
+override a declared unit. The assumption interprets the original source numbers;
+`unit=source`/`display` then refer to that assumed unit unless an explicit target
+is supplied. Calibration and pivots continue to use original source numbers.
+The returned receipt includes the assumption separately from `verification`.
+Neither the input snapshot, Dataset schema, metadata nor payload is modified.
+This supports existing Workspaces that explicitly assumed missing units during
+physical working-frame conversion. Permanent declarations/materialization use
+the schema owner or Dataset Transform, with their usual provenance and guards.
+
+Explicit materialization is available through Dataset Transform's
+`calibrate_variables` operation, including consumed-calibration provenance and
+atomic context adoption. See `DATASET_TRANSFORM_API_v1.md` for inheritance rules.
+These targeted checks do not establish completion of all GUI consumers or the
+integrated release acceptance campaign.
+
 Dataset Metadata API v1 stores one generic structured metadata resource for
 each canonical Dataset ID. It is separate from scientific data, Variable
 Schema, provenance fields in the Dataset registry, and free-form Dataset Notes.

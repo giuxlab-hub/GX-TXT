@@ -1,8 +1,8 @@
 # demo.numeric.smoothing — Complete User and Scientific Manual
 
 Plugin ID: `demo.numeric.smoothing`  
-Plugin version: `1.0.2`  
-Framework: current GX-TXT public scientific APIs  
+Plugin version: `1.1.0`  
+Reference framework: `GX-TXT 0.9.8.10-dev-097`  
 Package type: external independently installable analysis plugin  
 License: GNU GPL v3 or later
 
@@ -72,16 +72,14 @@ optional additional plot.dataset graphs
 
 ## 2. Required GX-TXT version
 
-The development and reference baseline is:
-
-```text
-GX-TXT 0.9.7.72
-```
+This version requires GX-TXT 0.9.8.10-dev-097. Its original numerical
+reference workflow was introduced in GX-TXT 0.9.7.72; dev097 targeted
+compatibility was checked against accepted dev096 as described in section 18.
 
 The package manifest declares:
 
 ```text
-framework_min=0.9.7.72
+framework_min=0.9.8.10-dev-097
 ```
 
 The plugin remains external. Installing it must not modify, repackage or create a
@@ -525,7 +523,7 @@ tradeoff, so the module does not produce a best-method score or ranking.
 The release package is:
 
 ```text
-demo.numeric.smoothing_1.0.1.zip
+demo.numeric.smoothing_1.1.0.zip
 ```
 
 Install through the actual GX-TXT GUI workflow:
@@ -533,7 +531,7 @@ Install through the actual GX-TXT GUI workflow:
 ```text
 Modules
 → Install plugin...
-→ select demo.numeric.smoothing_1.0.1.zip
+→ select demo.numeric.smoothing_1.1.0.zip
 ```
 
 After installation, remain in `Modules` and locate:
@@ -899,8 +897,8 @@ The packaged demonstration is reproducible because:
 - the three isolated disturbances use fixed indices and amplitudes;
 - the example CSV SHA-256 is fixed and documented;
 - default smoothing parameters are fixed in `module.ini`;
-- the module records its own installed version for provenance;
-- the documented public Dataset and numerical contracts are used.
+- plugin version is fixed at `1.1.0`;
+- reference framework is GX-TXT 0.9.8.10-dev-097.
 
 The normal reproduction path is `New Session` → `Generate Session...` →
 `GX-TXT Numerical Examples` → `Mathematics` → `Smoothing`. For source-level
@@ -1042,45 +1040,23 @@ demo.numeric.smoothing/
 │   ├── demo_numeric_smoothing_render.m
 │   ├── demo_numeric_smoothing_rerender.m
 │   └── demo_numeric_smoothing_rerender_main.m
-└── tests/
-    ├── README.md
-    ├── test_static.py
-    ├── test_publication_table.tcl
-    └── test_framework_integration.tcl
 ```
 
-## 18. Verification workflow
+## 18. Dev097 interpretation and validation
 
-Verify the module in a disposable scientific Session. The expected checks cover:
+CORE `STATISTICAL_RESULT_SEMANTICS_API_v1` owns descriptive comparison meaning.
+The output Dataset contains 13 validated records: measured/reference error and
+full, edge and interior errors for each of four methods. Legacy INI numeric keys
+remain, with quantity/status/unit/reason companions. These errors establish no
+regression or sampling-inference model. Numeric remains the only calculation
+authority; smoothing is not repeated for interpretation or reporting.
 
-```text
-plugin descriptor/package validity
-Plugin Install API installation
-discovery by GX-TXT 0.9.7.72
-Session Generator API v1 package import
-Smoothing generator discovery under GX-TXT Numerical Examples / Mathematics
-two deterministic generated Sessions
-generated CSV byte identity and generator provenance
-generic CSV Dataset import from the generated Session
-source Dataset discovery
-stable variable identity
-Analysis Source bindings
-NUMERIC_API_v1 capability discovery
-all four public Dataset smoothing methods
-configured window/degree reporting
-endpoint-policy reporting
-X association / no shift
-output length and finite-value checks
-Dataset Publication API v2
-published Dataset reopen
-reference-error metric recomputation
-four automatic Graph Provider PNG files
-cache-only rerender
-plot.dataset compatibility
-```
-
-Execution-dependent tests report `SKIP`, not `PASS`, when GNU Octave is not
-available in the validation environment.
+The integrated `statistics_comparison_demos.tcl` validator runs the actual module
+on the unchanged bundled generator in private dev096/dev097 Sessions and checks
+metadata/reopen, source SHA and one error graph. `compare_comparison_demos.py`
+requires identical canonical numerical column dtype/shape/bytes and legacy
+metrics, then independently checks NumPy error reductions. Those development
+receipts remain distinct from the complete final generator/plot acceptance.
 
 ## 19. Known limitations
 
@@ -1089,8 +1065,7 @@ available in the validation environment.
 - The plugin requires a bound reference variable to compute objective error
   diagnostics; it is a demonstration/reference module rather than a generic
   blind smoothing front end.
-- No smoothing spline is demonstrated because GX-TXT 0.9.7.72
-  `NUMERIC_API_v1` explicitly does not provide a v1 smoothing-spline method.
+- This demo compares the four listed smoothing methods.
 - The plugin does not design digital filters and does not call the separate
   `digital_filter` operation; that is outside this smoothing demo.
 - Graph rerender uses `render_cache.mat` and does not rerun numerical smoothing.

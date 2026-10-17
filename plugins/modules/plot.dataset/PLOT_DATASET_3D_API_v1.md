@@ -126,3 +126,13 @@ Ticks/grid/font layout follows Native3D's scientific presentation rather than Oc
 pixel layout. Logarithmic/reversed axes still require a nonlinear calibrated coordinate
 mapping contract and are rejected, never labeled as linear. Other providers/base graphs
 need an exact prepared-scene identity API. Transparent figure backgrounds remain unsupported.
+
+## Dataset coordinate policy (3.18 / dev097)
+
+Static XYZ rendering and its calibrated Native3D Plot preview share captured public
+Dataset display units and view factors/pivots. Preview validates the successful
+static coordinate revision receipt; changed metadata requires rerender. The VTP
+contains displayed physical coordinates with no numerical calibration or view-factor
+multiplication. Limits/camera/aspect express magnification, and the caption reports
+its source-unit pivots. The separate persistent canonical Viewer representation
+retains its own geometry/presentation lifecycle.

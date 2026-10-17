@@ -42,3 +42,16 @@ host-only; script discovery/snapshot/changed-since queries are safe.
 The revision is a process-local observation sequence, not a global persistent
 Session edit counter. Clients must retain and compare the Session token as well
 as the revision, and obtain a fresh snapshot after `reset_required`.
+
+## Bounded unchanged-read reuse (dev097)
+
+Public reload may reuse the existing normalized authority snapshot when its exact
+persisted registry bytes (up to4MiB), Session and current in-memory baseline still
+agree. One process-local read hint replaces repeated lock-worker startup; it is
+neither a second registry nor a scientific profile. Timestamp/size alone never
+establish identity. Pending recovery or staging records disable reuse, as do dirty
+in-memory edits, Session changes, oversized registries and external commits.
+Those cases retain the normal locked merge/recovery owner. Scientific access still
+performs its existing source-integrity checks; no payload hash is inferred from
+this metadata hint. Mutation, rollback, catalog revision and publication contracts
+remain unchanged. No background scan or automatic descriptive profiling is added.

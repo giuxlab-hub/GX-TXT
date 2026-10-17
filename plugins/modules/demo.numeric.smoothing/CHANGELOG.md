@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 — GX-TXT 0.9.8.10-dev-097
+
+- Publishes validated CORE descriptive comparison metadata and formats all error reports through the public semantics API.
+- Preserves existing scientific Dataset/variable/method/report identities and the original numerical algorithms.
+- Retains full-sample, edge and interior comparison records with physical units.
+
 ## 1.0.2 — GX-TXT 0.9.8.05
 
 - Uses public plot.dataset variants and the shared numerical smoothing service.

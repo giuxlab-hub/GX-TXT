@@ -476,6 +476,18 @@ output=y_mean
 
 Grouped aggregate values are broadcast back to their group rows so later expressions can reuse them.
 
+In dev097, Numeric owns aggregate facts and normalization input moments. CORE
+owns availability, units and exported statistical definitions. `aggregate` keeps
+each group's captured result in `context.statistical_results`; sample `std` for
+one finite value is unavailable rather than zero. Empty groups retain count
+zero, while their moments remain unavailable. Count has unit `1`; other supported
+aggregate outputs inherit their actual input unit. `normalize` outputs have unit
+`1` and retain the input-summary provenance. Constant-input min/max normalization
+preserves nonfinite source entries. Constant/singleton z-score normalization uses
+a unit divisor as a transformation convention; its captured singleton sample
+spread remains undefined. An output `unit` label must match the actual numerical
+unit: use `convert_unit` for scaling and variable metadata to declare source units.
+
 ### `filter` - historical destructive operation
 
 ```ini
@@ -809,7 +821,23 @@ The operation produces predicted values plus features:
 <output>_r2
 ```
 
-The v0.8.4 generic fit bridge uses Octave `fminsearch` with bound transformation. Specialized optimizers remain separate future extensions.
+dev097 routes regression, correlation and model fitting through the public
+`NUMERIC_API_v1`. Model fitting uses its declared `auto` solver selection and
+native bounds; an unavailable bounded solver reports the dependency failure.
+It records solver identity/options and retains the existing `objective`
+mean-squared-residual convention. Mathematical Model Plugin functions and
+parameter identities remain unchanged.
+
+Statistical meaning comes from `STATISTICAL_RESULT_SEMANTICS_API_v1`.
+`context.statistical_results` retains each fitted group and its units.
+Constant-response R squared and undefined correlation produce unavailable
+features with CORE reasons, while valid predictions remain available.
+The existing scalar feature IDs, including `_r2`, remain unchanged.
+Summary reports include the CORE report. An additive export with
+`type=statistical_results` writes the public `publication_metadata` Tcl
+dictionary representation, suitable for lossless validation and reuse; choose
+an explicit output filename. Standalone execution uses the same registered
+CORE interpretation binding without creating a Session or Job.
 
 ## 15. Units and explicit conversion - v0.8.4
 
@@ -1076,3 +1104,9 @@ view_elevation=30
 ```
 
 Supported types are `line3` and `scatter3`. See `PLOT_3D_API_v1.md`.
+
+Regression constant-input checks compare the actual finite coordinates, rather
+than estimating a variance that can underflow. A full-rank linear solve uses
+Numeric column scaling; extremely small coordinate units therefore retain their
+independent slope when representable. Numerical rank/availability still comes
+from the public owner and captured CORE result.

@@ -69,7 +69,7 @@ proc ::GX::CurveWorkbench::_fitPrimitivePreview {w token id values} {
     set st($w,fitReceipt) $receipt
     _toolPreview $w [dict get $receipt definition]
     set quality [dict get $receipt quality]
-    set st($w,fitQuality) "Approximate [dict get $values family] fit · $count complete points · RMS [format %.6g [dict get $quality train_geometric_rmse]] $unit · max error [format %.6g [dict get $quality train_max_geometric_distance]] $unit. Accept creates a separate retained primitive."
+    set st($w,fitQuality) "Approximate [dict get $values family] fit · $count complete points\n[::GX::StatisticsV1::report [dict get $quality statistical_results training] {rmse max_abs_error geometric_dispersion_score}]\nAccept creates a separate retained primitive."
     $w.fitPrimitive.actions.accept state !disabled;_draw $w
 }
 proc ::GX::CurveWorkbench::_fitPrimitiveAccept {w} {

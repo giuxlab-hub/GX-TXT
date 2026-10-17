@@ -191,17 +191,18 @@ proc ::GX::CurveWorkbench::_pointList {w} {
     try {
         set tree $w.leftScroll.viewport.content.points;set record [_record $w $st($w,active)]
         $w.leftScroll.viewport.content.pointFrame configure -text {Retained defining handles}
-        foreach axis {x y} unit [_coordinateUnits $record] {
+        foreach axis {x y} {
+            set unit [dict get [_coordinateAxis $w $st($w,active) $axis] display_unit]
             set key [string toupper $axis]
             $tree heading $axis -text "$key ($unit)"
             $w.leftScroll.viewport.content.numeric.ledit$key configure -text "$key ($unit)"
         }
         set handles [::GX::Native2D::core interaction_controls $st($w,scene) [dict get $record native]]
-        set signature [list handles $st($w,active) $handles]
+        set signature [list handles $st($w,active) $handles [_coordinateKey $w $st($w,active)]]
         if {$signature ne $st($w,pointTableSignature)} {
             $tree delete [$tree children {}];set i 0
             foreach handle $handles {
-                lassign [dict get $handle point] x y
+                lassign [_coordinatePoint $w $st($w,active) [dict get $handle point]] x y
                 $tree insert {} end -id h[incr i] -values [list [string map {_ { }} [dict get $handle role]] [format %.9g $x] [format %.9g $y] {retained control}]
             }
             set st($w,pointTableSignature) $signature
@@ -209,7 +210,7 @@ proc ::GX::CurveWorkbench::_pointList {w} {
         $tree heading index -text {Defining handle};$tree heading source_row -text {Representation}
         $w.leftScroll.viewport.content.numeric.apply configure -text {Apply handle X/Y}
         set selected {};set i 0;set st($w,editX) {};set st($w,editY) {}
-        foreach handle $handles {incr i;foreach ref $st($w,sketchSelection) {if {[dict get $ref logical] eq $st($w,active)&&[dict get $ref entity] eq "control"&&[dict get $ref index]==[dict get $handle index]} {lappend selected h$i;lassign [dict get $handle point] st($w,editX) st($w,editY)}}}
+        foreach handle $handles {incr i;foreach ref $st($w,sketchSelection) {if {[dict get $ref logical] eq $st($w,active)&&[dict get $ref entity] eq "control"&&[dict get $ref index]==[dict get $handle index]} {lappend selected h$i;lassign [_coordinatePoint $w $st($w,active) [dict get $handle point]] st($w,editX) st($w,editY)}}}
         if {[$tree selection] ne $selected} {$tree selection set $selected}
         if {[dict get $record sketch_definition family] eq "composite_path"} {
             set st($w,pointPageLabel) "[llength [dict get $record sketch_definition parts]] exact Path constituents — [llength $handles] editable defining handles"
@@ -236,7 +237,7 @@ proc ::GX::CurveWorkbench::_numericEdit {w} {
     if {![dict exists [_record $w [_active $w]] sketch_definition]} {tailcall _numericEdit_interaction_base $w}
     if {[llength $st($w,sketchSelection)]!=1||[dict get [lindex $st($w,sketchSelection) 0] entity] ne "control"} {error "Select one defining handle"}
     set before [_snapshotIds $w [list [_active $w]]];set undo $st($w,undo);set redo $st($w,redo)
-    ::GX::Native2D::core interaction_edit $st($w,scene) [lindex $st($w,sketchSelection) 0] [list [_finite $st($w,editX) X] [_finite $st($w,editY) Y]]
+    ::GX::Native2D::core interaction_edit $st($w,scene) [lindex $st($w,sketchSelection) 0] [_coordinatePoint $w [_active $w] [list [_finite $st($w,editX) X] [_finite $st($w,editY) Y]] inverse]
     try {_syncSamples $w [_active $w];_history $w $before [list [_active $w]]} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
 }
 proc ::GX::CurveWorkbench::_drawCreationPreview {w} {
@@ -284,11 +285,12 @@ proc ::GX::CurveWorkbench::_buildConstruction {w} {
     menu $w.sketchbar.constraints.menu -tearoff 0 -postcommand [list ::GX::CurveWorkbench::_constraintMenu $w]
     ttk::menubutton $w.sketchbar.represent -text Representation -menu $w.sketchbar.represent.menu;menu $w.sketchbar.represent.menu -tearoff 0
     foreach {label callback} [list {Publish primitive as Dataset…} [list _primitivePublishOpen $w] {Reconstruct exact primitive from Dataset} [list _reconstructPrimitive $w] {Fit to retained primitive…} [list _fitPrimitiveOpen $w] {Dataset → Native editable points…} [list _convertOpen $w] {Primitive → Native sampled points…} [list _sketchSampleOpen $w] {Construction / reference role…} [list _geometryRoleOpen $w]] {$w.sketchbar.represent.menu add command -label $label -command [list ::GX::CurveWorkbench::_safe $w [lreplace $callback 0 0 ::GX::CurveWorkbench::[lindex $callback 0]]]}
+    ttk::label $w.sketchbar.unitLabel -text {CAD length unit}
     ttk::combobox $w.sketchbar.unit -width 5 -values {mm cm m km um nm in ft} -state readonly -textvariable ::GX::CurveWorkbench::st($w,sketchUnit)
     bind $w.sketchbar.unit <<ComboboxSelected>> [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_sketchUnitChoice $w]]
     ttk::checkbutton $w.sketchbar.snap -text {Object snap} -variable ::GX::CurveWorkbench::st($w,cadObjectSnap)
     ttk::button $w.sketchbar.finish -text Finish -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_createCommit $w]]
-    foreach key {select create modify constraints represent unit snap finish} {pack $w.sketchbar.$key -side left -padx 3}
+    foreach key {select create modify constraints represent unitLabel unit snap finish} {pack $w.sketchbar.$key -side left -padx 3}
     # The feedback label is a real child; its host is gridded only after reflow.
     ttk::frame $w.sketchbar.feedback
     ttk::label $w.sketchbar.feedback.active -textvariable ::GX::CurveWorkbench::st($w,toolLabel) -wraplength 500
@@ -395,12 +397,7 @@ proc ::GX::CurveWorkbench::_constraintDescription {w record} {
     set spec [dict get $record definition];set names {}
     foreach field {a b axis} {if {[dict exists $spec $field]&&[dict exists $st($w,curves) [dict get $spec $field]]} {lappend names [dict get [_record $w [dict get $spec $field]] name]}}
     set kind [dict get $spec kind];set text "[_constraintTitle $kind]  [join [lsort -unique $names] { ↔ }]"
-    if {$kind in {distance radius diameter angle lock_x lock_y}} {
-        set unit [lindex [_coordinateUnits [_record $w [dict get $spec a]]] 0]
-        if {$kind eq "angle"} {set unit rad}
-        set prefix [dict get {distance {} radius {R } diameter {Ø } angle {} lock_x {X } lock_y {Y }} $kind]
-        append text " = $prefix[format %.3f [dict get $spec value]] $unit"
-    }
+    if {[_isDimension $kind]} {append text " = [_dimensionText $w [_constraintNativeSpec $w $spec] [dict get $spec value] [::GX::datasetPublicationV2DictDefault $spec driven 0]]"}
     return $text
 }
 proc ::GX::CurveWorkbench::_constraintMarkers {w} {
@@ -461,7 +458,8 @@ proc ::GX::CurveWorkbench::_sketchUnitChoice {w} {
     if {[dict size $st($w,curves)]==0} return
     set requested $st($w,sketchUnit)
     set units [_coordinateUnits [_record $w [_active $w]]]
-    set st($w,sketchUnit) [expr {[lindex $units 0] eq {}?"mm":[lindex $units 0]}]
+    if {[lindex $units 0] ne [lindex $units 1]||[catch {::GX::unitRegistryConversionPlan [lindex $units 0] m}]} {set st($w,sketchUnit) mm;error {This control converts a common CAD length frame. Use Axis display units for independent scientific axes.}}
+    set st($w,sketchUnit) [lindex $units 0]
     _unitsOpen $w
     set ::GX::UiField::formValues($w.units,target_unit) $requested
 }

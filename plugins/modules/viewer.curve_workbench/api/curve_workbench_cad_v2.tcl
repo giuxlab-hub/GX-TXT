@@ -69,16 +69,19 @@ proc ::GX::CurveWorkbench::_cadTargets {w} {
     if {$st($w,cadTarget) eq "group"} {
         if {$st($w,cadGroup) eq ""||![dict exists $st($w,groups) $st($w,cadGroup)]} {error "Select a named group"}
         if {[dict get $st($w,groups) $st($w,cadGroup) locked]} {error "The selected group is locked"}
-        return [dict get $st($w,groups) $st($w,cadGroup) members]
+        set ids [dict get $st($w,groups) $st($w,cadGroup) members];_coordinateRequireFrame $w $ids;return $ids
     }
-    set ids [_cadSelected $w];if {$ids eq {}} {error "Select one or more curves"};return $ids
+    set ids [_cadSelected $w];if {$ids eq {}} {error "Select one or more curves"};_coordinateRequireFrame $w $ids;return $ids
 }
-proc ::GX::CurveWorkbench::_cadSelectNative {w} {
+proc ::GX::CurveWorkbench::_cadSelectNative {w {ids {}}} {
     variable st
     if {[::GX::Native2D::core drag_active $st($w,scene)]} {error "Finish or cancel the native transform gesture before changing object selection"}
     ::GX::Native2D::core clear $st($w,scene)
-    if {$st($w,cadTarget) ne "group"&&$st($w,objectSelection) eq {}} {return}
-    foreach id [_cadTargets $w] {::GX::Native2D::core object_style $st($w,scene) [dict get [_record $w $id] native] {selected 1}}
+    if {$ids eq {}} {
+        if {$st($w,cadTarget) ne "group"&&$st($w,objectSelection) eq {}} {return}
+        set ids [_cadTargets $w]
+    }
+    foreach id $ids {::GX::Native2D::core object_style $st($w,scene) [dict get [_record $w $id] native] {selected 1}}
     if {$st($w,cadTarget) eq "group"} {::GX::Native2D::core object_style $st($w,scene) [dict get $st($w,groupNative) $st($w,cadGroup)] {selected 1}}
 }
 proc ::GX::CurveWorkbench::_cadToolChoice {w} {
@@ -288,38 +291,32 @@ proc ::GX::CurveWorkbench::_cadGroupAction {w action} {
 proc ::GX::CurveWorkbench::_cadUnits {w ids} {
     set common __unset__
     foreach id $ids {
-        set r [_record $w $id];set units {}
-        foreach axis {x y} {
-            set unit ""
-            if {[dict exists $r working_unit]} {set unit [dict get $r working_unit]} elseif {[dict exists $r source_descriptor]} {
-                foreach variable [dict get $r source_descriptor variables] {if {[dict get $variable variable_id] eq [dict get $r $axis]} {set unit [dict get $variable unit];break}}
-            } elseif {[dict get $r source] ne ""} {set unit [dict get [::GX::datasetVariableById [dict get $r source] [dict get $r $axis]] unit]}
-            lappend units $unit
-        }
-        if {[lindex $units 0] ne [lindex $units 1]||($common ne "__unset__"&&$common ne [lindex $units 0])} {error "CAD transforms require equal X/Y units and equal units across targets; normalize explicitly with Dataset Transform / Unit Registry."}
+        set units [_coordinateUnits [_record $w $id]]
+        if {[lindex $units 0] ne [lindex $units 1]||($common ne "__unset__"&&$common ne [lindex $units 0])} {error "Metric CAD operations require equal native X/Y units and equal units across targets; normalize explicitly with Dataset Transform / Unit Registry."}
         set common [lindex $units 0]
     }
     return [expr {$common in {__unset__ ""} ? "coordinate units (unspecified)" : $common}]
 }
 proc ::GX::CurveWorkbench::_cadTransformOpen {w kind} {
     variable st
-    set ids [_cadTargets $w];set unit [_cadUnits $w $ids]
-    _cadSelectNative $w
+    set ids [_cadTargets $w];_cadTransformUnits $w $kind $ids
+    set basis [lindex $ids 0];set xUnit [dict get [_coordinateAxis $w $basis x] display_unit];set yUnit [dict get [_coordinateAxis $w $basis y] display_unit]
+    _cadSelectNative $w $ids
     set pivot [dict get [::GX::Native2D::core pivot $st($w,scene)] point]
     switch -- $kind {
-        translate {set fields [dict create dx [dict create type number label "X displacement ($unit)"] dy [dict create type number label "Y displacement ($unit)"]];set initial {dx 1 dy 0}}
+        translate {set fields [dict create dx [dict create type number label "X displacement ($xUnit)"] dy [dict create type number label "Y displacement ($yUnit)"]];foreach axis {x y} {_coordinateControlPlan $w $basis $axis inverse};set initial {dx 1 dy 0}}
         rotate {set fields [dict create degrees [dict create type number label {Rotation angle (degrees)}]];set initial {degrees 90}}
         scale {set fields [dict create sx [dict create type number label {Physical scale X (dimensionless)} min 1e-12] sy [dict create type number label {Physical scale Y (dimensionless)} min 1e-12]];set initial {sx 1 sy 1}}
         mirror {
-            set fields [dict create ax [dict create type number label "Axis point A: X ($unit)"] ay [dict create type number label "Axis point A: Y ($unit)"] bx [dict create type number label "Axis point B: X ($unit)"] by [dict create type number label "Axis point B: Y ($unit)"]]
+            set fields [dict create ax [dict create type number label "Axis point A: X ($xUnit)"] ay [dict create type number label "Axis point A: Y ($yUnit)"] bx [dict create type number label "Axis point B: X ($xUnit)"] by [dict create type number label "Axis point B: Y ($yUnit)"]]
             set gizmo [::GX::Native2D::core gizmo $st($w,scene)]
-            lassign [dict get $gizmo mirror_a] ax ay
-            lassign [dict get $gizmo mirror_b] bx by
+            lassign [_coordinatePoint $w $basis [dict get $gizmo mirror_a]] ax ay
+            lassign [_coordinatePoint $w $basis [dict get $gizmo mirror_b]] bx by
             set initial [dict create ax $ax ay $ay bx $bx by $by]
         }
         default {error "Unknown CAD transform"}
     }
-    ::GX::uiFieldFormCreate $w.cadTransform "$kind — [llength $ids] curve(s) — $unit" $fields $initial [list ::GX::CurveWorkbench::_cadTransformApply $w $kind $ids $pivot] $w
+    ::GX::uiFieldFormCreate $w.cadTransform "$kind — [llength $ids] curve(s) — X $xUnit / Y $yUnit" $fields $initial [list ::GX::CurveWorkbench::_cadTransformDisplayedApply $w $kind $ids $pivot [_coordinateControlKey $w $ids]] $w
 }
 proc ::GX::CurveWorkbench::_cadTransformApply {w kind ids pivot values} {
     variable st
@@ -330,7 +327,7 @@ proc ::GX::CurveWorkbench::_cadTransformApply {w kind ids pivot values} {
         if {[_bulkRecord $r]} {error "Use Convert to Native to transform an explicit editable exact range of a large Dataset source"}
         if {$kind ne "mirror"&&[dict get $r locked]} {error "A target is locked; the complete transform was rejected"}
     }
-    _cadUnits $w $ids;_cadSelectNative $w
+    _cadTransformUnits $w $kind $ids;_cadSelectNative $w $ids
     _pointSyncApply $w
     set selectedIndices [_selected $w];set previousActive $st($w,active)
     set before [_snapshotIds $w $ids];set nativeIds [lmap id $ids {dict get [_record $w $id] native}]
@@ -377,11 +374,13 @@ proc ::GX::CurveWorkbench::_cadTransformApply {w kind ids pivot values} {
 }
 proc ::GX::CurveWorkbench::_cadPivotOpen {w} {
     variable st
-    _cadSelectNative $w;set pivot [::GX::Native2D::core pivot $st($w,scene)]
+    set ids [_cadTargets $w];_cadSelectNative $w $ids;set pivot [::GX::Native2D::core pivot $st($w,scene)]
     set p [dict get $pivot point];if {$p eq {}} {set p {0 0}}
-    set unit [_cadUnits $w [_cadTargets $w]]
-    set fields [dict create mode [dict create type choice label {Pivot policy} values {bounds centroid origin custom}] x [dict create type number label "Custom pivot X ($unit)"] y [dict create type number label "Custom pivot Y ($unit)"]]
-    ::GX::uiFieldFormCreate $w.cadPivot "Native2D transform pivot" $fields [dict create mode [dict get $pivot mode] x [lindex $p 0] y [lindex $p 1]] [list ::GX::CurveWorkbench::_cadPivotApply $w] $w
+    set ids [_cadTargets $w];set basis [lindex $ids 0]
+    set p [_coordinatePoint $w $basis $p]
+    set xUnit [dict get [_coordinateAxis $w $basis x] display_unit];set yUnit [dict get [_coordinateAxis $w $basis y] display_unit]
+    set fields [dict create mode [dict create type choice label {Pivot policy} values {bounds centroid origin custom}] x [dict create type number label "Custom pivot X ($xUnit)"] y [dict create type number label "Custom pivot Y ($yUnit)"]]
+    ::GX::uiFieldFormCreate $w.cadPivot "Native2D transform pivot" $fields [dict create mode [dict get $pivot mode] x [lindex $p 0] y [lindex $p 1]] [list ::GX::CurveWorkbench::_cadPivotDisplayedApply $w $ids [_coordinateControlKey $w $ids]] $w
 }
 proc ::GX::CurveWorkbench::_cadPivotApply {w values} {
     variable st

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 — GX-TXT 0.9.8.10-dev-097
+
+- Publishes four CORE-interpreted pointwise error subsets with physical derivative/integral units.
+- Uses public Numeric error reductions and CORE report formatting, retaining existing report and Dataset identities.
+- Empty derivative interiors are undefined, with explicit status/reason fields rather than a zero error.
+
 ## 1.0.1 — GX-TXT 0.9.8.05
 
 - Uses public plot.dataset variants and advertised numerical services for the calculus teaching graphs.

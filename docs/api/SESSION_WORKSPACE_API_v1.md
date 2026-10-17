@@ -22,10 +22,11 @@ and Octave through the common registration/transport. Arguments are positional:
 | preview_set | workspace_id, resource | same-owner verified image receipt association |
 | export | workspace_id | managed `gxtxt.workspace.zip` resource |
 | import | managed_package_resource, new_name | newly committed workspace receipt |
+| resource_copy_tree | workspace_id, payload_utf8 | serialized payload with all nested resources copied to this owner |
 
 The provider payload is serialized UTF-8 Tcl dictionary data, never executable
 code. Curve Workbench schema is `gxtxt.curve_workbench.workspace` version `2.0`;
-its version-2 logical payload stays compatible with dev-055. Payloads are bounded
+its version-2 logical payload retains the published schema. Payloads are bounded
 to 16 MiB; large scientific values use managed resources. Providers register
 schema, version, ordinary validation, optional deep validation and GUI opening
 callbacks. These host callbacks and GUI opening are intentionally not bridged.
@@ -49,11 +50,13 @@ See [MANAGED_RESOURCE_API_v1](MANAGED_RESOURCE_API_v1.md) and
 [NOTE_DOCUMENT_API_v1](NOTE_DOCUMENT_API_v1.md). Genuine Python/Octave fixtures:
 `validation/dev056/bridge.py`, `bridge.m`, executed by `bridge.tcl`.
 
-## Integrated dev-065 extension
+<a id="integrated-dev-065-extension"></a>
+## Parameters and retained networks
 
 See [CORE Parameter Service](CORE_PARAMETER_SERVICE_v1.md) for automatic Workspace contexts and descriptor Workspace actions, and [Native2D Geometry API](NATIVE_2D_GEOMETRY_API_v1.md) for exact topology/reference/constraint semantics.
 
-## Lightweight provider discovery and viewer menus (dev094)
+<a id="lightweight-provider-discovery-and-viewer-menus-dev094"></a>
+## Lightweight provider discovery and viewer menus
 
 Installed modules may declare `[workspaces] ids=provider_id` and
 `[workspace.provider_id] entrypoint=api/workspace_provider.tcl`, `type`, `schema`,
@@ -81,7 +84,8 @@ portable packaging stay with the existing CORE manager and Document/Resource
 APIs. No additional registry or private project format is created.
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 
-## Compatible provider schema versions (dev094)
+<a id="compatible-provider-schema-versions-dev094"></a>
+## Compatible provider schema versions
 
 A lightweight descriptor provider may declare `accepted_versions=1.0;2.0`.
 Without it, only the existing `version` is accepted. CORE checks format/owner and
@@ -90,7 +94,8 @@ New documents use the provider's current version. Curve Fit advertises existing
 v1/v2 compatibility; its authoritative restore suppresses autosave until complete,
 and a subsequent save promotes a v1 document to v2 on the same ID.
 
-## Shared OS title projection (dev096)
+<a id="shared-os-title-projection-dev096"></a>
+## Shared OS title projection
 
 `sessionWorkspaceViewerTitle window base_title current_callback ?draft_callback?`
 subscribes a Viewer window to the existing Workspace GUI lifecycle. The current
@@ -102,3 +107,27 @@ callbacks and widget paths only; it does not change Document identity, revision,
 generation or scientific contents. `sessionWorkspaceViewerTitlesRefresh` supports
 immediate host updates during a local transition; normal owner mutations use the
 existing idle notification. No provider-specific CORE branches are added.
+
+The Managed Resource API supports typed numeric writes. Scientific
+providers can retain large result arrays in their own Workspace payload through
+`MANAGED_RESOURCE_API_v1/write_numeric`, then read bounded typed pages after the
+producing Job exits. Document identity/generation and portable-package resource
+collection are unchanged; the provider retains the returned reference explicitly.
+
+
+Resource rebinding on package import preserves every untouched subtree
+exactly. Parsing a scientific label, formula or statistical receipt as Tcl data
+does not authorize reserialization. Only resource references and their containing
+structures change when ownership is assigned to the imported Document. This
+preserves CORE interpretation validation and frozen model-state hashes.
+
+`::GX::managedResourceCopyTree document payload` uses the same recursive collector
+and remapper as portable Workspaces. It copies each content hash once through
+managed bounded readers/writers, verifies unchanged bytes and preserves untouched
+text exactly. The caller commits the returned payload; uncommitted copies remain
+collectible managed resources. The existing owner and its payload are unchanged.
+
+The Script binding uses `sessionWorkspaceResourceCopyTreeUtf8` to encode the
+result before it crosses Tcl/Python. This preserves original text even when Tcl
+also caches a list representation; Python tuple conversion must not normalize
+scientific text. The public Script result is an ordinary Unicode string.

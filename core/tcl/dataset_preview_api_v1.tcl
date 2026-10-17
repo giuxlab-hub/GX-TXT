@@ -190,8 +190,7 @@ proc ::GX::datasetPreviewResolveViewer {mediaType format contract path} {
         return [dict create class $class mode viewer module_id viewer.spectral_library viewer_id spectral_library]
     }
     if {$class eq "mesh" && [moduleField viewer.engine_3d descriptor ""] ne "" && [moduleIsEnabled viewer.engine_3d]} {
-        set descriptor [moduleField viewer.engine_3d descriptor ""]
-        if {[file isfile [file join [file dirname $descriptor] bin libgx3de_viewer_tcl.so]]} {
+        if {[file isfile [file join $::GX::scriptDir core native3d bin libgx3de_viewer_tcl.so]]} {
             return [dict create class $class mode viewer module_id viewer.engine_3d viewer_id engine_3d]
         }
     }

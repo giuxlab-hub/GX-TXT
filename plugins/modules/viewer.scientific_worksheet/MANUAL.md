@@ -1,4 +1,4 @@
-# Scientific Worksheet 1.1.1 — User guide
+# Scientific Worksheet 1.2.0 — User guide
 
 Scientific Worksheet is a saved calculation workbook inside a GX-TXT Session. It combines typed cells, scientific formulas, public mathematical operations, canonical Dataset snapshots, and Plot Dataset output. A bound Dataset is read into the workbook with its source identity; editing Worksheet cells never changes the source Dataset.
 
@@ -12,6 +12,19 @@ Scientific Worksheet is a saved calculation workbook inside a GX-TXT Session. It
 The upper controls are grouped by purpose: **Workbook** for Save/Open, **Data** for binding and table preparation, **Analyze** for functions and Plot Dataset, **Edit** for cell actions, and **Calculate** for mode and recalculation scope. On a narrow window, Analyze and Calculate move to their own row. The action names and commands are the same in either layout.
 
 ## Read and edit the grid
+
+The selection status summarizes at most 5,000 cells using the public Numeric
+provider and CORE statistical interpretation. It includes finite scalar numbers,
+reports their count, and omits text, errors and nonfinite/nonscalar values.
+Mixed units require explicit conversion before aggregation; missing units stay
+undeclared. Empty or oversized selections show an explanation. Calculation keeps
+the interface responsive, and edits or reopened windows cannot receive an older
+selection's result. Identical selections reuse the captured result.
+
+Automatic calculation uses the supplied workbook's values, including when two
+in-memory copies share the same document ID or revision. Changing any sheet
+invalidates dependent cached results for that workbook. Manual mode continues
+to retain calculated values until the requested recalculation action.
 
 Column letters and row numbers identify cells such as **B4**. The active cell is shown in blue, and its full stored value or formula appears beside **fx**. A pale row highlight helps locate the active cell. Fine gridlines separate cells, including empty cells. Named columns and units appear in column headings.
 
@@ -43,6 +56,45 @@ References can be relative (A1), fixed ($A$1), or mixed (A$1, $A1). Copy and Fil
 
 Scalar results occupy one cell. A vector spills downward and a matrix spills across rows and columns. A blocked destination reports #SPILL! without overwriting an occupied cell. Blank, boolean, text, numeric, missing, Dataset-bound, and derived cells remain distinct.
 
+Statistical scalar formulas (mean, median, extrema, sum, population/sample
+variance and standard deviation, RMS, quantile, covariance, correlation and MAD)
+retain the shared CORE interpretation of the Numeric result. For example,
+sample variance of voltage has unit V²; a single observation has an explicit
+undefined variance. **Inspect Cell** displays its meaning and reason. Units
+must agree within an aggregated vector or range, including undeclared units.
+Arithmetic, cell references and spills retain the statistical inputs and source
+Dataset/Variable identities. The inspector distinguishes those inputs from the
+cell's final transformed value. Publication preserves the captured interpretation
+and links it to output cells without repeating the numerical calculation.
+
+Structured `field(numeric.statistics(B1:B10),"variance_sample")` and the
+corresponding guided operation retain the same interpretation. Quantile vectors
+keep their probability order; parameter uncertainty vectors keep each parameter's
+own unit. Guided output stores its captured interpretation once with the saved
+operation. Save/Open and publication reuse it; explicit operation recalculation
+uses the current inputs. A manual cell edit replaces that cell's statistical claim.
+Undefined or unavailable output remains explained by the captured reason.
+
+PCA component summaries retain ordered component identities in one compact CORE
+table; both formulas and guided outputs preserve the selected component through
+spills, Save/Open and publication. A zero spectrum has undefined explained ratios,
+shown as `NaN`; inspect the cell for the reason. Propagated uncertainty vectors and
+covariance matrices retain positional output identities. Their physical output
+units stay `unspecified` when the Worksheet inputs do not declare them; the
+Jacobian's unit is not sufficient to identify heterogeneous output units.
+
+Dataset statistics, weighted summaries and polynomial fits retain their recorded
+Variable units and source lineage even when the operation uses Dataset IDs
+instead of imported cells. Named Selections are resolved before execution;
+publication retains their ID with the captured calculation. The shared typed
+model path also applies named Selections to nonlinear fits.
+
+Foundation and remaining explicit-model/unmapped output paths
+are still being migrated during dev097 development; this coverage is not a claim
+of complete Worksheet statistical acceptance. Existing arithmetic may leave a
+derived unit undeclared. Inference that requires undeclared assumptions remains
+unavailable, even when a numerical provider returns a candidate value.
+
 **Calculate → Mode: automatic/manual** changes the calculation mode. Automatic recalculates after edits. Manual leaves cached results until **Selection**, **Sheet**, or **Workbook** recalculation is selected. Guided operation definitions retain their inputs, options, result field, and destination for recalculation. The calculation mode is saved with the workbook.
 
 The formula parser accepts only its documented data grammar. It does not evaluate Tcl, Octave, Python, shell commands, callbacks, or macros. The vector, matrix, complex, record, empty, and field helpers construct data-only operands and inspect structured scientific results.
@@ -62,6 +114,13 @@ The import reads public Table Stream chunks and is limited to **20,000 rows per 
 Choose **Analyze → Functions…**. Search by operation name or subject, browse categories, and select an operation. The lower pane shows its public provider, signature, argument information, shape, units, result fields, Worksheet example, and whether it is a formula or guided operation. The visible result count updates as you search.
 
 For a formula-safe operation, select **Insert into formula** and supply its arguments in the formula bar. For a guided operation, select **Apply…**. Enter cells, ranges, literals, options, or a provider-owned declarative model as requested. **Preview fields** evaluates the operation and lists available result fields. Choose a field and an output cell, then select **Apply to cells**. A vector or matrix field occupies a destination range, with collision checks. The Worksheet calls public Numeric, Signal, RF Network, or Magnetics providers; it implements no new mathematics.
+
+For statistical operations with captured interpretation, repeated **Preview** and
+**Apply** reuse the same result while the workbook and inputs are unchanged.
+Editing either requires a fresh calculation. A Session change requires reopening
+the dialog; a closed or replaced dialog cannot receive an earlier result. Closing
+the dialog releases its preview. These guards do not change the saved operation's
+explicit recalculation command.
 
 The Numeric foundation dispatcher and configure_fft_threads process setting are not cell calculations. Individual foundation actions are listed separately. Callback mathematics are available only through provider-owned safe declarative models. A full operation inventory appears in Task 005's WORKSHEET_MATH_OPERATION_INVENTORY.tsv.
 
@@ -109,3 +168,206 @@ Open copied uvvis_mxene_quantitative_analysis. Bind mxene.concentration.family v
 - [Guided statistics dialog](docs/images/worksheet_guided_statistics.png)
 - [Mixed text and numeric source](docs/images/worksheet_mixed_text_numeric.png)
 - [Real Plot Dataset preview](docs/images/worksheet_real_plot.png)
+
+## Integrated spectral powers and Welch summaries (dev097)
+
+`numeric.power_level` expects already integrated, nonnegative spectral band
+powers. Declare their actual column unit (for example `V^2`). The RMS reference
+is a numeric magnitude in the derived RMS unit (`V` in this example). CORE keeps
+power, RMS and dB meanings separate, and explains the undefined finite level at
+zero power in the cell inspector. This function does not integrate a PSD or
+establish sampling uncertainty. The captured result does not invent PSD provenance.
+
+Ranges are vectors. Use `matrix(A1:B2,2,2)` for a rectangular input; values follow
+Workbook row order. Guided and formula power fields preserve this shape and
+record input row/column identities. Saved guided operations retain their CORE table
+and undefined states through reopen and publication without repeating the calculation.
+Formulas retain their established automatic or explicit recalculation behavior.
+
+`numeric.welch_aggregate` takes summed normalized one-sided PSD and amplitude
+vectors plus `window_count`, `frequency_step_hz` and `enbw_sum_hz`. The first bin
+is DC. Declare both input units; incompatible PSD/amplitude units reject. CORE
+supplies the units and interpretation of the scalar aggregate fields.
+
+The provider adapter now converts row-ordered real and complex Workbook matrices
+to the public column-major transport convention. This fixes transposed/misplaced
+values for nonsymmetric matrices. Existing saved derived values are preserved;
+explicit recalculation uses the corrected order. Scientific source data and
+historical releases are not rewritten.
+
+### Matrix summaries (dev097)
+
+Guided `numeric.matrix_statistics` and `numeric.reduce_summary` preserve the
+actual output orientation. Dimension 1 yields a row; dimension 2 yields a column.
+Their shared input count is one scalar. Formula `field` results expose the whole
+array at the anchor and scalar components in the adjacent spill cells. Source
+units, squared variance units and undefined singleton sample spread come from
+CORE; saved guided results and Dataset metadata retain those receipts. The cell
+inspector explains unavailable values. Signal `statistical_contract` describes
+an API and is excluded from Worksheet calculations.
+
+### Signal summaries and physical units (dev097)
+
+Signal basic quality, supplied-noise SNR, coherent harmonic/spectrum quality,
+correlation peaks/delays, event periods, pulse metrics and window gains use the
+public Signal contract and shared CORE interpretation. Formula `field` and guided
+operations retain that meaning through cell inspection, save/open and Dataset
+publication. A missing correlation sample rate exposes delay in seconds as
+unavailable; it does not manufacture a finite time. Capturing a result does not
+run the estimator again.
+
+`complex(real, imaginary)` requires matching physical units and preserves them.
+SNR requires matching signal/noise units. Correlation permits different units and
+uses the CORE product or dimensionless normalization. Event and pulse time
+coordinates must declare `s`; use explicit unit conversion for `ms`. Supplied
+threshold/hysteresis units must match the measured signal. Sample-rate and
+fundamental-frequency parameters accept bare values in their documented Hz unit
+or values explicitly labelled Hz; convert kHz first. Window coefficients are
+dimensionless. Undeclared signal units remain explicitly unspecified in CORE.
+
+Four remaining foundation-statistics contracts remain development work.
+Raw fields outside the captured CORE mapping
+retain their existing behavior; a contributor receipt does not relabel them as
+an interpreted statistical quantity.
+
+### Captured spectral rows (dev097)
+
+Periodogram, Welch PSD, amplitude spectral density, cross spectrum, coherence,
+and H1/H2 frequency responses retain per-frequency CORE meaning and physical units.
+A saved Worksheet captures the full result once in binary columns owned by its
+existing Document. Unsaved Workbooks support compact results up to 8192 rows;
+save the Workbook before requesting a larger spectrum.
+
+Choose **First result row** (starting at 1) and **Number of rows** in the guided
+dialog to select a bounded result window. A blank count selects the whole field,
+subject to the Worksheet's 20000-cell spill limit. Formula
+`field(result,"imag",16385,3)` selects three rows starting at result row 16385.
+The existing two-argument `field` form selects the whole field. Shared scalar
+facts such as sample rate remain scalars. The inspector reports original result
+row identities, units and unavailable-value reasons from CORE.
+
+The public Tcl call is `applyOperation book operation inputs options destination
+field ?model? ?outputWindow?`. Its optional output window is
+`{start ZERO_BASED_OFFSET count ROW_COUNT}`; persisted operations keep that window
+beside the unchanged canonical field identifier. Existing calls retain their defaults.
+Windows apply to captured statistical vector fields and accept 1–20000 rows.
+
+Unchanged Preview and Apply share one captured calculation. Editing inputs or the
+selected output during calculation prevents stale adoption. Saved guided results
+reopen without an estimator call; published selected values carry the full captured
+binding as provenance. Formulas recalculate normally and save their latest resource
+references as provenance. Resource reads use the public CORE owner and bounded
+pages; presentation caches clear on reopen and recalculation.
+
+### Accumulated summaries (dev097)
+
+A scalar result from `numeric.reduce_summary` or `numeric.reduce_accumulate` can
+be passed as the first accumulation operand. For example,
+`field(numeric.reduce_accumulate(numeric.reduce_summary(A1:A2),A3:A4),"mean")`
+combines two blocks through the public Numeric owner. The guided dialog accepts
+the same source expression or a reference to a cell holding the summary result.
+`empty()` initializes a state. Explicit records need dimensionless `count` and
+`sum`, `min`, `max` in the new observations' physical unit. Captured state facts,
+identity and units are checked before calling Numeric. A non-scalar axis summary
+cannot silently become one scalar state. Convert observations before summarizing.
+Both source and accumulated receipts survive guided save/open and publication.
+
+### Foundation location estimates (dev097)
+
+Guided `numeric.foundation.statistics.confidence_interval` and
+`numeric.foundation.statistics.robust_location` retain CORE units and meaning.
+The former accepts `alpha`; the latter accepts `huber_constant`. In formulas,
+options are the fourth operand, after explicit `empty()` placeholders, for
+example `field(numeric.foundation.statistics.confidence_interval(A1:A10,
+empty(),empty(),record("alpha",0.1)),"lower")`. The inspector explains singleton
+undefined confidence limits and distinguishes a Huber scale from mean uncertainty.
+Captured guided results persist and publish without re-running the estimator.
+
+### Seeded foundation inference (dev097)
+
+The foundation bootstrap/permutation actions accept an explicit integer `seed`
+and `replicates` (at least 100); bootstrap also accepts `alpha`. Guided operations
+and formula option records use the same public call. Permutation samples must
+have matching physical units. Saved results retain the seed, method, source
+counts and actual conventions. CORE explains why singleton groups or degenerate
+bootstrap distributions cannot establish the requested inference. Publication
+uses those captured receipts without another randomized run.
+
+### Partial correlation and multiple testing (dev097)
+
+`numeric.foundation.statistics.partial_correlation` takes two aligned measured
+vectors and control columns. Their units may differ; the coefficient is
+dimensionless. CORE records covariance rank and distinguishes ordinary partial
+correlation from the descriptive pseudoinverse coefficient for singular inputs.
+An invalid normalization appears as unavailable numeric content with an explicit
+undefined reason in the cell inspector.
+
+`numeric.foundation.statistics.multiple_testing` accepts dimensionless p-values.
+In the guided dialog, enter a quoted method expression such as `"holm"` for the
+`method` option. `adjusted_p` spills in original input order; `family_size` is one
+shared scalar. In formulas use, for example,
+`field(numeric.foundation.statistics.multiple_testing(D1:D6,empty(),empty(),
+record("method","bh")),"adjusted_p")`. CORE retains method-specific FWER/FDR
+assumptions and hypothesis positions through guided save/open and publication.
+No second adjustment is performed during presentation or publication.
+
+### Survival curves (dev097)
+
+`numeric.foundation.statistics.survival_kaplan_meier` accepts observed coordinates
+and dimensionless event indicators (one for an event, zero for censoring). Declare
+the coordinate unit on its input column. The result includes `time`, `survival`,
+`at_risk`, `events`, `censored` and the shared observation count `n`. Coordinates
+with censoring only remain in the curve. CORE states the right-censoring and
+independence assumptions; no confidence interval is supplied.
+
+Save the Workbook to capture survival or multiplicity output in canonical binary
+Document resources. The guided result-row controls and four-argument `field`
+syntax select bounded rows using the same conventions as spectral results.
+Saved guided values reopen and publish with their full captured binding without
+another estimator call; formulas retain their normal recalculation behavior.
+Unsaved compact curves/tables retain the 8192-row limit.
+
+### Covariance diagnostics (dev097)
+
+For `numeric.foundation.statistics.covariance_diagnostics`, construct a matrix
+with observations in rows, for example `matrix(A1:B4,4,2)`. A vector input is
+one variable. Select `covariance_real` or `covariance_imaginary` for the CORE
+matrix component; `eigenvalues_real` and `eigenvalues_imaginary` expose the native
+spectrum. Original raw provider fields remain available. Explicit components
+preserve complex meaning without treating a whole complex matrix as its real part.
+
+CORE retains matrix entry identities and product units through spills, guided
+persistence and publication. Eigenvalues have squared units only for common-unit
+variables; their ordering is a spectral position, not a variable-specific variance.
+The inspector explains why a singleton has undefined sample covariance even
+though the underlying provider returns a zero placeholder. These diagnostics do
+not supply fit-parameter uncertainty or a statistical significance test.
+
+### Clustering and regression results (dev097)
+
+For `numeric.foundation.statistics.kmeans`, supply observation rows and explicit
+`seed` and `clusters` options. `centroids` is a cluster-by-feature matrix;
+`cluster_counts` and `within_ss` follow its row identities. `labels` are integer
+identifiers in original observation order, not continuous measurements. Guided
+row windows and the four-argument `field` syntax retain the original observation
+position. The inspector shows the corresponding cluster identity. The native
+provider supplies no selected-solution convergence status; requested starts do
+not establish a global optimum.
+
+The existing `robust_regression`, `logistic_regression` and `glm` actions take
+a design matrix and response as their first two operands. Include any intercept
+column explicitly. Robust residuals use the response column's physical unit.
+Logistic responses are zero/one; GLM accepts binary logit or nonnegative integer
+Poisson counts. These response columns must be dimensionless. CORE interprets
+the actual method and family, iteration count, stopping flag and coefficient
+components. Complex robust estimates retain explicit real/imaginary fields.
+Unknown coefficient units remain unspecified instead of copying response units.
+
+Select `probability` or `fitted_mean` for dimensionless response predictions,
+or `residual`, `residual_real` and `residual_imaginary` for supported robust
+residuals. Guided results save the original selected values and interpretation;
+reopening or publishing them does not fit again. Formulas retain normal
+recalculation behavior. The inspector includes CORE's definition of each scalar
+diagnostic: satisfying the numerical stopping criterion does not establish
+statistical identification, finite maximum likelihood or inferential coverage.
+These foundation routines do not provide parameter covariance or intervals.

@@ -26,6 +26,7 @@ def connect(root):
     c.execute('CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY,signature TEXT,state TEXT,created REAL,started REAL,finished REAL,pid INTEGER,cancel INTEGER DEFAULT 0,record TEXT,error TEXT DEFAULT "")')
     c.execute('CREATE UNIQUE INDEX IF NOT EXISTS active_signature ON jobs(signature) WHERE state IN ("QUEUED","PREPARING","RUNNING","FINALIZING")')
     c.execute('CREATE TABLE IF NOT EXISTS settings(id INTEGER PRIMARY KEY CHECK(id=1),value TEXT)')
+    c.execute('CREATE TABLE IF NOT EXISTS job_waits(parent_id TEXT PRIMARY KEY,child_id TEXT UNIQUE,token TEXT UNIQUE,caller_pid INTEGER,caller_start TEXT,created REAL)')
     c.execute('INSERT OR IGNORE INTO settings VALUES(1,?)',(json.dumps(dict(max_jobs=1,max_queue=64,threads=1,timeout_seconds=86400,memory_mib=4096,temp_mib=8192,max_processes=64)),))
     return c
 def policy(c):return json.loads(c.execute('SELECT value FROM settings').fetchone()[0])
@@ -63,7 +64,11 @@ def status(row):
         submission_identity(d)
     return d
 def admit(c,root,r):
+    parent=request_parent(c)
+    r.pop('parent_job_id',None)
+    if parent:r['parent_job_id']=parent['id']
     identity={k:r[k] for k in ('session','reference','source_sha256','parameters','execution_inputs')}
+    if parent:identity['parent_job_id']=parent['id']
     identity['inputs']={k:{f:v for f,v in b.items() if f not in ('label','namespace')} for k,b in r['inputs'].items()}
     signature=hashlib.sha256(json.dumps(identity,sort_keys=True,separators=(',',':')).encode()).hexdigest()
     c.execute('BEGIN IMMEDIATE')
@@ -127,6 +132,95 @@ def process_tree(pid):
 def usage(pid):
     tree={p:v for p,v in process_tree(pid).items() if v[6]!='Z'}
     return dict(rss_bytes=sum(v[3] for v in tree.values()),threads=sum(v[4] for v in tree.values()),processes=len(tree),cpu_seconds=sum(v[5] for v in tree.values()),identities={str(p):v[2] for p,v in tree.items()})
+
+def request_parent(c):
+    """Resolve an inherited Job identity only for its actual live process tree."""
+    jid=os.environ.get('GXTXT_JOB_ID','')
+    if not jid:return None
+    row=c.execute('SELECT * FROM jobs WHERE id=?',(jid,)).fetchone()
+    if row is None or row['state']!='RUNNING' or row['cancel']:
+        raise ValueError('The submitting/waiting parent Job is not running')
+    record=json.loads(row['record']);pid=row['pid'];caller=os.getppid()
+    if not pid or process_identity(pid)!=record.get('pid_start') or caller not in process_tree(pid):
+        raise ValueError('Caller does not belong to the claimed live parent Job')
+    return row
+
+def wait_begin(c,child_id):
+    parent=request_parent(c)
+    child=c.execute('SELECT * FROM jobs WHERE id=?',(child_id,)).fetchone()
+    if child is None:raise ValueError('Unknown child Job')
+    if parent is None:return dict(token='',parent_job_id='',child_job_id=child_id)
+    record=json.loads(child['record']);owner=json.loads(parent['record'])
+    if record.get('parent_job_id')!=parent['id'] or record['session']!=owner['session']:
+        raise ValueError('A parent may yield its slot only to its own same-Session child')
+    if child['state'] in TERMINAL:return dict(token='',parent_job_id=parent['id'],child_job_id=child_id)
+    caller=os.getppid();start=process_identity(caller)
+    if not start:raise ValueError('Waiting caller lifetime is unavailable')
+    c.execute('BEGIN IMMEDIATE')
+    try:
+        if c.execute('SELECT 1 FROM job_waits WHERE parent_id=?',(parent['id'],)).fetchone():
+            raise ValueError('Parent already has an active dependency wait')
+        # Bound active waiting ancestry; historical asynchronous parent records
+        # do not change canonical Job states or consume additional worker slots.
+        seen={child_id};cursor=parent['id'];depth=1
+        while True:
+            if cursor in seen:raise ValueError('Job dependency cycle refused')
+            seen.add(cursor)
+            ancestor=c.execute('SELECT parent_id FROM job_waits WHERE child_id=?',(cursor,)).fetchone()
+            if ancestor is None:break
+            depth+=1;cursor=ancestor['parent_id']
+        if depth>8:raise ValueError('At most eight active nested Job waits are supported')
+        token=uuid.uuid4().hex
+        c.execute('INSERT INTO job_waits VALUES(?,?,?,?,?,?)',(parent['id'],child_id,token,caller,start,time.time()))
+        c.execute('COMMIT')
+        return dict(token=token,parent_job_id=parent['id'],child_job_id=child_id)
+    except BaseException:
+        c.execute('ROLLBACK');raise
+
+def wait_end(c,token):
+    if not token:return dict(released=False)
+    row=c.execute('SELECT * FROM job_waits WHERE token=?',(token,)).fetchone()
+    if row is None:return dict(released=False)
+    if row['caller_pid']!=os.getppid() or row['caller_start']!=process_identity(os.getppid()):
+        raise ValueError('Dependency wait belongs to another caller lifetime')
+    child=c.execute('SELECT state FROM jobs WHERE id=?',(row['child_id'],)).fetchone()
+    if child is not None and child['state'] not in TERMINAL:
+        raise ValueError('Cancel and drain the child before ending its dependency wait')
+    c.execute('DELETE FROM job_waits WHERE token=?',(token,))
+    return dict(released=True)
+
+def dependency_maintenance(c):
+    """Cancel owned descendants on failure/cancel; retire stale wait leases."""
+    active=c.execute('SELECT * FROM jobs WHERE state IN (?,?,?,?)',ACTIVE).fetchall()
+    # Iterate to propagate through queued descendants in this same scheduler
+    # tick. Successful asynchronous submission does not cancel the child.
+    for unused in range(len(active)+1):
+        changed=False
+        for row in active:
+            parent_id=json.loads(row['record']).get('parent_job_id')
+            if not parent_id:continue
+            parent=c.execute('SELECT state,cancel FROM jobs WHERE id=?',(parent_id,)).fetchone()
+            if parent is None or parent['cancel'] or parent['state'] in ('FAILED','CANCELLED','INTERRUPTED'):
+                c.execute('UPDATE jobs SET cancel=1 WHERE id=? AND cancel=0',(row['id'],))
+                changed|=bool(c.execute('SELECT changes()').fetchone()[0])
+        if not changed:break
+    waiting={};rows=c.execute('SELECT * FROM job_waits').fetchall()
+    for row in rows:
+        parent=c.execute('SELECT state,cancel FROM jobs WHERE id=?',(row['parent_id'],)).fetchone()
+        child=c.execute('SELECT state,cancel,record FROM jobs WHERE id=?',(row['child_id'],)).fetchone()
+        live=(parent is not None and parent['state']=='RUNNING' and not parent['cancel']
+              and process_identity(row['caller_pid'])==row['caller_start'])
+        owned=child is not None and json.loads(child['record']).get('parent_job_id')==row['parent_id']
+        if live and owned and child['state'] in ACTIVE and not child['cancel']:
+            waiting[row['parent_id']]=row['child_id'];continue
+        if not live and owned and child['state'] in ACTIVE:
+            c.execute('UPDATE jobs SET cancel=1 WHERE id=?',(row['child_id'],))
+        # While cancellation drains an active child, the live parent remains
+        # asleep and continues to reserve memory, but not an execution slot.
+        if live and owned and child['state'] in ACTIVE:
+            waiting[row['parent_id']]=row['child_id'];continue
+        c.execute('DELETE FROM job_waits WHERE token=?',(row['token'],))
+    return waiting
 
 def owned_processes(r,pid):
     identities=dict(r.get('process_identities',{}))
@@ -370,6 +464,7 @@ def serve(root):
     atomic_json(root/'supervisor.json',dict(pid=os.getpid(),pid_start=process_identity(os.getpid()),started=time.time()))
     while True:
         p=policy(c)
+        dependency_maintenance(c)
         for jid,item in list(running.items()):
             try:
                 if poll_job(c,jid,item):del running[jid]
@@ -393,13 +488,14 @@ def serve(root):
             last_recovery=time.monotonic()
         for row in c.execute('SELECT * FROM jobs WHERE state="QUEUED" AND cancel=1').fetchall():
             terminal_commit(c,row['id'],json.loads(row['record']),'CANCELLED','Cancelled before execution')
-        if len(running)<p['max_jobs']:
-            rows=c.execute('SELECT * FROM jobs WHERE state="QUEUED" ORDER BY created').fetchall();rows.sort(key=lambda row:json.loads(row['record'])['session']==last_session)
+        waiting=dependency_maintenance(c)
+        if len(set(running)-set(waiting))<p['max_jobs']:
+            rows=c.execute('SELECT * FROM jobs WHERE state="QUEUED" ORDER BY created').fetchall();rows.sort(key=lambda row:(row['id'] not in waiting.values(),json.loads(row['record'])['session']==last_session))
             for row in rows:
-                if len(running)>=p['max_jobs']:break
+                if len(set(running)-set(waiting))>=p['max_jobs']:break
                 pending=json.loads(row['record'])
                 reserved=sum(item['record']['policy']['memory_mib']*1024**2 for item in running.values())
-                cpus=sum(item['record']['policy']['threads'] for item in running.values())
+                cpus=sum(item['record']['policy']['threads'] for jid,item in running.items() if jid not in waiting)
                 if reserved+pending['policy']['memory_mib']*1024**2>physical_memory()*.8 or cpus+pending['policy']['threads']>max(1,os.cpu_count() or 1):
                     pending['queue_reason']='Waiting for CPU or memory reservation budget'
                     c.execute('UPDATE jobs SET record=? WHERE id=?',(json.dumps(pending),row['id']))
@@ -436,16 +532,98 @@ def read_request():
     r=d(sys.stdin.read())
     for key in ('parameters','output','execution_inputs','environment'):r[key]=d(r.get(key,''))
     r['inputs']={k:d(v) for k,v in d(r.get('inputs','')).items()};r['command']=list(t.splitlist(r['command']));return r
+
+def presentation_request():
+    """The existing Tcl stdin protocol; bounded GUI metadata, never source/data."""
+    import tkinter
+    t=tkinter.Tcl();raw=sys.stdin.read(2097153)
+    if len(raw.encode('utf-8'))>2097152:raise ValueError('Runner view request exceeds 2 MiB')
+    parts=t.splitlist(raw)
+    if len(parts)%2 or len(set(parts[::2]))!=len(parts)//2:raise ValueError('Invalid Runner view dictionary')
+    request=dict(zip(parts[::2],parts[1::2]))
+    for key in ('hidden_ids','ids','watched_ids'):
+        import re
+        request[key]=list(t.splitlist(request.get(key,'')))
+        if len(request[key])>20000 or any(not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,191}',s) for s in request[key]):raise ValueError('Invalid Runner Job IDs')
+    return request
+
+def presentation_view(c,operation,request):
+    """Read projection from the one Job journal, with transient visibility IDs."""
+    if operation=='history_validate':
+        ids=request['ids']
+        for jid in ids:
+            row=c.execute('SELECT state FROM jobs WHERE id=?',(jid,)).fetchone()
+            if row is None:raise ValueError('Unknown Job ID: '+jid)
+            if row['state'] not in TERMINAL:raise ValueError('Only finished Jobs can be hidden: '+jid)
+        return ids
+    mode=request.get('filter','All');scope=request.get('scope','all')
+    if mode not in ('All','Active','Finished','Failed','Hidden'):raise ValueError('Invalid Runner state filter')
+    if scope!='all' and (not Path(scope).is_absolute() or '\n' in scope or '\r' in scope):raise ValueError('Invalid Runner Session scope')
+    show=int(request.get('show_hidden','0'));descending=int(request.get('descending','1'))
+    offset=int(request.get('offset','0'));limit=int(request.get('limit','500'))
+    if show not in (0,1) or descending not in (0,1) or offset<0 or not 1<=limit<=500:raise ValueError('Invalid Runner page request')
+    sorts={'created':'j.created','name':"json_extract(j.record,'$.script_name')",'reference':"json_extract(j.record,'$.reference')",
+        'language':"json_extract(j.record,'$.language')",'version':"json_extract(j.record,'$.script_version')",
+        'revision':"CAST(json_extract(j.record,'$.script_revision') AS INTEGER)",'state':'j.state',
+        'started':"COALESCE(json_extract(j.record,'$.launched_at'),j.started,j.created)",'finished':'j.finished',
+        'duration':'COALESCE(j.finished,?)-COALESCE(j.started,j.created)',
+        'session':"json_extract(j.record,'$.session')",'jobid':'j.id'}
+    sort=request.get('sort','created')
+    if sort not in sorts:raise ValueError('Invalid Runner sort')
+    c.execute('CREATE TEMP TABLE view_hidden(id TEXT PRIMARY KEY)')
+    c.executemany('INSERT OR IGNORE INTO view_hidden VALUES(?)',((jid,) for jid in request['hidden_ids']))
+    terminal="j.state IN ('COMPLETED','FAILED','CANCELLED','INTERRUPTED')"
+    hidden='(h.id IS NOT NULL AND '+terminal+')'
+    source=' FROM jobs j LEFT JOIN view_hidden h ON h.id=j.id'
+    where=[];params=[]
+    if scope!='all':where.append("json_extract(j.record,'$.session')=?");params.append(str(Path(scope).resolve()))
+    clause=lambda conditions:' WHERE '+(' AND '.join(conditions) if conditions else '1')
+    c.execute('BEGIN')
+    try:
+        total=c.execute('SELECT count(*) FROM jobs').fetchone()[0]
+        scoped=c.execute('SELECT count(*)'+source+clause(where),params).fetchone()[0]
+        hidden_count=c.execute('SELECT count(*)'+source+clause(where+[hidden]),params).fetchone()[0]
+        if mode=='Active':where.append("j.state IN ('QUEUED','PREPARING','RUNNING','FINALIZING')")
+        elif mode=='Finished':where.append(terminal)
+        elif mode=='Failed':where.append("j.state='FAILED'")
+        elif mode=='Hidden':where.append(hidden)
+        if mode!='Hidden' and not show:where.append('NOT '+hidden)
+        if operation=='history_candidates':
+            ids=[r[0] for r in c.execute('SELECT j.id'+source+clause(where+[terminal,'NOT '+hidden])+' ORDER BY j.created,j.id LIMIT 20001',params)]
+            if len(ids)>20000:raise ValueError('More than 20000 finished Jobs match; narrow the Session/state scope first')
+            return ids
+        count=c.execute('SELECT count(*)'+source+clause(where),params).fetchone()[0]
+        offset=min(offset,((count-1)//limit)*limit) if count else 0
+        order=sorts[sort]+(' DESC' if descending else ' ASC')+',j.id'
+        arguments=params+([time.time()] if sort=='duration' else [])+[limit,offset]
+        rows=c.execute('SELECT j.*,'+hidden+' AS view_hidden'+source+clause(where)+' ORDER BY '+order+' LIMIT ? OFFSET ?',arguments)
+        jobs=[]
+        for row in rows:
+            item=status(row);item['hidden']=bool(row['view_hidden']);jobs.append(item)
+        # Scientific refresh observes lifecycle independently of view filters.
+        lifecycle={r['id']:dict(r) for r in c.execute("SELECT id,state,json_extract(record,'$.session') AS session FROM jobs WHERE state IN ('QUEUED','PREPARING','RUNNING','FINALIZING')")}
+        for jid in request['watched_ids']:
+            if jid in lifecycle:continue
+            row=c.execute("SELECT id,state,json_extract(record,'$.session') AS session FROM jobs WHERE id=?",(jid,)).fetchone()
+            if row:lifecycle[jid]=dict(row)
+        return dict(jobs=jobs,lifecycle=list(lifecycle.values()),total_stored=total,total_scoped=scoped,hidden_scoped=hidden_count,matching=count,offset=offset,limit=limit)
+    finally:c.execute('ROLLBACK')
+
 def main():
     a=argparse.ArgumentParser();a.add_argument('--root',required=True);a.add_argument('operation');a.add_argument('args',nargs='*');args=a.parse_args();root=root_path(args.root)
     if args.operation=='serve':serve(root);return
     c=connect(root)
     if args.operation=='submit':result=admit(c,root,read_request());ensure(root)
     elif args.operation=='list':result=[status(r) for r in c.execute('SELECT * FROM jobs ORDER BY created DESC LIMIT 100')]
+    elif args.operation=='wait_begin':result=wait_begin(c,args.args[0]);ensure(root)
+    elif args.operation=='wait_end':result=wait_end(c,args.args[0])
+    elif args.operation in ('view_list','history_candidates','history_validate'):result=presentation_view(c,args.operation,presentation_request())
     elif args.operation in ('describe','inspect','log_read'):
         row=c.execute('SELECT * FROM jobs WHERE id=?',(args.args[0],)).fetchone()
         if not row:raise ValueError('Unknown job ID')
         result=status(row)
+        dependency=c.execute('SELECT child_id FROM job_waits WHERE parent_id=?',(row['id'],)).fetchone()
+        if dependency is not None:result['waiting_for_job']=dependency['child_id']
         if args.operation!='describe':
             from gxtxt_script_inspection import inspect_run, log_read
             if args.operation=='inspect':result=inspect_run(result['session'],result['id'],result)

@@ -280,6 +280,7 @@ proc ::GX::native3DPreviewXYZActivate {} {
 }
 proc ::GX::native3DPreviewXYZPrepare {id axes w} {
     variable ::GX::DatasetViewer::state
+    set state($w,coordinateContext) [datasetCoordinateRead $::GX::currentSession $id]
     set labels {}
     foreach axis {X Y Z} vid $axes {
         set v [datasetVariableV3ById $id $vid]
@@ -318,7 +319,9 @@ proc ::GX::native3DPreviewXYZChunk {w} {
             return
         }
         tableStreamClose $state($w,xyzStream);unset state($w,xyzStream)
-        set points $state($w,xyzPoints);set count [llength $points]
+        set state($w,xyzCanonicalPoints) $state($w,xyzPoints)
+        set presentation [native3DPreviewXYZPresentation $state($w,coordinateContext) $state($w,xyzAxes) $state($w,xyzCanonicalPoints)]
+        set points [dict get $presentation points];set count [llength $points]
         if {!$count} {error {No finite XYZ triples in the bounded display selection.}}
         set path [file join $state($w,temp) xyz.vtp]
         set f [open $path w]
@@ -333,14 +336,72 @@ proc ::GX::native3DPreviewXYZChunk {w} {
             for {set i 1} {$i<=$count} {incr i} {puts -nonewline $f "$i "}
             puts $f {</DataArray></Verts></Piece></PolyData></VTKFile>}
         } finally {close $f}
-        set layer [dict merge [native3DPreviewLayer] [dict create absolute_path $path resource_path $path sha256 [sha256File $path] kind points representation points]]
+        set layer [dict merge [native3DPreviewLayer] [dict create absolute_path $path resource_path $path sha256 [sha256File $path] kind points representation points local_transform [dict get $presentation local_transform]]]
         set state($w,compactLayers) [dict create scatter $layer]
-        set state($w,view) [dict replace [viewerSceneDefaults] background_rgb {1;1;1} lighting 0 axes_world 0 orientation_indicator_visible 1]
+        set state($w,view) [dict get $presentation view]
+        set state($w,scientificFigure) [dict get $presentation scientific_figure]
+        set state($w,presentation) [dict remove $presentation points]
+        $state($w,compactCanvas).tools.axes configure -state normal
+        set state($w,caption) [dict get $presentation caption]
         append state($w,caption) "\n$count finite points; [expr {$state($w,xyzTotal)<0?{unknown}:$state($w,xyzTotal)}] canonical rows. Display scan: first $state($w,xyzRows) rows (limit 100000); stride $state($w,xyzStride), point limit 12000. No connectivity or interpolation."
-        set state($w,xyzDisplayReceipt) [dict create dataset_id $state($w,id) variable_ids $state($w,xyzAxes) total_rows $state($w,xyzTotal) scanned_rows $state($w,xyzRows) displayed_points $count stride $state($w,xyzStride) source_rows $state($w,xyzSourceRows)]
+        dict append state($w,scientificFigure) legend " · $count pts / $state($w,xyzRows) scanned; stride $state($w,xyzStride)"
+        set state($w,xyzDisplayReceipt) [dict create dataset_id $state($w,id) variable_ids $state($w,xyzAxes) total_rows $state($w,xyzTotal) scanned_rows $state($w,xyzRows) displayed_points $count stride $state($w,xyzStride) source_rows $state($w,xyzSourceRows) coordinate_presentation [dict remove $presentation points]]
         unset state($w,xyzPoints) state($w,xyzSourceRows)
         meshDatasetWorkerStart $w
     } message]==1} {native3DPreviewFailure $w $message}
+}
+
+# A view-owned normalized frame keeps independent scientific axis magnification
+# visible. The fixed camera never refits it away; VTP values remain display-unit
+# coordinates and the retained source triples are never transformed in place.
+proc ::GX::native3DPreviewXYZPresentation {context axes canonicalPoints} {
+    if {[llength $axes]!=3||[llength [lsort -unique $axes]]!=3} {error {XYZ presentation requires three distinct Variables}}
+    if {![llength $canonicalPoints]||[llength $canonicalPoints]>12000} {error {XYZ presentation requires 1..12000 finite source triples}}
+    foreach point $canonicalPoints {
+        if {[llength $point]!=3} {error {XYZ source samples must be triples}}
+        foreach value $point {if {![string is double -strict $value]||[catch {expr {abs(double($value))<Inf}} finite]||!$finite} {error {XYZ source samples must be finite}}}
+    }
+    set columns {};set labels {};set lows {};set highs {};set ranges {};set policies {};set notices {}
+    set transform {0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1}
+    foreach index {0 1 2} axis {X Y Z} vid $axes {
+        set settings [scientificDatasetCoordinateSettings $context $vid]
+        set values [lmap p $canonicalPoints {lindex $p $index}];set shown {}
+        if {[dict exists $context variables $vid]} {
+            # Canonical Dataset readers expose HMS values in seconds. Return
+            # only the presentation buffer to the declared source frame before
+            # using the shared source-pivot coordinate policy.
+            set source [dict get $settings source]
+            if {[dict get $source value_kind] eq "elapsed_time"&&[dict get $source value_format] eq "hms"} {set values [elapsedTimeConvert $values [dict get $source unit]]}
+            for {set start 0} {$start<[llength $values]} {incr start 4096} {
+                set result [datasetCoordinateSnapshotValues $context $vid [lrange $values $start [expr {$start+4095}]] {mode canonical}]
+                lappend shown {*}[dict get $result values]
+            }
+        } else {set shown $values}
+        set sorted [lsort -real $shown];set lo [lindex $sorted 0];set hi [lindex $sorted end]
+        set pad [expr {$lo==$hi?max(1.0,abs($lo)*.05):($hi-$lo)*.05}]
+        set reference [list [expr {$lo-$pad}] [expr {$hi+$pad}]];set displayed $reference
+        if {[dict get $settings view_factor]!=1} {
+            set sourceRange [lsort -real [dict get [datasetCoordinateSnapshotValues $context $vid $reference {direction inverse}] values]]
+            set range [datasetCoordinateSnapshotViewRange $context $vid $sourceRange]
+            set displayed [lsort -real [dict get [datasetCoordinateSnapshotValues $context $vid [dict get $range canonical_range]] values]]
+        } else {set range [dict create view_factor 1 view_pivot [dict get $settings view_pivot]]}
+        lassign $displayed lo hi
+        if {[catch {expr {$lo<$hi&&abs($lo)<Inf&&abs($hi)<Inf&&abs($hi-$lo)<Inf}} valid]||!$valid} {error {XYZ coordinate policy collapses or overflows the display range}}
+        set width [expr {$hi-$lo}];set scale [expr {1.0/$width}];set offset [expr {-($lo/$width+.5)}]
+        if {$scale==0||abs($scale)>=Inf||abs($offset)>=Inf} {error {XYZ coordinate frame is not representable}}
+        lset transform [expr {$index*5}] $scale;lset transform [expr {12+$index}] $offset
+        lappend columns $shown;lappend lows $lo;lappend highs $hi
+        set unit [dict get $settings display_unit];set source [dict get $settings source]
+        lappend labels "$vid ([expr {$unit eq {}?{undeclared}:$unit}])"
+        dict set policies $vid $settings
+        lappend ranges [dict merge $range [dict create variable_id $vid reference_display_range $reference display_range $displayed]]
+        lappend notices "$axis×[format %.6g [dict get $settings view_factor]] @[format %.6g [dict get $settings view_pivot]] [dict get $source unit]"
+    }
+    set points {};foreach x [lindex $columns 0] y [lindex $columns 1] z [lindex $columns 2] {lappend points [list $x $y $z]}
+    set notice "[join $notices { · }]; calibration unapplied"
+    set view [dict replace [viewerSceneDefaults] background_rgb {1;1;1} background_bottom_rgb {1;1;1} background_gradient 0 lighting 0 axes_world 0 orientation_indicator_visible 1 camera_position {2;2;2} camera_target {0;0;0} camera_up {0;0;1} projection orthographic orthographic_height 2 near_clip .001 far_clip 100 clip_box {-.5;-.5;-.5;.5;.5;.5}]
+    set figure [dict create axes_grid_visible 1 colorbar_visible 0 bounds_min {-.5;-.5;-.5} bounds_max {.5;.5;.5} axis_min [join $lows {;}] axis_max [join $highs {;}] x_label [lindex $labels 0] y_label [lindex $labels 1] z_label [lindex $labels 2] title "[dict get $context dataset_id] — XYZ scatter" legend $notice scalar_label {}]
+    return [dict create schema gxtxt.xyz_coordinate_presentation.v1 context $context variable_ids $axes points $points local_transform [join $transform {;}] view $view scientific_figure $figure ranges $ranges coordinate_policies $policies calibration_applied 0 source_values_modified 0 caption "[dict get $figure title]\n[join $labels { · }]\n$notice"]
 }
 
 # Same shared host/worker/source; an enlarged viewport never prepares another scene.

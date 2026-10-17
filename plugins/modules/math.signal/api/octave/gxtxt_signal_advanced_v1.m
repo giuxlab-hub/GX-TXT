@@ -106,7 +106,8 @@ function out=generate_action(action,time,b,c,opts)
       unwind_protect_cleanup,rng(previous);end_unwind_protect
       if(strcmp(action,'colored_noise'))
         exponent=option(opts,'spectral_exponent',1);n=numel(y);f=(0:n-1)';f=min(f,n-f);f(1)=1;
-        y=real(ifft(fft(y)./(f.^(exponent/2))));y=y/std(y);
+        y=real(ifft(fft(y)./(f.^(exponent/2))));
+        scale=gxtxt_numeric_v1('array_reduce','std_sample',y);y=y/scale.values;
       endif
       y=amplitude*y;
     case 'am'

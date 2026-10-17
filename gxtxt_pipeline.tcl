@@ -109,7 +109,7 @@
 # Full release history: CHANGELOG.md
 
 namespace eval ::GX {
-    variable version "0.9.8.10-dev-096"
+    variable version "0.9.8.10-dev-097"
     variable scriptDir [file dirname [file normalize [info script]]]
     variable cfg
     variable ch
@@ -235,6 +235,7 @@ source [file join $::GX::scriptDir app gui scientific_text_editor.tcl]
 # Short labels keep both Plots toolbar rows horizontal; full actions remain
 source [file join $::GX::scriptDir app graph_toolbar_tips.tcl]
 source [file join $::GX::scriptDir app dataset_page_actions.tcl]
+source [file join $::GX::scriptDir app dataset_coordinate_surface.tcl]
 source [file join $::GX::scriptDir app gui dataset_browser.tcl]
 source [file join $::GX::scriptDir app gui importer_builder_dialog.tcl]
 source [file join $::GX::scriptDir app gui script_library_dialog.tcl]
@@ -261,6 +262,7 @@ source [file join $::GX::scriptDir core tcl interactive_document_resource_api_v1
 source [file join $::GX::scriptDir core tcl session_workspace_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl file_publication_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_gui_host_v1.tcl]
+source [file join $::GX::scriptDir core tcl statistical_result_semantics_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_geometry_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_organization_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_section_comparison_v1.tcl]
@@ -309,6 +311,7 @@ proc ::GX::main {} {
 }
 
 source [file join $::GX::scriptDir core tcl dataset_viewer_api_v1.tcl]
+source [file join $::GX::scriptDir core tcl scientific_dataset_coordinates_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_dataset_filters_v1.tcl]
 source [file join $::GX::scriptDir core tcl dataset_scientific_profile_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_dataset_series_v1.tcl]

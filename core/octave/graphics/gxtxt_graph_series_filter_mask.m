@@ -16,18 +16,23 @@ function keep=gxtxt_graph_series_filter_mask(ch,filters)
         otherwise,error('GXTXT:GraphSeries','predicate %s is invalid for text variable %s',predicate,id);
       endswitch
     else
-      values=double(gxtxt_table_chunk_numeric(ch,id));values=values(:);
+      integer=!isempty(regexp(f.dtype,'^(u?int(8|16|32|64)|bool)$','once'));
+      if(integer)
+        values=gxtxt_table_integer_values_v1(gxtxt_table_chunk_column(ch,id),f.dtype);
+        parse=@(s)gxtxt_table_integer_values_v1(s,f.dtype);
+      else values=double(gxtxt_table_chunk_numeric(ch,id));parse=@str2double;endif
+      values=values(:);
       switch(predicate)
-        case 'exact_equal',match=values==str2double(f.value);
-        case 'not_equal',match=values!=str2double(f.value);
-        case 'less_than',match=values<str2double(f.value);
-        case 'less_equal',match=values<=str2double(f.value);
-        case 'greater_than',match=values>str2double(f.value);
-        case 'greater_equal',match=values>=str2double(f.value);
-        case 'between_inclusive',match=values>=str2double(f.lower)&values<=str2double(f.upper);
+        case 'exact_equal',match=values==parse(f.value);
+        case 'not_equal',match=values!=parse(f.value);
+        case 'less_than',match=values<parse(f.value);
+        case 'less_equal',match=values<=parse(f.value);
+        case 'greater_than',match=values>parse(f.value);
+        case 'greater_equal',match=values>=parse(f.value);
+        case 'between_inclusive',match=values>=parse(f.lower)&values<=parse(f.upper);
         case 'in_set'
           match=false(ch.nrows,1);
-          for k=1:numel(f.values),match|=values==str2double(f.values{k});endfor
+          for k=1:numel(f.values),match|=values==parse(f.values{k});endfor
         case 'is_finite',match=isfinite(values);
         case 'is_nonfinite',match=!isfinite(values);
         otherwise,error('GXTXT:GraphSeries','unsupported row predicate %s',predicate);

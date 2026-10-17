@@ -1,0 +1,20 @@
+function result=implicit_branch(query,parameters,low,high,xtol,ftol,limit)
+  result=zeros(size(query));
+  for i=1:numel(query)
+    u=query(i);a=low;b=high;fa=implicit_equation(u,a,parameters);fb=implicit_equation(u,b,parameters);
+    if(!isreal([fa,fb])||any(!isfinite([fa,fb]))),error('Implicit branch has a nonfinite endpoint');endif
+    if(fa==0&&fb==0),error('Both branch endpoints match; local root is ambiguous');endif
+    if(fa==0),result(i)=a;continue;endif
+    if(fb==0),result(i)=b;continue;endif
+    if(sign(fa)==sign(fb)),error('Implicit branch has no sign-changing bracket');endif
+    valid=false;
+    for unused=1:limit
+      mid=a/2+b/2;fm=implicit_equation(u,mid,parameters);
+      if(!isreal(fm)||!isfinite(fm)),error('Implicit branch evaluation is nonfinite');endif
+      if(fm==0||abs(b-a)<=2*xtol||mid==a||mid==b),valid=abs(fm)<=ftol;break;endif
+      if(sign(fm)==sign(fa)),a=mid;fa=fm;else,b=mid;endif
+    endfor
+    if(!valid),error('Implicit branch root did not meet coordinate/equation tolerances');endif
+    result(i)=mid;
+  endfor
+endfunction

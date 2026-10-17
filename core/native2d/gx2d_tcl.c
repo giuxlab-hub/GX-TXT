@@ -380,7 +380,7 @@ static int command(ClientData data, Tcl_Interp *ip, int argc, Tcl_Obj *const arg
     op = Tcl_GetString(argv[1]);
     if (strcmp(op, "api_info") == 0) {
         if(argc!=2)return fail(ip,"Usage: core api_info");
-        Tcl_SetObjResult(ip,Tcl_NewStringObj("api_id NATIVE2D_API_v1 api_version 1 engine gx2d capabilities {stable_constituent_identity independent_part_direction truthful_composition_traversal compound_subentities retained_network_nodes network_subentity_constraints atomic_dimension_batch multi_object_semantic_selection polygon_region_selection retained_straight_path ordered_path_vertices retained_path_join_split retained_spline_tangents calibrated_reference_images scene_preview_views atomic_symmetric_construction atomic_attached_construction semantic_point_connectivity retained_component_solver graphical_dimensions driven_dimensions local_sketch_rank relationship_hit_regions retained_control_descriptors epoch_checked_references canvas_construction selection_constraint_compatibility atomic_constraint_driving native_viewport_clip defining_control_snap atomic_presentation_snapshots native_selection_sets native_layer_lifecycle native_identity_attributes parent_linked_fragments topology_epoch structured_scientific_measurements exact_supported_projection extended_constraint_lifecycle constraint_diagnostics native_constraint_enforcement rectangular_circular_series retained_sketch exact_sketch_evaluation paged_sketch_sampling coordinate_rescale exact_vertex_snap gizmo_snap_translation gizmo rotation_transaction pivot flat_group_lifecycle affine_objects copy_reflect endpoint_frame point_frame point_distance bridge_c0_c1 bounded_spline_range native_spline_object selection_replace selection_state selection_paged device_point_hit bounded_compare drag_active aspect requested_view direction_marker grid background polar display_sample numeric_pack numeric_gaps binary_points bounded_points object_sample render_lod curve_render object_style fit_selected}",-1));
+        Tcl_SetObjResult(ip,Tcl_NewStringObj("api_id NATIVE2D_API_v1 api_version 1 engine gx2d capabilities {stable_constituent_identity independent_part_direction truthful_composition_traversal compound_subentities retained_network_nodes network_subentity_constraints atomic_dimension_batch multi_object_semantic_selection polygon_region_selection retained_straight_path ordered_path_vertices retained_path_join_split retained_spline_tangents calibrated_reference_images scene_preview_views atomic_symmetric_construction atomic_attached_construction semantic_point_connectivity retained_component_solver graphical_dimensions driven_dimensions local_sketch_rank relationship_hit_regions retained_control_descriptors epoch_checked_references canvas_construction selection_constraint_compatibility atomic_constraint_driving native_viewport_clip defining_control_snap atomic_presentation_snapshots native_selection_sets native_layer_lifecycle native_identity_attributes parent_linked_fragments topology_epoch structured_scientific_measurements exact_supported_projection extended_constraint_lifecycle constraint_diagnostics native_constraint_enforcement rectangular_circular_series retained_sketch exact_sketch_evaluation paged_sketch_sampling coordinate_rescale exact_vertex_snap gizmo_snap_translation gizmo rotation_transaction pivot flat_group_lifecycle affine_objects copy_reflect endpoint_frame point_frame point_distance bridge_c0_c1 bounded_spline_range native_spline_object selection_replace selection_state selection_paged device_point_hit bounded_compare drag_active aspect requested_view direction_marker grid background polar display_sample numeric_pack numeric_companions numeric_row_audit numeric_gaps binary_points bounded_points object_sample render_lod curve_render object_style fit_selected}",-1));
         return TCL_OK;
     }
     if (strcmp(op, "scene") == 0) {
@@ -424,11 +424,20 @@ static int command(ClientData data, Tcl_Interp *ip, int argc, Tcl_Obj *const arg
         reply=Tcl_NewDictObj();Tcl_DictObjPut(ip,reply,Tcl_NewStringObj("theta_r",-1),Tcl_NewByteArrayObj(packed,(int)(count*16)));Tcl_DictObjPut(ip,reply,Tcl_NewStringObj("angle_defined",-1),Tcl_NewByteArrayObj(defined,(int)count));Tcl_SetObjResult(ip,reply);
         free(polar);free(packed);free(defined);return TCL_OK;
     }
-    if(strcmp(op,"numeric_pack")==0){numeric_column x,y,mapping,parameter;gx2d_point *points;uint64_t *rows=NULL;size_t base,finite=0;unsigned char *xy,*packed_rows,*packed_parameter=NULL;gx2d_status code;
-        if((argc!=7&&argc!=8)||index_arg(ip,argv[6],&base)!=TCL_OK)return fail(ip,"Usage: core numeric_pack scene x_column y_column source_rows_or_empty row_base ?parameter_column?");
+    if(strcmp(op,"numeric_pack")==0||strcmp(op,"numeric_pack_columns")==0){numeric_column x,y,mapping,parameter,companions[8];Tcl_Obj *companion_names[8],*companion_result=NULL;int companion_mode=strcmp(op,"numeric_pack_columns")==0,companion_count=0,has_parameter=(!companion_mode&&argc==8);gx2d_point *points;uint64_t *rows=NULL;size_t base,finite=0;unsigned char *xy,*packed_rows,*packed_parameter=NULL;gx2d_status code;
+        if((companion_mode?argc!=8:(argc!=7&&argc!=8))||index_arg(ip,argv[6],&base)!=TCL_OK)return fail(ip,"Usage: core numeric_pack scene x_column y_column source_rows_or_empty row_base ?parameter_column?; numeric_pack_columns requires a companion dictionary");
         if(numeric_column_read(ip,argv[3],&x)!=TCL_OK||numeric_column_read(ip,argv[4],&y)!=TCL_OK)return TCL_ERROR;
         if(x.count!=y.count)return fail(ip,"Numeric XY columns have different row counts");
-        if(argc==8&&(numeric_column_read(ip,argv[7],&parameter)!=TCL_OK||parameter.count!=x.count))return fail(ip,"Numeric parameter column must align with XY rows");
+        if(has_parameter&&(numeric_column_read(ip,argv[7],&parameter)!=TCL_OK||parameter.count!=x.count))return fail(ip,"Numeric parameter column must align with XY rows");
+        if(companion_mode){Tcl_DictSearch search;Tcl_Obj *key,*value;int done,n;
+            if(Tcl_DictObjSize(ip,argv[7],&n)!=TCL_OK||n<1||n>8)return fail(ip,"Numeric packing requires one to eight named companion columns");
+            if(Tcl_DictObjFirst(ip,argv[7],&search,&key,&value,&done)!=TCL_OK)return TCL_ERROR;
+            while(!done){
+                if(Tcl_GetCharLength(key)<1||Tcl_GetCharLength(key)>128||numeric_column_read(ip,value,&companions[companion_count])!=TCL_OK||companions[companion_count].count!=x.count){Tcl_DictObjDone(&search);return fail(ip,"Numeric companion identity/shape must match the XY rows");}
+                companion_names[companion_count++]=key;Tcl_DictObjNext(&search,&key,&value,&done);
+            }
+            Tcl_DictObjDone(&search);
+        }
         if(Tcl_GetCharLength(argv[5])){
             if(numeric_column_read(ip,argv[5],&mapping)!=TCL_OK)return TCL_ERROR;
             if(mapping.count!=x.count)return fail(ip,"Numeric source-row mapping has a different row count");
@@ -439,28 +448,52 @@ static int command(ClientData data, Tcl_Interp *ip, int argc, Tcl_Obj *const arg
         if(!points||!xy||!packed_rows){free(points);free(xy);free(packed_rows);free(rows);return fail(ip,"Out of memory");}
         for(i=0;i<x.count;++i)if(numeric_column_value(ip,&x,i,&points[i].x)!=TCL_OK||numeric_column_value(ip,&y,i,&points[i].y)!=TCL_OK){free(points);free(xy);free(packed_rows);free(rows);return TCL_ERROR;}
         code=gx2d_numeric_pack(points,rows,base,x.count,xy,x.count*16,packed_rows,x.count*8,&finite);
-        free(points);free(rows);
-        if(code!=GX2D_OK){free(xy);free(packed_rows);return status(ip,code);}
-        if(argc==8){size_t k=0,j;packed_parameter=(unsigned char *)malloc(finite?finite*8:1);
-            if(!packed_parameter){free(xy);free(packed_rows);return fail(ip,"Out of memory");}
+        free(points);
+        if(code!=GX2D_OK){free(xy);free(packed_rows);free(rows);return status(ip,code);}
+        if(has_parameter){size_t k=0,j;packed_parameter=(unsigned char *)malloc(finite?finite*8:1);
+            if(!packed_parameter){free(xy);free(packed_rows);free(rows);return fail(ip,"Out of memory");}
             for(i=0;i<x.count;++i){double px,py,p;uint64_t bits;
                 numeric_column_value(ip,&x,i,&px);numeric_column_value(ip,&y,i,&py);
                 if(!isfinite(px)||!isfinite(py))continue;
-                if(numeric_column_value(ip,&parameter,i,&p)!=TCL_OK||!isfinite(p)){free(xy);free(packed_rows);free(packed_parameter);return fail(ip,"Numeric parameters must be finite for every finite XY pair");}
+                if(numeric_column_value(ip,&parameter,i,&p)!=TCL_OK||!isfinite(p)){free(xy);free(packed_rows);free(rows);free(packed_parameter);return fail(ip,"Numeric parameters must be finite for every finite XY pair");}
                 memcpy(&bits,&p,8);for(j=0;j<8;++j)packed_parameter[8*k+j]=(unsigned char)(bits>>(8*j));++k;
             }
         }
+        if(companion_mode){int c;companion_result=Tcl_NewDictObj();Tcl_IncrRefCount(companion_result);
+            for(c=0;c<companion_count;++c){size_t k=0,j;unsigned char *bytes=(unsigned char *)malloc(finite?finite*8:1);
+                if(!bytes){free(xy);free(packed_rows);free(rows);Tcl_DecrRefCount(companion_result);return fail(ip,"Out of memory");}
+                for(i=0;i<x.count;++i){double px,py,v;uint64_t bits;
+                    numeric_column_value(ip,&x,i,&px);numeric_column_value(ip,&y,i,&py);
+                    if(!isfinite(px)||!isfinite(py))continue;
+                    /* Missing companion values stay aligned for consumer policy. */
+                    if(numeric_column_value(ip,&companions[c],i,&v)!=TCL_OK){free(bytes);free(xy);free(packed_rows);free(rows);Tcl_DecrRefCount(companion_result);return TCL_ERROR;}
+                    memcpy(&bits,&v,8);for(j=0;j<8;++j)bytes[8*k+j]=(unsigned char)(bits>>(8*j));++k;
+                }
+                Tcl_DictObjPut(ip,companion_result,companion_names[c],Tcl_NewByteArrayObj(bytes,(int)(finite*8)));free(bytes);
+            }
+        }
         result=Tcl_NewDictObj();Tcl_DictObjPut(ip,result,Tcl_NewStringObj("row_count",-1),Tcl_NewWideIntObj((Tcl_WideInt)finite));
+        if(companion_result){Tcl_DictObjPut(ip,result,Tcl_NewStringObj("companions",-1),companion_result);Tcl_DecrRefCount(companion_result);}
         Tcl_DictObjPut(ip,result,Tcl_NewStringObj("xy",-1),Tcl_NewByteArrayObj(xy,(int)(finite*16)));
         Tcl_DictObjPut(ip,result,Tcl_NewStringObj("source_rows",-1),Tcl_NewByteArrayObj(packed_rows,(int)(finite*8)));
         if(packed_parameter){Tcl_DictObjPut(ip,result,Tcl_NewStringObj("parameter",-1),Tcl_NewByteArrayObj(packed_parameter,(int)(finite*8)));free(packed_parameter);}
-        {unsigned char *gaps=(unsigned char *)calloc(finite?finite:1,1);size_t k=0;int previous=1;
-         if(!gaps){free(xy);free(packed_rows);return fail(ip,"Out of memory");}
+        {unsigned char *gaps=(unsigned char *)calloc(finite?finite:1,1);size_t k=0,missing=0;int previous=1;
+         Tcl_Obj *input_rows,*nonfinite_rows;unsigned char *input_bytes,*nonfinite_bytes;
+         if(!gaps){free(xy);free(packed_rows);free(rows);return fail(ip,"Out of memory");}
+         input_rows=Tcl_NewByteArrayObj(NULL,(int)(x.count*8));nonfinite_rows=Tcl_NewByteArrayObj(NULL,(int)((x.count-finite)*8));
+         Tcl_DictObjPut(ip,result,Tcl_NewStringObj("input_source_rows",-1),input_rows);
+         Tcl_DictObjPut(ip,result,Tcl_NewStringObj("nonfinite_source_rows",-1),nonfinite_rows);
+         input_bytes=Tcl_GetByteArrayFromObj(input_rows,NULL);nonfinite_bytes=Tcl_GetByteArrayFromObj(nonfinite_rows,NULL);
          /* Re-read the bounded input to preserve missing-pair gap semantics. */
-         for(i=0;i<x.count;++i){double px,py;numeric_column_value(ip,&x,i,&px);numeric_column_value(ip,&y,i,&py);if(isfinite(px)&&isfinite(py)){gaps[k++]=(unsigned char)!previous;previous=1;}else previous=0;}
+         for(i=0;i<x.count;++i){double px,py;uint64_t row=rows?rows[i]:(uint64_t)base+(uint64_t)i;size_t j;
+             numeric_column_value(ip,&x,i,&px);numeric_column_value(ip,&y,i,&py);
+             for(j=0;j<8;++j)input_bytes[8*i+j]=(unsigned char)(row>>(8*j));
+             if(isfinite(px)&&isfinite(py)){gaps[k++]=(unsigned char)!previous;previous=1;}
+             else {for(j=0;j<8;++j)nonfinite_bytes[8*missing+j]=(unsigned char)(row>>(8*j));++missing;previous=0;}
+         }
          Tcl_DictObjPut(ip,result,Tcl_NewStringObj("break_before",-1),Tcl_NewByteArrayObj(gaps,(int)finite));
          Tcl_DictObjPut(ip,result,Tcl_NewStringObj("ends_finite",-1),Tcl_NewBooleanObj(previous));free(gaps);}
-        free(xy);free(packed_rows);Tcl_SetObjResult(ip,result);return TCL_OK;
+        free(xy);free(packed_rows);free(rows);Tcl_SetObjResult(ip,result);return TCL_OK;
     }
     if(strcmp(op,"sample_begin")==0){size_t total,budget,base=0;
         if(argc!=5&&argc!=6)return fail(ip,"Usage: core sample_begin scene logical_rows budget ?source_row_base?");

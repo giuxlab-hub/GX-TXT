@@ -1,7 +1,7 @@
 # GX-TXT Curve Workbench. Native2D owns planar geometry, selection and view.
 # SPDX-License-Identifier: GPL-3.0-or-later
 namespace eval ::GX::CurveWorkbench {
-    variable version 2.15.2
+    variable version 2.19.0
     variable st
     variable root [file normalize [file join [file dirname [info script]] ../../../..]]
 }
@@ -340,7 +340,7 @@ proc ::GX::CurveWorkbench::_numericEdit {w} {
     set id [_editable $w];set indices [_selected $w]
     if {[llength $indices]!=1} {error "Select exactly one point"}
     set before [_snapshotIds $w [list $id]]
-    set p [list [_finite $st($w,editX) X] [_finite $st($w,editY) Y]]
+    set p [_coordinatePoint $w $id [list [_finite $st($w,editX) X] [_finite $st($w,editY) Y]] inverse]
     ::GX::Native2D::core set_point $st($w,scene) [dict get [_record $w $id] native] [lindex $indices 0] $p
     ::GX::Native2D::core set_point $st($w,selectionScene) $st($w,selectionObject) [lindex $indices 0] $p
     _syncSamples $w $id
@@ -369,6 +369,8 @@ proc ::GX::CurveWorkbench::_selectX {w} {
     set id [_active $w]
     set lo [_finite $st($w,xMin) "X minimum"];set hi [_finite $st($w,xMax) "X maximum"]
     if {$lo>$hi} {error "X minimum exceeds maximum"}
+    lassign [_coordinateValues $w $id x [list $lo $hi] inverse] lo hi
+    if {$lo>$hi} {set swap $lo;set lo $hi;set hi $swap}
     ::GX::Native2D::core select_x $st($w,selectionScene) $st($w,selectionObject) $lo $hi replace
     _pointList $w;_draw $w
 }
@@ -550,11 +552,11 @@ proc ::GX::CurveWorkbench::_compare {w} {
     lassign [_evaluatedObject $w $reference] a temporaryA
     try {
         lassign [_evaluatedObject $w $active] b temporaryB
-        try {set result [::GX::Native2D::core compare_lod $st($w,scene) $a $b $st($w,compareMethod) 4096]} finally {if {$temporaryB} {::GX::Native2D::core delete $st($w,scene) $b}}
+        try {set result [::GX::native2DComparison $st($w,scene) $a $b $st($w,compareMethod) 4096 [_coordinateUnits [_record $w $reference]] [_coordinateUnits [_record $w $active]] [dict create producer viewer.curve_workbench reference $reference target $active evaluated_representation [_comparisonRepresentation $w $reference $active]]]} finally {if {$temporaryB} {::GX::Native2D::core delete $st($w,scene) $b}}
     } finally {if {$temporaryA} {::GX::Native2D::core delete $st($w,scene) $a}}
     set st($w,residual) $result
     _drawResidual $w
-    set st($w,status) "[string toupper $st($w,compareMethod)] residual: n=[dict get $result count], max=[format %.5g [dict get $result max_absolute]], mean=[format %.5g [dict get $result mean_absolute]], RMSE=[format %.5g [dict get $result rmse]]"
+    set st($w,status) [::GX::StatisticsV1::report [dict get $result statistics reference] {n max_abs_error mae rmse}]
     _draw $w
     return $result
 }
@@ -563,15 +565,32 @@ proc ::GX::CurveWorkbench::_metrics {w} {
     set id $st($w,active)
     if {$id eq "" || ![dict exists $st($w,curves) $id]} {set st($w,metricText) "No active curve";return}
     set activeRecord [_record $w $id]
+    _coordinateMetricPolicy $w
+    if {$st($w,metric) eq "signed_y_residual"} {
+        set st($w,metricText) {Signed Y residual: choose a reference and Compare by X. No mixed-axis physical length is defined.}
+        if {$st($w,residual) ne {}&&[dict exists $st($w,comparisonConfig) method]&&[dict get $st($w,comparisonConfig) method] eq "x"&&[dict get $st($w,comparisonConfig) target] eq $id} {
+            set st($w,metricText) "Signed Y residual: [::GX::StatisticsV1::report [dict get $st($w,residual) statistics reference] {n max_abs_error mae rmse}]"
+        }
+        return
+    }
     if {[dict get $activeRecord representation] eq "spline"} {lassign [_evaluatedObject $w $id] native temporary} else {set native [dict get $activeRecord native];set temporary 0}
-    try {set m [::GX::Native2D::core metrics $st($w,scene) $native]} finally {if {$temporary} {::GX::Native2D::core delete $st($w,scene) $native}}
+    set metric $st($w,metric)
+    try {
+        if {$metric in {length signed_area length_span_ratio}} {
+            set displayUnit [dict get [_coordinateAxis $w $id x] display_unit]
+            set m [::GX::native2DMetrics $st($w,scene) $native [_coordinateUnits $activeRecord] [dict create output_units [lrepeat 2 $displayUnit]]]
+        } else {set m [::GX::Native2D::core metrics $st($w,scene) $native]}
+    } finally {if {$temporary} {::GX::Native2D::core delete $st($w,scene) $native}}
     set metric $st($w,metric)
     if {$metric eq "signed_area" && ![dict get $m closed]} {error "Enclosed area is defined only for a connected closed curve"}
     set value [dict get $m $metric]
     set target [string trim $st($w,target)]
-    set message "[dict get [_record $w $id] name]: $metric = [format %.7g $value] · [_pointCount [_record $w $id]] exact controls/points"
+    lassign [_coordinateUnits $activeRecord] ux uy
+    set unit [expr {$metric eq "span_y"?$uy:$metric eq "length_span_ratio"?"1":$metric eq "signed_area"?"$ux^2":$ux}]
+    if {$metric in {length signed_area length_span_ratio}} {set unit [expr {$metric eq "length_span_ratio"?"1":$metric eq "signed_area"?"[dict get $m unit]^2":[dict get $m unit]}]}
+    set message "[dict get [_record $w $id] name]: $metric = [format %.7g $value] $unit (geometry coordinates) · [_pointCount [_record $w $id]] exact controls/points"
     if {$target ne ""} {append message " · target error = [format %.7g [expr {$value-[_finite $target Target]}]]"}
-    if {$st($w,residual) ne {}} {append message " · max residual [format %.5g [dict get $st($w,residual) max_absolute]] · RMSE [format %.5g [dict get $st($w,residual) rmse]]"}
+    if {$st($w,residual) ne {}} {append message " · max residual [format %.5g [::GX::StatisticsV1::scalarValue [dict get $st($w,residual) statistics reference] max_abs_error]] · RMSE [format %.5g [::GX::StatisticsV1::scalarValue [dict get $st($w,residual) statistics reference] rmse]]"}
     if {[dict get $activeRecord breaks] ne {}} {append message " · disconnected fragments; gaps excluded from length"}
     set st($w,metricText) $message
 }
@@ -621,20 +640,19 @@ proc ::GX::CurveWorkbench::publish {w datasetId {ids {}}} {
     }
     if {![llength $xs]} {error "There are no points to publish"}
     set first [_record $w [lindex $ids 0]]
-    set xUnit "";set yUnit ""
-    catch {set xUnit [dict get [::GX::datasetVariableById [dict get $first source] [dict get $first x]] unit]}
-    catch {set yUnit [dict get [::GX::datasetVariableById [dict get $first source] [dict get $first y]] unit]}
-    if {[dict exists $first working_unit]} {set xUnit [dict get $first working_unit];set yUnit $xUnit}
+    lassign [_coordinateUnits $first] xUnit yUnit
     foreach id $ids {
         if {[_coordinateUnits [_record $w $id]] ne [list $xUnit $yUnit]} {error "Selected curves have incompatible coordinate units; convert them to a common working unit before publication"}
     }
-    set compared [expr {[llength $ids]==1 && [lindex $ids 0] eq $st($w,active) && $st($w,residual) ne {}}]
+    set compared [expr {[llength $ids]==1 && $st($w,comparisonConfig) ne {} && [lindex $ids 0] eq [dict get $st($w,comparisonConfig) target] && $st($w,residual) ne {}}]
     set residualSummary [expr {$compared ? [dict remove $st($w,residual) rows] : {}}]
     set residualMethod [expr {$compared ? $st($w,compareMethod) : {}}]
     set details [dict create workspace_curve_ids $ids curves $provenance comparison_method $residualMethod residual_summary $residualSummary metric $st($w,metric) metric_target $st($w,target) external_feedback $st($w,externalFeedback)]
-    set def [dict create dataset_id [::GX::datasetPublicationV2RequestedId $datasetId curve] contract table.generic storage auto expected_rows [llength $xs] estimated_numeric_bytes [expr {32*[llength $xs]}] producer_version 2.10.0 source "Curve Workbench" provenance $details source_dataset_ids $sources source_variable_ids [lsort -unique $bindings]]
-    dict set def structured_metadata [dict create dataset.display_name "Curve Workbench: [dict get $first name]" curve_workbench.workspace_curve_ids [join $ids {;}] curve_workbench.source_dataset_ids [join $sources {;}] curve_workbench.source_variable_ids [join [lsort -unique $bindings] {;}] curve_workbench.provenance $details curve_workbench.residual_method $residualMethod curve_workbench.residual_max [expr {$compared ? [dict get $st($w,residual) max_absolute] : ""}] curve_workbench.residual_rmse [expr {$compared ? [dict get $st($w,residual) rmse] : ""}] curve_workbench.external_feedback $st($w,externalFeedback)]
+    set def [dict create dataset_id [::GX::datasetPublicationV2RequestedId $datasetId curve] contract table.generic storage auto expected_rows [llength $xs] estimated_numeric_bytes [expr {32*[llength $xs]}] producer_version [::GX::moduleField viewer.curve_workbench version] source "Curve Workbench" provenance $details source_dataset_ids $sources source_variable_ids [lsort -unique $bindings]]
+    dict set def structured_metadata [dict create dataset.display_name "Curve Workbench: [dict get $first name]" curve_workbench.workspace_curve_ids [join $ids {;}] curve_workbench.source_dataset_ids [join $sources {;}] curve_workbench.source_variable_ids [join [lsort -unique $bindings] {;}] curve_workbench.provenance $details curve_workbench.residual_method $residualMethod curve_workbench.residual_max [expr {$compared ? [::GX::StatisticsV1::scalarValue [dict get $st($w,residual) statistics reference] max_abs_error] : ""}] curve_workbench.residual_rmse [expr {$compared ? [::GX::StatisticsV1::scalarValue [dict get $st($w,residual) statistics reference] rmse] : ""}] curve_workbench.external_feedback $st($w,externalFeedback)]
     dict set def structured_metadata [dict merge [dict get $def structured_metadata] [_publicationSketchMetadata $w $ids]]
+    dict set def structured_metadata [dict merge [dict get $def structured_metadata] [_coordinatePublicationMetadata $w $ids]]
+    if {$compared} {dict set def structured_metadata [dict merge [dict get $def structured_metadata] [::GX::StatisticsV1::publicationMetadata [dict get $st($w,residual) statistics]]]}
     set plan [::GX::datasetPublicationV2Prepare [_session] viewer.curve_workbench $def]
     set writer ""
     try {
@@ -673,13 +691,14 @@ proc ::GX::CurveWorkbench::_pointList {w} {
         $tree delete [$tree children {}];set st($w,pointTableSignature) {};return
     }
     set selected [_selected $w];set index 0
-    set signature [list $st($w,active) [dict get [_record $w $st($w,active)] samples]]
+    set signature [list $st($w,active) [dict get [_record $w $st($w,active)] samples] [_coordinateKey $w $st($w,active)]]
     # Selection-only changes do not destroy/reinsert table rows, preserving
     # scrolling, keyboard range anchors and queued virtual-event consistency.
     if {$signature ne $st($w,pointTableSignature)} {
         $tree delete [$tree children {}]
         foreach p [lindex $signature 1] {
-            $tree insert {} end -id "p$index" -values [list $index [format %.8g [dict get $p x]] [format %.8g [dict get $p y]] [dict get $p row]]
+            lassign [_coordinatePoint $w $st($w,active) [list [dict get $p x] [dict get $p y]]] dx dy
+            $tree insert {} end -id "p$index" -values [list $index [format %.8g $dx] [format %.8g $dy] [dict get $p row]]
             incr index
         }
         set st($w,pointTableSignature) $signature
@@ -689,7 +708,7 @@ proc ::GX::CurveWorkbench::_pointList {w} {
     if {[llength $selected]} {$tree see "p[lindex $selected 0]"}
     if {[llength $selected]==1} {
         set p [lindex [dict get [_record $w $st($w,active)] samples] [lindex $selected 0]]
-        set st($w,editX) [dict get $p x];set st($w,editY) [dict get $p y]
+        lassign [_coordinatePoint $w $st($w,active) [list [dict get $p x] [dict get $p y]]] st($w,editX) st($w,editY)
     }
 }
 proc ::GX::CurveWorkbench::_pointTreeSelect {w} {
@@ -849,7 +868,7 @@ proc ::GX::CurveWorkbench::_gridToggle {w property} {
 }
 proc ::GX::CurveWorkbench::_gridOpen {w} {
     variable st
-    ::GX::native2DGridForm $w.grid $st($w,scene) [list ::GX::CurveWorkbench::_gridChanged $w] $w
+    ::GX::native2DGridForm $w.grid $st($w,scene) [list ::GX::CurveWorkbench::_gridChanged $w] $w [_coordinateGridPresentation $w]
 }
 proc ::GX::CurveWorkbench::_gridChanged {w} {_draw $w;_save $w}
 proc ::GX::CurveWorkbench::_referenceSelect {w} {
@@ -867,8 +886,9 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
     set c $w.right.viewport.canvas;set width [winfo width $c];set height [winfo height $c]
     if {$width<120||$height<96} return
     set view [::GX::Native2D::core view_requested $st($w,scene)]
-    if {[lindex $view 0]!=$width||[lindex $view 1]!=$height||[lindex $view 4]<64} {
+    if {[lindex $view 0]!=$width||[lindex $view 1]!=$height||[lindex $view 4]<64||[lindex $view 2]<80} {
         lset view 0 $width;lset view 1 $height
+        lset view 2 [expr {max(80,[lindex $view 2])}]
         lset view 4 [expr {max(64,[lindex $view 4])}]
         ::GX::Native2D::core view $st($w,scene) $view
     }
@@ -895,24 +915,20 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
         set x [expr {$x0+($x1-$x0)*$i/5.0}];set y [expr {$y0+($y1-$y0)*$i/5.0}]
         lassign [::GX::Native2D::core device $st($w,scene) [list $x $y0]] sx _
         lassign [::GX::Native2D::core device $st($w,scene) [list $x0 $y]] _ sy
-        $c create text $sx [expr {$plotBottom+15}] -text [format %.4g $x] -fill $textRgb -font TkSmallCaptionFont -tags axis_label
-        $c create text [expr {$left-5}] $sy -text [format %.4g $y] -anchor e -fill $textRgb -font TkSmallCaptionFont -tags axis_label
+        $c create text $sx [expr {$plotBottom+15}] -text [_coordinateTick $w x $x] -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_x_tick}
+        $c create text [expr {$left-5}] $sy -text [_coordinateTick $w y $y] -anchor e -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_y_tick}
     }
-    set palette {#1479a8 #c05f30 #7654a8 #208861 #bb3c73 #ad8726 #2f858b #536dba}
     set index 0
     dict for {id r} $st($w,curves) {
         if {![_curveVisible $w $r]} continue
-        set color [lindex $palette [expr {$index%[llength $palette]}]];incr index
-        if {$id eq $st($w,reference)} {set color #525d68}
-        if {$id eq $st($w,active)} {set color #0c72b5}
-        set color [_curvePresentationColor $w $r $color $background]
+        set curveStyle [_coordinateCurveStyle $w $id $index $background];incr index
+        set color [dict get [::GX::uiFieldColorFromRGBA [dict get $curveStyle color]] rgb]
         set sampled {} ;# Defining/row markers query their own Native authority.
         # Shared Native presentation supports point objects as filled markers;
         # a singleton is geometry even when it has no selected defining handle.
         set object [::GX::native2DPresentationObjectSnapshot $st($w,scene) [dict get $r native] 4096]
         if {$object ne {}&&[::GX::datasetPublicationV2DictDefault $r display_style straight] ne "points"} {
-            dict set object style color [::GX::uiFieldColorToRGBA $color]
-            dict set object style line_width [expr {$id eq $st($w,active)?3:1.8}]
+            dict set object style [dict merge [dict get $object style] $curveStyle]
             # Defining controls / Dataset points have their own semantic marker
             # presenter. Drawing a marker at every retained display sample both
             # implies false controls and creates thousands of redundant Tk items.
@@ -943,7 +959,12 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
     }
     if {$st($w,residual) ne {} && $st($w,reference) ne ""} {
         set row [lindex [dict get $st($w,residual) rows] [dict get $st($w,residual) max_index]]
-        foreach p [list [lindex $row 3] [lindex $row 4]] {
+        foreach point [list [lindex $row 3] [lindex $row 4]] role {reference target} {
+            if {$st($w,comparisonConfig) ne {}&&[dict exists $st($w,comparisonConfig) $role]} {
+                set logical [dict get $st($w,comparisonConfig) $role]
+                if {![dict exists $st($w,curves) $logical]||![_curveVisible $w [_record $w $logical]]} continue
+            }
+            set p [::GX::native2DComparisonPoint $st($w,residual) $role $point]
             lassign [::GX::Native2D::core device $st($w,scene) $p] sx sy
             $c create oval [expr {$sx-7}] [expr {$sy-7}] [expr {$sx+7}] [expr {$sy+7}] -outline #d52323 -width 2
         }
@@ -951,13 +972,7 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
     if {$st($w,box) ne {}} {$c create rectangle {*}$st($w,box) -outline #234e9b -dash {4 3}}
     ::GX::native2DCanvasViewportClip $c $st($w,scene)
     if {$st($w,active) ne "" && [dict exists $st($w,curves) $st($w,active)]} {
-        set r [_record $w $st($w,active)];set xLabel [dict get $r x];set yLabel [dict get $r y]
-        catch {set xLabel [_axisLabel [::GX::datasetVariableById [dict get $r source] [dict get $r x]]]}
-        catch {set yLabel [_axisLabel [::GX::datasetVariableById [dict get $r source] [dict get $r y]]]}
-        if {[dict exists $r working_unit]} {
-            set xLabel "[dict get $r source_x_name] ([dict get $r working_unit])"
-            set yLabel "[dict get $r source_y_name] ([dict get $r working_unit])"
-        }
+        set xLabel [_coordinateLabel $w $st($w,active) x];set yLabel [_coordinateLabel $w $st($w,active) y]
         $c create text [expr {($left+$plotRight)/2}] [expr {$height-14}] -text $xLabel -fill $textRgb -tags {axis_label coordinate_axis_label}
         $c create text 13 [expr {($top+$plotBottom)/2}] -text $yLabel -angle 90 -fill $textRgb -tags {axis_label coordinate_axis_label}
     }
@@ -984,8 +999,12 @@ proc ::GX::CurveWorkbench::_drawResidual {w} {
     set index [dict get $st($w,residual) max_index]
     lassign [lindex $coords $index] sx sy
     $c create oval [expr {$sx-5}] [expr {$sy-5}] [expr {$sx+5}] [expr {$sy+5}] -fill #e6b433 -outline #711822
-    $c create text 8 [expr {$height/2}] -text "signed\nresidual" -anchor w -fill #48566b
-    $c create text [expr {$width/2}] [expr {$height-11}] -text [expr {$st($w,compareMethod) eq "x" ? "reference X" : "reference path distance"}] -fill #48566b
+    set unit [::GX::datasetPublicationV2DictDefault $st($w,residual) unit {}]
+    set xUnit $unit
+    if {$st($w,compareMethod) eq "x"&&[dict exists $st($w,residual) coordinate_frame]} {set xUnit [lindex [dict get $st($w,residual) coordinate_frame output_units] 0]}
+    set kind [expr {$st($w,compareMethod) eq "geometry"?"distance":"signed\nresidual"}]
+    $c create text 8 [expr {$height/2}] -text "$kind\n($unit)" -anchor w -fill #48566b
+    $c create text [expr {$width/2}] [expr {$height-11}] -text "[expr {$st($w,compareMethod) eq "x" ? "reference X" : "reference path distance"}] ($xUnit)" -fill #48566b
 }
 proc ::GX::CurveWorkbench::_hitCurve {w world tolerance} {
     variable st
@@ -1104,7 +1123,7 @@ proc ::GX::CurveWorkbench::_pointerMoveScientific {w x y} {
 proc ::GX::CurveWorkbench::_coordinates {w x y} {
     variable st
     if {![info exists st($w,scene)]} return
-    set st($w,coordinates) [::GX::native2DCoordinateReadout $st($w,scene) [list $x $y]]
+    set st($w,coordinates) [_coordinateReadout $w [list $x $y]]
 }
 proc ::GX::CurveWorkbench::_pointerUpScientific {w x y} {
     variable st
@@ -1149,7 +1168,9 @@ proc ::GX::CurveWorkbench::_wheel {w x y delta} {
 }
 proc ::GX::CurveWorkbench::_fit {w {selected 0}} {
     variable st
+    _coordinateFrameSync $w 0
     if {$selected} {::GX::Native2D::core fit $st($w,scene) [dict get [_record $w [_active $w]] native]} else {::GX::Native2D::core fit $st($w,scene)}
+    _coordinateMagnify $w 1
     _draw $w;_save $w
 }
 proc ::GX::CurveWorkbench::_safe {w command} {
@@ -1350,3 +1371,9 @@ source [file join [file dirname [info script]] curve_workbench_history.tcl]
 source [file join [file dirname [info script]] curve_workbench_planar_v1.tcl]
 
 source [file join [file dirname [info script]] curve_workbench_parts.tcl]
+source [file join [file dirname [info script]] curve_workbench_coordinate_presentation_v1.tcl]
+source [file join [file dirname [info script]] curve_workbench_coordinate_frames_v1.tcl]
+source [file join [file dirname [info script]] curve_workbench_coordinate_declaration_v1.tcl]
+source [file join [file dirname [info script]] curve_workbench_coordinate_controls_v1.tcl]
+
+source [file join [file dirname [info script]] curve_workbench_fit_import_v1.tcl]

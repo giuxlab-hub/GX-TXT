@@ -30,7 +30,7 @@ It is distinct from:
 
 ## 2. Installation
 
-Install `analysis.welch_spectrum_1.1.0.zip` through the normal GX-TXT Plugin Install workflow.
+Install `analysis.welch_spectrum_1.2.0.zip` through the normal GX-TXT Plugin Install workflow.
 
 Minimum supported framework: **GX-TXT 0.9.7.84**.
 
@@ -328,3 +328,23 @@ The implementation uses the current public facilities in GX-TXT 0.9.7.84:
 - Session Generator Library API v1 for the bundled teaching fixture.
 
 No private scheduler, private Dataset reader or CORE modification is used.
+
+## Statistical semantics in 1.2.0
+
+The public Numeric API owns final spectrum aggregation; the versioned CORE
+statistical API owns units, quantity definitions and interpretation. Published
+Dataset metadata and render caches retain the same captured result, including
+source/Variable/Temporal Set IDs, window, detrending, NFFT, window rows, step and
+partial-window policy. No sampling uncertainty is inferred from overlapping
+windows. Dataset and Variable identifiers are unchanged.
+
+Zero PSD is published with NaN in `psd_db`, since no finite logarithmic value
+exists. An entirely zero PSD retains an explicitly unavailable dB plot variant;
+its previous image is preserved under `previous_graphs/` and removed from the
+current artifact path. Linear PSD, ASD and mean-amplitude views remain valid.
+A zero non-DC spectrum has no peak frequency, including a DC-only signal.
+
+Compatible caches rerender without spectral recomputation. A pre-1.2 cache lacks
+this captured CORE result: cache-only rendering rejects it with a recalculation
+message. Explicit recalculation or normal Auto analysis creates a current cache;
+existing historical releases and source data are not migrated or rewritten.

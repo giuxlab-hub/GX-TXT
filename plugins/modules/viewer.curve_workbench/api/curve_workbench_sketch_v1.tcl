@@ -28,6 +28,8 @@ proc ::GX::CurveWorkbench::_sketchOpen {w {edit 0}} {
             dict set initial $key $value
         }
         dict unset fields working_unit
+        lassign [_coordinateUnits $record] xUnit yUnit
+        dict set fields controls label "Local native controls: X ($xUnit), Y ($yUnit); before the retained world transform"
     }
     ::GX::uiFieldFormCreate $w.sketch "Retained Native2D primitive — parameters define the geometry" $fields $initial [list ::GX::CurveWorkbench::_sketchApply $w $st($w,token) $id] $w
     ttk::label $w.sketch.hint -text {Controls: point/center 1 pair; line or opposite rectangle corners 2; quadratic Bezier 3; cubic Bezier 4; Line/path or spline 2 or more. Radii and controls use the selected working unit.} -wraplength 600 -padding 8

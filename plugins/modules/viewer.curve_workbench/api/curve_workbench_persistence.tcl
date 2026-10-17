@@ -62,6 +62,7 @@ proc ::GX::CurveWorkbench::_close {w} {
     if {[info exists st($w,configurationSubscription)]} {::GX::configurationUnsubscribe $st($w,configurationSubscription)}
     set scene $st($w,scene)
     if {$st($w,publishBusy)} {_publicationCancel $w;return}
+    _coordinateDispose $w
     set subscription [expr {[info exists st($w,lifecycleSubscription)] ? $st($w,lifecycleSubscription) : ""}]
     # Preserve dev-057's explicit recovery checkpoint followed by resource
     # collection and final payload commit. Resource ownership is still CORE's.

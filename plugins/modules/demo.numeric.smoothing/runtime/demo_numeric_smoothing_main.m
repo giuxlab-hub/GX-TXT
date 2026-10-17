@@ -3,7 +3,7 @@ function demo_numeric_smoothing_main(args, framework_root)
 % SPDX-License-Identifier: GPL-3.0-or-later
 
   module_id = 'demo.numeric.smoothing';
-  module_version = '1.0.2';
+  module_version = '1.1.0';
   methods = {'moving_mean','moving_median','savitzky_golay','local_polynomial'};
   publication_open = false;
   publication_finalized = false;
@@ -87,6 +87,7 @@ function demo_numeric_smoothing_main(args, framework_root)
     validate_windows_against_length(params,n,module_id);
 
     numeric = discover_numeric_api(framework_root,module_id);
+    statistics_lifetime=gxtxt_statistics_scope_v1();
     gxtxt_progress_stage('numeric','Invoking NUMERIC_API_v1 smoothing methods','determinate',numel(methods));
 
     grid_info = feval(numeric.function_name,'dataset_grid_info',session,source_dataset_id,x_id,struct());
@@ -95,7 +96,7 @@ function demo_numeric_smoothing_main(args, framework_root)
     endif
 
     measured_error = measured - reference;
-    measured_metrics = error_metrics(measured_error,0,numeric.function_name);
+    measured_metrics = error_metrics(measured_error,0,numeric.function_name,measured_unit,module_id,'measured');
     x_tolerance = 64.0 * eps(max(1.0,max(abs(x))));
     result = struct();
     all_pass = true;
@@ -128,7 +129,7 @@ function demo_numeric_smoothing_main(args, framework_root)
         err = sy - reference;
       endif
       edge_count = floor((expected_window - 1) / 2);
-      M = error_metrics(err,edge_count,numeric.function_name);
+      M = error_metrics(err,edge_count,numeric.function_name,measured_unit,module_id,method);
       result.(method) = struct('x',sx,'y',sy,'error',err,'window',expected_window, ...
         'degree',expected_degree,'endpoint_policy',endpoint_policy,'x_shift_max_abs',x_shift, ...
         'metrics',M,'length_pass',length_pass,'x_pass',x_pass,'finite_pass',finite_pass, ...
@@ -152,6 +153,11 @@ function demo_numeric_smoothing_main(args, framework_root)
       'source',source_dataset_id, ...
       'provenance',provenance_text(module_id,module_version,params), ...
       'notes','Comparison of public NUMERIC_API_v1 smoothing methods against a bound reference variable.');
+    popts.statistical_results=struct('measured',measured_metrics.core);
+    for k=1:numel(methods)
+      method=methods{k};M=result.(method).metrics;
+      popts.statistical_results.(method)=M.core;popts.statistical_results.([method '_edges'])=M.edges;popts.statistical_results.([method '_interior'])=M.interior;
+    endfor
     P = gxtxt_publication_v2_open(session,module_id,output_dataset_id,'table.generic',popts);
     publication_open = true;
     P = gxtxt_publication_v2_declare_dimension(P,'sample',0,true);
@@ -260,20 +266,20 @@ function opts = method_options(method,params)
   endif
 endfunction
 
-function M = error_metrics(err,edge_count,numeric_fn)
-  err=double(err(:)); n=numel(err);
-  M=struct('rmse',NaN,'mae',NaN,'max_abs',NaN,'edge_rmse',NaN,'interior_rmse',NaN,'edge_count',edge_count);
-  if (n<1 || any(!isfinite(err))), return; endif
-  metrics=feval(numeric_fn,'residual_metrics',zeros(size(err)),err,struct());
-  M.rmse=metrics.rmse;M.mae=metrics.mae;M.max_abs=metrics.max_abs_error;
-  if (edge_count > 0 && 2*edge_count < n)
-    edge_err=[err(1:edge_count);err((n-edge_count+1):n)];
-    interior_err=err((edge_count+1):(n-edge_count));
-    edge_metrics=feval(numeric_fn,'residual_metrics',zeros(size(edge_err)),edge_err,struct());
-    interior_metrics=feval(numeric_fn,'residual_metrics',zeros(size(interior_err)),interior_err,struct());
-    M.edge_rmse=edge_metrics.rmse;M.interior_rmse=interior_metrics.rmse;
+function M = error_metrics(err,edge_count,numeric_fn,unit,producer,comparison_id)
+  err=double(err(:));n=numel(err);M=struct('edge_count',edge_count);
+  if(n<1||any(!isfinite(err))),return;endif
+  context=struct('y_unit',unit,'sample_role','evaluation');provenance=struct('producer',producer,'comparison_id',comparison_id,'subset','all');
+  raw=feval(numeric_fn,'residual_metrics',zeros(size(err)),err,struct());
+  M.core=gxtxt_statistics_v1('from_numeric','math.numeric.comparison','residual_metrics',raw,context,struct(),provenance);
+  if(edge_count>0&&2*edge_count<n)
+    edge_err=[err(1:edge_count);err((n-edge_count+1):n)];interior_err=err((edge_count+1):(n-edge_count));
+    raw=feval(numeric_fn,'residual_metrics',zeros(size(edge_err)),edge_err,struct());provenance.subset='edges';
+    M.edges=gxtxt_statistics_v1('from_numeric','math.numeric.comparison','residual_metrics',raw,context,struct(),provenance);
+    raw=feval(numeric_fn,'residual_metrics',zeros(size(interior_err)),interior_err,struct());provenance.subset='interior';
+    M.interior=gxtxt_statistics_v1('from_numeric','math.numeric.comparison','residual_metrics',raw,context,struct(),provenance);
   else
-    M.interior_rmse=M.rmse;
+    M.interior=M.core;
   endif
 endfunction
 
@@ -375,12 +381,14 @@ function write_metrics(path,module_id,module_version,source_dataset_id,output_da
     fprintf(fid,'\n[numeric_api]\nname=%s\napi_version=%s\noctave_function=%s\n',numeric.name,numeric.api_version,numeric.function_name);
     fprintf(fid,'\n[parameters]\nmoving_mean_window=%d\nmoving_median_window=%d\nsavgol_window=%d\nsavgol_degree=%d\nlocal_polynomial_window=%d\nlocal_polynomial_degree=%d\n', ...
       params.moving_mean_window,params.moving_median_window,params.savgol_window,params.savgol_degree,params.local_polynomial_window,params.local_polynomial_degree);
-    fprintf(fid,'\n[measured]\nrmse=%.17g\nmae=%.17g\nmax_abs_error=%.17g\n',measured_metrics.rmse,measured_metrics.mae,measured_metrics.max_abs);
+    fprintf(fid,'\n[measured]\n%s\n',gxtxt_statistics_v1('ini_report',measured_metrics.core,struct('rmse','rmse','mae','mae','max_abs_error','max_abs_error')));
     methods={'moving_mean','moving_median','savitzky_golay','local_polynomial'};
     for k=1:numel(methods)
       m=methods{k};R=result.(m);M=R.metrics;
-      fprintf(fid,'\n[method.%s]\nwindow=%d\ndegree=%s\nendpoint_policy=%s\nrmse=%.17g\nmae=%.17g\nmax_abs_error=%.17g\nedge_count=%d\nedge_rmse=%.17g\ninterior_rmse=%.17g\nx_shift_max_abs=%.17g\nvalidation=%s\n', ...
-        m,R.window,degree_text(R.degree),R.endpoint_policy,M.rmse,M.mae,M.max_abs,M.edge_count,M.edge_rmse,M.interior_rmse,R.x_shift_max_abs,pass_text(R.pass));
+      fprintf(fid,'\n[method.%s]\nwindow=%d\ndegree=%s\nendpoint_policy=%s\nedge_count=%d\nx_shift_max_abs=%.17g\nvalidation=%s\n',m,R.window,degree_text(R.degree),R.endpoint_policy,M.edge_count,R.x_shift_max_abs,pass_text(R.pass));
+      fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',M.core,struct('rmse','rmse','mae','mae','max_abs_error','max_abs_error')));
+      fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',M.edges,struct('edge_rmse','rmse')));
+      fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',M.interior,struct('interior_rmse','rmse')));
     endfor
     fprintf(fid,'\n[output]\ndataset_id=%s\ncontract=table.generic\nstorage_provider=%s\n',output_dataset_id,output_provider);
   unwind_protect_cleanup
@@ -406,12 +414,12 @@ function write_report(path,module_id,module_version,source_dataset_id,output_dat
     fprintf(fid,'Savitzky-Golay: window=%d degree=%d\n',params.savgol_window,params.savgol_degree);
     fprintf(fid,'Local polynomial: window=%d degree=%d\n\n',params.local_polynomial_window,params.local_polynomial_degree);
     fprintf(fid,'Reference-error diagnostics\n---------------------------\n');
-    fprintf(fid,'Measured/noisy: rmse=%.12g  mae=%.12g  max_abs=%.12g\n',measured_metrics.rmse,measured_metrics.mae,measured_metrics.max_abs);
+    fprintf(fid,'Measured/noisy\n%s\n',gxtxt_statistics_v1('report',measured_metrics.core,{'n','rmse','mae','max_abs_error'}));
     methods={'moving_mean','moving_median','savitzky_golay','local_polynomial'};
     for k=1:numel(methods)
       m=methods{k};R=result.(m);M=R.metrics;
-      fprintf(fid,'%-19s rmse=%.12g  mae=%.12g  max_abs=%.12g  edge_rmse=%.12g  interior_rmse=%.12g\n', ...
-        method_label(m),M.rmse,M.mae,M.max_abs,M.edge_rmse,M.interior_rmse);
+      fprintf(fid,'%s\n%s\nEdges\n%s\nInterior\n%s\n',method_label(m), ...
+        gxtxt_statistics_v1('report',M.core,{'n','rmse','mae','max_abs_error'}),gxtxt_statistics_v1('report',M.edges,{'n','rmse'}),gxtxt_statistics_v1('report',M.interior,{'n','rmse'}));
       fprintf(fid,'  window=%d degree=%s endpoint=%s x_shift_max_abs=%.12g validation=%s\n', ...
         R.window,degree_text(R.degree),R.endpoint_policy,R.x_shift_max_abs,pass_text(R.pass));
     endfor

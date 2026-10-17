@@ -2,6 +2,16 @@ function [out,display_unit,factor]=pd_convert_display(values,source_unit,target_
 % Convert canonical values to a validated display unit.
 % SPDX-License-Identifier: GPL-3.0-or-later
   if(nargin<4),axis_name='axis';endif
+  if(isstruct(source_unit))
+    meta=source_unit;source_unit=meta.unit;
+    if(isfield(meta,'coordinate_context'))
+      lifetime=gxtxt_presentation_scope_v1();
+      if(isempty(target_unit)),target_unit=source_unit;endif
+      [out,receipt]=gxtxt_coordinate_values_v1(meta.coordinate_context,meta.variable_id,values,struct('mode','canonical','unit',target_unit),source_unit);
+      display_unit=receipt.output_unit;factor=1;if(receipt.affine),factor=receipt.scale;endif
+      return;
+    endif
+  endif
   source_unit=strtrim(source_unit);target_unit=strtrim(target_unit);out=values;display_unit=source_unit;factor=1;
   if(isempty(source_unit)&&isempty(target_unit)),display_unit='';return;endif
   if(isempty(source_unit)&&!isempty(target_unit)),error('plot.dataset: %s has no source-unit metadata; cannot display as %s',axis_name,target_unit);endif

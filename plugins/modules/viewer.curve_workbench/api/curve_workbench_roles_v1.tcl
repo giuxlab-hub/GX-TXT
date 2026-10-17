@@ -33,13 +33,7 @@ proc ::GX::CurveWorkbench::_buildRoles {w} {
     
     $w.cad.sketch.menu add command -label "Construction / reference role…" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_geometryRoleOpen $w]]}
 proc ::GX::CurveWorkbench::_sketchExportOpen {w} {
-    variable st
-    set context [_extensionContext $w];set labels {}
-    dict for {id record} $st($w,curves) {dict set labels [dict get $record native] [dict get $record name]}
-    set units [dict get $context units];set xLabel X;set yLabel Y
-    foreach axis {x y} {if {[dict exists $units $axis]&&[dict get $units $axis] ne {}} {set ${axis}Label "[string toupper $axis] ([dict get $units $axis])"}}
-    dict set context presentation_snapshot [::GX::native2DPresentationSnapshot $st($w,scene) [dict create point_budget 4096 object_labels $labels legend auto x_label $xLabel y_label $yLabel title {Curve Workbench sketch}]]
-    ::GX::workbenchExtensionExportDialog $w.sketchExport $context $w
+    ::GX::workbenchExtensionExportDialog $w.sketchExport [_coordinateExportContext $w] $w
 }
 proc ::GX::CurveWorkbench::_buildExport {w} {
     

@@ -106,7 +106,7 @@ world distance per device pixel on both axes, without cropping requested data.
 
 `gx2d.h` is the C99 geometry model API. It has no Tcl, Tk, Canvas, or renderer dependency. Build with CMake from this directory; `BUILD_SHARED_LIBS=ON` produces a DLL-capable API on Windows. Define `GX2D_USE_DLL` in a Windows DLL consumer. The default build is a static library.
 
-`gx2d_tcl.c` is an optional portable C/Tcl adapter used by `viewer.dataset_curve_fit` and `viewer.curve_workbench`. CMake builds it as `gx2dtcl` when Tcl development files are present. Both bundled viewers include the same built module and load it without a compiler. The same C source and CMake target can produce a Windows DLL in a later platform build. The adapter marshals CORE scene, curve, point-set, style, enumeration, selection, geometry, residual and view calls without owning their algorithms. The `nearest` and `hit` bridge commands return a hit dictionary (`object`, `index`, `point`, `distance`) or an empty result for `GX2D_NOT_FOUND`; `rect` returns the CORE selection-block ID. Both viewers use a separate exact-point selection scene so a segment crossing a rectangle cannot add outside data points.
+`gx2d_tcl.c` is an optional portable C/Tcl adapter used by `viewer.dataset_curve_fit` and `viewer.curve_workbench`. CMake builds it as `gx2dtcl` when Tcl development files are present. Both bundled viewers load the single CORE-installed module without a compiler. Their separately installable packages require a compatible framework and contain no private adapter. The same C source and CMake target can produce a Windows DLL in a later platform build. The adapter marshals CORE scene, curve, point-set, style, enumeration, selection, geometry, residual and view calls without owning their algorithms. The `nearest` and `hit` bridge commands return a hit dictionary (`object`, `index`, `point`, `distance`) or an empty result for `GX2D_NOT_FOUND`; `rect` returns the CORE selection-block ID. Both viewers use a separate exact-point selection scene so a segment crossing a rectangle cannot add outside data points.
 
 The original release's five-curve visual, independent known-scene state and nonvisual API contract tests are retained in the private validation archive, not this public source tree. The Tk canvas was used only as a test renderer; these tests do not change this CORE API.
 
@@ -141,6 +141,14 @@ Typed `append_binary_xy`, `append_binary_pointset` and `append_binary_xy_gaps`
 ingest bounded interleaved float64 little-endian chunks. Point-set ingestion
 retains point-only rectangle semantics. Gap ingestion consumes one 0/1 byte per
 incoming point and preserves the preceding edge break across chunk seams.
+`numeric_pack_columns scene x_column y_column source_rows_or_empty row_base companions`
+adds the `numeric_companions` capability to the same bounded transport. The
+dictionary contains one to eight named typed columns, each matching the XY row
+count. Its `companions` result contains float64 little-endian byte arrays aligned
+to precisely the finite XY rows. Companion NaN/Inf/zero values remain intact for
+the consumer's scientific policy. The original `numeric_pack` optional parameter
+contract and its finite-value requirement remain available unchanged.
+
 `numeric_pack` supplies finite XY pairs, exact uint64 source-row mapping, bounded
 `break_before` bytes and `ends_finite`, enabling shared host staging without a
 whole-source Tcl list. Failed appends leave existing geometry unchanged.
@@ -172,6 +180,13 @@ disabled, hidden and unsnapped. `gx2d_grid_render` clips device primitives to
 the native viewport and limits output to 2048 lines. Dense presentation is
 decimated without changing logical spacing or snap results. A NULL output is
 a count query; a smaller supplied buffer returns `GX2D_RANGE` and required count.
+Cartesian display thinning retains integer multiples of the configured major
+period until parallel rendered lines are at least eight device pixels apart.
+It uses their perpendicular screen distance under rotation and unequal axis
+scales. Zooming in reveals the original minor lattice again; origin, spacing,
+major classification, colors, snapping, geometry and saved Workspace values
+remain unchanged. Canvas, Preview and presentation export consume these same
+CORE primitives, so density follows each actual output viewport.
 `gx2d_grid_snap` explicitly snaps in rotated local grid coordinates with
 round-half-away-from-zero ties. Axis bits 1/2/3 select local X/Y/both. Explicit
 queries work even when the grid is hidden; the host applies `enabled` and
@@ -307,3 +322,23 @@ cannot. The existing spline tangent API resolves Path control ordinals to exact
 Spline leaves, composes root/leaf matrices for reads and inverts both for edits.
 Leaf side names are independent of Path traversal orientation; deep update and
 constraint validation preserve one owned Path and its defining controls.
+
+## Numerical reduction ownership (integrated dev097)
+
+The source build requires the matching public Numeric C binding at
+`plugins/modules/math.numeric/api/c/gxtxt_numeric_reductions_v1.h`. Native2D
+owns geometric matching, projections, path and contour traversal; Numeric owns
+streaming mean absolute error/RMS/maximum reductions. Both `compare`/
+`compare_lod` and `compare_geometry` consume this binding without IPC or an
+observation-array copy. Display sampling/retrieval passes reuse the first
+scientific reduction rather than computing the same summary three times.
+CMake rejects a missing binding. The public Native2D C
+structs, Tcl operations and result fields remain unchanged.
+
+The additive `numeric_row_audit` capability extends numeric_pack and
+numeric_pack_columns with input_source_rows and nonfinite_source_rows byte arrays.
+Both use exact little-endian uint64 encoding; input order and existing finite XY,
+companions, parameter and gap outputs remain intact. Row ordinals retain the
+existing0..INT64_MAX contract. The adapter retains the validated integer buffer
+through audit packing; no binary64 conversion or second Tcl value read is used.
+CORE streams these bounded chunks into owned temporary audit inputs.

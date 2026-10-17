@@ -10,6 +10,7 @@ function curvefit_family_rerender_main(args)
   config_path=arg_value(args,'--config','');
   if (isempty(config_path)), error('curvefit.family_global rerender: --config is required'); endif
   cfg=read_ini(config_path);
+  statistics_scope=gxtxt_statistics_scope_v1();
   numeric_fn=curvefit_numeric_api(cfg,{'residual_metrics'});
   outdir=ini_get(cfg,'runtime.output_dir','');
   if (isempty(outdir)), error('curvefit.family_global rerender: runtime.output_dir missing'); endif
@@ -42,7 +43,32 @@ function curvefit_family_rerender_main(args)
 
     [horizontal,group,horizontal_name,group_name]=presentation_view(x,family,x_name,fam_name,presentation_orientation);
     residual=pred-y;
-    group_metrics=compute_group_metrics(group,y,pred,numeric_fn);
+    [statistical_context,publication_units]=curvefit_family_context(cfg,x_name,fam_name,y_name,presentation_orientation);
+    if(isfield(cache,'statistical_results'))
+      statistical_results=cache.statistical_results;
+      for name=fieldnames(statistical_results)',gxtxt_statistics_v1('validate',statistical_results.(name{1}));endfor
+      % Retained training/evaluation provenance is immutable during presentation.
+      statistical_context=cache.statistical_context;
+      publication_units=cache.publication_units;
+      if(!strcmp(presentation_orientation,cache.presentation_orientation))
+        tmp=publication_units.horizontal;publication_units.horizontal=publication_units.group;publication_units.group=tmp;
+      endif
+    else
+      % A historical cache has predictions, but no validated training receipt.
+      % Interpret its aligned errors as comparisons without inventing inference.
+      raw=feval(numeric_fn,'residual_metrics',y,pred,struct());
+      statistical_results=struct('global',gxtxt_statistics_v1('from_numeric','math.numeric.comparison','residual_metrics',raw,statistical_context,struct(),struct('producer','curvefit.family_global','cache_origin','legacy_unverified_training_receipt')));
+    endif
+    same_group=isfield(cache,'group_metrics')&&isfield(cache.group_metrics,'response_variance')&&strcmp(presentation_orientation,cache_text(cache,'presentation_orientation',''));
+    if(same_group),group_metrics=cache.group_metrics;else group_metrics=curvefit_family_group_metrics(group,y,pred,numeric_fn);endif
+    group_provenance=struct('producer','curvefit.family_global','presentation_orientation',presentation_orientation,'group_values',group_metrics.group_value,'cache_origin','retained_predictions');
+    [group_records,group_metrics]=curvefit_family_statistics(group_metrics,statistical_context,group_provenance,'group');
+    for name=fieldnames(statistical_results)'
+      if(strncmp(name{1},'group_block_',12)),statistical_results=rmfield(statistical_results,name{1});endif
+    endfor
+    for name=fieldnames(group_records)',statistical_results.(name{1})=group_records.(name{1});endfor
+    metadata=gxtxt_statistics_v1('publication_metadata',statistical_results);
+    f=fopen(fullfile(outdir,'render_statistics.tcldict'),'w');if(f<0),error('Cannot write render metadata');endif;fprintf(f,'%s\n',metadata);fclose(f);
 
     minimum_abs_y_for_relative_error=str2double(ini_get(cfg,'config.minimum_abs_y_for_relative_error',''));
     if (!isfinite(minimum_abs_y_for_relative_error) || minimum_abs_y_for_relative_error < 0)
@@ -60,7 +86,9 @@ function curvefit_family_rerender_main(args)
     if(!isempty(session))
       progress_stage_safe('rendering','Rendering public Plot Variants','indeterminate',0);
       source_id=cache_text(cache,'dataset_id','');
-      graph_data=curvefit_family_publish(session,source_id,horizontal,group,y,pred,residual,relative_residual_percent,group_metrics);
+      source_audit=struct();if(isfield(cache,'source_audit')),source_audit=cache.source_audit;endif
+      parameter_state=struct();if(isfield(cache,'parameter_state')),parameter_state=cache.parameter_state;endif
+      graph_data=curvefit_family_publish(session,source_id,horizontal,group,y,pred,residual,relative_residual_percent,group_metrics,statistical_results,publication_units,source_audit,parameter_state);
       curvefit_family_render_public(outdir,cfg,graph_data,horizontal_name,group_name,y_name,operation_mode);
     endif
 
@@ -119,16 +147,6 @@ function [h,g,hname,gname]=presentation_view(x,f,xname,fname,orientation)
   else h=x;g=f;hname=xname;gname=fname;endif
 endfunction
 
-function metrics=compute_group_metrics(g,y,pred,numeric_fn)
-  groups=unique(g);n_group=numel(groups);
-  metrics=struct('family_value',groups(:),'group_value',groups(:),'n',zeros(n_group,1),'sse',zeros(n_group,1), ...
-                 'rmse',zeros(n_group,1),'mae',zeros(n_group,1),'max_abs_error',zeros(n_group,1),'r2',NaN(n_group,1));
-  for k=1:n_group
-    idx=find(g==groups(k));m=feval(numeric_fn,'residual_metrics',y(idx),pred(idx),struct());
-    metrics.n(k)=m.n;metrics.sse(k)=m.sse;metrics.rmse(k)=m.rmse;
-    metrics.mae(k)=m.mae;metrics.max_abs_error(k)=m.max_abs_error;metrics.r2(k)=m.r2;
-  endfor
-endfunction
 
 function progress_start_safe(stage,message,mode,total)
   if(exist('gxtxt_progress_start','file')!=2),return;endif

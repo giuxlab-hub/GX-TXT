@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 **Plugin name:** Numerical Interpolation Demo  
 **Plugin ID:** `demo.numeric.interpolation`  
-**Plugin version:** `1.0.4`  
+**Plugin version:** `1.1.0`  
 **Plugin type:** external GX-TXT analysis module  
 **Runner:** `standard_octave`
 
@@ -42,22 +42,20 @@ The end-to-end compatibility test also exercises the separate public
 
 ## 2. Required GX-TXT version
 
-The development and reference baseline is:
+The required dev097 framework is:
 
 ```text
-GX-TXT 0.9.7.71
+GX-TXT 0.9.8.10-dev-097
 ```
 
-The package manifest declares `framework_min=0.9.7.71`.
+The package manifest declares `framework_min=0.9.8.10-dev-097`.
 
 The plugin remains external. Installing it through the normal GX-TXT Plugin
 Install workflow copies only the plugin package into the managed plugin area. No
 GX-TXT source file, CORE module, `VERSION.txt`, or framework release archive is
 modified or replaced by this package.
 
-The runtime depends on the protected CORE service `math.numeric`, whose verified
-version in GX-TXT 0.9.7.71 is `1.1.0` and whose descriptor advertises
-`NUMERIC_API_v1` API version `1`.
+The runtime discovers protected service `math.numeric` through its advertised `NUMERIC_API_v1` version 1 descriptor and uses CORE `STATISTICAL_RESULT_SEMANTICS_API_v1` for interpretation.
 
 ## 3. Corresponding Session Generator
 
@@ -333,7 +331,7 @@ small machine-roundoff envelope indicates an API/path inconsistency.
 The actual package filename produced for this release is:
 
 ```text
-demo.numeric.interpolation_1.0.2.zip
+demo.numeric.interpolation_1.1.0.zip
 ```
 
 Install it with the normal GX-TXT GUI workflow:
@@ -341,7 +339,7 @@ Install it with the normal GX-TXT GUI workflow:
 ```text
 Modules
 → Install plugin...
-→ select demo.numeric.interpolation_1.0.2.zip
+→ select demo.numeric.interpolation_1.1.0.zip
 ```
 
 GX-TXT displays its normal Plugin Install confirmation after successful
@@ -657,14 +655,14 @@ values, Publication failure, or an unavailable `NUMERIC_API_v1` capability.
 
 The canonical example is reproducible because:
 
-- the generator uses the supported public GX-TXT data and numerical contracts;
+- GX-TXT reference version is fixed at `0.9.8.10-dev-097`;
 - Session Generator Library and generator names are fixed;
 - the generator is deterministic;
 - X positions are fixed;
 - the analytical function is fixed at `sin(x)+0.1*x`;
 - `noise=none`;
 - the generator serializes values deterministically;
-- the module records its own version in output provenance;
+- plugin version is fixed at `1.1.0`;
 - default query count is fixed at `201`;
 - interpolation method names are the public method names from the installed
   `math.numeric` descriptor;
@@ -706,9 +704,8 @@ private interpolation implementation.
 
 ### GNU Octave unavailable
 
-`standard_octave` and `math.numeric` require a working GNU Octave executable
-in the GX-TXT environment. An unavailable numerical runtime prevents execution
-of scientific checks and must be reported as `SKIP`, not `PASS`.
+`standard_octave` and `math.numeric` require a working GNU Octave executable in
+the GX-TXT environment. The module reports missing runtime dependencies as errors.
 
 ### Numerical validation fails
 
@@ -795,41 +792,29 @@ demo.numeric.interpolation/
 │   ├── demo_numeric_interpolation_render.m
 │   ├── demo_numeric_interpolation_rerender.m
 │   └── demo_numeric_interpolation_rerender_main.m
-└── tests/
-    ├── README.md
-    ├── test_static.py
-    └── test_framework_integration.tcl
 ```
 
 `plugin-package.ini` is the Plugin Install API v1 package manifest. `module.ini`
 is the Standard Module API v1 descriptor. The runtime directory contains only
-the external plugin's Octave entrypoint/implementation. Tests are included as
-reference validation material.
+the external plugin's Octave entrypoint/implementation. Validation lives in the integrated framework workspace.
 
-## 18. Verification workflow
+## 18. Dev097 interpretation and validation
 
-Verify against a disposable GX-TXT scientific Session and compatible numerical
-runtime. The expected verification stages include:
+The published Dataset retains ten validated CORE pointwise-comparison records:
+source/reference integrity, linear resample consistency, and analytical-reference
+and source-identity errors for each interpolation method. Existing metric keys,
+Dataset/variable IDs and method names remain stable. CORE adds explicit quantity,
+status, unit and reason fields; these descriptive errors do not establish a
+regression or sampling-inference model.
 
-```text
-package/descriptor checks
-→ Plugin Install API installation
-→ module discovery
-→ canonical Session generation
-→ verification that the fresh generated Session initially has no Dataset
-→ framework-owned CSV canonicalization
-→ Dataset schema and stable variable identity
-→ automatic Graph Provider descriptor and renderer validation
-→ Analysis Source runtime resolution
-→ NUMERIC_API_v1 discovery/capability checks
-→ real NUMERIC_API_v1 numerical calls when GNU Octave is available
-→ normal standard_octave module execution when GNU Octave is available
-→ Dataset Publication API v2 verification when execution is available
-→ deterministic reference validation when execution is available
-→ automatic Graph Provider PNG rendering when execution is available
-→ cache-only rerender validation when execution is available
-→ PLOT_DATASET_API_v1 / plot.dataset rendering when execution is available
-```
+Source/reference, identity, bound and resampling checks finish before publication.
+If a check fails, reports explain the failure and an existing successful output
+Dataset and render cache remain unchanged.
 
-Do not claim a scientific execution test passed unless it was actually run
-against a compatible numerical environment.
+The integrated `statistics_comparison_demos.tcl` validator runs the unchanged
+stock generator through the actual dev096/dev097 module, publication/reopen,
+source preservation and one error graph. Its negative case verifies preservation
+of successful output after invalid reference input. `compare_comparison_demos.py`
+requires exact canonical numeric dtype/shape/bytes and unchanged legacy metrics,
+then checks error reductions independently with NumPy. Development receipts are
+separate from final full generator, rerender and frozen-candidate acceptance.

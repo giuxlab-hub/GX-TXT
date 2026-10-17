@@ -23,12 +23,13 @@ function P=pd_prepare_2d(info,cfg,opts,graph,oldP)
       members=find(arrayfun(@(item) strcmp(item.dataset_id,G(seed).dataset_id)&&!isempty(item.row_filters),G));
       visited(members)=true;
       if(numel(members)<2),continue;endif
-      auxsets=cell(1,numel(members));modes=cell(1,numel(members));
+      auxsets=cell(1,numel(members));modes=cell(1,numel(members));optionalsets=cell(1,numel(members));
       for q=1:numel(members)
         item=G(members(q));pres=plotspec_series(V,item);aux=plotspec_aux_ids(pres);
         if(isfield(item,'secondary_variable_id')&&!isempty(strtrim(item.secondary_variable_id))),aux{end+1}=item.secondary_variable_id;endif
         if(isfield(item,'ordering_variable_id')&&!isempty(strtrim(item.ordering_variable_id))),aux{end+1}=item.ordering_variable_id;endif
         auxsets{q}=unique(aux,'stable');mode=opts.reduction_mode;
+        optionalsets{q}=pd_uncertainty_aux_ids(pres,item);
         % Exact source adjacency cannot be inferred across decimated rows.
         if(isfield(pres,'source_row_continuity')&&pres.source_row_continuity),mode='none';endif
         if(isfield(item,'source_row_ordinals')&&!isempty(item.source_row_ordinals)),mode='none';endif
@@ -37,7 +38,7 @@ function P=pd_prepare_2d(info,cfg,opts,graph,oldP)
         if(isfield(pres,'kind')&&any(strcmp(lower(strtrim(pres.kind)),{'histogram','box_whisker'}))),mode='none';endif
         modes{q}=mode;
       endfor
-      values=pd_prepare_2d_filtered_batch(session,G(members),auxsets,modes,per_series,opts.auto_reduce_threshold,opts.chunk_rows);
+      values=pd_prepare_2d_filtered_batch(session,G(members),auxsets,modes,per_series,opts.auto_reduce_threshold,opts.chunk_rows,optionalsets);
       for q=1:numel(members),batched{members(q)}=values{q};endfor
     endfor
   endif
@@ -47,6 +48,7 @@ function P=pd_prepare_2d(info,cfg,opts,graph,oldP)
     if(isfield(G,'secondary_variable_id')&&!isempty(strtrim(G(k).secondary_variable_id))),aux{end+1}=G(k).secondary_variable_id;endif
     if(isfield(G,'ordering_variable_id')&&!isempty(strtrim(G(k).ordering_variable_id))),aux{end+1}=G(k).ordering_variable_id;endif
     aux=unique(aux,'stable');
+    optional_ids=pd_uncertainty_aux_ids(pres,G(k));
     if(!isempty(G(k).style_color))
       if(!isfield(pres,'style')||isempty(pres.style)),pres.style=struct();endif
       if(!isfield(pres.style,'color')||isempty(pres.style.color)),pres.style.color=G(k).style_color;endif
@@ -83,19 +85,20 @@ function P=pd_prepare_2d(info,cfg,opts,graph,oldP)
       if(isempty(aux))
         d=pd_prepare_2d_series_path_compat(G(k).path,G(k).x_variable_id,G(k).y_variable_id,reduction,per_series,opts.auto_reduce_threshold,opts.chunk_rows,['graph_series_path_' G(k).series_id]);
       else
-        d=pd_prepare_2d_series_v2_path_compat(G(k).path,G(k).x_variable_id,G(k).y_variable_id,aux,reduction,per_series,opts.auto_reduce_threshold,opts.chunk_rows,['graph_series_v2_path_' G(k).series_id]);
+        d=pd_prepare_2d_series_v2_path_compat(G(k).path,G(k).x_variable_id,G(k).y_variable_id,aux,reduction,per_series,opts.auto_reduce_threshold,opts.chunk_rows,['graph_series_v2_path_' G(k).series_id],optional_ids);
       endif
       d.dataset_id=G(k).dataset_id;
     elseif(isempty(aux))
       d=pd_prepare_2d_series(session,G(k).dataset_id,G(k).x_variable_id,G(k).y_variable_id,reduction,per_series,opts.auto_reduce_threshold,opts.chunk_rows,['graph_series_' G(k).series_id],x_window,G(k).row_filters);
     else
-      d=pd_prepare_2d_series_v2(session,G(k).dataset_id,G(k).x_variable_id,G(k).y_variable_id,aux,reduction,per_series,opts.auto_reduce_threshold,opts.chunk_rows,['graph_series_v2_' G(k).series_id],x_window,G(k).row_filters);
+      d=pd_prepare_2d_series_v2(session,G(k).dataset_id,G(k).x_variable_id,G(k).y_variable_id,aux,reduction,per_series,opts.auto_reduce_threshold,opts.chunk_rows,['graph_series_v2_' G(k).series_id],x_window,G(k).row_filters,optional_ids);
     endif
     if(!reused&&isfield(G,'source_row_ordinals')&&!isempty(G(k).source_row_ordinals))
       keep=ismember(d.source_row_indices,G(k).source_row_ordinals);
       d.filter_dropped_rows+=sum(!keep);d.valid_rows=sum(keep);d.display_rows=sum(keep);
       d.x=d.x(keep);d.y=d.y(keep);d.source_row_indices=d.source_row_indices(keep);
       for a=1:numel(d.aux_values),d.aux_values{a}=d.aux_values{a}(keep);endfor
+      if(isfield(d,'uncertainty_run_ids')),for a=1:numel(d.uncertainty_run_ids),d.uncertainty_run_ids{a}=d.uncertainty_run_ids{a}(keep);endfor;endif
       if(isempty(d.x)),error('plot.dataset: exact source-row selection has no finite observations');endif
     endif
     if(!reused&&isfield(G,'ordering_variable_id')&&!isempty(strtrim(G(k).ordering_variable_id)))
@@ -108,6 +111,7 @@ function P=pd_prepare_2d(info,cfg,opts,graph,oldP)
       [~,order_index]=sortrows([double(order_values(:)),double(d.source_row_indices(:))],[1 2]);
       d.x=d.x(order_index);d.y=d.y(order_index);d.source_row_indices=d.source_row_indices(order_index);
       for a=1:numel(d.aux_values),d.aux_values{a}=d.aux_values{a}(order_index);endfor
+      if(isfield(d,'uncertainty_run_ids')),for a=1:numel(d.uncertainty_run_ids),d.uncertainty_run_ids{a}=d.uncertainty_run_ids{a}(order_index);endfor;endif
       d.ordering_variable_id=order_id;
     endif
     if(isfield(G,'secondary_variable_id')),d.secondary_variable_id=G(k).secondary_variable_id;endif
@@ -115,7 +119,8 @@ function P=pd_prepare_2d(info,cfg,opts,graph,oldP)
     ym=series_meta(G(k),'y');
     series(k)=struct('name',G(k).y_name,'axis',G(k).axis,'panel_id',series_panel_id(pres),'label',G(k).label,'series_id',G(k).series_id,'dataset_id',G(k).dataset_id,'meta',ym,'x_name',G(k).x_name,'x_meta',xm,'data',d,'presentation',pres,'prep_fingerprint',seriesFp);
   endfor
-  validate_axis_units(series,'left');validate_axis_units(series,'right');
+  % Physical unit compatibility is resolved at render time from captured CORE
+  % Variable relations, including declared source overrides.
   P=struct('mode','graph_series','graph_id',graph,'variant_id',variant,'x_name',common_x_name(series),'x_meta',series(1).x_meta,'series',series,'target_points',graph_budget,'configured_target_points',opts.target_points,'preparation_window',x_window,'plotspec_v2',V);
 endfunction
 
@@ -210,8 +215,6 @@ function validate_x_compatibility(G)
   b=G(1);
   for k=2:numel(G)
     q=G(k);
-    try ok=gxtxt_unit_compatible(b.x_unit,q.x_unit);catch ok=false;end_try_catch
-    if(!ok),error('plot.dataset: X units are incompatible across series: %s [%s] vs %s [%s]',b.x_name,b.x_unit,q.x_name,q.x_unit);endif
     if(!x_roles_compatible(b.x_semantic_role,q.x_semantic_role)),error('plot.dataset: X semantic roles are incompatible: %s vs %s',b.x_semantic_role,q.x_semantic_role);endif
     if(!pd_x_value_kinds_compatible(b.x_semantic_role,b.x_value_kind,q.x_semantic_role,q.x_value_kind)),error('plot.dataset: X value kinds are incompatible for semantic role %s: %s vs %s',shared_semantic_role(b,q),b.x_value_kind,q.x_value_kind);endif
     bt=strtrim(b.x_time_reference);qt=strtrim(q.x_time_reference);
@@ -230,22 +233,6 @@ function tf=x_roles_compatible(a,b)
 endfunction
 function role=shared_semantic_role(a,b),ar=strtrim(a.x_semantic_role);br=strtrim(b.x_semantic_role);if(!isempty(ar)&&strcmpi(ar,br)),role=ar;elseif(!isempty(ar)),role=ar;elseif(!isempty(br)),role=br;else role='(unspecified)';endif;endfunction
 function n=common_x_name(series),n=series(1).x_name;for k=2:numel(series),if(!strcmp(series(k).x_name,n)),n='X';return;endif;endfor;endfunction
-function validate_axis_units(series,axis_name)
-% Multi-panel Y domains are independent.  Compatibility is required only
-% among series sharing the same panel and the same Y side; X remains global.
-  panels=unique({series.panel_id});
-  for pi=1:numel(panels)
-    panel_id=panels{pi};idx=find(strcmp({series.axis},axis_name)&strcmp({series.panel_id},panel_id));if(numel(idx)<2),continue;endif
-    base='';base_name='';
-    for q=idx
-      u=strtrim(series(q).meta.unit);if(isempty(u)),continue;endif
-      if(isempty(base)),base=u;base_name=series(q).name;continue;endif
-      try ok=gxtxt_unit_compatible(base,u);catch ok=false;end_try_catch
-      if(!ok),error('plot.dataset: panel %s %s-axis series %s [%s] is incompatible with %s [%s]',panel_id,axis_name,series(q).name,u,base_name,base);endif
-    endfor
-  endfor
-endfunction
-
 function id=series_panel_id(pres)
   id='main';if(isempty(fieldnames(pres))),return;endif
   if(isfield(pres,'panel_id'))

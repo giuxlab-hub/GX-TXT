@@ -3,6 +3,7 @@ proc ::GX::moduleGroups {} {
     variable moduleOrder
     set groups {}
     foreach id $moduleOrder {
+        if {![moduleAnalysisEligible $id]} continue
         set g [string trim [moduleField $id group "General"]]
         if {$g eq ""} { set g "General" }
         if {[lsearch -exact $groups $g] < 0} { lappend groups $g }
@@ -25,7 +26,7 @@ proc ::GX::refreshModuleCatalog {} {
     array set groupIid {}
     set ng 0; set nm 0; set firstLeaf ""
     foreach id $moduleOrder {
-        if {(![moduleField $id selectable 1] && [moduleField $id kind] ne "acquisition") || $id in {plot.dataset analysis.octave_script analysis.python_script}} continue
+        if {![moduleAnalysisEligible $id] || $id in {plot.dataset analysis.octave_script analysis.python_script}} continue
         if {$moduleCoreFilter eq "CORE" && ![moduleIsCore $id]} continue
         if {$moduleCoreFilter eq "Non-CORE" && [moduleIsCore $id]} continue
         set kind [moduleKindLabel [moduleField $id kind]]
@@ -44,17 +45,7 @@ proc ::GX::refreshModuleCatalog {} {
         }
         incr nm; set iid "mod$nm"
         set ui(moduleId,$iid) $id
-        if {[moduleIsCore $id]} {
-            if {[moduleIsAlwaysAvailable $id]} {
-                set state "CORE / ALWAYS"
-            } else {
-                set state [expr {[moduleIsEnabled $id] ? "CORE / ON" : "CORE / OFF"}]
-            }
-        } elseif {[moduleIsAlwaysAvailable $id]} {
-            set state "ALWAYS"
-        } else {
-            set state [expr {[moduleIsEnabled $id] ? "ACTIVE" : "-"}]
-        }
+        set state [moduleOperationalState $id]
         $t insert $groupIid($group) end -id $iid -text $name -values [list $state $kind $ver $id]
         if {$firstLeaf eq ""} { set firstLeaf $iid }
     }
@@ -87,8 +78,8 @@ proc ::GX::refreshModuleDetails {} {
 proc ::GX::setSelectedModuleState_v078_workspace {state} {
     set id [selectedModuleFromTree]
     if {$id eq ""} return
-    if {[moduleIsAlwaysAvailable $id]} {
-        tk_messageBox -icon info -title "Module activation" -message "This provider is always available. Import prerequisites are checked when invoked."
+    if {![moduleAnalysisEligible $id]} {
+        tk_messageBox -icon info -title "Module activation" -message "Provider availability is managed in Configuration → Modules. Import prerequisites are checked when invoked."
         return
     }
     moduleSetEnabled $id $state
@@ -100,7 +91,7 @@ proc ::GX::setSelectedModuleState_v078_workspace {state} {
 proc ::GX::toggleSelectedModule_v078_workspace {} {
     set id [selectedModuleFromTree]
     if {$id eq ""} return
-    if {[moduleIsAlwaysAvailable $id]} return
+    if {![moduleAnalysisEligible $id]} return
     moduleSetEnabled $id [expr {![moduleIsEnabled $id]}]
     refreshModuleCatalog
     refreshAnalysisStatus
@@ -169,6 +160,7 @@ proc ::GX::resourceLifecycleModuleResetSelected {} {
 
 # Quick controls use the existing selection/lifecycle authority.
 proc ::GX::moduleQuickSet {id} {
+    if {![moduleAnalysisEligible $id]} {error "Module '$id' is not an analysis selection"}
     moduleSetEnabled $id $::GX::ui(moduleQuick,$id)
     rebuildNativeAnalysisGui
     refreshModuleCatalog

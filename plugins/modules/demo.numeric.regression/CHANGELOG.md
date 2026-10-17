@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 — GX-TXT 0.9.8.10-dev-097
+
+- Uses public CORE parameter/report interpretation and validates statistical metadata on both published Datasets.
+- Adds explicit coefficient identities, physical units and uncertainty status/reasons without renaming existing columns.
+- Requires declared measurement-noise assumptions for reduced chi-squared applicability; constant-response and zero-DOF states remain explicit.
+- Uses public residual metrics and removes duplicate runtime cross-check fits; analytical regression checks live in the development validator.
+
 ## 1.0.1 — GX-TXT 0.9.8.05
 
 - Completes the public plot.dataset graph path for all regression views.

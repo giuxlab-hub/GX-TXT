@@ -8,7 +8,7 @@ namespace eval ::GX::DatasetTransform {
     variable streams;array set streams {}
 }
 proc ::GX::datasetTransformOperations {} {
-    return {project_variables subset_rows concat_rows merge_columns join_by_key rename_reorder curve_bundle build_family extract_family_member split_family convert_units transform_xy reverse_rows reverse_range reverse_sequence combine_selection sort_rows}
+    return {project_variables subset_rows concat_rows merge_columns join_by_key rename_reorder curve_bundle build_family extract_family_member split_family convert_units calibrate_variables transform_xy reverse_rows reverse_range reverse_sequence combine_selection sort_rows baseline_correct log_variables smooth_curve}
 }
 proc ::GX::datasetTransformDescribeOperation {operation} {
     if {$operation ni [datasetTransformOperations]} {error "Unknown Dataset Transform operation '$operation'"}
@@ -16,7 +16,7 @@ proc ::GX::datasetTransformDescribeOperation {operation} {
 }
 proc ::GX::_datasetTransformSourceSnapshot {session id} {
     set payload [sessionInspectionDatasetPayload $id $session]
-    return [dict create dataset_id $id sha256 [dict get $payload sha256] schema [datasetVariableSchemaV3 $id] metadata [datasetMetadataRead $session $id]]
+    return [dict create dataset_id $id sha256 [dict get $payload sha256] schema [datasetVariableSchemaV3 $id] metadata [datasetMetadataRead $session $id] coordinate_context [_datasetCoordinateStored $session $id]]
 }
 proc ::GX::_datasetTransformNormalize {session manifest} {
     if {[catch {dict size $manifest}]} {error "Dataset Transform Manifest must be a dictionary"}
@@ -31,6 +31,15 @@ proc ::GX::_datasetTransformNormalize {session manifest} {
         if {[catch {dict size [dict get $manifest $key]}]} {error "Manifest $key must be a dictionary"}
     }
     set output [dict get $manifest output]
+    if {[dict exists $manifest options metadata_overrides]} {
+        set normalized {}
+        dict for {key value} [dict get $manifest options metadata_overrides] {
+            set key [_datasetMetadataUserKey $key]
+            if {[string match transform.* $key]} {error {Transform provenance cannot be overridden}}
+            dict set normalized $key $value
+        }
+        dict set manifest options metadata_overrides $normalized
+    }
     foreach key [dict keys $output] {if {$key ni {dataset_id member_outputs contract storage display_name notes}} {error "Unsupported transform output field '$key'"}}
     if {[dict exists $output dataset_id] && [dict get $output dataset_id] ne ""} {dict set output dataset_id [datasetPublicationV2RequestedId [dict get $output dataset_id]]}
     if {![dict exists $output contract]} {dict set output contract auto}
@@ -46,8 +55,30 @@ proc ::GX::_datasetTransformNormalize {session manifest} {
         }
         dict set output member_outputs $normalized
     } elseif {[dict exists $output member_outputs]} {error "member_outputs is only valid for split_family"}
-    set allowedOptions {variable_ids rename display_labels start count reorder ranges steps keys mode join duplicate_policy representation x_tolerance member_id members member_variable_id source_member_ids family_axes family_units target_units x_variable_id y_variable_id matrix metadata include_lineage lineage_prefix order_variable_ids descending polar_output preserve_auxiliary}
+    set allowedOptions {variable_ids rename display_labels start count reorder ranges steps keys mode join duplicate_policy representation x_tolerance member_id members member_variable_id source_member_ids family_axes family_units target_units x_variable_id y_variable_id matrix metadata metadata_overrides include_lineage lineage_prefix order_variable_ids descending polar_output preserve_auxiliary calibration_variable_ids expected_coordinate_revision}
+    lappend allowedOptions baseline_options baseline_variable_id corrected_variable_id row_variable_id logarithms smoothing_options smoothed_variable_id residual_variable_id
     foreach key [dict keys [dict get $manifest options]] {if {$key ni $allowedOptions} {error "Unknown Dataset Transform option '$key'"}}
+    if {[dict get $manifest operation] eq "baseline_correct"} {
+        foreach key [dict keys [dict get $manifest options]] {if {$key ni {baseline_options baseline_variable_id corrected_variable_id row_variable_id x_variable_id y_variable_id metadata metadata_overrides}} {error "Baseline correction does not combine with '$key'; use an explicit subsequent transform"}}
+        foreach source [dict get $manifest sources] {
+            foreach key [dict keys $source] {if {$key ni {dataset_id member_id variable_ids x_variable_id y_variable_id start count rows row_filters selection_id}} {error "Baseline correction does not combine with source '$key'"}}
+        }
+    } else {
+        foreach key {baseline_options baseline_variable_id corrected_variable_id} {if {[dict exists $manifest options $key]} {error "$key requires baseline_correct"}}
+    }
+    if {[dict get $manifest operation] eq "smooth_curve"} {
+        foreach key [dict keys [dict get $manifest options]] {if {$key ni {smoothing_options smoothed_variable_id residual_variable_id row_variable_id x_variable_id y_variable_id metadata metadata_overrides}} {error "Smoothing does not combine with '$key'; use a subsequent transform"}}
+        foreach source [dict get $manifest sources] {foreach key [dict keys $source] {if {$key ni {dataset_id member_id variable_ids x_variable_id y_variable_id start count rows row_filters selection_id}} {error "Smoothing does not combine with source '$key'"}}}
+    } else {foreach key {smoothing_options smoothed_variable_id residual_variable_id} {if {[dict exists $manifest options $key]} {error "$key requires smooth_curve"}}}
+    if {[dict get $manifest operation] eq "log_variables"} {
+        foreach key [dict keys [dict get $manifest options]] {if {$key ni {logarithms row_variable_id metadata metadata_overrides}} {error "Logarithmic columns do not combine with '$key'; use a subsequent transform"}}
+        foreach source [dict get $manifest sources] {
+            foreach key [dict keys $source] {if {$key ni {dataset_id member_id variable_ids start count rows row_filters selection_id}} {error "Logarithmic columns do not combine with source '$key'"}}
+        }
+    } elseif {[dict exists $manifest options logarithms]} {error {logarithms requires log_variables}}
+    if {[dict get $manifest operation] ni {baseline_correct log_variables smooth_curve}&&[dict exists $manifest options row_variable_id]} {
+        error {row_variable_id requires baseline_correct, log_variables or smooth_curve}
+    }
     dict for {key value} [dict get $manifest schema_policy] {
         if {$key ni {dtype_policy unit_policy} || ($key eq "dtype_policy" && $value ne "strict") || ($key eq "unit_policy" && $value ne "explicit")} {error "Unsupported Dataset Transform schema policy '$key=$value'"}
     }
@@ -90,6 +121,21 @@ proc ::GX::_datasetTransformNormalize {session manifest} {
     }
     if {![llength $sources]} {error "Dataset Transform needs at least one source"}
     dict set manifest sources $sources
+    if {[dict get $manifest operation] eq "calibrate_variables"} {
+        if {[llength $sources]!=1||[dict exists [lindex $sources 0] native_geometry]} {error {Calibration materialization requires one canonical Dataset}}
+        foreach key [dict keys [lindex $sources 0]] {if {$key ni {dataset_id member_id}} {error {Calibration materializes complete source tuples; use a separate structural transform for selections/conversions}}}
+        foreach key [dict keys [dict get $manifest options]] {if {$key ni {calibration_variable_ids expected_coordinate_revision metadata metadata_overrides}} {error "Calibration does not combine with '$key'; use an explicit subsequent transform"}}
+        foreach key {calibration_variable_ids expected_coordinate_revision} {if {![dict exists $manifest options $key]} {error "Calibration requires '$key'"}}
+        set requested [dict get $manifest options calibration_variable_ids]
+        if {![llength $requested]||[llength [lsort -unique $requested]]!=[llength $requested]} {error {Calibration needs unique selected Variable IDs}}
+        set id [dict get [lindex $sources 0] dataset_id]
+        set context [datasetCoordinateRead $session $id]
+        _datasetCoordinateExpected [_datasetCoordinateStored $session $id] [dict get $manifest options expected_coordinate_revision]
+        foreach vid $requested {
+            set variable [datasetVariableV3ById $id $vid]
+            if {![dict exists $context variables $vid]||![dict get $variable enabled]||[dict get $variable rank]!=1} {error "Calibration requires an enabled real table Variable '$vid'"}
+        }
+    } elseif {[dict exists $manifest options calibration_variable_ids]||[dict exists $manifest options expected_coordinate_revision]} {error {Calibration options require calibrate_variables}}
     if {$snapshots eq {}} {dict set manifest metadata_policy explicit}
     set policy [datasetPublicationV2DictDefault $manifest metadata_policy [expr {[llength $sources]==1 ? "inherit_single_source" : "merge_common"}]]
     if {$policy ni {inherit_single_source inherit_primary merge_common explicit}} {error "Unknown transform metadata policy '$policy'"}
@@ -145,6 +191,16 @@ proc ::GX::_datasetTransformPlanInternal {session manifest job} {
             lappend stagedSources $source
         }
         dict set workerManifest sources $stagedSources
+        if {[dict get $manifest operation] eq "calibrate_variables"} {
+            set context [datasetCoordinateRead $session [dict get [lindex $stagedSources 0] dataset_id]]
+            # Private worker envelope, derived only from the verified public
+            # context. Callers cannot supply or override calibration numbers.
+            set calibrations {}
+            foreach vid [dict get $manifest options calibration_variable_ids] {
+                dict set calibrations $vid [dict get $context variables $vid]
+            }
+            dict set workerManifest _coordinate_calibration $calibrations
+        }
         set f [open [file join $directory runtime.ini] w]
         puts $f "\[runtime\]\nsession=$session\nmodule_id=core.dataset_transform\noperation=plan";close $f
         set f [open [file join $directory request.utf8] w];fconfigure $f -encoding utf-8 -translation lf;puts -nonewline $f $workerManifest;close $f
@@ -274,6 +330,158 @@ proc ::GX::datasetTransformCloseView {view} {
     unset views($view)
     if {[dict get $record owns_plan]} {datasetTransformReleasePlan [dict get $record plan_id]}
 }
+proc ::GX::_datasetTransformBaselineLineage {record} {
+    # Track the current Variable alias separately from captured scientific IDs.
+    # This survives projection/renaming, unit conversion and row transforms.
+    set lineage {};set report [dict get $record report]
+    foreach snapshot [dict get $record snapshots] {
+        set metadata [dict get $snapshot metadata];set previous [datasetPublicationV2DictDefault $metadata transform.baseline_lineage {}]
+        if {$previous eq {}&&[dict exists $metadata transform.effective baseline_receipt]} {
+            set receipt [dict get $metadata transform.effective baseline_receipt]
+            set previous [list [dict create variable_id [dict get $receipt corrected_variable_id] correction $receipt]]
+        }
+        foreach binding $previous {
+            foreach mapping [dict get $report variable_mapping] {
+                if {[dict get $mapping source_dataset_id] eq [dict get $snapshot dataset_id]&&[dict get $mapping source_variable_id] eq [dict get $binding variable_id]} {
+                    set current [dict replace $binding variable_id [dict get $mapping output_variable_id]]
+                    if {$current ni $lineage} {lappend lineage $current}
+                }
+            }
+        }
+    }
+    if {[dict exists $report baseline_receipt]} {
+        set receipt [dict get $report baseline_receipt]
+        lappend lineage [dict create variable_id [dict get $receipt corrected_variable_id] correction $receipt]
+    }
+    return $lineage
+}
+proc ::GX::_datasetTransformSmoothingLineage {record} {
+    # Track the current Variable alias separately from captured scientific IDs.
+    # This survives projection/renaming, unit conversion and row transforms.
+    set lineage {};set report [dict get $record report]
+    foreach snapshot [dict get $record snapshots] {
+        set metadata [dict get $snapshot metadata];set previous [datasetPublicationV2DictDefault $metadata transform.smoothing_lineage {}]
+        if {$previous eq {}&&[dict exists $metadata transform.effective smoothing_receipt]} {
+            set receipt [dict get $metadata transform.effective smoothing_receipt]
+            set previous [list [dict create variable_id [dict get $receipt smoothed_variable_id] smoothing $receipt]]
+        }
+        foreach binding $previous {
+            # Polar-only publication removes Cartesian columns from the final
+            # mapping. Recover only its declared input aliases before deriving
+            # angle/radius ancestry; discard removed columns at the end.
+            if {[dict exists $record manifest options polar_output]} {
+                set polar [dict get $record manifest options polar_output]
+                if {$polar ne {}&&[datasetPublicationV2DictDefault $polar representation both] ne "cartesian"} {
+                    foreach input [dict get $record manifest sources] {
+                        if {[datasetPublicationV2DictDefault $input dataset_id {}] ne [dict get $snapshot dataset_id]} continue
+                        set aliases [datasetPublicationV2DictDefault $input variable_map [datasetPublicationV2DictDefault [dict get $record manifest options] rename {}]]
+                        set id [datasetPublicationV2DictDefault $aliases [dict get $binding variable_id] [dict get $binding variable_id]]
+                        if {$id in [list [dict get $polar x_variable_id] [dict get $polar y_variable_id]]} {
+                            set current [dict replace $binding variable_id $id];if {$current ni $lineage} {lappend lineage $current}
+                        }
+                    }
+                }
+            }
+            foreach mapping [dict get $report variable_mapping] {
+                if {[dict get $mapping source_dataset_id] eq [dict get $snapshot dataset_id]&&[dict get $mapping source_variable_id] eq [dict get $binding variable_id]} {
+                    set current [dict replace $binding variable_id [dict get $mapping output_variable_id]]
+                    if {$current ni $lineage} {lappend lineage $current}
+                }
+            }
+        }
+    }
+    set dependencies {}
+    if {[dict exists $report logarithm_receipt]} {
+        foreach transform [dict get $report logarithm_receipt transforms] {
+            lappend dependencies [list [list [dict get $transform source_variable_id]] [list [dict get $transform output_variable_id]]]
+        }
+    }
+    if {[dict exists $report baseline_receipt]} {
+        set receipt [dict get $report baseline_receipt]
+        lappend dependencies [list [list [dict get $receipt x_variable_id] [dict get $receipt original_y_variable_id]] [list [dict get $receipt baseline_variable_id] [dict get $receipt corrected_variable_id]]]
+    }
+    set options [dict get $record manifest options]
+    if {[dict get $report operation] eq "transform_xy"} {
+        set x [dict get $options x_variable_id];set y [dict get $options y_variable_id]
+        lassign [dict get $options matrix] a b c d tx ty
+        foreach input [list $x $y] first [list $a $b] second [list $c $d] {
+            set targets {};if {$first!=0} {lappend targets $x};if {$second!=0} {lappend targets $y}
+            lappend dependencies [list [list $input] $targets]
+        }
+        # Replaced axes must not inherit an input's same-name binding when the
+        # actual affine coefficient is zero.
+        set originalLineage $lineage;set lineage {}
+        foreach binding $originalLineage {if {[dict get $binding variable_id] ni [list $x $y]} {lappend lineage $binding}}
+    } else {set originalLineage $lineage}
+    foreach dependency $dependencies {
+        lassign $dependency inputs outputs
+        foreach binding $originalLineage {
+            if {[dict get $binding variable_id] ni $inputs} continue
+            foreach output $outputs {set current [dict replace $binding variable_id $output];if {$current ni $lineage} {lappend lineage $current}}
+        }
+    }
+    if {[dict exists $options polar_output]&&[dict get $options polar_output] ne {}} {
+        set polar [dict get $options polar_output]
+        if {[datasetPublicationV2DictDefault $polar representation both] ne "cartesian"} {
+            set inputs [list [dict get $polar x_variable_id] [dict get $polar y_variable_id]]
+            set previous $lineage
+            foreach binding $previous {
+                if {[dict get $binding variable_id] ni $inputs} continue
+                foreach output [list [datasetPublicationV2DictDefault $polar theta_variable_id theta] [datasetPublicationV2DictDefault $polar radius_variable_id r]] {
+                    set current [dict replace $binding variable_id $output];if {$current ni $lineage} {lappend lineage $current}
+                }
+            }
+        }
+    }
+    if {[dict exists $report smoothing_receipt]} {
+        set receipt [dict get $report smoothing_receipt]
+        foreach field {smoothed_variable_id residual_variable_id} {
+            set generated [dict get $receipt $field]
+            # Both the smoother and its removed component depend on every local
+            # neighborhood. Carry all inherited input-Y ancestry to both outputs.
+            set previous $lineage
+            foreach binding $previous {
+                if {[dict get $binding variable_id] in [list [dict get $receipt x_variable_id] [dict get $receipt original_y_variable_id]]} {
+                    set current [dict replace $binding variable_id $generated]
+                    if {$current ni $lineage} {lappend lineage $current}
+                }
+            }
+            lappend lineage [dict create variable_id $generated smoothing $receipt]
+        }
+    }
+    set outputIds {};foreach variable [dict get $report variables] {lappend outputIds [dict get $variable variable_id]}
+    set retained {};foreach binding $lineage {if {[dict get $binding variable_id] in $outputIds&&$binding ni $retained} {lappend retained $binding}}
+    return $retained
+}
+proc ::GX::_datasetTransformLogarithmLineage {record} {
+    set report [dict get $record report];set lineage {};set operation [dict get $report operation]
+    foreach snapshot [dict get $record snapshots] {
+        foreach binding [datasetPublicationV2DictDefault [dict get $snapshot metadata] transform.logarithm_lineage {}] {
+            foreach mapping [dict get $report variable_mapping] {
+                if {[dict get $mapping source_dataset_id] ne [dict get $snapshot dataset_id]||[dict get $mapping source_variable_id] ne [dict get $binding variable_id]} continue
+                set current [dict replace $binding variable_id [dict get $mapping output_variable_id]]
+                set reason {}
+                if {[llength [dict get $record snapshots]]!=1||$operation ni {project_variables subset_rows rename_reorder convert_units calibrate_variables reverse_rows reverse_range reverse_sequence sort_rows baseline_correct log_variables smooth_curve}} {
+                    set reason {Subsequent multi-source or numerical transform has not certified an unchanged log ratio}
+                }
+                foreach conversion [dict get $report conversions] {
+                    if {[dict get $conversion variable_id] eq [dict get $binding variable_id]} {set reason {Subsequent unit conversion changed the captured log-ratio coordinates}}
+                }
+                foreach calibration [dict get $report calibrations] {
+                    if {[dict get $calibration variable_id] eq [dict get $binding variable_id]&&![dict get $calibration identity]} {set reason {Subsequent calibration changed the captured log-ratio coordinates}}
+                }
+                if {$reason ne {}} {dict set current inverse_eligible 0;dict set current inverse_reason $reason}
+                if {$current ni $lineage} {lappend lineage $current}
+            }
+        }
+    }
+    if {[dict exists $report logarithm_receipt]} {
+        foreach transform [dict get $report logarithm_receipt transforms] {
+            lappend lineage [dict create variable_id [dict get $transform output_variable_id] transform $transform inverse_eligible 1 inverse_reason {}]
+        }
+    }
+    return $lineage
+}
 proc ::GX::_datasetTransformMetadata {record} {
     set manifest [dict get $record manifest];set snapshots [dict get $record snapshots]
     set policy [dict get $manifest metadata_policy]
@@ -291,10 +499,17 @@ proc ::GX::_datasetTransformMetadata {record} {
             }
         }
     }
+    set result [dict merge $result [datasetPublicationV2DictDefault [dict get $manifest options] metadata_overrides {}]]
     foreach key [dict keys $result] {if {[string match transform.* $key]} {dict unset result $key}}
     dict set result transform.api_version 1
     dict set result transform.manifest $manifest
     dict set result transform.effective [dict get $record report]
+    set smoothing [_datasetTransformSmoothingLineage $record]
+    if {$smoothing ne {}} {dict set result transform.smoothing_lineage $smoothing}
+    set baseline [_datasetTransformBaselineLineage $record]
+    if {$baseline ne {}} {dict set result transform.baseline_lineage $baseline}
+    set logarithms [_datasetTransformLogarithmLineage $record]
+    if {$logarithms ne {}} {dict set result transform.logarithm_lineage $logarithms}
     dict set result transform.metadata_conflicts [lsort [dict keys $conflicts]]
     dict set result transform.producer core.dataset_transform
     dict set result transform.producer_version 1.0.0
@@ -385,10 +600,10 @@ proc ::GX::_datasetTransformMaterialize {session plan {member ""} {job ""}} {
             # itself never yields or permits cancellation after registry writes.
             _datasetTransformRequire [dict get $plan plan_id]
         }
-        set result [datasetPublicationV2Finalize $writer];set writer ""
+        set result [_datasetCoordinateTransformFinalize $session $writer $record];set writer ""
         return [dict merge $result [dict create row_count [dict get $report row_count] contract [dict get $report contract]]]
     } finally {
-        if {$writer ne ""} {datasetPublicationV2Abort $writer}
+        if {$writer ne ""} {catch {datasetPublicationV2Abort $writer}}
         if {$stream ne ""} {datasetTransformStreamClose $stream}
         if {$view ne ""} {datasetTransformCloseView $view}
     }

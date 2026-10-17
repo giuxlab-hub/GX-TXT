@@ -58,6 +58,7 @@ proc ::GX::CurveWorkbench::_collectionSyncLayers {w} {
 proc ::GX::CurveWorkbench::_curveVisible {w record} {
     variable st
     if {![dict get $record visible]} {return 0}
+    if {![_coordinateInFrame $w $record]} {return 0}
     set style [::GX::Native2D::core object_style $st($w,scene) [dict get $record native]]
     if {[dict get $style layer]!=0&&![dict get [::GX::Native2D::core layer_info $st($w,scene) [dict get $style layer]] visible]} {return 0}
     dict for {id group} $st($w,groups) {if {[dict get $record id] in [dict get $group members]&&![dict get $group visible]} {return 0}}

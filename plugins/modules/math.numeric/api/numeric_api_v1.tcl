@@ -157,7 +157,7 @@ proc ::GX::NumericAPIv1::foundationOperationMetadata {id} {
 # Invoke a catalogued, data-only operation through the provider's public
 # Octave binding. Operands and options use ScientificTransportv1 typed nodes;
 # no caller-supplied command, expression, or callback is evaluated here.
-proc ::GX::NumericAPIv1::callOperation {id operands {options {kind struct fields {}}}} {
+proc ::GX::NumericAPIv1::_operationOptions {id operands options} {
     set meta [operationMetadata $id]
     if {[lsearch -exact [dict get $meta flags] callback] >= 0} {
         return -code error -errorcode {GXTXT NUMERIC CallbackRequired} "operation '$id' requires an execution-scoped callback"
@@ -175,6 +175,11 @@ proc ::GX::NumericAPIv1::callOperation {id operands {options {kind struct fields
     if {![dict exists $options kind] || [dict get $options kind] ne "struct"} {
         _error "operation '$id' options must be a typed struct node"
     }
+    if {"dataset" in [dict get $meta flags]} {set options [_typedDatasetOptions $operands $options]}
+    return $options
+}
+proc ::GX::NumericAPIv1::callOperation {id operands {options {kind struct fields {}}}} {
+    set options [_operationOptions $id $operands $options]
     set empty [::GX::ScientificTransportv1::empty]
     set result [::GX::ScientificTransportv1::call math.numeric gxtxt_numeric_catalog_call_v1 \
         $id invoke [dict create kind cell items $operands] $empty $empty $options]
@@ -182,9 +187,36 @@ proc ::GX::NumericAPIv1::callOperation {id operands {options {kind struct fields
     set lastResultTypes [dict get $result types]
     return [dict get $result values]
 }
+proc ::GX::NumericAPIv1::callOperationCaptured {document id operands context {options {kind struct fields {}}} {provenance {}}} {
+    ::GX::interactiveDocumentRead $document
+    set options [_operationOptions $id $operands $options]
+    set fields [dict keys [::GX::StatisticsV1::numericFieldMap $id]]
+    set empty [::GX::ScientificTransportv1::empty]
+    return [::GX::ScientificTransportv1::withCapturedColumns math.numeric gxtxt_numeric_catalog_call_v1 $id invoke \
+        [dict create kind cell items $operands] $empty $empty $options $fields \
+        [list ::GX::StatisticsV1::fromProviderColumns $document $id $context $provenance]]
+}
+# Shared Selection resolution for typed catalog and declared-model callers.
+proc ::GX::NumericAPIv1::_typedDatasetOptions {operands options} {
+    if {[dict exists $options fields selection_id]} {
+        if {[dict exists $options fields selection]} {_error {Choose either a Selection ID or an explicit Selection structure, not both}}
+        set sessionNode [lindex $operands 0];set datasetNode [lindex $operands 1]
+        set selectionNode [dict get $options fields selection_id]
+        foreach node [list $sessionNode $datasetNode $selectionNode] {if {[dict get $node kind] ne "text"} {_error {Dataset Session, Dataset ID and Selection ID must be text operands}}}
+        set selection [_selectionForDataset [dict get $sessionNode value] [dict get $datasetNode value] [dict get $selectionNode value]]
+        set fields {}
+        dict for {key value} $selection {
+            if {$key eq "x_binding_count"&&$value eq {}} {set value 0}
+            if {$key in {enabled x_min x_max y_min y_max x_binding_count}} {dict set fields $key [::GX::ScientificTransportv1::array {1 1} [list $value]]} else {dict set fields $key [::GX::ScientificTransportv1::text $value]}
+        }
+        dict unset options fields selection_id
+        dict set options fields selection [::GX::ScientificTransportv1::struct $fields]
+    }
+    return $options
+}
 proc ::GX::NumericAPIv1::modelKinds {id} {
     switch -- $id {
-        nonlinear_fit - dataset_nonlinear_fit {return {polynomial_fit gaussian exponential}}
+        nonlinear_fit - dataset_nonlinear_fit {return {linear polynomial_fit gaussian exponential expression power_law}}
         root_find - minimize_1d {return {polynomial}}
         minimize - foundation.constrained.solve {return {quadratic_norm}}
         foundation.calculus.gradient - foundation.calculus.hessian - foundation.calculus.directional {return {polynomial quadratic_norm}}
@@ -208,6 +240,7 @@ proc ::GX::NumericAPIv1::callModelOperation {id model operands {options {kind st
     set expected [expr {[string match {foundation.*} $id] ? 2 : [dict get [dict create nonlinear_fit 3 dataset_nonlinear_fit 5 root_find 1 minimize_1d 1 minimize 1] $id]}]
     if {[llength $operands] != $expected} {_error "operation '$id' requires $expected data operands with its declarative model"}
     foreach item $operands {if {![dict exists $item kind]} {_error "model operation operands must be typed nodes"}}
+    if {$id eq "dataset_nonlinear_fit"} {set options [_typedDatasetOptions $operands $options]}
     set empty [::GX::ScientificTransportv1::empty]
     set result [::GX::ScientificTransportv1::call math.numeric gxtxt_numeric_model_call_v1 \
         $id model [dict create kind cell items $operands] $model $empty $options]
@@ -285,25 +318,20 @@ proc ::GX::NumericAPIv1::_parseResult {path} {
         set message [::GX::descriptorValue $d error message "numerical worker failed"]
         return -code error -errorcode [list GXTXT NUMERIC $identifier] "math.numeric API v1: $message"
     }
-    set fields [::GX::splitList [::GX::descriptorValue $d result fields ""]]; set out [dict create]
-    variable lastResultTypes; set lastResultTypes [dict create]
-    foreach field $fields {
-        set sec "result.$field"; set typ [::GX::descriptorValue $d $sec type string]; set val [::GX::descriptorValue $d $sec value ""]
-        dict set lastResultTypes $field $typ
-        switch -- $typ {
-            vector {dict set out $field [expr {$val eq "" ? {} : [split $val {;}]}]}
-            matrix {set rows [::GX::descriptorValue $d $sec rows 0]; set cols [::GX::descriptorValue $d $sec cols 0]; set flat [expr {$val eq "" ? {} : [split $val {;}]}]; set m {}; set pos 0; for {set r 0} {$r < $rows} {incr r} {lappend m [lrange $flat $pos [expr {$pos+$cols-1}]]; incr pos $cols}; dict set out $field $m}
-            boolean {dict set out $field [expr {$val in {1 true yes on} ? 1 : 0}]}
-            default {dict set out $field $val}
-        }
-    }
-    return $out
+    set parsed [::GX::ScientificTransportv1::readResult $path]
+    variable lastResultTypes;set lastResultTypes [dict get $parsed types]
+    return [dict get $parsed values]
 }
 proc ::GX::NumericAPIv1::resultTypes {} {
     variable lastResultTypes
     return $lastResultTypes
 }
 proc ::GX::NumericAPIv1::_run {operation data {options {}} {selection {}}} {
+    if {$operation in {smooth dataset_smooth}} {
+        dict for {key value} $options {
+            if {$key ni {method window degree robust_iterations nonfinite chunk_rows}} {_error "Unknown smoothing option '$key'"}
+        }
+    }
     set options [_validateOptions $options]; set octave [_octaveCommand]; if {$octave eq ""} {_error "GNU Octave executable is unavailable"}
     variable lastResultTypes; set lastResultTypes [dict create]
     set reqChan [file tempfile reqPath]; close $reqChan; set rspChan [file tempfile rspPath]; close $rspChan; file delete -force $rspPath
@@ -388,6 +416,42 @@ proc ::GX::NumericAPIv1::validateMonotonic {x {options {}}} {requireCapability g
 proc ::GX::NumericAPIv1::uniformGrid {start stop spacing {options {}}} {requireCapability uniform_grid; set d [_vectorData start [list $start] stop [list $stop] spacing [list $spacing]]; return [_run uniform_grid $d $options]}
 proc ::GX::NumericAPIv1::commonRange {x1 x2 {options {}}} {requireCapability common_range; return [_run common_range [_vectorData x1 $x1 x2 $x2] $options]}
 proc ::GX::NumericAPIv1::statistics {values {options {}}} {requireCapability descriptive_statistics; return [_run statistics [_vectorData values $values] $options]}
+proc ::GX::NumericAPIv1::_responsiveCommand {command item context} {return $command}
+proc ::GX::NumericAPIv1::_responsiveStatisticsResult {response stdout item context} {
+    set values [_parseResult $response]
+    return [dict create values $values types [resultTypes]]
+}
+proc ::GX::NumericAPIv1::statisticsResponsive {values {options {}} {progress {}}} {
+    # Host-only event-loop adapter; the exact existing Numeric worker remains
+    # the sole computation. CORE owns process lifetime, argv and cancellation.
+    requireCapability descriptive_statistics
+    if {[llength $values]>65536} {_error {Responsive summary accepts at most 65536 values; use the Dataset/managed resource API for bulk data}}
+    set options [_validateOptions $options];set octave [_octaveCommand]
+    if {$octave eq {}} {_error {GNU Octave executable is unavailable}}
+    set requestChannel [file tempfile request];close $requestChannel
+    set responseChannel [file tempfile response];close $responseChannel;file delete -- $response
+    set runId "numeric-summary-[pid]-[clock clicks]"
+    try {
+        _writeRequest $request statistics [_vectorData values $values] $options {}
+        set command [list $octave --quiet --no-gui [_workerPath] --request $request --response $response]
+        set operation [dict create kind process command_builder [list ::GX::NumericAPIv1::_responsiveCommand $command] result_parser [list ::GX::NumericAPIv1::_responsiveStatisticsResult $response]]
+        set run [::GX::parallelExecutionExecute [list [dict create id statistics]] $operation [dict create workers 1 fail_fast 1 progress_command $progress run_id $runId]]
+        set item [lindex [dict get $run results] 0]
+        if {[dict get $item state] ne "success"} {
+            if {[dict get $run state] eq "cancelled"} {return -code error -errorcode {GXTXT NUMERIC CANCELLED} {Numeric summary cancelled}}
+            # A failed numerical worker writes its canonical error response
+            # before exiting. Preserve that identifier and explanation.
+            if {[file isfile $response]} {_parseResult $response}
+            _error [::GX::datasetPublicationV2DictDefault $item error {Numeric summary failed}]
+        }
+        set result [dict get $item value]
+        variable lastResultTypes;set lastResultTypes [dict get $result types]
+        return [dict get $result values]
+    } finally {
+        catch {::GX::parallelExecutionRelease $runId}
+        file delete -force -- $request $response
+    }
+}
 proc ::GX::NumericAPIv1::rank {values {options {}}} {requireCapability ranking; return [_run rank [_vectorData values $values] $options]}
 proc ::GX::NumericAPIv1::covariance {x y {options {}}} {requireCapability covariance; return [_run covariance [_vectorData x $x y $y] $options]}
 proc ::GX::NumericAPIv1::correlation {x y {options {}}} {requireCapability correlation; return [_run correlation [_vectorData x $x y $y] $options]}
@@ -443,6 +507,15 @@ proc ::GX::NumericAPIv1::foundation {family action a b c {options {kind struct f
     set lastResultTypes [dict get $result types]
     return [dict get $result values]
 }
+proc ::GX::NumericAPIv1::foundationCaptured {document family action a b c context {options {kind struct fields {}}} {provenance {}}} {
+    requireCapability mathematical_foundation
+    ::GX::interactiveDocumentRead $document
+    foundationOperationMetadata $family.$action
+    set operation foundation.$family.$action
+    set fields [dict keys [::GX::StatisticsV1::numericFieldMap $operation]]
+    return [::GX::ScientificTransportv1::withCapturedColumns math.numeric gxtxt_numeric_foundation_public_v1 $family $action \
+        $a $b $c $options $fields [list ::GX::StatisticsV1::fromProviderColumns $document $operation $context $provenance]]
+}
 proc ::GX::NumericAPIv1::resampleIndices {populationSize drawCount replicates seed {options {}}} {
     requireCapability random_resampling
     set data [_vectorData population_size [list $populationSize] draw_count [list $drawCount] replicates [list $replicates] seed [list $seed]]
@@ -456,6 +529,149 @@ proc ::GX::NumericAPIv1::normalizeVector {values {options {}}} {requireCapabilit
 proc ::GX::NumericAPIv1::vectorSimilarity {a b {options {}}} {requireCapability vector_similarity; return [_run vector_similarity [_vectorData a $a b $b] $options]}
 proc ::GX::NumericAPIv1::weightedStatistics {values weights {options {}}} {requireCapability weighted_statistics; return [_run weighted_statistics [_vectorData values $values weights $weights] $options]}
 proc ::GX::NumericAPIv1::leastSquares {design response {weights {}} {options {}}} {requireCapability linear_least_squares; set d [dict create design [dict create kind matrix value $design] response [dict create kind vector value $response]]; if {[llength $weights]} {requireCapability weighted_linear_least_squares; dict set d weights [dict create kind vector value $weights]}; return [_run least_squares $d $options]}
+proc ::GX::NumericAPIv1::fitInformationCriteria {plan} {
+    requireCapability fit_model_selection
+    set fields {}
+    dict for {key value} $plan {
+        if {$key in {api_version n free_parameter_count weighted_sse log_weight_sum}&&$value ne {}} {
+            set node [::GX::ScientificTransportv1::array {1 1} [list $value]]
+        } else {set node [::GX::ScientificTransportv1::text $value]}
+        dict set fields $key $node
+    }
+    return [callOperation fit_information_criteria [list [::GX::ScientificTransportv1::struct $fields]]]
+}
+proc ::GX::NumericAPIv1::nestedFTest {plan} {
+    requireCapability fit_model_selection
+    set fields {}
+    dict for {key value} $plan {
+        if {$key in {api_version n reduced_p full_p reduced_sse full_sse numerator_df denominator_df}&&$value ne {}} {
+            set node [::GX::ScientificTransportv1::array {1 1} [list $value]]
+        } else {set node [::GX::ScientificTransportv1::text $value]}
+        dict set fields $key $node
+    }
+    return [callOperation nested_f_test [list [::GX::ScientificTransportv1::struct $fields]]]
+}
+proc ::GX::NumericAPIv1::parameterUncertainty {plan} {
+    requireCapability uncertainty_propagation
+    return [callOperation parameter_uncertainty [list [_parameterInferencePlanNode $plan]]]
+}
+proc ::GX::NumericAPIv1::derivedProperties {plan} {
+    requireCapability uncertainty_propagation
+    set fields {}
+    dict for {key value} $plan {
+        switch -- $key {
+            api_version {set node [::GX::ScientificTransportv1::array {1 1} [list $value]]}
+            parameter_values - free_indices {set node [expr {[llength $value]?[::GX::ScientificTransportv1::array [list [llength $value] 1] $value]:[::GX::ScientificTransportv1::empty]}]}
+            source_covariance {set node [dict get [_parameterInferencePlanNode [dict create source_covariance $value]] fields source_covariance]}
+            parameter_ids - parameter_aliases - parameter_units - parameter_roles {set node [dict create kind cell items [lmap item $value {::GX::ScientificTransportv1::text $item}]]}
+            definitions {
+                set items {}
+                foreach definition $value {
+                    set df {}
+                    foreach field {id label expression unit} {dict set df $field [::GX::ScientificTransportv1::text [dict get $definition $field]]}
+                    set constants {}
+                    foreach constant [dict get $definition constants] {
+                        lappend constants [::GX::ScientificTransportv1::struct [dict create id [::GX::ScientificTransportv1::text [dict get $constant id]] unit [::GX::ScientificTransportv1::text [dict get $constant unit]] value [::GX::ScientificTransportv1::array {1 1} [list [dict get $constant value]]]]]
+                    }
+                    dict set df constants [dict create kind cell items $constants]
+                    lappend items [::GX::ScientificTransportv1::struct $df]
+                }
+                set node [dict create kind cell items $items]
+            }
+            default {set node [::GX::ScientificTransportv1::text $value]}
+        }
+        dict set fields $key $node
+    }
+    return [callOperation derived_properties [list [::GX::ScientificTransportv1::struct $fields]]]
+}
+proc ::GX::NumericAPIv1::fitBootstrap {model predictors response plan {options {kind struct fields {}}}} {
+    requireCapability bootstrap_refits
+    set fields {}
+    dict for {key value} $plan {
+        switch -- $key {
+            api_version - n - p - rank - dof - free_parameter_count - replicates - seed - confidence - max_seconds - residual_scale - workspace_bytes_max - resample_values_max - work_units_max {
+                set node [expr {$value eq {}?[::GX::ScientificTransportv1::text {}]:[::GX::ScientificTransportv1::array {1 1} [list $value]]}]
+            }
+            source_parameters {set node [::GX::ScientificTransportv1::array [list [llength $value] 1] $value]}
+            parameter_ids - parameter_units - parameter_roles - assumptions {set node [dict create kind cell items [lmap item $value {::GX::ScientificTransportv1::text $item}]]}
+            propagation_basis {set node [_parameterInferencePlanNode $value]}
+            solver_policy - observation_signature {
+                set nested {}
+                dict for {name item} $value {
+                    if {$name in {lower_bounds upper_bounds}} {set child [::GX::ScientificTransportv1::array [list [llength $item] 1] $item {} allow_infinity]} elseif {$name in {fixed_mask parameter_scales}} {set child [::GX::ScientificTransportv1::array [list [llength $item] 1] $item]} elseif {$name in {n log_weight_sum response_offset predictor_count loss_scale function_tolerance gradient_tolerance parameter_tolerance max_iterations max_function_evaluations}} {set child [::GX::ScientificTransportv1::array {1 1} [list $item]]} else {set child [::GX::ScientificTransportv1::text $item]}
+                    dict set nested $name $child
+                }
+                set node [::GX::ScientificTransportv1::struct $nested]
+            }
+            default {set node [::GX::ScientificTransportv1::text $value]}
+        }
+        dict set fields $key $node
+    }
+    return [callOperation fit_bootstrap [list $model $predictors $response [::GX::ScientificTransportv1::struct $fields]] $options]
+}
+proc ::GX::NumericAPIv1::fitProfile {model predictors response plan {options {kind struct fields {}}}} {
+    requireCapability profile_likelihood
+    set fields {}
+    dict for {key value} $plan {
+        switch -- $key {
+            api_version - n - p - free_parameter_count - confidence - max_seconds - workspace_bytes_max - work_units_max - search_lower - search_upper - initial_step - parameter_tolerance - max_refits - baseline_sse - parameter_index - original_fit_count {
+                set node [expr {$value eq {}?[::GX::ScientificTransportv1::text {}]:[::GX::ScientificTransportv1::array {1 1} [list $value]]}]
+            }
+            source_parameters {set node [::GX::ScientificTransportv1::array [list [llength $value] 1] $value]}
+            parameter_ids - parameter_units - parameter_roles - assumptions {set node [dict create kind cell items [lmap item $value {::GX::ScientificTransportv1::text $item}]]}
+            solver_policy - observation_signature {
+                set nested {}
+                dict for {name item} $value {
+                    if {$name in {lower_bounds upper_bounds}} {set child [::GX::ScientificTransportv1::array [list [llength $item] 1] $item {} allow_infinity]} elseif {$name in {fixed_mask parameter_scales}} {set child [::GX::ScientificTransportv1::array [list [llength $item] 1] $item]} elseif {$name in {n log_weight_sum response_offset predictor_count loss_scale function_tolerance gradient_tolerance parameter_tolerance max_iterations max_function_evaluations}} {set child [::GX::ScientificTransportv1::array {1 1} [list $item]]} else {set child [::GX::ScientificTransportv1::text $item]}
+                    dict set nested $name $child
+                }
+                set node [::GX::ScientificTransportv1::struct $nested]
+            }
+            default {set node [::GX::ScientificTransportv1::text $value]}
+        }
+        dict set fields $key $node
+    }
+    return [callOperation fit_profile [list $model $predictors $response [::GX::ScientificTransportv1::struct $fields]] $options]
+}
+proc ::GX::NumericAPIv1::_parameterInferencePlanNode {plan} {
+    set fields {}
+    dict for {key value} $plan {
+        switch -- $key {
+            api_version - confidence - query_center - query_scale {set node [::GX::ScientificTransportv1::array {1 1} [list $value]]}
+            degrees_of_freedom {set node [expr {$value eq {} ? [::GX::ScientificTransportv1::text {}] : [::GX::ScientificTransportv1::array {1 1} [list $value]]}]}
+            source_parameters {set node [expr {[llength $value] ? [::GX::ScientificTransportv1::array [list [llength $value] 1] $value] : [::GX::ScientificTransportv1::empty]}]}
+            source_covariance {
+                set count [llength $value];set flat {}
+                for {set column 0} {$column<$count} {incr column} {foreach row $value {if {[llength $row]!=$count} {_error "Parameter covariance must be square"};lappend flat [lindex $row $column]}}
+                set node [expr {$count ? [::GX::ScientificTransportv1::array [list $count $count] $flat] : [::GX::ScientificTransportv1::empty]}]
+            }
+            parameter_ids - parameter_units {
+                set items {};foreach item $value {lappend items [::GX::ScientificTransportv1::text $item]}
+                set node [dict create kind cell items $items]
+            }
+            default {set node [::GX::ScientificTransportv1::text $value]}
+        }
+        dict set fields $key $node
+    }
+    return [dict create kind struct fields $fields]
+}
+proc ::GX::NumericAPIv1::predictionUncertainty {model predictors plan {options {kind struct fields {}}}} {
+    requireCapability uncertainty_propagation
+    set fields {}
+    dict for {key value} $plan {
+        switch -- $key {
+            parameter_plan - propagation_basis {set node [_parameterInferencePlanNode $value]}
+            api_version {set node [::GX::ScientificTransportv1::array {1 1} [list $value]]}
+            critical_value - observation_scale {set node [expr {$value eq {}?[::GX::ScientificTransportv1::text {}]:[::GX::ScientificTransportv1::array {1 1} [list $value]]}]}
+            all_parameter_values - free_parameter_indices {set node [expr {[llength $value]?[::GX::ScientificTransportv1::array [list [llength $value] 1] $value]:[::GX::ScientificTransportv1::empty]}]}
+            all_parameter_ids {set node [dict create kind cell items [lmap id $value {::GX::ScientificTransportv1::text $id}]]}
+            default {set node [::GX::ScientificTransportv1::text $value]}
+        }
+        dict set fields $key $node
+    }
+    # Model and predictors use the existing public typed operand convention.
+    return [callOperation prediction_uncertainty [list $model $predictors [::GX::ScientificTransportv1::struct $fields]] $options]
+}
 proc ::GX::NumericAPIv1::linearRegression {x y {weights {}} {options {}}} {requireCapability linear_regression; set d [_vectorData x $x y $y]; if {[llength $weights]} {dict set d weights [dict create kind vector value $weights]}; return [_run linear_regression $d $options]}
 proc ::GX::NumericAPIv1::polynomialFit {x y degree {weights {}} {options {}}} {requireCapability polynomial_fit; set d [_vectorData x $x y $y degree [list $degree]]; if {[llength $weights]} {requireCapability weighted_polynomial_fit; dict set d weights [dict create kind vector value $weights]}; return [_run polynomial_fit $d $options]}
 proc ::GX::NumericAPIv1::_polynomialModelData {model} {
@@ -481,9 +697,8 @@ proc ::GX::NumericAPIv1::oneSided {realValues imaginaryValues {options {}}} {req
 proc ::GX::NumericAPIv1::detrend {values {options {}}} {requireCapability detrending; return [_run detrend [_vectorData values $values] $options]}
 proc ::GX::NumericAPIv1::window {name length {options {}}} {requireCapability window_generation; set d [dict create name [dict create kind string value $name] length [dict create kind vector value [list $length]]]; return [_run window $d $options]}
 
-# nonlinearFit, rootFind, minimize1D, minimize and datasetNonlinearFit intentionally
-# live in the public Octave binding: executable callbacks are not serialized by
-# the Tcl one-shot worker.
+# Executable callbacks stay in their language runtime. Data-only fitting models
+# use callModelOperation; nonlinear_evaluate uses the typed operation catalog.
 
 proc ::GX::NumericAPIv1::_recordGet {record key default} {
     if {[dict exists $record $key]} {return [dict get $record $key]}

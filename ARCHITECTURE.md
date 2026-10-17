@@ -1,6 +1,6 @@
 # GX-TXT Architecture
 
-**Reference source:** GX-TXT 0.9.8.10-dev-096  
+**Reference source:** GX-TXT 0.9.8.10-dev-097  
 **Framework license:** GPL-3.0-or-later
 
 GX-TXT is a modular desktop framework for scientific acquisition, Dataset management, numerical analysis, scripting and visualization. It is not a CFD solver, data-acquisition instrument or generic execution service.
@@ -34,6 +34,13 @@ Instrument/file/synthetic fixture
 ```
 
 The canonical Dataset identity consists of stable Dataset and Variable IDs, not display labels or CSV headers. Source inputs and scientific lineage must remain distinguishable from derived datasets, plots and presentation caches. Projects organize Experiments/Sessions without replacing the Dataset authority.
+
+The current scientific interpretation boundary additionally uses the public
+[Statistical Result Semantics API](docs/api/STATISTICAL_RESULT_SEMANTICS_API_v1.md)
+for dimensional, covariance and applicability policies. The
+[Scientific Binary Transport v2 contract](docs/api/SCIENTIFIC_BINARY_TRANSPORT_v2.md)
+preserves typed numerical arrays across supported Script Bridge operations.
+A presentation-only coordinate conversion does not rewrite the canonical Dataset.
 
 ## Public API and extension boundaries
 

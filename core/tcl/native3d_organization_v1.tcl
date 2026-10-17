@@ -80,6 +80,8 @@ proc ::GX::native3DGeometryCall {token action request} {
         unitRegistryConversionPlan [dict get $request working_unit] mm
         set result [native3DGeometryCall_organization_base $token $action $request]
         dict set result working_unit [dict get $request working_unit]
+        set unit [dict get $request working_unit]
+        dict set result statistics [::GX::StatisticsV1::fromNativeComparison surface $result [dict create x_unit $unit y_unit $unit z_unit $unit] [dict create producer core.native3d reference [dict get $request base] target [dict get $request tool]]]
         dict set result area_unit "[dict get $request working_unit]^2";dict set result volume_unit "[dict get $request working_unit]^3"
         return $result
     }

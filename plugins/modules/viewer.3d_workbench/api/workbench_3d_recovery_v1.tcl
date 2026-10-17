@@ -4,7 +4,7 @@ rename ::GX::Workbench3D::checkpoint ::GX::Workbench3D::checkpoint_recovery_base
 proc ::GX::Workbench3D::checkpoint {} {
     variable document;variable model;variable recoveryNotice
     set result [checkpoint_recovery_base]
-    set receipt [dict create module_id viewer.3d_workbench module_version 0.1.0 api_id NATIVE_3D_GEOMETRY_API_v1 api_version 1]
+    set receipt [dict create module_id viewer.3d_workbench module_version [::GX::moduleField viewer.3d_workbench version] api_id NATIVE_3D_GEOMETRY_API_v1 api_version 1]
     if {[dict get $model recipe] ne {}} {dict set receipt operation [lindex [dict get $model recipe] end]}
     if {[catch {::GX::workbenchRecoveryCheckpoint $document $receipt} message]} {set recoveryNotice "Action committed; recovery checkpoint unavailable: $message"} else {set recoveryNotice ""}
     return $result

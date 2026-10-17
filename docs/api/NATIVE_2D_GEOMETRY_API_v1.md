@@ -1,5 +1,57 @@
 # NATIVE_2D_GEOMETRY_API_v1
 
+Cartesian `render_grid` presentation selects a subset of the configured major
+lattice when necessary to retain at least eight pixels between parallel lines.
+The distance is perpendicular in the actual viewport, including rotated grids
+with unequal X/Y scales. Output remains bounded by 2048 primitives. Zooming in
+reveals the original minor lattice. `grid`, `grid_snap`, `grid_snap_delta`,
+geometry, source values and serialized presentation keep their original spacing
+and identities. CORE canvas, Preview and presentation exporters consume the
+same primitive provider; this display thinning does not materialize scientific
+coordinates or change a Session's working grid.
+
+The host helper `native2DSourceCoordinateRelations descriptor xVariable yVariable`
+returns nondefault unit-relation fields by axis from a frozen Curve Source
+descriptor. It performs no numerical conversion. Opaque-scene `metrics`,
+`compare` and `compare_geometry` reject unnormalized Variable-specific relations
+with Dataset Transform guidance; resource export/restore preserves this guard.
+Workbench uses the same inspection before automatic alignment and physical
+metrics/comparison. Nominal unit symbols alone cannot override source formulas.
+
+## Shared host grid and export presentation (dev097)
+
+The Tcl host helper `native2DGridForm window scene changed ?parent? ?presentation?`
+accepts an optional captured axis presentation. Existing callers retain Native
+coordinates. Each `x`/`y` entry supplies finite nonzero `scale`, `inverse_scale`,
+finite `offset`, `inverse_offset`, and a `unit` label. Callers obtain these plans
+from CORE Unit Registry or Dataset Metadata; the grid does not infer a physical
+conversion. Origins use the affine relation, whereas spacings and compatible
+polar radii use its absolute scale. `polar_compatible` enables a common physical
+axis frame; otherwise the polar tab is disabled and Apply permits Cartesian only.
+`note` explains the frame; optional `guard` is a host callback checked before
+opening, applying or resetting. A changed source, unit context or Session must
+reject the captured form before any Native mutation.
+
+`native2DGridPresentationApply scene changed presentation values` validates the
+presentation and guard, maps fields through their declared inverse plans, then
+uses the existing atomic `native2DGridApply`. Rotation remains explicitly in
+geometry coordinates. Nonlinear display relations cannot define uniform grid
+spacing: Workbench retains and labels the Native grid unit for that axis.
+
+`native2DPresentationSnapshot scene options` accepts optional `x_tick_labels`
+and `y_tick_labels`, exactly six strings per supplied axis (at most 256 characters
+each), corresponding to the existing six equally spaced Native viewport ticks.
+They change text only; positions, geometry, grid, clipping and sampling policy
+remain Native-owned. Existing callers retain numeric Native labels. Workbench
+uses bounded public coordinate conversion for tick text and axis labels before
+passing the same snapshot to the SVG/PNG exporters. No Dataset materialization
+or scientific unit relabelling occurs.
+Snapshot objects may carry an explicit bounded `point_markers` list of device XY
+coordinates supplied by the host from Native `render_lod` source/control points.
+The exporter draws these separately from curve paths and supports the existing
+`part_markers` descriptors. Workbench uses one palette resolver for Canvas and
+export, filters invisible objects, and preserves its points-only display mode.
+
 CORE provider `native2d_geometry`, API version 1. This additive TASK-9 authority
 provides retained Native2D geometry to Python and Octave Script Workspace through
 the common Script Bridge. It delegates geometry to `NATIVE2D_API_v1`; it does not
@@ -45,6 +97,7 @@ Native2D affine convention `{a,b,c,d,tx,ty}`:
 | `curve` | `points` N×2; optional `kind=curve`, `pointset`, or `point` | Object descriptor; direct input limited to 65536 points |
 | `from_source` | Execution-owned `source_token` from `CURVE_SOURCE_API_v1` | Complete finite Native geometry, frozen Source descriptor, exact original uint64 row-map resource and gap resource |
 | `describe` | `object_token` | Kind, complete bounds, Native style, metadata, point count; curves also have full length/span/signed-area metrics |
+| `metrics` | `object_token`; optional `output_units` pair | Native geometric metrics after compatible X/Y normalization; explicit unit and recorded coordinate frame |
 | `path_point` | `object_token,distance` | Exact point at nonnegative world arc length; over-end distances clamp to endpoint; infinite construction length is undefined |
 | `replace_points` | `object_token,points` Nx2 ≤65536 | Atomic full candidate; native constraints validate once; source-backed point counts must preserve exact row identity |
 | `points_page` | `object_token,start,count` | Zero-based start and N×2 points; count ≤65536 |
@@ -58,7 +111,7 @@ Native2D affine convention `{a,b,c,d,tx,ty}`:
 | `endpoint_frame` | `object_token,end,reverse,interpolation` (three booleans) | Point, derivative and exact original point index |
 | `bridge` | `start,end` object tokens; `kind=straight/quadratic/cubic/smooth`, `subdivisions` 1–4096, `tolerance`, `start_reverse,end_reverse,start_interpolation,end_interpolation` | Object descriptor and retained analytical controls/endpoint frames/C0/C1/tangent-continuity receipt |
 | `spline` | `object_token,subdivisions` | Complete Native sampled spline object; no full Tcl/Script coordinate return |
-| `compare` | `reference,derived,method=x/path,budget` 6–65536 | Full-input count/RMSE/mean/max and exact maximum source index, bounded residual descriptors/row indices; view independent |
+| `compare` | `reference,derived,method=x/path,budget` 6–65536; optional `output_units` pair | Full-input count/RMSE/mean/max and exact maximum source index, bounded residual descriptors/row indices and evaluation frame; view independent |
 | `selection` | `object_token,indices` (zero-based) | Atomic replacement and full Native selection summary |
 | `pivot` | Optional `arguments` list: `bounds`, `centroid`, `origin`, or `custom,[x,y]` | Native policy and current world point |
 | `grid`, `polar` | Optional `arguments` list containing one Native property struct | Typed shared presentation state |
@@ -359,7 +412,7 @@ Curve Workbench's shared role form persists Native metadata with one Undo action
 
 ## Bounded geometric deviation
 
-`compare_geometry` takes owned `reference`, `derived` and optional `budget` (6–4096, default 257). C computes viewport-independent geometric distances directly from retained uniform-parameter scientific evaluations or complete/bounded extrema-preserving Native vertices, preserving gaps. The receipt contains reference-query RMS/mean/max, symmetric RMS, **sampled** bidirectional Hausdorff, Native length difference, signed-area difference when both curves are closed, closest-boundary witness pairs, and bounded projection rows. Units must match across both geometry objects.
+`compare_geometry` takes owned `reference`, `derived`, optional `budget` (6–4096, default 257), and optional `output_units` pair. C computes viewport-independent geometric distances directly from retained uniform-parameter scientific evaluations or complete/bounded extrema-preserving Native vertices, preserving gaps. The receipt contains reference-query RMS/mean/max, symmetric RMS, **sampled** bidirectional Hausdorff, Native length difference, signed-area difference when both curves are closed, closest-boundary witness pairs, and bounded projection rows. Corresponding units must be compatible; CORE normalizes affine scales into one common X/Y evaluation unit before Native computation.
 
 Exact supported target projection and exact supported closest-boundary pairs are flagged separately. Other target families use the explicitly sampled segment policy; nonlinear cache chords never claim an exact retained projection. RMS/Hausdorff are sampled estimates, not continuous extrema guarantees. Closest-pair evaluation is bounded to one million exact segment pairs before using the declared sample approximation. Retained metrics use mathematical definitions independently of display cache count. Each row records the unsigned query distance and projected pair; positions are gap-aware sampled reference chord lengths. Infinite construction lines require explicit finite materialization first. Full scientific geometry remains untouched; a million-row source still produces at most the chosen budget in each direction.
 
@@ -699,3 +752,48 @@ part identities, independent marker state and batch updates, device picking and
 placement, compound semantic references, atomic owned-definition persistence,
 truthful traversal/materialization and public image calibration reset. Python
 and Octave expose the same additional operations under API version 1.
+
+### dev097 comparison semantics
+
+`compare` and `compare_geometry` preserve existing numerical receipt fields and
+add `statistics`: public `STATISTICAL_RESULT_SEMANTICS_API_v1` records named
+`reference` and (for nearest-curve geometry) `bidirectional`. Python and Octave
+receive typed records and can use the public report/validation/publication APIs.
+Coordinate units come from the actual owned geometry or stable source-variable
+bindings. Positive affine conversions on corresponding axes are resolved through
+Unit Registry; path/geometry additionally require compatible X/Y dimensions and
+one common output unit. No implicit geometric fallback is used for invalid X.
+Undeclared-unit legacy geometry stays inspectable with unavailable physical
+statistical quantities. Existing raw receipt keys remain compatible.
+
+Native module hosts share Tcl `native2DComparison SCENE REFERENCE TARGET METHOD
+BUDGET REFERENCE_XY_UNITS TARGET_XY_UNITS PROVENANCE ?OPTIONS?`; opaque public scene calls
+resolve ownership and source units before entering that common boundary.
+It computes one native comparison and attaches CORE interpretations of Numeric's
+existing reductions. Display rows are never reduced again as scientific data.
+
+`options.output_units` (Script request `output_units`) chooses the actual numeric
+evaluation frame. X matching defaults to the reference X/Y units; path/geometry
+default to the reference X unit on both axes. Unlike axes remain valid only for X
+matching. Nonlinear or nonpositive conversions are rejected with an explicit
+Dataset Transform normalization requirement. Matching identity undeclared units
+retain legacy numeric inspection with unavailable physical statistical quantities.
+
+Every receipt adds `coordinate_frame`: `schema_version=1`, `method`, ordered
+`reference_units`, `target_units`, `output_units`, and `reference_matrix` /
+`target_matrix`. The six-value diagonal affine matrices use Native's
+`{a b c d tx ty}` convention and map original coordinates into reported units.
+They are typed arrays/lists in both Script languages. All row positions, projected
+points, closest pairs, distances and statistics use the recorded output frame;
+the same descriptor accompanies CORE statistical provenance and publication.
+Host `native2DComparisonPoint receipt reference|target point` maps a reported
+point back using the captured matrix, including after Unit Registry changes.
+Historical receipts without a frame retain their original point coordinates.
+
+`native2DComparisonFrame method referenceUnits targetUnits ?options?` is the pure
+bounded planner. `native2DMetrics scene object units ?options?` and Script `metrics`
+use the same common-unit rule before the Native metric evaluation. Temporary
+affine Native copies retain full geometry and are released on success or failure;
+identity frames allocate no copies. The original objects and scientific source
+payloads are not changed. This is evaluation normalization, independent of
+Dataset calibration, display LOD and Workspace viewport zoom.

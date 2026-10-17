@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0
+
+- Public CORE statistical-result interpretation and publication metadata.
+- Numeric-owned mean uncertainty; explicit sampling assumptions and undefined/unavailable states.
+- Existing scientific variable IDs and historical releases preserved.
+
 ## 1.0.0
 
 - Added production grouped descriptive statistics for one grouping variable and one or more numeric value variables.

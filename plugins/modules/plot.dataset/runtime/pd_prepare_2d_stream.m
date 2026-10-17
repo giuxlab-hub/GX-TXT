@@ -1,4 +1,4 @@
-function S=pd_prepare_2d_stream(session,dataset_id,xid,yid,aux_ids,requested,target,threshold,chunk_rows,stage_tag,x_window,row_filters)
+function S=pd_prepare_2d_stream(session,dataset_id,xid,yid,aux_ids,requested,target,threshold,chunk_rows,stage_tag,x_window,row_filters,optional_ids)
 % Dataset-native bounded preparation for one 2-D Graph Series.
 % Reads stable Dataset/Variable IDs through Table Stream API v3. The reducer
 % keeps source-row extrema and never creates or modifies canonical data.
@@ -6,6 +6,7 @@ function S=pd_prepare_2d_stream(session,dataset_id,xid,yid,aux_ids,requested,tar
   if(nargin<10||isempty(stage_tag)),stage_tag='series';endif
   if(nargin<11||isempty(x_window)),x_window=struct('enabled',false);endif
   if(nargin<12||isempty(row_filters)),row_filters={};endif
+  if(nargin<13),optional_ids={};endif
   if(isempty(aux_ids)),aux_ids={};endif;if(ischar(aux_ids)),aux_ids={aux_ids};endif
   filter_ids=cell(1,numel(row_filters));
   for j=1:numel(row_filters),filter_ids{j}=row_filters{j}.filter_variable_id;endfor
@@ -28,7 +29,8 @@ function S=pd_prepare_2d_stream(session,dataset_id,xid,yid,aux_ids,requested,tar
   target=max(2,round(target));stride=max(1,ceil(max(1,planned_rows)/target));
   bucket_count=max(1,floor(max(2,target-2)/2));bucket_rows=max(1,ceil(max(1,planned_rows)/bucket_count));
 
-  xout=[];yout=[];seqout=[];aout=cell(1,numel(aux_ids));for j=1:numel(aout),aout{j}=[];endfor
+  xout=[];yout=[];seqout=[];aout=cell(1,numel(aux_ids)+numel(optional_ids));for j=1:numel(aout),aout{j}=[];endfor
+  uncertainty_state=[];
   x_payload_numeric=false;x_payload_seen=false;
   valid_rows=0;dropped_rows=0;filter_dropped_rows=0;window_filtered_rows=0;seen=0;bindex=-1;bmin=[];bmax=[];first_valid=[];last_valid=[];diag=struct();
   total=max(1,planned_rows);stage=['load_' stage_tag];
@@ -39,11 +41,12 @@ function S=pd_prepare_2d_stream(session,dataset_id,xid,yid,aux_ids,requested,tar
       if(ch.nrows>0)
         if(!x_payload_seen),xr=gxtxt_table_chunk_column(ch,xid);x_payload_numeric=isnumeric(xr)||islogical(xr);x_payload_seen=true;endif
         xv=gxtxt_table_chunk_numeric(ch,xid);yv=gxtxt_table_chunk_numeric(ch,yid);av=aux_chunk(ch,aux_ids);
-        finite_ok=isfinite(xv)&isfinite(yv);for j=1:numel(av),if(isnumeric(av{j})),finite_ok&=isfinite(av{j});endif;endfor
+        finite_ok=isfinite(xv)&isfinite(yv);for j=1:numel(av),if(isnumeric(av{j})&&!any(strcmp(optional_ids,aux_ids{j}))),finite_ok&=isfinite(av{j});endif;endfor
         filter_ok=gxtxt_graph_series_filter_mask(ch,row_filters);
         ok=finite_ok&filter_ok;
         if(window_bounds.enabled),ok&=(xv>=window_bounds.lo)&(xv<=window_bounds.hi);endif
         idx=find(ok);nv=numel(idx);valid_rows+=nv;dropped_rows+=ch.nrows-sum(finite_ok);filter_dropped_rows+=sum(finite_ok)-sum(finite_ok&filter_ok);window_filtered_rows+=sum(finite_ok&filter_ok)-nv;
+        [av,uncertainty_state]=pd_uncertainty_rows(av,aux_ids,optional_ids,idx,uncertainty_state);
         if(nv>0)
           seqv=ch.offset+idx-1;
           if(isempty(first_valid)),first_valid=make_row(xv(idx(1)),yv(idx(1)),av,idx(1),seqv(1));endif
@@ -81,7 +84,8 @@ function S=pd_prepare_2d_stream(session,dataset_id,xid,yid,aux_ids,requested,tar
   % A graphical point selection cannot safely infer rows from X/Y values:
   % duplicate coordinates, filters and display reduction all break that map.
   S=struct('x',xout(:),'y',yout(:),'source_row_indices',seqout(:),'valid_rows',valid_rows,'dropped_rows',dropped_rows,'filter_dropped_rows',filter_dropped_rows,'window_filtered_rows',window_filtered_rows,'display_rows',numel(xout), ...
-    'requested_reduction',requested,'effective_reduction',effective,'aux_ids',{aux_ids},'aux_values',{aout},'aux_meta',{meta}, ...
+    'requested_reduction',requested,'effective_reduction',effective,'aux_ids',{aux_ids},'aux_values',{aout(1:numel(aux_ids))},'aux_meta',{meta}, ...
+    'uncertainty_variable_ids',{optional_ids},'uncertainty_run_ids',{aout(numel(aux_ids)+1:end)}, ...
     'dataset_id',dataset_id,'stream_api_version',3,'storage_provider',provider, ...
     'source_row_count',row_count,'range_applied',plan.applied,'range_start',plan.start,'range_count',planned_rows,'range_mode',st.range_mode, ...
     'implicit_x',implicit_x,'x_payload_numeric',x_payload_numeric,'stream_diagnostics',diag);
@@ -145,9 +149,9 @@ function [x,y,a,seqs]=append_indices(x,y,a,seqs,xv,yv,av,idx,seqv)
 endfunction
 function r=make_row(x,y,av,i,seq),r=struct('x',x,'y',y,'a',{cell(1,numel(av))},'seq',seq);for j=1:numel(av),r.a{j}=av{j}(i);endfor;endfunction
 function [x,y,a,seqs]=append_row(x,y,a,seqs,r),x(end+1,1)=r.x;y(end+1,1)=r.y;seqs(end+1,1)=r.seq;for j=1:numel(a),a{j}(end+1,1)=r.a{j};endfor;endfunction
-function [x,y,a,seqs]=flush_rows(x,y,a,seqs,r1,r2)
-  if(isempty(r1)&&isempty(r2)),return;endif;if(isempty(r1)),[x,y,a,seqs]=append_row(x,y,a,seqs,r2);return;endif;if(isempty(r2)),[x,y,a,seqs]=append_row(x,y,a,seqs,r1);return;endif
-  if(r1.seq==r2.seq),[x,y,a,seqs]=append_row(x,y,a,seqs,r1);elseif(r1.seq<r2.seq),[x,y,a,seqs]=append_row(x,y,a,seqs,r1);[x,y,a,seqs]=append_row(x,y,a,seqs,r2);else [x,y,a,seqs]=append_row(x,y,a,seqs,r2);[x,y,a,seqs]=append_row(x,y,a,seqs,r1);endif
+function [x,y,a,seqs]=flush_rows(x,y,a,seqs,first_row,second_row)
+  if(isempty(first_row)&&isempty(second_row)),return;endif;if(isempty(first_row)),[x,y,a,seqs]=append_row(x,y,a,seqs,second_row);return;endif;if(isempty(second_row)),[x,y,a,seqs]=append_row(x,y,a,seqs,first_row);return;endif
+  if(first_row.seq==second_row.seq),[x,y,a,seqs]=append_row(x,y,a,seqs,first_row);elseif(first_row.seq<second_row.seq),[x,y,a,seqs]=append_row(x,y,a,seqs,first_row);[x,y,a,seqs]=append_row(x,y,a,seqs,second_row);else [x,y,a,seqs]=append_row(x,y,a,seqs,second_row);[x,y,a,seqs]=append_row(x,y,a,seqs,first_row);endif
 endfunction
 function [x,y,a,seqs]=preserve_boundaries(x,y,a,seqs,first,last)
   if(!isempty(first)&&isempty(find(seqs==first.seq,1))),x=[first.x;x];y=[first.y;y];seqs=[first.seq;seqs];for j=1:numel(a),a{j}=[first.a{j};a{j}];endfor;endif

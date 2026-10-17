@@ -1,7 +1,7 @@
 % SPDX-License-Identifier: GPL-3.0-or-later
 % GX-TXT shared INI reader for trusted framework/plugin descriptors and runtime files.
-function d = gxtxt_ini_read(path)
-  d = struct();
+function d = gxtxt_ini_read(path,exact_keys=false)
+  if(exact_keys),d=containers.Map('KeyType','char','ValueType','char');else,d=struct();endif
   sec = '';
   fid = fopen(path,'r');
   if (fid < 0), error('GXTXT:INI','Cannot open INI file: %s',path); endif
@@ -19,7 +19,10 @@ function d = gxtxt_ini_read(path)
       val = line(eq+1:end);
       fullkey = key;
       if (!isempty(sec)), fullkey = [sec '.' key]; endif
-      d.(gxtxt_ini_key(fullkey)) = gxtxt_ini_unescape(val);
+      if(exact_keys)
+        if(isKey(d,fullkey)),error('GXTXT:INI','Duplicate exact INI key: %s',fullkey);endif
+        d(fullkey)=gxtxt_ini_unescape(val);
+      else,d.(gxtxt_ini_key(fullkey)) = gxtxt_ini_unescape(val);endif
     endwhile
   unwind_protect_cleanup
     fclose(fid);

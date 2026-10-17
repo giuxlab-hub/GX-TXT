@@ -142,4 +142,48 @@ Compatibility is governed by the current `module.ini` descriptors and public API
 
 Required public interfaces include Standard Module API v1, Analysis Source Map/Access APIs, Dataset Variable Schema API v3, Table Stream API v3, Dataset Publication API v2, `NUMERIC_API_v1`, Graph Provider API v1, Graph Series API v1, Series Editor Extension API v1, Graphics Inheritance API v1, Plot Module API v1, Graph Workflow API v1, Plot Annotation API v1, Plot Region Selection API v1, Level Scale API v1, Render Cache API v1, Scientific Plot Framework API v1 and Plot Dataset API v2/v3.
 
-See [Graphics integration reference](GRAPHICS_REFERENCE.md) for current graph authority, supported capabilities, API usage and validation procedures.
+See [the current graphics reference](GRAPHICS_REFERENCE.md) for the supported plotting interfaces.
+
+## dev097 / 15.3 scientific integration
+
+Compatible X, Y and Family units are converted through CORE Units to the first
+source's actual units before alignment. Mixing a declared unit with an undeclared
+one, incompatible dimensions, or different time origins/references rejects with
+an explicit message. Canonical input payloads are unchanged. An absent Family
+stays absent; plot preparation no longer treats its NaN placeholder as required
+finite auxiliary data.
+
+Public Numeric owns local-cloud fitting, aligned source/replicate moments and
+spread envelopes. CORE owns quantity identities, units, availability and report
+definitions. Select `sampling_model=independent_traces` only when that assumption
+is appropriate for labelled curves; the default leaves SEM unavailable. Clouds
+never infer independent repeat counts. Single-curve dispersion is undefined.
+
+The existing three Dataset IDs and their existing Variable IDs remain stable.
+Profiles additionally expose counts, component eligibility and variance-truncation
+facts. Typed publication streams blocks without building a second concatenated
+copy of every profile. CORE metadata uses bounded Dataset-local column bindings;
+descriptive trace/source/component summaries use compact tables. CSV and text
+reports reuse captured reductions. Unsupported component summaries contain NaN,
+not fabricated zero bars. The historical v152 graphics-bridge filename remains a
+compatibility path; it now verifies the published CORE records before rendering.
+
+A pre-15.3 cache cannot establish this statistical contract. It is preserved and
+requires an explicit analysis recalculation before rerender. New caches retain
+captured CORE results; cache-only rerender preserves their payloads. The package
+requires dev097 CORE and Numeric APIs.
+
+Each graph writes a matching `*.status.ini` output with its render status,
+omitted Series and reason. A Series with no finite observations under its actual
+bindings and filters is omitted from that render. Its producer Graph Series
+identity remains stored. If all Series are unavailable, no replacement plot is
+fabricated: any previous PNG, extra-format export and plot metadata are moved
+into `previous_graphs/`. Captured CORE records remain the authority for why a
+statistical quantity is unavailable; the graph receipt describes presentation.
+
+Targeted labelled multi-source, single-curve, single-cloud and mixed-family tests pass,
+including actual plots, unavailable components, unchanged source payloads and
+legacy/tampered cache rejection. A mixed-family test also verifies that two-source
+cloud components remain available while a single-source family's components and
+SEM stay unavailable, including cache-only rerender. The final frozen consumer
+acceptance and package delivery remain pending.

@@ -10,6 +10,7 @@ function model_spice_build_validate_main(args)
   if(isempty(config_path)), error('model.spice_build_validate: --config is required'); endif
   cfg=gxtxt_spice_read_ini(config_path);
   numeric_fn=spice_numeric_binding(cfg);
+  statistics_lifetime=gxtxt_statistics_scope_v1();
   outdir=gxtxt_spice_ini_get(cfg,'runtime.output_dir','');
   if(isempty(outdir)), error('model.spice_build_validate: runtime.output_dir missing'); endif
   if(exist(outdir,'dir')!=7), mkdir(outdir); endif
@@ -89,7 +90,7 @@ function model_spice_build_validate_main(args)
     timestamp=utc_timestamp();
     device_name=strtrim(gxtxt_spice_ini_get(cfg,'config.spice_device_name','GXTXT_MODEL'));
     if(isempty(device_name)), device_name='GXTXT_MODEL'; endif
-    module_version='3';
+    module_version='5';
     application_version=strtrim(gxtxt_spice_ini_get(cfg,'runtime.application_version','0.7.8'));
 
     gxtxt_progress_stage('exporting_spice_model','Exporting SPICE model','indeterminate');
@@ -155,8 +156,14 @@ function model_spice_build_validate_main(args)
     rel_floor=parse_nonnegative(gxtxt_spice_ini_get(cfg,'config.relative_error_floor','1e-9'),1e-9);
 
     gxtxt_progress_stage('computing_metrics','Computing SPICE validation metrics','indeterminate');
-    metrics=compute_all_metrics(rows_data,abs_tol,rel_tol,rel_floor,numeric_fn);
-    family_metrics=compute_family_metrics(rows_data,rel_floor,validation.x_name,validation.family_name,numeric_fn);
+    metrics=compute_all_metrics(rows_data,abs_tol,rel_tol,rel_floor,numeric_fn,model_y_unit);
+    family_metrics=compute_family_metrics(rows_data,rel_floor,validation.x_name,validation.family_name,numeric_fn,model_y_unit);
+
+    statistical_results=struct();
+    for k=1:numel(metrics.n),statistical_results.(sprintf('comparison_%04d',k))=metrics.core{k};endfor
+    for k=1:numel(family_metrics.n),statistical_results.(sprintf('family_%04d',k))=family_metrics.core{k};endfor
+    metadata=gxtxt_statistics_v1('publication_metadata',statistical_results);
+    write_placeholder(fullfile(outdir,'spice_statistics.tcldict'),metadata);
 
     gxtxt_progress_stage('writing_outputs','Writing machine-readable outputs','indeterminate');
     write_predictions(fullfile(outdir,'spice_predictions.csv'),rows_data,rel_floor);
@@ -191,7 +198,7 @@ function model_spice_build_validate_main(args)
     save(fullfile(outdir,'render_cache.mat'),'input_x','input_family','measured_y','analytical_y','spice_y', ...
          'residual_spice_analytical','residual_spice_measured','relative_residual_spice_measured_percent', ...
          'comparison','profile','domain_role','relative_error_floor','validation_dataset_role','validation_dataset_id', ...
-         'validation_x_name','validation_family_name','validation_y_name','domain_vertices','domain_kind','model_x_name','model_family_name','model_y_name','model_y_unit','model_id','device_name');
+         'validation_x_name','validation_family_name','validation_y_name','domain_vertices','domain_kind','model_x_name','model_family_name','model_y_name','model_y_unit','model_id','device_name','statistical_results');
 
     gxtxt_progress_stage('rendering_graphs','Rendering enabled graphs','determinate',count_enabled_graphs(cfg));
     cache=load(fullfile(outdir,'render_cache.mat'));
@@ -453,7 +460,7 @@ function r=append_rows(r,comparison,profile,points,measured,analytical,spice,rol
   r.domain_role=[r.domain_role; roles(:)];
 endfunction
 
-function metrics=compute_all_metrics(r,abs_tol,rel_tol,rel_floor,numeric_fn)
+function metrics=compute_all_metrics(r,abs_tol,rel_tol,rel_floor,numeric_fn,yunit)
   metrics=struct('comparison',{{}},'profile',{{}},'domain_role',{{}},'n',zeros(0,1),'rmse',zeros(0,1), ...
                  'mae',zeros(0,1),'max_abs_error',zeros(0,1),'r2',zeros(0,1),'max_relative_error',zeros(0,1), ...
                  'rms_relative_error',zeros(0,1),'pass',{{}});
@@ -461,28 +468,29 @@ function metrics=compute_all_metrics(r,abs_tol,rel_tol,rel_floor,numeric_fn)
   profiles={'all','x_sweep','family_sweep'};
   for i=1:numel(profiles)
     if(strcmp(profiles{i},'all')), idx=vidx; else idx=intersect(vidx,find(strcmp(r.profile,profiles{i}))); endif
-    metrics=add_metric(metrics,'spice_vs_analytical',profiles{i},'all',r.analytical_y,r.spice_y,r.residual_spice_analytical,idx,abs_tol,rel_tol,rel_floor,true,numeric_fn);
+    metrics=add_metric(metrics,'spice_vs_analytical',profiles{i},'all',r.analytical_y,r.spice_y,r.residual_spice_analytical,idx,abs_tol,rel_tol,rel_floor,true,numeric_fn,yunit);
   endfor
   midx=find(strcmp(r.comparison,'measured_validation'));
   if(!isempty(midx))
     roles={'all','in_domain','out_of_domain','unknown'};
     for i=1:numel(roles)
       if(strcmp(roles{i},'all')), idx=midx; else idx=intersect(midx,find(strcmp(r.domain_role,roles{i}))); endif
-      metrics=add_metric(metrics,'spice_vs_measured','validation',roles{i},r.measured_y,r.spice_y,r.residual_spice_measured,idx,NaN,NaN,rel_floor,false,numeric_fn);
+      metrics=add_metric(metrics,'spice_vs_measured','validation',roles{i},r.measured_y,r.spice_y,r.residual_spice_measured,idx,NaN,NaN,rel_floor,false,numeric_fn,yunit);
     endfor
   endif
 endfunction
 
-function m=add_metric(m,comparison,profile,domain_role,y,predicted,resid,idx,abs_tol,rel_tol,rel_floor,with_pass,numeric_fn)
+function m=add_metric(m,comparison,profile,domain_role,y,predicted,resid,idx,abs_tol,rel_tol,rel_floor,with_pass,numeric_fn,yunit)
   row=numel(m.n)+1; n=numel(idx);
   m.comparison{row,1}=comparison; m.profile{row,1}=profile; m.domain_role{row,1}=domain_role; m.n(row,1)=n;
-  m.rmse(row,1)=NaN; m.mae(row,1)=NaN; m.max_abs_error(row,1)=NaN; m.r2(row,1)=NaN;
-  m.max_relative_error(row,1)=NaN; m.rms_relative_error(row,1)=NaN; m.pass{row,1}='';
-  if(n==0), return; endif
-  rr=resid(idx); yy=y(idx);
-  nm=feval(numeric_fn,'residual_metrics',yy,predicted(idx),struct('relative_floor',rel_floor));
-  m.rmse(row)=nm.rmse; m.mae(row)=nm.mae; m.max_abs_error(row)=nm.max_abs_error; m.r2(row)=nm.r2;
-  m.max_relative_error(row)=nm.max_relative_error; m.rms_relative_error(row)=nm.rms_relative_error;
+  m.pass{row,1}='';
+  raw=struct('n',0,'relative_n',0,'relative_floor',rel_floor);
+  if(n>0),raw=feval(numeric_fn,'residual_metrics',y(idx),predicted(idx),struct('relative_floor',rel_floor));endif
+  provenance=struct('producer','model.spice_build_validate','comparison',comparison,'profile',profile,'domain_role',domain_role);
+  record=gxtxt_statistics_v1('from_numeric','math.numeric.comparison','residual_metrics',raw,struct('y_unit',yunit,'sample_role','evaluation'),struct(),provenance);
+  m=store_core_values(m,row,record);
+  if(n==0),return;endif
+  rr=resid(idx);yy=y(idx);
   if(with_pass)
     ok=all(abs(rr) <= abs_tol + rel_tol.*abs(yy)); if(ok), m.pass{row}='PASS'; else m.pass{row}='FAIL'; endif
   endif
@@ -505,17 +513,7 @@ function write_predictions(path,r,rel_floor)
 endfunction
 
 function write_metrics(path,m)
-  fid=fopen(path,'w'); if(fid<0), error('Cannot write %s',path); endif
-  unwind_protect
-    fprintf(fid,'comparison,profile,domain_role,n,rmse,mae,max_abs_error,r2,max_relative_error,rms_relative_error,pass\n');
-    for i=1:numel(m.n)
-      fprintf(fid,'%s,%s,%s,%d,',m.comparison{i},m.profile{i},m.domain_role{i},m.n(i));
-      write_num(fid,m.rmse(i)); fprintf(fid,','); write_num(fid,m.mae(i)); fprintf(fid,','); write_num(fid,m.max_abs_error(i)); fprintf(fid,',');
-      write_num(fid,m.r2(i)); fprintf(fid,','); write_num(fid,m.max_relative_error(i)); fprintf(fid,','); write_num(fid,m.rms_relative_error(i)); fprintf(fid,',%s\n',m.pass{i});
-    endfor
-  unwind_protect_cleanup
-    fclose(fid);
-  end_unwind_protect
+  write_core_csv(path,m,false);
 endfunction
 
 function write_summary(path,cfg,model_id,model_version,parameter_file,domain_file,ainfo,adesc,device_name,ngpath,ngversion,m,validation,vrun,timestamp,abs_tol,rel_tol,yunit,bounds)
@@ -556,17 +554,12 @@ endfunction
 function print_metric_block(fid,m,comparison,profile,role)
   idx=find(strcmp(m.comparison,comparison)&strcmp(m.profile,profile)&strcmp(m.domain_role,role),1);
   if(isempty(idx)), return; endif
-  fprintf(fid,'\n[%s / %s]\n',profile,role); fprintf(fid,'N: %d\n',m.n(idx));
-  fprintf(fid,'RMSE: '); write_summary_num(fid,m.rmse(idx)); fprintf(fid,'\n');
-  fprintf(fid,'MAE: '); write_summary_num(fid,m.mae(idx)); fprintf(fid,'\n');
-  fprintf(fid,'MaxAbsError: '); write_summary_num(fid,m.max_abs_error(idx)); fprintf(fid,'\n');
-  fprintf(fid,'R2: '); write_summary_num(fid,m.r2(idx)); fprintf(fid,'\n');
-  fprintf(fid,'MaxRelativeError: '); write_summary_num(fid,m.max_relative_error(idx)); fprintf(fid,'\n');
-  fprintf(fid,'RMSRelativeError: '); write_summary_num(fid,m.rms_relative_error(idx)); fprintf(fid,'\n');
+  fprintf(fid,'\n[%s / %s]\n',profile,role);
+  fprintf(fid,'%s\n',gxtxt_statistics_v1('report',m.core{idx},struct2cell(metric_mapping())));
   if(!isempty(m.pass{idx})), fprintf(fid,'Result: %s\n',m.pass{idx}); endif
 endfunction
 
-function fm=compute_family_metrics(r,rel_floor,x_name,family_name,numeric_fn)
+function fm=compute_family_metrics(r,rel_floor,x_name,family_name,numeric_fn,yunit)
   fm=struct('group_input',{{}},'group_value',zeros(0,1),'domain_role',{{}},'n',zeros(0,1),'rmse',zeros(0,1),'mae',zeros(0,1), ...
             'max_abs_error',zeros(0,1),'r2',zeros(0,1),'max_relative_error',zeros(0,1),'rms_relative_error',zeros(0,1));
   midx=find(strcmp(r.comparison,'measured_validation'));
@@ -585,25 +578,53 @@ function fm=compute_family_metrics(r,rel_floor,x_name,family_name,numeric_fn)
       if(strcmp(roles{ri},'all')), idx=fidx; else idx=intersect(fidx,find(strcmp(r.domain_role,roles{ri}))); endif
       if(isempty(idx) && !strcmp(roles{ri},'all')), continue; endif
       row=numel(fm.n)+1; fm.group_input{row,1}=group_name; fm.group_value(row,1)=group_values(fi); fm.domain_role{row,1}=roles{ri}; fm.n(row,1)=numel(idx);
-      fm.rmse(row,1)=NaN; fm.mae(row,1)=NaN; fm.max_abs_error(row,1)=NaN; fm.r2(row,1)=NaN;
-      fm.max_relative_error(row,1)=NaN; fm.rms_relative_error(row,1)=NaN;
-      if(isempty(idx)), continue; endif
-      yy=r.measured_y(idx);
-      nm=feval(numeric_fn,'residual_metrics',yy,r.spice_y(idx),struct('relative_floor',rel_floor));
-      fm.rmse(row)=nm.rmse; fm.mae(row)=nm.mae; fm.max_abs_error(row)=nm.max_abs_error; fm.r2(row)=nm.r2;
-      fm.max_relative_error(row)=nm.max_relative_error; fm.rms_relative_error(row)=nm.rms_relative_error;
+      raw=struct('n',0,'relative_n',0,'relative_floor',rel_floor);
+      if(!isempty(idx)),raw=feval(numeric_fn,'residual_metrics',r.measured_y(idx),r.spice_y(idx),struct('relative_floor',rel_floor));endif
+      provenance=struct('producer','model.spice_build_validate','group_input',group_name,'group_value',group_values(fi),'domain_role',roles{ri});
+      record=gxtxt_statistics_v1('from_numeric','math.numeric.comparison','residual_metrics',raw,struct('y_unit',yunit,'sample_role','evaluation'),struct(),provenance);
+      fm=store_core_values(fm,row,record);
     endfor
   endfor
 endfunction
 
-function write_family_metrics(path,fm)
-  fid=fopen(path,'w'); if(fid<0), error('Cannot write %s',path); endif
+function write_family_metrics(path,m)
+  write_core_csv(path,m,true);
+endfunction
+
+function mapping=metric_mapping()
+  mapping=struct('n','n','rmse','rmse','mae','mae','max_abs_error','max_abs_error','r2','centered_comparison_score', ...
+    'max_relative_error','max_relative_error','rms_relative_error','rms_relative_error');
+endfunction
+function m=store_core_values(m,index,record)
+  rows=gxtxt_statistics_v1('scalar_rows',record,metric_mapping());
+  for k=1:numel(rows),m.(rows{k}.id)(index,1)=rows{k}.value;endfor
+  m.core{index}=record;
+endfunction
+function write_core_csv(path,m,family)
+  mapping=metric_mapping();names=fieldnames(mapping);
+  if(family),prefix={'group_input','group_value','domain_role'};suffix={};
+  else prefix={'comparison','profile','domain_role'};suffix={'pass'};endif
+  headers=[prefix(:);names(:);suffix(:)];
+  for k=1:numel(names)
+    for field={'status','quantity','unit','reason'},headers{end+1}=[names{k} '.' field{1}];endfor
+  endfor
+  fid=fopen(path,'w');if(fid<0),error('Cannot write %s',path);endif
   unwind_protect
-    fprintf(fid,'group_input,group_value,domain_role,n,rmse,mae,max_abs_error,r2,max_relative_error,rms_relative_error\n');
-    for i=1:numel(fm.n)
-      fprintf(fid,'%s,%.17g,%s,%d,',fm.group_input{i},fm.group_value(i),fm.domain_role{i},fm.n(i));
-      write_num(fid,fm.rmse(i)); fprintf(fid,','); write_num(fid,fm.mae(i)); fprintf(fid,','); write_num(fid,fm.max_abs_error(i)); fprintf(fid,',');
-      write_num(fid,fm.r2(i)); fprintf(fid,','); write_num(fid,fm.max_relative_error(i)); fprintf(fid,','); write_num(fid,fm.rms_relative_error(i)); fprintf(fid,'\n');
+    fprintf(fid,'%s\n',strjoin(headers,','));
+    for i=1:numel(m.n)
+      if(family),cells={m.group_input{i},sprintf('%.17g',m.group_value(i)),m.domain_role{i}};
+      else cells={m.comparison{i},m.profile{i},m.domain_role{i}};endif
+      rows=gxtxt_statistics_v1('scalar_rows',m.core{i},mapping);
+      for k=1:numel(rows)
+        value='';if(strcmp(rows{k}.status,'value')),value=sprintf('%.17g',rows{k}.value);endif
+        cells{end+1}=value;
+      endfor
+      if(!family),cells{end+1}=m.pass{i};endif
+      for k=1:numel(rows)
+        for field={'status','quantity','unit_text','reason'},cells{end+1}=rows{k}.(field{1});endfor
+      endfor
+      for k=1:numel(cells),cells{k}=['"' strrep(cells{k},'"','""') '"'];endfor
+      fprintf(fid,'%s\n',strjoin(cells,','));
     endfor
   unwind_protect_cleanup
     fclose(fid);
@@ -649,7 +670,6 @@ function write_failure_summary(path,err)
 endfunction
 
 function write_num(fid,v), if(isfinite(v)), fprintf(fid,'%.17g',v); endif; endfunction
-function write_summary_num(fid,v), if(isfinite(v)),fprintf(fid,'%.12g',v);else fprintf(fid,'N/A');endif; endfunction
 
 function p=validate_points(p,label)
   if(!isnumeric(p)||columns(p)!=2||rows(p)<1||any(!isfinite(p(:)))), error('SPICE adapter returned invalid %s points',label); endif

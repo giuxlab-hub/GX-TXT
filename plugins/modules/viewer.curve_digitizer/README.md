@@ -8,7 +8,7 @@ It is designed for scanned datasheets, plots, legacy figures, and other raster s
 
 - Plugin ID: `viewer.curve_digitizer`
 - Display name: `Curve Digitalizer`
-- Version: `1.2.1`
+- Version: `1.2.4`
 - GX-TXT baseline: `0.9.7.78`
 - Workspace: `Viewers`
 - License: GPL-3.0-or-later
@@ -97,12 +97,12 @@ Install the packaged ZIP through the GX-TXT Plugin Install interface/API. Do not
 Package name:
 
 ```text
-viewer.curve_digitizer_1.2.1.zip
+viewer.curve_digitizer_1.2.4.zip
 ```
 
 See `MANUAL.md` for the complete operation, supported inputs and limitations.
 
-Version 1.2.1 normalizes LF and CRLF messages from the Python adapter, keeps
+The viewer normalizes LF and CRLF messages from the Python adapter, keeps
 the startup window responsive while Session state loads, and lets a second
 Open request focus an idle viewer. Host and Python startup diagnostics are
 appended under the current Session's `logs/` directory. The scientific model,
@@ -114,3 +114,11 @@ Session document format and published Dataset formats are unchanged.
 Version 1.2.0 exposes `CURVE_DIGITIZER_COMPANION_API_v1`. Companion tools can enumerate digitizer configurations, resolve a selected curve and its calibrated source context, verify the Image Dataset SHA-256, and commit accepted pixel points back into the same authoritative Session Interactive Document. The commit path reuses the Curve Digitalizer calibration model.
 
 Writes use optimistic document SHA-256 checks. If the configuration changes after a companion loaded it, the companion must reload rather than overwriting newer scientific state.
+
+## Reviewed uncertainty
+
+The Publish tab includes pixel/calibration uncertainty review and an explicit
+physical override. Saved declarations, original point IDs and source hashes
+remain attached to published sigma/covariance columns. Full X/Y response
+covariance can be published separately for correlated-response fitting.
+See [the public contract](../../../docs/api/DIGITIZATION_UNCERTAINTY_v1.md).

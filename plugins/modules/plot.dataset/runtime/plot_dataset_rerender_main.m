@@ -11,9 +11,9 @@ function plot_dataset_rerender_main(args)
     catch load_err
       rebuild_reason=['unreadable cache: ' load_err.message];
     end_try_catch
-    info=pd_runtime_info(cfg);opts=read_opts(cfg);enabled=enabled_graphs(cfg);sources=pd_source_map(cfg,info,enabled);
+    info=pd_runtime_info(cfg);presentation_lifetime=gxtxt_presentation_scope_v1(info.session);opts=read_opts(cfg);enabled=enabled_graphs(cfg);sources=pd_source_map(cfg,info,enabled);
     if(isempty(rebuild_reason))
-      expected=struct('module_id','plot.dataset','module_version','3.3.5','source_fingerprint',gxtxt_render_cache_source_fingerprint(sources));rep=gxtxt_render_cache_validate(cache,expected);
+      expected=struct('module_id','plot.dataset','module_version','3.18.0','source_fingerprint',gxtxt_render_cache_source_fingerprint(sources));rep=gxtxt_render_cache_validate(cache,expected);
       if(!rep.valid),rebuild_reason=['stale/incompatible cache: ' joincell(rep.errors,',')];elseif(!isfield(cache,'module')),rebuild_reason='cache.module is missing';endif
     endif
     if(!isempty(rebuild_reason))
@@ -31,18 +31,22 @@ function plot_dataset_rerender_main(args)
         stale=!isfield(cache.module,fld)||!isfield(cache.meta,'prep2d')||!isfield(cache.meta.prep2d,fld)||!strcmp(cache.meta.prep2d.(fld),fp);
         if(stale)
           previous=struct();if(isfield(cache.module,fld)),previous=cache.module.(fld);endif
-          P=pd_prepare_2d(info,cfg,opts,g,previous);P=pd_attach_x_region_selection(P,cfg,g);cache.module.(fld)=P;cache.module.(['prepared_' fld])=true;
+          P=pd_prepare_2d(info,cfg,opts,g,previous);cache.module.(fld)=P;cache.module.(['prepared_' fld])=true;
           if(!isfield(cache.meta,'prep2d')||!isstruct(cache.meta.prep2d)),cache.meta.prep2d=struct();endif
           cache.meta.prep2d.(fld)=fp;cache_dirty=true;
         endif
       endif
     endfor
     if(any(strcmp(enabled,'plot.dataset.xyz'))),if(!isfield(cache.module,'prepared_3d')||!cache.module.prepared_3d),error('plot.dataset rerender: 3D data are not present in cache. Run the module again.');endif;opts3d=pd_3d_options(cfg,opts);fp=pd_prep_fingerprint(info,cfg,opts3d,'3d');if(!isfield(cache.meta,'prep3d_fingerprint')||!strcmp(cache.meta.prep3d_fingerprint,fp)),error('plot.dataset rerender: 3D bindings/plot type/preparation settings changed. Run the module again.');endif;endif
+    [cache.module,policy_changed]=pd_coordinate_capture(cache.module,cfg,enabled);cache_dirty=cache_dirty||policy_changed;
+    for graph={'plot.dataset.xy','plot.dataset.xy_region'}
+      if(any(strcmp(enabled,graph{1}))),fld=cache_field(graph{1});cache.module.(fld)=pd_attach_x_region_selection(cache.module.(fld),cfg,graph{1});endif
+    endfor
     if(cache_dirty),gxtxt_render_cache_save(outdir,cache);endif
     % Summary is derived state too; rewrite it even when prepared data remains
     % reusable so diagnostics cannot describe a previous graph selection.
     pd_write_summary(fullfile(outdir,'plot_summary.txt'),info,opts,cache.module,enabled,cache.meta);
-    gxtxt_progress_stage('rendering','Rerendering scientific dataset plots','indeterminate');plot_dataset_render(outdir,cfg,cache.module);gxtxt_progress_complete('done','Scientific Dataset Plot rerendered');
+    gxtxt_progress_stage('rendering','Rerendering scientific dataset plots','indeterminate');plot_dataset_render(outdir,cfg,cache.module);pd_coordinate_receipt(outdir,cache.module,enabled);gxtxt_progress_complete('done','Scientific Dataset Plot rerendered');
   catch err;try gxtxt_progress_fail('failed','Scientific Dataset Plot rerender failed');catch;end_try_catch;rethrow(err);end_try_catch
 endfunction
 function fld=cache_field(graph),if(strcmp(graph,'plot.dataset.xy')),fld='plot2d_xy';else fld='plot2d_xy_region';endif;endfunction

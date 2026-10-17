@@ -102,8 +102,11 @@ framework still manages the script process cancellation lifecycle.
 The bridge transports UTF-8 strings, logical and numeric scalars, numeric
 vectors and matrices with shape, empty numeric arrays, cells, scalar
 structs, lists of structs, nested combinations of these values, and opaque
-UTF-8 tokens. Numeric arrays above 10,000 elements use a private typed
-binary block. Strings, empty arrays, empty cells and empty structs remain
+UTF-8 tokens. Float64 arrays above 10,000 elements and other supported numeric
+array dtypes use a private typed binary block. Dtype, shape, large integers and
+complex components are preserved by descriptor v2; see
+[CORE scientific binary descriptor v2](SCIENTIFIC_BINARY_TRANSPORT_v2.md).
+Strings, empty arrays, empty cells and empty structs remain
 distinct. A script receives ordinary Octave values and does not manage
 transport files.
 

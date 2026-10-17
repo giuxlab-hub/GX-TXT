@@ -203,3 +203,12 @@ The module is serial and low-overhead by design. Table Stream API v3 performs bo
 - Numeric grouping is exact-value grouping; no automatic binning is performed.
 - Grouped hypothesis tests and ANOVA are outside this module.
 - Automatic categorical plots use numeric `group_index` because current `plot.dataset` Cartesian/bar X bindings are numeric. Original labels are preserved and explicitly mapped; no private categorical-axis implementation is introduced.
+
+## Statistical interpretation (dev097)
+
+Published results include the public `STATISTICAL_RESULT_SEMANTICS_API_v1`
+record, with units, statuses, reasons and source identity. Numeric computes all
+estimates. Sampling standard errors assume independent observations with finite
+variance; they do not establish Gaussian noise or confidence intervals. A single
+finite observation has no estimated sample spread or sampling standard error.
+Existing output variable IDs remain unchanged.

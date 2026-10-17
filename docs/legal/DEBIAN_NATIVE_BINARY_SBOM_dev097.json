@@ -1,0 +1,2926 @@
+{
+  "schema_version": 1,
+  "scope": "Candidate Debian ELF files; actual system prerequisite closure; system binaries are not redistributed",
+  "status": "PASS",
+  "binaries": [
+    {
+      "path": "core/native2d/bin/gx2dtcl.so",
+      "bytes": 596008,
+      "sha256": "df8025551f247ca41cf70c33c8a750b0f6e19ebdd50f4f6f0a4a72e5648484c6",
+      "needed": [
+        "libtcl8.6.so",
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "rpaths": [],
+      "resolved": [
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtcl8.6.so"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libm.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libc.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"
+        }
+      ],
+      "corresponding_source": [
+        "core/native2d/CMakeLists.txt",
+        "core/native2d/gx2d.c",
+        "core/native2d/gx2d_tcl.c"
+      ]
+    },
+    {
+      "path": "core/native3d/bin/libgx3de_viewer_tcl.so",
+      "bytes": 433632,
+      "sha256": "9926737fa37c8a4b4b4418cfa66c44b0428e030d0c1bd6d44928846486e7eb75",
+      "needed": [
+        "libgx3de.so",
+        "libtcl8.6.so",
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "rpaths": [
+        "$ORIGIN/../lib"
+      ],
+      "resolved": [
+        {
+          "framework_path": "core/native3d/lib/libgx3de.so"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtcl8.6.so"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libm.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libc.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersModeling-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOGeometry-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOXML-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingAnnotation-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingFreeType-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingVolumeOpenGL2-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libcrypto.so.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKDESTEP.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKXSBase.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKXCAF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKLCAF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKBO.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKPrim.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKBRep.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKMesh.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKTopAlgo.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKShHealing.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKG3d.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKGeomBase.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKMath.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKernel.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingOpenGL2-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOImage-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGLEW.so.2.2.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersSources-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersGeneral-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersGeometry-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonExecutionModel-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonDataModel-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonMisc-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonMath-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtksys-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonTransforms-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtbb.so.12.15"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersHybrid-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersVerdict-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonSystem-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOXMLParser-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libfreetype.so.6.20.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkImagingMath-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingVolume-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkImagingCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libOpenGL.so.0.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKDE.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKG2d.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKVCAF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKV3d.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKService.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKCAF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKCDF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKGeomAlgo.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libdouble-conversion.so.3.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/liblz4.so.1.10.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/liblzma.so.5.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingHyperTreeGrid-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingUI-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libX11.so.6.4.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGLX.so.0.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkDICOMParser-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkmetaio-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkpugixml-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjpeg.so.62.3.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libpng16.so.16.48.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtiff.so.6.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGL.so.1.7.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonColor-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonComputationalGeometry-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkfmt-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkkissfft-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkloguru-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkImagingSources-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkverdict-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libexpat.so.1.12.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbz2.so.1.0.4"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGLdispatch.so.0.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKHLR.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libfreeimage-3.18.0.so"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libxxhash.so.0.8.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersHyperTree-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libwebp.so.7.1.10"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libLerc.so.4"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjbig.so.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libdeflate.so.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjxrglue.so.1.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libopenjp2.so.2.5.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libraw.so.23.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libwebpmux.so.3.1.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libOpenEXR-3_1.so.30.13.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libIex-3_1.so.30.13.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libImath-3_1.so.29.11.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXau.so.6.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libsharpyuv.so.0.1.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjpegxr.so.1.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/liblcms2.so.2.0.16"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libIlmThread-3_1.so.30.13.1"
+        }
+      ],
+      "corresponding_source": [
+        "core/native3d/CMakeLists.txt",
+        "core/native3d/gx3de_viewer_tcl.cpp"
+      ]
+    },
+    {
+      "path": "core/native3d/lib/libgx3de.so",
+      "bytes": 1694512,
+      "sha256": "4d77344560c5a47df25cfa6c7fa9bfd7a0c7510dce493a5997bdb93b41afab6c",
+      "needed": [
+        "libvtkFiltersModeling-9.3.so.1",
+        "libvtkIOGeometry-9.3.so.1",
+        "libvtkIOXML-9.3.so.1",
+        "libvtkRenderingAnnotation-9.3.so.1",
+        "libvtkRenderingFreeType-9.3.so.1",
+        "libvtkRenderingVolumeOpenGL2-9.3.so.1",
+        "libcrypto.so.3",
+        "libTKDESTEP.so.7.8",
+        "libTKXSBase.so.7.8",
+        "libTKXCAF.so.7.8",
+        "libTKLCAF.so.7.8",
+        "libTKBO.so.7.8",
+        "libTKPrim.so.7.8",
+        "libTKBRep.so.7.8",
+        "libTKMesh.so.7.8",
+        "libTKTopAlgo.so.7.8",
+        "libTKShHealing.so.7.8",
+        "libTKG3d.so.7.8",
+        "libTKGeomBase.so.7.8",
+        "libTKMath.so.7.8",
+        "libTKernel.so.7.8",
+        "libvtkIOCore-9.3.so.1",
+        "libvtkRenderingOpenGL2-9.3.so.1",
+        "libvtkIOImage-9.3.so.1",
+        "libGLEW.so.2.2",
+        "libvtkRenderingCore-9.3.so.1",
+        "libvtkFiltersSources-9.3.so.1",
+        "libvtkFiltersGeneral-9.3.so.1",
+        "libvtkFiltersGeometry-9.3.so.1",
+        "libvtkFiltersCore-9.3.so.1",
+        "libvtkCommonExecutionModel-9.3.so.1",
+        "libvtkCommonDataModel-9.3.so.1",
+        "libvtkCommonMisc-9.3.so.1",
+        "libvtkCommonMath-9.3.so.1",
+        "libvtkCommonCore-9.3.so.1",
+        "libvtksys-9.3.so.1",
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6",
+        "ld-linux-x86-64.so.2"
+      ],
+      "rpaths": [
+        "$ORIGIN"
+      ],
+      "resolved": [
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersModeling-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOGeometry-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOXML-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingAnnotation-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingFreeType-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingVolumeOpenGL2-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libcrypto.so.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKDESTEP.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKXSBase.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKXCAF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKLCAF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKBO.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKPrim.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKBRep.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKMesh.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKTopAlgo.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKShHealing.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKG3d.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKGeomBase.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKMath.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKernel.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingOpenGL2-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOImage-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGLEW.so.2.2.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersSources-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersGeneral-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersGeometry-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonExecutionModel-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonDataModel-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonMisc-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonMath-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtksys-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libm.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libc.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonTransforms-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtbb.so.12.15"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersHybrid-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersVerdict-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonSystem-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOXMLParser-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libfreetype.so.6.20.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkImagingMath-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingVolume-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkImagingCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libOpenGL.so.0.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKDE.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKG2d.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKVCAF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKV3d.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKService.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKCAF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKCDF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKGeomAlgo.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libdouble-conversion.so.3.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/liblz4.so.1.10.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/liblzma.so.5.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingHyperTreeGrid-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingUI-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libX11.so.6.4.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGLX.so.0.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkDICOMParser-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkmetaio-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkpugixml-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjpeg.so.62.3.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libpng16.so.16.48.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtiff.so.6.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGL.so.1.7.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonColor-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonComputationalGeometry-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkfmt-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkkissfft-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkloguru-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkImagingSources-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkverdict-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libexpat.so.1.12.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbz2.so.1.0.4"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGLdispatch.so.0.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKHLR.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libfreeimage-3.18.0.so"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libxxhash.so.0.8.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersHyperTree-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libwebp.so.7.1.10"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libLerc.so.4"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjbig.so.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libdeflate.so.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjxrglue.so.1.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libopenjp2.so.2.5.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libraw.so.23.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libwebpmux.so.3.1.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libOpenEXR-3_1.so.30.13.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libIex-3_1.so.30.13.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libImath-3_1.so.29.11.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXau.so.6.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libsharpyuv.so.0.1.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjpegxr.so.1.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/liblcms2.so.2.0.16"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libIlmThread-3_1.so.30.13.1"
+        }
+      ],
+      "corresponding_source": [
+        "core/native3d/CMakeLists.txt",
+        "core/native3d/src/",
+        "core/native3d/include/"
+      ]
+    },
+    {
+      "path": "core/nativegui/libgxtxt_ui_x11.so",
+      "bytes": 16448,
+      "sha256": "7a5ae8d96e7869e70dfed4870edaba5e0f60063c847076769c7b57a9347b1d84",
+      "needed": [
+        "libtk8.6.so",
+        "libtcl8.6.so",
+        "libX11.so.6",
+        "libXdamage.so.1",
+        "libXfixes.so.3",
+        "libc.so.6"
+      ],
+      "rpaths": [],
+      "resolved": [
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtk8.6.so"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtcl8.6.so"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libX11.so.6.4.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXdamage.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXfixes.so.3.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libc.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXft.so.2.3.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXss.so.1.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libm.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libfreetype.so.6.20.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXrender.so.1.3.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libexpat.so.1.12.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXext.so.6.4.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXau.so.6.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbz2.so.1.0.4"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libpng16.so.16.48.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.1.0"
+        }
+      ],
+      "corresponding_source": [
+        "core/nativegui/ui_x11_popup.c"
+      ]
+    },
+    {
+      "path": "core/parameters/gxparameters.so",
+      "bytes": 30808,
+      "sha256": "270d3aa503e9cf0152a24a88fcdaffbe623258cec6b06290fff9db8e1cc7ffb1",
+      "needed": [
+        "libtcl8.6.so",
+        "libm.so.6",
+        "libc.so.6"
+      ],
+      "rpaths": [],
+      "resolved": [
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtcl8.6.so"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libm.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libc.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"
+        }
+      ],
+      "corresponding_source": [
+        "core/parameters/CMakeLists.txt",
+        "core/parameters/gx_parameters.c",
+        "core/parameters/gx_parameters_tcl.c"
+      ]
+    },
+    {
+      "path": "plugins/modules/math.numeric/api/octave/gxtxt_numeric_ceres_native.oct",
+      "bytes": 9390312,
+      "sha256": "713da7d0de29e67e39e551fba23ed6961db6046546b67fe73b7bb739881e77b2",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "rpaths": [],
+      "resolved": [
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libm.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libc.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"
+        }
+      ],
+      "corresponding_source": [
+        "plugins/modules/math.numeric/api/octave/gxtxt_numeric_ceres_native.cc"
+      ]
+    },
+    {
+      "path": "plugins/modules/math.numeric/api/octave/gxtxt_numeric_cubic_project_native.oct",
+      "bytes": 2031760,
+      "sha256": "2031689e46f231d8e5fd3600703e97fb7a3dda240d263a428e504338fcae9390",
+      "needed": [
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "rpaths": [],
+      "resolved": [
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libm.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libc.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"
+        }
+      ],
+      "corresponding_source": [
+        "plugins/modules/math.numeric/api/octave/gxtxt_numeric_cubic_project_native.cc"
+      ]
+    },
+    {
+      "path": "plugins/modules/math.numeric/api/octave/gxtxt_numeric_smoothing_native.oct",
+      "bytes": 1899760,
+      "sha256": "98204744c161923c8e028e3be3d19dace809f40e594eda87606478f1dce148a9",
+      "needed": [
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "rpaths": [],
+      "resolved": [
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libc.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libm.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"
+        }
+      ],
+      "corresponding_source": [
+        "plugins/modules/math.numeric/api/octave/gxtxt_numeric_smoothing_native.cc"
+      ]
+    },
+    {
+      "path": "plugins/modules/viewer.curve_trace_assistant/bin/gx_curve_trace_assistant",
+      "bytes": 80816,
+      "sha256": "36148c74dedf3b625aeeff106974c03e65f89f17c795ee45d5be5ca6b094edbe",
+      "needed": [
+        "libX11.so.6",
+        "libpng16.so.16",
+        "libjpeg.so.62",
+        "libm.so.6",
+        "libtiff.so.6",
+        "libwebp.so.7",
+        "libgif.so.7",
+        "libc.so.6"
+      ],
+      "rpaths": [],
+      "resolved": [
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libX11.so.6.4.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libpng16.so.16.48.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjpeg.so.62.3.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libm.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtiff.so.6.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libwebp.so.7.1.10"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libgif.so.7.2.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libc.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/liblzma.so.5.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libLerc.so.4"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjbig.so.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libdeflate.so.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libsharpyuv.so.0.1.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXau.so.6.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1"
+        }
+      ],
+      "corresponding_source": [
+        "plugins/modules/viewer.curve_trace_assistant/build_native.sh",
+        "plugins/modules/viewer.curve_trace_assistant/src/"
+      ]
+    },
+    {
+      "path": "plugins/modules/viewer.native_3d/bin/gx3d-host",
+      "bytes": 296032,
+      "sha256": "50227dd7f4be9be0e6c2d01ba2e0d7c3ccaaa1c445f6afd33e7e6000e77e8a5a",
+      "needed": [
+        "libgx3d.so",
+        "libvtkInteractionWidgets-9.3.so.1",
+        "libcrypto.so.3",
+        "libvtkRenderingOpenGL2-9.3.so.1",
+        "libvtkFiltersHybrid-9.3.so.1",
+        "libvtkRenderingAnnotation-9.3.so.1",
+        "libvtkInteractionStyle-9.3.so.1",
+        "libvtkIOXML-9.3.so.1",
+        "libvtkIOImage-9.3.so.1",
+        "libvtkRenderingCore-9.3.so.1",
+        "libvtkFiltersSources-9.3.so.1",
+        "libvtkFiltersGeometry-9.3.so.1",
+        "libvtkFiltersCore-9.3.so.1",
+        "libvtkCommonExecutionModel-9.3.so.1",
+        "libvtkCommonDataModel-9.3.so.1",
+        "libvtkCommonMisc-9.3.so.1",
+        "libvtkCommonMath-9.3.so.1",
+        "libvtkCommonCore-9.3.so.1",
+        "libvtksys-9.3.so.1",
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "rpaths": [
+        "$ORIGIN/../lib"
+      ],
+      "resolved": [
+        {
+          "framework_path": "plugins/modules/viewer.native_3d/lib/libgx3d.so"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkInteractionWidgets-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libcrypto.so.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingOpenGL2-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersHybrid-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingAnnotation-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkInteractionStyle-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOXML-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOImage-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersSources-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersGeometry-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonExecutionModel-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonDataModel-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonMisc-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonMath-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtksys-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libm.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libc.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingContext2D-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersModeling-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersTexture-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkImagingGeneral-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingFreeType-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkImagingCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersGeneral-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonComputationalGeometry-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonSystem-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonTransforms-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingHyperTreeGrid-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingUI-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libX11.so.6.4.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGLEW.so.2.2.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGLX.so.0.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libOpenGL.so.0.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkImagingSources-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOXMLParser-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkDICOMParser-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkmetaio-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkpugixml-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjpeg.so.62.3.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libpng16.so.16.48.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtiff.so.6.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonColor-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtbb.so.12.15"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkkissfft-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkloguru-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libfreetype.so.6.20.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersVerdict-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkfmt-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersHyperTree-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGL.so.1.7.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGLdispatch.so.0.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libexpat.so.1.12.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libdouble-conversion.so.3.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/liblz4.so.1.10.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/liblzma.so.5.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libwebp.so.7.1.10"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libLerc.so.4"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjbig.so.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libdeflate.so.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbz2.so.1.0.4"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkverdict-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXau.so.6.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libxxhash.so.0.8.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libsharpyuv.so.0.1.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.1.0"
+        }
+      ],
+      "corresponding_source": [
+        "plugins/modules/viewer.native_3d/native/CMakeLists.txt",
+        "plugins/modules/viewer.native_3d/native/src/",
+        "plugins/modules/viewer.native_3d/native/include/"
+      ]
+    },
+    {
+      "path": "plugins/modules/viewer.native_3d/bin/gx3d-worker",
+      "bytes": 209000,
+      "sha256": "53ec174cf17d98e9b2bb5ff31ee2809603cc119cdf6c3c9aa2e42c343e51adac",
+      "needed": [
+        "libvtkIOGeometry-9.3.so.1",
+        "libcrypto.so.3",
+        "libTKDESTEP.so.7.8",
+        "libTKXSBase.so.7.8",
+        "libTKXCAF.so.7.8",
+        "libTKLCAF.so.7.8",
+        "libTKBRep.so.7.8",
+        "libTKMesh.so.7.8",
+        "libTKMath.so.7.8",
+        "libTKernel.so.7.8",
+        "libvtkFiltersCore-9.3.so.1",
+        "libvtkCommonExecutionModel-9.3.so.1",
+        "libvtkCommonDataModel-9.3.so.1",
+        "libvtkCommonCore-9.3.so.1",
+        "libvtksys-9.3.so.1",
+        "libstdc++.so.6",
+        "libm.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "rpaths": [
+        "$ORIGIN/../lib"
+      ],
+      "resolved": [
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOGeometry-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libcrypto.so.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKDESTEP.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKXSBase.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKXCAF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKLCAF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKBRep.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKMesh.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKMath.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKernel.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonExecutionModel-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonDataModel-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtksys-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libm.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libc.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersHybrid-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOImage-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersGeneral-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersVerdict-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonSystem-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonTransforms-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonMath-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtbb.so.12.15"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKDE.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKShHealing.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKTopAlgo.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKGeomBase.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKG3d.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKG2d.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKVCAF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKV3d.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKService.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKCAF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKCDF.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonMisc-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkpugixml-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkloguru-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkImagingSources-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersGeometry-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkImagingCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkDICOMParser-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkmetaio-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjpeg.so.62.3.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libpng16.so.16.48.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtiff.so.6.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonColor-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersSources-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonComputationalGeometry-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libdouble-conversion.so.3.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/liblz4.so.1.10.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/liblzma.so.5.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkfmt-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkverdict-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkkissfft-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKGeomAlgo.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKHLR.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libX11.so.6.4.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libfreeimage-3.18.0.so"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libfreetype.so.6.20.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKBO.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libwebp.so.7.1.10"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libLerc.so.4"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjbig.so.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libdeflate.so.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libxxhash.so.0.8.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libexpat.so.1.12.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjxrglue.so.1.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libopenjp2.so.2.5.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libraw.so.23.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libwebpmux.so.3.1.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libOpenEXR-3_1.so.30.13.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libIex-3_1.so.30.13.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libImath-3_1.so.29.11.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbz2.so.1.0.4"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libTKPrim.so.7.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libsharpyuv.so.0.1.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXau.so.6.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjpegxr.so.1.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/liblcms2.so.2.0.16"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libIlmThread-3_1.so.30.13.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.1.0"
+        }
+      ],
+      "corresponding_source": [
+        "plugins/modules/viewer.native_3d/native/CMakeLists.txt",
+        "plugins/modules/viewer.native_3d/native/src/",
+        "plugins/modules/viewer.native_3d/native/include/"
+      ]
+    },
+    {
+      "path": "plugins/modules/viewer.native_3d/lib/libgx3d.so",
+      "bytes": 101832,
+      "sha256": "204914e6b6f3d89e8111ecf51e2b6ab18d0cdd2c344d7dd037dae368b55ff160",
+      "needed": [
+        "libvtkRenderingOpenGL2-9.3.so.1",
+        "libvtkInteractionStyle-9.3.so.1",
+        "libvtkRenderingCore-9.3.so.1",
+        "libvtkCommonDataModel-9.3.so.1",
+        "libvtkCommonCore-9.3.so.1",
+        "libvtksys-9.3.so.1",
+        "libstdc++.so.6",
+        "libgcc_s.so.1",
+        "libc.so.6"
+      ],
+      "rpaths": [
+        "$ORIGIN"
+      ],
+      "resolved": [
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingOpenGL2-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkInteractionStyle-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonDataModel-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtksys-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libc.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkIOImage-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingHyperTreeGrid-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkRenderingUI-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libX11.so.6.4.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersGeneral-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonExecutionModel-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonSystem-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonTransforms-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonMath-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGLEW.so.2.2.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGLX.so.0.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libOpenGL.so.0.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libm.so.6"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersSources-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonColor-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonComputationalGeometry-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersGeometry-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkCommonMisc-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtbb.so.12.15"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkpugixml-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkloguru-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkImagingCore-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkDICOMParser-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkmetaio-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjpeg.so.62.3.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libpng16.so.16.48.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libtiff.so.6.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersHybrid-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersHyperTree-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkFiltersVerdict-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkfmt-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkkissfft-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGL.so.1.7.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libGLdispatch.so.0.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libwebp.so.7.1.10"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/liblzma.so.5.8.1"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libLerc.so.4"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libjbig.so.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libdeflate.so.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkImagingSources-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXau.so.6.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6.0.0"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libvtkverdict-9.3.so.9.3"
+        },
+        {
+          "system_path": "/usr/lib/x86_64-linux-gnu/libsharpyuv.so.0.1.1"
+        }
+      ],
+      "corresponding_source": [
+        "plugins/modules/viewer.native_3d/native/CMakeLists.txt",
+        "plugins/modules/viewer.native_3d/native/src/",
+        "plugins/modules/viewer.native_3d/native/include/"
+      ]
+    }
+  ],
+  "system_libraries": {
+    "/usr/lib/x86_64-linux-gnu/libtcl8.6.so": {
+      "sha256": "209f61ff2bca70b84450e7e40f664efeb05f533b12e79b49a55da295e8150af9",
+      "package": "libtcl8.6:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libm.so.6": {
+      "sha256": "6d567d53e895273ca14a1f9dc164fc6c8d39aed2f60aa46a733c2784228915f3",
+      "package": "libc6:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libc.so.6": {
+      "sha256": "fa430b8f298f817a266046af84a77533185ad6fc4406c7d3787b5a0a0c207826",
+      "package": "libc6:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1": {
+      "sha256": "85590dd58edf5445e18bc7193e5ebc01ac5841f1ae187e97705a662e90c6421e",
+      "package": "zlib1g:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2": {
+      "sha256": "438c546d8e8cc48496bf3a95f753051afd9db66a629a74e31a9ded71586b56e0",
+      "package": "libc6:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.33": {
+      "sha256": "972bb2a18b71140dab0240f8a1f68ab3fb1d56bcd4c4f824a91b70888faf5a00",
+      "package": "libstdc++6:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libgcc_s.so.1": {
+      "sha256": "30c61ab012a4241bed033725a09b61f5fdd3bb7df95ee852d0b096520524c7af",
+      "package": "libgcc-s1:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkFiltersModeling-9.3.so.9.3": {
+      "sha256": "d689601beb1be3cda157269b525aa133ab18f8bc36946a284b40e67e9c39ea80",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkIOGeometry-9.3.so.9.3": {
+      "sha256": "eba2b920746b6bb7e5029c6281cc2e727eb99087c78928d8c26f579b4d1512e9",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkIOXML-9.3.so.9.3": {
+      "sha256": "e1780835816d17c591c9f286b4ae9fbe9b5eb4ffd8e391e385a121472557f27e",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkRenderingAnnotation-9.3.so.9.3": {
+      "sha256": "007a3cc458e914269a2c1915e507f687f6f43518f7b0c4a505d1aa65f589d80a",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkRenderingFreeType-9.3.so.9.3": {
+      "sha256": "a85247860ec019c41daec9771b878694d2ce92f4e0c089f55e9f1fe38e8a8f61",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkRenderingVolumeOpenGL2-9.3.so.9.3": {
+      "sha256": "803808ebecd2be1c3ec7be616d1a882acfb23c5dcf181e7461ed1435562325f8",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libcrypto.so.3": {
+      "sha256": "cb0b7ad91caee5f3b1448198b1a60b4d202baf916e779e9dbab7f232155991eb",
+      "package": "libssl3t64:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKDESTEP.so.7.8.1": {
+      "sha256": "5ddeb81278fc1efe21ca00820cfc1f6fadfb69ee6b86248abea5536522b42cb9",
+      "package": "libocct-data-exchange-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKXSBase.so.7.8.1": {
+      "sha256": "67d26de2c65a2937f9b07d0bfc3eebac926231ea6c5c2ae463060b3d44f42059",
+      "package": "libocct-data-exchange-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKXCAF.so.7.8.1": {
+      "sha256": "45c4d92316a33b326ad9fdfafb9014f6faea12d57e90239dd980e6cb5af0c999",
+      "package": "libocct-data-exchange-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKLCAF.so.7.8.1": {
+      "sha256": "7ed92148490dbcbfee15c13e4d421e9337f4eadd67ea1d0f94456c1a256c29a4",
+      "package": "libocct-ocaf-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKBO.so.7.8.1": {
+      "sha256": "87cf6da51b6a60f2d44b89a04b00ecae83201173e0381c7a70d79e947dadd216",
+      "package": "libocct-modeling-algorithms-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKPrim.so.7.8.1": {
+      "sha256": "740e556f9cde07a1974065f115329d703a70b8e4844be63bd8a2a30c2677a4e9",
+      "package": "libocct-modeling-algorithms-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKBRep.so.7.8.1": {
+      "sha256": "ad324df639bf89cc9b311450b686141bddf557ae0f1047a4d6b2822628526402",
+      "package": "libocct-modeling-data-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKMesh.so.7.8.1": {
+      "sha256": "ecedb4a60c26b67381584de96c1df24f8104bdc09250a44c0cce092aec218379",
+      "package": "libocct-modeling-algorithms-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKTopAlgo.so.7.8.1": {
+      "sha256": "84acd1bc611afccdd918d51c062fbf2e577a895e2f2366e84ed47ff176a5d602",
+      "package": "libocct-modeling-algorithms-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKShHealing.so.7.8.1": {
+      "sha256": "0f46e5d831228e2fa87428d491a002c023afc5d2e60a90579edc0640e7139f33",
+      "package": "libocct-modeling-algorithms-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKG3d.so.7.8.1": {
+      "sha256": "f9ba168f8f7db6a4bfa6aba451763267aa16413d507d7b8421bf987c9bf1553e",
+      "package": "libocct-modeling-data-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKGeomBase.so.7.8.1": {
+      "sha256": "76c4a083327e367047f3869613fb90fc172a218c95e3f9b0631b6b20a7ff1a5a",
+      "package": "libocct-modeling-data-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKMath.so.7.8.1": {
+      "sha256": "41fd3d5373aca5535a09e68be440d60988bef0790839d92d7429be9eabe61b31",
+      "package": "libocct-foundation-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKernel.so.7.8.1": {
+      "sha256": "4c8e5f8f171f7a296f892a909f885bca90eb6f0f333d28d9107724013f1e7af7",
+      "package": "libocct-foundation-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkIOCore-9.3.so.9.3": {
+      "sha256": "8cfc307040be92891b52b4666eca51dcb455214aecf17704b0ebde88ed606d04",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkRenderingOpenGL2-9.3.so.9.3": {
+      "sha256": "9fd70141fe1aae0778dd87852f89268421841cb89a8a0371d7333eacdcbe7189",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkIOImage-9.3.so.9.3": {
+      "sha256": "25b7051e3fd83c52b4e3e9d6fef96ddf6cbc59f19d154a3f1a66f09a42579124",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libGLEW.so.2.2.0": {
+      "sha256": "f530db8ba63f31608b08f515eadc5609bd90d4da4db68647a7517c2639fc0ca0",
+      "package": "libglew2.2:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkRenderingCore-9.3.so.9.3": {
+      "sha256": "0ddbf129e4c72d56df7e7fbf59610a5827a55c5feb1593cd0fc180f917a797a9",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkFiltersSources-9.3.so.9.3": {
+      "sha256": "65b73a851e80c83fb71716442ee84bf3ed913aae7800d3465809da615304ba73",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkFiltersGeneral-9.3.so.9.3": {
+      "sha256": "6a1986f19b009ad2b7c3a3a27ccf4a2eec88304f4d63594ac54375f8ac8177aa",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkFiltersGeometry-9.3.so.9.3": {
+      "sha256": "d359c08fd9610a8d2c5a21d77f8d4838e0989fbeec18b3cb548194c6dd980356",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkFiltersCore-9.3.so.9.3": {
+      "sha256": "c057154b724553eeb583f19f1f8c15a290ac0ac98a6d33466b12549c80cb39e9",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkCommonExecutionModel-9.3.so.9.3": {
+      "sha256": "ef6274ac39eb6025e1df86f642725ef591b6552abb5440dadb7629a2c982d6a6",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkCommonDataModel-9.3.so.9.3": {
+      "sha256": "761378617c8242b94d838ea8e4a5b258e11512aee3658ca290cda53131f7b8f9",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkCommonMisc-9.3.so.9.3": {
+      "sha256": "1062466139e877e1e3789923df9b9955cdf7a01066d8e4de969e176f1889fc09",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkCommonMath-9.3.so.9.3": {
+      "sha256": "09812d8693b3a95fb9110b3e8c45f74dd7f4754942acf7e62b7b0d900303948b",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkCommonCore-9.3.so.9.3": {
+      "sha256": "845f6c3c64eae641aab525b6ae6948ea5351fcb043bb8431dd5eec4897c81fc3",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtksys-9.3.so.9.3": {
+      "sha256": "8eabc04c6bec61c91b90a93045671ddebfad3abea5665bfa08639abf8c6f092c",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkCommonTransforms-9.3.so.9.3": {
+      "sha256": "944cd8fa8e3abc33403323e27d5f804688246c03d1539556c0205721e26e3221",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libtbb.so.12.15": {
+      "sha256": "134b73cd640bf9ae6b8b7e266332a421bd19f892ce428032b4c173eefeecde0c",
+      "package": "libtbb12:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkFiltersHybrid-9.3.so.9.3": {
+      "sha256": "1f32f58c9db8a3c7a59055556f38156e54a54f94e2531c13653c5ac069b1ef05",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkFiltersVerdict-9.3.so.9.3": {
+      "sha256": "d58339187f283b9298949adbfd9086794b8e32a0fd734dc8133e05510ec50fa8",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkCommonSystem-9.3.so.9.3": {
+      "sha256": "f452e896e88e1ed8a5892d320395da9ef48c4ddd490b639e3a7a239d6bb125d4",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkIOXMLParser-9.3.so.9.3": {
+      "sha256": "c9dc89920c3996c6eb94567a0e0d327a607ca2487b9486916a6319effafc9e1a",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libfreetype.so.6.20.2": {
+      "sha256": "9e376992a91e92d86809893a3b9eea22a4e27849db1686f6ca58032f79cdafb5",
+      "package": "libfreetype6:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkImagingMath-9.3.so.9.3": {
+      "sha256": "c882985997de725603f508d3212691aff9a6c9ea299d23faeaea7035595f4d01",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkRenderingVolume-9.3.so.9.3": {
+      "sha256": "34954b32342355555ddfae45b48d926b07afd00050a7c00d03adca9f1cc77262",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkImagingCore-9.3.so.9.3": {
+      "sha256": "3c31896d6542434df5643d563f5037234c56dbd18065fe159e22149d115de615",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libOpenGL.so.0.0.0": {
+      "sha256": "b437e2bc5a58dd89f7ec78cac73ddb34b22fc724d5a2246d93ee06a8453f0e86",
+      "package": "libopengl0:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7": {
+      "sha256": "27f07c9a49c2c956bcfb64cd4712976586a66facbf15fc7f09bc37413b5f2b21",
+      "package": "libzstd1:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKDE.so.7.8.1": {
+      "sha256": "969d2c251cd463a88b8b320d06135cda08baa9b5e0ca75a851b4052794549c73",
+      "package": "libocct-data-exchange-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKG2d.so.7.8.1": {
+      "sha256": "8ee3268d18613abcf515ed73f63843ebf758093e62dfbc6782f6465094a226f5",
+      "package": "libocct-modeling-data-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKVCAF.so.7.8.1": {
+      "sha256": "5e86824dbcaf7056f51365320fd545b71e63db7c59ddf479e3f449a5a9bff5e5",
+      "package": "libocct-ocaf-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKV3d.so.7.8.1": {
+      "sha256": "3ae3199b416ffd0f2c81c7f8f186c24be4f13742403597a92776665aaf8f1d43",
+      "package": "libocct-visualization-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKService.so.7.8.1": {
+      "sha256": "f9cdda1c9edf8eb34868f6fe2a37dfeda738f3cdf2bf5ddba890b5a559e4e95e",
+      "package": "libocct-visualization-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKCAF.so.7.8.1": {
+      "sha256": "624a1755555db76d5d5e138f0c5016a05ba05514d6a1fba999007a534e8527cc",
+      "package": "libocct-ocaf-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKCDF.so.7.8.1": {
+      "sha256": "527f5cde7f00446d6617d11dcb0264bebed20b17749673a64ebf2b20ded3ff82",
+      "package": "libocct-ocaf-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKGeomAlgo.so.7.8.1": {
+      "sha256": "a683c6516fc0be23653cb3e405cb5ffa495fcf92a4a6db0cc8aa83095ac1890c",
+      "package": "libocct-modeling-algorithms-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libdouble-conversion.so.3.1": {
+      "sha256": "e24833daaa56c3143a7c5d75c75e7357e3841061bd11ffee07d7ff5499da1c58",
+      "package": "libdouble-conversion3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/liblz4.so.1.10.0": {
+      "sha256": "67bf8b84af77e962e09be661944f7c61393c4806746734e36db9fbdaebc1de36",
+      "package": "liblz4-1:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/liblzma.so.5.8.1": {
+      "sha256": "01e05a4b5268805a10a2414a8904fb1fb45c60626dce53b5ea19c1d491049b99",
+      "package": "liblzma5:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkRenderingHyperTreeGrid-9.3.so.9.3": {
+      "sha256": "653d72564e84ebe7f065a2c45ccb9be0e5f89d71b821b456bc07d0d22a013204",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkRenderingUI-9.3.so.9.3": {
+      "sha256": "30c01a5aa673d8f330302c0b6bce457935d4cfe26d3e653ace066db59b635e00",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libX11.so.6.4.0": {
+      "sha256": "b03e563b316b8b53c7988f0ee91d6656cc425538e00947a8b14482d179e80099",
+      "package": "libx11-6:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libGLX.so.0.0.0": {
+      "sha256": "6b9525981881bb388b8726c8862d2ac5c2484e81328738d924415692d873018c",
+      "package": "libglx0:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkDICOMParser-9.3.so.9.3": {
+      "sha256": "8f86d32f0b1aedf0c185bd0462281cd7fa52dcd4e0706c855048c9834b64374a",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkmetaio-9.3.so.9.3": {
+      "sha256": "a694c88ce9220d0044968776260cf8b29bb60730cb2bb5cd23eadbaa1a9f796a",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkpugixml-9.3.so.9.3": {
+      "sha256": "e58b0cd0189dc53711734d0d6b6983a7a298e531e22ee1cda511decb11172c5d",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libjpeg.so.62.3.0": {
+      "sha256": "0928fd49fa79e10f72eb3276f1cf603d928201a628cd78e0118a2e9c01fd2dac",
+      "package": "libjpeg62-turbo:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libpng16.so.16.48.0": {
+      "sha256": "56485ea502d222fa8b0d99f899470c1bacdca815a958d83c1b349d4e8f605255",
+      "package": "libpng16-16t64:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libtiff.so.6.1.0": {
+      "sha256": "7f2309b13404f98171b54c07f75ad7c54673cec26ecaa874ac5273feda916c6f",
+      "package": "libtiff6:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libGL.so.1.7.0": {
+      "sha256": "b01915dfedf03be4710d3184bc62a3364880fc950043742fd5e07659b409ef1e",
+      "package": "libgl1:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkCommonColor-9.3.so.9.3": {
+      "sha256": "79fd4278bd6504f06b6ac80ffd5e3d818725270368087e4331c55964930c63df",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkCommonComputationalGeometry-9.3.so.9.3": {
+      "sha256": "6ab5683bcbfe6bb54f2456509065ad783f98580702b5549fc7856c806fb15871",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkfmt-9.3.so.9.3": {
+      "sha256": "b000eee2c845d91a14b420d152625d166c971a7807ab14480c3664e3296a6e77",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkkissfft-9.3.so.9.3": {
+      "sha256": "df4adf1b2294b3147045e051af3f9756ea8c772254d9e1062294f700a04f161c",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkloguru-9.3.so.9.3": {
+      "sha256": "68a1395bea7230cf85ce8932287f1b23ecb603b0927c1a855bc830fc39e29d21",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkImagingSources-9.3.so.9.3": {
+      "sha256": "f50a85de16f5ae38a4adb066c6a842ce8c4fcf23e70c764e1b5536f0daa55147",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkverdict-9.3.so.9.3": {
+      "sha256": "5734cddfe21226991cdd47efedb019d82174b3d7c1751c7b59e4d6f861185a63",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libexpat.so.1.12.3": {
+      "sha256": "0fd7d092bd0bf5dcc29f31daaba2bad993b0d18a1ab771fb844e0a6dfa8efe18",
+      "package": "libexpat1:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libbz2.so.1.0.4": {
+      "sha256": "c630f057efedc12f848710d71f40283895591e5b4608539f387895c64e0553da",
+      "package": "libbz2-1.0:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1.1.0": {
+      "sha256": "06530583d5927000480f4214d80d0213fec3d34cc448527f932a6eceb50cefef",
+      "package": "libbrotli1:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libGLdispatch.so.0.0.0": {
+      "sha256": "890baeef03fd73560a2fde85ebe9fb49ca3e90686923c5ee22101b28ec8ee7aa",
+      "package": "libglvnd0:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libTKHLR.so.7.8.1": {
+      "sha256": "4aa3272bf6ecc8928af10a85a0d65e10fd143127e95e154f8468b18ad1f84531",
+      "package": "libocct-modeling-algorithms-7.8:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libfontconfig.so.1.12.1": {
+      "sha256": "d6344f71a0cfd5fcb154278f0be706021f75f79d1fcc973fc4ddb1dff40ab0ee",
+      "package": "libfontconfig1:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libfreeimage-3.18.0.so": {
+      "sha256": "957a60ad481c0786d05c5eac085c58c02770bfab1e1b2977d8ede1fd5db215d3",
+      "package": "libfreeimage3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libxxhash.so.0.8.3": {
+      "sha256": "7dd49b353facbee50c371d0559ce29db5afee5ac33249ca5c7068420fb642762",
+      "package": "libxxhash0:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkFiltersHyperTree-9.3.so.9.3": {
+      "sha256": "3e8865a340b7a668e9626b5318d6c29f725ad6d2f4833d66b6abcc8eaa2f90e9",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libxcb.so.1.1.0": {
+      "sha256": "a1cde2cec9b7b8b38e4cca450c55c63651efb80a2458d76964b56b763043f533",
+      "package": "libxcb1:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libwebp.so.7.1.10": {
+      "sha256": "5f547b804f9c8f70aa2d64a70d49eb406ec4e295fa0772ebcadfba719f8c8668",
+      "package": "libwebp7:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libLerc.so.4": {
+      "sha256": "b04bc6a13a8cda1d3f60b7e8b9b69e38f8a998b3364705168510285c29719bee",
+      "package": "liblerc4:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libjbig.so.0": {
+      "sha256": "7a4ff4cd3d0012f610f9eaed154ce593c5a26aaf08993456dbb3f4ac2d23cc6c",
+      "package": "libjbig0:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libdeflate.so.0": {
+      "sha256": "1f21f19cb8406b030cdf01b598ff399e084618e53164b56c813d8c2cd6e88aca",
+      "package": "libdeflate0:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libbrotlicommon.so.1.1.0": {
+      "sha256": "7b0b0de90d8d3d4f07b99738c0285c6a0dbb6611d774ca44e7ea53a19a01ea68",
+      "package": "libbrotli1:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libjxrglue.so.1.2": {
+      "sha256": "db9439c648d9973d3c3d96269e27dd4dd5c0fbbb605d2ecfddaba2263ef63b4b",
+      "package": "libjxr0t64:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libopenjp2.so.2.5.3": {
+      "sha256": "aa1654c4757c8b37f744d1b12c75f19166b298c05c0c8dbcff5467e300e3da18",
+      "package": "libopenjp2-7:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libraw.so.23.0.0": {
+      "sha256": "a079b84344cd1c901900e792d14cbe16a6ae000048af777c791ffe84f86fa849",
+      "package": "libraw23t64:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libwebpmux.so.3.1.1": {
+      "sha256": "ee1bd367a626ef8e05867b27b227619ba6ae3c0345d4e80aaa99ce76c762a772",
+      "package": "libwebpmux3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libOpenEXR-3_1.so.30.13.1": {
+      "sha256": "a2c777b2c6fcddc4ffc271998bc1cfc0b411924ad5ea6ff8efc74019b9792dce",
+      "package": "libopenexr-3-1-30:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libIex-3_1.so.30.13.1": {
+      "sha256": "2d6c6e53067e7f9d67afc05a09441ff913fefe38ad076b45f6586b5d8c601699",
+      "package": "libopenexr-3-1-30:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libImath-3_1.so.29.11.0": {
+      "sha256": "dcf5400ee224af08e57cf2098476ab3c84db66512307343b22e2c087b0b9bea5",
+      "package": "libimath-3-1-29t64:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libXau.so.6.0.0": {
+      "sha256": "4275ec5b14bec21770c44447b3a52977e211c7ba08745008f3a1783878e091bb",
+      "package": "libxau6:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libXdmcp.so.6.0.0": {
+      "sha256": "761409b24c818719f8c8a2a64a61c8ac6a3067f3d8882485dca64a98d7500040",
+      "package": "libxdmcp6:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libsharpyuv.so.0.1.1": {
+      "sha256": "36969fea33a1afb64c381f053a8870b486c41cba93e9cc4779a42687c1b391ca",
+      "package": "libsharpyuv0:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libjpegxr.so.1.2": {
+      "sha256": "9f1ed8596834738d349b3320e99e39afd59a616e19035ee4d2062f655e16e630",
+      "package": "libjxr0t64:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/liblcms2.so.2.0.16": {
+      "sha256": "a0afaac586186b4e6b06c157e48c49480fde35d671052ee1309f36881a4508e7",
+      "package": "liblcms2-2:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libgomp.so.1.0.0": {
+      "sha256": "6456b504ac347bd50c419667440b691f6966ad8aff5309d2f06c977fe2f9debe",
+      "package": "libgomp1:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libIlmThread-3_1.so.30.13.1": {
+      "sha256": "0c6fce3377c37563bab8a00498b0e68662ea0f14ffb700ed712df1128f2433ec",
+      "package": "libopenexr-3-1-30:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libtk8.6.so": {
+      "sha256": "7a9a2111be27c36e31a7f78c4dd83cac7badf92d3a11a5cbc1de21f0b7ecf798",
+      "package": "libtk8.6:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libXdamage.so.1.1.0": {
+      "sha256": "e87b12f4208b53769802abfa4052147ffcc5f0f7d76d8bcd677126a593cc70fb",
+      "package": "libxdamage1:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libXfixes.so.3.1.0": {
+      "sha256": "85e29f4739a349d94d61db7a696f764d21dfe5c8db6ba7444af21416a0339187",
+      "package": "libxfixes3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libXft.so.2.3.6": {
+      "sha256": "ea552c46f6733e75eff8283380e194a45a1e1df3b395ba9c6f1f01beb5271c14",
+      "package": "libxft2:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libXss.so.1.0.0": {
+      "sha256": "ee25b3f08bed4d97c703890fb8ba27a70e0df6af67c13161e39a1e34db3396e4",
+      "package": "libxss1:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libXrender.so.1.3.0": {
+      "sha256": "39fed75f787ac251cba86e30ccd979e3df1f84dd73c63a75eeb86a18fd413e64",
+      "package": "libxrender1:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libXext.so.6.4.0": {
+      "sha256": "74cef58f0855cbbe23fce87566249f717e5c8ebeceee09efee393616a9b17697",
+      "package": "libxext6:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libgif.so.7.2.0": {
+      "sha256": "6cd3c080a86388318765b6c5d2fda2439f5f7cb537bcd4a463ce297b50b60fcb",
+      "package": "libgif7:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkInteractionWidgets-9.3.so.9.3": {
+      "sha256": "2ffe58c635278d4433891695c330f05c04afd19773c18e9c041511358cc208b5",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkInteractionStyle-9.3.so.9.3": {
+      "sha256": "5388185c0842d36d04c7ac1d1c8cddf3765fff3985f63c1e8195b4212de3513a",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkRenderingContext2D-9.3.so.9.3": {
+      "sha256": "3e19ef6555f3da440990d3ebc4a79760f0e4a2080aae17d3ad3e7a7a6c832175",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkFiltersTexture-9.3.so.9.3": {
+      "sha256": "7afe80b5b5a179e158fb5d81b51547363ccf84a5fbef68573d87d484a768a2b7",
+      "package": "libvtk9.3:amd64"
+    },
+    "/usr/lib/x86_64-linux-gnu/libvtkImagingGeneral-9.3.so.9.3": {
+      "sha256": "1e9b30fd3227d0a9f18f75e8cd75b8ca1bc1e57585eeb0763a4c5c1c2ff66806",
+      "package": "libvtk9.3:amd64"
+    }
+  },
+  "system_packages": {
+    "libtcl8.6:amd64": {
+      "package": "libtcl8.6:amd64",
+      "version": "8.6.16+dfsg-1",
+      "source_package": "tcl8.6",
+      "source_version": "8.6.16+dfsg-1",
+      "notice": "debian-runtime-notices/libtcl8.6_amd64.copyright",
+      "notice_sha256": "e925aa8863f0c9eda3625ce2cb16c0d5017fca248c5bd6af97006df5d9c6199c",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libc6:amd64": {
+      "package": "libc6:amd64",
+      "version": "2.41-12+deb13u3",
+      "source_package": "glibc",
+      "source_version": "2.41-12+deb13u3",
+      "notice": "debian-runtime-notices/libc6_amd64.copyright",
+      "notice_sha256": "f5788886720a2605a946e81d571e6c8162b09f58d2e2ceb8d36e5768fccd850d",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "zlib1g:amd64": {
+      "package": "zlib1g:amd64",
+      "version": "1:1.3.dfsg+really1.3.1-1+b1",
+      "source_package": "zlib",
+      "source_version": "1:1.3.dfsg+really1.3.1-1",
+      "notice": "debian-runtime-notices/zlib1g_amd64.copyright",
+      "notice_sha256": "9e5b96d63773a5d177ba264254390f792be07e41748ebd94730981c6cac31cc6",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libstdc++6:amd64": {
+      "package": "libstdc++6:amd64",
+      "version": "14.2.0-19",
+      "source_package": "gcc-14",
+      "source_version": "14.2.0-19",
+      "notice": "debian-runtime-notices/libstdc++6_amd64.copyright",
+      "notice_sha256": "20390f8a6f3b1e4d7cb45dd8652dabb259bbef688cbad839bcdb0b9ba7252f79",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libgcc-s1:amd64": {
+      "package": "libgcc-s1:amd64",
+      "version": "14.2.0-19",
+      "source_package": "gcc-14",
+      "source_version": "14.2.0-19",
+      "notice": "debian-runtime-notices/libgcc-s1_amd64.copyright",
+      "notice_sha256": "20390f8a6f3b1e4d7cb45dd8652dabb259bbef688cbad839bcdb0b9ba7252f79",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libvtk9.3:amd64": {
+      "package": "libvtk9.3:amd64",
+      "version": "9.3.0+dfsg1-4+b1",
+      "source_package": "vtk9",
+      "source_version": "9.3.0+dfsg1-4",
+      "notice": "debian-runtime-notices/libvtk9.3_amd64.copyright",
+      "notice_sha256": "babf7362f847806dd0fda61384d7a5c8789c3195dc80a99d7521b4b37a652ca2",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libssl3t64:amd64": {
+      "package": "libssl3t64:amd64",
+      "version": "3.5.6-1~deb13u2",
+      "source_package": "openssl",
+      "source_version": "3.5.6-1~deb13u2",
+      "notice": "debian-runtime-notices/libssl3t64_amd64.copyright",
+      "notice_sha256": "6a7da622fe0637a334d2a8fc470852d2ffb77d9a2b2f930f854e32a41ad6ef35",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libocct-data-exchange-7.8:amd64": {
+      "package": "libocct-data-exchange-7.8:amd64",
+      "version": "7.8.1+dfsg1-3",
+      "source_package": "opencascade",
+      "source_version": "7.8.1+dfsg1-3",
+      "notice": "debian-runtime-notices/libocct-data-exchange-7.8_amd64.copyright",
+      "notice_sha256": "22670f9e09e703e595a8305bb23d4708a694f9481566714d4e37606f95ae22bb",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libocct-ocaf-7.8:amd64": {
+      "package": "libocct-ocaf-7.8:amd64",
+      "version": "7.8.1+dfsg1-3",
+      "source_package": "opencascade",
+      "source_version": "7.8.1+dfsg1-3",
+      "notice": "debian-runtime-notices/libocct-ocaf-7.8_amd64.copyright",
+      "notice_sha256": "22670f9e09e703e595a8305bb23d4708a694f9481566714d4e37606f95ae22bb",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libocct-modeling-algorithms-7.8:amd64": {
+      "package": "libocct-modeling-algorithms-7.8:amd64",
+      "version": "7.8.1+dfsg1-3",
+      "source_package": "opencascade",
+      "source_version": "7.8.1+dfsg1-3",
+      "notice": "debian-runtime-notices/libocct-modeling-algorithms-7.8_amd64.copyright",
+      "notice_sha256": "22670f9e09e703e595a8305bb23d4708a694f9481566714d4e37606f95ae22bb",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libocct-modeling-data-7.8:amd64": {
+      "package": "libocct-modeling-data-7.8:amd64",
+      "version": "7.8.1+dfsg1-3",
+      "source_package": "opencascade",
+      "source_version": "7.8.1+dfsg1-3",
+      "notice": "debian-runtime-notices/libocct-modeling-data-7.8_amd64.copyright",
+      "notice_sha256": "22670f9e09e703e595a8305bb23d4708a694f9481566714d4e37606f95ae22bb",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libocct-foundation-7.8:amd64": {
+      "package": "libocct-foundation-7.8:amd64",
+      "version": "7.8.1+dfsg1-3",
+      "source_package": "opencascade",
+      "source_version": "7.8.1+dfsg1-3",
+      "notice": "debian-runtime-notices/libocct-foundation-7.8_amd64.copyright",
+      "notice_sha256": "22670f9e09e703e595a8305bb23d4708a694f9481566714d4e37606f95ae22bb",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libglew2.2:amd64": {
+      "package": "libglew2.2:amd64",
+      "version": "2.2.0-4+b2",
+      "source_package": "glew",
+      "source_version": "2.2.0-4",
+      "notice": "debian-runtime-notices/libglew2.2_amd64.copyright",
+      "notice_sha256": "958c4d13d81167d4983a367439f76a03dfeab530b3609a9caa279cd66fe5c668",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libtbb12:amd64": {
+      "package": "libtbb12:amd64",
+      "version": "2022.1.0-1+deb13u1",
+      "source_package": "onetbb",
+      "source_version": "2022.1.0-1+deb13u1",
+      "notice": "debian-runtime-notices/libtbb12_amd64.copyright",
+      "notice_sha256": "73250336f90b9e772acb04daf1cb8f2a6f98ca57f18e236a145ac44bdf6e1eae",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libfreetype6:amd64": {
+      "package": "libfreetype6:amd64",
+      "version": "2.13.3+dfsg-1+deb13u1",
+      "source_package": "freetype",
+      "source_version": "2.13.3+dfsg-1+deb13u1",
+      "notice": "debian-runtime-notices/libfreetype6_amd64.copyright",
+      "notice_sha256": "acdab1506824347784d2cc0a634cfa17dbf525c0d5b4902b4ac9d0d4e1fed6c7",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libopengl0:amd64": {
+      "package": "libopengl0:amd64",
+      "version": "1.7.0-1+b2",
+      "source_package": "libglvnd",
+      "source_version": "1.7.0-1",
+      "notice": "debian-runtime-notices/libopengl0_amd64.copyright",
+      "notice_sha256": "37920f219f60efa2fde5d003c51be0608b2159cc74c5eb6d70d630907db2d9a3",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libzstd1:amd64": {
+      "package": "libzstd1:amd64",
+      "version": "1.5.7+dfsg-1",
+      "source_package": "libzstd",
+      "source_version": "1.5.7+dfsg-1",
+      "notice": "debian-runtime-notices/libzstd1_amd64.copyright",
+      "notice_sha256": "5cec9fef4d3fa7e0371fbef4ec3fc416e0105dc2a9922117f84e825cb11f50f8",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libocct-visualization-7.8:amd64": {
+      "package": "libocct-visualization-7.8:amd64",
+      "version": "7.8.1+dfsg1-3",
+      "source_package": "opencascade",
+      "source_version": "7.8.1+dfsg1-3",
+      "notice": "debian-runtime-notices/libocct-visualization-7.8_amd64.copyright",
+      "notice_sha256": "22670f9e09e703e595a8305bb23d4708a694f9481566714d4e37606f95ae22bb",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libdouble-conversion3:amd64": {
+      "package": "libdouble-conversion3:amd64",
+      "version": "3.3.1-1",
+      "source_package": "double-conversion",
+      "source_version": "3.3.1-1",
+      "notice": "debian-runtime-notices/libdouble-conversion3_amd64.copyright",
+      "notice_sha256": "1cc0b36cdfe5a674e11cb9907a88291c7602d3805bddd334cc07d57231a0cd00",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "liblz4-1:amd64": {
+      "package": "liblz4-1:amd64",
+      "version": "1.10.0-4",
+      "source_package": "lz4",
+      "source_version": "1.10.0-4",
+      "notice": "debian-runtime-notices/liblz4-1_amd64.copyright",
+      "notice_sha256": "8dce0cb8c5a4486e4aac00466e4dd4b0b5b28d70efe3b3256ea4594099a8509c",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "liblzma5:amd64": {
+      "package": "liblzma5:amd64",
+      "version": "5.8.1-1+deb13u1",
+      "source_package": "xz-utils",
+      "source_version": "5.8.1-1+deb13u1",
+      "notice": "debian-runtime-notices/liblzma5_amd64.copyright",
+      "notice_sha256": "d755588e2d89d7845d0d4e718ac45d49ae9fc53cec4540af105963c20598f9d7",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libx11-6:amd64": {
+      "package": "libx11-6:amd64",
+      "version": "2:1.8.12-1",
+      "source_package": "libx11",
+      "source_version": "2:1.8.12-1",
+      "notice": "debian-runtime-notices/libx11-6_amd64.copyright",
+      "notice_sha256": "0b380a7fd5b2228f26e9585e56f14812efd3350f3df307507d2bc055dfd8de3e",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libglx0:amd64": {
+      "package": "libglx0:amd64",
+      "version": "1.7.0-1+b2",
+      "source_package": "libglvnd",
+      "source_version": "1.7.0-1",
+      "notice": "debian-runtime-notices/libglx0_amd64.copyright",
+      "notice_sha256": "37920f219f60efa2fde5d003c51be0608b2159cc74c5eb6d70d630907db2d9a3",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libjpeg62-turbo:amd64": {
+      "package": "libjpeg62-turbo:amd64",
+      "version": "1:2.1.5-4",
+      "source_package": "libjpeg-turbo",
+      "source_version": "1:2.1.5-4",
+      "notice": "debian-runtime-notices/libjpeg62-turbo_amd64.copyright",
+      "notice_sha256": "3821184e23385bf2cdc01f56bd999b34036fc3aa03d5135d41680374eb81bf8a",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libpng16-16t64:amd64": {
+      "package": "libpng16-16t64:amd64",
+      "version": "1.6.48-1+deb13u5",
+      "source_package": "libpng1.6",
+      "source_version": "1.6.48-1+deb13u5",
+      "notice": "debian-runtime-notices/libpng16-16t64_amd64.copyright",
+      "notice_sha256": "7e729164c60950b2b57f1712d82a051c9ba54f421c9b69815d9e4686ddc5709b",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libtiff6:amd64": {
+      "package": "libtiff6:amd64",
+      "version": "4.7.0-3+deb13u3",
+      "source_package": "tiff",
+      "source_version": "4.7.0-3+deb13u3",
+      "notice": "debian-runtime-notices/libtiff6_amd64.copyright",
+      "notice_sha256": "d73e31b03a0d7a515851601c19fee5792c7db03a312efacae146ddf9c91f86f1",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libgl1:amd64": {
+      "package": "libgl1:amd64",
+      "version": "1.7.0-1+b2",
+      "source_package": "libglvnd",
+      "source_version": "1.7.0-1",
+      "notice": "debian-runtime-notices/libgl1_amd64.copyright",
+      "notice_sha256": "37920f219f60efa2fde5d003c51be0608b2159cc74c5eb6d70d630907db2d9a3",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libexpat1:amd64": {
+      "package": "libexpat1:amd64",
+      "version": "2.8.3-1~deb13u1",
+      "source_package": "expat",
+      "source_version": "2.8.3-1~deb13u1",
+      "notice": "debian-runtime-notices/libexpat1_amd64.copyright",
+      "notice_sha256": "60919fe1a156395ff14511bb6ff79756c50ade2fff59ac60c9bae1d8a7fe6292",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libbz2-1.0:amd64": {
+      "package": "libbz2-1.0:amd64",
+      "version": "1.0.8-6",
+      "source_package": "bzip2",
+      "source_version": "1.0.8-6",
+      "notice": "debian-runtime-notices/libbz2-1.0_amd64.copyright",
+      "notice_sha256": "832ed535ff3c3d025a8d2348eb1b697b89addcf2eaadbc17650262040b9145e2",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libbrotli1:amd64": {
+      "package": "libbrotli1:amd64",
+      "version": "1.1.0-2+b7",
+      "source_package": "brotli",
+      "source_version": "1.1.0-2",
+      "notice": "debian-runtime-notices/libbrotli1_amd64.copyright",
+      "notice_sha256": "24a64e5bb83d0960d1835696a1e23c0896ad6055b0ca47c66ab0eb9a766324b1",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libglvnd0:amd64": {
+      "package": "libglvnd0:amd64",
+      "version": "1.7.0-1+b2",
+      "source_package": "libglvnd",
+      "source_version": "1.7.0-1",
+      "notice": "debian-runtime-notices/libglvnd0_amd64.copyright",
+      "notice_sha256": "37920f219f60efa2fde5d003c51be0608b2159cc74c5eb6d70d630907db2d9a3",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libfontconfig1:amd64": {
+      "package": "libfontconfig1:amd64",
+      "version": "2.15.0-2.3",
+      "source_package": "fontconfig",
+      "source_version": "2.15.0-2.3",
+      "notice": "debian-runtime-notices/libfontconfig1_amd64.copyright",
+      "notice_sha256": "b215a61cdd3e62b5b17cc28b1852c78acb3dd38be0fb30706f7efc050dba91db",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libfreeimage3:amd64": {
+      "package": "libfreeimage3:amd64",
+      "version": "3.18.0+ds2-11",
+      "source_package": "freeimage",
+      "source_version": "3.18.0+ds2-11",
+      "notice": "debian-runtime-notices/libfreeimage3_amd64.copyright",
+      "notice_sha256": "95c09f74f81fd0317d8d84aa630e2a75e4239e0dfc40c8aa91ab8d9525bc5678",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libxxhash0:amd64": {
+      "package": "libxxhash0:amd64",
+      "version": "0.8.3-2",
+      "source_package": "xxhash",
+      "source_version": "0.8.3-2",
+      "notice": "debian-runtime-notices/libxxhash0_amd64.copyright",
+      "notice_sha256": "81affefe3047c8a88a9e4c94c8c698f51a7e0787e75b58e901bf1f8fcd433f58",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libxcb1:amd64": {
+      "package": "libxcb1:amd64",
+      "version": "1.17.0-2+b1",
+      "source_package": "libxcb",
+      "source_version": "1.17.0-2",
+      "notice": "debian-runtime-notices/libxcb1_amd64.copyright",
+      "notice_sha256": "4f7cb9db6bf6542f5417e3d674c780d3a5fd12291a54d63054fb576ee0cfae80",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libwebp7:amd64": {
+      "package": "libwebp7:amd64",
+      "version": "1.5.0-0.1",
+      "source_package": "libwebp",
+      "source_version": "1.5.0-0.1",
+      "notice": "debian-runtime-notices/libwebp7_amd64.copyright",
+      "notice_sha256": "725344c9200f6e6dad88d1ea88add2d673cdf1d8fbc3961bcd2693ab0c26d30d",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "liblerc4:amd64": {
+      "package": "liblerc4:amd64",
+      "version": "4.0.0+ds-5",
+      "source_package": "lerc",
+      "source_version": "4.0.0+ds-5",
+      "notice": "debian-runtime-notices/liblerc4_amd64.copyright",
+      "notice_sha256": "6e694f6e6063e7b1ffb5f723ce4e696aa015944cf1b4d15e8f3ea7e90417a71d",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libjbig0:amd64": {
+      "package": "libjbig0:amd64",
+      "version": "2.1-6.1+b2",
+      "source_package": "jbigkit",
+      "source_version": "2.1-6.1",
+      "notice": "debian-runtime-notices/libjbig0_amd64.copyright",
+      "notice_sha256": "89ab20c324a191652e94598f2144a65442faed4f14f77bbd10516130ee20f05a",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libdeflate0:amd64": {
+      "package": "libdeflate0:amd64",
+      "version": "1.23-2",
+      "source_package": "libdeflate",
+      "source_version": "1.23-2",
+      "notice": "debian-runtime-notices/libdeflate0_amd64.copyright",
+      "notice_sha256": "b08d3438a0eadaee3103fba087a3e0f639506388ed71e7e2dfbb3e3484e9742c",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libjxr0t64:amd64": {
+      "package": "libjxr0t64:amd64",
+      "version": "1.2~git20170615.f752187-5.3",
+      "source_package": "jxrlib",
+      "source_version": "1.2~git20170615.f752187-5.3",
+      "notice": "debian-runtime-notices/libjxr0t64_amd64.copyright",
+      "notice_sha256": "4eac4e605c8b8eb709db25f006a58ac7d7e9146288bed34a1f6f595ea2bd451e",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libopenjp2-7:amd64": {
+      "package": "libopenjp2-7:amd64",
+      "version": "2.5.3-2.1~deb13u2",
+      "source_package": "openjpeg2",
+      "source_version": "2.5.3-2.1~deb13u2",
+      "notice": "debian-runtime-notices/libopenjp2-7_amd64.copyright",
+      "notice_sha256": "ba3ae385ad2337d6cfc862e280a9f155bb421b43f6ee47e77ebcaaf24e992151",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libraw23t64:amd64": {
+      "package": "libraw23t64:amd64",
+      "version": "0.21.4-2",
+      "source_package": "libraw",
+      "source_version": "0.21.4-2",
+      "notice": "debian-runtime-notices/libraw23t64_amd64.copyright",
+      "notice_sha256": "22b67820170c245903eb3be4df4daa2770b5f0d54aaef44d5ac364b79831d142",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libwebpmux3:amd64": {
+      "package": "libwebpmux3:amd64",
+      "version": "1.5.0-0.1",
+      "source_package": "libwebp",
+      "source_version": "1.5.0-0.1",
+      "notice": "debian-runtime-notices/libwebpmux3_amd64.copyright",
+      "notice_sha256": "725344c9200f6e6dad88d1ea88add2d673cdf1d8fbc3961bcd2693ab0c26d30d",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libopenexr-3-1-30:amd64": {
+      "package": "libopenexr-3-1-30:amd64",
+      "version": "3.1.13-2",
+      "source_package": "openexr",
+      "source_version": "3.1.13-2",
+      "notice": "debian-runtime-notices/libopenexr-3-1-30_amd64.copyright",
+      "notice_sha256": "3557d6675517d972a2d4d1ba2488e4c7202e6451dbdb4024c0eb72603af82b38",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libimath-3-1-29t64:amd64": {
+      "package": "libimath-3-1-29t64:amd64",
+      "version": "3.1.12-1+b3",
+      "source_package": "imath",
+      "source_version": "3.1.12-1",
+      "notice": "debian-runtime-notices/libimath-3-1-29t64_amd64.copyright",
+      "notice_sha256": "4bf0f39309999e8f77a203b91b87e53b27a3e590b828ee5a09119491fa9b60e8",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libxau6:amd64": {
+      "package": "libxau6:amd64",
+      "version": "1:1.0.11-1",
+      "source_package": "libxau",
+      "source_version": "1:1.0.11-1",
+      "notice": "debian-runtime-notices/libxau6_amd64.copyright",
+      "notice_sha256": "118dd263a7b91c8f21c489f949bf13281dff9e766deea92b829dac4dce66601a",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libxdmcp6:amd64": {
+      "package": "libxdmcp6:amd64",
+      "version": "1:1.1.5-1",
+      "source_package": "libxdmcp",
+      "source_version": "1:1.1.5-1",
+      "notice": "debian-runtime-notices/libxdmcp6_amd64.copyright",
+      "notice_sha256": "1bcbb50f8603fe8b86d330bfa460b772ea04fbd3c70e4499f0768b5340b9fd6e",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libsharpyuv0:amd64": {
+      "package": "libsharpyuv0:amd64",
+      "version": "1.5.0-0.1",
+      "source_package": "libwebp",
+      "source_version": "1.5.0-0.1",
+      "notice": "debian-runtime-notices/libsharpyuv0_amd64.copyright",
+      "notice_sha256": "725344c9200f6e6dad88d1ea88add2d673cdf1d8fbc3961bcd2693ab0c26d30d",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "liblcms2-2:amd64": {
+      "package": "liblcms2-2:amd64",
+      "version": "2.16-2+deb13u2",
+      "source_package": "lcms2",
+      "source_version": "2.16-2+deb13u2",
+      "notice": "debian-runtime-notices/liblcms2-2_amd64.copyright",
+      "notice_sha256": "420fd2c72204652c08a48548a0d1002edab3d9b180d3c416578c61f74092f460",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libgomp1:amd64": {
+      "package": "libgomp1:amd64",
+      "version": "14.2.0-19",
+      "source_package": "gcc-14",
+      "source_version": "14.2.0-19",
+      "notice": "debian-runtime-notices/libgomp1_amd64.copyright",
+      "notice_sha256": "20390f8a6f3b1e4d7cb45dd8652dabb259bbef688cbad839bcdb0b9ba7252f79",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libtk8.6:amd64": {
+      "package": "libtk8.6:amd64",
+      "version": "8.6.16-1",
+      "source_package": "tk8.6",
+      "source_version": "8.6.16-1",
+      "notice": "debian-runtime-notices/libtk8.6_amd64.copyright",
+      "notice_sha256": "55756939bc322e1ddb187794a0deb8bdf72349ecba34b429446782cd04ea4cef",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libxdamage1:amd64": {
+      "package": "libxdamage1:amd64",
+      "version": "1:1.1.6-1+b2",
+      "source_package": "libxdamage",
+      "source_version": "1:1.1.6-1",
+      "notice": "debian-runtime-notices/libxdamage1_amd64.copyright",
+      "notice_sha256": "09182bc7805ff77a41251e450cebd0d33c48a74ba8ec4b734855a22c86f50417",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libxfixes3:amd64": {
+      "package": "libxfixes3:amd64",
+      "version": "1:6.0.0-2+b4",
+      "source_package": "libxfixes",
+      "source_version": "1:6.0.0-2",
+      "notice": "debian-runtime-notices/libxfixes3_amd64.copyright",
+      "notice_sha256": "051ffe073ab38244c504bb379903b4ecda6081fb3d97d0d3dce44bc11712eef2",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libxft2:amd64": {
+      "package": "libxft2:amd64",
+      "version": "2.3.6-1+b4",
+      "source_package": "xft",
+      "source_version": "2.3.6-1",
+      "notice": "debian-runtime-notices/libxft2_amd64.copyright",
+      "notice_sha256": "5960983c962c864d7d73eae6bb9b3b06c1940a23fc6d22ce10ef0f0cde8fd48d",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libxss1:amd64": {
+      "package": "libxss1:amd64",
+      "version": "1:1.2.3-1+b3",
+      "source_package": "libxss",
+      "source_version": "1:1.2.3-1",
+      "notice": "debian-runtime-notices/libxss1_amd64.copyright",
+      "notice_sha256": "3ebbe713ac6980aefc18dcf407c94f51bbf02852463294bbb6dc1ee1f9fad9c3",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libxrender1:amd64": {
+      "package": "libxrender1:amd64",
+      "version": "1:0.9.12-1",
+      "source_package": "libxrender",
+      "source_version": "1:0.9.12-1",
+      "notice": "debian-runtime-notices/libxrender1_amd64.copyright",
+      "notice_sha256": "ed2a78123a5076b4f11da38cb1ffb85b5cb9fdc26b5746c517b1d7e7a9029704",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libxext6:amd64": {
+      "package": "libxext6:amd64",
+      "version": "2:1.3.4-1+b3",
+      "source_package": "libxext",
+      "source_version": "2:1.3.4-1",
+      "notice": "debian-runtime-notices/libxext6_amd64.copyright",
+      "notice_sha256": "bc57e445ca1d9fe082c8d54189dd411ff26caa8552c9c63d44ea06a982f32124",
+      "distribution": "system prerequisite; binary not bundled"
+    },
+    "libgif7:amd64": {
+      "package": "libgif7:amd64",
+      "version": "5.2.2-1+deb13u1",
+      "source_package": "giflib",
+      "source_version": "5.2.2-1+deb13u1",
+      "notice": "debian-runtime-notices/libgif7_amd64.copyright",
+      "notice_sha256": "479e834b17e61f0afe5f4a62e1794a4543208dea955820399e2d9589a1938fb0",
+      "distribution": "system prerequisite; binary not bundled"
+    }
+  },
+  "errors": [],
+  "installed_release_status": "PENDING"
+}

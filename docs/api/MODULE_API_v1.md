@@ -184,6 +184,13 @@ This preserves a homogeneous publication style across modules by default. A modu
 
 For a selected mathematical model, `runtime.ini` now publishes `model.descriptor_path` and `model.plugin_dir` in addition to the existing model function/script/parameter metadata. A consumer may inspect additional sections in the model descriptor itself. The core does not interpret optional model-specific capability sections.
 
+Optional `[parameters] units` is a semicolon-separated list of declared physical
+units in `names` order. CORE carries it unchanged as `model.param_units` and as
+`param_units` in each selected model resource section. Empty declarations do not
+imply dimensionless parameters. Consumers validate the length and retain explicit
+unspecified entries. This field is independent of symbolic `X`/`Y` relationships
+in scalar fitting model cards; CORE does not silently convert one into the other.
+
 ## v0.7.8: descriptor-driven file/path fields
 
 Module and graph configuration may use `type=file` or `type=path`. The common GUI creates an Entry + `Browse...` control. Optional metadata:
@@ -384,7 +391,26 @@ See [Experiment Duplication Policy API](EXPERIMENT_DUPLICATION_POLICY_API_v1.md)
 or existing `selectable=0`. `moduleIsEnabled` and the owning implementation of
 `moduleSetEnabled` use that policy. All installed acquisition providers are
 invocable without Analysis membership; this does not change `core`, package
-ownership, version, source or prerequisite checks. CORE / ALWAYS combines
-ownership with activation; external providers show ALWAYS. Selectable Analysis
+ownership, version, source or prerequisite checks. ALWAYS is its sole operational
+status; package protection is shown separately in Configuration. Selectable Analysis
 modules retain their existing explicit flags and dependency rules. No additional
 activation registry or scientific Script Bridge operation is introduced.
+
+## dev097 operational classification
+
+`moduleOperationalClass id` derives one of `ALWAYS`, `CORE_ANALYSIS`, `ANALYSIS`,
+or `SELECTABLE_PROVIDER` from the existing descriptor. `moduleAnalysisEligible id`
+is true only for the two selectable analysis classes. `moduleOperationalState id`
+formats `ALWAYS`, `CORE / ON|OFF`, or `ON|OFF`. `moduleOperationalInfo id` returns
+those facts plus `core_protected`, `always_available`, `analysis_enableable`,
+`run_eligible` and `enabled`. Unknown IDs fail. Package protection continues to
+use `moduleIsCore`; no descriptor ownership bit or stable module ID changes.
+
+The existing `MODULE_API_v1` Script Bridge exposes read-only `operational_class`
+and `operational_info`, each taking the module ID. Information flags are real
+booleans in Python/Octave. Analysis activation and run selection exclude every
+ALWAYS module, including historical acquisition descriptors with selectable=1.
+Saved acquisition toggles cannot disable import or select an analysis run.
+The existing selection serializer retains selectable Viewer/export availability;
+those six shipped provider choices are managed in Configuration → Modules.
+Analysis lists, groups and CORE filters use the shared eligibility predicate.

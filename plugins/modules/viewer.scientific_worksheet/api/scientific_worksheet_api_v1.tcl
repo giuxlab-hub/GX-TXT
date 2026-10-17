@@ -1,7 +1,7 @@
 # GX-TXT Scientific Worksheet API v1
 # SPDX-License-Identifier: GPL-3.0-or-later
 namespace eval ::GX::ScientificWorksheet {
-    variable version 1.1.1
+    variable version 1.2.0
     variable cache [dict create]
     variable dirty [dict create]
     variable evaluating [dict create]
@@ -174,6 +174,31 @@ proc ::GX::ScientificWorksheet::_take {tokens indexVar expected} {
     incr index
 }
 proc ::GX::ScientificWorksheet::_value {value {unit ""} {kind scalar}} {return [dict create value $value unit $unit kind $kind]}
+proc ::GX::ScientificWorksheet::_statisticalSources {item} {
+    set results [expr {[dict exists $item statistical_sources]?[dict get $item statistical_sources]:{}}]
+    if {[dict exists $item statistical_result]&&[lsearch -exact $results [dict get $item statistical_result]]<0} {lappend results [dict get $item statistical_result]}
+    return $results
+}
+proc ::GX::ScientificWorksheet::_sourceLineage {item} {
+    set records [expr {[dict exists $item source_lineage]?[dict get $item source_lineage]:{}}]
+    if {[dict exists $item lineage dataset_id]&&[dict exists $item lineage variable_id]} {
+        set record [dict create dataset_id [dict get $item lineage dataset_id] variable_id [dict get $item lineage variable_id]]
+        if {$record ni $records} {lappend records $record}
+    }
+    return $records
+}
+proc ::GX::ScientificWorksheet::_carryStatistics {item inputs} {
+    set results [_statisticalSources $item]
+    set lineage {};foreach record [_sourceLineage $item] {dict set lineage $record 1}
+    foreach input $inputs {
+        foreach result [_statisticalSources $input] {if {[lsearch -exact $results $result]<0} {lappend results $result}}
+        foreach record [_sourceLineage $input] {dict set lineage $record 1}
+        if {[dict exists $input mixed_units]&&[dict get $input mixed_units]} {dict set item mixed_units 1}
+    }
+    if {[llength $results]} {dict set item statistical_sources $results}
+    if {[dict size $lineage]} {dict set item source_lineage [dict keys $lineage]}
+    return $item
+}
 proc ::GX::ScientificWorksheet::_evalCell {book address stack} {
     variable cache; variable evaluating
     set address [_cell $address]; set key [_key $book]
@@ -232,7 +257,7 @@ proc ::GX::ScientificWorksheet::_binary {operator left right} {
         != {set result [expr {$a!=$b}]; set unit ""}
     }
     if {![string is double -strict $result] || [expr {abs(double($result)) == Inf || double($result) != double($result)}]} {error "Nonfinite formula result."}
-    return [_value $result $unit]
+    return [_carryStatistics [_value $result $unit] [list $left $right]]
 }
 proc ::GX::ScientificWorksheet::_parseComparison {book tokens indexVar stack} {
     upvar 1 $indexVar index
@@ -280,16 +305,16 @@ proc ::GX::ScientificWorksheet::_parsePrimary {book tokens indexVar stack} {
         set first [_cell $value]
         if {[_peek $tokens $index] eq ":"} {
             incr index; set last [_peek $tokens $index]; incr index
-            set addresses [rangeCells $first $last]; set out {}; set unit ""
-            foreach address $addresses {set item [_evalCell $book $address $stack]; if {$unit eq ""} {set unit [dict get $item unit]} elseif {[dict get $item unit] ne $unit} {error "Range units differ."}; lappend out [dict get $item value]}
-            return [_value $out $unit vector]
+            set addresses [rangeCells $first $last]; set out {}; set unit "";set inputs {}
+            foreach address $addresses {set item [_evalCell $book $address $stack]; if {![llength $inputs]} {set unit [dict get $item unit]} elseif {[dict get $item unit] ne $unit} {error "Range units differ."};lappend inputs $item; lappend out [dict get $item value]}
+            return [_carryStatistics [_value $out $unit vector] $inputs]
         }
         return [_evalCell $book $first $stack]
     }
     if {[dict exists $book ranges $value]} {
-        set out {}; set unit ""
-        foreach address [dict get $book ranges $value] {set item [_evalCell $book $address $stack]; if {$unit eq ""} {set unit [dict get $item unit]} elseif {[dict get $item unit] ne $unit} {error "Range units differ."}; lappend out [dict get $item value]}
-        return [_value $out $unit vector]
+        set out {}; set unit "";set inputs {}
+        foreach address [dict get $book ranges $value] {set item [_evalCell $book $address $stack]; if {![llength $inputs]} {set unit [dict get $item unit]} elseif {[dict get $item unit] ne $unit} {error "Range units differ."};lappend inputs $item; lappend out [dict get $item value]}
+        return [_carryStatistics [_value $out $unit vector] $inputs]
     }
     if {[dict exists $book columns $value] && [_peek $tokens $index] eq "\["} {
         incr index; set row [_peek $tokens $index]; incr index; _take $tokens index "]"
@@ -337,6 +362,11 @@ proc ::GX::ScientificWorksheet::functionCatalog {{query ""}} {
 proc ::GX::ScientificWorksheet::_numericResult {id meta args} {
     set count [llength $args]
     if {$count < [dict get $meta arity_min] || $count > [dict get $meta arity_max]} {error "Function requires [dict get $meta arity_min]–[dict get $meta arity_max] arguments."}
+    set unmapped [catch {set mapping [::GX::StatisticsV1::numericFieldMap $id]} reason mappingOptions]
+    if {$unmapped&&[dict get $mappingOptions -errorcode] ne {GXTXT STATISTICS UNKNOWN_NUMERIC_OPERATION}} {return -options $mappingOptions $reason}
+    if {!$unmapped} {
+        foreach item $args {if {[dict exists $item mixed_units]&&[dict get $item mixed_units]} {error {Statistical input contains mixed units; convert values explicitly before aggregation}}}
+    }
     set parts [split $id .]; set family [lindex $parts 0]; set action [lindex $parts 1]
     switch -- $family {
         array_unary {set raw [::GX::NumericAPIv1::arrayUnary $action [_numericOperand [lindex $args 0]]]}
@@ -365,6 +395,24 @@ proc ::GX::ScientificWorksheet::_numericResult {id meta args} {
     }
     set field [dict get $meta expression_result_field]
     if {![dict exists $raw $field]} {error "NUMERIC_API result field '$field' is unavailable; inspect operation metadata."}
+    # Safe-formula statistical operations all produce descriptive summaries.
+    # CORE owns source-field applicability and units; an unknown field mapping
+    # means this is an ordinary nonstatistical mathematical operation.
+    if {!$unmapped&&[dict exists $mapping $field]} {
+        set context [dict create y_unit [dict get [lindex $args 0] unit]]
+        foreach argument [dict get $meta arguments] item $args {
+            if {$argument in {x y}&&$item ne {}} {dict set context ${argument}_unit [dict get $item unit]}
+        }
+        set provenance [dict create producer viewer.scientific_worksheet]
+        set lineage {};foreach item $args {foreach record [_sourceLineage $item] {dict set lineage $record 1}}
+        if {[dict size $lineage]} {dict set provenance source_variables [dict keys $lineage]}
+        set statistics [::GX::StatisticsV1::fromNumeric math.numeric.summary $id $raw $context {} $provenance]
+        set item [dict get [::GX::StatisticsV1::numericFields $statistics] $field]
+        set value NaN
+        if {[dict get $item status] eq "value"} {set value [dict get $item value]}
+        set kind [expr {[llength $value]>1?"vector":"scalar"}]
+        return [dict merge [_value $value [dict get $item unit_text] $kind] [dict create statistical_result $statistics statistical_field $field]]
+    }
     set value [dict get $raw $field]
     set kind [expr {[llength $value] > 1 ? "vector" : "scalar"}]
     set unitBehavior [dict get $meta unit_behavior]
@@ -376,15 +424,27 @@ proc ::GX::ScientificWorksheet::_numericResult {id meta args} {
     }
     return [_value $value $unit $kind]
 }
+proc ::GX::ScientificWorksheet::_columnMajor {values shape} {
+    # Workbook cells and spills are row-major; public provider arrays are
+    # column-major. Convert at this one producer/consumer boundary only.
+    if {[llength $shape]!=2} {error {Worksheet matrix shape requires two dimensions}}
+    lassign $shape rows cols
+    foreach size $shape {if {![string is integer -strict $size]||$size<1} {error {Worksheet matrix dimensions must be positive integers}}}
+    if {[llength $values]!=$rows*$cols} {error {Worksheet matrix shape differs from its cell count}}
+    if {$rows==1||$cols==1} {return $values}
+    set result {}
+    for {set col 0} {$col<$cols} {incr col} {for {set row 0} {$row<$rows} {incr row} {lappend result [lindex $values [expr {$row*$cols+$col}]]}}
+    return $result
+}
 proc ::GX::ScientificWorksheet::_typed {item} {
     set kind [dict get $item kind]; set value [dict get $item value]
     if {$kind eq "text"} {return [::GX::ScientificTransportv1::text $value]}
     if {$kind eq "scalar"} {return [::GX::ScientificTransportv1::array {1 1} [list $value]]}
     if {$kind eq "vector"} {return [::GX::ScientificTransportv1::array [list [llength $value] 1] $value]}
-    if {$kind eq "matrix"} {return [::GX::ScientificTransportv1::array [dict get $item shape] $value]}
+    if {$kind eq "matrix"} {return [::GX::ScientificTransportv1::array [dict get $item shape] [_columnMajor $value [dict get $item shape]]]}
     if {$kind eq "complex"} {
         set data [dict get $item value]
-        return [::GX::ScientificTransportv1::array [dict get $data shape] [dict get $data real] [dict get $data imaginary]]
+        return [::GX::ScientificTransportv1::array [dict get $data shape] [_columnMajor [dict get $data real] [dict get $data shape]] [_columnMajor [dict get $data imaginary] [dict get $data shape]]]
     }
     if {$kind eq "empty"} {return [::GX::ScientificTransportv1::empty]}
     if {$kind eq "record"} {
@@ -406,9 +466,15 @@ proc ::GX::ScientificWorksheet::_call {name args} {
         return [_value $fields "" record]
     }
     if {$name eq "vector"} {
-        set values {}
-        foreach item $args {if {[dict get $item kind] ne "scalar"} {error "vector requires scalar arguments."}; lappend values [dict get $item value]}
-        return [_value $values "" vector]
+        set values {};set units {}
+        foreach item $args {
+            if {[dict get $item kind] ne "scalar"} {error "vector requires scalar arguments."}
+            lappend values [dict get $item value]
+            set unit [dict get $item unit];if {$unit ni $units} {lappend units $unit}
+        }
+        set item [_value $values [expr {[llength $units]==1?[lindex $units 0]:{}}] vector]
+        if {[llength $units]>1} {dict set item mixed_units 1}
+        return $item
     }
     if {$name eq "matrix"} {
         if {[llength $args] != 3} {error "matrix(values, rows, columns) requires three arguments."}
@@ -417,12 +483,14 @@ proc ::GX::ScientificWorksheet::_call {name args} {
         if {![string is integer -strict $rows] || ![string is integer -strict $columns] || $rows < 1 || $columns < 1 || $rows*$columns != [llength [dict get $source value]]} {error "Matrix dimensions do not match the range length."}
         set result [_value [dict get $source value] [dict get $source unit] matrix]
         dict set result shape [list $rows $columns]
+        if {[dict exists $source mixed_units]} {dict set result mixed_units [dict get $source mixed_units]}
         return $result
     }
     if {$name eq "complex"} {
         if {[llength $args] != 2} {error "complex(real, imaginary) requires two arguments."}
         lassign $args real imaginary
         if {[dict get $real kind] ne [dict get $imaginary kind] || [dict get $real kind] ni {scalar vector matrix}} {error "Complex real and imaginary parts must have matching numeric shape."}
+        if {[dict get $real unit] ne [dict get $imaginary unit]||([dict exists $real mixed_units]&&[dict get $real mixed_units])||([dict exists $imaginary mixed_units]&&[dict get $imaginary mixed_units])} {error {Complex real and imaginary parts must have matching physical units; convert explicitly first.}}
         if {[dict get $real kind] eq "matrix"} {
             if {[dict get $real shape] ne [dict get $imaginary shape]} {error "Complex matrix dimensions differ."}
             set shape [dict get $real shape]
@@ -430,7 +498,7 @@ proc ::GX::ScientificWorksheet::_call {name args} {
             if {[llength [dict get $real value]] != [llength [dict get $imaginary value]]} {error "Complex vector lengths differ."}
             set shape [list [llength [dict get $real value]] 1]
         } else {set shape {1 1}}
-        return [_value [dict create shape $shape real [dict get $real value] imaginary [dict get $imaginary value]] "" complex]
+        return [_value [dict create shape $shape real [dict get $real value] imaginary [dict get $imaginary value]] [dict get $real unit] complex]
     }
     if {$name eq "field"} {
         if {[llength $args] != 2 || [dict get [lindex $args 0] kind] ne "struct" || [dict get [lindex $args 1] kind] ne "text"} {error "field(result, \"field_name\") requires a public API result and field name."}
@@ -442,6 +510,7 @@ proc ::GX::ScientificWorksheet::_call {name args} {
     set catalog [functionCatalog $name]
     if {![dict exists $catalog $name]} {error "Unknown or unsafe function '$name'. Browse Worksheet functions for supported operations."}
     set meta [dict get $catalog $name]; set id [dict get $meta id]; set provider [dict get $meta provider_id]
+    if {[dict exists $meta operation_kind]&&[dict get $meta operation_kind] eq "metadata"} {error {This operation describes API result contracts and does not calculate Worksheet cell values.}}
     if {$provider eq "math.numeric"} {return [_numericResult $id $meta {*}$args]}
     if {[llength $args] > 4} {error "Scientific API operation accepts at most three data arguments and one options record."}
     set options [::GX::ScientificTransportv1::struct [dict create]]
@@ -553,26 +622,29 @@ proc ::GX::ScientificWorksheet::load {id} {
 proc ::GX::ScientificWorksheet::columnValues {book column first last} {
     set column [string toupper $column]; _columnNumber $column
     if {![string is integer -strict $first] || ![string is integer -strict $last] || $first < 1 || $last < $first || $last-$first >= 20000} {error "Select a valid range of at most 20000 rows."}
-    set values {}; set unit ""; set sources {}; set formulas {}
+    set values {}; set unit ""; set sources {}; set formulas {};set statistics {}
     for {set row $first} {$row <= $last} {incr row} {
         set address "$column$row"
-        if {![dict exists $book cells $address]} {error "Selected column has an empty cell at $address."}
         set item [value $book $address]
+        if {[dict get $item kind] eq "blank"} {error "Selected column has an empty cell at $address."}
         if {[dict get $item kind] ne "scalar" || ![string is double -strict [dict get $item value]]} {error "Selected column requires scalar numeric cells: $address."}
         if {$row == $first} {set unit [dict get $item unit]} elseif {[dict get $item unit] ne $unit} {error "Selected column contains incompatible units at $address."}
         lappend values [dict get $item value]
-        set cell [dict get $book cells $address]
-        if {[dict exists $cell lineage dataset_id]} {lappend sources [dict get $cell lineage]}
-        if {[dict get $cell kind] eq "formula"} {lappend formulas "$address=[dict get $cell source]"}
+        if {[llength [_statisticalSources $item]]} {dict set statistics $address [_statisticalSources $item]}
+        foreach record [_sourceLineage $item] {if {$record ni $sources} {lappend sources $record}}
+        if {[dict exists $book cells $address]} {
+            set cell [dict get $book cells $address]
+            if {[dict get $cell kind] eq "formula"} {lappend formulas "$address=[dict get $cell source]"}
+        } elseif {[dict exists $item anchor]} {lappend formulas "$address=spill([dict get $item anchor])"}
     }
-    return [dict create values $values unit $unit sources $sources formulas $formulas]
+    return [dict create values $values unit $unit sources $sources formulas $formulas statistical_sources $statistics]
 }
 proc ::GX::ScientificWorksheet::publish {book mappings first last datasetId {displayName ""}} {
     set session [_requireSession]
     if {[dict get $book document_id] eq ""} {error "Save the Worksheet before publication so its identity is retained."}
     set datasetId [::GX::datasetPublicationV2ValidateId dataset $datasetId]
     if {![llength $mappings]} {error "Select at least one column."}
-    set values [dict create]; set units [dict create]; set sources [dict create]; set bindings [dict create]; set formulaText {}
+    set values [dict create]; set units [dict create]; set sources [dict create]; set bindings [dict create]; set formulaText {};set statisticalResults {};set statisticalLinks {};set distinctStatistics {}
     dict for {outputId col} $mappings {
         if {![regexp {^[A-Za-z][A-Za-z0-9_]*$} $outputId]} {error "Invalid output variable ID '$outputId'."}
         set selected [columnValues $book $col $first $last]
@@ -580,9 +652,24 @@ proc ::GX::ScientificWorksheet::publish {book mappings first last datasetId {dis
         dict set units $outputId [dict get $selected unit]
         foreach lineage [dict get $selected sources] {dict set sources [dict get $lineage dataset_id] 1; dict set bindings "[dict get $lineage dataset_id]:[dict get $lineage variable_id]" 1}
         set formulaText [concat $formulaText [dict get $selected formulas]]
+        dict for {address results} [dict get $selected statistical_sources] {
+            foreach result $results {
+                set index [lsearch -exact $distinctStatistics $result]
+                if {$index<0} {set index [llength $distinctStatistics];lappend distinctStatistics $result}
+                set name worksheet_stat_$index
+                dict set statisticalResults $name $result
+                if {![dict exists $statisticalLinks $address]||$name ni [dict get $statisticalLinks $address]} {dict lappend statisticalLinks $address $name}
+            }
+        }
     }
     set provenance "Scientific Worksheet [dict get $book document_id] revision [dict get $book revision]; rows $first:$last; columns $mappings; formulas [join $formulaText {; }]"
-    set definition [dict create dataset_id $datasetId contract table.generic storage csv producer_version 1.1.0 source "Scientific Worksheet" provenance $provenance notes $displayName source_dataset_ids [dict keys $sources] source_variable_ids [dict keys $bindings]]
+    set definition [dict create dataset_id $datasetId contract table.generic storage csv producer_version [::GX::moduleField viewer.scientific_worksheet version {}] source "Scientific Worksheet" provenance $provenance notes $displayName source_dataset_ids [dict keys $sources] source_variable_ids [dict keys $bindings]]
+    set statisticalMetadata {}
+    if {[dict size $statisticalResults]} {
+        set statisticalMetadata [::GX::StatisticsV1::publicationMetadata $statisticalResults]
+        dict set statisticalMetadata worksheet.statistical_contributions $statisticalLinks
+        dict set definition structured_metadata $statisticalMetadata
+    }
     set plan [::GX::datasetPublicationV2Prepare $session viewer.scientific_worksheet $definition]
     set writer ""
     try {
@@ -597,7 +684,7 @@ proc ::GX::ScientificWorksheet::publish {book mappings first last datasetId {dis
         ::GX::datasetPublicationV2Append $writer row $values
         set result [::GX::datasetPublicationV2Finalize $writer]
     } on error {message options} {if {$writer ne ""} {catch {::GX::datasetPublicationV2Abort $writer}}; return -options $options $message}
-    ::GX::datasetMetadataWrite $session $datasetId [dict create dataset.display_name $displayName worksheet.document_id [dict get $book document_id] worksheet.revision [dict get $book revision] worksheet.source_rows "$first:$last" worksheet.columns $mappings worksheet.formulas [join $formulaText {; }] worksheet.source_dataset_ids [join [dict keys $sources] {;}] worksheet.source_variable_ids [join [dict keys $bindings] {;}]]
+    ::GX::datasetMetadataWrite $session $datasetId [dict merge $statisticalMetadata [dict create dataset.display_name $displayName worksheet.document_id [dict get $book document_id] worksheet.revision [dict get $book revision] worksheet.source_rows "$first:$last" worksheet.columns $mappings worksheet.formulas [join $formulaText {; }] worksheet.source_dataset_ids [join [dict keys $sources] {;}] worksheet.source_variable_ids [join [dict keys $bindings] {;}]]]
     return $result
 }
 proc ::GX::ScientificWorksheet::preview {book xColumn yColumns first last destinationDir {zColumn ""}} {
@@ -824,12 +911,96 @@ proc ::GX::ScientificWorksheet::_uiRecalculate {w all} {
     _uiRefresh $w
     set ui($w,status) "Recalculated [dict size $results] cells; $errors errors. Select a cell to inspect its error."
 }
+proc ::GX::ScientificWorksheet::_cellInspectionText {book address} {
+    set result [value $book $address]
+    set display [dict get $result value]
+    if {[string length $display]>2000} {set display "[string range $display 0 1999]… (display shortened)"}
+    set unit [dict get $result unit];if {$unit eq ""} {set unit {undeclared}}
+    set detail "$address\nValue: $display\nUnit: $unit"
+    if {[dict exists $result statistical_result]} {
+        set statistics [dict get $result statistical_result]
+        set field [dict get $result statistical_field]
+        set window [expr {[dict exists $result statistical_window]?[dict get $result statistical_window]:{}}]
+        if {[dict exists $result statistical_data_field]} {
+            set contract [dict get [::GX::StatisticsV1::numericDataFields $statistics] fields $field]
+            append detail "\n\n[dict get $contract label]\n[dict get $contract definition]"
+            if {[dict get $result kind] eq "scalar"} {
+                set index [expr {[dict exists $result statistical_element]?[dict get $result statistical_element]:0}]
+                set start [expr {$window eq {}?0:[dict get $window start]}]
+                append detail "\nObservation row: [expr {$start+$index+1}]"
+                if {[dict exists $result statistical_data_statuses]&&[lindex [dict get $result statistical_data_statuses] $index] ne "value"} {
+                    append detail "\n[lindex [dict get $result statistical_data_statuses] $index] — [lindex [dict get $result statistical_data_reasons] $index]"
+                }
+                if {[dict exists $contract identity_ids]} {append detail "\nIdentity: [lindex [dict get $contract identity_ids] [expr {int([dict get $result value])-1}]]"}
+            }
+        } elseif {[dict exists $result statistical_element]} {
+            set cells [dict get [_statisticalProjection $statistics $field $window] cells]
+            set cell [lindex $cells [dict get $result statistical_element]]
+            append detail "\n\n[dict get $cell label]: "
+            if {[dict get $cell status] eq "value"} {append detail "[format %.9g [dict get $cell value]] ([dict get $cell unit_text])"} else {append detail "[dict get $cell status] — [dict get $cell reason]"}
+            foreach key {element_id row_id column_id probability} {if {[dict exists $cell $key]} {append detail "\n[string totitle [string map {_ { }} $key]]: [dict get $cell $key]"}}
+            if {[dict exists $cell definition]} {append detail "\n[dict get $cell definition]"}
+        } elseif {[dict get $statistics schema] eq "gxtxt.statistical_result.resource_binding.v1"} {
+            set cells [dict get [_statisticalProjection $statistics $field $window] cells]
+            foreach cell [lrange $cells 0 19] {
+                append detail "\n\n[dict get $cell label]"
+                if {[dict exists $cell row_id]} {append detail " · [dict get $cell row_id]"}
+                if {[dict get $cell status] eq "value"} {append detail ": [format %.9g [dict get $cell value]] ([dict get $cell unit_text])"} else {append detail ": [dict get $cell status] — [dict get $cell reason]"}
+            }
+            if {[llength $cells]>20} {append detail "\nShowing the first 20 selected result rows."}
+        } elseif {[dict get $statistics schema] eq "gxtxt.statistical_result.table.v1"} {
+            set quantity [dict get [::GX::StatisticsV1::numericFieldMap [dict get $statistics provenance operation]] $field]
+            append detail "\n\n[::GX::StatisticsV1::tableReport $statistics [lrange [dict get $statistics row_ids] 0 19] [list $quantity]]"
+            if {[dict get $statistics row_count]>20} {append detail "\nShowing the first 20 statistical rows."}
+        } else {
+            set quantity [dict get [::GX::StatisticsV1::numericFields $statistics] $field quantity]
+            append detail "\n\n[::GX::StatisticsV1::report $statistics [list $quantity]]"
+        }
+    }
+    set contributors [_statisticalSources $result]
+    if {[dict exists $result statistical_result]} {
+        set at [lsearch -exact $contributors [dict get $result statistical_result]]
+        if {$at>=0} {set contributors [lreplace $contributors $at $at]}
+    }
+    if {[llength $contributors]} {
+        append detail "\n\nStatistical inputs used by this cell:"
+        foreach statistics $contributors {
+            if {[dict get $statistics schema] eq "gxtxt.statistical_result.resource_binding.v1"} {append detail "\n\n[::GX::StatisticsV1::report $statistics]";continue}
+            if {[dict get $statistics schema] eq "gxtxt.statistical_result.table.v1"} {
+                set requested [lsort -unique [dict values [::GX::StatisticsV1::numericFieldMap [dict get $statistics provenance operation]]]]
+                set report [::GX::StatisticsV1::tableReport $statistics [lrange [dict get $statistics row_ids] 0 4] $requested]
+                if {[dict get $statistics row_count]>5} {append report "\nShowing the first 5 contributing rows."}
+                if {[string length $report]>4000} {set report "[string range $report 0 3999]… (display shortened)"}
+                append detail "\n\n$report";continue
+            }
+            set requested {}
+            dict for {field item} [::GX::StatisticsV1::numericFields $statistics] {
+                if {[dict get $item status] in {value undefined error}} {lappend requested [dict get $item quantity]}
+            }
+            set report [::GX::StatisticsV1::report $statistics [lsort -unique $requested]]
+            if {[string length $report]>4000} {set report "[string range $report 0 3999]… (display shortened)"}
+            append detail "\n\n$report"
+        }
+    }
+    foreach source [_sourceLineage $result] {
+        append detail "\nSource Dataset: [dict get $source dataset_id]; Variable: [dict get $source variable_id]"
+    }
+    if {[dict exists $result lineage source_row]} {append detail "\nSource row: [dict get $result lineage source_row]"}
+    return $detail
+}
 proc ::GX::ScientificWorksheet::_uiInspect {w} {
     variable ui
     if {$ui($w,active) eq ""} return
     set address $ui($w,active)
-    if {[catch {set result [value $ui($w,book) $address]} message]} {set detail "Error in $address: $message"} else {set detail "$address: $result"}
-    tk_messageBox -parent $w -type ok -title "Worksheet cell $address" -message $detail
+    if {[catch {set detail [_cellInspectionText $ui($w,book) $address]} message]} {set detail "Error in $address: $message"}
+    set d $w.inspect;catch {destroy $d};toplevel $d
+    wm title $d "Worksheet cell $address";wm transient $d $w
+    text $d.detail -wrap word -width 76 -height 18 -padx 12 -pady 12 -yscrollcommand [list $d.scroll set]
+    ttk::scrollbar $d.scroll -orient vertical -command [list $d.detail yview]
+    ttk::button $d.close -text Close -command [list destroy $d]
+    $d.detail insert 1.0 $detail;$d.detail configure -state disabled
+    grid $d.detail $d.scroll -sticky nsew;grid $d.close -columnspan 2 -sticky e -padx 12 -pady 8
+    grid rowconfigure $d 0 -weight 1;grid columnconfigure $d 0 -weight 1
 }
 proc ::GX::ScientificWorksheet::_uiFunctionBrowser {w} {
     variable ui

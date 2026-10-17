@@ -19,3 +19,33 @@ To package an exact `.m` or `.py` research script as an ordinary installable Ana
 ## New public operations (dev-051)
 
 Python/Octave examples `examples/scripts/combined_stabilization.*` demonstrate new curve models, explicit series publication, graph aspect/background, annotations, Graph Notes and Graph Metadata through `gxtxt_api_call`. Completed files use `publish_auto` inside the script output directory. See [Script Bridge API](../api/OCTAVE_SCRIPT_BRIDGE_API_v1.md) and coverage JSON. Portable Resource import/export remains a host/GUI operation. Octave namespaced keys use dynamic field access without JSON name rewriting.
+
+## Runner history and named views (dev097)
+
+Use **Run → Open Script Runner** in either Script Workspace to review a saved
+script's parameters and Dataset bindings. Opening it creates no Job. Dirty buffers
+let you save first, use the explicitly identified last saved revision, or cancel.
+The Runner's own Run button submits the execution. **Script Jobs** then manages
+that exact Job ID and retained log.
+
+In Script Jobs, select one or several finished rows and choose **History → Hide
+selected / Remove from visible list**. Repeated executions of the same script
+remain independent. **Include hidden** or the **Hidden** filter reveals hidden
+rows; **Restore selected** reverses hiding. **Hide finished in current scope**
+shows its count, state filter and Session scope before confirmation. Cancellation
+is a separate Jobs command for active executions. Hiding preserves the script,
+immutable snapshot, log, output files and all published scientific data.
+
+**View** changes state filters, Session scope, columns and pages. Click headings
+to sort; the status line gives visible, matching, hidden and stored counts. The
+list displays up to 500 Jobs per page, with Previous/Next under View. Details and
+complete logs remain available for hidden jobs.
+
+**Workspace** saves named user-local layouts and filters, including column widths,
+pane proportions, geometry and safe selection. New/Open/Save/Save As/Rename and
+Manager reuse Configuration persistence; the active name appears in the window
+title. These layouts work without an open Session and do not contain Job records
+or scientific data. Hidden Job IDs apply across all named Runner layouts. Closing
+or switching a layout never runs or cancels a Job and never applies resource policy.
+Change concurrency and limits separately under **Settings → Concurrency and resource
+policy**, then explicitly save that policy.

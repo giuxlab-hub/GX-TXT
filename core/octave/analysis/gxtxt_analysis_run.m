@@ -166,8 +166,10 @@ function result = gxtxt_analysis_run(definition_path, source_map, output_dir, op
         value_id=strtrim(gxtxt_ini_get(def,['operation.' id '.value'],'')); require_series(ctx,value_id,id);
         if (!isnumeric(ctx.series.(value_id))), error('GXTXT:Analysis','normalize value must be numeric: %s',value_id); endif
         method=gxtxt_ini_get(def,['operation.' id '.method'],'maxabs');
-        v=gxtxt_analysis_op_normalize(ctx.series.(value_id),method);
-        [st,rs,blocked]=dependency_status(ctx,deps,op_output,numel(v)); v=apply_blocked_value(v,blocked);
+        [v,normalization]=gxtxt_analysis_op_normalize(ctx.series.(value_id),method,struct('y_unit',ctx.units.(value_id)));
+        unit=statistical_output_unit(unit,normalization.unit,id);ctx=retain_statistics(ctx,output,normalization.statistical_results);
+        [dst,drs,blocked]=dependency_status(ctx,deps,op_output,numel(v));v=apply_blocked_value(v,blocked);
+        st=normalization.status;rs=normalization.reason;st(blocked)=dst(blocked);rs(blocked)=drs(blocked);
         ctx=set_series(ctx,output,v,'numeric',['operation:' id],rolemeta,unit,st,rs);
       case 'aggregate'
         value_id=strtrim(gxtxt_ini_get(def,['operation.' id '.value'],'')); require_series(ctx,value_id,id);
@@ -175,8 +177,10 @@ function result = gxtxt_analysis_run(definition_path, source_map, output_dir, op
         method=gxtxt_ini_get(def,['operation.' id '.method'],'mean');
         group_id=strtrim(gxtxt_ini_get(def,['operation.' id '.group'],'')); group=[];
         if (!isempty(group_id)), require_series(ctx,group_id,id); group=ctx.series.(group_id); endif
-        v=gxtxt_analysis_op_aggregate(ctx.series.(value_id),method,group);
-        [st,rs,blocked]=dependency_status(ctx,deps,op_output,numel(v)); v=apply_blocked_value(v,blocked);
+        [v,aggregate]=gxtxt_analysis_op_aggregate(ctx.series.(value_id),method,group,struct('y_unit',ctx.units.(value_id)));
+        unit=statistical_output_unit(unit,aggregate.unit,id);ctx=retain_statistics(ctx,output,aggregate.statistical_results);
+        [dst,drs,blocked]=dependency_status(ctx,deps,op_output,numel(v));v=apply_blocked_value(v,blocked);
+        st=aggregate.status;rs=aggregate.reason;st(blocked)=dst(blocked);rs(blocked)=drs(blocked);
         ctx=set_series(ctx,output,v,'numeric',['operation:' id],rolemeta,unit,st,rs);
       case 'filter'
         % Historical filter remains destructive.  v0.8.3 additionally accepts
@@ -277,14 +281,18 @@ function result = gxtxt_analysis_run(definition_path, source_map, output_dir, op
         xid=strtrim(gxtxt_ini_get(def,['operation.' id '.x'],''));yid=strtrim(gxtxt_ini_get(def,['operation.' id '.y'],''));require_series(ctx,xid,id);require_series(ctx,yid,id);
         gid=strtrim(gxtxt_ini_get(def,['operation.' id '.group'],''));group=[];if(!isempty(gid)),require_series(ctx,gid,id);group=ctx.series.(gid);endif
         [xx,yy,domain_mask]=domain_filtered_xy(def,id,ctx,xid,yid);
-        F=gxtxt_analysis_dispatch_kernel('correlate',xx,yy,group);F.group_id=gid;F.output=output;F.operation_id=id;F.domain=strtrim(gxtxt_ini_get(def,['operation.' id '.domain'],''));
+        scientific_context=struct('x_unit',ctx.units.(xid),'y_unit',ctx.units.(yid));
+        F=gxtxt_analysis_dispatch_kernel('correlate',xx,yy,group,scientific_context);F.group_id=gid;F.output=output;F.operation_id=id;F.domain=strtrim(gxtxt_ini_get(def,['operation.' id '.domain'],''));
+        ctx=retain_statistics(ctx,output,F.statistical_results);
         [dst,drs,dblocked]=dependency_status(ctx,deps,op_output,numel(F.broadcast));if(any(dblocked)),F=feature_dependency_overlay(F,group,dblocked);endif
         ctx.features.(output)=F;ctx=set_series(ctx,output,F.broadcast,'numeric',['operation:' id],rolemeta,'1',F.broadcast_status,F.broadcast_reason);
       case 'regress'
         xid=strtrim(gxtxt_ini_get(def,['operation.' id '.x'],''));yid=strtrim(gxtxt_ini_get(def,['operation.' id '.y'],''));require_series(ctx,xid,id);require_series(ctx,yid,id);
         gid=strtrim(gxtxt_ini_get(def,['operation.' id '.group'],''));group=[];if(!isempty(gid)),require_series(ctx,gid,id);group=ctx.series.(gid);endif
         [xx,yy,domain_mask]=domain_filtered_xy(def,id,ctx,xid,yid);
-        R=gxtxt_analysis_dispatch_kernel('regress',xx,yy,group);[dst,drs,dblocked]=dependency_status(ctx,deps,op_output,numel(R.predicted));R.predicted=apply_blocked_value(R.predicted,dblocked);R.broadcast_status(dblocked)={'unavailable'};R.broadcast_reason(dblocked)={'dependency_unavailable'};
+        scientific_context=struct('x_unit',ctx.units.(xid),'y_unit',ctx.units.(yid));
+        R=gxtxt_analysis_dispatch_kernel('regress',xx,yy,group,scientific_context);[dst,drs,dblocked]=dependency_status(ctx,deps,op_output,numel(R.predicted));R.predicted=apply_blocked_value(R.predicted,dblocked);R.broadcast_status(dblocked)={'unavailable'};R.broadcast_reason(dblocked)={'dependency_unavailable'};
+        ctx=retain_statistics(ctx,output,R.statistical_results);
         if(!isempty(domain_mask)),outside=!domain_mask(:);R.predicted(outside)=NaN;R.broadcast_status(outside)={'unavailable'};R.broadcast_reason(outside)={'outside_domain'};endif
         ctx=set_series(ctx,output,R.predicted,'numeric',['operation:' id],rolemeta,unit,R.broadcast_status,R.broadcast_reason);
         ctx=store_regression_features(ctx,output,id,gid,R);
@@ -292,7 +300,9 @@ function result = gxtxt_analysis_run(definition_path, source_map, output_dir, op
         xid=strtrim(gxtxt_ini_get(def,['operation.' id '.x'],''));yid=strtrim(gxtxt_ini_get(def,['operation.' id '.y'],''));require_series(ctx,xid,id);require_series(ctx,yid,id);
         fid=strtrim(gxtxt_ini_get(def,['operation.' id '.family'],''));family=[];if(!isempty(fid)),require_series(ctx,fid,id);family=ctx.series.(fid);endif
         maxiter=str2double(gxtxt_ini_get(def,['operation.' id '.max_iter'],'400'));tol=str2double(gxtxt_ini_get(def,['operation.' id '.tolerance'],'1e-8'));
-        R=gxtxt_analysis_dispatch_kernel('fit',ctx.series.(xid),ctx.series.(yid),family,runtime,maxiter,tol);n=numel(R.predicted);st=repmat({R.status},n,1);rs=repmat({R.reason},n,1);ctx=set_series(ctx,output,R.predicted,'numeric',['operation:' id],rolemeta,unit,st,rs);ctx.fit_results.(output)=R;ctx=store_fit_features(ctx,output,id,R,n);
+        scientific_context=struct('x_unit',ctx.units.(xid),'y_unit',ctx.units.(yid));
+        R=gxtxt_analysis_dispatch_kernel('fit',ctx.series.(xid),ctx.series.(yid),family,runtime,maxiter,tol,scientific_context);n=numel(R.predicted);st=repmat({R.status},n,1);rs=repmat({R.reason},n,1);ctx=set_series(ctx,output,R.predicted,'numeric',['operation:' id],rolemeta,unit,st,rs);ctx.fit_results.(output)=R;ctx=store_fit_features(ctx,output,id,R,n);
+        ctx=retain_statistics(ctx,output,{R.statistical_results});
       case 'convert_unit'
         value_id=strtrim(gxtxt_ini_get(def,['operation.' id '.value'],''));require_series(ctx,value_id,id);to_unit=strtrim(gxtxt_ini_get(def,['operation.' id '.to_unit'],unit));from_unit=strtrim(gxtxt_ini_get(def,['operation.' id '.from_unit'],ctx.units.(value_id)));
         if(isempty(to_unit)),error('GXTXT:Analysis','convert_unit %s requires to_unit or operation unit metadata',id);endif
@@ -321,6 +331,12 @@ function result = gxtxt_analysis_run(definition_path, source_map, output_dir, op
         write_feature_table(path,ctx,feats); exported{end+1}=path; %#ok<AGROW>
       case {'summary','text_summary'}
         write_summary(path,definition_path,defid,ctx,order); exported{end+1}=path; %#ok<AGROW>
+      case 'statistical_results'
+        named=struct();if(isfield(ctx,'statistical_results')),named=ctx.statistical_results;endif
+        text=gxtxt_statistics_v1('publication_metadata',named);
+        fid=fopen(path,'w');if(fid<0),error('GXTXT:Analysis','Cannot write %s',path);endif
+        unwind_protect,fprintf(fid,'%s\n',text);unwind_protect_cleanup,fclose(fid);end_unwind_protect
+        exported{end+1}=path;
       otherwise
         error('GXTXT:Analysis','Unsupported export type %s in %s',et,eid);
     endswitch
@@ -343,6 +359,19 @@ function ctx=set_series(ctx,id,v,typ,origin,role,unit,status,reason)
   ctx.series.(id)=v; ctx.types.(id)=typ; ctx.origins.(id)=origin; ctx.roles.(id)=role; ctx.units.(id)=unit;
   ctx.status.(id)=status; ctx.reason.(id)=reason;ctx.lengths.(id)=numel(v);
   ctx.row_aligned.(id)=(isscalar(v)||ctx.row_count==0||numel(v)==ctx.row_count);
+endfunction
+
+function unit=statistical_output_unit(declared,actual,operation)
+  unit=actual;
+  if(isempty(declared)||strcmp(declared,actual)),return;endif
+  % Unit labels cannot rescale an aggregate or a dimensionless transform.
+  % Explicit convert_unit is the operation that changes numerical units.
+  same=false;
+  if(!isempty(actual))
+    try converted=gxtxt_unit_convert([0;1],actual,declared);same=isequal(converted,[0;1]);catch;end_try_catch
+  endif
+  if(!same),error('GXTXT:Analysis','Operation %s declares unit %s but its actual output unit is %s; use explicit variable metadata or convert_unit',operation,declared,actual);endif
+  unit=declared;
 endfunction
 
 function target=resolve_target(def,id,ctx,default)
@@ -509,10 +538,18 @@ function [x,y,mask]=domain_filtered_xy(def,id,ctx,xid,yid)
   mask=mask(:);x=x(:);y=y(:);x(!mask)=NaN;y(!mask)=NaN;
 endfunction
 
+function ctx=retain_statistics(ctx,output,results)
+  if(!isfield(ctx,'statistical_results')),ctx.statistical_results=struct();endif
+  for k=1:numel(results)
+    if(!isempty(results{k})),ctx.statistical_results.(sprintf('%s_group%d',output,k))=results{k};endif
+  endfor
+endfunction
 function ctx=store_regression_features(ctx,output,opid,gid,R)
   n=ctx.row_count; names={'slope','intercept','r2'};group=[];if(!isempty(gid)&&isfield(ctx.series,gid)),group=ctx.series.(gid);endif
   for j=1:numel(names)
-    nm=names{j};fid=[output '_' nm];vals=R.(nm);F=feature_from_group_values(R.group_values,R.group_kind,vals,R.status,R.reason,gid,n,group);F.output=fid;F.operation_id=opid;ctx.features.(fid)=F;ctx=set_series(ctx,fid,F.broadcast,'numeric',['operation:' opid],['regression_' nm],'',F.broadcast_status,F.broadcast_reason);
+    nm=names{j};fid=[output '_' nm];vals=R.(nm);status=R.status;reason=R.reason;
+    if(strcmp(nm,'r2')),status=R.r2_status;reason=R.r2_reason;endif
+    F=feature_from_group_values(R.group_values,R.group_kind,vals,status,reason,gid,n,group);F.output=fid;F.operation_id=opid;ctx.features.(fid)=F;ctx=set_series(ctx,fid,F.broadcast,'numeric',['operation:' opid],['regression_' nm],'',F.broadcast_status,F.broadcast_reason);
   endfor
 endfunction
 
@@ -522,7 +559,8 @@ function ctx=store_fit_features(ctx,output,opid,R,n)
     fid=[output '_' safe_field(names{i})];F=global_feature(R.theta(i),R.status,R.reason,n);F.output=fid;F.operation_id=opid;ctx.features.(fid)=F;ctx=set_series(ctx,fid,F.broadcast,'numeric',['operation:' opid],'fit_parameter','',F.broadcast_status,F.broadcast_reason);
   endfor
   for spec={'rmse','mae','r2'}
-    nm=spec{1};fid=[output '_' nm];F=global_feature(R.(nm),R.status,R.reason,n);F.output=fid;F.operation_id=opid;ctx.features.(fid)=F;ctx=set_series(ctx,fid,F.broadcast,'numeric',['operation:' opid],'fit_diagnostic','',F.broadcast_status,F.broadcast_reason);
+    nm=spec{1};fid=[output '_' nm];meaning=R.diagnostic_features.(nm);
+    F=global_feature(R.(nm),meaning.status,meaning.reason,n);F.output=fid;F.operation_id=opid;ctx.features.(fid)=F;ctx=set_series(ctx,fid,F.broadcast,'numeric',['operation:' opid],'fit_diagnostic',meaning.unit,F.broadcast_status,F.broadcast_reason);
   endfor
 endfunction
 
@@ -614,6 +652,10 @@ function write_summary(path,definition_path,defid,ctx,order)
       F=ctx.features.(ff{i});
       for k=1:numel(F.values),fprintf(fid,'  %s group=%s value=%s status=%s reason=%s\n',ff{i},csv_value(F.group_values{k}),csv_value(F.values(k)),F.status{k},F.reason{k});endfor
     endfor
+    if(isfield(ctx,'statistical_results'))
+      names=fieldnames(ctx.statistical_results);
+      for k=1:numel(names),fprintf(fid,'\n%s\n%s\n',names{k},gxtxt_statistics_v1('report',ctx.statistical_results.(names{k})));endfor
+    endif
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect

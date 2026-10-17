@@ -1,4 +1,18 @@
-## 1.2.2
+## 1.2.4
+
+Add saved uncertainty declarations, explicit review/override controls, stable
+point IDs and exact calibration/image/row provenance on published sigma and
+covariance. Reuse public Numeric/CORE and canonical managed full-covariance
+publication. Expose real Python/Octave Companion consumers; preserve historical
+configuration/publication and retired-owner resource compatibility.
+
+## 1.2.3
+
+Expose analytic calibration sensitivities from the existing homography/axis
+owner for shared Numeric/CORE uncertainty propagation. Preserve original
+calibration, point identities and Session configuration serialization.
+
+## 1.2.20
 
 - Resolve Session context and source image through public Session Inspection; preserve measured-versus-registered SHA diagnostics for stale-source reporting.
 

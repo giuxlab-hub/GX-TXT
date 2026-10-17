@@ -2,6 +2,7 @@
 # Coordinate-frame conversion uses Native2D for complete geometry and the
 # public Unit Registry for dimensional semantics. Source identities are frozen.
 proc ::GX::CurveWorkbench::_coordinateUnits {record} {
+    if {[dict exists $record coordinate_units]} {return [dict get $record coordinate_units]}
     if {[dict exists $record sketch_units]&&![dict exists $record working_unit]} {return [dict get $record sketch_units]}
     if {[dict exists $record working_unit]} {return [lrepeat 2 [dict get $record working_unit]]}
     set result {}
@@ -25,6 +26,7 @@ proc ::GX::CurveWorkbench::_newRecord {w name samples source x y filter value fa
     if {$parents ne {}} {
         set units [_coordinateUnits [_record $w [lindex $parents 0]]]
         foreach parent $parents {if {[_coordinateUnits [_record $w $parent]] ne $units} {error "Derived geometry requires common coordinate units across its parents"}}
+        dict set record coordinate_units $units
         if {[lindex $units 0] ne ""&&[lindex $units 0] eq [lindex $units 1]} {dict set record working_unit [lindex $units 0]}
     }
     return $record
@@ -34,16 +36,18 @@ proc ::GX::CurveWorkbench::_pointList {w} {
     variable st
     _pointList_units_base $w
     if {$st($w,active) ne ""&&[winfo exists $w.leftScroll.viewport.content.numeric.leditX]} {
-        foreach axis {x y} unit [_coordinateUnits [_record $w $st($w,active)]] {
+        foreach axis {x y} {
             set key [string toupper $axis]
-            $w.leftScroll.viewport.content.numeric.ledit$key configure -text [expr {$unit eq "" ? $key : "$key ($unit)"}]
-            $w.leftScroll.viewport.content.points heading $axis -text [expr {$unit eq "" ? $key : "$key ($unit)"}]
+            set unit [dict get [_coordinateAxis $w $st($w,active) $axis] display_unit]
+            $w.leftScroll.viewport.content.numeric.ledit$key configure -text "$key ($unit)"
+            $w.leftScroll.viewport.content.points heading $axis -text "$key ($unit)"
         }
         foreach column [$w.leftScroll.viewport.content.points cget -columns] {
             set minimum [expr {[font measure TkHeadingFont [$w.leftScroll.viewport.content.points heading $column -text]]+24}]
             $w.leftScroll.viewport.content.points column $column -minwidth $minimum
             if {[$w.leftScroll.viewport.content.points column $column -width]<$minimum} {$w.leftScroll.viewport.content.points column $column -width $minimum}
         }
+        $w.leftScroll.viewport.content.interval.label configure -text "Select X interval ([dict get [_coordinateAxis $w $st($w,active) x] display_unit])"
     }
 }
 rename ::GX::CurveWorkbench::_restoreSnapshot ::GX::CurveWorkbench::_restoreSnapshot_units_base
@@ -92,6 +96,9 @@ proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
     set changed 0
     try {
         dict for {image record} $st($w,images) {if {[dict get [::GX::Native2D::core image_get $st($w,scene) [dict get $record native]] length_unit] ne $from} {error {Reference images require the same declared workspace unit before conversion}}}
+        if {[info exists st($w,coordinateFrameKey)]} {
+            dict set st($w,coordinateFrameViews) $st($w,coordinateFrameKey) [dict create view [::GX::Native2D::core view_requested $st($w,scene)] presentation [::GX::Native2D::core presentation $st($w,scene)] coordinate_view $st($w,coordinateView)]
+        }
         ::GX::Native2D::core rescale_coordinates $st($w,scene) $factor;set changed 1
         dict for {image record} $st($w,images) {set native [dict get $record native];set state [::GX::Native2D::core image_get $st($w,scene) $native];dict set state length_unit $to;::GX::Native2D::core image_update $st($w,scene) $native $state}
         set st($w,bridgeTolerance) [expr {$st($w,bridgeTolerance)*$factor}]
@@ -105,6 +112,7 @@ proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
                 dict set record edited $edited
             }
             dict set record working_unit $to
+            dict unset record coordinate_units
             if {[dict get $unknown $id]&&[dict get $record source] ne ""} {
                 set assumptions {}
                 foreach axis {x y} unit [_coordinateUnits [_record $w $id]] {
@@ -130,6 +138,8 @@ proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
         set regions {}
         foreach region [dict get $descriptor regions] {dict set region bounds [::GX::unitRegistryConvertCoordinates $from $to [dict get $region bounds]];lappend regions $region}
         dict set descriptor regions $regions
+        _coordinateRescaleView $w $factor
+        set st($w,coordinateFrameKey) [_coordinateFrameKey [_record $w $st($w,active)]]
         _selectionScene $w;_restorePointSelectionDescriptor $w $descriptor
         _history $w $before $ids
     } on error {message options} {
@@ -143,7 +153,11 @@ proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
     return [dict create source_unit $from target_unit $to factor $factor object_count [llength $ids] physical_scale 0]
 }
 proc ::GX::CurveWorkbench::_buildUnits {w} {
-    
+    ttk::button $w.cad.declareaxes -text "Declare axes…" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_coordinateDeclareOpen $w]]
+    pack $w.cad.declareaxes -side left -padx 3
+    ttk::button $w.cad.axisunits -text "Axis display units…" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_coordinateOpen $w]]
+    ttk::button $w.cad.datasetcoordinates -text "Dataset coordinates…" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_coordinateDatasetOpen $w]]
+    pack $w.cad.axisunits $w.cad.datasetcoordinates -side left -padx 3
     ttk::button $w.cad.units -text "Working units…" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_unitsOpen $w]]
     pack $w.cad.units -side left -padx 3
 }

@@ -22,6 +22,7 @@ from PIL import Image, ImageTk, UnidentifiedImageError
 
 from digitizer_model import AxisConfig, CalibrationError, CORNER_ORDER, DigitizedPoint, Project, Series
 from image_canvas import ImageCanvas
+from uncertainty_dialog import UncertaintyDialog
 
 APP_NAME = "GX-TXT Curve Digitalizer"
 LOG = logging.getLogger("gx.curve_digitizer")
@@ -29,7 +30,7 @@ STARTUP_TIMEOUT_SECONDS = 45.0
 RPC_TIMEOUT_SECONDS = 120.0
 CONFIG_FORMAT = "gxtxt.curve_digitizer.configuration"
 CONFIG_VERSION = "1.0"
-PLUGIN_VERSION = "1.2.1"
+PLUGIN_VERSION = "1.2.4"
 SERIES_COLORS = ("#d62728", "#1f77b4", "#2ca02c", "#9467bd", "#ff7f0e", "#17becf", "#e377c2", "#8c564b", "#bcbd22")
 CORNER_LABELS = {"bottom_left": "BL", "bottom_right": "BR", "top_left": "TL", "top_right": "TR"}
 RESAMPLE_LANCZOS = getattr(Image, "Resampling", Image).LANCZOS
@@ -555,8 +556,10 @@ class CurveDigitizerApp:
                 raise RpcError("GX-TXT returned an unexpected Interactive Document identity while saving.")
             self.document_sha[self.current_doc_id] = doc_sha
             self.documents[self.current_doc_id] = copy.deepcopy(self.config)
+            return True
         except RpcError as exc:
             messagebox.showerror(APP_NAME, f"Unable to save the digitizer configuration in the Session:\n{exc}")
+            return False
 
     def snapshot(self):
         if self.current_doc_id:
@@ -745,6 +748,7 @@ class CurveDigitizerApp:
         ttk.Button(tab, text="Publish Dataset", command=self.publish_dataset).grid(row=5, column=0, columnspan=2, sticky="ew")
         self.publish_result = tk.StringVar()
         ttk.Label(tab, textvariable=self.publish_result, wraplength=360, justify="left").grid(row=6, column=0, columnspan=2, sticky="w", pady=(8, 0))
+        ttk.Button(tab, text="Pixel / calibration uncertainty…", command=lambda: UncertaintyDialog(self) if self.current_doc_id else None).grid(row=7, column=0, columnspan=2, sticky="ew", pady=8)
         tab.columnconfigure(1, weight=1)
         for var in (self.output_dataset_id, self.output_display_name):
             var.trace_add("write", lambda *_: self.persist_later())
@@ -1448,7 +1452,7 @@ class CurveDigitizerApp:
             for point_index, point in enumerate(series.points):
                 if point.calibrated_x is None or point.calibrated_y is None:
                     continue
-                rows.append("\t".join((b64e(series.id), b64e(series.name), str(point_index), format(point.calibrated_x, ".17g"), format(point.calibrated_y, ".17g"), family)))
+                rows.append("\t".join((b64e(series.id), b64e(series.name), str(point_index), format(point.calibrated_x, ".17g"), format(point.calibrated_y, ".17g"), family, b64e(point.id))))
         if not rows:
             messagebox.showerror(APP_NAME, "There are no calibrated digitized points to publish.")
             return
@@ -1461,6 +1465,10 @@ class CurveDigitizerApp:
             return
         display_name = self.output_display_name.get().strip() or self.config.get("name", dataset_id)
         source = self.config.get("source", {})
+        if not self.persist():
+            return
+        uncertainty = self.config.get("uncertainty", {}).get("mode", "none") != "none"
+        extra = [self.document_sha[self.current_doc_id]] if uncertainty else []
         try:
             result = self.rpc.call(
                 "PUBLISH", self.session_token, self.current_doc_id, dataset_id, display_name, mode,
@@ -1468,7 +1476,7 @@ class CurveDigitizerApp:
                 self.project.y_axis.name, self.project.y_axis.unit, self.y_role.get().strip() or "measured",
                 self.family_label.get().strip() or "Family parameter", self.family_unit.get().strip(), self.family_role.get().strip() or "family",
                 source.get("dataset_id", ""), source.get("sha256", ""), "four_point_homography", self.project.x_axis.scale, self.project.y_axis.scale,
-                self.config.get("name", "Curve Digitalizer configuration"), "\n".join(rows)
+                self.config.get("name", "Curve Digitalizer configuration"), "\n".join(rows), *extra
             )
         except RpcError as exc:
             messagebox.showerror(APP_NAME, f"Dataset publication failed:\n{exc}")

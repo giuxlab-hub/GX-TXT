@@ -270,7 +270,11 @@ proc ::GX::repeatableModelKinds {moduleId key column} {
 
 proc ::GX::scalarModelValues {moduleId key} {
     set required [expr {[moduleConfigField $moduleId $key required 0] ? 1 : 0}]
-    return [modelIdsForKinds [scalarModelKinds $moduleId $key] $required]
+    set values [modelIdsForKinds [scalarModelKinds $moduleId $key] $required]
+    if {[moduleConfigField $moduleId $key requires_function 0]} {
+        set values [lmap model $values {if {$model ne ""&&[modelField $model function ""] eq ""} continue;set model}]
+    }
+    return $values
 }
 
 proc ::GX::repeatableModelValues {moduleId key column} {
@@ -460,7 +464,7 @@ proc ::GX::modelResourceWriteSection {fd section moduleId owner modelId} {
     putKV $fd id $modelId
     putKV $fd descriptor_path $descriptor
     putKV $fd plugin_dir [file dirname $descriptor]
-    foreach f {kind name version function y_unit x_column family_column y_column} { putKV $fd $f [modelField $modelId $f ""] }
+    foreach f {kind name version function y_unit x_column family_column y_column param_units} { putKV $fd $f [modelField $modelId $f ""] }
     set script [modelField $modelId script ""]
     if {$script ne "" && [file pathtype $script] eq "relative"} { set script [file join $scriptDir $script] }
     putKV $fd script $script
@@ -603,6 +607,9 @@ proc ::GX::validateScalarModelConfig {moduleId} {
         }
         if {[modelField $mid descriptor ""] eq ""} { error "$moduleId: configuration '$key' references unknown mathematical model '$mid'." }
         set kinds [scalarModelKinds $moduleId $key]
+        if {[moduleConfigField $moduleId $key requires_function 0]&&[modelField $mid function ""] eq ""} {
+            error "$moduleId: configuration '$key' requires a callable model; '$mid' is a data-only descriptor."
+        }
         if {![modelKindAllowed $mid $kinds]} {
             error "$moduleId: configuration '$key' model '$mid' has kind '[modelField $mid kind ""]', expected one of '[join $kinds {;}]'."
         }

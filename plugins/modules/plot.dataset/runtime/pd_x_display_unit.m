@@ -2,7 +2,7 @@ function xdu=pd_x_display_unit(P,cfg,graph)
 % Resolve the exact shared X display unit used by the 2-D renderer.
 % SPDX-License-Identifier: GPL-3.0-or-later
   series=P.series;n=numel(series);xvals=cell(1,n);xunits=cell(1,n);
-  for k=1:n,xvals{k}=series(k).data.x;xunits{k}=series(k).x_meta.unit;endfor
+  for k=1:n,xvals{k}=series(k).data.x;xunits{k}=series(k).x_meta;endfor
   mode=gxtxt_plot_axis_unit_mode(cfg,graph,'x','auto');if(isempty(mode)||strcmpi(mode,'inherit')),mode='auto';endif
   declared=core_axis_state_declared_local(cfg,graph);enabled=core_axis_state_enabled_local(cfg,graph);
   if(declared)

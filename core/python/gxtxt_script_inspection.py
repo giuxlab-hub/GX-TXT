@@ -68,13 +68,13 @@ def run_file(fd, name):
     finally:
         os.close(f)
 
-def ini(fd, name, diagnostics):
+def ini(fd, name, diagnostics, limit=LIMIT):
     try:
         with run_file(fd, name) as (f, s):
-            if s.st_size > LIMIT:
+            if s.st_size > limit:
                 raise ValueError('Metadata exceeds bounded inspection limit')
             c = configparser.ConfigParser(interpolation=None, strict=False)
-            c.read_string(f.read(LIMIT + 1).decode('utf-8'))
+            c.read_string(f.read(limit + 1).decode('utf-8'))
         return {section: dict(c[section]) for section in c.sections()}
     except (OSError, ValueError, UnicodeError, configparser.Error) as exc:
         diagnostics.append(f'{name}: unavailable or corrupt ({exc})')
@@ -85,7 +85,7 @@ def inspect_run(session, run_id, record=None, verify=True):
     r.update(id=run_id, session=str(Path(session).resolve()), archived=record is None)
     diagnostics = []
     with run_directory(session, run_id) as (fd, path):
-        runtime = ini(fd, 'runtime.ini', diagnostics)
+        runtime = ini(fd, 'runtime.ini', diagnostics, 2097152)
         report = ini(fd, 'execution.ini', diagnostics)
         cfg, execution = runtime.get('config', {}), report.get('execution', {})
         fields = {'reference': ('registered_script', 'script_reference'),
@@ -146,6 +146,31 @@ def inspect_run(session, run_id, record=None, verify=True):
         except (OSError, ValueError) as exc:
             diagnostics.append(f'Publication receipt unavailable or corrupt ({exc})')
             r['published_datasets'] = []
+        if verify and 'registered_callable' in runtime:
+            invocation = runtime['registered_callable']
+            r['registered_callable'] = {k: v for k, v in invocation.items() if k != 'payload_json'}
+            r['callable_result'] = {}
+            r['callable_validation'] = 'not completed'
+            if r['state'] == 'COMPLETED':
+                try:
+                    if r['snapshot_validation'] != 'verified':
+                        raise ValueError('Callable execution source is not verified')
+                    with run_file(fd, 'registered_callable_result.json') as (f, s):
+                        if s.st_size > 1048576:
+                            raise ValueError('Callable receipt exceeds 1 MiB')
+                        receipt = json.loads(f.read(1048577))
+                    if not isinstance(receipt, dict) or receipt.get('format') != 'gxtxt.registered_callable_result.v1' or 'result' not in receipt:
+                        raise ValueError('Invalid callable receipt schema')
+                    for key in ('callable_id','contract','source_sha256','revision','declaration_sha256','consumer_api','consumer_operation'):
+                        if receipt.get(key) != invocation.get(key):
+                            raise ValueError(f'Callable receipt differs from its invocation: {key}')
+                    if receipt['source_sha256'] != r['source_sha256']:
+                        raise ValueError('Callable receipt source differs from its execution')
+                    r['callable_result'] = receipt
+                    r['callable_validation'] = 'verified'
+                except (OSError, ValueError, RecursionError) as exc:
+                    r['callable_validation'] = 'invalid'
+                    diagnostics.append(f'Callable receipt unavailable or corrupt ({exc})')
         r['diagnostics'] = diagnostics
     return r
 

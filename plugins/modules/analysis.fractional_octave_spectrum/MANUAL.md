@@ -39,6 +39,25 @@ band_level_db = 20 log10(band_rms / reference_rms)
 
 The RMS reference is configurable and defaults to `1` in the underlying signal unit.
 
+## Result interpretation in version 1.2.0
+
+The public Numeric `power_level` operation calculates RMS and logarithmic level
+from the already integrated powers. CORE
+`STATISTICAL_RESULT_SEMANTICS_API_v1` owns their physical units, reference, zero
+policy and descriptive limits. One compact table retains each original band
+number as its row identity; a separate descriptive summary records the published
+band powers. Both are persisted with the Dataset and survive Session reopening.
+The integration algorithm and existing Dataset/Variable IDs are unchanged.
+
+A zero-power band has RMS zero and no finite dB level. Its published level is
+`NaN` with CORE status `undefined` and an explanation. A numeric floor is not
+reported as a measured level. If every band has zero power, the dB variant is
+saved with an unavailable title and its reason is recorded in
+`automatic_graphs.ini`; no dB image is rendered. Power and RMS plots still render.
+Any previous finite `01_band_level_db.png` is preserved byte-for-byte under
+`previous_graphs/` in the owning analysis directory, so it cannot appear as the
+current zero result. Existing persistent variants and source payloads remain intact.
+
 ## Compliance note
 
 This is FFT/PSD-domain band integration. It **does not claim IEC 61260 instrument-class compliance** and does not emulate a certified fractional-octave filter bank.

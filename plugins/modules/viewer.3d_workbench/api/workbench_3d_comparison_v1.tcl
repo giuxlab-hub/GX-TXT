@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 proc ::GX::Workbench3D::comparisonState {record} {
     variable model
+    if {![dict exists $record receipt statistics]} {return refresh_required}
     foreach side {reference target} {set id [dict get $record $side];if {![dict exists $model objects $id]} {return missing};if {[dict get $model objects $id geometry] ne [dict get $record ${side}_geometry]} {return stale}}
     return [expr {[dict get $record working_unit] eq [dict get $model working_unit] ? "current" : "stale"}]
 }
@@ -29,10 +30,16 @@ proc ::GX::Workbench3D::comparisonRefresh {} {
     set chosen [$d.tree selection];$d.tree delete [$d.tree children {}]
     dict for {id record} [dict get $model comparisons] {
         set receipt [dict get $record receipt]
-        $d.tree insert {} end -id $id -values [list $id [dict get $record name] [dict get $record reference] [dict get $record target] [comparisonState $record] [format %.9g [dict get $receipt reference_rms]] [format %.9g [dict get $receipt hausdorff_sampled]] [format %.9g [dict get $receipt closest_sampled]] [dict get $record working_unit]]
+        $d.tree insert {} end -id $id -values [list $id [dict get $record name] [dict get $record reference] [dict get $record target] [comparisonState $record] [comparisonStatistic $record reference rmse] [comparisonStatistic $record bidirectional sampled_hausdorff_distance] [format %.9g [dict get $receipt closest_sampled]] [dict get $record working_unit]]
     }
     foreach id $chosen {if {[$d.tree exists $id]} {$d.tree selection add $id}}
     ::GX::uiFieldInspectionColumnsFit $d.tree;comparisonSummary
+}
+proc ::GX::Workbench3D::comparisonStatistic {record direction quantity} {
+    if {![dict exists $record receipt statistics $direction]} {return {Refresh required}}
+    set cell [lindex [::GX::StatisticsV1::scalarRows [dict get $record receipt statistics $direction] [dict create value $quantity]] 0]
+    if {[dict get $cell status] ne "value"} {return [dict get $cell status]}
+    return [format %.9g [dict get $cell value]]
 }
 proc ::GX::Workbench3D::comparisonSelected {} {set rows [$::GX::Engine3D::window.comparisons.tree selection];if {[llength $rows]!=1} {error "Select one captured comparison"};return [lindex $rows 0]}
 proc ::GX::Workbench3D::comparisonSummary {} {
@@ -40,12 +47,14 @@ proc ::GX::Workbench3D::comparisonSummary {} {
     set d $::GX::Engine3D::window.comparisons;if {![winfo exists $d.summary]} return
     set ids [$d.tree selection];if {[llength $ids]!=1} {$d.summary configure -text {Select a captured result to inspect its science and sampling policy.};return}
     set record [dict get $model comparisons [lindex $ids 0]];set value [dict get $record receipt];set unit [dict get $record working_unit]
+    if {![dict exists $value statistics]} {$d.summary configure -text {This historical receipt has no versioned statistical interpretation. Refresh the comparison to produce a current scientific report.};return}
+    set statistics "Reference: [::GX::StatisticsV1::report [dict get $value statistics reference] {n rmse mae max_abs_error}]\nBoth directions: [::GX::StatisticsV1::report [dict get $value statistics bidirectional] {n rmse sampled_hausdorff_distance}]"
     if {[::GX::datasetPublicationV2DictDefault [dict get $record parameters] method surface] eq "section"} {
-        $d.summary configure -text "[comparisonState $record]: shared-plane section RMS [format %.9g [dict get $value rmse]] $unit; symmetric RMS [format %.9g [dict get $value symmetric_rmse]] $unit; sampled Hausdorff [format %.9g [dict get $value hausdorff_sampled]] $unit; closest [format %.9g [dict get $value closest_distance]] $unit. Length difference [format %.9g [dict get $value length_difference]] $unit; signed area difference [format %.9g [dict get $value area_difference]] ${unit}^2. Coordinates are section-plane XY. Frame: [dict get $value plane]. Chaining tolerance [dict get $value tolerance] $unit; [dict get $value section_policy]."
+        $d.summary configure -text "[comparisonState $record]: $statistics\nShared-plane closest [format %.9g [dict get $value closest_distance]] $unit. Length difference [format %.9g [dict get $value length_difference]] $unit; signed area difference [format %.9g [dict get $value area_difference]] ${unit}^2. Coordinates are section-plane XY. Frame: [dict get $value plane]. Chaining tolerance [dict get $value tolerance] $unit; [dict get $value section_policy]."
         return
     }
     set volume [expr {[dict get $value volume_defined] ? "[format %.9g [dict get $value volume_difference]] ${unit}^3" : "undefined for an open surface"}]
-    $d.summary configure -text "[comparisonState $record]: reference RMS [format %.9g [dict get $value reference_rms]] $unit; symmetric RMS [format %.9g [dict get $value symmetric_rms]] $unit; sampled Hausdorff [format %.9g [dict get $value hausdorff_sampled]] $unit; sampled closest [format %.9g [dict get $value closest_sampled]] $unit. Area difference [format %.9g [dict get $value area_difference]] ${unit}^2; volume difference $volume. [dict get $value reference_samples]/[dict get $value reference_vertices] and [dict get $value target_samples]/[dict get $value target_vertices] sampled vertices; full target triangle projection. Bounds delta: [dict get $value bounds_min_difference] / [dict get $value bounds_max_difference]."
+    $d.summary configure -text "[comparisonState $record]: $statistics\nSampled closest [format %.9g [dict get $value closest_sampled]] $unit. Area difference [format %.9g [dict get $value area_difference]] ${unit}^2; volume difference $volume. [dict get $value reference_samples]/[dict get $value reference_vertices] and [dict get $value target_samples]/[dict get $value target_vertices] sampled vertices; full target triangle projection. Bounds delta: [dict get $value bounds_min_difference] / [dict get $value bounds_max_difference]."
 }
 proc ::GX::Workbench3D::comparisonAction {action} {
     variable model;variable selection
@@ -106,13 +115,14 @@ proc ::GX::Workbench3D::comparisonPublish {id values} {
         }
     }
     dict set metadata inspection.source_bindings $sourceBindings
-    set plan [::GX::datasetPublicationV2Prepare $::GX::currentSession viewer.3d_workbench [dict create dataset_id $requested contract table.generic storage [dict get $values storage] expected_rows [llength $rows] expected_bytes [expr {128*[llength $rows]}] structured_metadata $metadata source_dataset_ids $sourceIds provenance "Explicit captured Native3D complete-triangle deviation report from $document" producer_version 0.1.0]]
+    set metadata [dict merge $metadata [::GX::StatisticsV1::publicationMetadata [dict get $receipt statistics]]]
+    set plan [::GX::datasetPublicationV2Prepare $::GX::currentSession viewer.3d_workbench [dict create dataset_id $requested contract table.generic storage [dict get $values storage] expected_rows [llength $rows] expected_bytes [expr {128*[llength $rows]}] structured_metadata $metadata source_dataset_ids $sourceIds provenance "Explicit captured Native3D complete-triangle deviation report from $document" producer_version [::GX::moduleField viewer.3d_workbench version]]]
     set writer {}
     try {
         set writer [::GX::datasetPublicationV2OpenWriter $plan];::GX::datasetPublicationV2DeclareDimension $writer row 0 {extendible 1}
         set section [expr {[::GX::datasetPublicationV2DictDefault [dict get $record parameters] method surface] eq "section"}]
         set columns [list sample_index uint64 {Sample ordinal} {} distance float64 {Unsigned deviation} $unit source_x float64 {Query X} $unit source_y float64 {Query Y} $unit projected_x float64 {Projected X} $unit projected_y float64 {Projected Y} $unit]
-        if {$section} {lappend columns position float64 {Section path fraction} {} signed_residual float64 {Signed left-normal residual} $unit} else {lappend columns direction uint64 {Direction:0 reference to target;1 reverse} {} source_vertex uint64 {Source vertex index (zero based)} {} source_z float64 {Query Z} $unit projected_z float64 {Projected Z} $unit}
+        if {$section} {lappend columns position float64 {Section path distance} $unit signed_residual float64 {Unsigned nearest-curve distance (legacy field)} $unit} else {lappend columns direction uint64 {Direction:0 reference to target;1 reverse} {} source_vertex uint64 {Source vertex index (zero based)} {} source_z float64 {Query Z} $unit projected_z float64 {Projected Z} $unit}
         foreach {key type label units} $columns {::GX::datasetPublicationV2DeclareVariable $writer $key [dict create name $label dtype $type rank 1 dimension_ids row unit $units coordinate_role [expr {$key eq "sample_index" ? "coordinate" : "data"}]]}
         set data {};set ordinal 0;set count 0
         foreach row $rows {

@@ -387,7 +387,7 @@ bar_bounds [dict create \
 bar_baseline -90
 ```
 
-`bar_bounds` is presentation binding state, not a second data model. Both variables are prepared with the owning Graph Series and converted through the normal X-unit/display-unit path. This is intended for interval-valued bars such as spectral bands or binned scientific results where a single scalar `bar_width` would alter the actual X support. `bar_baseline` is optional (`auto` by default) and, when numeric, is expressed in the owning Y variable's source unit before normal display-unit and level-scale conversion. On a logarithmic Y axis a non-positive automatic baseline is replaced by a positive display-safe baseline. Bar-specific fields may remain persisted while a user temporarily changes the series kind to line/scatter; they are ignored until the representation is changed back to `bar`.
+`bar_bounds` is presentation binding state, not a second data model. Both variables are prepared with the owning Graph Series and converted through the normal X-unit/display-unit path. This is intended for interval-valued bars such as spectral bands or binned scientific results where a single scalar `bar_width` would alter the actual X support. `bar_baseline` is optional (`auto` means display zero) and, when numeric, is expressed in the owning Y variable's source unit before normal display-unit and level-scale conversion. The converted explicit baseline must be finite. Scalar-width and interval bars follow the same baseline policy. On a logarithmic Y axis a non-positive baseline is replaced by half the smallest positive plotted value (or that value if halving would underflow). The final panel/axis scale determines this fallback. Bar-specific fields may remain persisted while a user temporarily changes the series kind to line/scatter; they are ignored until the representation is changed back to `bar`.
 
 
 ### 2-D family grouping
@@ -399,7 +399,9 @@ rows. This is intended for curve/spectral families already represented in long-f
 canonical Datasets; consumers must not create private per-curve renderers or duplicate
 curve payloads merely to obtain a family overlay.
 
-Family grouping currently applies to `line`, `scatter`, `line_marker`, and `step` series.
+Family grouping applies to `line`, `scatter`, `line_marker`, and `step` series
+in both single and stacked panels, including right Y axes. Each group retains
+its own trace, label and explicit series style; no edge crosses family boundaries.
 
 For a filtered and ordered long-form Dataset, a PlotSpec v2 series may also
 declare `row_filters`, `secondary_variable_id`, and `ordering_variable_id`:

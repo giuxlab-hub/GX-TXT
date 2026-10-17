@@ -50,6 +50,8 @@ proc ::GX::scientificDatasetViewerPlot {w} {
         if {$state($w,source) ne {}} {curveSourceClose $state($w,source);set state($w,source) {}}
         set state($w,plottedRequest) [scientificDatasetViewerSelection $w]
         lassign $state($w,plottedRequest) x ys requests
+        set state($w,coordinateContext) [datasetCoordinateRead $::GX::currentSession $state($w,id)]
+        scientificDatasetCoordinateOverlay $state($w,coordinateContext) $ys
         set state($w,queue) {};set state($w,series) {}
         foreach filters $requests {foreach y $ys {lappend state($w,queue) [list $y $filters]}}
         if {$state($w,scene) ne {}} {::GX::Native2D::core destroy $state($w,scene);set state($w,scene) {}}
@@ -61,7 +63,7 @@ proc ::GX::scientificDatasetViewerNext {w} {
     if {![llength $state($w,queue)]} {scientificDatasetViewerFit $w;return}
     lassign [lindex $state($w,queue) 0] y filters;set state($w,queue) [lrange $state($w,queue) 1 end]
     set state($w,loading) [list $y $filters]
-    set request [dict create dataset_id $state($w,id) x_variable_id $state($w,x) y_variable_id $y display_budget 4096]
+    set request [dict create dataset_id $state($w,id) x_variable_id [lindex $state($w,plottedRequest) 0] y_variable_id $y display_budget 4096]
     dict set request filters $filters
     set state($w,source) [curveSourceOpen $::GX::currentSession $request [list ::GX::scientificDatasetOpeningProgress $w $state($w,epoch)]]
     set state($w,job) [curveSourceDisplayAsync $state($w,source) [list ::GX::scientificDatasetViewerReady $w] [list ::GX::scientificDatasetViewerProgress $w]]
@@ -73,22 +75,20 @@ proc ::GX::scientificDatasetViewerReady {w receipt} {
     if {[dict get $receipt status] ne "ok"} {set state($w,status) [datasetPublicationV2DictDefault $receipt message {Loading cancelled}];return}
     if {[catch {
         datasetViewerCheck $w;set display [dict get $receipt display]
+        if {[datasetCoordinateRead $::GX::currentSession $state($w,id)] ne $state($w,coordinateContext)} {error {Coordinate settings changed during loading; select Plot again}}
+        lassign $state($w,loading) y filters
+        set display [scientificDatasetCoordinateDisplay $state($w,coordinateContext) [lindex $state($w,plottedRequest) 0] $y $display]
         if {$state($w,scene) eq {}} {
             set state($w,scene) [scientificDatasetDisplayScene $display]
             ::GX::Native2D::core aspect $state($w,scene) $state($w,aspect)
         } else {
-            set object [::GX::Native2D::core add $state($w,scene) [dict get $display points]]
-            ::GX::Native2D::core set_breaks $state($w,scene) $object [dict get $display breaks]
-            set colors {{0.8 0.25 0.1 1} {0.15 0.55 0.25 1} {0.6 0.2 0.7 1} {0.5 0.4 0.1 1}}
-            ::GX::Native2D::core object_style $state($w,scene) $object [dict create color [lindex $colors [expr {([llength $state($w,series)]-1)%4}]] line_width 2 marker 0]
+            scientificDatasetCoordinateAddTrace $state($w,scene) $display [llength $state($w,series)]
         }
         lassign $state($w,loading) y filters
         set member [join [lmap filter $filters {format {%s=%s} [dict get $filter filter_variable_id] [join [dict get $filter values] {, }]}] {; }]
         lappend state($w,series) [dict create y $y member $member filters $filters display $display]
         curveSourceClose $state($w,source);set state($w,source) {}
-        set xv [datasetVariableV3ById $state($w,id) $state($w,x)];set labels {}
-        foreach series $state($w,series) {set v [datasetVariableV3ById $state($w,id) [dict get $series y]];lappend labels "[dict get $v canonical] ([dict get $v unit]) [dict get $series member]"}
-        set state($w,legend) "X: [dict get $xv canonical] ([dict get $xv unit])    Y: [join $labels { | }]"
+        scientificDatasetViewerCoordinateLegend $w
         set state($w,status) "[scientificDatasetFilterMode $state($w,dimensions) $state($w,filters) $state($w,separate)] — [llength $state($w,series)] trace(s); last trace: [dict get $display row_count] canonical rows, [llength [dict get $display points]] displayed points. Gaps retained; reduced: [dict get $display reduced]. Drag to Pan; wheel zooms."
         scientificDatasetViewerNext $w
     } message]} {if {[info exists state($w,id)]} {set state($w,status) $message}}
@@ -102,7 +102,7 @@ proc ::GX::scientificDatasetViewerPoint {w x y} {
         foreach p [dict get $display points] {
             lassign [::GX::Native2D::core device $state($w,scene) $p] px py
             set d [expr {hypot($px-$x,$py-$y)}]
-            if {$d<$distance} {set distance $d;set hit "[dict get $series y] [dict get $series member] · canonical row [expr {1+[lindex [dict get $display source_rows] $i]}] · X/Y: $p"}
+            if {$d<$distance} {set distance $d;set hit "[dict get $series y] [dict get $series member] · canonical row [expr {1+[lindex [dict get $display source_rows] $i]}] · displayed X/Y: $p [dict get $display coordinate_presentation display_units] · canonical X/Y: [lindex [dict get $display canonical_points] $i]"}
             incr i
         }
     }

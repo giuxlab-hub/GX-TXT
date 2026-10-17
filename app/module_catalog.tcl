@@ -62,7 +62,7 @@ proc ::GX::selectedModuleIds {} {
     variable moduleOrder
     set out {}
     foreach id $moduleOrder {
-        if {![moduleField $id selectable 1]} continue
+        if {[moduleIsAlwaysAvailable $id]} continue
         if {[moduleIsEnabled $id]} { lappend out $id }
     }
     return $out
@@ -108,15 +108,7 @@ proc ::GX::moduleHelpText_v083_before_documentation_api {id} {
     set name [moduleField $id name]
     set ver [moduleField $id version]
     set dep [string trim [moduleField $id depends]]
-    if {[moduleIsAlwaysAvailable $id]} {
-        set st [expr {[moduleIsCore $id] ? "CORE / ALWAYS" : "ALWAYS"}]
-    } elseif {[moduleIsCore $id]} {
-        set st [expr {[moduleIsEnabled $id] ? "CORE / active" : "CORE / inactive"}]
-    } elseif {![moduleField $id selectable 1]} {
-        set st "always available"
-    } else {
-        set st [expr {[moduleIsEnabled $id] ? "active" : "inactive"}]
-    }
+    set st [moduleOperationalState $id]
     set out "$name"
     if {$ver ne ""} { append out "  (v$ver)" }
     append out "\nID stabile: $id\nTipo: $kind\nGruppo: $group\nStatus: $st\n\n"

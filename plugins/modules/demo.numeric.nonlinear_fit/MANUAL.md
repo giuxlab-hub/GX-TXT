@@ -3,10 +3,10 @@
 ## 1. Module overview
 
 **Plugin ID:** `demo.numeric.nonlinear_fit`  
-**Plugin version:** `1.0.5`  
+**Plugin version:** `1.1.0`  
 **Plugin name in GX-TXT:** `Nonlinear fit integration demo`  
 **Group:** `Generic analysis / Numerical examples`  
-**Framework:** GX-TXT with public Dataset, Analysis Source Map, NUMERIC and Plot Dataset APIs  
+**Reference framework:** GX-TXT `0.9.8.10-dev-097`  
 **License:** GNU GPL v3 or later
 
 This external plugin demonstrates nonlinear least-squares fitting through the
@@ -66,7 +66,13 @@ The module accepts any compatible Canonical Dataset selected as Analysis Source 
 
 ## 3. Required GX-TXT version and numerical service
 
-The module depends on the public numerical service:
+This version requires:
+
+```text
+GX-TXT 0.9.8.10-dev-097
+```
+
+It depends on the bundled CORE numerical service:
 
 ```text
 math.numeric
@@ -78,7 +84,7 @@ and uses:
 NUMERIC_API_v1
 ```
 
-The numerical backend is GX-TXT's normal `standard_octave` environment.
+The normal `standard_octave` environment dispatches the declared expression to the platform Numeric Ceres backend. The model remains `A*exp(-k*x)+c`, with parameter identities `A`, `k`, `c`. CORE `STATISTICAL_RESULT_SEMANTICS_API_v1` interprets existing results without repeating the fit.
 
 The plugin package does not modify GX-TXT CORE.
 
@@ -281,7 +287,7 @@ becomes available to analysis modules.
 Package filename:
 
 ```text
-demo.numeric.nonlinear_fit_1.0.3.zip
+demo.numeric.nonlinear_fit_1.1.0.zip
 ```
 
 1. Open the `Modules` tab.
@@ -436,6 +442,8 @@ and requests numerical optimizer tolerance:
 1e-9
 ```
 
+Parameter units follow the source: A and c use the response unit; k uses the reciprocal X unit. Missing units remain unspecified. The interpretation retains an unspecified inferential noise model; generator prose alone does not establish an inference assumption.
+
 Because the generator adds Gaussian noise, the fitted parameters are not
 expected to equal the generator values exactly.
 
@@ -484,7 +492,7 @@ fitted
 ```
 
 The published Dataset records the selected input Dataset and selected source
-variable IDs as provenance.
+variable IDs as provenance, together with validated CORE `analysis.statistical_results` metadata. Parameter identities, covariance ordering, applicability and physical units survive Session reopen.
 
 `x` is the output coordinate, `measured` is the source observation, and `fitted`
 is the predicted value returned by `NUMERIC_API_v1`.
@@ -514,7 +522,7 @@ seed
 
 ### `fit_report.txt`
 
-Human-readable summary of the same scientific result.
+Human-readable summary of the same scientific result, with CORE parameter, uncertainty and applicability text. Existing INI statistic keys add `.statistical_status`, `.statistical_quantity`, `.statistical_label`, `.statistical_reason` and `.statistical_unit`. The legacy `rmse` means the Numeric residual-DOF-scaled standard deviation, not the n-denominator residual RMSE; its identifier remains unchanged.
 
 ---
 
@@ -637,6 +645,7 @@ Plugin Install API v1
 Dataset / standard runtime selection
 Table Stream API through public Octave helpers
 NUMERIC_API_v1
+STATISTICAL_RESULT_SEMANTICS_API_v1
 Dataset Publication API v2 standard_octave binding
 Graph Provider API v1
 Plot Module API v1
@@ -660,8 +669,6 @@ runtime/
     demo_numeric_nonlinear_fit_render.m
     demo_numeric_nonlinear_fit_rerender.m
     demo_numeric_nonlinear_fit_rerender_main.m
-tests/
-    test_package.tcl
 ```
 
 ---
@@ -689,7 +696,7 @@ Acquisition
 
 Modules
 → Install plugin...
-→ demo.numeric.nonlinear_fit_1.0.3.zip
+→ demo.numeric.nonlinear_fit_1.1.0.zip
 → enable Nonlinear fit integration demo
 
 Analysis
@@ -711,3 +718,8 @@ The module uses the Analysis Source Map for Dataset-bound `primary.x` and `prima
 This second distinction matters because an imported Dataset may display
 canonical variables named `x` and `y` while internally using stable IDs such as
 `v0001` and `v0002`.
+
+
+## 22. Dev097 migration validation
+
+`validation/integrated_dev097/statistics_nonlinear_demo.tcl` runs the unchanged stock generator in an isolated Session, stable-ID binding, the actual module, metadata publication/reopen and one canonical plot. Its baseline mode runs accepted dev096 independently. `nonlinear_demo_reference.py` compares candidate parameters, covariance and standard errors with SciPy/NumPy using an independent analytic Jacobian. Development receipts and final acceptance are separate; validator presence does not itself claim a PASS. All historical generator and release archives remain preserved.

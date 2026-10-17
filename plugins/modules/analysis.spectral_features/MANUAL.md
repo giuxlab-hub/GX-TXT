@@ -34,7 +34,7 @@ Required bindings:
 
 The frequency unit must be compatible with Hz through the public Unit Registry. The module preserves the source frequency unit in published frequency-valued descriptors.
 
-The frequency coordinate must be non-negative, strictly increasing, and uniformly spaced. Version 1.1.0 intentionally requires a uniform grid because the amplitude/power bin interpretation is then unambiguous and matches normal FFT/Welch outputs.
+The frequency coordinate must be non-negative, strictly increasing, and uniformly spaced. Version 1.2.0 intentionally requires a uniform grid because the amplitude/power bin interpretation is then unambiguous and matches normal FFT/Welch outputs.
 
 ## 4. Input spectral semantics
 
@@ -163,15 +163,21 @@ The source Dataset remains unchanged. Publication provenance records the source 
 
 ## 10. Numerical architecture and graphs
 
-Version 1.1.0 depends on protected CORE `math.numeric` and discovers `NUMERIC_API_v1` through the normal module dependency runtime bridge. Generic operations delegated to the numerical service include:
+Version 1.2.0 discovers the public `NUMERIC_API_v1` `spectral_features`
+operation through the module dependency bridge. Numeric owns the existing grid,
+weighted-moment, quantile, flatness, crest and entropy calculation.
+`STATISTICAL_RESULT_SEMANTICS_API_v1` owns the result definitions, physical units,
+applicability and reports. Both output Datasets retain the full captured record;
+Save/Open and export do not repeat the calculation. These are descriptive bin
+distributions: spectral bins do not establish independent repeated observations,
+parameter covariance, confidence intervals or regression degrees of freedom.
 
-- uniform-grid analysis;
-- descriptive sums/means/maxima;
-- weighted statistics for centroid/RMS/bandwidth;
-- arbitrary weighted quantiles for F05/F50/F85/F95;
-- cumulative sum for the normalized spectral distribution.
-
-The module retains the scientific definitions of spectral centroid, flatness, crest factor, entropy, rolloff/occupied bandwidth, and the interpretation of amplitude/power/PSD inputs.
+For amplitude input, the sum of bin weights has squared-amplitude units. For
+power or PSD input, it retains the input unit. In particular, the PSD-bin sum
+omits frequency-bin width and is **not integrated physical power**. The original
+Variable IDs and INI metric names remain stable. Plot legends contain units once.
+The public Numeric operation and CORE interpretation also work in real Python
+and Octave Script Bridge Jobs and in Worksheet guided operations.
 
 After publication it creates three persistent `plot.dataset` variants from the distribution Dataset:
 
@@ -212,7 +218,7 @@ The generated `STUDENT_GUIDE.md` gives the complete exercise and discussion ques
 
 ## 12. Limitations
 
-Version 1.1.0 intentionally does not provide:
+Version 1.2.0 intentionally does not provide:
 
 - another FFT or STFT implementation;
 - harmonic identification or THD;

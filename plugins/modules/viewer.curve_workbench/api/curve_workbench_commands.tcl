@@ -152,8 +152,8 @@ proc ::GX::CurveWorkbench::_installCommands {w} {
     $w.sketchbar.select configure -command [list ::GX::CurveWorkbench::_commandInvoke $w select]
     $w.sketchbar.dimension configure -command [list ::GX::CurveWorkbench::_commandInvoke $w constraint.dimension]
     $w.publish.save configure -command [list ::GX::CurveWorkbench::_commandInvoke $w workspace.save]
-    $w.sketchbar.create.menu configure -postcommand [list ::GX::CurveWorkbench::_commandMenu $w $w.sketchbar.create.menu {create.line create.rectangle create.circle create.arc create.spline create.quadratic_bezier create.cubic_bezier create.polyline create.ellipse create.point create.construction_line - create.numeric}]
-    $w.sketchbar.modify.menu configure -postcommand [list ::GX::CurveWorkbench::_commandMenu $w $w.sketchbar.modify.menu {transform.translate transform.rotate object.parameters object.units object.spline_line - object.duplicate object.reverse object.split - object.join object.combine object.separate - object.native_tools}]
+    $w.sketchbar.create.menu configure -postcommand [list ::GX::CurveWorkbench::_commandMenu $w $w.sketchbar.create.menu {create.line create.rectangle create.circle create.arc create.spline create.quadratic_bezier create.cubic_bezier create.polyline create.ellipse create.point create.construction_line - create.numeric create.scientific}]
+    $w.sketchbar.modify.menu configure -postcommand [list ::GX::CurveWorkbench::_commandMenu $w $w.sketchbar.modify.menu {transform.translate transform.rotate object.parameters object.units object.declare_axes object.spline_line - object.duplicate object.reverse object.split - object.join object.combine object.separate - object.native_tools}]
 }
 
 proc ::GX::CurveWorkbench::_shortcutsValidate {w overrides} {return [_shortcutSettingsValidate $overrides]}

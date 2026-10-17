@@ -17,6 +17,7 @@ addpath(fullfile(package_root,'core','octave'));
 addpath(fullfile(package_root,'core','octave','graphics'));
 addpath(fullfile(package_root,'core','octave','io'));
 addpath(fullfile(package_root,'core','octave','util'));
+addpath(fullfile(package_root,'core','octave','analysis'));
 
 if (exist('curvefit_family_global_main','file') != 2)
   error('curvefit.family_global: implementation missing: %s', ...

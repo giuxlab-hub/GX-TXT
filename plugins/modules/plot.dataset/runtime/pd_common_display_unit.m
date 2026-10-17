@@ -3,6 +3,25 @@ function [target,base_unit]=pd_common_display_unit(value_cells,unit_cells,mode,a
 % SPDX-License-Identifier: GPL-3.0-or-later
   if(nargin<4),axis_name='axis';endif
   mode=strtrim(mode);if(isempty(mode)||strcmpi(mode,'inherit')),mode='auto';endif
+  original_units=unit_cells;
+  preferred={};
+  for i=1:numel(unit_cells)
+    m=unit_cells{i};if(!isstruct(m)),continue;endif
+    unit_cells{i}=m.unit;
+    if(!isfield(m,'coordinate_context')),continue;endif
+    c=m.coordinate_context;settings=c.variables.(m.variable_id);
+    if(!strcmp(settings.display_unit,settings.source.unit)),preferred{end+1}=settings.display_unit;endif
+    if(!isempty(settings.source.canonical_unit))
+      canonical=settings.source.canonical_unit;
+      value_cells{i}=pd_convert_display(value_cells{i},m,canonical,axis_name);
+      unit_cells{i}=canonical;
+    endif
+  endfor
+  if(any(strcmpi(mode,{'auto','inherit'}))&&!isempty(preferred))
+    preferred=unique(preferred);
+    if(numel(preferred)!=1),error('plot.dataset: conflicting Dataset display units on %s; select an explicit graph display unit',axis_name);endif
+    mode=preferred{1};
+  endif
   base_unit='';known=0;unknown=0;
   for i=1:numel(unit_cells)
     u=strtrim(unit_cells{i});if(isempty(u)),unknown+=1;continue;endif
@@ -15,7 +34,9 @@ function [target,base_unit]=pd_common_display_unit(value_cells,unit_cells,mode,a
     if(!any(strcmpi(mode,{'auto','source','none','inherit'}))),error('plot.dataset: %s display unit %s requested but source unit metadata are missing',axis_name,mode);endif
     target='';return;
   endif
-  if(any(strcmpi(mode,{'source','none'}))),target=base_unit;return;endif
+  if(any(strcmpi(mode,{'source','none'})))
+    target=original_units{1};if(isstruct(target)),target=target.unit;endif;return;
+  endif
   combined=[];
   for i=1:numel(value_cells)
     v=value_cells{i};u=strtrim(unit_cells{i});if(isempty(v)),continue;endif

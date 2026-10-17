@@ -83,10 +83,11 @@ proc ::GX::CurveWorkbench::_constraintForm {w {edit 0}} {
     variable st
     set curves [dict keys $st($w,curves)];if {$curves eq {}} {error "Create or load geometry first"}
     set kinds {fixed distance angle parallel perpendicular coincident horizontal vertical equal_length equal_radius tangent concentric collinear midpoint point_on_line point_on_curve symmetry radius diameter lock_x lock_y horizontal_distance vertical_distance point_line_distance line_distance axis_angle curvature}
-    set fields [dict create name {type string label {Constraint name}} kind [dict create type choice label Relationship values $kinds] a [dict create type choice label {Geometry A (logical ID)} values $curves] a_index {type integer min 0 label {Point/segment index A}} b [dict create type choice label {Geometry B (when required)} values [linsert $curves 0 {}]] b_index {type integer min 0 label {Point/segment index B}} axis [dict create type choice label {Symmetry axis geometry (when required)} values [linsert $curves 0 {}]] axis_index {type integer min 0 label {Symmetry axis segment index}} value {type number label {Dimension value (working units; angle in radians)}} tolerance {type number min 1e-15 label {World tolerance (angle/parallel/perpendicular: radians or normalized residual)}} angular_tolerance {type number min 1e-15 label {Tangent/collinear angular tolerance (radians)}} disabled {type boolean label {Disable enforcement; retain diagnostics}}]
+    set fields [dict create name {type string label {Constraint name}} kind [dict create type choice label Relationship values $kinds] a [dict create type choice label {Geometry A (logical ID)} values $curves] a_index {type integer min 0 label {Point/segment index A}} b [dict create type choice label {Geometry B (when required)} values [linsert $curves 0 {}]] b_index {type integer min 0 label {Point/segment index B}} axis [dict create type choice label {Symmetry axis geometry (when required)} values [linsert $curves 0 {}]] axis_index {type integer min 0 label {Symmetry axis segment index}} value {type string label {Dimension: numeric display value or value with explicit unit}} tolerance {type number min 1e-15 label {Native coordinate tolerance (angles: radians; directional residuals: normalized)}} angular_tolerance {type number min 1e-15 label {Tangent/collinear angular tolerance (radians)}} disabled {type boolean label {Disable enforcement; retain diagnostics}}]
     set id {};set initial [dict create name constraint kind fixed a [_active $w] a_index 0 b {} b_index 0 axis {} axis_index 0 value 0 tolerance 1e-8 angular_tolerance 1e-9 disabled 0]
     if {$edit} {set id [_constraintSelected $w];set record [dict get $st($w,constraints) $id];set initial [dict merge $initial [dict get $record definition] [dict create name [dict get $record name]]]}
-    ::GX::uiFieldFormCreate $w.constraintForm "Native relationship — current geometry must satisfy enabled parameters" $fields $initial [list ::GX::CurveWorkbench::_constraintApply $w $st($w,token) $id] $w
+    if {[_isDimension [dict get $initial kind]]} {set spec [_constraintNativeSpec $w [dict remove $initial name]];dict set initial value [_dimensionDisplayedValue $w $spec [dict get $initial value]]}
+    ::GX::uiFieldFormCreate $w.constraintForm "Native relationship — current geometry must satisfy enabled parameters" $fields $initial [list ::GX::CurveWorkbench::_constraintDisplayedApply $w $st($w,token) $id $curves [_coordinateControlKey $w $curves]] $w
 }
 proc ::GX::CurveWorkbench::_constraintApply {w token id values} {
     variable st
@@ -96,7 +97,7 @@ proc ::GX::CurveWorkbench::_constraintApply {w token id values} {
     if {[string trim [dict get $values name]] eq {}} {error "Enter a constraint name"}
     set definition [dict remove $values name]
     set refs {};foreach field {a b axis} {if {[dict exists $definition $field]&&[dict get $definition $field] ne {}} {lappend refs [dict get $definition $field]}}
-    _cadUnits $w [lsort -unique $refs]
+    _constraintCoordinateGuard $w [_constraintNativeSpec $w $definition]
     if {$id ne {}} {
         set record [dict get $st($w,constraints) $id]
         if {[dict exists $record definition anchor]} {dict set definition anchor [dict get $record definition anchor]}

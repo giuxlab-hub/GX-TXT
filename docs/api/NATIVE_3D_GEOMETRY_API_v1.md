@@ -247,3 +247,25 @@ Native C additive exports are declared in `native_3d_engine_api_v1.h`:
 presentation. They reuse the same engine, scene ownership, result codes and VTK
 scientific data authority. `native_foundations.cpp` and `picking.cpp` are executable
 standalone C++ clients (with assertions enabled).
+
+### dev097 comparison interpretation and resource metadata
+
+Surface and section comparison receipts preserve their existing fields and add
+`statistics.reference` and `statistics.bidirectional` from public CORE statistical
+semantics. Native surface RMS/mean/max reductions now use the public Numeric C
+binding; closest-point queries, area, volume and tessellation stay in Native3D.
+Surface records explicitly describe 3D unsigned nearest-triangle distances;
+section records describe 2D unsigned nearest-curve distances in the captured
+plane. Scientific budgets and full-target projection policy remain in provenance.
+
+Section `position` is cumulative physical path distance, not a normalized
+fraction. Its legacy `signed_residual` field contains the same unsigned distance
+as `distance`; neither key nor values change. New Workbench Dataset publications
+label these facts accurately and assign `position` the working length unit.
+Previously published Datasets and historical releases are preserved.
+
+Both language bindings preserve managed-resource metadata as the opaque metadata
+dictionary used by `MANAGED_RESOURCE_API_v1`. A metadata `origin` denotes Object
+Origin provenance, whereas a geometric `origin` is an XYZ point. Inspect resource
+provenance through public `OBJECT_ORIGIN_API_v1/resource`; it is never converted
+into a coordinate array.

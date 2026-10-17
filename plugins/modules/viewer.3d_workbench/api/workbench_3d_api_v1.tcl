@@ -58,7 +58,7 @@ proc ::GX::Workbench3D::checkpoint {} {
 }
 proc ::GX::Workbench3D::record {operation parameters targets results} {
     variable model
-    dict lappend model recipe [dict create api_id NATIVE_3D_GEOMETRY_API_v1 api_version 1 provider native3d_geometry module_id viewer.3d_workbench module_version 0.1.0 operation $operation parameters $parameters targets $targets result_ids $results working_unit [dict get $model working_unit]]
+    dict lappend model recipe [dict create api_id NATIVE_3D_GEOMETRY_API_v1 api_version 1 provider native3d_geometry module_id viewer.3d_workbench module_version [::GX::moduleField viewer.3d_workbench version] operation $operation parameters $parameters targets $targets result_ids $results working_unit [dict get $model working_unit]]
     dict set model recipe [lrange [dict get $model recipe] end-127 end]
 }
 proc ::GX::Workbench3D::commit {before operation parameters targets results} {
@@ -487,7 +487,7 @@ proc ::GX::Workbench3D::measurementPublishApply {captured ids values} {
             }
         }
     }
-    set definition [dict create dataset_id $requested contract table.generic storage [dict get $values storage] expected_rows [llength $ids] expected_bytes [expr {256*[llength $ids]}] producer_version 0.1.0 provenance "Explicit Native3D measurement inspection from $document at revision [dict get $captured revision]" structured_metadata [dict create dataset.display_name $requested inspection.kind native3d_measurements inspection.document_id $document inspection.document_revision [dict get $captured revision] inspection.value_units_column unit inspection.geometry_policy complete_native inspection.anchor_policy explicit_current_geometry inspection.source_dataset_id_policy none_unless_dataset_source]]
+    set definition [dict create dataset_id $requested contract table.generic storage [dict get $values storage] expected_rows [llength $ids] expected_bytes [expr {256*[llength $ids]}] producer_version [::GX::moduleField viewer.3d_workbench version] provenance "Explicit Native3D measurement inspection from $document at revision [dict get $captured revision]" structured_metadata [dict create dataset.display_name $requested inspection.kind native3d_measurements inspection.document_id $document inspection.document_revision [dict get $captured revision] inspection.value_units_column unit inspection.geometry_policy complete_native inspection.anchor_policy explicit_current_geometry inspection.source_dataset_id_policy none_unless_dataset_source]]
     dict set definition source_dataset_ids $sourceIds
     dict set definition expected_bytes $expectedBytes
     dict set definition structured_metadata inspection.source_fingerprints $sourceFingerprints

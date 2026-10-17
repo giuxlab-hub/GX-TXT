@@ -37,6 +37,10 @@ def _state(host):
 
 def _receipt(host, raw):
     result = host.as_dict(raw)
+    if "statistics" in result:
+        binding = host.modules["STATISTICAL_RESULT_SEMANTICS_API_v1"]
+        result["statistics"] = {name: binding.invoke(host, "validated_result", [record])
+                                for name, record in host.as_dict(result["statistics"]).items()}
     for field in ("volume", "surface_area", "value", "maximum_residual", "reference_rms", "reference_mean", "reference_max", "symmetric_rms", "hausdorff_sampled", "closest_sampled", "area_difference", "volume_difference", "distance", "rmse", "symmetric_rmse", "closest_distance", "length_difference", "max_absolute", "mean_absolute", "position", "signed_residual", "tolerance"):
         if field in result:
             result[field] = float(result[field])
@@ -82,7 +86,12 @@ def _receipt(host, raw):
     for field in ("section_resources", "contours"):
         if field in result: result[field] = [_receipt(host,item) for item in host.as_list(result[field])]
     for field in ("xy_resource", "metadata"):
-        if field in result: result[field] = _receipt(host,result[field])
+        if field in result:
+            # Resource metadata belongs to the managed-resource contract. Its
+            # origin is a provenance record, not a geometric XYZ origin vector.
+            result[field] = (host.as_dict(result[field]) if field == "metadata" and
+                             result.get("api_id") == "INTERACTIVE_DOCUMENT_RESOURCE_API_v1"
+                             else _receipt(host, result[field]))
     if "tessellation" in result: result["tessellation"] = host.as_dict(result["tessellation"])
     for field in ("member_states",):
         if field in result: result[field] = host.as_list(result[field])

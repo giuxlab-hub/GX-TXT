@@ -2,7 +2,7 @@
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
-**Module:** `analysis.octave_script` 1.3.0  
+**Module:** `analysis.octave_script` 1.4.0  
 **Editor API:** `OCTAVE_SCRIPT_EDITOR_API_v1`  
 **Execution:** CORE Script Registry and `OCTAVE_SCRIPT_BRIDGE_API_v1`
 
@@ -77,3 +77,27 @@ If a new Workspace script is absent from Analysis, check that its scope is **Ses
 - `OCTAVE_SCRIPT_EDITOR_API_v1.md` for the Workspace activation and persistence contract.
 - CORE `SCRIPT_REGISTRY_API_v1`, `SCRIPT_EXECUTION_API_v1`, `OCTAVE_SCRIPT_BRIDGE_API_v1` and `VIEWER_PROVIDER_API_v1` documentation.
 - `examples/` for executable Bridge examples.
+
+## dev097 editor menus and saved revisions
+
+File, Edit, Run and Help share one compact menu row. Ctrl+A and Edit → Select All
+select the focused editable control, including multiline UTF-8 source and metadata.
+Ctrl+C/X/V keep that focus. Pasting over selected source replaces it as one local
+undo transaction; Ctrl+Z undoes it and Ctrl+Y redoes it. Selection and copying do
+not mark the document modified or write a Script Registry revision. Ctrl+S saves;
+Ctrl+F, F3/Shift+F3 and Ctrl+G retain find and go-to-line; Escape in Find returns
+to the source. Disabled line numbers and Bridge reference text are not editable.
+
+Run → Open Script Runner opens the existing CORE Runner without submitting a
+Job. A dirty registered buffer prompts: Yes saves it and opens the Runner, No
+opens the last saved revision while retaining edits, and Cancel returns to editing.
+The Runner shows its actual scope, ID, version and SHA, and requires its own Run
+command to execute. A source changed elsewhere is explicitly identified; stale
+saves remain rejected. Run also opens the existing Script Library and Jobs Manager.
+
+An unregistered buffer must first be saved. Octave legacy documents require the
+explicit Run → Register legacy as Session/User action; merely opening a Runner
+never converts them. Existing documents and execution snapshots retain their
+identities. An editor opened for another or subsequently closed Session cannot
+save, delete, register or open a Runner there: export any unsaved source if needed,
+close it, and reopen the workspace in the intended Session.

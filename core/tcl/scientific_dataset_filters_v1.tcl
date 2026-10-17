@@ -214,24 +214,26 @@ proc ::GX::scientificDatasetFilterMode {dimensions selections separate} {
     return "[join $labels {; }] ([expr {$separate?"explicit separate family curves":"filtered XY, one series"}])"
 }
 proc ::GX::scientificDatasetPreviewFiltered {id x y output requests} {
+    set context [datasetCoordinateRead $::GX::currentSession $id]
     set scene {};set rows 0;set reduced 0;set traces {};set displayed 0
     try {
         foreach filters $requests {
             set source [curveSourceOpen $::GX::currentSession [dict create dataset_id $id x_variable_id $x y_variable_id $y display_budget 4096 filters $filters]]
-            try {set display [curveSourceDisplayResponsive $source]} finally {curveSourceClose $source}
+            try {set display [curveSourceDisplayResponsive $source];set sourceIdentity [curveSourceDescribe $source]} finally {curveSourceClose $source}
+            foreach identity [dict get $sourceIdentity source_identities] {if {[dict get $identity dataset_id] eq $id&&[dict get $identity sha256] ne [dict get $context source_sha256]} {error {Preview coordinate context belongs to changed source bytes}}}
+            set display [scientificDatasetCoordinateDisplay $context $x $y $display]
             incr rows [dict get $display row_count];set reduced [expr {$reduced || [dict get $display reduced]}]
-            lappend traces [dict remove $display points]
+            lappend traces [dict remove $display points canonical_points]
             incr displayed [llength [dict get $display points]]
             if {![llength [dict get $display points]]} continue
-            if {$scene eq {}} {set scene [scientificDatasetDisplayScene $display]} else {
-                set object [::GX::Native2D::core add $scene [dict get $display points]]
-                ::GX::Native2D::core set_breaks $scene $object [dict get $display breaks]
-                ::GX::Native2D::core object_style $scene $object [dict create color [lindex {{0.8 0.25 0.1 1} {0.15 0.55 0.25 1} {0.6 0.2 0.7 1}} [expr {([llength $traces]-2)%3}]] line_width 2 marker 0]
-            }
+            if {$scene eq {}} {set scene [scientificDatasetDisplayScene $display]} else {scientificDatasetCoordinateAddTrace $scene $display [expr {[llength $traces]-1}]}
         }
         if {$scene eq {}} {error {No finite X/Y pairs match the selected filters.}}
-        native2DCanvasPreview $scene {} fit [dict create width 960 height 580 output_file $output background {1 1 1 1} annotations 1]
-        set view [::GX::Native2D::core preview_view $scene 1 960 580 .03]
-        return [dict merge [lindex $traces 0] [dict create row_count $rows reduced $reduced trace_count [llength $requests] traces $traces displayed_points $displayed view_bounds [lindex $view 6] axis_aspect auto]]
+        if {[datasetCoordinateRead $::GX::currentSession $id] ne $context} {error {Preview coordinate settings changed during preparation; render again}}
+        ::GX::Native2D::core view $scene [::GX::Native2D::core preview_view $scene 1 960 580 .03]
+        set presentation [scientificDatasetCoordinateView $scene [dict get [lindex $traces 0] coordinate_presentation]]
+        native2DCanvasPreview $scene {} current [dict create width 960 height 580 output_file $output background {1 1 1 1} annotations 1]
+        set view [::GX::Native2D::core preview_view $scene 0 960 580 .03]
+        return [dict merge [lindex $traces 0] [dict create row_count $rows reduced $reduced trace_count [llength $requests] traces $traces displayed_points $displayed view_bounds [lindex $view 6] axis_aspect auto coordinate_presentation $presentation]]
     } finally {if {$scene ne {}} {::GX::Native2D::core destroy $scene}}
 }

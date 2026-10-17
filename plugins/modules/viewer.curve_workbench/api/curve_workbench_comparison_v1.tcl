@@ -1,11 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-proc ::GX::CurveWorkbench::_geometricComparisonEvaluate {w reference derived budget} {
+proc ::GX::CurveWorkbench::_geometricComparisonEvaluate {w reference derived budget {options {}}} {
     variable st
     set a [_record $w $reference];set b [_record $w $derived]
     set units [_coordinateUnits $a]
-    if {$units ne [_coordinateUnits $b]||[lindex $units 0] ne [lindex $units 1]} {error "Geometric comparison requires a common X/Y coordinate unit for both curves"}
-    set receipt [::GX::Native2D::core compare_geometry $st($w,scene) [dict get $a native] [dict get $b native] $budget]
-    dict set receipt unit [lindex $units 0]
+    set receipt [::GX::native2DComparison $st($w,scene) [dict get $a native] [dict get $b native] geometry $budget $units [_coordinateUnits $b] [dict create producer viewer.curve_workbench reference $reference target $derived] $options]
     set fingerprints [dict create $reference [_measurementFingerprint $w $reference] $derived [_measurementFingerprint $w $derived]];set sources {}
     foreach record [list $a $b] id [list $reference $derived] {if {[dict get $record source] ne {}} {dict set sources $id [dict create dataset_id [dict get $record source] descriptor [::GX::datasetPublicationV2DictDefault $record source_descriptor {}]]}}
     return [dict create definition [dict create reference $reference derived $derived budget $budget] fingerprints $fingerprints sources $sources receipt $receipt]
@@ -20,7 +18,10 @@ proc ::GX::CurveWorkbench::_measurementEvaluate {w definition} {
     if {$kind eq "curve_area_difference"&&![dict get $comparison area_supported]} {error "Area comparison requires supported closed curves"}
     set unit [dict get $comparison unit];set power [expr {$kind eq "curve_area_difference" ? 2 : 1}]
     set exact [expr {$kind eq "closest_curve_distance"&&[dict get $comparison closest_exact]}]
-    set receipt [dict create value [dict get $comparison $field] unit [expr {$unit eq {} ? {} : $power==2 ? "$unit^2" : $unit}] unit_power $power unit_declared [expr {$unit ne {}}] angular 0 exact $exact policy [dict get $comparison policy] point_a [dict get $comparison closest_a] point_b [dict get $comparison closest_b] comparison_summary [dict remove $comparison rows]]
+    set value [dict get $comparison $field]
+    if {$kind eq "geometric_rmse"} {set value [::GX::StatisticsV1::scalarValue [dict get $comparison statistics reference] rmse]}
+    if {$kind eq "hausdorff_sampled"} {set value [::GX::StatisticsV1::scalarValue [dict get $comparison statistics bidirectional] sampled_hausdorff_distance]}
+    set receipt [dict create value $value unit [expr {$unit eq {} ? {} : $power==2 ? "$unit^2" : $unit}] unit_power $power unit_declared [expr {$unit ne {}}] angular 0 exact $exact policy [dict get $comparison policy] point_a [dict get $comparison closest_a] point_b [dict get $comparison closest_b] comparison_summary [dict remove $comparison rows]]
     dict set record definition $definition;dict set record receipt $receipt;return $record
 }
 rename ::GX::CurveWorkbench::_compare ::GX::CurveWorkbench::_compare_geometric_base
@@ -38,7 +39,7 @@ proc ::GX::CurveWorkbench::_compare {w} {
     set st($w,lastGeometricComparison) $record;set st($w,residual) [dict get $record receipt]
     try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
     set result [dict get $record receipt]
-    set st($w,status) "Sampled geometric deviation ([dict get $result count_a]/[dict get $result count_b] scientific queries): RMS [format %.7g [dict get $result rmse]], sampled Hausdorff [format %.7g [dict get $result hausdorff_sampled]], closest [format %.7g [dict get $result closest_distance]] [dict get $result unit]. Policy is retained in the report."
+    set st($w,status) "[::GX::StatisticsV1::report [dict get $result statistics reference] {n rmse}]; [::GX::StatisticsV1::report [dict get $result statistics bidirectional] {sampled_hausdorff_distance}]"
     return $result
 }
 rename ::GX::CurveWorkbench::_drawResidual ::GX::CurveWorkbench::_drawResidual_comparison_base
@@ -57,11 +58,12 @@ proc ::GX::CurveWorkbench::_comparisonPublishApply {w token values} {
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen comparison publication"}
     set record $st($w,lastGeometricComparison)
-    if {$record eq {}||[_measurementState $w $record] ne "current"} {error "Comparison geometry is stale or missing; explicitly Compare again before publishing"}
+    if {$record eq {}||[_measurementState $w $record] ne "current"||![dict exists $record receipt statistics]} {error "Comparison geometry or its statistical receipt is stale or missing; explicitly Compare again before publishing"}
     set receipt [dict get $record receipt];set unit [dict get $receipt unit];set rows [dict get $receipt rows]
     set sources {};dict for {id source} [dict get $record sources] {lappend sources [dict get $source dataset_id]}
     set id [::GX::datasetPublicationV2RequestedId [dict get $values dataset_id]]
     set metadata [dict create geometry_comparison.definition [dict get $record definition] geometry_comparison.fingerprints [dict get $record fingerprints] geometry_comparison.policy [dict get $receipt policy] geometry_comparison.summary [dict remove $receipt rows] geometry_comparison.sources [dict get $record sources]]
+    set metadata [dict merge $metadata [::GX::StatisticsV1::publicationMetadata [dict get $receipt statistics]]]
     set definition [dict create dataset_id $id contract table.generic storage auto expected_rows [llength $rows] estimated_numeric_bytes [expr {48*[llength $rows]}] source_dataset_ids [lsort -unique $sources] source {Native2D geometric comparison} provenance [dict create api_id NATIVE_2D_GEOMETRY_API_v1 api_version 1 module_id viewer.curve_workbench policy [dict get $receipt policy]] structured_metadata $metadata]
     set writer {};set plan [::GX::datasetPublicationV2Prepare [_session] viewer.curve_workbench $definition]
     try {

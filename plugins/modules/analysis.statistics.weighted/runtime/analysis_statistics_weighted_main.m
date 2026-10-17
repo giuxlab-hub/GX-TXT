@@ -1,7 +1,7 @@
 function analysis_statistics_weighted_main(args,framework_root)
 % Weighted descriptive analysis with explicit weight and uncertainty semantics.
 % SPDX-License-Identifier: GPL-3.0-or-later
-  module_id='analysis.statistics.weighted';version='1.0.1';
+  module_id='analysis.statistics.weighted';version='1.1.0';
   config_path=argument(args,'--config','');
   if(isempty(config_path)),error('%s: --config is required',module_id);endif
   cfg=gxtxt_ini_read(config_path);
@@ -65,26 +65,34 @@ function analysis_statistics_weighted_main(args,framework_root)
       else weight_unit_out=[value_unit '^-2'];weighted_sum_unit=[value_unit '^-1'];endif
     endif
     gxtxt_progress_stage('compute','Computing public weighted statistics','indeterminate');
-    stats=gxtxt_numeric_v1('weighted_statistics',values,weights,struct('nonfinite',policy));
+    semantics='relative';if(strcmp(model,'inverse_variance_uncertainty')),semantics='inverse_variance';endif
+    stats=gxtxt_numeric_v1('weighted_statistics',values,weights,struct('nonfinite',policy,'weight_semantics',semantics));
     Q=gxtxt_numeric_v1('weighted_quantiles',values,weights,probabilities,struct('nonfinite',policy));
-    measurement_uncertainty=NaN;measurement_status='not_applicable';
-    if(strcmp(model,'inverse_variance_uncertainty'))
-      measurement_uncertainty=sqrt(1/stats.sum_weights);
-      measurement_status='known_independent_measurement_uncertainty';
-    endif
-    sampling_se=NaN;sampling_status='not_requested';
-    if(strcmp(se_model,'sampling'))
-      sampling_status='insufficient_effective_sample_size';
-      if(stats.effective_n>1&&isfinite(stats.variance_unbiased))
-        sampling_se=sqrt(stats.variance_unbiased/stats.effective_n);
-        sampling_status='sampling_estimate_from_replicate_variability';
-      endif
-    endif
+    context=struct('y_unit',value_unit,'sampling_model','independent_observations','mean_se_model',se_model, ...
+      'assumptions',{{'Mean uncertainty is conditional on independent observations and the explicitly selected weight model'}});
+    provenance=struct('producer',module_id,'source_dataset_id',source_id,'source_variable_id',value_id,'weight_variable_id',weight_id);
+    statistics=gxtxt_statistics_v1('from_numeric','math.numeric.summary','weighted_statistics',stats,context,struct(),provenance);
+    quantiles=gxtxt_statistics_v1('from_numeric','math.numeric.summary','weighted_quantiles',Q,context,struct(),provenance);
+    interpreted=gxtxt_statistics_values_v1(statistics);
+    mapping={'mean','mean';'weighted_sum','weighted_sum';'variance_population','variance_population';'std_population','standard_deviation_population'; ...
+      'variance_unbiased','variance';'std_unbiased','standard_deviation';'median','median';'q25','quartile_1';'q75','quartile_3';'iqr','interquartile_range'};
+    for i=1:rows(mapping),stats.(mapping{i,1})=interpreted.(mapping{i,2});endfor
+    Q.quantiles=quantiles.quantities.quantiles.value;
+    measurement_uncertainty=interpreted.measurement_standard_error_mean;sampling_se=interpreted.standard_error_mean;
+    % Preserve existing Dataset status spellings as presentation aliases of
+    % the CORE statuses. Applicability and numerical values are never decided here.
+    measurement_status=statistics.quantities.measurement_standard_error_mean.status;
+    if(strcmp(measurement_status,'value')),measurement_status='known_independent_measurement_uncertainty';endif
+    sampling_status=statistics.quantities.standard_error_mean.status;
+    if(strcmp(sampling_status,'value')),sampling_status='sampling_estimate_from_replicate_variability';
+    elseif(strcmp(sampling_status,'undefined')),sampling_status='insufficient_effective_sample_size';
+    elseif(strcmp(sampling_status,'unavailable')),sampling_status='not_requested';endif
     opts=struct('storage','auto','replace_owned',true,'producer_version',version, ...
       'source','GX-TXT Weighted Statistics', ...
       'provenance',sprintf('%s %s; source=%s; value=%s; second=%s; selection=%s; weight_model=%s; mean_se_model=%s; nonfinite=%s',module_id,version,source_id,value_id,weight_id,selection_id(selection),model,se_model,policy), ...
       'notes','Weight semantics explicit; measurement uncertainty and sampling standard error are separate.');
     opts.source_dataset_ids={source_id};opts.source_variable_ids={value_id,weight_id};
+    opts.statistical_results=struct('summary',statistics,'quantiles',quantiles);
     gxtxt_progress_stage('publish','Publishing weighted summaries and quantiles','indeterminate');
     publish_table(session,module_id,[prefix '.summary'],'summary',opts,{ ...
       'n_input','Selected pair count','int64','','count',int64(stats.n_input); ...
@@ -111,8 +119,8 @@ function analysis_statistics_weighted_main(args,framework_root)
     publish_table(session,module_id,[prefix '.quantiles'],'quantile',opts,{ ...
       'probability','Weighted quantile probability','float64','1','coordinate',Q.probabilities; ...
       'value','Weighted empirical-CDF inverse quantile','float64',value_unit,'derived',Q.quantiles});
-    write_summary(fullfile(outdir,'weighted_summary.ini'),source_id,value_id,weight_id,prefix,selection,model,se_model,policy,stats,measurement_uncertainty,sampling_se);
-    write_report(fullfile(outdir,'weighted_report.txt'),source_id,value_id,weight_id,value_unit,selection,model,se_model,policy,stats,measurement_uncertainty,sampling_se,measurement_status,sampling_status);
+    write_summary(fullfile(outdir,'weighted_summary.ini'),source_id,value_id,weight_id,prefix,selection,model,se_model,policy,stats,statistics);
+    write_report(fullfile(outdir,'weighted_report.txt'),source_id,value_id,weight_id,value_unit,selection,model,se_model,policy,stats,statistics);
     fid=fopen(fullfile(outdir,'automatic_graphs.ini'),'w');if(fid<0),error('%s: cannot write graph manifest',module_id);endif
     fprintf(fid,'[automatic_graphs]\ncount=0\nprovider=plot.dataset\n');fclose(fid);
     gxtxt_progress_complete('done',sprintf('Published weighted summary and %d quantiles',numel(Q.probabilities)));
@@ -180,24 +188,26 @@ function publish_table(session,module_id,dataset_id,dim,opts,variables)
     rethrow(err);
   end_try_catch
 endfunction
-function write_summary(path,source_id,value_id,weight_id,prefix,selection,model,se_model,policy,S,measurement,sampling)
+function write_summary(path,source_id,value_id,weight_id,prefix,selection,model,se_model,policy,S,statistics)
   fid=fopen(path,'w');if(fid<0),error('analysis.statistics.weighted: cannot write summary');endif
   unwind_protect
-    fprintf(fid,'[meta]\nmodule_id=analysis.statistics.weighted\nmodule_version=1.0.1\napi=NUMERIC_API_v1\n');
+    fprintf(fid,'[meta]\nmodule_id=analysis.statistics.weighted\nmodule_version=1.1.0\napi=NUMERIC_API_v1\n');
     fprintf(fid,'\n[source]\ndataset_id=%s\nvalue_variable_id=%s\nsecond_variable_id=%s\nselection_id=%s\n',source_id,value_id,weight_id,selection_id(selection));
-    fprintf(fid,'\n[analysis]\nweight_model=%s\nmean_se_model=%s\nnonfinite_policy=%s\nn_input=%d\nn_valid=%d\nn_nonfinite=%d\nn_zero_weight=%d\nn_positive_weight=%d\nsum_weights=%.17g\neffective_n=%.17g\nweighted_mean=%.17g\nmeasurement_uncertainty_of_mean=%.17g\nsampling_standard_error_of_mean=%.17g\n',model,se_model,policy,S.n_input,S.n_valid,S.n_nonfinite,S.n_zero_weight,S.n_positive_weight,S.sum_weights,S.effective_n,S.mean,measurement,sampling);
+    fprintf(fid,'\n[analysis]\nweight_model=%s\nmean_se_model=%s\nnonfinite_policy=%s\nn_input=%d\nn_valid=%d\nn_nonfinite=%d\nn_zero_weight=%d\nn_positive_weight=%d\n',model,se_model,policy,S.n_input,S.n_valid,S.n_nonfinite,S.n_zero_weight,S.n_positive_weight);
+    mapping=struct('sum_weights','sum_weights','effective_n','effective_n','weighted_mean','mean', ...
+      'measurement_uncertainty_of_mean','measurement_standard_error_mean','sampling_standard_error_of_mean','standard_error_mean');
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',statistics,mapping));
     fprintf(fid,'\n[output]\nprefix=%s\n',prefix);
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect
 endfunction
-function write_report(path,source_id,value_id,weight_id,unit,selection,model,se_model,policy,S,measurement,sampling,measurement_status,sampling_status)
+function write_report(path,source_id,value_id,weight_id,unit,selection,model,se_model,policy,S,statistics)
   fid=fopen(path,'w');if(fid<0),error('analysis.statistics.weighted: cannot write report');endif
   unwind_protect
     fprintf(fid,'GX-TXT Weighted Statistics\nSource Dataset: %s\nValue: %s (%s)\nSecond variable: %s\nSelection: %s\nWeight model: %s\nMean-SE model: %s\nNaN / Inf: %s\n',source_id,value_id,unit,weight_id,selection_id(selection),model,se_model,policy);
     fprintf(fid,'Selected pairs: %d  Finite pairs: %d  Zero weights: %d  Positive weights: %d\n',S.n_input,S.n_valid,S.n_zero_weight,S.n_positive_weight);
-    fprintf(fid,'Sum weights: %.12g  Effective N: %.12g\nWeighted mean: %.12g %s\nWeighted population SD: %.12g %s\nReplicate unbiased SD: %.12g %s\nWeighted median: %.12g %s  IQR: %.12g %s\n',S.sum_weights,S.effective_n,S.mean,unit,S.std_population,unit,S.std_unbiased,unit,S.median,unit,S.iqr,unit);
-    fprintf(fid,'Measurement uncertainty of mean: %.12g %s (%s)\nSampling standard error of mean: %.12g %s (%s)\n',measurement,unit,measurement_status,sampling,unit,sampling_status);
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('report',statistics,{'sum_weights','effective_n','mean','standard_deviation_population','standard_deviation','median','interquartile_range','measurement_standard_error_mean','standard_error_mean'}));
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect

@@ -44,6 +44,7 @@ proc ::GX::CurveWorkbench::_disposeInvalidated {w} {
         } message]} {lappend failures $message}
     }
     if {[info exists st($w,lifecycleSubscription)]} {::GX::interactiveDocumentLifecycleUnsubscribe $st($w,lifecycleSubscription)}
+    _coordinateDispose $w
     foreach key [array names st "$w,*"] {unset st($key)}
     if {[winfo exists $w]} {destroy $w}
     if {[catch {_closeSources $sources} message]} {lappend failures $message}

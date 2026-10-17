@@ -6,7 +6,7 @@ function analysis_fft_spectrum_main(args)
 % SPDX-License-Identifier: GPL-3.0-or-later
 
   module_id='analysis.fft_spectrum';
-  module_version='2.2.0';
+  module_version='2.3.0';
   io_chunk_rows=65536;
   publication_chunk_rows=65536;
 
@@ -19,6 +19,7 @@ function analysis_fft_spectrum_main(args)
   if(isempty(outdir)), error('%s: runtime.output_dir missing',module_id); endif
   if(isempty(session)), error('%s: runtime.session missing',module_id); endif
   if(exist(outdir,'dir')!=7), mkdir(outdir); endif
+  statistical_scope=gxtxt_statistics_scope_v1(session);
 
   P=struct(); publication_open=false; publication_finalized=false;
   gxtxt_progress_start('prepare','Preparing dataset-native FFT spectrum analysis','indeterminate');
@@ -165,6 +166,9 @@ function analysis_fft_spectrum_main(args)
     freq_is_hz=is_seconds(ind_unit);
     freq_unit='Hz'; if(!freq_is_hz), freq_unit=inv_unit(ind_unit); endif
     freq_name='frequency_Hz'; if(!freq_is_hz), freq_name='frequency'; endif
+    stat_provenance=struct('source_dataset_id',source_dataset_id,'source_independent_variable_id',ind_id,'source_signal_variable_id',sig_id,'analysis_mode',analysis_mode,'block_start_sample',block_start,'block_row_count',N);
+    if(selection.enabled),stat_provenance.selection_id=selection.id;endif
+    R=capture_fft_quality(R,freq_unit,sig_unit,stat_provenance);
 
     selection_id=''; if(selection.enabled), selection_id=selection.id; endif
     metrics=struct('fs',fs,'N',N,'df',df,'window',window,'coherent_gain',cg, ...
@@ -176,12 +180,14 @@ function analysis_fft_spectrum_main(args)
                    'uniform_axis',uniform_axis,'f0',f0,'fund_bin',fbin,'fund_amp',A0, ...
                    'thd_db',thd_db,'thd_pct',thd_pct,'sfdr_db',sfdr_db,'sinad_db',sinad_db,'enob',enob, ...
                    'worst_freq',worst_freq,'worst_amp',worst_amp,'noise_floor',noise_floor,'nonuniform',nonuniform);
+    metrics.statistics=R.statistics;metrics.component_statistics=R.component_statistics;
 
     % ---- canonical spectrum publication v2 ------------------------------
     pub_id=[nz(source_dataset_id,'signal') '.spectrum'];
     required={'typed_numeric','implicit_axis','range_write'};
     preferred={'sequential_chunks'};
-    popts=struct('storage','auto','capabilities_required',{required},'capabilities_preferred',{preferred},'replace_owned',true);
+    popts=struct('storage','auto','capabilities_required',{required},'capabilities_preferred',{preferred},'replace_owned',true,'producer_version',module_version,'source_dataset_ids',{{source_dataset_id}},'source_variable_ids',{{ind_id,sig_id}});
+    popts.statistical_results=struct('quality',R.statistics);
     gxtxt_progress_stage('publish','Publishing canonical spectrum dataset','determinate',Nh);
     P=gxtxt_publication_v2_open(session,module_id,pub_id,'spectrum.table',popts);
     publication_open=true;
@@ -404,6 +410,8 @@ function run_temporal_set_mode(C)
     freq_is_hz=is_seconds(temporal_unit);
     freq_unit='Hz'; if(!freq_is_hz), freq_unit=inv_unit(temporal_unit); endif
     freq_name='frequency_Hz'; if(!freq_is_hz), freq_name='frequency'; endif
+    stat_provenance=struct('source_dataset_id',C.source_dataset_id,'source_independent_variable_id',C.ind_id,'source_signal_variable_id',C.sig_id,'analysis_mode','temporal_set','temporal_set_id',T.id,'temporal_member_id',M.member_id,'source_row_start',M.row_start,'source_row_count',M.row_count);
+    R=capture_fft_quality(R,freq_unit,C.sig_unit,stat_provenance);
     pub_id=sprintf('%s.spectrum.%s.%s',C.source_dataset_id,T.id,M.member_id);
 
     provenance=sprintf('Temporal Set %s member %s index %d; source rows %d..%d; boundary=%s', ...
@@ -417,6 +425,7 @@ function run_temporal_set_mode(C)
       'producer_version',C.module_version,'source_dataset_ids',{{C.source_dataset_id}}, ...
       'source_variable_ids',{{C.ind_id,C.sig_id}},'source',C.source_dataset_id,'provenance',provenance,'notes',notes);
 
+    popts.statistical_results=struct('quality',R.statistics);
     [output_provider,pub_diag,pub_result]=publish_spectrum(C,pub_id,R,freq_name,freq_unit,popts);
     write_spectrum_annotations(C.outdir,sprintf('spectrum.%s.%s.annotations.ini',T.id,M.member_id),pub_id,R,freq_name,freq_unit);
 
@@ -428,6 +437,7 @@ function run_temporal_set_mode(C)
       'f0',R.f0,'fund_bin',R.fund_bin,'fund_amp',R.fund_amp,'thd_db',R.thd_db,'thd_pct',R.thd_pct, ...
       'sfdr_db',R.sfdr_db,'sinad_db',R.sinad_db,'enob',R.enob,'worst_freq',R.worst_freq, ...
       'worst_amp',R.worst_amp,'noise_floor',R.noise_floor,'nonuniform',nonuniform);
+    metrics.statistics=R.statistics;metrics.component_statistics=R.component_statistics;
     results{member_index}=struct('member',M,'metrics',metrics,'result',R,'pub_id',pub_id, ...
       'provider',output_provider,'pub_diag',pub_diag,'pub_result',pub_result);
     gxtxt_progress_update(member_index,T.member_count,'temporal_members', ...
@@ -515,12 +525,10 @@ function write_temporal_metrics_ini(path,T,results,module_version)
       fprintf(fid,'member_id=%s\nlabel=%s\npublished_dataset_id=%s\n',M.member_id,ini_escape(M.label),E.pub_id);
       fprintf(fid,'row_start=%d\nrow_count=%d\ntime_start=%s\ntime_end=%s\n',M.row_start,M.row_count,num_text(M.time_start),num_text(M.time_end));
       fprintf(fid,'fs=%.10g\nN=%d\ndelta_f=%.10g\nwindow=%s\ncoherent_gain=%.10g\n',m.fs,m.N,m.df,m.window,m.coherent_gain);
-      fprintf(fid,'fundamental_hz=%.10g\nfundamental_bin=%d\nfundamental_amp=%.10g\n',m.f0,m.fund_bin,m.fund_amp);
-      fprintf(fid,'thd_db=%.6g\nthd_pct=%.6g\nsfdr_db=%.6g\nsinad_db=%.6g\nenob=%.6g\n',m.thd_db,m.thd_pct,m.sfdr_db,m.sinad_db,m.enob);
-      for h=1:numel(R.harm_freq)
-        fprintf(fid,'\n[member.%d.harmonic.%d]\norder=%d\nfrequency_hz=%.10g\namp=%.10g\ndbc=%.6g\n', ...
-          i,h+1,h+1,R.harm_freq(h),R.harm_amp(h),20*log10(R.harm_amp(h)/R.fund_amp));
-      endfor
+      fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',m.statistics,struct('fundamental_hz','spectrum_reference_frequency','fundamental_amp','spectrum_reference_amplitude')));
+      fprintf(fid,'fundamental_bin=%d\n',m.fund_bin);
+      fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',m.statistics,struct('thd_db','amplitude_thd_level','thd_pct','amplitude_thd_percent','sfdr_db','amplitude_sfdr_level','sinad_db','amplitude_sinad_level','enob','amplitude_nominal_bits')));
+      write_component_ini(fid,m.component_statistics,sprintf('member.%d.',i));
     endfor
   unwind_protect_cleanup
     fclose(fid);
@@ -541,7 +549,8 @@ function write_temporal_report(path,T,results,sig,sig_id,module_version)
       fprintf(fid,'  source rows       : %d .. %d (%d samples)\n',M.row_start,M.row_start+M.row_count-1,M.row_count);
       if(isfinite(M.time_start)&&isfinite(M.time_end)), fprintf(fid,'  temporal interval : [%.10g, %.10g) %s\n',M.time_start,M.time_end,T.temporal_unit); endif
       fprintf(fid,'  published dataset : %s\n  fs / df            : %.10g / %.10g\n',E.pub_id,m.fs,m.df);
-      fprintf(fid,'  fundamental       : %.10g\n  THD / SFDR / SINAD : %.6g / %.6g / %.6g dB\n\n',m.f0,m.thd_db,m.sfdr_db,m.sinad_db);
+      fprintf(fid,'%s\n',gxtxt_statistics_v1('report',m.statistics,{'spectrum_reference_frequency','amplitude_thd_level','amplitude_sfdr_level','amplitude_sinad_level'}));
+      write_component_report(fid,m.component_statistics);
     endfor
     fprintf(fid,'Each Temporal Set member is transformed independently. Separated regions are never concatenated.\n');
     fprintf(fid,'Variable-length segment members therefore retain independent frequency grids as separate spectrum.table datasets.\n');
@@ -561,83 +570,40 @@ function s=num_text(v)
 endfunction
 
 function R=compute_fft_spectrum(x,dt,window,fund_mode,fund_hz,track_harm,spur_search,guard,detrend_mode,numeric_fn)
-  N=numel(x);
-  if(N<8), error('analysis.fft_spectrum: need at least 8 samples, got %d',N); endif
-  fs=1.0/dt; df=fs/N;
+  options=struct('window',window,'fundamental_mode',fund_mode,'track_harmonics',track_harm,'spur_search',spur_search,'guard_bins',guard,'detrend',detrend_mode);
+  if(strcmp(fund_mode,'explicit')),options.fundamental_hz=fund_hz;endif
+  R=feval(numeric_fn,'fft_spectrum_quality',x,dt,options);
+endfunction
 
-  % This is the established FFT calculation from analysis.fft_spectrum 2.0.0.
-  % Temporal Set integration changes only which contiguous source rows become x.
-  D=feval(numeric_fn,'detrend',x,struct('method',detrend_mode,'nonfinite','error'));xw=D.values;
-  W=feval(numeric_fn,'window',window,N,struct('sampling','symmetric'));w=W.values;
-  cg=W.coherent_gain;
-  F=feval(numeric_fn,'fft',xw.*w,struct('nfft',N,'normalization','backward','nonfinite','error'));
-  Xf=complex(F.real,F.imaginary);
-  Nh=floor(N/2)+1;
-  Xf=Xf(1:Nh);
-  amp=abs(Xf)*2.0/(N*cg);
-  amp(1)=amp(1)/2.0;
-  if(mod(N,2)==0), amp(end)=amp(end)/2.0; endif
-
-  dc_guard=max(1,guard);
-  if(strcmp(fund_mode,'explicit') && isfinite(fund_hz) && fund_hz>0)
-    fbin=round(fund_hz/df);
-  else
-    search=amp; search(1:dc_guard+1)=0;
-    [~,fbin0]=max(search); fbin=fbin0-1;
-  endif
-  fbin=max(1,min(fbin,Nh-1));
-  A0=lobe_amp(amp,fbin,guard);
-  f0=fbin*df;
-  mag_dbc=20*log10(max(amp,realmin)/A0);
-
-  harm_bins=[]; harm_amp=[]; harm_freq=[];
-  for k=2:track_harm
-    hb=fbin*k;
-    if(hb>Nh-1), break; endif
-    pk=peak_bin(amp,hb,max(guard,2));
-    harm_bins(end+1)=pk; harm_amp(end+1)=lobe_amp(amp,pk,guard); harm_freq(end+1)=pk*df;
+function R=capture_fft_quality(R,frequency_unit,amplitude_unit,provenance)
+  context=struct('x_unit',frequency_unit,'y_unit',amplitude_unit);
+  R.statistics=gxtxt_statistics_v1('from_numeric','math.numeric.fft_spectrum_quality','fft_spectrum_quality',R,context,struct(),provenance);
+  R.component_statistics={};count=numel(R.component_order);
+  mapping=gxtxt_statistics_v1('numeric_field_map','harmonic_components');
+  common=struct('fundamental_amplitude',R.fundamental_amplitude,'component_method',R.component_method,'component_level_floor',R.component_level_floor);
+  for start=1:512:count
+    selected=start:min(count,start+511);columns=struct();ids=cell(numel(selected),1);
+    for key=fieldnames(mapping)'
+      name=key{1};if(!strcmp(name,'fundamental_amplitude')),columns.(name)=R.(name)(selected);endif
+    endfor
+    for k=1:numel(selected),ids{k}=sprintf('H%d',R.component_order(selected(k)));endfor
+    R.component_statistics{end+1}=gxtxt_statistics_v1('from_numeric_columns','math.numeric.harmonic_components','harmonic_components',ids,columns,common,context,provenance);
   endfor
-  if(isempty(harm_amp)), thd_lin=0; else thd_lin=sqrt(sum(harm_amp.^2))/A0; endif
-  if(thd_lin>0), thd_db=20*log10(thd_lin); thd_pct=thd_lin*100; else thd_db=-Inf; thd_pct=0; endif
-
-  excl=false(Nh,1); excl(1:dc_guard+1)=true;
-  excl=mark_lobe(excl,fbin,guard);
-  if(strcmp(spur_search,'nonharmonic_only'))
-    for i=1:numel(harm_bins), excl=mark_lobe(excl,harm_bins(i),guard); endfor
-  endif
-  cand=amp; cand(excl)=0;
-  [worst_amp,wi]=max(cand); worst_bin=wi-1; worst_freq=worst_bin*df;
-  if(worst_amp>0), sfdr_db=20*log10(A0/worst_amp); worst_dbc=20*log10(worst_amp/A0); else sfdr_db=Inf; worst_dbc=-Inf; endif
-
-  ndmask=true(Nh,1); ndmask(1:dc_guard+1)=false; ndmask=clear_lobe(ndmask,fbin,guard);
-  nd_pow=sum(amp(ndmask).^2);
-  if(nd_pow>0), sinad_db=10*log10(A0^2/nd_pow); enob=(sinad_db-1.76)/6.02; else sinad_db=Inf; enob=Inf; endif
-
-  nf=amp(ndmask); if(isempty(nf)), noise_floor=0; else noise_floor=fft_median(numeric_fn,nf); endif
-  noise_floor_dbc=20*log10(max(noise_floor,realmin)/A0);
-  R=struct('N',N,'fs',fs,'df',df,'coherent_gain',cg,'amp',amp,'Nh',Nh, ...
-           'fund_bin',fbin,'fund_amp',A0,'f0',f0,'magnitude_dbc',mag_dbc, ...
-           'harm_bins',harm_bins,'harm_amp',harm_amp,'harm_freq',harm_freq, ...
-           'thd_db',thd_db,'thd_pct',thd_pct,'sfdr_db',sfdr_db,'worst_dbc',worst_dbc, ...
-           'worst_amp',worst_amp,'worst_freq',worst_freq,'sinad_db',sinad_db,'enob',enob, ...
-           'noise_floor',noise_floor,'noise_floor_dbc',noise_floor_dbc);
 endfunction
-
-function a=lobe_amp(amp,bin0,guard)
-  Nh=numel(amp); lo=max(1,bin0+1-guard); hi=min(Nh,bin0+1+guard);
-  a=sqrt(sum(amp(lo:hi).^2));
+function write_component_ini(fid,tables,prefix)
+  mapping=struct('order','harmonic_order','frequency_hz','harmonic_frequency','amp','harmonic_amplitude','dbc','harmonic_level_db');
+  for k=1:numel(tables)
+    rows=gxtxt_statistics_v1('table_csv_rows',tables{k},mapping);
+    for j=1:numel(rows.records)
+      fields=strsplit(rows.records{j},',','collapsedelimiters',false);
+      fprintf(fid,'\n[%sharmonic.%s]\norder=%s\nfrequency_hz=%s\namp=%s\ndbc=%s\n',prefix,fields{1},fields{1},fields{2},fields{3},fields{4});
+    endfor
+  endfor
 endfunction
-
-function pk=peak_bin(amp,bin0,win)
-  Nh=numel(amp); lo=max(1,bin0+1-win); hi=min(Nh,bin0+1+win);
-  seg=amp(lo:hi); [~,mi]=max(seg); pk=(lo+mi-1)-1;
-endfunction
-
-function m=mark_lobe(m,bin0,guard)
-  Nh=numel(m); lo=max(1,bin0+1-guard); hi=min(Nh,bin0+1+guard); m(lo:hi)=true;
-endfunction
-function m=clear_lobe(m,bin0,guard)
-  Nh=numel(m); lo=max(1,bin0+1-guard); hi=min(Nh,bin0+1+guard); m(lo:hi)=false;
+function write_component_report(fid,tables)
+  for k=1:numel(tables)
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('table_report',tables{k},tables{k}.row_ids,{'harmonic_order','harmonic_frequency','harmonic_amplitude','harmonic_level_db'}));
+  endfor
 endfunction
 
 function write_metrics_ini(path,m,hf,ha,A0,provider,module_version)
@@ -650,12 +616,12 @@ function write_metrics_ini(path,m,hf,ha,A0,provider,module_version)
     fprintf(fid,'record_samples=%d\nsource_record_samples=%d\n',m.record_N,m.source_record_N);
     fprintf(fid,'dataset_selection_id=%s\nsource_storage_provider=%s\nsource_range_mode=%s\nsource_uniform_axis=%d\n',m.selection_id,m.source_provider,m.source_range_mode,m.uniform_axis);
     fprintf(fid,'publication_api=2\nstorage_request=auto\neffective_storage_provider=%s\n',provider);
-    fprintf(fid,'fundamental_hz=%.10g\nfundamental_bin=%d\nfundamental_amp=%.10g\n',m.f0,m.fund_bin,A0);
-    fprintf(fid,'thd_db=%.6g\nthd_pct=%.6g\nsfdr_db=%.6g\nsinad_db=%.6g\nenob=%.6g\n',m.thd_db,m.thd_pct,m.sfdr_db,m.sinad_db,m.enob);
-    fprintf(fid,'worst_spur_hz=%.10g\nworst_spur_amp=%.10g\nnoise_floor=%.10g\nnonuniform_sampling=%d\n',m.worst_freq,m.worst_amp,m.noise_floor,m.nonuniform);
-    for i=1:numel(hf)
-      fprintf(fid,'[harmonic.%d]\norder=%d\nfrequency_hz=%.10g\namp=%.10g\ndbc=%.6g\n',i+1,i+1,hf(i),ha(i),20*log10(ha(i)/A0));
-    endfor
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',m.statistics,struct('fundamental_hz','spectrum_reference_frequency','fundamental_amp','spectrum_reference_amplitude')));
+    fprintf(fid,'fundamental_bin=%d\n',m.fund_bin);
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',m.statistics,struct('thd_db','amplitude_thd_level','thd_pct','amplitude_thd_percent','sfdr_db','amplitude_sfdr_level','sinad_db','amplitude_sinad_level','enob','amplitude_nominal_bits')));
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',m.statistics,struct('worst_spur_hz','amplitude_spur_frequency','worst_spur_amp','amplitude_spur','noise_floor','amplitude_noise_median')));
+    fprintf(fid,'nonuniform_sampling=%d\n',m.nonuniform);
+    write_component_ini(fid,m.component_statistics,'');
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect
@@ -684,14 +650,9 @@ function write_report(path,m,hf,ha,A0,sig,sig_id,pub_id,nonuniform,provider,modu
     fprintf(fid,'resolution df      : %.6g\n',m.df);
     fprintf(fid,'uniform axis meta  : %s\n',yesno(m.uniform_axis));
     if(nonuniform), fprintf(fid,'WARNING            : non-uniform sampling detected; fs taken from the median step.\n'); endif
-    fprintf(fid,'\nfundamental f0     : %.6g   (amp %.6g)\n',m.f0,A0);
-    fprintf(fid,'THD                : %.4g dB  (%.4g %%)\n',m.thd_db,m.thd_pct);
-    fprintf(fid,'SFDR               : %.4g dB  (worst spur at %.6g)\n',m.sfdr_db,m.worst_freq);
-    fprintf(fid,'SINAD              : %.4g dB\n',m.sinad_db);
-    fprintf(fid,'ENOB               : %.4g bits\n',m.enob);
-    fprintf(fid,'noise floor (med)  : %.6g\n\n',m.noise_floor);
-    fprintf(fid,'tracked harmonics  :\n');
-    for i=1:numel(hf), fprintf(fid,'  H%-2d  %12.6g   %10.4g dBc\n',i+1,hf(i),20*log10(ha(i)/A0)); endfor
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('report',m.statistics,{'spectrum_reference_frequency','spectrum_reference_amplitude'}));
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('report',m.statistics,{'amplitude_thd_level','amplitude_thd_percent','amplitude_sfdr_level','amplitude_sinad_level','amplitude_nominal_bits','amplitude_noise_median'}));
+    write_component_report(fid,m.component_statistics);
     fprintf(fid,'\npublication diagnostics: %s\n',pub_diag);
     fprintf(fid,'publication result     : %s\n',pub_result);
   unwind_protect_cleanup

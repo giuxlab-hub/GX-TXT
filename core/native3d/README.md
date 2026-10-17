@@ -250,3 +250,9 @@ translucent casters from shadow maps, and `GX3DE_SHADOW_FULL` retains opacity
 attenuation. Scene, object cast/receive, and per-light flags continue to apply.
 The field occupies the former `reserved32` slot, preserving the ABI v1 struct
 layout. New capability bits advertise curved textures and shadow policy.
+
+The dev097 comparison kernel depends on the matching public header
+`plugins/modules/math.numeric/api/c/gxtxt_numeric_reductions_v1.h`. CMake checks
+and tracks that dependency. Reference and bidirectional RMS/absolute reductions
+use its scaled accumulation without changing the public Native3D C ABI; complete
+surface queries and geometric area/volume calculations remain in this kernel.

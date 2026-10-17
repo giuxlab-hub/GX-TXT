@@ -107,6 +107,12 @@ def main(runtime_path):
             code = compile(snapshot.read_bytes(), str(snapshot), "exec")
             namespace = {"__name__": "__main__", "__file__": str(snapshot), "__package__": None}
             exec(code, namespace)
+            if config.has_section('registered_callable'):
+                from gxtxt_registered_callable import execute
+                invocation = config['registered_callable']
+                execute(namespace, invocation, outdir)
+                fields['Registered callable'] = invocation['callable_id']
+                fields['Callable declaration SHA-256'] = invocation['declaration_sha256']
         finally:
             if settings.get("bundle_dir", "").strip():
                 bundle_path = str(Path(settings["bundle_dir"]).resolve())

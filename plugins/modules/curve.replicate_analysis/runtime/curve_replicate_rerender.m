@@ -12,6 +12,7 @@ addpath(fullfile(package_root,'core','octave'));
 addpath(fullfile(package_root,'core','octave','graphics'));
 addpath(fullfile(package_root,'core','octave','io'));
 addpath(fullfile(package_root,'core','octave','util'));
+addpath(fullfile(package_root,'core','octave','units'));
 if(exist('curve_replicate_rerender_main','file')!=2)
   error('curve.replicate_analysis rerender: implementation missing');
 endif

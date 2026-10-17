@@ -7,7 +7,6 @@ arbitrary UTF-8/text/newlines distinct without evaluating generated Tcl code.
 """
 # SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
-import ast
 import base64
 from collections import OrderedDict
 import itertools
@@ -18,40 +17,17 @@ import sqlite3
 import struct
 import sys
 from gxtxt_script_bridge_server import Host
+from gxtxt_unit_program_v1 import compile_formula
 
 OPERATIONS = {"project_variables", "subset_rows", "concat_rows", "merge_columns",
               "join_by_key", "rename_reorder", "curve_bundle", "build_family",
-              "extract_family_member", "split_family", "convert_units",
-              "transform_xy", "reverse_rows", "reverse_range", "reverse_sequence", "combine_selection", "sort_rows"}
+              "extract_family_member", "split_family", "convert_units", "calibrate_variables",
+              "transform_xy", "reverse_rows", "reverse_range", "reverse_sequence", "combine_selection", "sort_rows", "baseline_correct", "log_variables", "smooth_curve"}
 
 
 def require(test, message):
     if not test:
         raise ValueError(message)
-
-
-def formula(text, x):
-    """Evaluate only Unit Registry's validated scalar arithmetic vocabulary."""
-    functions = {"log": math.log, "log10": math.log10, "exp": math.exp, "sqrt": math.sqrt}
-    def visit(node):
-        if isinstance(node, ast.Constant) and isinstance(node.value, (float, int)):
-            return node.value
-        if isinstance(node, ast.Name) and node.id == "x":
-            return x
-        if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
-            return visit(node.operand) * (-1 if isinstance(node.op, ast.USub) else 1)
-        if isinstance(node, ast.BinOp):
-            a, b = visit(node.left), visit(node.right)
-            if isinstance(node.op, ast.Add): return a + b
-            if isinstance(node.op, ast.Sub): return a - b
-            if isinstance(node.op, ast.Mult): return a * b
-            if isinstance(node.op, ast.Div): return a / b
-            if isinstance(node.op, ast.Pow): return a ** b
-        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-                and node.func.id in functions and len(node.args) == 1 and not node.keywords):
-            return functions[node.func.id](visit(node.args[0]))
-        raise ValueError("Unsupported Unit Registry expression")
-    return visit(ast.parse(text.replace("^", "**"), mode="eval").body)
 
 
 class Transform:
@@ -71,6 +47,9 @@ class Transform:
         self.db.execute("PRAGMA cache_size=-4096")
         self.db.execute("PRAGMA temp_store=FILE")
         self.conversions = []
+        self.calibrations = []
+        self.coordinate_calibration = self.dictionary(self.request.get("_coordinate_calibration", ""))
+        require(self.op == "calibrate_variables" or not self.coordinate_calibration, "Unexpected calibration envelope")
         self.unit_assumptions = []
         self.schema = []
         self.tables = []
@@ -118,8 +97,41 @@ class Transform:
         spec["dtype"] = "float64"
         for field in ("canonical_unit", "to_canonical", "from_canonical"):
             spec[field] = target_definition[field]
-        return lambda value: None if value is None else formula(plan["target_from_canonical"],
-                                     formula(plan["source_to_canonical"], value) * float(plan["base_scale_ratio"]))
+        forward = compile_formula(self.host, plan["source_to_canonical"])
+        inverse = compile_formula(self.host, plan["target_from_canonical"])
+        ratio = float(plan["base_scale_ratio"])
+        def convert(value):
+            if value is None:
+                return None
+            canonical = forward(value) * ratio
+            require(not math.isfinite(float(value)) or math.isfinite(canonical), "Unit conversion exceeds the finite numeric range")
+            return inverse(canonical)
+        return convert
+
+    def calibrator(self, spec, settings):
+        settings = self.dictionary(settings)
+        factor, origin, output = (float(settings[key]) for key in ("calibration_factor", "input_origin", "output_origin"))
+        require(all(math.isfinite(v) for v in (factor, origin, output)) and factor > 0, "Invalid calibration coefficients")
+        require(spec["dtype"] in ("float32", "float64", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64"), "Calibration requires a real numeric Variable")
+        identity = factor == 1 and origin == output
+        self.calibrations.append(dict(variable_id=spec["variable_id"], source_dtype=spec["dtype"], unit=spec.get("unit", ""),
+            factor=factor, input_origin=origin, output_origin=output, identity=int(identity),
+            coordinate_revision=int(self.option("expected_coordinate_revision"))))
+        if identity:
+            return lambda value: value
+        spec["dtype"] = "float64"
+        def convert(value):
+            if value is None:
+                return None
+            if isinstance(value, int):
+                require(int(float(value)) == value, "Calibration would lose input integer precision; select an exactly representable Variable")
+            value = float(value)
+            if not math.isfinite(value):
+                return value
+            result = output + factor * (value - origin)
+            require(math.isfinite(result), "Calibration exceeds the finite binary64 range")
+            return result
+        return convert
 
     def matches(self, values, source, ordinal, filters, chosen):
         if "rows" in source:
@@ -237,7 +249,10 @@ class Transform:
                 if identifier in inherited_axes:
                     for field in ("unit", "display_label", "semantic_role", "value_kind", "value_format", "canonical_unit", "to_canonical", "from_canonical", "time_origin", "time_reference"):
                         variable[field] = inherited_axes[identifier].get(field, variable.get(field, ""))
-                converter = self.converter(variable, conversions[identifier]) if identifier in conversions else lambda value: value
+                if self.op == "calibrate_variables" and identifier in self.coordinate_calibration:
+                    converter = self.calibrator(variable, self.coordinate_calibration[identifier])
+                else:
+                    converter = self.converter(variable, conversions[identifier]) if identifier in conversions else lambda value: value
                 converters.append(converter)
                 variable["variable_id"] = aliases.get(identifier, identifier)
                 if identifier in aliases: variable["name"] = variable["canonical"] = aliases[identifier]
@@ -248,7 +263,11 @@ class Transform:
             names = [v["variable_id"] for v in schema]
             require(len(names) == len(set(names)), "Renamed variable IDs collide")
             table = f"source{index}"
-            columns = ",".join(f"c{i} " + ("TEXT" if v["dtype"] in ("string", "uint64") else "REAL" if str(v["dtype"]).startswith("float") else "INTEGER") for i, v in enumerate(schema))
+            # Calibration uses complete tuple order, with no SQL numerical
+            # comparisons. Store floating cells as round-trip text so SQLite
+            # cannot normalize -0.0 or collapse NaN into SQL NULL.
+            exact_float_text = self.op in ("calibrate_variables", "baseline_correct", "log_variables", "smooth_curve")
+            columns = ",".join(f"c{i} " + ("TEXT" if v["dtype"] in ("string", "uint64") or (exact_float_text and str(v["dtype"]).startswith("float")) else "REAL" if str(v["dtype"]).startswith("float") else "INTEGER") for i, v in enumerate(schema))
             self.db.execute(f"CREATE TABLE {table} (seq INTEGER PRIMARY KEY, source_row INTEGER, {columns})")
             stream = self.host.call("::GX::tableStreamOpenDataset", self.host.session, source["dataset_id"], read_ids, 65536, {"numeric_transport": "auto"})
             try:
@@ -276,7 +295,7 @@ class Transform:
                         data = {v: values[v][row] for v in read_ids}
                         if not self.matches(data, source, ordinal, filters, chosen): continue
                         data = [convert(self.typed(data[v], self.variables[member][v])) for v, convert in zip(selected, converters)]
-                        data = [str(v) if spec["dtype"] == "uint64" else v for v,spec in zip(data,schema)]
+                        data = [str(v) if v is not None and (spec["dtype"] == "uint64" or (exact_float_text and str(spec["dtype"]).startswith("float"))) else v for v,spec in zip(data,schema)]
                         batch.append((position, ordinal, *data));position += 1
                     if batch: self.db.executemany(f"INSERT INTO {table} VALUES ({','.join('?' for _ in range(len(schema)+2))})", batch)
                     if int(chunk["eof"]): break
@@ -639,6 +658,18 @@ class Transform:
             yield list(row)
 
     def transformed(self):
+        if self.op == "smooth_curve":
+            from dataset_transform_smoothing_v1 import rows
+            yield from rows(self)
+            return
+        if self.op == "log_variables":
+            from dataset_transform_log_v1 import rows
+            yield from rows(self)
+            return
+        if self.op == "baseline_correct":
+            from dataset_transform_baseline_v1 import rows
+            yield from rows(self)
+            return
         if self.op == "combine_selection":
             require(all(s.get("x_variable_id") and s.get("y_variable_id") for s in self.sources), "Selection members require explicit X/Y bindings")
             try:
@@ -823,9 +854,15 @@ class Transform:
             report = {"api_version": 1, "operation": self.op, "effective_operation": self.effective_op, "effective_options": self.options, "compatibility_conflicts": self.compatibility_conflicts, "member_variable_id": self.option("lineage_prefix", "selection_")+"member_id" if self.effective_op=="concat_rows" and self.op=="combine_selection" else "member_id", "row_count": count,
                       "variables": self.schema, "contract": contract,
                       "source_fingerprints": [{"dataset_id": s["dataset_id"], "member_id": s["member_id"], "sha256": s["sha256"], "variable_ids": s["selected_variable_ids"], "row_count": s["row_count"]} for s in self.sources],
-                      "conversions": self.conversions, "unit_assumptions": self.unit_assumptions, "family_coordinates": self.family_coordinates, "family_parts": self.family_parts, "variable_mapping": mapping + self.bundle_auxiliary_mapping, "member_descriptors": self.member_descriptors,
+                      "conversions": self.conversions, "calibrations": self.calibrations, "unit_assumptions": self.unit_assumptions, "family_coordinates": self.family_coordinates, "family_parts": self.family_parts, "variable_mapping": mapping + self.bundle_auxiliary_mapping, "member_descriptors": self.member_descriptors,
                       "ordering": "explicit stable tuple sort; ties retain original row order" if self.op == "sort_rows" else "explicit source/member order; original row order unless reverse operation",
                       "interpolation": "none", "max_input_chunk_rows": self.max_input_chunk, "input_chunk_limit": 65536, "input_chunks": self.input_chunks, "binary_columns_returned": self.binary_columns, "sqlite_cache_bytes": 4194304}
+            if hasattr(self, 'smoothing_receipt'):
+                report['smoothing_receipt'] = self.smoothing_receipt
+            if hasattr(self, 'baseline_receipt'):
+                report['baseline_receipt'] = self.baseline_receipt
+            if hasattr(self, 'logarithm_receipt'):
+                report['logarithm_receipt'] = self.logarithm_receipt
             print(self.host.tcl.call("format", "%s", self.host.tcl_arg(report)))
         finally:
             for handle in self.part_handles.values(): handle.close()

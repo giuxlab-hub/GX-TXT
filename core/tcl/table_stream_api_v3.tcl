@@ -42,7 +42,7 @@ proc ::GX::tableStreamOpenDataset {session datasetId variableIds chunkRows {opti
     set count [tableStreamOption $options count -1]
     set requireDirect [expr {[tableStreamOption $options require_direct 0] ? 1 : 0}]
     set numericTransport [string tolower [string trim [tableStreamOption $options numeric_transport values]]]
-    if {$numericTransport ni {values auto}} { error "Table Stream numeric_transport must be values or auto" }
+    if {$numericTransport ni {values auto resource}} { error "Table Stream numeric_transport must be values, auto or resource" }
     if {![string is integer -strict $start] || $start < 0} { error "Table Stream start must be an integer >= 0" }
     if {![string is integer -strict $count] || $count < -1} { error "Table Stream count must be -1 or an integer >= 0" }
     set currentSession $session
@@ -126,6 +126,8 @@ proc ::GX::tableStreamOpenDataset {session datasetId variableIds chunkRows {opti
         set tableStreamState($stream,binary_columns_returned) 0
         set tableStreamState($stream,binary_bytes_returned) 0
         set tableStreamState($stream,value_columns_returned) 0
+        set tableStreamState($stream,resource_columns_returned) 0
+        set tableStreamState($stream,resource_bytes_returned) 0
         set access ""
         return $stream
     } finally {
@@ -187,7 +189,9 @@ proc ::GX::tableStreamNext {stream} {
     }
     set absolute [expr {$tableStreamState($stream,start)+$tableStreamState($stream,position)}]
     if {[catch {
-        if {$tableStreamState($stream,numeric_transport) eq "auto"} {
+        if {$tableStreamState($stream,numeric_transport) eq "resource"} {
+            set raw [datasetAccessReadRangeResource $tableStreamState($stream,access) $tableStreamState($stream,variable_ids) $absolute $requested]
+        } elseif {$tableStreamState($stream,numeric_transport) eq "auto"} {
             set raw [datasetAccessReadRangeTransport $tableStreamState($stream,access) $tableStreamState($stream,variable_ids) $absolute $requested]
         } else {
             set raw [datasetAccessReadRange $tableStreamState($stream,access) $tableStreamState($stream,variable_ids) $absolute $requested]
@@ -204,7 +208,14 @@ proc ::GX::tableStreamNext {stream} {
         set itemCount [dict get $item count]
         if {$actual < 0} { set actual $itemCount } elseif {$itemCount != $actual} { set tableStreamState($stream,status) failed; error "Canonical provider returned inconsistent table column lengths" }
         if {![tableStreamDtypeCompatible [dict get $variable dtype] [dict get $item dtype]]} { set tableStreamState($stream,status) failed; error "Canonical provider dtype does not match Schema v3 for $variableId" }
-        if {[dict exists $item binary_block]} {
+        if {[dict exists $item binary_resource]} {
+            set resource [dict get $item binary_resource]
+            datasetBinaryResourceValidate $resource $itemCount
+            dict set values $variableId $resource
+            lappend columns [dict merge $variable [dict create binary_resource $resource transport managed_binary count $itemCount]]
+            incr tableStreamState($stream,resource_columns_returned)
+            incr tableStreamState($stream,resource_bytes_returned) [dict get $resource byte_count]
+        } elseif {[dict exists $item binary_block]} {
             set block [dict get $item binary_block]
             datasetBinaryValidateBlock $block $itemCount
             dict set values $variableId $block
@@ -250,6 +261,8 @@ proc ::GX::tableStreamDiagnostics {stream} {
         binary_columns_returned $tableStreamState($stream,binary_columns_returned) \
         binary_bytes_returned $tableStreamState($stream,binary_bytes_returned) \
         value_columns_returned $tableStreamState($stream,value_columns_returned) \
+        resource_columns_returned $tableStreamState($stream,resource_columns_returned) \
+        resource_bytes_returned $tableStreamState($stream,resource_bytes_returned) \
         provider $provider]
 }
 
@@ -265,6 +278,12 @@ proc ::GX::tableStreamClose {stream} {
     return $stream
 }
 
+proc ::GX::tableStreamReleaseResource {stream resourceId} {
+    variable tableStreamState
+    tableStreamRequire $stream
+    return [datasetAccessReleaseResource $tableStreamState($stream,access) $resourceId]
+}
+
 # Runtime discovery is additive. Existing Table Stream v1/v2 and Analysis
 # Source sections remain unchanged.
 proc ::GX::tableStreamRuntimeAppend {path} {
@@ -276,6 +295,7 @@ proc ::GX::tableStreamRuntimeAppend {path} {
     putKV $fd table_shape {rank1_shared_dimension}
     putKV $fd canonical_dataset_api_version 2
     putKV $fd numeric_transport {typed_binary_auto_with_values_fallback}
+    putKV $fd supported_numeric_transports {values;auto;resource}
     close $fd
     return $path
 }

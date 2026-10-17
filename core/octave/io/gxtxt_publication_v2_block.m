@@ -1,4 +1,4 @@
-function fields=gxtxt_publication_v2_block(values,shape)
+function fields=gxtxt_publication_v2_block(values,shape,resource_scope)
 % Internal Publication v2 transport block. Public helper signatures remain stable.
  if(nargin<2||isempty(shape)),shape=numel(values);endif
  if(isnumeric(shape)),shape_text=strjoin(arrayfun(@num2str,shape,'uniformoutput',false),';');else shape_text=char(shape);endif
@@ -12,7 +12,15 @@ function fields=gxtxt_publication_v2_block(values,shape)
    return
  endif
  if(!(isnumeric(values)||islogical(values))),error('GXTXT:Publication','Unsupported publication value type');endif
- dtype=dtype_local(values); flat=values(:);
+ dtype=dtype_local(values);
+ if(!isreal(values)),error('GXTXT:Publication','Complex Dataset publication requires a supported complex schema');endif
+ if(nargin>=3&&!isempty(resource_scope))
+   d=gxtxt_binary_resource_v1('write',resource_scope,values);
+   physical=strjoin(arrayfun(@num2str,d.shape,'uniformoutput',false),';');
+   payload=strjoin({num2str(d.version),d.order,d.resource_id,physical,num2str(d.count),num2str(d.byte_count)},'|');
+   fields={'RESOURCE',d.dtype,d.endian,shape_text,gxtxt_publication_v2_encode(payload)};return;
+ endif
+ flat=values(:);
  if(islogical(flat)),bytes=uint8(flat);else
    [~,~,machine_endian]=computer();
    if(strcmpi(machine_endian,'B')),flat=swapbytes(flat);endif

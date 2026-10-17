@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0
+
+- Public CORE statistical-result interpretation and publication metadata.
+- Numeric-owned mean uncertainty; explicit sampling assumptions and undefined/unavailable states.
+- Existing scientific variable IDs and historical releases preserved.
+
 ## 1.1.0
 
 - Added automatic public `plot.dataset` histogram and box/whisker variants using GX-TXT 0.9.7.86 `PLOT_DATASET_API_v2` through the public Plot Dataset Octave Bridge v1.

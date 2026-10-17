@@ -2,7 +2,7 @@
 # CORE local durable Job API. UI callbacks use nonblocking fileevents only.
 namespace eval ::GX {variable scriptJobRequests {};variable scriptJobCounter 0}
 proc ::GX::scriptJobApiInfo {} {
-    return [dict create api_name SCRIPT_JOB_API_v1 api_version 1 scope local authority core operations {submit list describe inspect log_read inspect_run run_log_read run_summaries cancel recover configure} persistence durable gui_lifetime independent]
+    return [dict create api_name SCRIPT_JOB_API_v1 api_version 1 scope local authority core operations {submit wait list describe inspect log_read inspect_run run_log_read run_summaries cancel recover configure view_list history_hide history_restore history_candidates workspace_save workspace_open workspace_rename workspace_delete view_remember} persistence durable gui_lifetime independent presentation_scope user_configuration]
 }
 proc ::GX::scriptJobRoot {} {
     if {[info exists ::env(GXTXT_JOB_ROOT)]} {return [file normalize $::env(GXTXT_JOB_ROOT)]}
@@ -68,7 +68,33 @@ proc ::GX::scriptJobLogRead {id {offset 0} {count 65536} {tail 0}} {scriptJobCal
 proc ::GX::scriptExecutionInspectRun {session runId} {scriptJobCall inspect_run $session $runId}
 proc ::GX::scriptExecutionRunSummaries {session} {scriptJobCall run_summaries $session}
 proc ::GX::scriptJobCancel {id} {scriptJobCall cancel $id}
+proc ::GX::scriptJobWait {id {timeoutSeconds 60} {cancelCommand {}}} {
+    if {![string is integer -strict $timeoutSeconds]||$timeoutSeconds<1||$timeoutSeconds>86400} {error {Job wait timeout must be an integer from 1 to 86400 seconds}}
+    set lease [scriptJobCall wait_begin $id];set started [clock milliseconds];set cancelled 0
+    try {
+        while {1} {
+            set info [scriptJobDescribe $id]
+            if {[dict get $info state] in {COMPLETED FAILED CANCELLED INTERRUPTED}} break
+            set requested [expr {[clock milliseconds]-$started>=1000*$timeoutSeconds}]
+            if {$cancelCommand ne {}&&[{*}$cancelCommand]} {set requested 1}
+            if {$requested&&!$cancelled} {scriptJobCancel $id;set cancelled 1}
+            # Keep host events/cancellation responsive while CORE alone owns
+            # admission, descendant lifetimes and terminal resource recovery.
+            after 100;update
+        }
+        dict set info wait_cancel_requested $cancelled
+        return $info
+    } on error {message options} {
+        catch {scriptJobCancel $id}
+        return -options $options $message
+    } finally {
+        # On process/transport failure the supervisor reaps the caller lease,
+        # cancels the owned child and restores capacity without caller cleanup.
+        catch {scriptJobCall wait_end [dict get $lease token]}
+    }
+}
 proc ::GX::scriptJobRecover {} {scriptJobCall recover}
+source [file join [file dirname [info script]] script_job_presentation_v1.tcl]
 # FUTURE WINDOWS PORTING REQUIREMENT: GUI close only detaches this client.
 # Use the same LOCAL CORE Job API with an independent Windows supervisor/tray:
 # reopen GUI, inspect jobs, cancel selected/all (confirm all), safe supervisor exit.

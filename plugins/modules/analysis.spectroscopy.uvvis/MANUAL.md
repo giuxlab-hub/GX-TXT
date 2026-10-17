@@ -1,6 +1,6 @@
 # UV/Vis Spectral Family Quantitation
 
-`analysis.spectroscopy.uvvis` 1.1.1 is a Dataset-native GX-TXT production analysis module for selected-wavelength quantitation from a canonical `spectrum.family`.
+`analysis.spectroscopy.uvvis` 1.2.0 is a Dataset-native GX-TXT production analysis module for selected-wavelength quantitation from a canonical `spectrum.family`.
 
 ## Architecture
 

@@ -10,7 +10,14 @@ function curve_replicate_rerender_main(args)
     cache_path=strtrim(ini_get(cfg,'render_cache_api.path',''));
     if(isempty(cache_path)),cache_path=fullfile(outdir,'render_cache.mat');endif
     if(exist(cache_path,'file')!=2),error('curve.replicate_analysis rerender: render_cache.mat not found: %s',cache_path);endif
-    c=load(cache_path);
+    c=load(cache_path);statistical_scope=gxtxt_statistics_scope_v1();
+    if(!isfield(c,'core_statistics_schema')||!strcmp(c.core_statistics_schema,'gxtxt.replicate_analysis.statistics.v1')||!isfield(c,'reports'))
+      error('curve.replicate_analysis: legacy cache lacks captured CORE statistical meaning; recalculate the analysis before rerendering');
+    endif
+    for i=1:numel(c.render_results)
+      gxtxt_statistics_v1('validate',c.render_results(i).core_statistics.prototype);
+      gxtxt_statistics_v1('validate',c.render_results(i).core_statistics.binding);
+    endfor
     required={'render_traces','render_results','D','has_family','x_name','family_name','y_name'};
     for i=1:numel(required),if(!isfield(c,required{i})),error('curve.replicate_analysis rerender: cache missing %s',required{i});endif;endfor
     if(!isempty(strtrim(ini_get(cfg,'runtime.session',''))))

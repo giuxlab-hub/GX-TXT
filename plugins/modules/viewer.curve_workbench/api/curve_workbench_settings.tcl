@@ -14,10 +14,12 @@ proc ::GX::CurveWorkbench::_commandRows {} {return {
         object.reverse {Reverse selection traversal} {} selection {_reverseSelection} {}
         object.parameters {Exact parameters…} {} selection {_sketchOpen 1} {}
         object.units {Working units…} {} selection {_unitsOpen} {}
+        object.declare_axes {Declare scientific axis meaning…} {} selection {_coordinateDeclareOpen} {}
         object.native_tools {Native point operations / groups…} {} none {_cadDetails} {}
         object.selectable {Include in selection} {} selection {_selectableSet 1} {}
         object.reference {Visible reference only} {} selection {_selectableSet 0} {}
         create.numeric {Exact numeric creation…} {} none {_sketchOpen} {}
+        create.scientific {Scientific point curve…} {} none {_coordinateDeclareOpen 1} {}
         constraint.unfix Unfix {} selection {_unfix} {}
         constraint.inspector {Inspector / dimensions…} {} none {_constraintOpen} {}
         constraint.advanced {Advanced reference editor…} {} none {_constraintForm} {}
@@ -36,6 +38,9 @@ proc ::GX::CurveWorkbench::_commandRows {} {return {
         view.fit_all {Fit all} f none {_fit 0} {}
         view.fit_selection {Fit selection} Shift+f selection {_fit 1} {}
         view.pan Pan p none {_scienceTool pan} {}
+        view.axis_units {Axis display units…} {} none {_coordinateOpen} {}
+        view.dataset_coordinates {Dataset coordinates…} {} none {_coordinateDatasetOpen} {}
+        view.align_axes {Align Dataset working axes…} {} none {_coordinateAlignOpen} {}
         workspace.save {Save workspace} Ctrl+s none {_saveExplicit} {}
 }}
 proc ::GX::CurveWorkbench::_creationRows {} {return {line Line l rectangle Rectangle r circle Circle c arc Arc a spline Spline s quadratic_bezier {Quadratic Bézier} {} cubic_bezier {Cubic Bézier} b polyline Polyline {} ellipse Ellipse {} point Point {} construction_line {Construction axis} {}}}

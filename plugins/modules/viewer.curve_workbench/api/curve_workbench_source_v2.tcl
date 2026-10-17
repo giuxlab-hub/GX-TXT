@@ -92,6 +92,7 @@ proc ::GX::CurveWorkbench::_sourceAdd {w} {
             set name [expr {$family eq "" ? [_datasetName $dataset] : "[_datasetName $dataset] · $member"}]
             set record [_newRecord $w $name {} $dataset $x $y $filter $value $member $order {} [list "import:$dataset"]]
             dict set record source_request $request;dict set record source_descriptor $descriptor
+            set targetFrame [_coordinateSourceFrame $w $record]
             if {[dict get $descriptor row_count]>65536} {
                 _save $w
                 dict set record source_token $source
@@ -104,6 +105,7 @@ proc ::GX::CurveWorkbench::_sourceAdd {w} {
                 ::GX::curveSourceClose $source;set source ""
             }
             lappend created $id;dict set before $id ""
+            _coordinateNormalizeSource $w $id $targetFrame
         }
         if {$created eq {}} {error "No curves match the source selection"}
     } on error {message options} {
@@ -111,9 +113,12 @@ proc ::GX::CurveWorkbench::_sourceAdd {w} {
         return -options $options $message
     } finally {if {$source ne ""} {::GX::curveSourceClose $source}}
     set st($w,active) [lindex $created 0];_selectionScene $w
+    _coordinateFrameSync $w 0
     ::GX::Native2D::core fit $st($w,scene)
+    _coordinateMagnify $w 1
     _history $w $before $created
     set st($w,status) "Added [llength $created] exact Dataset curve(s). Large curves use paged points; Convert to Native creates an explicit editable subset."
+    append st($w,status) " Native working axes: [join [_coordinateUnits [_record $w $st($w,active)]] { / }]; original Dataset values and units are preserved."
     destroy $w.source
 }
 proc ::GX::CurveWorkbench::_sampleAt {w id index} {
@@ -195,7 +200,7 @@ proc ::GX::CurveWorkbench::_pointList {w} {
     set record [_record $w $st($w,active)];set total [_pointCount $record]
     if {$total<=200} {_pointList_v1 $w;set st($w,pointPageLabel) "$total exact points";return}
     set start $st($w,pointPageStart);set count [expr {min(200,$total-$start)}]
-    set tree $w.leftScroll.viewport.content.points;set signature [list $st($w,active) $start $record]
+    set tree $w.leftScroll.viewport.content.points;set signature [list $st($w,active) $start $record [_coordinateKey $w $st($w,active)]]
     set oldRunning $st($w,pointSyncRunning);set st($w,pointSyncRunning) 1
     try {
         if {$signature ne $st($w,pointTableSignature)} {
@@ -206,14 +211,17 @@ proc ::GX::CurveWorkbench::_pointList {w} {
                 foreach xy $points row $rows {lappend samples [dict create x [lindex $xy 0] y [lindex $xy 1] row $row]}
             } else {set samples [lrange [dict get $record samples] $start [expr {$start+$count-1}]]}
             $tree delete [$tree children {}];set i $start
-            foreach point $samples {$tree insert {} end -id p$i -values [list $i [format %.10g [dict get $point x]] [format %.10g [dict get $point y]] [dict get $point row]];incr i}
+            foreach point $samples {
+                lassign [_coordinatePoint $w $st($w,active) [list [dict get $point x] [dict get $point y]]] dx dy
+                $tree insert {} end -id p$i -values [list $i [format %.10g $dx] [format %.10g $dy] [dict get $point row]];incr i
+            }
             set st($w,pointTableSignature) $signature
         }
         set selected [_pointTableSelected $w]
         set rows [lmap i $selected {format p%d $i}]
         if {[$tree selection] ne $rows} {$tree selection set $rows}
         set all [_semanticPointIndices $w $st($w,active)];set summary [dict create count [llength $all] first [lindex $all 0]]
-        if {[dict get $summary count]==1} {set point [_sampleAt $w $st($w,active) [dict get $summary first]];set st($w,editX) [dict get $point x];set st($w,editY) [dict get $point y]}
+        if {[dict get $summary count]==1} {set point [_sampleAt $w $st($w,active) [dict get $summary first]];lassign [_coordinatePoint $w $st($w,active) [list [dict get $point x] [dict get $point y]]] st($w,editX) st($w,editY)}
         set st($w,pointPageLabel) "Exact points $start–[expr {$start+$count-1}] / $total · [dict get $summary count] selected"
         set st($w,pointPageInput) [expr {$start/200+1}]
     } finally {set st($w,pointSyncRunning) $oldRunning}
@@ -300,6 +308,7 @@ proc ::GX::CurveWorkbench::publish {w requested {ids {}}} {
         if {[dict exists $request filters]} {dict set source row_filters [dict get $request filters]}
         if {[dict exists $request order_variable_id]&&![dict get $record edited]} {dict set source order_variable_ids [list [dict get $request order_variable_id]]}
         if {[dict exists $record working_unit]} {dict set source convert_units [dict create [dict get $record x] [dict get $record working_unit] [dict get $record y] [dict get $record working_unit]]}
+        if {[dict exists $record coordinate_units]} {foreach axis {x y} unit [dict get $record coordinate_units] {dict set source convert_units [dict get $record $axis] $unit}}
         if {[dict exists $record source_assumed_units]} {dict set source assume_units [dict get $record source_assumed_units]}
         set marker [::GX::Native2D::core direction_marker $st($w,scene) [dict get $record native]]
         dict set source reverse [expr {![dict get $marker forward]}]
@@ -318,7 +327,8 @@ proc ::GX::CurveWorkbench::publish {w requested {ids {}}} {
     }
     set metadata [dict create curve_workbench.workspace_curve_ids [join $ids {;}] curve_workbench.provenance $provenance curve_workbench.exact_publication 1]
     set metadata [dict merge $metadata [_publicationSketchMetadata $w $ids]]
-    set manifest [dict create api_version 1 operation concat_rows sources $sources output [dict create dataset_id $requested contract table.generic storage auto display_name "Curve Workbench: [dict get [_record $w [lindex $ids 0]] name]"] options [dict create include_lineage 1 lineage_prefix $prefix metadata $metadata]]
+    set metadata [dict merge $metadata [_coordinatePublicationMetadata $w $ids]]
+    set manifest [dict create api_version 1 operation concat_rows sources $sources output [dict create dataset_id $requested contract table.generic storage auto display_name "Curve Workbench: [dict get [_record $w [lindex $ids 0]] name]"] options [dict create include_lineage 1 lineage_prefix $prefix metadata_overrides $metadata]]
     if {$arrangement ne "table"} {
         dict set manifest operation curve_bundle
         dict set manifest options representation $arrangement

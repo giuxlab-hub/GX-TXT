@@ -94,12 +94,13 @@ proc ::GX::loadModuleCatalog_v052_api {} {
         if {[descriptorValue $d meta api_version ""] ne "1"} { error "Unsupported model API version in $path" }
         set id [string trim [descriptorValue $d meta id ""]]
         if {$id eq ""} { error "Missing model meta.id in $path" }
+        if {[info exists modelCatalog($id,descriptor)]} {error "Duplicate mathematical model id: $id"}
         foreach {field def} {
             kind "" name "" version "" function "" script "" x_column "" family_column "" y_column "" y_unit "" description ""
         } {
             set modelCatalog($id,$field) [descriptorValue $d meta $field $def]
         }
-        foreach field {names initial lower upper} {
+        foreach field {names initial lower upper units} {
             set modelCatalog($id,param_$field) [descriptorValue $d parameters $field ""]
         }
         set modelCatalog($id,descriptor) $path
@@ -170,6 +171,32 @@ proc ::GX::ensureModuleConfigDefaults {} {
 proc ::GX::moduleIsAlwaysAvailable {id} {
     expr {[moduleField $id kind ""] eq "acquisition" || ![moduleField $id selectable 1]}
 }
+proc ::GX::moduleOperationalClass {id} {
+    if {[moduleField $id kind {}] eq {}} {error "Unknown module '$id'"}
+    if {[moduleIsAlwaysAvailable $id]} {return ALWAYS}
+    if {[moduleField $id kind] eq "analysis"} {
+        if {[moduleIsCore $id]} {return CORE_ANALYSIS}
+        return ANALYSIS
+    }
+    return SELECTABLE_PROVIDER
+}
+proc ::GX::moduleAnalysisEligible {id} {
+    expr {[moduleOperationalClass $id] in {CORE_ANALYSIS ANALYSIS}}
+}
+proc ::GX::moduleOperationalState {id} {
+    switch -- [moduleOperationalClass $id] {
+        ALWAYS {return ALWAYS}
+        CORE_ANALYSIS {return [expr {[moduleIsEnabled $id] ? "CORE / ON" : "CORE / OFF"}]}
+        default {return [expr {[moduleIsEnabled $id] ? "ON" : "OFF"}]}
+    }
+}
+proc ::GX::moduleOperationalInfo {id} {
+    return [dict create module_id $id kind [moduleField $id kind] \
+        operational_class [moduleOperationalClass $id] state [moduleOperationalState $id] \
+        core_protected [moduleIsCore $id] always_available [moduleIsAlwaysAvailable $id] \
+        analysis_enableable [moduleAnalysisEligible $id] run_eligible [moduleAnalysisEligible $id] \
+        enabled [moduleIsEnabled $id]]
+}
 proc ::GX::moduleIsEnabled {id} {
     variable cfg
     variable moduleEnabled
@@ -185,6 +212,7 @@ proc ::GX::moduleIsEnabled {id} {
 }
 
 proc ::GX::moduleRunIsSelected {id} {
+    if {![moduleAnalysisEligible $id]} {return 0}
     variable cfg
     variable moduleRun
     set key [moduleField $id run_key ""]
@@ -197,7 +225,7 @@ proc ::GX::moduleRunIsSelected {id} {
 proc ::GX::moduleSetRunSelected {id state} {
     variable cfg
     variable moduleRun
-    set v [expr {$state ? 1 : 0}]
+    set v [expr {[moduleAnalysisEligible $id]&&$state ? 1 : 0}]
     set key [moduleField $id run_key ""]
     if {$key ne ""} { set cfg($key) $v } else { set moduleRun($id) $v }
 }
@@ -206,7 +234,7 @@ proc ::GX::selectedRunModuleIds {} {
     variable moduleOrder
     set out {}
     foreach id $moduleOrder {
-        if {[moduleField $id kind ""] ne "analysis"} continue
+        if {![moduleAnalysisEligible $id]} continue
         if {[moduleIsEnabled $id] && [moduleRunIsSelected $id]} { lappend out $id }
     }
     return $out
@@ -216,7 +244,7 @@ proc ::GX::selectedModuleIds {} {
     variable moduleOrder
     set out {}
     foreach id $moduleOrder {
-        if {![moduleField $id selectable 1]} continue
+        if {[moduleIsAlwaysAvailable $id]} continue
         if {[moduleIsEnabled $id]} { lappend out $id }
     }
     return $out
@@ -775,7 +803,7 @@ proc ::GX::writeStandardRuntimeConfig_v052_native {id} {
     puts $fd "\[runtime\]"; putKV $fd api_version 1; putKV $fd module_id $id; putKV $fd session $currentSession; putKV $fd output_dir $outDir
     puts $fd "\n\[dataset\]"; putKV $fd id $datasetId; putKV $fd path $dataPath; putKV $fd kind [datasetField $datasetId kind]; putKV $fd columns [datasetField $datasetId columns]
     puts $fd "\n\[model\]"; putKV $fd id $modelId; putKV $fd function [modelField $modelId function]; putKV $fd script [file join $scriptDir [modelField $modelId script]]
-    foreach f {x_column family_column y_column y_unit param_names param_initial param_lower param_upper} { putKV $fd $f [modelField $modelId $f ""] }
+    foreach f {x_column family_column y_column y_unit param_names param_initial param_lower param_upper param_units} { putKV $fd $f [modelField $modelId $f ""] }
     puts $fd "\n\[config\]"
     foreach key [moduleConfigKeys $id] { putKV $fd $key $moduleCfg($id,$key) }
     close $fd
@@ -873,7 +901,11 @@ proc ::GX::standardConfigWidget_v060 {parent id key row} {
         set vals [splitList [moduleConfigField $id $key values ""]]
         ttk::combobox $parent.w$row -textvariable ::GX::moduleCfg($id,$key) -values $vals -state readonly -width 30
     } elseif {$type eq "model"} {
-        ttk::combobox $parent.w$row -textvariable ::GX::moduleCfg($id,$key) -values $modelOrder -state readonly -width 30
+        # This historical selector supplies an executable family-model callback.
+        # Scalar expression descriptors are discoverable in the same registry
+        # but are consumed through the public Numeric composition API.
+        set callableModels [lmap model $modelOrder {if {[modelField $model function ""] eq ""} continue;set model}]
+        ttk::combobox $parent.w$row -textvariable ::GX::moduleCfg($id,$key) -values $callableModels -state readonly -width 30
     } elseif {$type eq "dataset" && $currentSession ne "" && [file isdirectory $currentSession]} {
         catch {loadDatasetRegistry $currentSession}
         set vals [datasetRegistryIds]
@@ -1695,7 +1727,7 @@ proc ::GX::writeStandardRuntimeConfig_v061_base {id} {
     puts $fd "\n\[dataset\]"; putKV $fd id $datasetId; putKV $fd path $dataPath; putKV $fd kind [datasetField $datasetId kind]; putKV $fd columns [datasetField $datasetId columns]
     if {$modelId ne ""} {
         puts $fd "\n\[model\]"; putKV $fd id $modelId; putKV $fd function [modelField $modelId function]; putKV $fd script [file join $scriptDir [modelField $modelId script]]
-        foreach f {y_unit param_names param_initial param_lower param_upper} { putKV $fd $f [modelField $modelId $f ""] }
+        foreach f {y_unit param_names param_initial param_lower param_upper param_units} { putKV $fd $f [modelField $modelId $f ""] }
         foreach {role mf} {x x_column family family_column y y_column} {
             set resolved [expr {[dict exists $resolvedBindings $role] ? [dict get $resolvedBindings $role] : [resolveModuleBinding $id $role $modelId]}]
             if {$resolved eq "" && [moduleBindingField $id $role required 0]} { close $fd; error "$id: input binding '$role' cannot be resolved." }

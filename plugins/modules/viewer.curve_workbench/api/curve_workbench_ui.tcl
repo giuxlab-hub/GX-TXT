@@ -57,6 +57,7 @@ proc ::GX::CurveWorkbench::open {{context {}}} {
     } elseif {$st($w,document) ne {}} {_parameterRecalculate $w [_parameterBind $w]}
     if {$sketch ne {}} {_datasetImport $w $sketch}
     if {[dict exists $context planar_document]} {_planarIntake $w [dict get $context planar_document] [dict get $context planar_mode]} else {_planarControls $w}
+    _coordinateMagnify $w 0
     ::GX::sessionWorkspaceViewerTitle $w {Curve Workbench · planar 2-D} [list set ::GX::CurveWorkbench::st($w,document)] [list set ::GX::CurveWorkbench::st($w,workspaceName)]
     return $w
 }
@@ -90,6 +91,9 @@ proc ::GX::CurveWorkbench::_cadGui {w} {
 }
 proc ::GX::CurveWorkbench::_initWorkbenchState {w} {
     variable st
+    set st($w,coordinatePresentation) {};set st($w,coordinateCache) {};set st($w,coordinateView) {}
+    set st($w,coordinateFrameViews) {}
+    set st($w,coordinateSubscription) [::GX::datasetCatalogSubscribe [list ::GX::CurveWorkbench::_coordinateCatalogChanged $w]]
     set st($w,comparisonEnabled) 0;set st($w,comparisonConfig) {};set st($w,comparisonRecord) {};set st($w,comparisonText) {Comparison inactive}
     set st($w,constructionPlaces) {};set st($w,chainReferences) {};set st($w,moreControls) 0
     foreach key {constraintTool dimRefs dimSpec dimAnnotation dimExisting annotationDrag selectedRelationship hoverRelationship markerRegions} {set st($w,$key) {}}
@@ -259,6 +263,9 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     ttk::button $w.right.display.gridSettings -text "Grid / view…" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_gridOpen $w]]
     pack $w.right.display.direction $w.right.display.flip $w.right.display.settings $w.right.display.grid $w.right.display.snap $w.right.display.gridSettings -side left -padx 3
     pack $w.right.display -fill x -pady 3
+    ttk::label $w.right.coordinatePolicy -textvariable ::GX::CurveWorkbench::st($w,coordinatePolicy) -wraplength 800 -justify left
+    pack $w.right.coordinatePolicy -fill x -pady 2
+    bind $w.right.coordinatePolicy <Configure> [list $w.right.coordinatePolicy configure -wraplength %w]
     bind $w.right.display <Configure> [list ::GX::native2DToolbarLayout $w.right.display %w]
     ttk::frame $w.right.readout
     pack $w.right.readout -fill x
@@ -274,8 +281,9 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     ttk::combobox $w.validation.reference -textvariable ::GX::CurveWorkbench::st($w,referenceLabel) -state readonly -width 32
     ttk::combobox $w.validation.method -textvariable ::GX::CurveWorkbench::st($w,compareMethod) -values {x path} -state readonly -width 7
     ttk::button $w.validation.compare -text "Compare / residuals" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_compare $w]]
-    ttk::label $w.validation.metricLabel -text "2-D metric"
-    ttk::combobox $w.validation.metric -textvariable ::GX::CurveWorkbench::st($w,metric) -values {length span_x span_y signed_area length_span_ratio} -state readonly -width 18
+    ttk::label $w.validation.metricLabel -text "Metric"
+    ttk::combobox $w.validation.metric -textvariable ::GX::CurveWorkbench::st($w,metricLabel) -state readonly -width 20
+    bind $w.validation.metric <<ComboboxSelected>> [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_coordinateMetricSelect $w]]
     ttk::label $w.validation.targetLabel -text "Target"
     ttk::entry $w.validation.target -textvariable ::GX::CurveWorkbench::st($w,target) -width 12
     ttk::button $w.validation.evaluate -text Evaluate -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_metrics $w]]

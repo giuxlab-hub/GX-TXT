@@ -1,0 +1,7 @@
+SPDX-License-Identifier: GPL-3.0-or-later
+
+Copyright (C) 2026 Giux-Lab contributors.
+This generator, its original synthetic image and reference data are free
+software/data under the GNU General Public License version3 or, at your option,
+any later version. They are provided without warranty.
+See https://www.gnu.org/licenses/gpl-3.0.html for the full license terms.

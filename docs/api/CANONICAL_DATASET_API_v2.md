@@ -20,6 +20,37 @@ Variable Schema v3 fields.
 
 ## Public Tcl operations
 
+Dev097 adds managed, bounded reads from the same canonical provider:
+`datasetAccessReadRangeResource handle variable_ids start count`,
+`datasetAccessReadHyperslabResource handle variable_id starts counts`, and
+`datasetAccessReleaseResource handle resource_id`. Query `managed_binary_read`
+before requiring this capability. Range reads retain the values fallback for
+providers or variables that do not supply resources. Counts must be bounded.
+
+Results retain source dtype/shape and include a validated `binary_resource`
+descriptor for eligible numeric data. The descriptor's storage shape may include
+a column dimension for language transport; the outer result's shape remains the
+source shape. Resource IDs are execution-local and must never be persisted as
+Dataset or Variable identities. A Tcl consumer releases each buffer while its
+access handle is open; closing a provider-owned scope releases its remaining
+buffers. A Script Bridge scope is owned by that execution and receives the buffer
+directly, then removes it after decoding. Backpressure bounds outstanding buffers
+to 512 MiB per provider. Existing Resource Management reconciles crashed owners.
+
+Python/Octave `read_range` uses this path automatically when available and still
+returns ordinary typed arrays. The additive safe `read_hyperslab` operation takes
+`dataset_id, variable_id, zero-based starts, counts`, and returns the same typed
+values/shape metadata. No HDF5 locator or source path is exposed to scripts.
+Managed HDF5 reads carry numeric payload through raw resources, with no numeric
+Base64 or Tcl list expansion. Legacy value/Base64 operations remain callable.
+
+Provider diagnostics distinguish raw resource bytes, legacy binary bytes,
+text-element counts, provider-read time, resource-encode time and outstanding
+bytes. `serialization_copy_bytes` counts bytes formed for file serialization;
+`layout_copy_bytes` is the subset also requiring C-to-F layout adaptation, not an
+additional independent copy to add to the former. These counters do not claim
+to count kernel/HDF5-internal allocations or physical disk writes.
+
 ```tcl
 set handle [::GX::datasetAccessOpen $session $datasetId]
 set metadata [::GX::datasetAccessMetadata $handle]
@@ -158,3 +189,13 @@ Bridge API ID: `CANONICAL_DATASET_API_v2`. The provider registers:
 `read_range` retains the Canonical Dataset API bounds and stable variable ID
 rules. Use a bounded `count` for large Datasets. The bridge does not expose a
 Dataset file path or an open storage handle to user scripts.
+
+## Missing numeric CSV cells in typed Script Bridge reads
+
+`read_range` retains float32/float64 blanks as NaN placeholders with an additive
+boolean `missing_mask` in that variable block. Only original empty numeric cells
+are true; explicit source NaN and infinities remain separate. The mask is omitted
+when no numeric cell is missing. Integer/boolean blanks remain errors without
+a nullable storage contract. Canonical Tcl tokens, Worksheet missing-value
+distinctions and source files remain unchanged. Table Stream exposes the same
+mask in its column records; standalone Octave uses `chunk.missing_masks`.

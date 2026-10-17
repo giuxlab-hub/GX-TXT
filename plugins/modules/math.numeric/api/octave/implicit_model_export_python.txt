@@ -1,0 +1,35 @@
+def _implicit_branch(query, parameters, low, high, xtol, ftol, limit):
+    result = np.empty_like(query)
+    for i, u in enumerate(query):
+        a, b = low, high
+        fa = float(_implicit_equation(u, a, parameters))
+        fb = float(_implicit_equation(u, b, parameters))
+        if not np.isfinite(fa) or not np.isfinite(fb):
+            raise ValueError('Implicit branch has a nonfinite endpoint')
+        if fa == 0 and fb == 0:
+            raise ValueError('Both branch endpoints match; local root is ambiguous')
+        if fa == 0:
+            result[i] = a
+            continue
+        if fb == 0:
+            result[i] = b
+            continue
+        if np.signbit(fa) == np.signbit(fb):
+            raise ValueError('Implicit branch has no sign-changing bracket')
+        valid = False
+        for unused in range(limit):
+            mid = a / 2 + b / 2
+            fm = float(_implicit_equation(u, mid, parameters))
+            if not np.isfinite(fm):
+                raise ValueError('Implicit branch evaluation is nonfinite')
+            if fm == 0 or abs(b-a) <= 2*xtol or mid == a or mid == b:
+                valid = abs(fm) <= ftol
+                break
+            if np.signbit(fm) == np.signbit(fa):
+                a, fa = mid, fm
+            else:
+                b = mid
+        if not valid:
+            raise ValueError('Implicit branch root did not meet coordinate/equation tolerances')
+        result[i] = mid
+    return result

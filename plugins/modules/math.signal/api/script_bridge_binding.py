@@ -21,6 +21,14 @@ for line in (Path(__file__).with_name("family_contracts_v1.tsv")).read_text(enco
 for name, operation in _OPERATIONS.items():
     operation.update(_FAMILIES[name.split(".", 1)[0]])
 
+_OPERATIONS["statistical_contract"] = {
+    "operation_kind": "metadata",
+    "name": "statistical_contract", "summary": "Resolve a Signal operation's registered CORE statistical contract",
+    "argument_convention": "signal_operation string", "result_convention": "bounded public contract dictionary",
+    "arguments": [{"name": "signal_operation", "kind": "string", "required": True}],
+    "result_contract": "Numeric operation and CORE model identity; no calculation or interpretation copy",
+    "unit_behavior": "Actual units and availability are supplied by the public CORE API"}
+
 REGISTRATION = {"api_id": "SIGNAL_API_v1", "api_version": 1, "provider_kind": "module", "provider_id": "math.signal", "documentation_ref": "plugins/modules/math.signal/SIGNAL_API_v1.md", "operations": _OPERATIONS}
 
 def _adapt(host, raw, types):
@@ -54,6 +62,13 @@ def _adapt(host, raw, types):
 def invoke(host, operation, args):
     if operation not in _OPERATIONS:
         raise BridgeError("GXTXT:ScriptBridge:UnknownOperation", operation)
+    if operation == "statistical_contract":
+        if len(args) != 1 or not isinstance(args[0], str):
+            raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "statistical_contract requires one Signal operation string")
+        host.call("::GX::modulePublicApiActivate", "math.signal", "SIGNAL_API_v1")
+        result = {str(k): str(v) for k, v in host.as_dict(host.call("::GX::SignalAPIv1::statisticalContract", args[0])).items()}
+        result["api_version"] = int(result["api_version"])
+        return result
     if len(args) not in (3,4):
         raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "scientific operation requires a, b, c and optional options")
     host.call("::GX::modulePublicApiActivate", "math.signal", "SIGNAL_API_v1")

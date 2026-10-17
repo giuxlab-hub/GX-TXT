@@ -25,7 +25,9 @@ function [values,groups,source_rows]=gxtxt_analysis_grouped_numeric_source(cfg,r
       if(isnumeric(group)||islogical(group))
         labels=cell(chunk.nrows,1);
         for j=1:chunk.nrows
-          if(isfinite(group(j))),labels{j}=sprintf('%.17g',double(group(j)));else labels{j}='';endif
+          if(isinteger(group)&&strncmp(class(group),'uint',4)),labels{j}=sprintf('%u',group(j));
+          elseif(isinteger(group)),labels{j}=sprintf('%d',group(j));
+          elseif(isfinite(group(j))),labels{j}=sprintf('%.17g',double(group(j)));else labels{j}='';endif
         endfor
       elseif(iscell(group))
         labels=cell(chunk.nrows,1);

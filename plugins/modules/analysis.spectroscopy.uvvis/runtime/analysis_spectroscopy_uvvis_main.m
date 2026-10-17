@@ -1,7 +1,7 @@
 function analysis_spectroscopy_uvvis_main(args)
 % Dataset-native UV/Vis quantitation using public numerical and plot services.
 % SPDX-License-Identifier: GPL-3.0-or-later
-  module_id='analysis.spectroscopy.uvvis';module_version='1.1.1';
+  module_id='analysis.spectroscopy.uvvis';module_version='1.2.0';
   config_path=arg_value(args,'--config','');if(isempty(config_path)),error('%s: --config is required',module_id);endif
   cfg=gxtxt_ini_read(config_path);outdir=strtrim(gxtxt_ini_get(cfg,'runtime.output_dir',''));session=strtrim(gxtxt_ini_get(cfg,'runtime.session',''));
   if(isempty(outdir)||isempty(session)),error('%s: runtime.output_dir and runtime.session are required',module_id);endif;if(exist(outdir,'dir')!=7),mkdir(outdir);endif

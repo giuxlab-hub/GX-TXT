@@ -1,4 +1,5 @@
 #include "gx2d.h"
+#include "../../plugins/modules/math.numeric/api/c/gxtxt_numeric_reductions_v1.h"
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>
@@ -1125,9 +1126,11 @@ static int monotonic_x(const object *o){size_t i;int direction=0;
 typedef gx2d_status (*residual_consumer)(void *,size_t,const gx2d_residual *);
 static gx2d_status compare_kernel(const gx2d_scene *s,gx2d_id reference,gx2d_id derived,
     gx2d_compare_method method,residual_consumer emit,void *context,gx2d_residual_summary *summary){
-    const object *a=cobj(s,reference),*b=cobj(s,derived);size_t i,j=0,n=0,max_index=0;
-    double total_a=0,total_b=0,progress=0,b_progress=0,max_abs=0,sum_abs=0,sum_sq=0;
-    if(!summary||method<GX2D_COMPARE_X||method>GX2D_COMPARE_PATH)return GX2D_INVALID;
+    const object *a=cobj(s,reference),*b=cobj(s,derived);size_t i,j=0,n=0;
+    gx_numeric_residual_accumulator_v1 statistics;gx_numeric_residual_result_v1 facts;
+    double total_a=0,total_b=0,progress=0,b_progress=0;
+    gx_numeric_residual_init_v1(&statistics);
+    if((!summary&&!emit)||method<GX2D_COMPARE_X||method>GX2D_COMPARE_PATH)return GX2D_INVALID;
     if(!a||!b)return GX2D_NOT_FOUND;if(a->kind!=GX2D_CURVE||b->kind!=GX2D_CURVE)return GX2D_INVALID;
     for(i=0;i+1<a->count;++i)if(a->breaks[i])return GX2D_INVALID;
     for(i=0;i+1<b->count;++i)if(b->breaks[i])return GX2D_INVALID;
@@ -1156,33 +1159,37 @@ static gx2d_status compare_kernel(const gx2d_scene *s,gx2d_id reference,gx2d_id 
         }
         if(!isfinite(position)||!isfinite(residual)||!isfinite(absolute))return GX2D_RANGE;
         if(emit){gx2d_residual row={position,residual,absolute,ref,fit};gx2d_status code=emit(context,n,&row);if(code!=GX2D_OK)return code;}
-        if(absolute>max_abs){max_abs=absolute;max_index=n;}
-        sum_abs+=absolute;sum_sq+=absolute*absolute;++n;
+        if(summary&&gx_numeric_residual_push_v1(&statistics,absolute)!=GX_NUMERIC_OK_V1)return GX2D_RANGE;
+        ++n;
     }
     if(!n)return GX2D_NOT_FOUND;
-    *summary=(gx2d_residual_summary){n,max_index,max_abs,sum_abs/n,sqrt(sum_sq/n)};return GX2D_OK;
+    if(summary){
+        if(gx_numeric_residual_finish_v1(&statistics,&facts)!=GX_NUMERIC_OK_V1)return GX2D_RANGE;
+        *summary=(gx2d_residual_summary){(size_t)facts.count,(size_t)facts.max_index,facts.max_absolute,facts.mean_absolute,facts.rmse};
+    }
+    return GX2D_OK;
 }
 typedef struct {gx2d_residual *rows;size_t capacity;} residual_buffer;
 static gx2d_status residual_write(void *context,size_t index,const gx2d_residual *row){residual_buffer *buffer=context;if(index>=buffer->capacity)return GX2D_RANGE;buffer->rows[index]=*row;return GX2D_OK;}
 gx2d_status gx2d_compare_curves(const gx2d_scene *s,gx2d_id reference,gx2d_id derived,
     gx2d_compare_method method,gx2d_residual *out,size_t cap,gx2d_residual_summary *summary){
-    residual_buffer buffer={out,cap};return compare_kernel(s,reference,derived,method,out?residual_write:NULL,&buffer,summary);
+    residual_buffer buffer={out,cap};if(!summary)return GX2D_INVALID;return compare_kernel(s,reference,derived,method,out?residual_write:NULL,&buffer,summary);
 }
 static gx2d_status residual_sample(void *context,size_t index,const gx2d_residual *row){gx2d_point point={row->position,row->signed_residual};return gx2d_display_push(context,index,&point,1);}
 typedef struct {gx2d_residual *rows;uint64_t *indices;size_t count,next;} residual_sample_buffer;
 static gx2d_status residual_collect(void *context,size_t index,const gx2d_residual *row){residual_sample_buffer *buffer=context;if(buffer->next<buffer->count&&buffer->indices[buffer->next]==index)buffer->rows[buffer->next++]=*row;return GX2D_OK;}
 gx2d_status gx2d_compare_curves_display(const gx2d_scene *s,gx2d_id reference,gx2d_id derived,
     gx2d_compare_method method,size_t budget,gx2d_residual *out,uint64_t *indices,size_t cap,size_t *returned,gx2d_residual_summary *summary){
-    gx2d_display_accumulator *accumulator=NULL;gx2d_point *sampled=NULL;gx2d_status code;gx2d_rect bounds;gx2d_residual_summary pass;
+    gx2d_display_accumulator *accumulator=NULL;gx2d_point *sampled=NULL;gx2d_status code;gx2d_rect bounds;
     size_t count,finite;residual_sample_buffer buffer;
     if(!out||!indices||!returned||!summary||budget<6||budget>65536||cap<budget)return GX2D_INVALID;
     code=compare_kernel(s,reference,derived,method,NULL,NULL,summary);if(code!=GX2D_OK)return code;
     accumulator=gx2d_display_begin(summary->count,budget,0);sampled=calloc(budget,sizeof(*sampled));
     if(!accumulator||!sampled){code=GX2D_NOMEM;goto finished;}
-    code=compare_kernel(s,reference,derived,method,residual_sample,accumulator,&pass);if(code!=GX2D_OK)goto finished;
+    code=compare_kernel(s,reference,derived,method,residual_sample,accumulator,NULL);if(code!=GX2D_OK)goto finished;
     code=gx2d_display_result(accumulator,sampled,indices,budget,&count,&finite,&bounds);if(code!=GX2D_OK)goto finished;
     buffer=(residual_sample_buffer){out,indices,count,0};
-    code=compare_kernel(s,reference,derived,method,residual_collect,&buffer,&pass);
+    code=compare_kernel(s,reference,derived,method,residual_collect,&buffer,NULL);
     if(code==GX2D_OK){if(buffer.next!=count)code=GX2D_RANGE;else *returned=count;}
 finished:
     free(sampled);gx2d_display_destroy(accumulator);return code;
@@ -1467,13 +1474,18 @@ gx2d_status gx2d_grid_render(const gx2d_scene *s,gx2d_grid_segment *out,size_t c
     for(axis=0;axis<2;++axis){
         double spacing=axis?g->spacing_y:g->spacing_x,low=axis?local.y0:local.x0,high=axis?local.y1:local.x1;
         double first=floor(low/spacing),last=ceil(high/spacing),stride=1,index;
-        gx2d_point origin,offset;double pixels;size_t attempts=0;
+        double pixels,required,co=cos(g->angle),si=sin(g->angle);size_t attempts=0;
+        double world_per_pixel_x=(s->view.world.x1-s->view.world.x0)/(s->view.width-s->view.left-s->view.right);
+        double world_per_pixel_y=(s->view.world.y1-s->view.world.y0)/(s->view.height-s->view.top-s->view.bottom);
         if(!isfinite(first)||!isfinite(last)||!isfinite(last-first))return GX2D_RANGE;
-        gx2d_world_to_device(s,g->origin,&origin);
-        gx2d_world_to_device(s,grid_world(g,axis?(gx2d_point){0,spacing}:(gx2d_point){spacing,0}),&offset);
-        pixels=dist(origin,offset);
-        if(pixels<4||last-first>limit/2){stride=(double)g->major_interval;
-            if(last-first>limit/2)stride*=ceil((last-first)/((limit/2)*stride));
+        /* Perpendicular distance between parallel lines under the actual
+         * anisotropic viewport transform. Length of the transformed normal
+         * vector is wrong for a rotated grid with unequal axis scales. This
+         * derivative form also avoids cancellation at large grid origins. */
+        pixels=spacing/(axis?hypot(co*world_per_pixel_y,si*world_per_pixel_x):
+                                  hypot(si*world_per_pixel_y,co*world_per_pixel_x));
+        required=fmax(1,fmax(8/pixels,(last-first)/(limit/2-1)));
+        if(required>1){stride=(double)g->major_interval*ceil(required/g->major_interval);
             first=ceil(first/stride)*stride;}
         if(!isfinite(stride)||stride<=0)return GX2D_RANGE;
         for(index=first;index<=last&&attempts++<limit/2;){

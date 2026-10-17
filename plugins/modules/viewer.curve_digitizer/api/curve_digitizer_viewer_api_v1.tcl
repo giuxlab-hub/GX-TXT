@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 namespace eval ::GX::CurveDigitizer {
-    variable version 1.2.2
+    variable version 1.2.4
     variable moduleId viewer.curve_digitizer
     variable providerId curve_digitizer
     variable processChannel ""
@@ -125,13 +125,14 @@ proc ::GX::CurveDigitizer::_cleanSingleLine {value label} {
     return $value
 }
 proc ::GX::CurveDigitizer::_parseRows {text familyMode} {
-    set curveIds {}; set curveLabels {}; set indices {}; set xs {}; set ys {}; set families {}
+    set curveIds {}; set curveLabels {}; set indices {}; set xs {}; set ys {}; set families {};set pointIds {};set rowWidth 0
     set count 0
     foreach line [split $text "\n"] {
         if {$line eq ""} continue
         set fields [split $line "\t"]
-        if {[llength $fields] != 6} { error "Invalid Curve Digitalizer publication row." }
-        lassign $fields curve64 label64 index x y family
+        if {[llength $fields] ni {6 7}||($rowWidth&&[llength $fields]!=$rowWidth)} { error "Invalid Curve Digitalizer publication row." }
+        set rowWidth [llength $fields]
+        lassign $fields curve64 label64 index x y family point64
         set curveId [_b64d $curve64]
         set curveLabel [_b64d $label64]
         if {![string is integer -strict $index] || $index < 0} { error "Invalid point_index '$index'." }
@@ -139,10 +140,11 @@ proc ::GX::CurveDigitizer::_parseRows {text familyMode} {
         if {$familyMode && ![string is double -strict $family]} { error "Every curve must have a numeric family value before curve-family publication." }
         lappend curveIds $curveId; lappend curveLabels $curveLabel; lappend indices $index; lappend xs $x; lappend ys $y
         if {$familyMode} { lappend families $family }
+        if {$rowWidth==7} {set point [_b64d $point64];if {$point eq {}||[string length $point]>160||$point in $pointIds} {error {Publication needs unique bounded point identities}};lappend pointIds $point}
         incr count
     }
     if {$count == 0} { error "There are no calibrated digitized points to publish." }
-    return [dict create count $count curve_id $curveIds curve_label $curveLabels point_index $indices x $xs y $ys family_value $families]
+    return [dict create count $count curve_id $curveIds curve_label $curveLabels point_index $indices x $xs y $ys family_value $families point_id $pointIds]
 }
 proc ::GX::CurveDigitizer::_publicationVariable {writer id displayLabel unit role dtype coordRole} {
     # The public variable_id/name remain stable technical identities. Human
@@ -166,7 +168,7 @@ proc ::GX::CurveDigitizer::_schemaEnhance {datasetId fields} {
 }
 
 proc ::GX::CurveDigitizer::_publish {args} {
-    if {[llength $args] != 21} { error "Invalid Curve Digitalizer publication request." }
+    if {[llength $args] ni {21 22}} { error "Invalid Curve Digitalizer publication request." }
     lassign $args sessionToken documentId datasetId displayName mode xLabel xUnit xRole yLabel yUnit yRole familyLabel familyUnit familyRole sourceDataset sourceSha calibrationType xScale yScale configName rowsText
     if {$sessionToken ne [::GX::interactiveDocumentSessionToken]} { error "The GX-TXT Session changed; publication was not performed." }
     set session [_requireSession]
@@ -179,9 +181,15 @@ proc ::GX::CurveDigitizer::_publish {args} {
     set sourceInfo [_sourceInfo $sourceDataset]
     if {[string tolower [dict get $sourceInfo sha256]] ne [string tolower $sourceSha]} { error "The source image payload changed after this configuration was calibrated. Create a new configuration or explicitly reset it before publication." }
     set rows [_parseRows $rowsText $familyMode]
+    set review {}
+    if {[llength $args]==22} {
+        ::GX::modulePublicApiActivate viewer.curve_digitizer CURVE_DIGITIZER_COMPANION_API_v1
+        set review [::GX::CurveDigitizerCompanion::uncertaintyPublicationReview $documentId [lindex $args 21] $rows]
+        if {[dict get $review meaning summary coordinate_units] ne [list $xUnit $yUnit]||[dict get $review meaning context source_dataset_id] ne $sourceDataset||[dict get $review meaning context source_sha256] ne $sourceSha} {error {Publication units or image identity differ from the uncertainty review; declare explicit physical units (or 1)}}
+    }
     set contract [expr {$familyMode ? "curve_family.table" : "table.generic"}]
     set provenance "Curve Digitalizer configuration $documentId; source Dataset $sourceDataset; source SHA-256 $sourceSha; calibration $calibrationType; X scale $xScale; Y scale $yScale"
-    set definition [dict create dataset_id $datasetId contract $contract storage csv replace_owned 1 producer_version 1.2.2 source "Curve Digitalizer: $configName" provenance $provenance notes $displayName source_dataset_ids [list $sourceDataset]]
+    set definition [dict create dataset_id $datasetId contract $contract storage csv replace_owned 1 producer_version 1.2.4 source "Curve Digitalizer: $configName" provenance $provenance notes $displayName source_dataset_ids [list $sourceDataset]]
     set plan [::GX::datasetPublicationV2Prepare $session viewer.curve_digitizer $definition]
     set writer ""
     if {[catch {
@@ -197,8 +205,14 @@ proc ::GX::CurveDigitizer::_publish {args} {
         _publicationVariable $writer curve_id "Curve ID" "" identifier string auxiliary
         _publicationVariable $writer curve_label "Curve label" "" category string auxiliary
         _publicationVariable $writer point_index "Point index" "" index int64 auxiliary
+        if {[llength [dict get $rows point_id]]} {_publicationVariable $writer point_id "Point ID" "" identifier string auxiliary}
+        if {$review ne {}} {
+            foreach {id unit role} [list sigma_x $xUnit standard_uncertainty sigma_y $yUnit standard_uncertainty covariance_xy "($xUnit)*($yUnit)" covariance] {_publicationVariable $writer $id $id $unit $role float64 auxiliary}
+        }
         set appendData [dict create x [dict get $rows x] y [dict get $rows y] curve_id [dict get $rows curve_id] curve_label [dict get $rows curve_label] point_index [dict get $rows point_index]]
         if {$familyMode} { dict set appendData family_value [dict get $rows family_value] }
+        if {[llength [dict get $rows point_id]]} {dict set appendData point_id [dict get $rows point_id]}
+        if {$review ne {}} {set appendData [dict merge $appendData [dict get $review columns]]}
         set appended [::GX::datasetPublicationV2Append $writer row $appendData]
         if {$appended != $n} { error "Dataset Publication API appended $appended rows; expected $n." }
         set result [::GX::datasetPublicationV2Finalize $writer]
@@ -213,12 +227,16 @@ proc ::GX::CurveDigitizer::_publish {args} {
         curve_label [dict create label "Curve label" unit ""] \
         point_index [dict create label "Point index" unit ""]]
     if {$familyMode} { dict set schemaFields family_value [dict create label $familyLabel unit $familyUnit] }
+    if {[llength [dict get $rows point_id]]} {dict set schemaFields point_id [dict create label {Point ID} unit {}]}
+    if {$review ne {}} {
+        foreach {id label unit} [list sigma_x {X standard uncertainty} $xUnit sigma_y {Y standard uncertainty} $yUnit covariance_xy {Within-point XY covariance} "($xUnit)*($yUnit)"] {dict set schemaFields $id [dict create label $label unit $unit]}
+    }
     _schemaEnhance $datasetId $schemaFields
 
     set metadata [dict create \
         dataset.display_name $displayName \
         curve_digitizer.plugin_id viewer.curve_digitizer \
-        curve_digitizer.plugin_version 1.2.2 \
+        curve_digitizer.plugin_version 1.2.4 \
         curve_digitizer.configuration_document_id $documentId \
         curve_digitizer.configuration_name $configName \
         curve_digitizer.source_dataset_id $sourceDataset \
@@ -235,6 +253,10 @@ proc ::GX::CurveDigitizer::_publish {args} {
     if {$familyMode} {
         dict set metadata curve_digitizer.family_label $familyLabel
         dict set metadata curve_digitizer.family_unit $familyUnit
+    }
+    if {$review ne {}} {
+        set binding [dict create schema gxtxt.digitizer_publication_binding.v1 dataset_id $datasetId payload_sha256 [dict get $result sha256] point_count [dict get $rows count] x_variable_id x y_variable_id y sigma_x_variable_id sigma_x sigma_y_variable_id sigma_y point_id_variable_id point_id resources [dict get $review resources]]
+        dict set metadata curve_digitizer.uncertainty_binding $binding
     }
     ::GX::datasetMetadataWrite $session $datasetId $metadata
     return [join [list [dict get $result dataset_id] [dict get $result path] [dict get $result sha256] $contract] "\t"]
@@ -267,6 +289,17 @@ proc ::GX::CurveDigitizer::_handleRequest {channel line} {
             set payload [_documentDelete [lindex $args 0] [lindex $args 1]]
         }
         PUBLISH { set payload [_publish {*}$args] }
+        UNCERTAINTY_REVIEW {
+            if {[llength $args]!=2} {error {Uncertainty review requires a saved configuration and its SHA256}}
+            ::GX::modulePublicApiActivate viewer.curve_digitizer CURVE_DIGITIZER_COMPANION_API_v1
+            set payload [::GX::CurveDigitizerCompanion::uncertaintyReport {*}$args]
+        }
+        PUBLISH_COVARIANCE {
+            if {[llength $args]!=3} {error {Covariance publication requires source Dataset, output Dataset and axis}}
+            ::GX::modulePublicApiActivate viewer.curve_digitizer CURVE_DIGITIZER_COMPANION_API_v1
+            set result [::GX::CurveDigitizerCompanion::publishCovariance {*}$args]
+            set payload "Published [dict get $result dataset_id]: covariance uses every original point in the same order on both axes."
+        }
         default { error "Unknown Curve Digitalizer backend request '$command'." }
     }
     return [list $requestId $payload]
@@ -444,7 +477,7 @@ proc ::GX::CurveDigitizer::_launch {} {
     set hostLogPath [file join $logDir curve_digitizer_host.log]
     set pythonLogPath [file join $logDir curve_digitizer_python.log]
     set diagnosticShown 0; set processReady 0; set processExitReported 0
-    _log "--- Curve Digitalizer 1.2.2; Tcl [info patchlevel]; platform=$::tcl_platform(platform) ---"
+    _log "--- Curve Digitalizer 1.2.4; Tcl [info patchlevel]; platform=$::tcl_platform(platform) ---"
     set python [_pythonExecutable]
     _log "Python command: $python"
     _pythonDependenciesCheck $python

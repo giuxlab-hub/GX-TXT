@@ -1,0 +1,67 @@
+function y=registered_response(u,p,spec)
+  bytes=uint8(sscanf(spec.source_hex,'%2x').');
+  if(!strcmp(hash('sha256',char(bytes)),spec.source_sha256)),error('Retained executable source SHA mismatch');endif
+  if(isempty(u)),y=zeros(0,1);return;endif
+  directory=tempname();[ok,msg]=mkdir(directory);if(!ok),error('%s',msg);endif
+  unwind_protect
+    writebytes(fullfile(directory,'source'),bytes);
+    f=fopen(fullfile(directory,'parameters.bin'),'wb');fwrite(f,p,'double',0,'ieee-le');fclose(f);
+    f=fopen(fullfile(directory,'query.bin'),'wb');fwrite(f,u,'double',0,'ieee-le');fclose(f);
+    if(strcmp(spec.language,'Python'))
+      runner=strjoin({
+        'import sys'
+        'from pathlib import Path'
+        'import numpy as np'
+        'root=Path(sys.argv[1]);entry=sys.argv[2]'
+        'ns={"__name__":"__independent_registered_model__","__file__":str(root/"source")}'
+        'exec(compile((root/"source").read_bytes(),str(root/"source"),"exec"),ns)'
+        'p=np.fromfile(root/"parameters.bin",dtype="<f8").reshape(-1,1)'
+        'x=np.fromfile(root/"query.bin",dtype="<f8").reshape(-1,1)'
+        'y=np.asarray(ns[entry](p,x))'
+        'if y.shape!=x.shape or y.dtype.kind not in "fiu" or np.iscomplexobj(y) or not np.all(np.isfinite(y)):'
+        ' raise ValueError("Registered model must return finite real Nx1 responses")'
+        'if y.dtype.kind in "iu" and np.any(np.abs(y.astype(np.longdouble))>2**53):'
+        ' raise ValueError("Integer model response is not exactly representable in binary64")'
+        'np.asarray(y,dtype="<f8").tofile(root/"response.bin")'
+      },sprintf('\n'));
+      path=fullfile(directory,'runner.py');writebytes(path,unicode2native(runner,'UTF-8'));
+      command=['python3 -I ',shellquote(path),' ',shellquote(directory),' ',shellquote(spec.entrypoint)];
+    else
+      writebytes(fullfile(directory,'retained_callable_source.m'),[uint8(sprintf('1;\n')),bytes]);
+      runner=strjoin({
+        'args=argv();root=args{1};entry=args{2};'
+        'builtin("source",fullfile(root,"retained_callable_source.m"));'
+        'f=fopen(fullfile(root,"parameters.bin"),"rb");p=fread(f,Inf,"double",0,"ieee-le");fclose(f);'
+        'f=fopen(fullfile(root,"query.bin"),"rb");x=fread(f,Inf,"double",0,"ieee-le");fclose(f);'
+        'y=feval(entry,p,x);'
+        'if(!isnumeric(y)||!isreal(y)||!isequal(size(y),size(x))||any(!isfinite(y(:)))),error("Registered model must return finite real Nx1 responses");endif'
+        'if(isa(y,"uint64")),bad_integer=any(y(:)>uint64(2^53));elseif(isinteger(y)),bad_integer=any(int64(y(:))>int64(2^53)|int64(y(:))<-int64(2^53));else bad_integer=false;endif'
+        'if(bad_integer),error("Integer model response is not exactly representable in binary64");endif'
+        'f=fopen(fullfile(root,"response.bin"),"wb");n=fwrite(f,double(y),"double",0,"ieee-le");fclose(f);'
+        'if(n!=numel(x)),error("Incomplete model response");endif'
+      },sprintf('\n'));
+      path=fullfile(directory,'runner.m');writebytes(path,unicode2native(runner,'UTF-8'));
+      command=['octave-cli --quiet --no-gui --no-init-file --no-site-file ',shellquote(path),' ',shellquote(directory),' ',shellquote(spec.entrypoint)];
+    endif
+    logpath=fullfile(directory,'execution.log');
+    status=system(['timeout --signal=TERM --kill-after=2s 120s ',command,' >',shellquote(logpath),' 2>&1']);
+    if(status!=0)
+      detail='';f=fopen(logpath,'rb');if(f>=0),detail=char(fread(f,8192,'*uint8').');fclose(f);endif
+      error('Independent model execution failed (status %d): %s',status,detail);
+    endif
+    info=dir(fullfile(directory,'response.bin'));
+    if(isempty(info)||info.bytes!=8*numel(u)),error('Independent model returned a different response shape');endif
+    f=fopen(fullfile(directory,'response.bin'),'rb');y=fread(f,Inf,'double',0,'ieee-le');fclose(f);
+    if(any(!isfinite(y))),error('Independent model returned nonfinite responses');endif
+  unwind_protect_cleanup
+    if(exist(directory,'dir')),rmdir(directory,'s');endif
+  end_unwind_protect
+endfunction
+function writebytes(path,bytes)
+  f=fopen(path,'wb');if(f<0),error('Cannot create private independent model resource');endif
+  unwind_protect,n=fwrite(f,bytes,'uint8');if(n!=numel(bytes)),error('Incomplete independent model resource');endif
+  unwind_protect_cleanup,fclose(f);end_unwind_protect
+endfunction
+function q=shellquote(value)
+  q=[char(39),strrep(value,char(39),[char(39),char(34),char(39),char(34),char(39)]),char(39)];
+endfunction

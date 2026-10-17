@@ -1,4 +1,48 @@
-# plot.dataset 3.14.0
+## 0.9.8.10-dev-097
+
+Reuse the existing family grouping renderer in stacked panels, including right Y
+axes and explicit styles. Preserve exact source rows and prevent cross-family
+line segments. Single-panel grouping and ordinary traces retain their contracts.
+
+# plot.dataset 3.18.0 / dev097
+
+Integrate persistent Dataset coordinate presentation through public CORE snapshots.
+Canonical preparation and detached source identity remain retained.
+For narrow log X ranges, label visible frequency subdivisions when automatic
+decade ticks provide fewer than three labels. Reapply the presentation policy after
+coordinate view limits; saved custom ticks and explicit major steps take priority.
+Repeated grid application keeps one set of minor lines.
+Share explicit unit-suffix conversion between 2D, 3D and colorbar labels. The
+3D Native preview export receives the same corrected visible axis labels.
+
+# plot.dataset 3.17.0 / dev097
+
+Consume canonical rank-two Y-by-X grids through public managed hyperslabs, with
+strict dimension/unit/axis checks and bounded reads. Validate every source cell;
+refuse holes and unsafe integer narrowing. Display stride retains exact physical
+coordinates and original indices. Preserve the existing XYZ table reader.
+Align module/package and cache producer/consumer versions; APIv1 is unchanged.
+
+# plot.dataset 3.16.0 / dev097
+
+Preserve exact typed integer members in both ordinary filtered and two-pass grouped
+preparation. Share CORE's exact integer conversion, and invalidate prior render
+and preparation caches through matching producer/consumer versions. Scientific
+Dataset, Series, graph and Workspace identities remain unchanged.
+
+# plot.dataset 3.15.0 / dev097
+
+Optional uncertainty no longer removes finite central observations. Finite-run
+identities prevent reduced bands from bridging unavailable bounds in single and
+multiple panels. Streaming, filtered batches, CSV compatibility, source-row
+selection, ordering and cache fingerprints share this behavior. Align module,
+package and render-cache producer/consumer versions; preserve scientific IDs.
+
+Scalar-width and interval bars honor source-unit baselines after display/level
+conversion. Final axis scales determine the positive log-Y fallback; independent
+series baselines remain independent across panels. Auto uses display zero.
+
+## 3.14.0
 
 Exact selected source rows and continuity through PlotSpec/Variant rendering; backend-neutral Table Stream v3 for HDF5 3D.
 
@@ -445,4 +489,29 @@ SPDX-License-Identifier: GPL-3.0-or-later
 - retains categorical Family text unchanged;
 - relies on v0.9.4 framework contract-specialization matching for future `table.generic` descendants.
 
-Additional Native3D presentation support includes calibrated axes, scalar-bar controls, viewport interaction and high-resolution Dataset publication.
+Dev087 same-version manual correction: canvas eligibility, native calibrated axes/grids/scalar bar, flat-cell fidelity, roll, shared enlarged viewport and explicit high-resolution Dataset publication.
+
+## Retained release notes from the module overview
+
+Version 3.10.0 made `PLOT_DATASET_API_v3` the complete current facade for
+PlotSpec v2 operations, legacy graph lifecycle, detached snapshots and
+interactive 3D. A consumer activates only v3. A persistent graph/Variant can
+create multiple independent Viewer representations. Each records its source
+fingerprint; changes report OUT OF SYNC until explicit Sync, and deleting the
+source reports SOURCE MISSING without deleting an existing view. The Native
+3D Viewer panel lists compatible graph/Variant identities alongside imported
+3D Datasets. PlotSpec persistence remains `PLOT_DATASET_PLOTSPEC_v2`.
+
+Version 3.9.0 adds public `PLOT_DATASET_3D_API_v1`: a configured persistent
+XYZ Plot Variant can be rendered interactively by the shared Native 3D viewer.
+Plot Dataset interprets the Dataset and emits Session-owned scene artifacts;
+the viewer renders them. Seven existing XYZ types are supported. Static plots
+and public APIs v1/v2/v3 remain available. See `PLOT_DATASET_3D_API_v1.md`.
+
+plot.dataset 3.8.0 adds [Plot Dataset API v3](PLOT_DATASET_API_v3.md) for detached HDF5 scientific snapshots and exact source-row indexes for displayed 2D points. Public APIs v1 and v2 remain available without changed consumer semantics. The existing PlotSpec v2 supports numeric 2D family grouping, reversible axis direction, Dataset-bound bar intervals, histogram and box/whisker plots, stable Graph Series identity, layouts, variants and 3D paths. It targets GX-TXT 0.9.7.56 or newer.
+
+Release 3.3.5 reconciles persistent PlotSpec presentation against current Graph Series before runtime generation. Removed scientific series are not revived from provider state, newly committed stable IDs receive neutral presentation in the first existing panel, and surviving panel/axis/style state is preserved. Missing, incompatible or unreadable derived runtime/cache is rebuilt by the normal rerender path without deleting variants. Explicit render/rerender operates on the requested graph without changing persistent USE, variant serialization preserves the base runtime, and summaries are regenerated for every selected graph.
+
+Release 3.3.4 fixes the temporal-X runtime-unit contract. Canonical Dataset API v2 materializes HMS `elapsed_time` values as numeric seconds; `plot.dataset` now normalizes every temporal 2-D X coordinate to seconds during preparation and performs `min`/`h`/`day` conversion only for display. The original declared unit is retained as source metadata. Prepared-cache versioning was bumped so older mismatched caches are rejected.
+
+Release 3.3.3 made the multi-panel renderer follow that working single-panel path for shared X and Y Right: X uses the merged PlotSpec X authority and normal axis-label resolver, right overlays are created through CORE `gxtxt_plot_dual_y_axes()`, all primary/right axes share one linked X group, and stacked margins/gaps grow from the actual native text/tick extents. That release did not change global elapsed-time parsing or single-panel behavior.

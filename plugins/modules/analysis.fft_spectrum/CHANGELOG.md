@@ -1,3 +1,9 @@
+# 2.3.0 — dev097 statistical ownership
+
+- Delegate the retained estimator to public Numeric and interpret once through CORE.
+- Preserve scientific Dataset/Variable identities, add captured metadata and validated reports.
+-
+
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 # Changelog — analysis.fft_spectrum
 

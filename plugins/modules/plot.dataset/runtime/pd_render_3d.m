@@ -1,14 +1,15 @@
 function pd_render_3d(outdir,cfg,P,graph,file_name,preview_dir)
   if(nargin<6),preview_dir='';endif
+  lifetime=[];if(any(cellfun(@(key) isfield(P.(key),'coordinate_context'),{'x_meta','y_meta','z_meta','color_meta'}))),lifetime=gxtxt_presentation_scope_v1();endif
   display_groups={};
 % Render framework-native XYZ/C data using Plot 3D API v2.
 % SPDX-License-Identifier: GPL-3.0-or-later
   pcfg=gxtxt_plot_config();groups=P.groups;ng=numel(groups);ptype=P.plot_type;
   xcells=cell(1,ng);ycells=cell(1,ng);zcells=cell(1,ng);for g=1:ng,xcells{g}=groups(g).x;ycells{g}=groups(g).y;zcells{g}=groups(g).z;endfor
   xmode=axis_mode(cfg,graph,'x');ymode=axis_mode(cfg,graph,'y');zmode=axis_mode(cfg,graph,'z');
-  [xdu,~]=pd_common_display_unit(xcells,repmat({P.x_meta.unit},1,ng),xmode,'X axis');
-  [ydu,~]=pd_common_display_unit(ycells,repmat({P.y_meta.unit},1,ng),ymode,'Y axis');
-  [zdu,~]=pd_common_display_unit(zcells,repmat({P.z_meta.unit},1,ng),zmode,'Z axis');
+  [xdu,~]=pd_common_display_unit(xcells,repmat({P.x_meta},1,ng),xmode,'X axis');
+  [ydu,~]=pd_common_display_unit(ycells,repmat({P.y_meta},1,ng),ymode,'Y axis');
+  [zdu,~]=pd_common_display_unit(zcells,repmat({P.z_meta},1,ng),zmode,'Z axis');
 
   zlevel=gxtxt_level_scale_config(cfg,graph,'z');zlevel_label='';
   color_enabled=false;color_name='';color_meta=struct('unit','');ccells={};
@@ -18,7 +19,7 @@ function pd_render_3d(outdir,cfg,P,graph,file_name,preview_dir)
     color_enabled=true;color_name=P.z_name;color_meta=P.z_meta;ccells=zcells;
   endif
   cdu='';if(color_enabled)
-    cmode=axis_mode(cfg,graph,'c');[cdu,~]=pd_common_display_unit(ccells,repmat({color_meta.unit},1,ng),cmode,'Color');
+    cmode=axis_mode(cfg,graph,'c');[cdu,~]=pd_common_display_unit(ccells,repmat({color_meta},1,ng),cmode,'Color');
     if(strcmp(ptype,'contour3')&&!strcmp(normunit(cdu),normunit(zdu)))
       error('plot.dataset: contour3 uses Z itself as color; Z display unit (%s) and Color display unit (%s) must match',zdu,cdu);
     endif
@@ -39,11 +40,11 @@ function pd_render_3d(outdir,cfg,P,graph,file_name,preview_dir)
   [family_labels,family_unit]=family_catalog_labels(cfg,P);
   handles=[];labels={};xf=1;yf=1;zf=1;cf=1;
   for g=1:ng
-    [xd,~,xfg]=pd_convert_display(groups(g).x,P.x_meta.unit,xdu,'X');[yd,~,yfg]=pd_convert_display(groups(g).y,P.y_meta.unit,ydu,'Y');[zd,~,zfg]=pd_convert_display(groups(g).z,P.z_meta.unit,zdu,'Z');
+    [xd,~,xfg]=pd_convert_display(groups(g).x,P.x_meta,xdu,'X');[yd,~,yfg]=pd_convert_display(groups(g).y,P.y_meta,ydu,'Y');[zd,~,zfg]=pd_convert_display(groups(g).z,P.z_meta,zdu,'Z');
     zlinear=zd;[zd,zlevel_label]=gxtxt_level_scale_apply(zd,zdu,zlevel);
     if(g==1),xf=xfg;yf=yfg;zf=zfg;endif
     cd=[];if(color_enabled)
-      if(strcmp(ptype,'contour3')),cd=zlinear;cfgf=zfg;else [cd,~,cfgf]=pd_convert_display(ccells{g},color_meta.unit,cdu,'Color');endif
+      if(strcmp(ptype,'contour3')),cd=zlinear;cfgf=zfg;else [cd,~,cfgf]=pd_convert_display(ccells{g},color_meta,cdu,'Color');endif
       if(g==1),cf=cfgf;endif
     endif
     if(any(strcmp(ptype,{'line3','scatter3','trisurf'}))&&strcmp(order_mode,'sort_x'))
@@ -89,7 +90,7 @@ function pd_render_3d(outdir,cfg,P,graph,file_name,preview_dir)
 
   title_txt=presentation_value(cfg,graph,'title',gxtxt_ini_get(cfg,['plot.' graph '.title'],'auto'));xl=presentation_value(cfg,graph,'x_label',gxtxt_ini_get(cfg,['plot.' graph '.x_label'],'auto'));yl=presentation_value(cfg,graph,'y_label',gxtxt_ini_get(cfg,['plot.' graph '.y_label'],'auto'));zl=presentation_value(cfg,graph,'z_label',gxtxt_ini_get(cfg,['plot.' graph '.z_label'],'auto'));
   if(is_auto(title_txt)),title_txt=sprintf('%s vs %s / %s',display_name(P.z_name),display_name(P.x_name),display_name(P.y_name));endif
-  if(is_auto(xl)),xl=axis_label(display_name(P.x_name),xdu);endif;if(is_auto(yl)),yl=axis_label(display_name(P.y_name),ydu);endif;if(is_auto(zl)),zl=axis_label(display_name(P.z_name),zdu);endif;if(!isempty(zlevel_label)),zl=[zl ' (' zlevel_label ')'];endif
+  if(is_auto(xl)),xl=axis_label(display_name(P.x_name),xdu);endif;if(is_auto(yl)),yl=axis_label(display_name(P.y_name),ydu);endif;if(is_auto(zl)),zl=axis_label(display_name(P.z_name),zdu);endif;xl=pd_display_axis_label(xl,P.x_meta.unit,xdu);yl=pd_display_axis_label(yl,P.y_meta.unit,ydu);zl=pd_display_axis_label(zl,P.z_meta.unit,zdu);if(!isempty(zlevel_label)),zl=[zl ' (' zlevel_label ')'];endif
   xlabel(ax,xl,'interpreter','none');ylabel(ax,yl,'interpreter','none');zlabel(ax,zl,'interpreter','none');title(ax,title_txt,'interpreter','none');
   gxtxt_plot_apply_axes3d(ax,pcfg);
   if(any(strcmp(ptype,{'surface','mesh','contour3','trisurf'})))
@@ -105,13 +106,20 @@ function pd_render_3d(outdir,cfg,P,graph,file_name,preview_dir)
     gy=strtrim(gxtxt_ini_get(cfg,['axis.' graph '.ygrid'],''));
     if(isempty(gx)&&isempty(gy)),grid(ax,'off');endif
   endif
+  pd_coordinate_axis_metadata(ax,'x',P.x_meta,xdu);pd_coordinate_axis_metadata(ax,'y',P.y_meta,ydu);
+  pd_coordinate_view(ax,'x',{P.x_meta},xdu,cfg,graph,'x');pd_coordinate_view(ax,'y',{P.y_meta},ydu,cfg,graph,'y');
+  if(!strcmp(ptype,'heatmap'))
+    pd_coordinate_axis_metadata(ax,'z',P.z_meta,zdu);
+    pd_coordinate_view(ax,'z',{P.z_meta},zdu,cfg,graph,'z',struct(),'',zlevel);
+  endif
   if(color_enabled)
+    pd_coordinate_axis_metadata(ax,'c',color_meta,cdu);
     cs=gxtxt_plot_color_settings(cfg,graph,pcfg);
     cb_choice=strtrim(gxtxt_ini_get(cfg,['axis.' graph '.colorbar_visible'],'inherit'));
     if(any(strcmp(ptype,{'scatter3','surface','mesh','contour3','trisurf','heatmap'}))&&(isempty(cb_choice)||strcmpi(cb_choice,'inherit')))
       cs.colorbar_visible=true;
     endif
-    auto_cb=axis_label(display_name(color_name),cdu);if(!isempty(strtrim(cs.colorbar_label))),auto_cb=cs.colorbar_label;endif;gxtxt_plot_apply_color_settings(ax,cs,auto_cb);
+    auto_cb=axis_label(display_name(color_name),cdu);if(!isempty(strtrim(cs.colorbar_label))),auto_cb=pd_display_axis_label(cs.colorbar_label,color_meta.unit,cdu);endif;gxtxt_plot_apply_color_settings(ax,cs,auto_cb);
     if(cs.colorbar_visible&&is_auto(presentation_value(cfg,graph,'z_label',gxtxt_ini_get(cfg,['plot.' graph '.z_label'],'auto'))))
       zlabel(ax,'');
     endif
@@ -170,7 +178,7 @@ function [labels,du]=family_catalog_labels(cfg,P)
   keys={P.groups.key};labels=keys;du='';if(isempty(P.family_name)),return;endif
   nums=nan(numel(keys),1);numeric=true;for i=1:numel(keys),nums(i)=str2double(keys{i});if(!isfinite(nums(i))),numeric=false;break;endif;endfor
   if(!numeric||isempty(strtrim(P.family_meta.unit))),return;endif
-  mode=strtrim(gxtxt_ini_get(cfg,'config.family_display_unit','auto'));[du,~]=pd_common_display_unit({nums},{P.family_meta.unit},mode,'Family');[vals,~,~]=pd_convert_display(nums,P.family_meta.unit,du,'Family');for i=1:numel(keys),labels{i}=sprintf('%g',vals(i));endfor
+  mode=strtrim(gxtxt_ini_get(cfg,'config.family_display_unit','auto'));[du,~]=pd_common_display_unit({nums},{P.family_meta},mode,'Family');[vals,~,~]=pd_convert_display(nums,P.family_meta,du,'Family');for i=1:numel(keys),labels{i}=sprintf('%g',vals(i));endfor
 endfunction
 function s=family_label(key,g,labels,P,cfg,graph,unit),v=labels{g};if(!isempty(unit)),v=[v ' ' unit];endif;prefix=strtrim(gxtxt_ini_get(cfg,['plot.' graph '.family_label_prefix'],'auto'));if(is_auto(prefix)),prefix=display_name(P.family_name);endif;if(isempty(prefix)),s=v;else s=[prefix '=' v];endif;endfunction
 function s=series_label(name,unit),s=axis_label(display_name(name),unit);endfunction

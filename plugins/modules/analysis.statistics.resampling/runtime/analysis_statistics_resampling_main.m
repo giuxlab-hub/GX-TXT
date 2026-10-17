@@ -1,7 +1,7 @@
 function analysis_statistics_resampling_main(args,framework_root)
 % Seeded bootstrap and permutation workflows through public NUMERIC_API.
 % SPDX-License-Identifier: GPL-3.0-or-later
-  module_id='analysis.statistics.resampling';version='1.0.1';
+  module_id='analysis.statistics.resampling';version='1.1.0';
   config_path=argument(args,'--config','');
   if(isempty(config_path)),error('%s: --config is required',module_id);endif
   cfg=gxtxt_ini_read(config_path);
@@ -111,24 +111,16 @@ function analysis_statistics_resampling_main(args,framework_root)
       gxtxt_progress_update(last,reps,'compute',sprintf('Completed %d of %d seeded replicates',last,reps));
     endfor
     if(any(!isfinite(distribution))),error('%s: resampled statistic is nonfinite',module_id);endif
-    lower_bound=NaN;upper_bound=NaN;p_value=NaN;extreme_count=int64(0);
-    if(strcmp(method,'bootstrap'))
-      q=gxtxt_numeric_v1('quantiles',distribution,[(1-confidence)/2;(1+confidence)/2]);
-      lower_bound=q.quantiles(1);upper_bound=q.quantiles(2);
-      inference='percentile_confidence_interval';
-    else
-      tolerance=32*eps(max(1,abs(observed)));
-      if(strcmp(alternative,'greater')),extreme_count=int64(sum(distribution>=observed-tolerance));
-      elseif(strcmp(alternative,'less')),extreme_count=int64(sum(distribution<=observed+tolerance));
-      else extreme_count=int64(sum(abs(distribution)>=abs(observed)-tolerance));endif
-      p_value=(double(extreme_count)+1)/(reps+1);
-      inference='monte_carlo_permutation_p_plus_one';
-    endif
+    raw=gxtxt_numeric_v1('resampling_summary',distribution,observed,struct('method',method,'alternative',alternative,'confidence',confidence,'n_x',nx,'n_y',ny));
+    statistics=gxtxt_statistics_v1('from_numeric','math.numeric.resampling','resampling_summary',raw,struct('y_unit',first_unit),struct(), ...
+      struct('producer',module_id,'source_dataset_id',source_id,'first_variable_id',first_id,'second_variable_id',second_id,'seed',seed,'generator','park_miller_16807_v1','statistic',statistic));
+    V=gxtxt_statistics_values_v1(statistics);
+    lower_bound=V.ci_lower;upper_bound=V.ci_upper;p_value=V.p_value;extreme_count=int64(raw.extreme_count);inference=raw.inference;
     opts=struct('storage','auto','replace_owned',true,'producer_version',version, ...
       'source','GX-TXT Resampling Inference', ...
       'provenance',sprintf('%s %s; source=%s; first=%s; second=%s; selection=%s; method=%s; statistic=%s; alternative=%s; confidence=%.12g; replicates=%d; seed=%d; nonfinite=%s; generator=park_miller_16807_v1; inference=%s',module_id,version,source_id,first_id,second_id,selection_id(selection),method,statistic,alternative,confidence,reps,seed,policy,inference), ...
       'notes','Public seeded resample_indices batches; complete results published only after all iterations.');
-    opts.source_dataset_ids={source_id};opts.source_variable_ids=ids;
+    opts.source_dataset_ids={source_id};opts.source_variable_ids=ids;opts.statistical_results=struct('resampling',statistics);
     gxtxt_progress_stage('publish','Publishing replicate and summary Datasets','indeterminate');
     publish_table(session,module_id,[prefix '.distribution'],'replicate',opts,{ ...
       'replicate','Replicate number','int64','','index',int64((1:reps)'); ...
@@ -150,8 +142,8 @@ function analysis_statistics_resampling_main(args,framework_root)
       'ci_upper','Percentile interval upper','float64',first_unit,'derived',upper_bound; ...
       'p_value','Permutation p-value','float64','1','derived',p_value; ...
       'extreme_count','Extreme permutation count','int64','','count',extreme_count});
-    write_summary(fullfile(outdir,'resampling_summary.ini'),source_id,first_id,second_id,selection,method,statistic,alternative,confidence,reps,seed,policy,inference,n_input_x,n_input_y,nx,ny,observed,lower_bound,upper_bound,p_value,extreme_count,prefix);
-    write_report(fullfile(outdir,'resampling_report.txt'),source_id,first_id,second_id,first_unit,method,statistic,alternative,reps,seed,nx,ny,observed,lower_bound,upper_bound,p_value);
+    write_summary(fullfile(outdir,'resampling_summary.ini'),source_id,first_id,second_id,selection,method,statistic,alternative,confidence,reps,seed,policy,inference,n_input_x,n_input_y,nx,ny,observed,lower_bound,upper_bound,p_value,extreme_count,prefix,statistics);
+    write_report(fullfile(outdir,'resampling_report.txt'),source_id,first_id,second_id,first_unit,method,statistic,alternative,reps,seed,nx,ny,observed,lower_bound,upper_bound,p_value,statistics);
     fid=fopen(fullfile(outdir,'automatic_graphs.ini'),'w');if(fid<0),error('%s: cannot write graph manifest',module_id);endif
     fprintf(fid,'[automatic_graphs]\ncount=0\nprovider=plot.dataset\n');fclose(fid);
     gxtxt_progress_complete('done',sprintf('Published %d reproducible replicates',reps));
@@ -218,21 +210,25 @@ function publish_table(session,module_id,dataset_id,dim,opts,variables)
     rethrow(err);
   end_try_catch
 endfunction
-function write_summary(path,source_id,first_id,second_id,selection,method,statistic,alternative,confidence,reps,seed,policy,inference,n_input_x,n_input_y,nx,ny,observed,lo,hi,p,extreme,prefix)
+function write_summary(path,source_id,first_id,second_id,selection,method,statistic,alternative,confidence,reps,seed,policy,inference,n_input_x,n_input_y,nx,ny,observed,lo,hi,p,extreme,prefix,statistics)
   fid=fopen(path,'w');if(fid<0),error('analysis.statistics.resampling: cannot write summary');endif
   unwind_protect
-    fprintf(fid,'[meta]\nmodule_id=analysis.statistics.resampling\nmodule_version=1.0.1\napi=NUMERIC_API_v1\n');
+    fprintf(fid,'[meta]\nmodule_id=analysis.statistics.resampling\nmodule_version=1.1.0\napi=NUMERIC_API_v1\n');
     fprintf(fid,'\n[source]\ndataset_id=%s\nfirst_variable_id=%s\nsecond_variable_id=%s\nselection_id=%s\n',source_id,first_id,second_id,selection_id(selection));
-    fprintf(fid,'\n[analysis]\nmethod=%s\nstatistic=%s\nalternative=%s\nconfidence=%.17g\nreplicates=%d\nseed=%d\nnonfinite_policy=%s\ngenerator=park_miller_16807_v1\ninference=%s\nn_input_first=%d\nn_input_second=%d\nn_valid_first=%d\nn_valid_second=%d\nobserved=%.17g\nci_lower=%.17g\nci_upper=%.17g\np_value=%.17g\nextreme_count=%d\n',method,statistic,alternative,confidence,reps,seed,policy,inference,n_input_x,n_input_y,nx,ny,observed,lo,hi,p,extreme);
+    fprintf(fid,'\n[analysis]\nmethod=%s\nstatistic=%s\nalternative=%s\nconfidence=%.17g\nreplicates=%d\nseed=%d\nnonfinite_policy=%s\ngenerator=park_miller_16807_v1\ninference=%s\nn_input_first=%d\nn_input_second=%d\nn_valid_first=%d\nn_valid_second=%d\nextreme_count=%d\n',method,statistic,alternative,confidence,reps,seed,policy,inference,n_input_x,n_input_y,nx,ny,extreme);
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',statistics,struct('observed','test_estimate','ci_lower','ci_lower','ci_upper','ci_upper','p_value','p_value')));
     fprintf(fid,'\n[output]\nprefix=%s\n',prefix);
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect
 endfunction
-function write_report(path,source_id,first_id,second_id,unit,method,statistic,alternative,reps,seed,nx,ny,observed,lo,hi,p)
+function write_report(path,source_id,first_id,second_id,unit,method,statistic,alternative,reps,seed,nx,ny,observed,lo,hi,p,statistics)
   fid=fopen(path,'w');if(fid<0),error('analysis.statistics.resampling: cannot write report');endif
   unwind_protect
-    fprintf(fid,'GX-TXT Resampling Inference\nSource Dataset: %s\nFirst variable: %s\nSecond variable: %s\nMethod: %s\nStatistic: %s\nAlternative: %s\nReplicates: %d\nSeed: %d\nValid sample sizes: %d, %d\nObserved: %.12g %s\nPercentile interval: [%.12g, %.12g] %s\nPermutation p-value: %.12g\n',source_id,first_id,second_id,method,statistic,alternative,reps,seed,nx,ny,observed,unit,lo,hi,unit,p);
+    fprintf(fid,'GX-TXT Resampling Inference\nSource Dataset: %s\nFirst variable: %s\nSecond variable: %s\nMethod: %s\nStatistic: %s\nAlternative: %s\nReplicates: %d\nSeed: %d\nValid sample sizes: %d, %d\n',source_id,first_id,second_id,method,statistic,alternative,reps,seed,nx,ny);
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('report',statistics,{'test_estimate','ci_lower','ci_upper','bootstrap_standard_error','p_value','extreme_count'}));
+    fprintf(fid,'Conditional assumptions:\n');for assumption=statistics.assumptions(:)',fprintf(fid,'- %s\n',assumption{1});endfor
+
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect

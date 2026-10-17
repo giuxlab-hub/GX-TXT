@@ -152,6 +152,10 @@ proc ::GX::datasetCatalogTransaction {command args} {
 rename ::GX::loadDatasetRegistry ::GX::loadDatasetRegistry_before_catalog
 proc ::GX::loadDatasetRegistry {session} {
     if {![datasetAuthorityActive $session]} {
+        if {[datasetAuthorityReadUnchanged $session]} {
+            datasetCatalogObserve $session
+            return [datasetRegistryIds]
+        }
         return [datasetAuthorityTransaction $session ::GX::loadDatasetRegistry $session]
     }
     set result [loadDatasetRegistry_before_catalog $session]

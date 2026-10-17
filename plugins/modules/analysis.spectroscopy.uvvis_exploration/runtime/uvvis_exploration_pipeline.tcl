@@ -8,7 +8,7 @@ set runtimeIni [file normalize [lindex $argv 1]]
 
 namespace eval ::UVExplore {
     variable moduleId analysis.spectroscopy.uvvis_exploration
-    variable moduleVersion 1.0.2
+    variable moduleVersion 1.0.3
 }
 proc ::UVExplore::datasetProvenance {session datasetId} {
     set record [::GX::sessionInspectionDataset $datasetId $session]
@@ -109,15 +109,7 @@ proc ::UVExplore::process {spectrum blank cfg} {
     }
     set norm [choice $cfg normalization {none unit_vector mean_center_unit_vector} none]
     if {$norm ne "none"} {
-        if {$norm eq "mean_center_unit_vector"} {
-            set sum 0.0; foreach v $y {set sum [expr {$sum+$v}]}
-            set mean [expr {$sum/double([llength $y])}]
-            set y [lmap v $y {expr {$v-$mean}}]
-        }
-        set sumsq 0.0; foreach v $y {set sumsq [expr {$sumsq+$v*$v}]}
-        if {$sumsq <= 0} {error "Cannot normalize a zero-variation spectrum"}
-        set length [expr {sqrt($sumsq)}]
-        set y [lmap v $y {expr {$v/$length}}]
+        set y [dict get [::GX::NumericAPIv1::normalizeVector $y [dict create method $norm]] values]
     }
     return [dict create x $x original_absorbance $original y $y]
 }

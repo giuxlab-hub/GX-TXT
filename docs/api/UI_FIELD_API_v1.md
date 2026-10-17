@@ -8,6 +8,10 @@ Apply/Close, keyboard focus scrolling and visible validation status.
 `uiFieldFormApply` validates all fields before invoking its one apply callback;
 invalid input never invokes the callback. The host remains responsible for
 making that callback's domain changes atomic.
+`uiFieldFormSectionEnabled window section boolean` enables or disables an existing
+named notebook section without removing its fields or changing their values.
+The domain callback must still reject unsupported combinations on Apply; disabling
+a tab is a presentation affordance, not domain validation.
 
 CORE owns one descriptor/value/widget authority for modules, Configuration,
 viewer and Workbench settings, and provider forms. API `UI_FIELD_API_v1`,
@@ -105,3 +109,21 @@ validation. Sectioned fields use compact label/control columns, dynamic page
 height, existing vertical scrolling and visible errors on invalid input. The
 shared grid form groups all 35 existing options into six pages, retaining Apply,
 field Reset, Reset grid, alpha/color and unit/precision behavior.
+
+## dev097 focused text editing
+
+Host-only `uiTextEditingAttach window widgets` attaches standard editor bindings
+to specified native Text/Entry controls. `uiTextEdit window operation` and
+`uiTextEditCan window operation` dispatch/enable `select_all`, `copy`, `cut`,
+`paste`, `undo`, `redo` against the focused attached control. Menu posting retains
+the last attached edit target; unrelated controls, disabled widgets, gutters and
+unattached reference panes are excluded. Text undo requires the widget's own
+undo stack. Entries retain native Entry editing behavior.
+
+Ctrl+A selects the entire focused buffer. Text paste replaces its selection as
+one local undo transaction on X11 and other Tk platforms. The helper preserves
+native clipboard and Text modified events, creates no Registry/scientific history
+entry, installs no global binding, and releases widget bindtags on destruction.
+The existing Viewer shortcut configuration reserves standard text chords and
+excludes text controls; editor bindings do not add a second shortcut registry.
+These native widget helpers are host-only, not Script Job operations.

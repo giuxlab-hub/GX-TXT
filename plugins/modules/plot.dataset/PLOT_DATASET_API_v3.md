@@ -1,6 +1,6 @@
 # Plot Dataset API v3 — current public facade
 
-GX-TXT 0.9.8.10-dev hosts this API in `plot.dataset` 3.12.6. Activate only
+GX-TXT 0.9.8.10-dev hosts this API in `plot.dataset` 3.18.0. Activate only
 `::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3` for a new
 consumer. The namespace is `::GX::PlotDatasetAPIv3`. It loads its stable v1/v2
 dependencies as needed; callers do not activate v2 separately.
@@ -214,3 +214,21 @@ Ticks/grid/font layout follows Native3D's scientific presentation rather than Oc
 pixel layout. Logarithmic/reversed axes still require a nonlinear calibrated coordinate
 mapping contract and are rejected, never labeled as linear. Other providers/base graphs
 need an exact prepared-scene identity API. Transparent figure backgrounds remain unsupported.
+
+## Coordinate snapshots (module3.18 / dev097)
+
+Public API versions and PlotSpec v2 identities are unchanged. Main/rerender reads
+current `DATASET_METADATA_API_v1` contexts through CORE's read-only presentation
+scope, attaches bounded Variable snapshots to prepared metadata, and preserves
+canonical arrays and row identities. Captured Clones serialize these snapshots;
+`renderSnapshot` uses their captured policy without consulting source Datasets.
+See the [GUI guide](GUI_MANUAL.md#dataset-coordinate-presentation) for precedence,
+shared-axis conflicts, numerical calibration and region-selection limitations.
+
+`coordinate_presentation.ini` is a derived successful-render receipt containing
+Dataset IDs, context revisions and source hashes. It is not a settings store.
+Native3D preview validates it against current public contexts. Missing receipts
+remain compatible with legacy identity contexts; changed settings require rerender.
+A failed render never installs a new successful-render receipt. XYZ preview export
+adds `coordinate_policies` and `calibration_applied=false` to its existing captured
+presentation descriptor; canonical scientific identities and geometry are retained.

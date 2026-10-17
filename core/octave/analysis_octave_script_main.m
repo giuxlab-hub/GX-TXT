@@ -165,7 +165,9 @@ function analysis_octave_script_main(args, framework_root)
       cd(working_directory);
     endif
 
-    execute_user_script(snapshot_path);
+    callable_entrypoint = gxtxt_ini_get(cfg, 'registered_callable.entrypoint', '');
+    callable_function = execute_user_script(snapshot_path, callable_entrypoint);
+    if (!isempty(callable_entrypoint)), gxtxt_registered_callable_v1(callable_function, cfg); endif
 
     cd(original_pwd);
     path(original_path);
@@ -252,13 +254,20 @@ function analysis_octave_script_main(args, framework_root)
   end_try_catch
 endfunction
 
-function execute_user_script(snapshot_path)
+function callable_function = execute_user_script(snapshot_path, gxtxt_callable_entry)
 % Execute in a dedicated function workspace so ordinary script variables cannot
 % overwrite the module runner state. The bridge lifecycle remains runner-owned.
   if (exist(snapshot_path, 'file') != 2)
     error('analysis.octave_script: script snapshot is missing: %s', snapshot_path);
   endif
+  callable_function = [];
   source(snapshot_path);
+  if (!isempty(gxtxt_callable_entry))
+    if (isempty(regexp(gxtxt_callable_entry, '^[A-Za-z][A-Za-z0-9_]{0,63}$', 'once')))
+      error('GXTXT:ScriptCallback:InvalidEntrypoint', 'Invalid registered callable identifier');
+    endif
+    callable_function = str2func(gxtxt_callable_entry);
+  endif
 endfunction
 
 function validate_bridge_info(info, module_id)

@@ -48,3 +48,17 @@ Source traces preserve exact measured row adjacency and genuine nonfinite gaps.
 Full Dataset context is therefore not display-decimated and uses memory
 proportional to its finite source rows. Selected Subset limits the drawn context
 independently of the selected fitting input.
+
+
+Version 1.2.0 reports line and polynomial fit diagnostics through the public
+CORE Statistical Result Semantics API. Preview uses validated labels, physical
+units and explicit undefined/unavailable states. Polynomial coefficients retain
+physical descending-power order; line coefficients retain intercept/slope order.
+For a parametric curve, each axis has its own response-unit result against the
+actual parameter. No mixed-unit pooled error or geometric-distance claim is made.
+Interpolation retains its nonregression contract. Published fitted curves carry
+`analysis.statistical_results` alongside the existing raw Numeric diagnostics and
+source-row provenance. Saving/publishing starts no additional fit or residual
+calculation. Old previews with captured Numeric facts are interpreted on explicit
+publication; existing Datasets are not rewritten. Known fit noise assumptions
+are not invented, and confidence intervals remain unavailable without them.

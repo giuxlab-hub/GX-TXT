@@ -1,7 +1,8 @@
 function analysis_statistics_pca_main(args,framework_root)
 % Focused PCA through public NUMERIC_API matrix SVD and Dataset APIs.
 % SPDX-License-Identifier: GPL-3.0-or-later
-  module_id='analysis.statistics.pca';version='1.0.1';
+  module_id='analysis.statistics.pca';version='1.1.0';
+  semantics_scope=gxtxt_statistics_scope_v1();
   config_path=argument(args,'--config','');
   if(isempty(config_path)),error('%s: --config is required',module_id);endif
   cfg=gxtxt_ini_read(config_path);
@@ -62,7 +63,16 @@ function analysis_statistics_pca_main(args,framework_root)
     endif
     gxtxt_progress_stage('compute','Centering/scaling and running public matrix SVD','indeterminate');
     descriptive=gxtxt_numeric_v1('matrix_statistics',X,struct('dimension',1));
-    means=double(descriptive.mean(:));sds=double(descriptive.std_sample(:));
+    records=struct();means=zeros(p,1);sds=zeros(p,1);
+    for j=1:p
+      fact=struct('n',descriptive.n);
+      for field={'mean','median','variance_population','std_population','variance_sample','std_sample','min','max'}
+        fact.(field{1})=descriptive.(field{1})(j);
+      endfor
+      summary=gxtxt_statistics_v1('from_numeric','math.numeric.summary','statistics',fact,struct('y_unit',variables(j).analysis_unit),struct(),struct('producer',module_id,'source_dataset_id',source_id,'source_variable_id',ids{j}));
+      records.(sprintf('input_%03d',j))=summary;
+      means(j)=summary.quantities.mean.value;sds(j)=summary.quantities.standard_deviation.value;
+    endfor
     applied_centers=zeros(p,1);applied_scales=ones(p,1);
     if(center),applied_centers=means;endif
     if(strcmp(scaling,'standardize'))
@@ -77,9 +87,18 @@ function analysis_statistics_pca_main(args,framework_root)
     endfor
     svd_result=gxtxt_numeric_v1('matrix_svd',Z,struct());
     singular=svd_result.singular_values(:);max_components=numel(singular);
-    eigenvalues=singular.^2/(n-1);total=sum(eigenvalues);
-    if(total<=0),error('%s: PCA has zero total variance/second moment',module_id);endif
-    ratios=eigenvalues/total;cumulative=cumsum(ratios);
+    spectral=gxtxt_numeric_v1('pca_summary',singular,n,struct('centered',center));
+    if(spectral.total_component_variance<=0),error('%s: PCA has zero total variance/second moment',module_id);endif
+    component_ids=arrayfun(@(j) sprintf('component_%03d',j),1:max_components,'UniformOutput',false);
+    raw_columns=struct();for field={'singular_value','component_variance','explained_ratio','cumulative_ratio','component_index'},raw_columns.(field{1})=spectral.(field{1});endfor
+    common=struct('n',n,'component_count',spectral.component_count,'total_component_variance',spectral.total_component_variance,'method',spectral.method);
+    records.components=gxtxt_statistics_v1('from_numeric_columns','math.numeric.pca','pca_summary',component_ids,raw_columns,common,struct('y_unit',score_unit),struct('producer',module_id,'source_dataset_id',source_id));
+    records.decomposition=gxtxt_statistics_v1('from_numeric','math.numeric.solver','matrix_svd',svd_result,struct(),struct(),struct('producer',module_id,'source_dataset_id',source_id));
+    validated=gxtxt_statistics_v1('table_values',records.components,{'singular_value','component_variance','explained_ratio','cumulative_ratio'});
+    singular=validated.singular_value(:);eigenvalues=validated.component_variance(:);ratios=validated.explained_ratio(:);cumulative=validated.cumulative_ratio(:);
+    variance_label=records.components.columns.component_variance.definition.label;
+    ratio_label=records.components.columns.explained_ratio.definition.label;
+    cumulative_label=records.components.columns.cumulative_ratio.definition.label;
     if(strcmp(component_mode,'count'))
       if(component_count>max_components),error('%s: requested components exceed matrix rank bounds',module_id);endif
       k=component_count;
@@ -100,7 +119,7 @@ function analysis_statistics_pca_main(args,framework_root)
       'source','GX-TXT Principal Component Analysis', ...
       'provenance',sprintf('%s %s; source=%s; variables=%s; selection=%s; center=%d; scaling=%s; component_mode=%s; component_count=%d; variance_target=%.12g; missing=%s',module_id,version,source_id,strjoin(ids,';'),selection_id(selection),center,scaling,component_mode,k,target,missing), ...
       'notes','SVD sign orientation: each component largest-magnitude loading is positive.');
-    opts.source_dataset_ids={source_id};opts.source_variable_ids=ids;
+    opts.source_dataset_ids={source_id};opts.source_variable_ids=ids;opts.statistical_results=records;
     scores_id=[prefix '.scores'];loadings_id=[prefix '.loadings'];components_id=[prefix '.components'];scaling_id=[prefix '.scaling'];
     gxtxt_progress_stage('publish','Publishing PCA scores, loadings and components','indeterminate');
     score_data={'source_row','Original one-based source row','int64','','index',int64(source_rows)};
@@ -119,10 +138,10 @@ function analysis_statistics_pca_main(args,framework_root)
     comp_data={ ...
       'component_index','Component index','int64','','index',int64((1:max_components)'); ...
       'singular_value','Singular value','float64',score_unit,'derived',singular; ...
-      'eigenvalue','Eigenvalue / explained variance','float64',squared_unit(score_unit),'derived',eigenvalues; ...
-      'explained_variance','Explained variance','float64',squared_unit(score_unit),'derived',eigenvalues; ...
-      'explained_ratio','Explained variance ratio','float64','1','derived',ratios; ...
-      'cumulative_ratio','Cumulative explained ratio','float64','1','derived',cumulative; ...
+      'eigenvalue',variance_label,'float64',squared_unit(score_unit),'derived',eigenvalues; ...
+      'explained_variance',variance_label,'float64',squared_unit(score_unit),'derived',eigenvalues; ...
+      'explained_ratio',ratio_label,'float64','1','derived',ratios; ...
+      'cumulative_ratio',cumulative_label,'float64','1','derived',cumulative; ...
       'selected','Selected component flag','int32','','flag',int32((1:max_components)'<=k)};
     publish_table(session,module_id,components_id,'component',opts,comp_data);
     scaling_data={ ...
@@ -138,7 +157,7 @@ function analysis_statistics_pca_main(args,framework_root)
     graphs=struct('key',{},'graph_id',{},'variant_id',{},'artifact',{},'png',{});
     if(parse_bool(gxtxt_ini_get(cfg,'config.render_graphs','1')))
       gxtxt_progress_stage('graphs','Creating persistent PCA graphs','indeterminate');
-      graphs(end+1)=plot_graph(session,components_id,'component_index','explained_ratio','bar','Explained variance ratio','scree','pca_scree.png');
+      graphs(end+1)=plot_graph(session,components_id,'component_index','explained_ratio','bar',ratio_label,'scree','pca_scree.png');
       if(k>=2)
         graphs(end+1)=plot_graph(session,scores_id,'component_001','component_002','scatter','PC scores','scores','pca_scores.png');
         graphs(end+1)=plot_graph(session,loadings_id,'component_001','component_002','scatter','PC loadings','loadings','pca_loadings.png');
@@ -149,8 +168,8 @@ function analysis_statistics_pca_main(args,framework_root)
       endfor
     endif
     write_manifest(fullfile(outdir,'automatic_graphs.ini'),graphs);
-    write_summary(fullfile(outdir,'pca_summary.ini'),source_id,prefix,selection,center,scaling,component_mode,target,missing,n_input,n,p,k,svd_result,ratios,cumulative,numel(graphs));
-    write_report(fullfile(outdir,'pca_report.txt'),source_id,selection,variables,center,scaling,missing,n_input,n,k,singular,eigenvalues,ratios,cumulative,V);
+    write_summary(fullfile(outdir,'pca_summary.ini'),source_id,prefix,selection,center,scaling,component_mode,target,missing,n_input,n,p,k,records.decomposition,numel(graphs));
+    write_report(fullfile(outdir,'pca_report.txt'),source_id,selection,variables,center,scaling,missing,n_input,n,k,records,V);
     gxtxt_progress_complete('done',sprintf('Published %d PCA components and %d graphs',k,numel(graphs)));
     fprintf('[%s] source=%s variables=%d rows=%d components=%d graphs=%d\n',module_id,source_id,p,n,k,numel(graphs));
   catch err
@@ -241,23 +260,24 @@ function write_manifest(path,graphs)
     fclose(fid);
   end_unwind_protect
 endfunction
-function write_summary(path,source_id,prefix,selection,center,scaling,mode,target,missing,n_input,n,p,k,S,ratios,cumulative,graphs)
+function write_summary(path,source_id,prefix,selection,center,scaling,mode,target,missing,n_input,n,p,k,S,graphs)
   fid=fopen(path,'w');if(fid<0),error('analysis.statistics.pca: cannot write summary');endif
   unwind_protect
-    fprintf(fid,'[meta]\nmodule_id=analysis.statistics.pca\nmodule_version=1.0.1\napi=NUMERIC_API_v1\n');
+    fprintf(fid,'[meta]\nmodule_id=analysis.statistics.pca\nmodule_version=1.1.0\napi=NUMERIC_API_v1\n');
     fprintf(fid,'\n[source]\ndataset_id=%s\nselection_id=%s\nvariable_count=%d\nn_input=%d\nn_complete=%d\nn_excluded=%d\n',source_id,selection_id(selection),p,n_input,n,n_input-n);
-    fprintf(fid,'\n[pca]\ncenter=%d\nscaling=%s\ncomponent_mode=%s\nvariance_target=%.12g\nmissing_policy=%s\nselected_components=%d\nsvd_rank=%d\ncondition_number=%.17g\n',center,scaling,mode,target,missing,k,S.rank,S.condition_number);
+    fprintf(fid,'\n[pca]\ncenter=%d\nscaling=%s\ncomponent_mode=%s\nvariance_target=%.12g\nmissing_policy=%s\nselected_components=%d\n',center,scaling,mode,target,missing,k);
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',S,struct('svd_rank','rank','condition_number','condition_number')));
     fprintf(fid,'\n[output]\nprefix=%s\nautomatic_graph_count=%d\n',prefix,graphs);
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect
 endfunction
-function write_report(path,source_id,selection,variables,center,scaling,missing,n_input,n,k,singular,eigenvalues,ratios,cumulative,V)
+function write_report(path,source_id,selection,variables,center,scaling,missing,n_input,n,k,records,V)
   fid=fopen(path,'w');if(fid<0),error('analysis.statistics.pca: cannot write report');endif
   unwind_protect
     fprintf(fid,'GX-TXT Principal Component Analysis\nSource Dataset: %s\nSelection: %s\nVariables: %d\nSelected rows: %d  Complete rows: %d\nCenter: %d  Scaling: %s  Missing: %s\nSelected components: %d\n',source_id,selection_id(selection),numel(variables),n_input,n,center,scaling,missing,k);
-    fprintf(fid,'\nComponent | Singular value | Explained variance | Ratio | Cumulative\n');
-    for i=1:numel(singular),fprintf(fid,'%d | %.12g | %.12g | %.12g | %.12g\n',i,singular(i),eigenvalues(i),ratios(i),cumulative(i));endfor
+    fprintf(fid,'\n%s\n',gxtxt_statistics_v1('table_report',records.components,records.components.row_ids,{'singular_value','component_variance','explained_ratio','cumulative_ratio'}));
+    labels=fieldnames(records);for i=1:numel(labels),if(!strcmp(labels{i},'components')),fprintf(fid,'\n%s\n%s\n',labels{i},gxtxt_statistics_v1('report',records.(labels{i})));endif,endfor
     fprintf(fid,'\nVariable | Unit | Loadings\n');
     for i=1:numel(variables)
       fprintf(fid,'%s | %s',variables(i).variable_id,variables(i).unit);

@@ -338,6 +338,7 @@ rename ::GX::CurveWorkbench::_fit ::GX::CurveWorkbench::_fit_selection057_base
 proc ::GX::CurveWorkbench::_fit {w {selected 0}} {
     variable st
     if {!$selected||[_semanticMembers $w] eq {}} {tailcall _fit_selection057_base $w $selected}
+    _coordinateRequireFrame $w [_cadSelected $w]
     # Fit uses the semantic set's complete logical owners, not primary focus.
     # The Native authority includes real controls/segments without sample masks.
     set bounds [::GX::Native2D::core selection_set_bounds $st($w,scene) $st($w,semanticSet)]
@@ -362,6 +363,7 @@ proc ::GX::CurveWorkbench::_curveList {w} {
             if {[dict exists $r sketch_definition parts]} {set count "[llength [dict get $r sketch_definition parts]] parts"}
         } elseif {[dict get $r source] ne {}&&![dict get $r edited]} {set state {Dataset source · immutable}} else {set state {Native point curve · editable}}
         if {![::GX::datasetPublicationV2DictDefault $r selectable 1]} {append state { · reference only}}
+        if {![_coordinateInFrame $w $r]} {append state { · other axis frame}}
         if {[dict get $r locked]} {append state { · locked}}
         if {[dict exists $r source_state]&&[dict get $r source_state] ne "current"} {append state " · Dataset [dict get $r source_state]"}
         dict for {group record} $st($w,groups) {if {$id in [dict get $record members]} {append state " · [dict get $record name]"}}

@@ -40,7 +40,11 @@ proc emitChunk {chunk} {
         foreach field {variable_id canonical dtype unit semantic_role axis_kind} {
             lappend fields [::GX::datasetB64Encode [dict get $column $field]]
         }
-        if {[dict exists $column binary_block]} {
+        if {[dict exists $column binary_resource]} {
+            set resource [dict get $column binary_resource]
+            ::GX::datasetBinaryResourceValidate $resource [dict get $column count]
+            puts "RCOL\t[join $fields \t]\t[dict get $resource version]\t[dict get $resource endian]\t[dict get $resource order]\t[::GX::datasetB64Encode [dict get $resource shape]]\t[dict get $resource count]\t[dict get $resource byte_count]\t[dict get $resource resource_id]\t[::GX::datasetB64Encode [dict get $resource resource_root]]"
+        } elseif {[dict exists $column binary_block]} {
             set block [dict get $column binary_block]
             ::GX::datasetBinaryValidateBlock $block [dict get $column count]
             puts "BCOL\t[join $fields \t]\t[dict get $block endian]\t[::GX::datasetB64Encode [dict get $block shape]]\t[dict get $column count]\t[dict get $block base64]"
@@ -97,13 +101,19 @@ flush stdout
 try {
     set done 0
     while {[gets stdin command] >= 0} {
-        set command [string toupper [string trim $command]]
+        set parts [split [string trim $command] "\t"]
+        set command [string toupper [lindex $parts 0]]
         if {$command eq ""} continue
         if {[catch {
             switch -- $command {
                 META { emitMetadata $stream }
                 NEXT { emitChunk [::GX::tableStreamNext $stream] }
                 DIAG { emitDiagnostics $stream }
+                RELEASE {
+                    if {[llength $parts]!=2} {error {RELEASE requires one resource identity}}
+                    ::GX::tableStreamReleaseResource $stream [lindex $parts 1]
+                    puts RELEASED;flush stdout
+                }
                 CLOSE {
                     ::GX::tableStreamClose $stream
                     puts "CLOSED"; flush stdout

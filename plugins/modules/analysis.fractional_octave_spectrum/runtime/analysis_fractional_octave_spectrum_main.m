@@ -2,7 +2,7 @@ function analysis_fractional_octave_spectrum_main(args)
 % Fractional-Octave Band Analysis - scientific stage.
 % SPDX-License-Identifier: GPL-3.0-or-later
   module_id='analysis.fractional_octave_spectrum';
-  module_version='1.1.0';
+  module_version='1.2.0';
   chunk_rows=65536;
   publication_chunk_rows=4096;
   this_file=mfilename('fullpath');runtime_dir=fileparts(this_file);module_dir=fileparts(runtime_dir);modules_dir=fileparts(module_dir);plugins_dir=fileparts(modules_dir);package_root=fileparts(plugins_dir);
@@ -39,7 +39,7 @@ function analysis_fractional_octave_spectrum_main(args)
     max_hz=str2double(strtrim(gxtxt_ini_get(cfg,'config.maximum_frequency_hz','20000')));
     reference_rms=str2double(strtrim(gxtxt_ini_get(cfg,'config.reference_rms','1')));
     if(!(isfinite(reference_rms)&&reference_rms>0)),error('%s: RMS reference must be positive',module_id);endif
-    discover_plot_service(package_root,module_id);
+    discover_plot_service(package_root,module_id);numeric=discover_numeric_api(cfg,module_id);
 
     gxtxt_progress_stage('scan','Scanning source frequency axis','indeterminate');
     S=scan_frequency_axis(cfg,frequency_id,frequency_unit,chunk_rows);
@@ -48,14 +48,27 @@ function analysis_fractional_octave_spectrum_main(args)
     [band_power,covered_width,source_provider]=integrate_psd_stream(cfg,frequency_id,frequency_unit,psd_id,B,chunk_rows);
     coverage_fraction=covered_width./B.bandwidth_hz;
     if(any(coverage_fraction<1-1e-9)),error('%s: complete-band integration unexpectedly produced incomplete source coverage',module_id);endif
-    band_rms=sqrt(max(band_power,0));
-    band_level_db=20*log10(max(band_rms,realmin)./reference_rms);
-    [power_unit,rms_unit]=derive_band_units(psd_unit);
-    [~,peak_i]=max(band_power);peak_center=B.center_hz(peak_i);peak_power=band_power(peak_i);total_band_power=sum(band_power);
+    levels=feval(numeric.function_name,'power_level',band_power,struct('reference_rms',reference_rms));
+    row_ids=arrayfun(@(k) sprintf('band_%d',k),B.band_number,'UniformOutput',false);
+    context=struct('psd_unit',psd_unit);
+    band_statistics=gxtxt_statistics_v1('from_numeric_columns','math.numeric.power_level','power_level',row_ids, ...
+      struct('power',levels.power,'root_power',levels.root_power,'level_db',levels.level_db), ...
+      struct('reference_rms',levels.reference_rms,'zero_policy',levels.zero_policy),context, ...
+      struct('producer',module_id,'source_dataset_id',source_dataset_id,'frequency_variable_id',frequency_id,'psd_variable_id',psd_id,'band_definition','base10_G_10^(3/10)','bands_per_octave',num2str(bands_per_octave),'frequency_unit','Hz'));
+    presentation=gxtxt_statistics_v1('table_values',band_statistics,{'integrated_power','band_rms','band_level_db'});
+    band_power=presentation.integrated_power;band_rms=presentation.band_rms;band_level_db=presentation.band_level_db;
+    power_unit=band_statistics.context.power_unit;rms_unit=band_statistics.context.y_unit;
+    summary_raw=feval(numeric.function_name,'statistics',band_power);
+    summary_statistics=gxtxt_statistics_v1('from_numeric','math.numeric.summary','statistics',summary_raw,struct('y_unit',power_unit),struct(), ...
+      struct('producer',module_id,'source_dataset_id',source_dataset_id,'sample_identity','published_complete_frequency_bands'));
+    summary_values=gxtxt_statistics_values_v1(summary_statistics);
+    peak_i=find(band_power==summary_values.maximum,1,'first');peak_center=B.center_hz(peak_i);
+    statistics=struct('bands',band_statistics,'published_band_powers',summary_statistics);
 
     pub_id=[safe_id(source_dataset_id) '.frac_oct.' safe_id(psd_id) '.n' num2str(bands_per_octave)];
     provenance=sprintf('source_dataset=%s;frequency=%s;psd=%s;bands_per_octave=%d;definition=base10_G_10^(3/10);range_mode=%s;reference_rms=%.17g;module=%s@%s',source_dataset_id,frequency_id,psd_id,bands_per_octave,range_mode,reference_rms,module_id,module_version);
     options=struct('storage','auto','capabilities_required',{{'typed_numeric','range_write'}},'capabilities_preferred',{{'sequential_chunks'}},'replace_owned',true,'producer_version',module_version,'source_dataset_ids',{{source_dataset_id}},'source_variable_ids',{{frequency_id,psd_id}},'source',source_dataset_id,'provenance',provenance,'notes','Exact base-10 fractional-octave integration of a linear PSD. This is spectral band integration, not IEC 61260 instrument-class compliance.');
+    options.statistical_results=statistics;
     nb=numel(B.center_hz);
     gxtxt_progress_stage('publish','Publishing fractional-octave Dataset','determinate',nb);
     P=gxtxt_publication_v2_open(session,module_id,pub_id,'spectrum.table',options);publication_open=true;
@@ -73,10 +86,17 @@ function analysis_fractional_octave_spectrum_main(args)
     endfor
     output_provider=P.provider;[P,pub_result]=gxtxt_publication_v2_finalize(P);publication_finalized=true;publication_open=false;
 
-    write_report(fullfile(outdir,'fractional_octave_report.txt'),module_version,source_dataset_id,frequency_id,psd_id,psd_name,psd_unit,bands_per_octave,range_mode,S,B,reference_rms,power_unit,rms_unit,source_provider,output_provider,pub_id,peak_center,peak_power,total_band_power);
-    db_baseline=min(band_level_db)-max(6,0.1*max(1,max(band_level_db)-min(band_level_db)));
+    write_report(fullfile(outdir,'fractional_octave_report.txt'),module_version,source_dataset_id,frequency_id,psd_id,psd_name,psd_unit,bands_per_octave,range_mode,S,B,reference_rms,power_unit,rms_unit,source_provider,output_provider,pub_id,peak_center,statistics);
+    finite_levels=band_level_db(isfinite(band_level_db));db_baseline=-6;
+    if(!isempty(finite_levels)),db_baseline=min(finite_levels)-max(6,0.1*max(1,max(finite_levels)-min(finite_levels)));endif
+    level_reason='';
+    if(isempty(finite_levels))
+      cells=gxtxt_statistics_v1('numeric_field_elements',band_statistics,'level_db');
+      if(iscell(cells.cells)),first=cells.cells{1};else,first=cells.cells(1);endif
+      level_reason=first.reason;
+    endif
     gxtxt_progress_stage('plot','Creating persistent plot.dataset fractional-octave graphs','indeterminate');
-    graphs=create_standard_graphs(session,pub_id,reference_rms,power_unit,rms_unit,db_baseline,module_id);copy_graph_artifacts(graphs,outdir,module_id);write_graph_manifest(fullfile(outdir,'automatic_graphs.ini'),graphs);
+    graphs=create_standard_graphs(session,pub_id,reference_rms,power_unit,rms_unit,db_baseline,module_id,level_reason);copy_graph_artifacts(graphs,outdir,module_id);write_graph_manifest(fullfile(outdir,'automatic_graphs.ini'),graphs);
     gxtxt_progress_complete('done',sprintf('Published %s with %d bands and %d persistent graphs',pub_id,nb,numel(graphs)));
   catch err
     if(publication_open&&!publication_finalized),try P=gxtxt_publication_v2_abort(P);catch;end_try_catch;endif
@@ -164,16 +184,14 @@ function [power,covered,cursor]=accumulate_cell(power,covered,cursor,B,left,righ
   endwhile
 endfunction
 
-function [power_unit,rms_unit]=derive_band_units(psd_unit)
-  u=strtrim(psd_unit);
-  if(strcmp(u,'1/Hz')),power_unit='1';rms_unit='1';return;endif
-  suffix='^2/Hz';
-  if(length(u)>length(suffix)&&strcmp(u(end-length(suffix)+1:end),suffix))
-    base=u(1:end-length(suffix));power_unit=[base '^2'];rms_unit=base;
-  else
-    power_unit=[u '*Hz'];rms_unit=['sqrt(' power_unit ')'];
-  endif
+function api=discover_numeric_api(cfg,module_id)
+  sec='public_api.NUMERIC_API_v1';provider=strtrim(gxtxt_ini_get(cfg,[sec '.module_id'],''));if(!strcmp(provider,'math.numeric')),error('%s: runtime NUMERIC_API_v1 provider discovery failed',module_id);endif
+  if(!strcmp(strtrim(gxtxt_ini_get(cfg,[sec '.api_version'],'')),'1')),error('%s: unsupported runtime NUMERIC_API_v1 version',module_id);endif
+  caps=split_list(gxtxt_ini_get(cfg,[sec '.capabilities'],''));required={'power_level','descriptive_statistics'};for k=1:numel(required),if(!any(strcmp(caps,required{k}))),error('%s: NUMERIC_API_v1 capability missing: %s',module_id,required{k});endif;endfor
+  entry=strtrim(gxtxt_ini_get(cfg,[sec '.octave_entrypoint'],''));fn=strtrim(gxtxt_ini_get(cfg,[sec '.octave_function'],''));if(isempty(entry)||isempty(fn)||exist(entry,'file')!=2),error('%s: runtime NUMERIC_API_v1 Octave binding unavailable',module_id);endif
+  addpath(fileparts(entry));if(exist(fn,'file')!=2),error('%s: advertised NUMERIC_API_v1 function unavailable',module_id);endif;api=struct('function_name',fn,'provider',provider);
 endfunction
+
 function s=binding_name(s),s=strtrim(s);p=strfind(s,'.');if(!isempty(p)),s=s(p(end)+1:end);endif;endfunction
 function require_meta(m,label,module_id),if(!isfield(m,'found')||!m.found||!isfield(m,'variable_id')||isempty(strtrim(m.variable_id))),error('%s: %s binding could not be resolved to a stable variable ID',module_id,label);endif;endfunction
 function v=parse_choice_int(raw,allowed,label),v=str2double(strtrim(raw));if(!isfinite(v)||v!=fix(v)||!any(v==allowed)),error('analysis.fractional_octave_spectrum: invalid %s',label);endif;endfunction
@@ -184,27 +202,49 @@ function discover_plot_service(root,module_id)
   caps=split_list(gxtxt_ini_get(d,'public_api.PLOT_DATASET_API_v2.capabilities',''));for req={'series_kind_bar','bar_x_bounds'},if(!any(strcmp(caps,req{1}))),error('%s: PLOT_DATASET_API_v2 capability missing: %s',module_id,req{1});endif;endfor
   bridge=fullfile(root,'core','octave','io','gxtxt_plot_dataset_v2.m');if(exist(bridge,'file')!=2),error('%s: public PLOT_DATASET_API_v2 Octave bridge unavailable',module_id);endif;addpath(fileparts(bridge));
 endfunction
-function G=create_standard_graphs(session,dataset_id,reference_rms,power_unit,rms_unit,db_baseline,module_id)
+function G=create_standard_graphs(session,dataset_id,reference_rms,power_unit,rms_unit,db_baseline,module_id,level_reason)
   G={};
-  G{end+1}=create_band_plot(session,dataset_id,'band_level_db','Fractional-octave band level','band_level_db',sprintf('Band level [dB re %.6g %s RMS]',reference_rms,rms_unit),'dB',db_baseline,module_id);
-  G{end+1}=create_band_plot(session,dataset_id,'band_rms','Fractional-octave band RMS','band_rms','Band RMS',rms_unit,0,module_id);
-  G{end+1}=create_band_plot(session,dataset_id,'band_power','Fractional-octave band power','band_power','Band power',power_unit,0,module_id);
+  G{end+1}=create_band_plot(session,dataset_id,'band_level_db','Fractional-octave band level','band_level_db',sprintf('Band level re %.6g %s RMS',reference_rms,rms_unit),'dB',db_baseline,module_id,level_reason);
+  G{end+1}=create_band_plot(session,dataset_id,'band_rms','Fractional-octave band RMS','band_rms','Band RMS',rms_unit,0,module_id,'');
+  G{end+1}=create_band_plot(session,dataset_id,'band_power','Fractional-octave band power','band_power','Band power',power_unit,0,module_id,'');
 endfunction
-function R=create_band_plot(session,dataset_id,key,title_text,yvar,ylabel,yunit,baseline,module_id)
+function R=create_band_plot(session,dataset_id,key,title_text,yvar,ylabel,yunit,baseline,module_id,unavailable_reason)
+  render=isempty(unavailable_reason);if(!render),title_text=[title_text ' — unavailable: zero band power'];endif
   axes=struct('x',struct('label','Band centre frequency [Hz]','display_unit','Hz','scale','log'),'y_left',struct('label',axis_label(ylabel,yunit),'scale','linear'));
   bounds=struct('lower_variable_id','lower_frequency','upper_variable_id','upper_frequency');
   series=struct('id',key,'dataset_id',dataset_id,'x_variable_id','center_frequency','y_variable_id',yvar,'axis','left','kind','bar','label',ylabel,'bar_bounds',bounds,'bar_baseline',num2str(baseline,17),'style',struct('opacity',0.35));
   panel=struct('id','main','title',title_text,'axes',axes,'series',{{series}});spec=struct('schema','PLOT_DATASET_PLOTSPEC_v2','graph_type','cartesian_2d','graph_id','plot.dataset.xy','title',title_text,'defaults',struct('style',struct()),'panels',{{panel}},'output',struct());
-  R=gxtxt_plot_dataset_v2(session,spec,struct('action','create','kind','variant','source_variant','','render',true));if(!isfield(R,'artifact')||isempty(strtrim(R.artifact))),error('%s: plot.dataset returned no artifact for %s',module_id,key);endif;R.key=key;
+  R=gxtxt_plot_dataset_v2(session,spec,struct('action','create','kind','variant','source_variant','','render',render));
+  if(render&&(!isfield(R,'artifact')||isempty(strtrim(R.artifact)))),error('%s: plot.dataset returned no artifact for %s',module_id,key);endif
+  if(!isfield(R,'artifact')),R.artifact='';endif
+  R.key=key;R.render_status='rendered';R.reason=unavailable_reason;if(!render),R.render_status='unavailable';endif
 endfunction
 function copy_graph_artifacts(G,outdir,module_id)
-  for i=1:numel(G),src=strtrim(G{i}.artifact);if(isempty(src)||exist(src,'file')!=2),error('%s: plot.dataset graph artifact missing for %s',module_id,G{i}.key);endif;dst=fullfile(outdir,sprintf('%02d_%s.png',i,G{i}.key));[ok,msg]=copyfile(src,dst,'f');if(!ok),error('%s: cannot copy plot.dataset artifact: %s',module_id,msg);endif;endfor
+  for i=1:numel(G)
+    dst=fullfile(outdir,sprintf('%02d_%s.png',i,G{i}.key));
+    if(strcmp(G{i}.render_status,'unavailable'))
+      % A previous run's finite graph must not masquerade as this result.
+      % Preserve its bytes in the owning analysis directory's history.
+      if(exist(dst,'file')==2)
+        history=fullfile(outdir,'previous_graphs',sprintf('%s_%d',datestr(now(),'yyyymmddTHHMMSSFFF'),getpid()));
+        if(exist(history,'dir')!=7),mkdir(history);endif
+        [ok,msg]=movefile(dst,history);if(!ok),error('%s: cannot preserve previous graph: %s',module_id,msg);endif
+      endif
+      continue;
+    endif
+    src=strtrim(G{i}.artifact);if(isempty(src)||exist(src,'file')!=2),error('%s: plot.dataset graph artifact missing for %s',module_id,G{i}.key);endif
+    [ok,msg]=copyfile(src,dst,'f');if(!ok),error('%s: cannot copy plot.dataset artifact: %s',module_id,msg);endif
+  endfor
 endfunction
+
 function write_graph_manifest(path,G)
   fid=fopen(path,'w');if(fid<0),error('analysis.fractional_octave_spectrum: cannot write automatic graph manifest');endif
   unwind_protect
     fprintf(fid,'[automatic_graphs]\ncount=%d\nprovider=plot.dataset\napi=PLOT_DATASET_API_v2\npersistent_variants=true\n',numel(G));
-    for i=1:numel(G),fprintf(fid,'\n[graph.%02d]\nkey=%s\ngraph_id=%s\nvariant_id=%s\npng=%02d_%s.png\nprovider_artifact=%s\nrerender=Use the persisted plot.dataset variant\n',i,G{i}.key,ini_escape(G{i}.graph_id),ini_escape(G{i}.variant_id),i,G{i}.key,ini_escape(G{i}.artifact));endfor
+    for i=1:numel(G)
+      png='';if(strcmp(G{i}.render_status,'rendered')),png=sprintf('%02d_%s.png',i,G{i}.key);endif
+      fprintf(fid,'\n[graph.%02d]\nkey=%s\ngraph_id=%s\nvariant_id=%s\nrender_status=%s\nreason=%s\npng=%s\nprovider_artifact=%s\nrerender=Use the persisted plot.dataset variant when finite data are available\n',i,G{i}.key,ini_escape(G{i}.graph_id),ini_escape(G{i}.variant_id),G{i}.render_status,ini_escape(G{i}.reason),png,ini_escape(G{i}.artifact));
+    endfor
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect
@@ -212,14 +252,17 @@ endfunction
 function s=axis_label(name,unit),if(isempty(strtrim(unit))||strcmp(unit,'1')),s=name;else s=sprintf('%s [%s]',name,unit);endif;endfunction
 function s=ini_escape(s),s=strrep(strrep(char(s),sprintf('\r'),' '),sprintf('\n'),' ');endfunction
 function out=split_list(s),s=strrep(char(s),',',';');parts=strsplit(s,';');out={};for i=1:numel(parts),q=strtrim(parts{i});if(!isempty(q)),out{end+1}=q;endif;endfor;endfunction
-function write_report(path,version,ds,fid,pid,pname,punit,N,mode,S,B,ref,power_unit,rms_unit,source_provider,output_provider,pub_id,peak_center,peak_power,total_power)
+function write_report(path,version,ds,fid,pid,pname,punit,N,mode,S,B,ref,power_unit,rms_unit,source_provider,output_provider,pub_id,peak_center,statistics)
   h=fopen(path,'w');if(h<0),error('analysis.fractional_octave_spectrum: cannot write report');endif
   unwind_protect
     fprintf(h,'Fractional-Octave Band Analysis\n================================\n');
     fprintf(h,'Module version: %s\nSource Dataset: %s\nFrequency variable: %s\nPSD variable: %s (%s)\nPSD unit: %s\n',version,ds,fid,pname,pid,punit);
     fprintf(h,'Bands per octave: %d\nDefinition: exact base-10, G = 10^(3/10), reference centre = 1000 Hz\nRange mode: %s\nSource support: %.17g .. %.17g Hz\nPublished complete bands: %d\n',N,mode,S.source_lower_hz,S.source_upper_hz,numel(B.center_hz));
     fprintf(h,'Band RMS reference: %.17g %s\nBand power unit: %s\nBand RMS unit: %s\n',ref,rms_unit,power_unit,rms_unit);
-    fprintf(h,'Peak band centre by integrated power: %.17g Hz\nPeak band power: %.17g %s\nSum of published band powers: %.17g %s\n',peak_center,peak_power,power_unit,total_power,power_unit);
+    fprintf(h,'First maximum-power band centre: %.17g Hz\n',peak_center);
+    fprintf(h,'%s\n',gxtxt_statistics_v1('report',statistics.published_band_powers,{'maximum','sum'}));
+    fprintf(h,'%s\n',gxtxt_statistics_v1('table_report',statistics.bands,{}, {'integrated_power','band_rms','band_level_db'}));
+    for k=1:numel(statistics.bands.context.assumptions),fprintf(h,'%s\n',statistics.bands.context.assumptions{k});endfor
     fprintf(h,'Source provider: %s\nOutput provider: %s\nPublished Dataset: %s\n',source_provider,output_provider,pub_id);
     fprintf(h,'Method: linear PSD integrated over exact band edges using frequency-bin cell overlap.\nCompliance note: this is FFT/PSD band integration and does not claim IEC 61260 instrument-class filter-bank compliance.\n');
   unwind_protect_cleanup

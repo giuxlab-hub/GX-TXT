@@ -17,6 +17,11 @@ function P=pd_refresh_plotspec_v2(P,cfg,graph)
       endif
       need=aux_ids(Q);have={};if(isfield(S.data,'aux_ids')),have=S.data.aux_ids;endif
       for a=1:numel(need),if(isempty(find(strcmp(have,need{a}),1))),error('plot.dataset: PlotSpec v2 auxiliary binding changed for series %s; run the module again before rerendering',S.series_id);endif;endfor
+      optional=pd_uncertainty_aux_ids(Q,S.data);
+      prepared_optional={};if(isfield(S.data,'uncertainty_variable_ids')),prepared_optional=S.data.uncertainty_variable_ids;endif
+      if(!isequal(sort(optional(:)),sort(prepared_optional(:))))
+        error('plot.dataset: uncertainty preparation changed for series %s; recalculate before rerendering (the saved cache is preserved)',S.series_id);
+      endif
       P.series(k).presentation=Q;break;
     endfor
   endfor

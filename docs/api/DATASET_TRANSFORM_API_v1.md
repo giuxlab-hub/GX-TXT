@@ -85,6 +85,7 @@ both per-source preprocessing choices.
 | extract_family_member | `member_variable_id` defaults to member_id; explicit `members`. Projection may omit the member variable. Produces an ordinary derived Dataset. |
 | split_family | Explicit `output.member_outputs` maps every selected member to its requested Dataset ID. All member publications form one logical transaction; a failure rolls back newly created members and emits no catalog event. |
 | convert_units | Explicit `target_units` or per-source `convert_units`. Uses public Unit Registry conversion plans, persisting the source/target definitions and applied formula/scale, including variable-specific canonical calibration. |
+| calibrate_variables | One complete canonical table source; explicit `calibration_variable_ids` and `expected_coordinate_revision`. Freezes verified Dataset Metadata settings and materializes `output_origin + factor * (canonical - input_origin)` only for the selected Variables. No implicit unit conversion or row selection. Nonidentity calibrated columns become float64; exact identity keeps dtype. |
 | transform_xy | Explicit X/Y output IDs and six finite `matrix` entries `{a b c d tx ty}`; computes `(a*x+b*y+tx,c*x+d*y+ty)`. Mixing coordinates requires equal units or explicit conversion. Ancillary tuple values remain intact. |
 | reverse_rows / reverse_range | Complete tuples reverse together. Ranges are zero-based `{start count}` pairs, disjoint and bounded. `source_member_ids` or `member_id` scopes input sources. `members` with `member_variable_id` reverses only selected family members, preserving unrelated member positions/order. |
 | reverse_sequence | A single source's ordered `steps={{start count} ...}` each reverse a span of the current complete tuple order. Later steps may overlap earlier steps because they are sequential transformations. Bounds are validated for the entire private recipe; source preprocessing order/reverse is applied first. A disk-backed integer permutation preserves all columns and original row lineage. It creates no Dataset unless explicitly materialized. |
@@ -93,10 +94,43 @@ both per-source preprocessing choices.
 Metadata policy is `inherit_single_source`, explicit `inherit_primary`,
 `merge_common`, or `explicit` (`options.metadata`). Conflicting multi-source
 values are omitted and recorded as conflicts; source notes are not concatenated.
+The additive `options.metadata_overrides` dictionary applies explicit publication
+annotations after any inheritance policy. Unspecified inherited fields remain;
+the new values win on named user-metadata keys. Reserved framework metadata and
+`transform.*` provenance overrides are rejected during planning. This does not
+change the legacy meaning of `options.metadata`, which is used only by `explicit`.
+Overrides are published in the same atomic Dataset transaction, in both Script
+languages and the responsive GUI path. Workbench uses this extension to preserve
+source metadata while publishing its own coordinate/sketch provenance.
 The persisted `transform.manifest` is the validated request and
 `transform.effective` records output schema/mapping, exact source IDs and SHA-256,
 conversions, member information, actual contract/provider/output ID, ordering and
 bounded-read diagnostics. Producer/version and timestamp are also persisted.
+
+### Persistent coordinate settings (dev097)
+
+Plans also snapshot the existing Dataset coordinate context; edits to it invalidate
+prepared plans. `calibrate_variables` records exact consumed coefficients/revision
+in the public `calibrations` report, preserves complete tuple order and unselected
+columns, and creates a new Dataset. A selected integer that cannot be represented
+exactly in binary64 rejects nonidentity calibration. Floating overflow rejects;
+NaN/infinity and signed zero in untouched floating columns remain representable.
+Missing numerical cells retain Transform's existing NaN output convention.
+
+Publication and coordinate adoption share one Dataset Authority transaction.
+Selected Variables' active calibration resets to identity; their view pivot is
+mapped to the new calibrated coordinates. Unconsumed Variable settings persist.
+The original payload and its settings are unchanged.
+
+Structural transforms use the existing source-to-output Variable mapping to
+inherit compatible settings. Affine unit conversion transforms physical pivots
+and calibration origins through Unit Registry. Conflicting contributors, stale
+source settings, nonlinear unit-frame conversions, or changed geometry do not
+silently inherit a calibration: `transform.coordinate_inheritance` records the
+reason, and `transform.source_coordinate_contexts` retains the original context
+and payload SHA. This lineage is separate from the derived Dataset's active
+context. Ordinary Dataset IDs and canonical Variable identities are unchanged
+unless the caller explicitly requests the existing rename/mapping operation.
 
 Tcl services:
 
@@ -200,3 +234,89 @@ Tcl value transport as null. Read-only subset/family views retain the row and
 lineage when a different field matches; finite/nonfinite predicates recognize
 absence, and explicit conversion preserves it. Numeric nulls use the existing
 view transport's NaN representation. Canonical source cells/dtypes are unchanged.
+# Baseline correction (additive dev097 operation)
+
+`baseline_correct` takes one canonical Dataset source, optional explicit row
+selection/filters, and options `x_variable_id`, `y_variable_id`, `baseline_options`.
+It delegates estimation to public NUMERIC_API_v1. Supported methods are `asls`
+(default), `constant`, `linear` and `polynomial`; full estimator settings follow
+Numeric. Axes must be float32/float64 with distinct stable IDs. No implicit
+integer-to-floating conversion, sorting, unit conversion or combined geometry
+operation is performed. Maximum selected rows: 2,000,000. Nonconverged AsLS rejects
+publication; the low-level Numeric API retains its inspectable failure receipt.
+
+The create-only output retains all selected source columns and appends float64
+`baseline`, `corrected_y` in source Y units, plus uint64
+`baseline_source_row_ordinal` (zero-based). Override their IDs using
+`baseline_variable_id`, `corrected_variable_id`, `row_variable_id`; collisions
+reject. With `nonfinite=omit`, original positions remain, while baseline/corrected
+values at excluded pairs are NaN. Original data and fitted models remain separate.
+
+`effective.baseline_receipt` freezes source SHA/IDs, settings, convergence and
+the unpropagated-baseline-uncertainty policy. `provenance.baseline_lineage` maps
+current corrected Variable aliases to immutable correction receipts through later
+projections, renames, unit changes and row transforms. Removed Variables lose their
+active binding; historical scientific IDs in the receipt are never relabelled.
+Both Script languages use the existing `execute`, `plan` and `provenance` operations.
+The Fitter uses the existing responsive execution/cancellation service.
+
+## Explicit dimensionless logarithmic columns (dev097)
+
+Operation `log_variables` accepts one canonical Dataset and 1..16 `options.logarithms`
+bindings, each with exactly `source_variable_id`, new `output_variable_id`, and a
+finite positive `reference` in the source Variable's units. Selected columns must
+be float32/float64. Source row selections/filters are supported; simultaneous unit
+conversion, renaming or numerical transforms require a subsequent explicit step.
+Nonfinite or nonpositive selected values reject atomically without silent omission.
+
+The create-only Dataset retains every selected original column and appends each
+log column with unit `1`, followed by uint64 `log_source_row_ordinal` (override with
+`row_variable_id`). Original zero-based Dataset row identities and auxiliary exact
+integers/signed zero/nonfinite values remain intact. Bounded 65,536-row typed chunks
+call the registered Numeric `log_ratio`; CORE does not calculate logarithms.
+
+`effective.logarithm_receipt` records the chunk limit, row identity and individual
+`gxtxt.log_variable_transform.v1` receipts with reference, units, original IDs and
+source SHA. `logarithm_lineage` binds current column aliases to immutable receipts.
+Rename/projection and certified row-only transforms retain inverse eligibility.
+Numerical calibration/conversion of a log column, or uncertified multi-source or
+geometry operations, preserve ancestry with `inverse_eligible=false` and a reason.
+Removed Variables lose their active binding; historical scientific identities are
+never renamed. Both Script languages expose structured receipts through existing
+`execute`/`plan`/`provenance`, including numeric references and boolean eligibility.
+
+## Smoothing into a separate Dataset
+
+`smooth_curve` takes one canonical source, explicit `x_variable_id` and
+`y_variable_id`, and `smoothing_options` containing the public Numeric `method`,
+`window`, `degree`, optional LOWESS `robust_iterations`, and explicit
+`nonfinite=error|omit`. It preserves every selected original column and row and
+adds `smoothed_y`, `smoothing_residual` and uint64
+`smoothing_source_row_ordinal`. Override generated names with
+`smoothed_variable_id`, `residual_variable_id` and `row_variable_id`.
+Original Dataset ordinals are zero based. Omitted pairs remain explicit NaN gaps
+in the added response columns. Publication is create-only; generated IDs must
+be distinct from each other and from the source columns.
+
+Numeric owns the computation through the same public `smooth` implementation.
+Axes must be float32/float64, increasing and distinct; convert other coordinate
+types explicitly. A source has at most one million selected rows; LOWESS has its
+additional public work bound. This operation uses Dataset row filters/selections,
+not a Fitter graphical rectangle. Cancellation uses the existing responsive
+transform and atomic publication lifecycle.
+
+The `gxtxt.smoothing_transform.v1` receipt captures exact source SHA, original
+variable identities, requested and effective settings, selected/smoothed/omitted
+counts and the policy
+`smoothing_induces_correlated_errors_no_parameter_inference`.
+`transform.smoothing_lineage` binds those immutable receipts to current output
+variable IDs. Both smoothed and removed-component columns inherit dependency.
+Renames, projections, log columns, baseline correction, subsequent smoothing,
+affine mixing and polar-only output preserve the actual dependency chain;
+affine ancestry follows nonzero coefficients. Original scientific identities
+inside receipts remain unchanged when an output alias changes.
+
+Both Script languages use `gxtxt_api_call('DATASET_TRANSFORM_API_v1','execute',...)`
+and public `provenance`. Returned settings/counts have numeric types and lineage
+has structured bindings. Subsequent consumers must carry smoothing ancestry into
+CORE statistical interpretation before presenting independent-error inference.

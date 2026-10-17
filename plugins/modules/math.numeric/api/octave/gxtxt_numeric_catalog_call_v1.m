@@ -17,6 +17,13 @@ function out = gxtxt_numeric_catalog_call_v1(operation, mode, operands, unused_b
   if(isempty(fieldnames(options)))
     out = gxtxt_numeric_v1(base,args{:});
   else
+    % These public fits place optional weights before options. Retain an
+    % explicit empty slot when a catalog caller supplies options without weights.
+    if(any(strcmp(base,{'least_squares','linear_regression'}))&&numel(args)==2)
+      args{3}=[];
+    elseif(strcmp(base,'polynomial_fit')&&numel(args)==3)
+      args{4}=[];
+    endif
     out = gxtxt_numeric_v1(base,args{:},options);
   endif
   if(!isstruct(out))

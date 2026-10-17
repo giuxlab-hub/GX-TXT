@@ -11,7 +11,97 @@ function out = gxtxt_numeric_v1(operation, varargin)
     error('GXTXT:Numeric','operation must be a character string');
   endif
   op = lower(strtrim(operation));
+  if(!isempty(varargin)&&isstruct(varargin{end})&&isfield(varargin{end},'influence_diagnostics')&&!any(strcmp(op,{'least_squares','linear_regression','polynomial_fit'})))
+    error('GXTXT:Numeric:Influence','Exact linear influence is supported only by least_squares, linear_regression and polynomial_fit');
+  endif
   switch (op)
+    case 'nested_f_test'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_nested_f_v1(varargin{1});
+    case 'fit_bootstrap_prepare'
+      require_nargs(op,varargin,5,5);out=gxtxt_numeric_fit_bootstrap_state_v1('prepare',varargin{:});
+    case 'fit_bootstrap_draw'
+      require_nargs(op,varargin,2,2);out=gxtxt_numeric_fit_bootstrap_state_v1('draw',varargin{:});
+    case 'fit_bootstrap_summarize'
+      require_nargs(op,varargin,5,5);out=gxtxt_numeric_fit_bootstrap_state_v1('summarize',varargin{:});
+    case 'fit_profile'
+      require_nargs(op,varargin,4,5);out=gxtxt_numeric_fit_profile_v1(varargin{1},varargin{2},varargin{3},varargin{4},arg_opts(varargin,5));
+    case 'fit_bootstrap'
+      require_nargs(op,varargin,4,5);out=gxtxt_numeric_fit_bootstrap_v1(varargin{1},varargin{2},varargin{3},varargin{4},arg_opts(varargin,5));
+    case 'fit_region_catalog'
+      require_nargs(op,varargin,0,0);out=gxtxt_numeric_fit_regions_v1('catalog');
+    case 'fit_region_compose'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_fit_regions_v1('compose',varargin{1});
+    case 'fit_region_selection'
+      require_nargs(op,varargin,2,2);out=gxtxt_numeric_fit_regions_v1('selection',varargin{1},varargin{2});
+    case 'fit_observation_signature'
+      require_nargs(op,varargin,1,4);out=gxtxt_numeric_fit_observations_v1(varargin{:});
+    case 'fit_information_criteria'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_fit_information_criteria_v1(varargin{1});
+    case 'fit_model_catalog'
+      require_nargs(op,varargin,0,0);out=gxtxt_numeric_fit_composition_v1('catalog');
+    case 'expression_dimensions'
+      require_nargs(op,varargin,2,4);
+      root=fullfile(fileparts(mfilename('fullpath')),'..','..','..','..','..');addpath(fullfile(root,'core/octave/units'));addpath(fullfile(root,'core/octave/io'));
+      output_unit='';unknown_ids={};if(numel(varargin)>2),output_unit=varargin{3};endif;if(numel(varargin)>3),unknown_ids=varargin{4};if(isempty(unknown_ids)),unknown_ids={};endif;endif
+      out=gxtxt_unit_expression_dimensions_v1(varargin{1},varargin{2},output_unit,unknown_ids);
+    case 'polynomial_gls'
+      require_nargs(op,varargin,4,5);out=op_polynomial_gls(varargin{1},varargin{2},varargin{3},varargin{4},arg_opts(varargin,5));
+    case 'generalized_least_squares'
+      require_nargs(op,varargin,3,4);out=gxtxt_numeric_gls_v1(varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
+    case 'fit_characteristics'
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_fit_characteristics_v1(varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'fit_initial_guess'
+      require_nargs(op,varargin,3,4);out=gxtxt_numeric_fit_initial_guess_v1(varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
+    case 'fit_formula_compose'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_fit_formula_v1('compose',varargin{1});
+    case 'rational_model_compose'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_rational_v1('compose',varargin{1});
+    case 'rational_domain'
+      require_nargs(op,varargin,2,2);out=gxtxt_numeric_rational_v1('domain',varargin{1},varargin{2});
+    case 'rational_fit'
+      require_nargs(op,varargin,3,4);out=gxtxt_numeric_rational_v1('fit',varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
+    case 'rational_evaluate'
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_rational_v1('evaluate',varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'rational_residuals'
+      require_nargs(op,varargin,3,4);out=gxtxt_numeric_rational_v1('residuals',varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
+    case 'rational_model_state'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_rational_v1('state',varargin{1});
+    case 'rational_model_restore'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_rational_v1('restore',varargin{1});
+    case 'fit_model_compose'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_fit_composition_v1('compose',varargin{1});
+    case {'signal_periodogram','signal_welch','signal_asd'}
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_signal_spectral_v1(op(8:end),varargin{1},[],varargin{2},arg_opts(varargin,3));
+    case {'signal_cross_psd','signal_coherence','signal_frf_h1','signal_frf_h2'}
+      require_nargs(op,varargin,3,4);out=gxtxt_numeric_signal_spectral_v1(op(8:end),varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
+    case 'window_metrics'
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_window_metrics_v1(varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'signal_correlation'
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_signal_correlation_v1(varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'event_period'
+      require_nargs(op,varargin,1,2);out=gxtxt_numeric_event_timing_v1(op,varargin{1},[],arg_opts(varargin,2));
+    case 'pulse_timing'
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_event_timing_v1(op,varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'fft_spectrum_quality'
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_fft_spectrum_quality_v1(varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'harmonic_peak_quality'
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_harmonic_peak_quality_v1(varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'harmonic_components'
+      require_nargs(op,varargin,4,5);out=gxtxt_numeric_harmonic_components_v1(varargin{1},varargin{2},varargin{3},varargin{4},arg_opts(varargin,5));
+    case {'signal_snr','signal_spectrum_quality'}
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_signal_quality_v1(op,varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'signal_summary'
+      require_nargs(op,varargin,1,2);out=gxtxt_numeric_signal_summary_v1(varargin{1},arg_opts(varargin,2));
+    case 'replicate_summary'
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_replicate_summary_v1(varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'local_cloud_fit'
+      require_nargs(op,varargin,3,4);out=gxtxt_numeric_local_cloud_fit_v1(varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
+    case 'welch_aggregate'
+      require_nargs(op,varargin,3,3);out=gxtxt_numeric_welch_aggregate_v1(varargin{1},varargin{2},varargin{3});
+    case 'power_level'
+      require_nargs(op,varargin,1,2);out=op_power_level(varargin{1},arg_opts(varargin,2));
+    case 'spectral_features'
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_spectral_features_v1(varargin{1},varargin{2},arg_opts(varargin,3));
     case 'list_operations'
       require_nargs(op,varargin,0,0);out=gxtxt_numeric_operation_catalog_v1('list');
     case 'operation_metadata'
@@ -72,6 +162,10 @@ function out = gxtxt_numeric_v1(operation, varargin)
       require_nargs(op,varargin,2,3); out=op_common_range(varargin{1},varargin{2},arg_opts(varargin,3));
     case 'statistics'
       require_nargs(op,varargin,1,2); out=op_statistics(varargin{1},arg_opts(varargin,2));
+    case 'pca_summary'
+      require_nargs(op,varargin,2,3); out=gxtxt_numeric_pca_summary_v1(varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'resampling_summary'
+      require_nargs(op,varargin,2,3); out=gxtxt_numeric_resampling_summary_v1(varargin{1},varargin{2},arg_opts(varargin,3));
     case 'rank'
       require_nargs(op,varargin,1,2); out=op_rank(varargin{1},arg_opts(varargin,2));
     case 'covariance'
@@ -93,6 +187,12 @@ function out = gxtxt_numeric_v1(operation, varargin)
       require_nargs(op,varargin,2,3); out=op_student_t_cdf(varargin{1},varargin{2},arg_opts(varargin,3));
     case 'student_t_quantile'
       require_nargs(op,varargin,2,3); out=op_student_t_quantile(varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'derived_properties'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_derived_properties_v1(varargin{1});
+    case 'parameter_uncertainty'
+      require_nargs(op,varargin,1,1); out=gxtxt_numeric_parameter_uncertainty_v1(varargin{1});
+    case 'prediction_uncertainty'
+      require_nargs(op,varargin,3,4); out=gxtxt_numeric_prediction_uncertainty_v1(varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
     case 'hypothesis_test'
       require_nargs(op,varargin,3,4); out=op_hypothesis_test(varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
     case 'one_way_anova'
@@ -147,16 +247,70 @@ function out = gxtxt_numeric_v1(operation, varargin)
       out=op_polynomial_fit(varargin{1},varargin{2},varargin{3},weights,opts);
     case 'polynomial_evaluate'
       require_nargs(op,varargin,2,3); out=op_polynomial_evaluate(varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'surface_model_state'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_surface_v1('state',varargin{1});
+    case 'surface_model_restore'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_surface_v1('restore',varargin{1});
+    case 'surface_model_compose'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_surface_v1('compose',varargin{1});
+    case 'surface_residuals'
+      require_nargs(op,varargin,5,5);out=gxtxt_numeric_surface_v1('residuals',varargin{:});
+    case 'surface_fit'
+      require_nargs(op,varargin,5,5);out=gxtxt_numeric_surface_v1('fit',varargin{:});
+    case 'surface_evaluate'
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_surface_v1('evaluate',varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'surface_grid'
+      require_nargs(op,varargin,3,4);out=gxtxt_numeric_surface_v1('grid',varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
+    case 'complex_model_compose'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_complex_v1('compose',varargin{1});
+    case 'complex_fit'
+      require_nargs(op,varargin,4,5);out=gxtxt_numeric_complex_v1('fit',varargin{1},varargin{2},varargin{3},varargin{4},arg_opts(varargin,5));
+    case 'complex_evaluate'
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_complex_v1('evaluate',varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'complex_residuals'
+      require_nargs(op,varargin,4,4);out=gxtxt_numeric_complex_v1('residuals',varargin{:});
+    case 'complex_from_polar'
+      require_nargs(op,varargin,3,3);out=gxtxt_numeric_complex_v1('from_polar',varargin{1},varargin{2},varargin{3});
+    case 'implicit_model_compose'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_implicit_v1('compose',varargin{1});
+    case 'implicit_fit'
+      require_nargs(op,varargin,3,4);out=gxtxt_numeric_implicit_v1('fit',varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
+    case 'implicit_evaluate'
+      require_nargs(op,varargin,3,4);out=gxtxt_numeric_implicit_v1('evaluate',varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
+    case 'implicit_query'
+      require_nargs(op,varargin,3,3);out=gxtxt_numeric_implicit_v1('query',varargin{1},varargin{2},varargin{3});
     case 'nonlinear_fit'
       require_nargs(op,varargin,4,5); out=op_nonlinear_fit(varargin{1},varargin{2},varargin{3},varargin{4},arg_opts(varargin,5));
+    case 'log_ratio'
+      require_nargs(op,varargin,2,2);out=gxtxt_numeric_log_response_v1(op,varargin{1},struct('reference',varargin{2}));
+    case 'log_response_retransform'
+      require_nargs(op,varargin,1,2);out=gxtxt_numeric_log_response_v1(op,varargin{1},arg_opts(varargin,2));
+    case 'model_export'
+      require_nargs(op,varargin,1,2);out=gxtxt_numeric_model_export_v1(varargin{1},arg_opts(varargin,2));
+    case 'nonlinear_evaluate'
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_nonlinear_evaluate_v1(varargin{1},varargin{2},arg_opts(varargin,3));
     case 'curve_model_fit'
       require_nargs(op,varargin,3,4);out=gxtxt_numeric_curve_models_v1('fit',varargin{1},varargin{2},varargin{3},arg_opts(varargin,4));
+    case 'model_state_decode'
+      require_nargs(op,varargin,1,1);out=gxtxt_numeric_model_state_decode_v1(varargin{1});
+    case 'fit_input_policy'
+      require_nargs(op,varargin,2,2);out=gxtxt_numeric_fit_input_policy_v1(varargin{1},varargin{2});
+    case 'model_geometry'
+      require_nargs(op,varargin,2,2);out=gxtxt_numeric_model_geometry_v1(varargin{1},varargin{2});
+    case 'model_query'
+      require_nargs(op,varargin,3,3);out=gxtxt_numeric_model_query_v1(varargin{1},varargin{2},varargin{3});
+    case 'model_inverse'
+      require_nargs(op,varargin,4,4);out=gxtxt_numeric_model_inverse_v1(varargin{1},varargin{2},varargin{3},varargin{4});
+    case 'curve_model_parameter_state'
+      require_nargs(op,varargin,2,2);out=gxtxt_numeric_curve_parameter_state_v1(varargin{1},varargin{2});
     case 'curve_model_evaluate'
-      require_nargs(op,varargin,2,2);out=gxtxt_numeric_curve_models_v1('evaluate',varargin{1},varargin{2});
+      require_nargs(op,varargin,2,3);out=gxtxt_numeric_curve_models_v1('evaluate',varargin{1},varargin{2},arg_opts(varargin,3));
     case 'curve_model_project'
       require_nargs(op,varargin,3,3);out=gxtxt_numeric_curve_models_v1('project',varargin{1},varargin{2},varargin{3});
     case 'curve_model_residual'
       require_nargs(op,varargin,3,3);out=gxtxt_numeric_curve_models_v1('residual',varargin{1},varargin{2},varargin{3});
+    case 'residual_sequence'
+      require_nargs(op,varargin,3,3);out=gxtxt_numeric_residual_sequence_v1(varargin{1},varargin{2},varargin{3});
     case 'smooth'
       require_nargs(op,varargin,2,3); out=op_smooth(varargin{1},varargin{2},arg_opts(varargin,3));
     case 'digital_filter'
@@ -165,7 +319,8 @@ function out = gxtxt_numeric_v1(operation, varargin)
       require_nargs(op,varargin,2,3); out=op_find_peaks(varargin{1},varargin{2},arg_opts(varargin,3));
     case 'baseline'
       require_nargs(op,varargin,2,5); ax=[]; ay=[]; opts=struct();
-      if(numel(varargin)>=3),ax=varargin{3};endif
+      if(numel(varargin)==3&&isstruct(varargin{3})),opts=ensure_opts(varargin{3});
+      elseif(numel(varargin)>=3),ax=varargin{3};endif
       if(numel(varargin)>=4),ay=varargin{4};endif
       if(numel(varargin)>=5),opts=ensure_opts(varargin{5});endif
       out=op_baseline(varargin{1},varargin{2},ax,ay,opts);
@@ -175,6 +330,10 @@ function out = gxtxt_numeric_v1(operation, varargin)
       require_nargs(op,varargin,2,3); out=op_minimize_1d(varargin{1},varargin{2},arg_opts(varargin,3));
     case 'minimize'
       require_nargs(op,varargin,2,3); out=op_minimize(varargin{1},varargin{2},arg_opts(varargin,3));
+    case 'digitization_uncertainty'
+      require_nargs(op,varargin,2,2);out=gxtxt_numeric_digitization_uncertainty_v1('propagate',varargin{:});
+    case 'digitization_covariance'
+      require_nargs(op,varargin,2,2);out=gxtxt_numeric_digitization_uncertainty_v1('covariance',varargin{:});
     case 'propagate_uncertainty'
       require_nargs(op,varargin,2,3); out=op_propagate_uncertainty(varargin{1},varargin{2},arg_opts(varargin,3));
     case 'fft'
@@ -671,9 +830,20 @@ function out=op_vector_similarity(a,b,opts)
 endfunction
 
 function out=op_statistics(v,opts)
-  n_input=numel(v);v=finite_vector(v,'values',opts,1);n=numel(v);m=mean(v);vp=mean((v-m).^2);qs=quantile_type7(v,[0.25;0.5;0.75]);
+  empty_policy=opt_text(opts,'empty_policy','error');
+  if(!any(strcmp(empty_policy,{'error','undefined'}))),error('GXTXT:Numeric','statistics empty_policy must be error or undefined');endif
+  n_input=numel(v);v=finite_vector(v,'values',opts,!strcmp(empty_policy,'undefined'));n=numel(v);
+  if(n==0)
+    out=struct('n',0,'n_input',n_input,'n_valid',0,'n_nonfinite',n_input);
+    for field={'min','max','max_absolute','range','sum','mean','median','q25','q75','iqr','variance_population','std_population','variance_sample','std_sample','rms','standard_error_mean'}
+      out.(field{1})=NaN;
+    endfor
+    return;
+  endif
+  m=mean(v);vp=mean((v-m).^2);qs=quantile_type7(v,[0.25;0.5;0.75]);
   if(n>1),vs=sum((v-m).^2)/(n-1);else vs=NaN;endif
-  out=struct('n',n,'n_input',n_input,'n_valid',n,'n_nonfinite',n_input-n,'min',min(v),'max',max(v),'range',max(v)-min(v),'sum',sum(v),'mean',m,'median',qs(2),'q25',qs(1),'q75',qs(3),'iqr',qs(3)-qs(1),'variance_population',vp,'std_population',sqrt(vp),'variance_sample',vs,'std_sample',sqrt(vs),'rms',sqrt(mean(v.^2)));
+  out=struct('n',n,'n_input',n_input,'n_valid',n,'n_nonfinite',n_input-n,'min',min(v),'max',max(v),'max_absolute',max(abs(v)),'range',max(v)-min(v),'sum',sum(v),'mean',m,'median',qs(2),'q25',qs(1),'q75',qs(3),'iqr',qs(3)-qs(1),'variance_population',vp,'std_population',sqrt(vp),'variance_sample',vs,'std_sample',sqrt(vs),'rms',sqrt(mean(v.^2)));
+  out.standard_error_mean=sqrt(vs/n);
 endfunction
 function [x,y,n_input,n_valid]=finite_pair(x,y,opts,min_count)
   x=real_vector(x,'first values',false);y=real_vector(y,'second values',false);
@@ -796,9 +966,10 @@ function out=op_residual_metrics(observed,predicted,opts)
     rel=absolute(mask)./abs(observed(mask));
     max_relative=max(rel);rms_relative=sqrt(mean(rel.^2));
   endif
-  out=struct('n',n,'sse',sse,'rmse',sqrt(sse/n),'mae',mean(absolute), ...
-    'max_abs_error',max(absolute),'r2',r2, ...
-    'max_relative_error',max_relative,'rms_relative_error',rms_relative);
+  out=struct('n',n,'sse',sse,'mse',sse/n,'rmse',sqrt(sse/n),'mae',mean(absolute), ...
+    'max_abs_error',max(absolute),'r2',r2,'response_variance',sst/n, ...
+    'max_relative_error',max_relative,'rms_relative_error',rms_relative, ...
+    'relative_n',sum(mask),'relative_floor',floor_value);
 endfunction
 function out=op_matrix_statistics(v,opts)
   if(!isnumeric(v)||!isreal(v)||isempty(v)||ndims(v)>2||any(!isfinite(v(:))))
@@ -813,7 +984,7 @@ function out=op_matrix_statistics(v,opts)
   if(n>1),vs=vp*n/(n-1);else vs=NaN(size(mu));endif
   out=struct('n',n,'mean',mu,'median',med,'variance_population',vp, ...
     'std_population',sqrt(vp),'variance_sample',vs,'std_sample',sqrt(vs), ...
-    'min',min(v,[],dim),'max',max(v,[],dim));
+    'min',min(v,[],dim),'max',max(v,[],dim),'requested_dimension',dim,'input_shape',size(v),'output_shape',size(mu));
 endfunction
 function out=op_reduce_summary(v,opts)
   if(!isnumeric(v)||!isreal(v)||isempty(v)||ndims(v)>2||any(!isfinite(v(:))))
@@ -827,7 +998,8 @@ function out=op_reduce_summary(v,opts)
     if(!isscalar(dim)||!any(dim==[1,2])),error('GXTXT:Numeric','reduce_summary dimension must be 1 or 2');endif
     n=size(v,dim);total=sum(v,dim);lo=min(v,[],dim);hi=max(v,[],dim);
   endif
-  out=struct('count',n,'sum',total,'mean',total/n,'min',lo,'max',hi);
+  requested=0;if(isfield(opts,'dimension')||!isvector(v)),requested=dim;endif
+  out=struct('count',n,'sum',total,'mean',total/n,'min',lo,'max',hi,'requested_dimension',requested,'input_shape',size(v),'output_shape',size(total));
 endfunction
 function out=op_reduce_accumulate(state,v)
   s=op_reduce_summary(v,struct());
@@ -881,51 +1053,78 @@ function out=op_weighted_quantiles(v,w,p,opts)
 endfunction
 
 function out=op_weighted_statistics(v,w,opts)
-  [v,w,n_total,n_input,n_valid]=prepare_weighted(v,w,opts);sw=sum(w);sw2=sum(w.^2);mu=sum(w.*v)/sw;varp=sum(w.*(v-mu).^2)/sw;denom=sw-sw2/sw;
-  if(denom>0),varu=sum(w.*(v-mu).^2)/denom;else varu=NaN;endif
+  semantics=opt_text(opts,'weight_semantics','relative');
+  if(!any(strcmp(semantics,{'relative','inverse_variance'}))),error('GXTXT:Numeric','Weighted statistics require relative or inverse_variance weights');endif
+  [v,w,n_total,n_input,n_valid]=prepare_weighted(v,w,opts);sw=sum(w);sw2=sum(w.^2);mu=sum(w.*v)/sw;weighted_sse=sum(w.*(v-mu).^2);varp=weighted_sse/sw;denom=sw-sw2/sw;
+  if(denom>0),varu=weighted_sse/denom;else varu=NaN;endif
   qs=weighted_quantile_step(v,w,[0.25;0.5;0.75]);
   out=struct('n_total',n_total,'n_input',n_input,'n_valid',n_valid,'n_nonfinite',n_input-n_valid,'n_zero_weight',n_valid-numel(v),'n_positive_weight',numel(v),'n_positive',numel(v),'sum_weights',sw,'effective_n',sw^2/sw2,'min',min(v),'max',max(v),'range',max(v)-min(v),'weighted_sum',sum(w.*v),'mean',mu,'median',qs(2),'q25',qs(1),'q75',qs(3),'iqr',qs(3)-qs(1),'variance_population',varp,'std_population',sqrt(varp),'variance_unbiased',varu,'std_unbiased',sqrt(varu),'rms',sqrt(sum(w.*v.^2)/sw),'quantile_definition','weighted empirical CDF inverse');
+  out.weight_semantics=semantics;
+  out.sampling_standard_error_mean=sqrt(varu/out.effective_n);
+  out.measurement_standard_error_mean=NaN;
+  if(strcmp(semantics,'inverse_variance'))
+    out.measurement_standard_error_mean=sqrt(1/sw);
+    out.dof=numel(v)-1;out.reduced_chi_squared=NaN;
+    if(out.dof>0),out.reduced_chi_squared=weighted_sse/out.dof;endif
+  endif
 endfunction
 
 % ---------- least squares, regression and polynomial fitting ----------
-function [A,b,w,weighted,n0]=prepare_ls(A,b,w,opts)
+function [A,b,w,weighted,n0,input_rows]=prepare_ls(A,b,w,opts)
   A=real_matrix(A,'design matrix',false);b=real_vector(b,'response',false);if(rows(A)!=numel(b)),error('GXTXT:Numeric','design matrix row count and response length differ');endif
   n0=rows(A);good=all(isfinite(A),2)&isfinite(b);weighted=!isempty(w);
+  input_rows=[];if(nargout>5),input_rows=uint64((1:n0)');endif
   if(weighted),w=real_vector(w,'weights',false);if(numel(w)!=n0),error('GXTXT:Numeric','weight length differs from design matrix row count');endif;good=good&isfinite(w);endif
-  if(any(!good)),if(strcmp(nonfinite_policy(opts),'omit')),A=A(good,:);b=b(good);if(weighted),w=w(good);endif;else error('GXTXT:Numeric','least-squares input contains NaN or Inf; set nonfinite=omit explicitly to discard affected rows');endif,endif
-  if(weighted),if(any(w<0)),error('GXTXT:Numeric','weights must be non-negative');endif;keep=w>0;A=A(keep,:);b=b(keep);w=w(keep);if(isempty(w)),error('GXTXT:Numeric','at least one weight must be positive');endif,endif
+  if(any(!good)),if(strcmp(nonfinite_policy(opts),'omit')),A=A(good,:);b=b(good);if(weighted),w=w(good);endif;if(nargout>5),input_rows=input_rows(good);endif;else error('GXTXT:Numeric','least-squares input contains NaN or Inf; set nonfinite=omit explicitly to discard affected rows');endif,endif
+  if(weighted),if(any(w<0)),error('GXTXT:Numeric','weights must be non-negative');endif;keep=w>0;A=A(keep,:);b=b(keep);w=w(keep);if(nargout>5),input_rows=input_rows(keep);endif;if(isempty(w)),error('GXTXT:Numeric','at least one weight must be positive');endif,endif
 endfunction
-function out=op_least_squares(A,b,w,opts)
-  [A,b,w,weighted,n_input]=prepare_ls(A,b,w,opts);n=rows(A);p=columns(A);if(n<p),error('GXTXT:Numeric','least squares requires at least as many valid rows as columns (%d < %d)',n,p);endif
+function out=op_least_squares(A,b,w,opts,retained_predictors)
+  influence=opt_bool(opts,'influence_diagnostics',false);
+  if(influence),influence_budget(rows(A),columns(A));[A,b,w,weighted,n_input,input_rows]=prepare_ls(A,b,w,opts);else [A,b,w,weighted,n_input]=prepare_ls(A,b,w,opts);endif
+  n=rows(A);p=columns(A);if(n<p),error('GXTXT:Numeric','least squares requires at least as many valid rows as columns (%d < %d)',n,p);endif
   if(weighted),sw=sqrt(w);Aw=A.*repmat(sw,1,p);bw=b.*sw;else Aw=A;bw=b;endif
-  s=svd(Aw);if(isempty(s)),rnk=0;condn=Inf;else tol=max(size(Aw))*eps(max(s));rnk=sum(s>tol);if(rnk<p),condn=Inf;else condn=max(s)/min(s);endif,endif
+  factor=gxtxt_numeric_jacobian_factor_v1(Aw,false(p,1));rnk=factor.rank;s=factor.physical_singular_values;
   rank_policy=opt_text(opts,'rank_policy','error');if(!any(strcmp(rank_policy,{'error','minimum_norm'}))),error('GXTXT:Numeric','rank_policy must be error or minimum_norm');endif
   if(rnk<p&&strcmp(rank_policy,'error')),error('GXTXT:Numeric','design matrix is rank deficient (%d < %d)',rnk,p);endif
-  if(rnk<p),beta=pinv(Aw)*bw;status='rank_deficient_minimum_norm';else beta=Aw\bw;status='ok';endif
-  predicted=A*beta;residual=b-predicted;if(weighted),weighted_residual=sqrt(w).*residual;sse=sum(weighted_residual.^2);mu=sum(w.*b)/sum(w);sst=sum(w.*(b-mu).^2);else weighted_residual=residual;sse=sum(residual.^2);mu=mean(b);sst=sum((b-mu).^2);endif
-  dof=n-rnk;if(dof>0),sigma2=sse/dof;rmse=sqrt(sigma2);residual_rmse=sqrt(sum(residual.^2)/dof);else sigma2=NaN;rmse=NaN;residual_rmse=NaN;endif
+  if(rnk<p),beta=pinv(Aw)*bw;status='rank_deficient_minimum_norm';
+  else
+    % Solve in the same column coordinates used for the rank decision.
+    % Raw backslash can discard a tiny but independently identified column.
+    beta=((Aw./factor.column_scale)\bw)./factor.column_scale(:);status='ok';
+  endif
+  predicted=A*beta;
   weight_semantics=opt_text(opts,'weight_semantics','relative');if(!any(strcmp(weight_semantics,{'relative','inverse_variance'}))),error('GXTXT:Numeric','weight_semantics must be relative or inverse_variance');endif
   if(!weighted),weight_semantics='unweighted';endif
-  covariance_scale=NaN;reduced_chi_squared=NaN;
-  if(dof>0&&rnk==p)
-    if(weighted&&strcmp(weight_semantics,'inverse_variance')),covariance_scale=1;reduced_chi_squared=sse/dof;else covariance_scale=sigma2;endif
-    covb=pinv(Aw'*Aw)*covariance_scale;se=sqrt(max(diag(covb),0));
-  else covb=NaN(p,p);se=NaN(p,1);endif
-  if(sst>0),r2=1-sse/sst;elseif(sse==0),r2=1;else r2=NaN;endif
-  has_intercept=opt_bool(opts,'has_intercept',false);if(has_intercept&&dof>0&&n>1&&isfinite(r2)),adj=1-(1-r2)*(n-1)/dof;else adj=NaN;endif
-  out=struct('coefficients',beta(:),'predicted',predicted(:),'residuals',residual(:),'weighted_residuals',weighted_residual(:),'standard_errors',se(:),'covariance',covb,'singular_values',s(:),'n_input',n_input,'n',n,'p',p,'rank',rnk,'dof',dof,'sse',sse,'rss',sse,'sigma_squared',sigma2,'rmse',rmse,'residual_rmse',residual_rmse,'r_squared',r2,'adjusted_r_squared',adj,'condition_number',condn,'weighted',logical(weighted),'weight_semantics',weight_semantics,'covariance_scale',covariance_scale,'reduced_chi_squared',reduced_chi_squared,'has_intercept',logical(has_intercept),'status',status);
+  diagnostics=struct('weight_semantics',weight_semantics);if(nargin>=5),diagnostics.predictor_values=retained_predictors;else diagnostics.predictor_values=A;endif;diagnostic_weights=w;if(!weighted),diagnostic_weights=ones(n,1);endif
+  out=gxtxt_numeric_fit_diagnostics_v1(beta,b,predicted,Aw,diagnostic_weights,diagnostics,factor);
+  out=rmfield(out,{'parameters','jacobian'});out.coefficients=beta(:);out.singular_values=s(:);out.n_input=n_input;
+  out.sigma_squared=NaN;if(out.dof>0),out.sigma_squared=out.sse/out.dof;endif
+  out.has_intercept=opt_bool(opts,'has_intercept',false);if(!out.has_intercept),out.adjusted_r_squared=NaN;endif
+  out.status=status;
+  if(influence),out.influence=gxtxt_numeric_influence_v1(Aw,out,factor,input_rows,n_input);endif
 endfunction
-function [x,y,w]=prepare_fit_xyw(x,y,w,opts,min_count)
+function influence_budget(n,p)
+  if(n<1||n>1000000||p<1||p>128||80*n*p+128*n+64*p*p>536870912),error('GXTXT:Numeric:Influence','Influence exceeds the 1M-row/128-parameter/512-MiB estimated workspace budget');endif
+endfunction
+function [x,y,w,input_rows]=prepare_fit_xyw(x,y,w,opts,min_count)
   x=real_vector(x,'X',false);y=real_vector(y,'Y',false);if(numel(x)!=numel(y)),error('GXTXT:Numeric','X and Y lengths differ');endif;weighted=!isempty(w);good=isfinite(x)&isfinite(y);
+  input_rows=[];if(nargout>3),input_rows=uint64((1:numel(x))');endif
   if(weighted),w=real_vector(w,'weights',false);if(numel(w)!=numel(x)),error('GXTXT:Numeric','weight length differs from X/Y length');endif;good=good&isfinite(w);endif
-  if(any(!good)),if(strcmp(nonfinite_policy(opts),'omit')),x=x(good);y=y(good);if(weighted),w=w(good);endif;else error('GXTXT:Numeric','fit input contains NaN or Inf; set nonfinite=omit explicitly to discard affected observations');endif,endif
-  if(weighted),if(any(w<0)),error('GXTXT:Numeric','weights must be non-negative');endif;keep=w>0;x=x(keep);y=y(keep);w=w(keep);if(isempty(w)),error('GXTXT:Numeric','at least one weight must be positive');endif,endif
+  if(any(!good)),if(strcmp(nonfinite_policy(opts),'omit')),x=x(good);y=y(good);if(weighted),w=w(good);endif;if(nargout>3),input_rows=input_rows(good);endif;else error('GXTXT:Numeric','fit input contains NaN or Inf; set nonfinite=omit explicitly to discard affected observations');endif,endif
+  if(weighted),if(any(w<0)),error('GXTXT:Numeric','weights must be non-negative');endif;keep=w>0;x=x(keep);y=y(keep);w=w(keep);if(nargout>3),input_rows=input_rows(keep);endif;if(isempty(w)),error('GXTXT:Numeric','at least one weight must be positive');endif,endif
   if(numel(x)<min_count),error('GXTXT:Numeric','fit requires at least %d valid observations',min_count);endif
 endfunction
 function out=op_linear_regression(x,y,w,opts)
-  [x,y,w]=prepare_fit_xyw(x,y,w,opts,2);with_intercept=opt_bool(opts,'intercept',true);if(with_intercept),A=[ones(numel(x),1),x];else A=x;endif
-  r=op_least_squares(A,y,w,merge_opts(opts,struct('has_intercept',with_intercept)));r.x=x;r.y=y;r.intercept_included=logical(with_intercept);
+  influence=opt_bool(opts,'influence_diagnostics',false);input_count=numel(x);
+  if(influence),influence_budget(input_count,2);[x,y,w,input_rows]=prepare_fit_xyw(x,y,w,opts,2);else [x,y,w]=prepare_fit_xyw(x,y,w,opts,2);endif
+  with_intercept=opt_bool(opts,'intercept',opt_bool(opts,'has_intercept',true));
+  if(isfield(opts,'intercept')&&isfield(opts,'has_intercept')&&opt_bool(opts,'intercept',true)!=opt_bool(opts,'has_intercept',true))
+    error('GXTXT:Numeric:InvalidOption','intercept and has_intercept must agree when both are supplied');
+  endif
+  if(with_intercept),A=[ones(numel(x),1),x];else A=x;endif
+  r=op_least_squares(A,y,w,merge_opts(opts,struct('has_intercept',with_intercept)),x);r.x=x;r.y=y;r.intercept_included=logical(with_intercept);
   if(with_intercept),r.intercept=r.coefficients(1);r.slope=r.coefficients(2);else r.intercept=0;r.slope=r.coefficients(1);endif
+  if(influence),r.influence.input_row_index=input_rows;r.influence.input_count=input_count;endif
   out=r;
 endfunction
 function V=poly_design(z,degree)
@@ -941,20 +1140,52 @@ function T=scaled_poly_transform(degree,center,scale)
 endfunction
 function out=op_polynomial_fit(x,y,degree,w,opts)
   degree=double(degree);if(!isscalar(degree)||!isfinite(degree)||degree<0||degree!=fix(degree)),error('GXTXT:Numeric','polynomial degree must be a non-negative integer');endif
-  [x,y,w]=prepare_fit_xyw(x,y,w,opts,degree+1);center_scale=opt_bool(opts,'center_scale',true);
-  if(center_scale&&degree>0),center=mean(x);scale=std(x,0);if(!isfinite(scale)||scale<=0),error('GXTXT:Numeric','polynomial fit cannot scale a zero-spread X vector');endif;z=(x-center)/scale;scaling='center_scale';else center=0;scale=1;z=x;scaling='none';endif
-  V=poly_design(z,degree);ls=op_least_squares(V,y,w,merge_opts(opts,struct('has_intercept',true)));T=scaled_poly_transform(degree,center,scale);coeff=T*ls.coefficients;covx=T*ls.covariance*T.';sex=sqrt(max(diag(covx),0));
+  influence=opt_bool(opts,'influence_diagnostics',false);input_count=numel(x);
+  if(influence),influence_budget(input_count,degree+1);[x,y,w,input_rows]=prepare_fit_xyw(x,y,w,opts,degree+1);else [x,y,w]=prepare_fit_xyw(x,y,w,opts,degree+1);endif
+  center_scale=opt_bool(opts,'center_scale',true);
+  [V,T,center,scale,scaling]=polynomial_coordinates(x,degree,center_scale);ls=op_least_squares(V,y,w,merge_opts(opts,struct('has_intercept',true)),x);coeff=T*ls.coefficients;covx=T*ls.covariance*T.';sex=sqrt(max(diag(covx),0));
   out=ls;out.coefficients=coeff(:);out.standard_errors=sex(:);out.covariance=covx;out.scaled_coefficients=ls.coefficients(:);out.scaled_covariance=ls.covariance;out.degree=degree;out.x_center=center;out.x_scale=scale;out.scaling=scaling;out.x=x;out.y=y;out.weighted=logical(!isempty(w));
+  if(influence),out.influence.input_row_index=input_rows;out.influence.input_count=input_count;endif
+endfunction
+function [V,T,center,scale,scaling]=polynomial_coordinates(x,degree,center_scale)
+  if(center_scale&&degree>0),center=mean(x);scale=std(x,0);if(!isfinite(scale)||scale<=0),error('GXTXT:Numeric','polynomial fit cannot scale a zero-spread X vector');endif;z=(x-center)/scale;scaling='center_scale';else center=0;scale=1;z=x;scaling='none';endif
+  V=poly_design(z,degree);T=scaled_poly_transform(degree,center,scale);
+endfunction
+function out=op_polynomial_gls(x,y,degree,C,opts)
+  degree=double(degree);
+  if(!isscalar(degree)||!isfinite(degree)||degree<0||degree>63||degree!=fix(degree)),error('GXTXT:Numeric:GLS','Polynomial GLS degree must be an integer from0 to63');endif
+  if(numel(x)>2048),error('GXTXT:Numeric:GLS','Polynomial GLS is bounded to2048 observations');endif
+  [x,y]=prepare_fit_xyw(x,y,[],struct('nonfinite','error'),degree+1);
+  center_scale=opt_bool(opts,'center_scale',true);if(isfield(opts,'center_scale')),opts=rmfield(opts,'center_scale');endif
+  [V,T,center,scale,scaling]=polynomial_coordinates(x,degree,center_scale);
+  out=gxtxt_numeric_gls_v1(V,y,C,opts);
+  out.scaled_coefficients=out.coefficients;out.scaled_covariance=out.covariance;
+  out.coefficients=T*out.coefficients;out.covariance=T*out.covariance*T.';
+  if(any(!isfinite(out.coefficients))),error('GXTXT:Numeric:GLS','Physical polynomial coefficients overflow');endif
+  available=!strcmp(out.uncertainty_status,'unavailable_no_residual_dof');
+  if(available&&any(!isfinite(out.covariance(:)))),error('GXTXT:Numeric:GLS','Physical polynomial covariance overflow');endif
+  variance=diag(out.covariance);finite=isfinite(variance);variance(finite)=max(variance(finite),0);out.standard_errors=sqrt(variance);
+  out.operation='polynomial_gls';out.degree=degree;out.x_center=center;out.x_scale=scale;out.scaling=scaling;
+  out.observation_signature=gxtxt_numeric_v1('fit_observation_signature',y,[],[],x);
+  out.summary=rmfield(out,{'predicted','residuals','whitened_residuals','summary','scaled_coefficients','scaled_covariance','degree','x_center','x_scale','scaling'});
+  out.summary.schema='gxtxt.gls_numeric_summary.v1';
 endfunction
 function out=op_polynomial_evaluate(model,xq,opts)
   if(!isstruct(model)||numel(model)!=1),error('GXTXT:Numeric','polynomial model must be a scalar struct returned by polynomial_fit');endif
   xq=real_vector(xq,'X query',true);if(any(!isfinite(xq))),error('GXTXT:Numeric','X query contains NaN or Inf');endif
+  scale=1;z=xq;
   if(isfield(model,'scaled_coefficients')&&isfield(model,'x_center')&&isfield(model,'x_scale'))
-    c=real_vector(model.scaled_coefficients,'scaled coefficients',false);z=(xq-double(model.x_center))/double(model.x_scale);yq=polyval(c.',z);
+    scale=double(model.x_scale);center=double(model.x_center);
+    if(!isscalar(scale)||!isfinite(scale)||scale<=0||!isscalar(center)||!isfinite(center)),error('GXTXT:Numeric','Polynomial scaling must be finite with positive scale');endif
+    c=real_vector(model.scaled_coefficients,'scaled coefficients',false);z=(xq-center)/scale;
   elseif(isfield(model,'coefficients'))
-    c=real_vector(model.coefficients,'coefficients',false);yq=polyval(c.',xq);
+    c=real_vector(model.coefficients,'coefficients',false);
   else error('GXTXT:Numeric','polynomial model has no coefficients');endif
-  out=struct('xq',xq,'yq',double(yq(:)),'degree',numel(c)-1);
+  degree=numel(c)-1;order=opt_int(opts,'derivative_order',0);
+  if(order<0||order>12),error('GXTXT:Numeric','Polynomial derivative order must be0..12');endif
+  for k=1:order,c=polyder(c);endfor
+  yq=polyval(c(:).',z)/scale^order;
+  out=struct('xq',xq,'yq',double(yq(:)),'degree',degree,'derivative_order',order);
 endfunction
 
 % ---------- generic nonlinear least squares ----------
@@ -978,46 +1209,69 @@ function loaded=try_load_optim()
   loaded=(exist('lsqnonlin','file')==2);
 endfunction
 function out=op_nonlinear_fit(model_fun,X,y,initial,opts)
+  if(isstruct(model_fun))
+    out=gxtxt_numeric_declared_fit_v1(model_fun,X,y,initial,opts);return;
+  endif
+  if(!strcmp(opt_text(opts,'multistart_mode','single'),'single')),error('GXTXT:Numeric','Multistart currently requires a declared model');endif
+  if(!strcmp(opt_text(opts,'fit_geometry','vertical_response'),'vertical_response')||opt_has(opts,'sigma_x')),error('GXTXT:Numeric','XY uncertainty fitting requires a declared model and the native backend');endif
   require_function_handle(model_fun,'model function');p0=real_vector(initial,'initial parameters',false);if(any(!isfinite(p0))),error('GXTXT:Numeric','initial parameters must be finite');endif;weights=[];weight_semantics='relative';
   if(opt_has(opts,'weights')),weights=real_vector(opts.weights,'weights',false);weight_semantics=opt_text(opts,'weight_semantics','relative');elseif(opt_has(opts,'sigma')),sig=real_vector(opts.sigma,'sigma',false);if(any(sig<=0)||any(!isfinite(sig))),error('GXTXT:Numeric','sigma values must be finite and positive');endif;weights=1./(sig.^2);weight_semantics='inverse_variance';endif
   if(!any(strcmp(weight_semantics,{'relative','inverse_variance'}))),error('GXTXT:Numeric','weight_semantics must be relative or inverse_variance');endif
-  [X,y,w]=prepare_nonlinear_data(X,y,weights,opts);n=numel(y);p=numel(p0);if(n<p),error('GXTXT:Numeric','nonlinear fit has fewer observations than parameters');endif;sqrtw=sqrt(w);
+  [X,y,w]=prepare_nonlinear_data(X,y,weights,opts);n=numel(y);p=numel(p0);sqrtw=sqrt(w);
+  if(p<1||p>128||n*p*8>512*1024*1024),error('GXTXT:Numeric:Memory','Callback fitting requires 1..128 parameters and a Jacobian within 512 MiB');endif
   lb=-Inf(p,1);ub=Inf(p,1);if(opt_has(opts,'lower_bounds')),lb=real_vector(opts.lower_bounds,'lower_bounds',false);endif;if(opt_has(opts,'upper_bounds')),ub=real_vector(opts.upper_bounds,'upper_bounds',false);endif
   if(numel(lb)!=p||numel(ub)!=p),error('GXTXT:Numeric','parameter bounds must match initial parameter length');endif;if(any(isnan(lb))||any(isnan(ub))),error('GXTXT:Numeric','parameter bounds must not contain NaN');endif;if(any(lb>ub)),error('GXTXT:Numeric','lower_bounds must be <= upper_bounds');endif;if(any(p0<lb)||any(p0>ub)),error('GXTXT:Numeric','initial parameters violate bounds');endif
+  fixed=zeros(p,1);if(opt_has(opts,'fixed_mask')),fixed=real_vector(opts.fixed_mask,'fixed_mask',false);endif
+  if(numel(fixed)!=p||any(!ismember(fixed,[0,1]))),error('GXTXT:Numeric','fixed_mask must contain one boolean per parameter');endif
+  fixed=logical(fixed)|(lb==ub);free=find(!fixed);free_count=numel(free);
+  if(n<free_count),error('GXTXT:Numeric','nonlinear fit has fewer observations than free parameters');endif
   solver=opt_text(opts,'solver','auto');maxiter=opt_int(opts,'max_iterations',400);tol=opt_num(opts,'tolerance',1e-8);if(maxiter<1||tol<=0),error('GXTXT:Numeric','invalid nonlinear solver limits');endif
   bounded_fminsearch=opt_text(opts,'bounded_fminsearch','reject');
   if(!any(strcmp(bounded_fminsearch,{'reject','penalty_clip'}))),error('GXTXT:Numeric','bounded_fminsearch must be reject or penalty_clip');endif
-  requested_solver=solver;have_lsq=try_load_optim();if(strcmp(solver,'auto')),if(have_lsq),solver='lsqnonlin';else solver='fminsearch';endif,endif
-  fun=@(q) nl_weighted_residual(model_fun,q,X,y,sqrtw);iterations=NaN;evals=NaN;message='';J=[];
-  if(strcmp(solver,'lsqnonlin'))
+  if(!any(strcmp(solver,{'auto','lsqnonlin','fminsearch'}))),error('GXTXT:Numeric','nonlinear solver must be auto, lsqnonlin or fminsearch');endif
+  requested_solver=solver;have_lsq=false;if(free_count),have_lsq=try_load_optim();endif
+  if(strcmp(solver,'auto')),if(have_lsq),solver='lsqnonlin';else solver='fminsearch';endif,endif
+  free_model=@(q,predictors) model_fun(nonlinear_expand_free(q,p0,free),predictors);
+  fun=@(q) nl_weighted_residual(free_model,q,X,y,sqrtw);iterations=NaN;evals=NaN;message='';Jfree=[];
+  q0=p0(free);lo=lb(free);hi=ub(free);
+  if(!free_count)
+    qhat=zeros(0,1);Jfree=zeros(n,0);solver='fixed_evaluation';exitflag=1;iterations=0;evals=1;message='All parameters fixed; optimizer not invoked';
+  elseif(strcmp(solver,'lsqnonlin'))
     if(!have_lsq),error('GXTXT:Numeric','solver lsqnonlin requires the Octave optim package');endif
     o=optimset('Display','off','MaxIter',maxiter,'TolFun',tol,'TolX',tol);
     try
-      [phat,obj,wr,exitflag,info,~,J]=lsqnonlin(fun,p0,lb,ub,o);
+      [qhat,obj,wr,exitflag,info,~,Jfree]=lsqnonlin(fun,q0,lo,hi,o);
       if(isstruct(info)),if(isfield(info,'iterations')),iterations=info.iterations;endif;if(isfield(info,'niter')),iterations=info.niter;endif;if(isfield(info,'funcCount')),evals=info.funcCount;endif;if(isfield(info,'nfev')),evals=info.nfev;endif;if(isfield(info,'message')),message=info.message;endif,endif
     catch err
       if(strcmp(requested_solver,'auto')&&opt_bool(opts,'fallback_on_solver_error',false)),solver='fminsearch';else rethrow(err);endif
     end_try_catch
   endif
   if(strcmp(solver,'fminsearch'))
-    bounded=any(isfinite(lb))||any(isfinite(ub));
+    bounded=any(isfinite(lo))||any(isfinite(hi));
     if(bounded&&strcmp(bounded_fminsearch,'reject')),error('GXTXT:Numeric','bounded nonlinear fitting requires solver lsqnonlin or bounded_fminsearch=penalty_clip');endif
     if(bounded)
-      scale=max(abs(p0),1);z0=p0./scale;
-      objfun=@(z) nonlinear_bounded_penalty(z,scale,fun,lb,ub);
+      scale=max(abs(q0),1);z0=q0./scale;
+      objfun=@(z) nonlinear_bounded_penalty(z,scale,fun,lo,hi);
       o=optimset('Display','off','MaxIter',maxiter,'MaxFunEvals',20*maxiter,'TolX',tol,'TolFun',tol);
-      [z,obj,exitflag,info]=fminsearch(objfun,z0,o);phat=min(max(z.*scale,lb),ub);
+      [z,obj,exitflag,info]=fminsearch(objfun,z0,o);qhat=min(max(z.*scale,lo),hi);
     else
-      objfun=@(q) sum(fun(q).^2);o=optimset('Display','off','MaxIter',maxiter,'TolX',tol,'TolFun',tol);[phat,obj,exitflag,info]=fminsearch(objfun,p0,o);
+      objfun=@(q) sum(fun(q).^2);o=optimset('Display','off','MaxIter',maxiter,'TolX',tol,'TolFun',tol);[qhat,obj,exitflag,info]=fminsearch(objfun,q0,o);
     endif
-    wr=fun(phat);J=numerical_jacobian(model_fun,phat,X,y,sqrtw);
+    wr=fun(qhat);Jfree=numerical_jacobian(free_model,qhat,X,y,sqrtw);
     if(isstruct(info)),if(isfield(info,'iterations')),iterations=info.iterations;endif;if(isfield(info,'funcCount')),evals=info.funcCount;endif;endif
-  elseif(!strcmp(solver,'lsqnonlin')),error('GXTXT:Numeric','nonlinear solver must be auto, lsqnonlin or fminsearch');endif
-  phat=phat(:);pred=model_eval(model_fun,phat,X,n);res=y-pred;sse=sum((sqrtw.*res).^2);rnk=rank(J);dof=n-rnk;covariance_scale=NaN;reduced_chi_squared=NaN;
-  if(dof>0&&rnk==p),if(!isempty(weights)&&strcmp(weight_semantics,'inverse_variance')),covariance_scale=1;reduced_chi_squared=sse/dof;else covariance_scale=sse/dof;endif;covp=pinv(J.'*J)*covariance_scale;se=sqrt(max(diag(covp),0));else covp=NaN(p,p);se=NaN(p,1);endif
-  mu=sum(w.*y)/sum(w);sst=sum(w.*(y-mu).^2);if(sst>0),r2=1-sse/sst;elseif(sse==0),r2=1;else r2=NaN;endif;if(dof>0&&n>1&&isfinite(r2)),adj=1-(1-r2)*(n-1)/dof;else adj=NaN;endif
-  sv=svd(J);if(rnk<p||isempty(sv)),condn=Inf;else condn=max(sv)/min(sv);endif
-  out=struct('parameters',phat,'predicted',pred(:),'residuals',res(:),'weighted_residuals',sqrtw.*res(:),'objective',sse,'sse',sse,'rss',sse,'rmse',iff(dof>0,sqrt(sse/dof),NaN),'residual_rmse',iff(dof>0,sqrt(sum(res.^2)/dof),NaN),'r_squared',r2,'adjusted_r_squared',adj,'dof',dof,'rank',rnk,'condition_number',condn,'covariance',covp,'standard_errors',se(:),'jacobian',J,'weighted',logical(!isempty(weights)),'weight_semantics',iff(isempty(weights),'unweighted',weight_semantics),'covariance_scale',covariance_scale,'reduced_chi_squared',reduced_chi_squared,'solver',solver,'converged',logical(exitflag>0),'exitflag',exitflag,'iterations',iterations,'function_evaluations',evals,'solver_message',message);
+  endif
+  phat=nonlinear_expand_free(qhat,p0,free);pred=model_eval(model_fun,phat,X,n);
+  J=zeros(n,p);J(:,free)=Jfree;
+  diagnostics=struct('weight_semantics',iff(isempty(weights),'unweighted',weight_semantics),'predictor_values',X,'fixed_mask',fixed);
+  diagnostics.active_bounds=!fixed&((isfinite(lb)&abs(phat-lb)<=32*eps.*max(abs(lb),abs(phat)))|(isfinite(ub)&abs(phat-ub)<=32*eps.*max(abs(ub),abs(phat))));
+  out=gxtxt_numeric_fit_diagnostics_v1(phat,y,pred,J,w,diagnostics);
+  out.active_bounds=diagnostics.active_bounds;
+  out.solver=solver;out.converged=logical(exitflag>0);out.exitflag=exitflag;
+  out.iterations=iterations;out.function_evaluations=evals;out.solver_message=message;
+endfunction
+
+function full=nonlinear_expand_free(values,initial,free)
+  full=initial;full(free)=values(:);
 endfunction
 
 function s=nonlinear_bounded_penalty(z,scale,fun,lb,ub)
@@ -1045,18 +1299,30 @@ function loaded=try_load_signal()
   loaded=(exist('sgolayfilt','file')==2);
 endfunction
 function out=op_smooth(x,y,opts)
+  if(numel(x)!=numel(y)),error('GXTXT:Numeric','X and Y smoothing lengths differ');endif
+  original_count=numel(x);valid=isfinite(x(:))&isfinite(y(:));
   [x,y]=xy_prepare(x,y,opts,1);method=opt_text(opts,'method','moving_mean');window=opt_int(opts,'window',5);if(window<1),error('GXTXT:Numeric','smoothing window must be >= 1');endif;if(mod(window,2)==0),error('GXTXT:Numeric','smoothing window must be odd for centered v1 smoothing');endif
+  if(any(strcmp(method,{'lowess','loess'})))
+    allowed={'method','window','degree','robust_iterations','nonfinite','selection','selection_id','chunk_rows'};
+    unknown=setdiff(fieldnames(opts),allowed);if(!isempty(unknown)),error('GXTXT:Numeric','Unknown LOWESS option: %s',unknown{1});endif
+    degree=opt_int(opts,'degree',1+strcmp(method,'loess'));iterations=opt_int(opts,'robust_iterations',2);
+    out=gxtxt_numeric_lowess_v1(x,y,window,degree,iterations);
+    out.original_count=original_count;out.source_row_positions=uint64(find(valid));out.dropped_row_positions=uint64(find(!valid));return;
+  endif
+  if(isfield(opts,'robust_iterations')),error('GXTXT:Numeric','robust_iterations requires lowess or loess');endif
   if(strcmp(method,'moving_mean')),ys=moving_stat_local(y,window,'mean');degree=NaN;endpoint='shrink';
   elseif(strcmp(method,'moving_median')),ys=moving_stat_local(y,window,'median');degree=NaN;endpoint='shrink';
   elseif(any(strcmp(method,{'savitzky_golay','savgol'})))
+    if(window>numel(x)),error('GXTXT:Numeric','Savitzky-Golay window exceeds retained data length');endif
     degree=opt_int(opts,'degree',2);if(degree<0||degree>=window),error('GXTXT:Numeric','Savitzky-Golay degree must be in [0, window-1]');endif
     g=op_grid_info(x,opts);if(!g.uniform),error('GXTXT:Numeric','Savitzky-Golay smoothing requires a uniform X grid; use local_polynomial for non-uniform coordinates');endif
     if(!try_load_signal()),error('GXTXT:Numeric','Savitzky-Golay smoothing requires the Octave signal package (sgolayfilt)');endif
     ys=sgolayfilt(y,degree,window);method='savitzky_golay';endpoint='signal.sgolayfilt';
   elseif(strcmp(method,'local_polynomial'))
     degree=opt_int(opts,'degree',2);ys=local_polynomial_smooth(x,y,window,degree);endpoint='shift_full_window';
-  else error('GXTXT:Numeric','smoothing method must be moving_mean, moving_median, savitzky_golay or local_polynomial');endif
+  else error('GXTXT:Numeric','smoothing method must be moving_mean, moving_median, savitzky_golay, local_polynomial, lowess or loess');endif
   out=struct('x',x,'y',double(ys(:)),'residuals',double(y(:)-ys(:)),'method',method,'window',window,'degree',degree,'endpoint_policy',endpoint);
+  out.original_count=original_count;out.source_row_positions=uint64(find(valid));out.dropped_row_positions=uint64(find(!valid));
 endfunction
 function out=op_digital_filter(y,b,a,opts)
   y=real_vector(y,'signal',false);b=real_vector(b,'numerator coefficients',false);a=real_vector(a,'denominator coefficients',false);
@@ -1106,7 +1372,15 @@ endfunction
 
 % ---------- baseline primitives ----------
 function out=op_baseline(x,y,anchor_x,anchor_y,opts)
-  [x,y]=paired_vectors(x,y,'X','Y',opts,1);method=opt_text(opts,'method','constant');base=zeros(size(y));coeff=[];degree=NaN;
+  for values={x,y}
+    v=values{1};if(isinteger(v)&&(any(v(:)>cast(flintmax,class(v)))||any(v(:)<cast(-flintmax,class(v)))))
+      error('GXTXT:Numeric:Baseline','Baseline integer inputs outside the exact binary64 range require an explicit scientific conversion');
+    endif
+  endfor
+  original_x=x(:);original_y=y(:);
+  raw_x=real_vector(x,'X',false);raw_y=real_vector(y,'Y',false);
+  [x,y]=paired_vectors(raw_x,raw_y,'X','Y',opts,1);good=isfinite(raw_x)&isfinite(raw_y);
+  method=opt_text(opts,'method','constant');base=zeros(size(y));coeff=[];degree=NaN;details=struct();
   if(strcmp(method,'constant'))
     if(opt_has(opts,'value')),c=opt_num(opts,'value',0);else est=opt_text(opts,'estimator','mean');if(strcmp(est,'mean')),c=mean(y);elseif(strcmp(est,'median')),c=median(y);else error('GXTXT:Numeric','constant baseline estimator must be mean or median');endif,endif;base(:)=c;coeff=c;degree=0;
   elseif(any(strcmp(method,{'linear','polynomial'})))
@@ -1115,8 +1389,13 @@ function out=op_baseline(x,y,anchor_x,anchor_y,opts)
   elseif(strcmp(method,'anchors'))
     require_strict_increasing(x,'X');anchor_x=real_vector(anchor_x,'anchor X',false);anchor_y=real_vector(anchor_y,'anchor Y',false);if(numel(anchor_x)!=numel(anchor_y)),error('GXTXT:Numeric','anchor X/Y lengths differ');endif
     amethod=opt_text(opts,'anchor_method','linear');r=op_interpolate(anchor_x,anchor_y,x,struct('method',amethod,'extrapolation',opt_text(opts,'extrapolation','error'),'nonfinite',nonfinite_policy(opts)));base=r.yq;method=['anchors_' amethod];
-  else error('GXTXT:Numeric','baseline method must be constant, linear, polynomial or anchors');endif
+  elseif(strcmp(method,'asls'))
+    details=gxtxt_numeric_baseline_asls_v1(x,y,opts);base=details.baseline;details=rmfield(details,'baseline');
+  else error('GXTXT:Numeric','baseline method must be constant, linear, polynomial, anchors or asls');endif
   out=struct('x',x,'baseline',double(base(:)),'corrected',double(y(:)-base(:)),'method',method,'degree',degree,'coefficients',double(coeff(:)));
+  out.original_x=original_x(good);out.original_y=original_y(good);out.source_row_positions=find(good);out.dropped_row_positions=find(!good);out.index_base=1;
+  out.original_n=numel(raw_y);out.selected_n=numel(y);out.nonfinite_policy=nonfinite_policy(opts);
+  out.row_order='original_input_order';out.estimator=details;out.schema='gxtxt.baseline_result.v1';
 endfunction
 
 % ---------- root finding, optimization and uncertainty ----------
@@ -1142,7 +1421,7 @@ function out=op_propagate_uncertainty(J,u,opts)
     Cin=real_matrix(u,'input covariance',false);if(rows(Cin)!=n||columns(Cin)!=n||any(!isfinite(Cin(:)))),error('GXTXT:Numeric','input covariance dimensions must match Jacobian columns');endif;if(norm(Cin-Cin.','fro')>1e-10*max(1,norm(Cin,'fro'))),error('GXTXT:Numeric','input covariance must be symmetric');endif
     ev=eig((Cin+Cin.')/2);tol=1e-12*max(1,max(abs(ev)));if(any(ev < -tol)),error('GXTXT:Numeric','input covariance must be positive semidefinite within numerical tolerance');endif
   else error('GXTXT:Numeric','input_kind must be standard_uncertainty or covariance');endif
-  Cout=J*Cin*J.';sout=sqrt(max(diag(Cout),0));out=struct('covariance',Cout,'standard_uncertainty',sout(:),'jacobian',J,'input_covariance',Cin,'method','first_order_linear_propagation');
+  Cout=J*Cin*J.';sout=sqrt(max(diag(Cout),0));out=struct('covariance',Cout,'standard_uncertainty',sout(:),'jacobian',J,'input_covariance',Cin,'method','first_order_linear_propagation','input_kind',kind,'input_count',columns(J),'output_count',rows(J));
 endfunction
 
 % ---------- Dataset-aware facade ----------
@@ -1202,7 +1481,7 @@ function out=op_dataset_reduce_summary(session,dataset_id,vid,opts)
   endif
   chunk_rows=opt_int(opts,'chunk_rows',65536);
   if(chunk_rows<1),error('GXTXT:Numeric','chunk_rows must be >= 1');endif
-  S=gxtxt_table_stream_open_dataset(session,dataset_id,ids,chunk_rows,struct('start',0,'count',-1,'require_direct',false,'numeric_transport','auto'));
+  S=gxtxt_table_stream_open_dataset(session,dataset_id,ids,chunk_rows,struct('start',0,'count',-1,'require_direct',false,'numeric_transport','resource'));
   schema=S.schema;state=[];n_input=0;n_valid=0;policy=nonfinite_policy(opts);
   unwind_protect
     while(!S.eof)
@@ -1247,16 +1526,58 @@ function out=op_dataset_polynomial_fit(session,dataset_id,xid,yid,degree,opts)
   selection=opt(opts,'selection',struct('enabled',false));wid='';if(opt_has(opts,'weight_variable_id')),wid=strtrim(opts.weight_variable_id);endif;ids={xid,yid};if(!isempty(wid)),ids{end+1}=wid;endif;validate_dataset_ids(session,dataset_id,ids);validate_xy_selection(selection,dataset_id,xid,yid);[vals,meta]=dataset_read(session,dataset_id,ids,selection,opts);w=[];if(!isempty(wid)),w=vals{3};endif;r=op_polynomial_fit(vals{1},vals{2},degree,w,opts);r.dataset_id=dataset_id;r.x_variable_id=xid;r.y_variable_id=yid;r.weight_variable_id=wid;r.x_unit=meta.units{1};r.y_unit=meta.units{2};r.selection_id=selection_id(selection);out=r;
 endfunction
 function out=op_dataset_nonlinear_fit(session,dataset_id,xid,yid,model_fun,initial,opts)
-  selection=opt(opts,'selection',struct('enabled',false));wid='';if(opt_has(opts,'weight_variable_id')),wid=strtrim(opts.weight_variable_id);endif;ids={xid,yid};if(!isempty(wid)),ids{end+1}=wid;endif;validate_dataset_ids(session,dataset_id,ids);validate_xy_selection(selection,dataset_id,xid,yid);[vals,meta]=dataset_read(session,dataset_id,ids,selection,opts);fitopts=opts;if(!isempty(wid)),fitopts.weights=vals{3};endif;r=op_nonlinear_fit(model_fun,vals{1},vals{2},initial,fitopts);r.dataset_id=dataset_id;r.x_variable_id=xid;r.y_variable_id=yid;r.weight_variable_id=wid;r.x_unit=meta.units{1};r.y_unit=meta.units{2};r.selection_id=selection_id(selection);out=r;
+  selection=opt(opts,'selection',struct('enabled',false));wid=opt_text(opts,'weight_variable_id','');
+  sxid=opt_text(opts,'sigma_x_variable_id','');syid=opt_text(opts,'sigma_variable_id','');
+  bound_xy=!isempty(sxid)||!isempty(syid);ids={xid,yid};fitopts=opts;
+  if(bound_xy)
+    if(isempty(sxid)||isempty(syid)||!isempty(wid)||opt_has(opts,'weights')||opt_has(opts,'sigma')||opt_has(opts,'sigma_x')||!strcmp(opt_text(opts,'fit_geometry','vertical_response'),'orthogonal_xy'))
+      error('GXTXT:Numeric:ODR','Dataset XY fitting requires both sigma variable identities, explicit orthogonal_xy geometry and no competing measurement arrays or weights');
+    endif
+    ids{end+1}=sxid;ids{end+1}=syid;
+  elseif(!isempty(wid)),ids{end+1}=wid;endif
+  validate_dataset_ids(session,dataset_id,ids);validate_xy_selection(selection,dataset_id,xid,yid);
+  [vals,meta,original_rows]=dataset_read(session,dataset_id,ids,selection,opts);
+  if(isstruct(model_fun)&&(isfield(model_fun,'composition')||isfield(model_fun,'regional_composition')))
+    model_fun=gxtxt_numeric_fit_model_v1(model_fun,numel(initial));
+    declaration='composition';if(isfield(model_fun,'regional_composition')),declaration='regional_composition';endif
+    for axis=1:2
+      keys={'x_unit','y_unit'};declared_unit=model_fun.(declaration).recipe.(keys{axis});
+      actual_unit=meta.units{axis};if(isempty(actual_unit)),actual_unit='unspecified';endif
+      if(!strcmp(declared_unit,actual_unit)),error('GXTXT:Numeric:Model','Frozen model recipe units differ from the bound Dataset axes; convert data explicitly before fitting');endif
+    endfor
+  endif
+  if(bound_xy)
+    for axis=1:2
+      if(isempty(meta.units{axis})||!strcmp(meta.units{axis},meta.units{axis+2}))
+        error('GXTXT:Numeric:ODR','Dataset sigma columns must declare the same units as their respective axes; convert uncertainties explicitly using the public CORE unit scale before array fitting');
+      endif
+    endfor
+    fitopts.sigma_x=vals{3};fitopts.sigma=vals{4};
+  elseif(!isempty(wid)),fitopts.weights=vals{3};endif
+  r=op_nonlinear_fit(model_fun,vals{1},vals{2},initial,fitopts);
+  r.dataset_id=dataset_id;r.x_variable_id=xid;r.y_variable_id=yid;r.weight_variable_id=wid;
+  r.x_unit=meta.units{1};r.y_unit=meta.units{2};r.selection_id=selection_id(selection);
+  if(isfield(r,'source_row_positions'))
+    r.source_row_ordinals=original_rows(r.source_row_positions);r.dropped_row_ordinals=original_rows(r.dropped_row_positions);r.row_identity='original_dataset_one_based_uint64';
+  endif
+  if(bound_xy),r.sigma_x_variable_id=sxid;r.sigma_variable_id=syid;r.sigma_x_unit=meta.units{3};r.sigma_unit=meta.units{4};endif
+  out=r;
 endfunction
 function out=op_dataset_smooth(session,dataset_id,xid,yid,opts)
-  [vals,meta,selection]=dataset_xy(session,dataset_id,xid,yid,opts);r=op_smooth(vals{1},vals{2},opts);out=annotate_xy(r,dataset_id,xid,yid,meta,selection);
+  selection=opt(opts,'selection',struct('enabled',false));validate_dataset_ids(session,dataset_id,{xid,yid});validate_xy_selection(selection,dataset_id,xid,yid);
+  [vals,meta,rows]=dataset_read(session,dataset_id,{xid,yid},selection,opts);
+  r=op_smooth(vals{1},vals{2},opts);out=annotate_xy(r,dataset_id,xid,yid,meta,selection);
+  out.source_row_ordinals=rows(r.source_row_positions);out.dropped_row_ordinals=rows(r.dropped_row_positions);out.row_identity='original_dataset_one_based_uint64';
 endfunction
 function out=op_dataset_find_peaks(session,dataset_id,xid,yid,opts)
   [vals,meta,selection]=dataset_xy(session,dataset_id,xid,yid,opts);r=op_find_peaks(vals{1},vals{2},opts);out=annotate_xy(r,dataset_id,xid,yid,meta,selection);
 endfunction
 function out=op_dataset_baseline(session,dataset_id,xid,yid,opts)
-  [vals,meta,selection]=dataset_xy(session,dataset_id,xid,yid,opts);if(strcmp(opt_text(opts,'method','constant'),'anchors')),error('GXTXT:Numeric','Dataset baseline anchors must be supplied through the low-level baseline API; Dataset baseline supports constant/linear/polynomial methods');endif;r=op_baseline(vals{1},vals{2},[],[],opts);out=annotate_xy(r,dataset_id,xid,yid,meta,selection);
+  selection=opt(opts,'selection',struct('enabled',false));validate_dataset_ids(session,dataset_id,{xid,yid});validate_xy_selection(selection,dataset_id,xid,yid);
+  [vals,meta,rows]=dataset_read(session,dataset_id,{xid,yid},selection,opts);
+  if(strcmp(opt_text(opts,'method','constant'),'anchors')),error('GXTXT:Numeric','Dataset baseline anchors must be supplied through the low-level baseline API');endif
+  r=op_baseline(vals{1},vals{2},[],[],opts);out=annotate_xy(r,dataset_id,xid,yid,meta,selection);
+  out.source_row_ordinals=rows(r.source_row_positions);out.dropped_row_ordinals=rows(r.dropped_row_positions);out.row_identity='original_dataset_one_based_uint64';
 endfunction
 function [vals,meta,selection]=dataset_xy(session,dataset_id,xid,yid,opts)
   selection=opt(opts,'selection',struct('enabled',false));validate_dataset_ids(session,dataset_id,{xid,yid});validate_xy_selection(selection,dataset_id,xid,yid);[vals,meta]=dataset_read(session,dataset_id,{xid,yid},selection,opts);
@@ -1272,15 +1593,16 @@ function ensure_dataset_api()
   req={'gxtxt_table_stream_open_dataset','gxtxt_table_stream_next','gxtxt_table_stream_close','gxtxt_selection_mask'};
   for i=1:numel(req),if(exist(req{i},'file')!=2),error('GXTXT:Numeric','required public GX-TXT Dataset/Table Stream API function is unavailable: %s',req{i});endif,endfor
 endfunction
-function [values,meta]=dataset_read(session,dataset_id,requested,selection,opts)
+function [values,meta,original_rows]=dataset_read(session,dataset_id,requested,selection,opts)
   ids=requested(:)';
   if(selection_enabled(selection))
     require_selection_dataset(selection,dataset_id);if(!isfield(selection,'x_variable_id')||isempty(strtrim(selection.x_variable_id))),error('GXTXT:Numeric','Dataset Selection must expose stable x_variable_id');endif;ids=append_unique(ids,selection.x_variable_id);
     if(strcmp(lower(strtrim(selection.type)),'rectangle')),if(!isfield(selection,'y_variable_id')||isempty(strtrim(selection.y_variable_id))),error('GXTXT:Numeric','Rectangle Dataset Selection must expose stable y_variable_id');endif;ids=append_unique(ids,selection.y_variable_id);endif
   endif
   chunk_rows=opt_int(opts,'chunk_rows',65536);if(chunk_rows<1),error('GXTXT:Numeric','chunk_rows must be >= 1');endif
-  S=gxtxt_table_stream_open_dataset(session,dataset_id,ids,chunk_rows,struct('start',0,'count',-1,'require_direct',false,'numeric_transport','auto'));schema=S.schema;
+  S=gxtxt_table_stream_open_dataset(session,dataset_id,ids,chunk_rows,struct('start',0,'count',-1,'require_direct',false,'numeric_transport','resource'));schema=S.schema;
   selected=selection_enabled(selection);nids=numel(ids);parts=cell(1,nids);
+  capture_rows=nargout>2;row_parts={};original_rows=uint64([]);
   for j=1:nids,parts{j}={};endfor
   preallocate=!selected&&isfield(S,'row_count')&&isnumeric(S.row_count)&&isscalar(S.row_count)&&isfinite(S.row_count)&&S.row_count>=0&&S.row_count==fix(S.row_count)&&S.row_count<=50000000;
   if(preallocate),declared_rows=S.row_count;allvals=cell(1,nids);for j=1:nids,allvals{j}=zeros(declared_rows,1);endfor;written=0;endif
@@ -1313,6 +1635,11 @@ function [values,meta]=dataset_read(session,dataset_id,requested,selection,opts)
       else
         for j=1:nids,parts{j}{end+1}=chunk{j};endfor
       endif
+      if(capture_rows)
+        identities=uint64(C.first_row)+(uint64(0:C.nrows-1))';
+        if(selected),identities=identities(mask);endif
+        row_parts{end+1}=identities;
+      endif
     endwhile
   unwind_protect_cleanup
     try S=gxtxt_table_stream_close(S);catch;end_try_catch
@@ -1324,11 +1651,18 @@ function [values,meta]=dataset_read(session,dataset_id,requested,selection,opts)
     for j=1:nids,if(isempty(parts{j})),allvals{j}=zeros(0,1);else allvals{j}=vertcat(parts{j}{:});endif,endfor
   endif
   values=cell(1,numel(requested));units=cell(1,numel(requested));for j=1:numel(requested),k=find_id(ids,requested{j});values{j}=allvals{k};units{j}=schema_unit(schema,requested{j});endfor;meta=struct('units',{units});
+  if(capture_rows&&!isempty(row_parts)),original_rows=vertcat(row_parts{:});endif
 endfunction
 function ids=append_unique(ids,id),if(find_id(ids,id)==0),ids{end+1}=id;endif,endfunction
 function idx=find_id(ids,id),idx=0;for i=1:numel(ids),if(strcmp(ids{i},id)),idx=i;return;endif,endfor,endfunction
 function unit=schema_unit(schema,id)
-  unit='';if(isstruct(schema)&&isfield(schema,'variables')),vars=schema.variables;for i=1:numel(vars),if(isfield(vars(i),'variable_id')&&strcmp(vars(i).variable_id,id)),if(isfield(vars(i),'unit')),unit=vars(i).unit;endif;return;endif,endfor,endif
+  unit='';if(!isstruct(schema)),return;endif
+  vars=schema;if(isscalar(schema)&&isfield(schema,'variables')),vars=schema.variables;endif
+  for i=1:numel(vars)
+    if(isfield(vars(i),'variable_id')&&strcmp(vars(i).variable_id,id))
+      if(isfield(vars(i),'unit')),unit=vars(i).unit;endif;return;
+    endif
+  endfor
 endfunction
 function tf=selection_enabled(S),tf=isstruct(S)&&isfield(S,'enabled')&&logical(S.enabled);endfunction
 function id=selection_id(S),id='';if(selection_enabled(S)&&isfield(S,'id')),id=S.id;endif,endfunction
@@ -1468,7 +1802,7 @@ function out=op_hypothesis_test(method,x,y,opts)
     x=finite_vector(x,'first sample',opts,2);y=finite_vector(y,'second sample',opts,2);
     nx=numel(x);ny=numel(y);
   endif
-  statistic=NaN;df=NaN;pvalue=NaN;estimate=NaN;ci_lower=NaN;ci_upper=NaN;
+  statistic=NaN;df=NaN;pvalue=NaN;estimate=NaN;se=NaN;sd=NaN;interval_margin=NaN;ci_lower=NaN;ci_upper=NaN;
   effect=NaN;effect_name='not_defined';approximation='exact';ci_status='not_defined_for_rank_test';
   if(any(strcmp(method,{'one_sample_t','paired_t','independent_t','welch_t'})))
     if(strcmp(method,'paired_t')),d=x-y;estimate=mean(d);sd=std(d,0);se=sd/sqrt(nx);df=nx-1;effect_name='cohen_dz';
@@ -1492,13 +1826,13 @@ function out=op_hypothesis_test(method,x,y,opts)
     elseif(isfinite(sd)&&sd==0),effect=sign(estimate-mu0)*Inf;endif
     if(strcmp(alternative,'two_sided'))
       crit=op_student_t_quantile((1+confidence)/2,df,struct()).values;
-      ci_lower=estimate-crit*se;ci_upper=estimate+crit*se;
+      interval_margin=crit*se;ci_lower=estimate-interval_margin;ci_upper=estimate+interval_margin;
     elseif(strcmp(alternative,'greater'))
       crit=op_student_t_quantile(confidence,df,struct()).values;
-      ci_lower=estimate-crit*se;ci_upper=Inf;
+      interval_margin=crit*se;ci_lower=estimate-interval_margin;ci_upper=Inf;
     else
       crit=op_student_t_quantile(confidence,df,struct()).values;
-      ci_lower=-Inf;ci_upper=estimate+crit*se;
+      interval_margin=crit*se;ci_lower=-Inf;ci_upper=estimate+interval_margin;
     endif
     ci_status='defined';
   elseif(strcmp(method,'mann_whitney'))
@@ -1533,23 +1867,24 @@ function out=op_hypothesis_test(method,x,y,opts)
     'n_input_x',nx_input,'n_input_y',ny_input,'n_x',nx,'n_y',ny, ...
     'p_value',min(max(pvalue,0),1),'alternative',alternative,'confidence',confidence, ...
     'null_value',mu0,'estimate',estimate,'ci_lower',ci_lower,'ci_upper',ci_upper, ...
-    'ci_status',ci_status,'effect_size',effect,'effect_name',effect_name, ...
+    'ci_status',ci_status,'standard_error',se,'test_standard_deviation',sd,'interval_margin',interval_margin,'effect_size',effect,'effect_name',effect_name, ...
     'nonfinite_policy',policy,'approximation',approximation);
 endfunction
 function p=student_pvalue(t,df,alternative)
-  if(isinf(t)),if(t>0),cdf=1;else cdf=0;endif;
-  else cdf=op_student_t_cdf(t,df,struct()).values;endif
-  if(strcmp(alternative,'greater')),p=1-cdf;
-  elseif(strcmp(alternative,'less')),p=cdf;
-  else p=2*min(cdf,1-cdf);endif
+  % Direct small tail avoids catastrophic 1-CDF cancellation.
+  if(isinf(t)),tail=0;else tail=0.5*betainc(df/(df+t^2),df/2,0.5);endif
+  if(strcmp(alternative,'two_sided')),p=2*tail;
+  elseif(strcmp(alternative,'greater')),if(t>=0),p=tail;else p=1-tail;endif
+  else if(t<=0),p=tail;else p=1-tail;endif,endif
 endfunction
+
 function p=normal_rank_p(statistic,mu,sd,alternative)
   if(strcmp(alternative,'greater'))
-    z=(statistic-mu-0.5)/sd;p=1-op_normal_cdf(z,0,1,struct()).values;
+    z=(statistic-mu-0.5)/sd;p=0.5*erfc(z/sqrt(2));
   elseif(strcmp(alternative,'less'))
-    z=(statistic-mu+0.5)/sd;p=op_normal_cdf(z,0,1,struct()).values;
+    z=(statistic-mu+0.5)/sd;p=0.5*erfc(-z/sqrt(2));
   else
-    z=max(0,abs(statistic-mu)-0.5)/sd;p=2*(1-op_normal_cdf(z,0,1,struct()).values);
+    z=max(0,abs(statistic-mu)-0.5)/sd;p=erfc(z/sqrt(2));
   endif
 endfunction
 function p=exact_rank_sum_p(ranks,n1,observed,alternative)
@@ -1626,7 +1961,7 @@ function out=op_one_way_anova(values,groups,opts)
       if(ms_between==0),error('GXTXT:Numeric','ANOVA F statistic is undefined for identical constant groups');endif
       F=Inf;p=0;
     else
-      F=ms_between/ms_within;p=1-op_f_cdf(F,df_between,df_within,struct()).values;
+      F=ms_between/ms_within;p=betainc(df_within/(df_within+df_between*F),df_within/2,df_between/2);
     endif
     if(ss_total>0),eta_squared=ss_between/ss_total;omega_squared=(ss_between-df_between*ms_within)/(ss_total+ms_within);effect_status='ordinary_anova';endif
     denominator_df=df_within;
@@ -1639,7 +1974,7 @@ function out=op_one_way_anova(values,groups,opts)
     correction=1+(2*(k-2)/(k^2-1))*correction_sum;
     F=(sum(weights.*(means-weighted_mean).^2)/df_between)/correction;
     denominator_df=(k^2-1)/(3*correction_sum);
-    p=1-op_f_cdf(F,df_between,denominator_df,struct()).values;
+    p=betainc(denominator_df/(denominator_df+df_between*F),denominator_df/2,df_between/2);
   endif
   out=struct('method',method,'n_input',n_input,'n_valid',n_valid,'n_nonfinite',n_input-n_valid, ...
     'group_count',k,'group_names',{names(:)},'group_counts',counts,'group_means',means, ...
@@ -1819,15 +2154,24 @@ endfunction
 function out=op_array_reduce(name,a,opts)
   name=lower(strtrim(name));a=array_real(a,'values');
   axis=opt_int(opts,'axis',0);if(!any(axis==[0 1 2])),error('GXTXT:Numeric','array reduction axis must be 0, 1 or 2');endif
+  requested_axis=axis;input_shape=size(a);
   if(axis==0),a=a(:);axis=1;endif
   names={'sum','product','minimum','maximum','argmin','argmax','count','valid_count','mean','median','variance_population','variance_sample','std_population','std_sample','rms','quantile','any','all','count_true'};
   if(!any(strcmp(name,names))),error('GXTXT:Numeric','unknown array reduction: %s',name);endif
-  if(axis==1),v=zeros(1,columns(a));for j=1:columns(a),v(j)=reduce_one(name,a(:,j),opts);endfor;
-  else v=zeros(rows(a),1);for j=1:rows(a),v(j)=reduce_one(name,a(j,:).',opts);endfor;endif
+  if(axis==1)
+    v=zeros(1,columns(a));n_input=zeros(size(v));n_valid=zeros(size(v));
+    for j=1:columns(a),[v(j),n_input(j),n_valid(j)]=reduce_one(name,a(:,j),opts);endfor;
+  else
+    v=zeros(rows(a),1);n_input=zeros(size(v));n_valid=zeros(size(v));
+    for j=1:rows(a),[v(j),n_input(j),n_valid(j)]=reduce_one(name,a(j,:).',opts);endfor;
+  endif
   if(any(strcmp(name,{'any','all'}))),v=logical(v);endif
-  out=struct('values',v,'axis',axis);
+  out=struct('values',v,'axis',axis,'requested_axis',requested_axis,'input_shape',input_shape, ...
+    'action',name,'n_input',n_input,'n_valid',n_valid);
+  if(strcmp(name,'quantile')),out.probability=opt_num(opts,'probability',.5);out.quantile_definition='Hyndman-Fan type 7 linear interpolation';endif
 endfunction
-function value=reduce_one(name,values,opts)
+function [value,n_input,n_valid]=reduce_one(name,values,opts)
+  n_input=numel(values);n_valid=n_input;
   if(any(strcmp(name,{'any','all','count_true'})))
     mask=array_valid_mask(values,size(values));
     switch(name)
@@ -1837,9 +2181,10 @@ function value=reduce_one(name,values,opts)
     endswitch
     return;
   endif
-  if(strcmp(name,'count')),value=numel(values);return;endif
-  if(strcmp(name,'valid_count')),value=sum(isfinite(values));return;endif
-  good=isfinite(values);policy=nonfinite_policy(opts);
+  good=isfinite(values);n_valid=sum(good);
+  if(strcmp(name,'count')),value=n_input;return;endif
+  if(strcmp(name,'valid_count')),value=n_valid;return;endif
+  policy=nonfinite_policy(opts);
   if(any(!good)&&strcmp(policy,'error')),error('GXTXT:Numeric','reduction values contain NaN or Inf; set nonfinite=omit explicitly');endif
   original_indices=find(good);values=values(good);
   if(isempty(values))
@@ -1864,4 +2209,16 @@ function value=reduce_one(name,values,opts)
     case 'rms',value=sqrt(mean(values.^2));
     case 'quantile',value=quantile_type7(values,opt_num(opts,'probability',0.5));
   endswitch
+endfunction
+
+function out=op_power_level(power,opts)
+  if(!(isnumeric(power)||islogical(power))||!isreal(power)||isempty(power)||any(!isfinite(power(:)))||any(power(:)<0))
+    error('GXTXT:Numeric','Power values must be nonempty finite nonnegative real values');
+  endif
+  reference=opt(opts,'reference_rms',1);
+  if(!isnumeric(reference)||!isreal(reference)||!isscalar(reference)||!isfinite(reference)||reference<=0),error('GXTXT:Numeric','RMS reference must be positive and finite');endif
+  power=double(power);amplitude=sqrt(power);level=NaN(size(power));positive=power>0;
+  % Difference of logs avoids intermediate overflow/underflow of a ratio.
+  level(positive)=10*log10(power(positive))-20*log10(reference);
+  out=struct('power',power,'root_power',amplitude,'level_db',level,'reference_rms',reference,'zero_policy','undefined_finite_logarithmic_level');
 endfunction

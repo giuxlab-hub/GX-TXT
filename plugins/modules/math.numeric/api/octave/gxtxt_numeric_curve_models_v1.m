@@ -3,6 +3,10 @@
 % SPDX-License-Identifier: GPL-3.0-or-later
 function out=gxtxt_numeric_curve_models_v1(operation,varargin)
   if(strcmp(operation,'fit'))
+    if(any(strcmp(varargin{1},{'akima','bspline'})))
+      opts=struct();if(numel(varargin)>=4),opts=varargin{4};endif
+      out=gxtxt_numeric_knot_splines_v1('fit',varargin{1},varargin{2},varargin{3},opts);return;
+    endif
     model=varargin{1};x=double(varargin{2}(:));y=double(varargin{3}(:));
     if(numel(varargin)>=4),opts=varargin{4};else opts=struct();endif
     if(!isstruct(opts)||numel(opts)!=1),error('GXTXT:Numeric','curve model options must be a scalar struct');endif
@@ -44,29 +48,12 @@ function out=gxtxt_numeric_curve_models_v1(operation,varargin)
         [x,idx]=sort(x);y=y(idx);
         if(numel(x)<3||any(diff(x)<=0)),error('GXTXT:Numeric','PCHIP requires distinct increasing X values');endif
         out=struct('model','pchip','parametric',false,'source_x',x,'source_y',y,...
-          'extrapolation','error','parameters',[]);
+          'extrapolation','error','parameters',[],'input_order',idx);
       case 'smoothing_spline'
         [x,idx]=sort(x);y=y(idx);
         if(numel(x)<3||any(diff(x)<=0)),error('GXTXT:Numeric','smoothing spline requires distinct increasing X values');endif
-        if(!isfield(opts,'smoothing_lambda')),error('GXTXT:Numeric','smoothing_lambda is required');endif
-        lambda=double(opts.smoothing_lambda);
-        if(!isscalar(lambda)||!isfinite(lambda)||lambda<0),error('GXTXT:Numeric','smoothing_lambda must be finite and nonnegative');endif
-        h=diff(x);n=numel(x);j=(1:n-2).';
-        % Three-diagonal difference and tridiagonal curvature authorities.
-        % Form the same exact penalized system in sparse storage; a dense
-        % N-by-N matrix made even ordinary large source curves impractical.
-        Q=sparse([j;j+1;j+2],[j;j;j],[1./h(1:end-1);-1./h(1:end-1)-1./h(2:end);1./h(2:end)],n,n-2);
-        k=(1:n-3).';
-        R=sparse([j;k;k+1],[j;k+1;k],[(h(1:end-1)+h(2:end))/3;h(2:end-1)/6;h(2:end-1)/6],n-2,n-2);
-        c=(R+lambda*(Q.'*Q))\(Q.'*y);
-        smooth_y=y-lambda*Q*c;
-        % The natural cubic interpolant through the regularized nodal values
-        % minimizes sum((y-z)^2)+lambda*integral((f'')^2).
-        second=[0;c;0];
-        out=struct('model','smoothing_spline','parametric',false,'source_x',x,...
-          'smoothed_y',smooth_y,'second_derivatives',second,'smoothing_lambda',lambda,...
-          'penalty','sum squared residuals + lambda times integral squared second derivative',...
-          'extrapolation','error','parameters',smooth_y);
+        out=gxtxt_numeric_smoothing_spline_v1(x,y,opts);
+        out.input_order=idx;
       case 'fourier'
         if(!isfield(opts,'order')),error('GXTXT:Numeric','Fourier order is required');endif
         order=double(opts.order);
@@ -108,6 +95,9 @@ function out=gxtxt_numeric_curve_models_v1(operation,varargin)
         out=struct('model','fourier','parametric',false,'order',order,'period',period,...
           'fundamental_angular_frequency',omega,'origin',origin,'basis',basis,...
           'coefficients',coefficients,'parameters',coefficients,'solver',solver);
+        % Only the FFT branch consumes the sorted observation vector. The
+        % nonuniform least-squares branch above retains the original row order.
+        if(uniform_cycle),out.input_order=idx;endif
       otherwise
         error('GXTXT:Numeric','unsupported curve model %s',model);
     endswitch
@@ -171,7 +161,15 @@ function out=gxtxt_numeric_curve_models_v1(operation,varargin)
     endif
     out=struct('x',px,'y',py,'parameter',t,'distance',hypot(px-x,py-y),'points',[px,py]);
   elseif(strcmp(operation,'evaluate'))
+    if(isstruct(varargin{1})&&isfield(varargin{1},'model')&&any(strcmp(varargin{1}.model,{'akima','bspline'})))
+      options=struct();if(numel(varargin)>=3),options=varargin{3};endif
+      out=gxtxt_numeric_knot_splines_v1('evaluate',varargin{1},varargin{2},options);return;
+    endif
     model=varargin{1};q=double(varargin{2}(:));
+    options=struct();if(numel(varargin)>=3),options=varargin{3};endif
+    if(!isstruct(options)||numel(options)!=1||!isempty(setdiff(fieldnames(options),{'derivative'}))),error('GXTXT:Numeric','Curve evaluation accepts only the derivative option');endif
+    derivative=false;if(isfield(options,'derivative')),derivative=options.derivative;endif
+    if(!(isnumeric(derivative)||islogical(derivative))||!isscalar(derivative)||!isreal(derivative)||!ismember(derivative,[0,1])),error('GXTXT:Numeric','Curve derivative must be boolean');endif
     if(!isstruct(model)||!isfield(model,'model')||any(!isfinite(q))),error('GXTXT:Numeric','invalid curve model or query');endif
     if(any(strcmp(model.model,{'parametric_polynomial','parametric_spline'})))
       out=gxtxt_numeric_parametric_models_v1('evaluate',model,q);return;
@@ -197,20 +195,32 @@ function out=gxtxt_numeric_curve_models_v1(operation,varargin)
         endfor
       case 'pchip'
         if(any(q<model.source_x(1))||any(q>model.source_x(end))),error('GXTXT:Numeric','PCHIP query is outside training domain');endif
-        px=q;py=interp1(model.source_x,model.source_y,q,'pchip');
+        pp=gxtxt_numeric_v1('spline_create',model.source_x,model.source_y,struct('method','pchip'));
+        px=q;py=gxtxt_numeric_v1('spline_evaluate',pp,q,struct('derivative_order',0)).values;
+        if(derivative)
+          tangent_x=ones(size(q));tangent_y=gxtxt_numeric_v1('spline_evaluate',pp,q,struct('derivative_order',1)).values;
+        endif
       case 'smoothing_spline'
         x=model.source_x;y=model.smoothed_y;M=model.second_derivatives;
         if(any(q<x(1))||any(q>x(end))),error('GXTXT:Numeric','smoothing spline query is outside training domain');endif
         px=q;i=min(lookup(x,q),numel(x)-1);
         h=x(i+1)-x(i);a=(x(i+1)-q)./h;b=(q-x(i))./h;
         py=a.*y(i)+b.*y(i+1)+((a.^3-a).*M(i)+(b.^3-b).*M(i+1)).*h.^2/6;
+        if(derivative),tangent_x=ones(size(q));tangent_y=(y(i+1)-y(i))./h+((-3*a.^2+1).*M(i)+(3*b.^2-1).*M(i+1)).*h/6;endif
       case 'fourier'
         px=q;py=fourier_design(q,model.order,model.origin,model.fundamental_angular_frequency)*model.coefficients;
+        if(derivative)
+          tangent_x=ones(size(q));tangent_y=zeros(size(q));
+          for k=1:model.order
+            frequency=k*model.fundamental_angular_frequency;angle=frequency*(q-model.origin);
+            tangent_y+=frequency*(-model.coefficients(2*k)*sin(angle)+model.coefficients(2*k+1)*cos(angle));
+          endfor
+        endif
       otherwise
         error('GXTXT:Numeric','unsupported curve model');
     endswitch
     out=struct('x',px(:),'y',py(:),'points',[px(:),py(:)]);
-    if(any(strcmp(model.model,{'circular_arc','quadratic_bezier','cubic_bezier'})))
+    if(derivative||any(strcmp(model.model,{'circular_arc','quadratic_bezier','cubic_bezier'})))
       out.tangent_x=tangent_x(:);out.tangent_y=tangent_y(:);
     endif
   else

@@ -24,6 +24,9 @@ proc ::GX::CurveWorkbench::_buildCommandMenus {w} {
     foreach {label mode} {Select select {Insert Native point} add Pan pan} {$w.toolbar.view.menu add command -label $label -command [list ::GX::CurveWorkbench::_scienceTool $w $mode]}
     $w.toolbar.view.menu add command -label {Fit all} -command [$w.toolbar.fit cget -command]
     $w.toolbar.view.menu add command -label {Fit active} -command [$w.toolbar.fitSelected cget -command]
+    foreach {label id} {{Axis display units…} view.axis_units {Dataset coordinates…} view.dataset_coordinates {Align Dataset working axes…} view.align_axes} {
+        $w.toolbar.view.menu add command -label $label -command [list ::GX::CurveWorkbench::_commandInvoke $w $id]
+    }
     $w.toolbar.view.menu add command -label {Source Dataset Preview…} -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_sourcePreviewActive $w]]
     $w.toolbar.view.menu add command -label {More scientific controls} -command [list ::GX::CurveWorkbench::_moreControls $w]
     foreach child [winfo children $w.toolbar] {pack forget $child;grid forget $child}
@@ -60,7 +63,7 @@ proc ::GX::CurveWorkbench::_commandLayout {w width} {
 proc ::GX::CurveWorkbench::_sketchBarLayout {w width} {
     variable st
     if {![winfo exists $w.sketchbar.feedback]} return
-    set children {};foreach key {create modify constraints represent unit snap dimension parameters palette finish} {lappend children $w.sketchbar.$key}
+    set children {};foreach key {create modify constraints represent unitLabel unit snap dimension parameters palette finish} {lappend children $w.sketchbar.$key}
     pack forget $w.sketchbar.select
     grid forget $w.sketchbar.select
     # Only this completed grid layout owns feedback; never pack it here.
@@ -133,7 +136,7 @@ proc ::GX::CurveWorkbench::_coordinates {w x y} {
     variable st
     if {$st($w,canvasTool) eq "select"} {_pointerMovePart $w $x $y;tailcall _coordinates_interaction055_base $w $x $y}
     if {$st($w,publishBusy)} return
-    set st($w,coordinates) [::GX::native2DCoordinateReadout $st($w,scene) [list $x $y]]
+    set st($w,coordinates) [_coordinateReadout $w [list $x $y]]
     set candidate [_constructionPlacement $w $x $y]
     _constructionPreview $w $candidate
     _draw $w

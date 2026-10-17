@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0
+
+- Move percentile summaries and corrected permutation probabilities into public Numeric.
+- CORE interpretation with conditional assumptions and explicit unavailable/undefined states.
+- Preserve seeded replicate generation and scientific output IDs.
+
 ## 1.0.1
 
 - Classified the independently packaged module as a managed external plugin.

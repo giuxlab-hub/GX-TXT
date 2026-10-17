@@ -1,0 +1,19 @@
+function captured=curve_replicate_capture(raw,unit,provenance)
+% Bind captured Numeric profile facts to this producer's stable Dataset columns.
+% Scientific quantity IDs, eligibility and definitions come only from CORE.
+% SPDX-License-Identifier: GPL-3.0-or-later
+  mapping=gxtxt_statistics_v1('numeric_field_map','replicate_summary');first=struct();
+  for key=fieldnames(mapping)',name=key{1};first.(name)=raw.(name)(1);endfor
+  for key={'mode','sampling_model','component_method'},first.(key{1})=raw.(key{1});endfor
+  prototype=gxtxt_statistics_v1('from_numeric','math.numeric.replicate_profile','replicate_summary',first,struct('y_unit',unit),struct(),provenance);
+  columns={'y_mean','mean';'y_median','median';'y_std','std';'y_sem','sem'; ...
+    'sigma_within','sigma_within';'sigma_between','sigma_between';'sigma_total','sigma_total'; ...
+    'components_identifiable','components_available';'between_clamped','between_clamped'; ...
+    'n','n';'n_sources','n_sources';'within_df','within_df';'component_coefficient','component_coefficient'; ...
+    'lower_std','lower_std';'upper_std','upper_std';'lower_sem','lower_sem';'upper_sem','upper_sem'; ...
+    'lower_total','lower_sigma_total';'upper_total','upper_sigma_total'};
+  bindings=struct();
+  for k=1:rows(columns),bindings.(mapping.(columns{k,1}))=columns{k,2};endfor
+  captured=struct('prototype',prototype,'column_variables',bindings,'producer_columns',{columns}, ...
+    'binding',gxtxt_statistics_v1('bind_columns',prototype,bindings,numel(raw.y_mean)));
+endfunction

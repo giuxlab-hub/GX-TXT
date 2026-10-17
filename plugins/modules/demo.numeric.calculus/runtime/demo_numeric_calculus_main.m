@@ -3,7 +3,7 @@ function demo_numeric_calculus_main(args, framework_root)
 % SPDX-License-Identifier: GPL-3.0-or-later
 
   module_id = 'demo.numeric.calculus';
-  module_version = '1.0.1';
+  module_version = '1.1.0';
   publication_open = false;
   publication_finalized = false;
   P = struct();
@@ -82,6 +82,7 @@ function demo_numeric_calculus_main(args, framework_root)
     if (any(diff(x)<=0)), error('%s: X must be strictly increasing',module_id); endif
 
     numeric=discover_numeric_api(framework_root,module_id);
+    statistics_lifetime=gxtxt_statistics_scope_v1();
     opts=struct(); if(selection.enabled),opts.selection=selection;endif
     gxtxt_progress_stage('numeric','Invoking NUMERIC_API_v1 calculus operations','determinate',4);
     grid_info=feval(numeric.function_name,'dataset_grid_info',session,source_dataset_id,x_id,opts);gxtxt_progress_update(1,4,'numeric','Grid analysis complete');
@@ -115,8 +116,6 @@ function demo_numeric_calculus_main(args, framework_root)
     integral_error=integral_numeric-integral_exact;
     absolute_derivative_error=abs(derivative_error);
     absolute_integral_error=abs(integral_error);
-    derivative_metrics=error_metrics(derivative_error,true,numeric.function_name);
-    integral_metrics=error_metrics(integral_error,false,numeric.function_name);
     exact_definite=double(antiderivative_reference(end)-antiderivative_reference(1));
     definite_error=definite_numeric-exact_definite;
 
@@ -126,6 +125,9 @@ function demo_numeric_calculus_main(args, framework_root)
       error('%s: definite and cumulative integration result units disagree (%s vs %s)',module_id,strtrim(definite_result.result_unit),integral_unit);
     endif
 
+    derivative_metrics=error_metrics(derivative_error,true,numeric.function_name,derivative_unit,module_id,'derivative');
+    integral_metrics=error_metrics(integral_error,false,numeric.function_name,integral_unit,module_id,'integral');
+
     gxtxt_progress_stage('publish','Publishing derived calculus comparison Dataset','determinate',n);
     source_ids={x_id,function_id,derivative_reference_id,antiderivative_reference_id};
     selection_id='';if(selection.enabled),selection_id=selection.id;endif
@@ -133,6 +135,7 @@ function demo_numeric_calculus_main(args, framework_root)
       'source_dataset_ids',{{source_dataset_id}},'source_variable_ids',{source_ids},'source',source_dataset_id, ...
       'provenance',provenance_text(module_id,module_version,derivative_result,definite_result,cumulative_result,selection_id), ...
       'notes','Public NUMERIC_API_v1 calculus comparison against bound analytical derivative and antiderivative reference variables.');
+    popts.statistical_results=struct('derivative',derivative_metrics.core,'derivative_endpoints',derivative_metrics.endpoints,'derivative_interior',derivative_metrics.interior,'integral',integral_metrics.core);
     P=gxtxt_publication_v2_open(session,module_id,output_dataset_id,'table.generic',popts);publication_open=true;
     P=gxtxt_publication_v2_declare_dimension(P,'sample',0,true);
     P=declare_series(P,'x','x','independent',x_unit,'');
@@ -221,14 +224,18 @@ function unit=resolved_result_unit(result,reference_unit,module_id,label)
   if(!isempty(result_unit)),unit=result_unit;else unit=reference_unit;endif
 endfunction
 
-function M=error_metrics(err,derivative_mode,numeric_fn)
-  err=double(err(:));n=numel(err);M=struct('rmse',NaN,'mae',NaN,'max_abs',NaN,'endpoint_max_abs',NaN,'interior_rmse',NaN);
-  if(n<1||any(!isfinite(err))),return;endif
-  metrics=feval(numeric_fn,'residual_metrics',zeros(size(err)),err,struct());
-  M.rmse=metrics.rmse;M.mae=metrics.mae;M.max_abs=metrics.max_abs_error;
+function M=error_metrics(err,derivative_mode,numeric_fn,unit,producer,comparison_id)
+  err=double(err(:));context=struct('y_unit',unit,'sample_role','evaluation');
+  provenance=struct('producer',producer,'comparison_id',comparison_id,'subset','all');
+  raw=feval(numeric_fn,'residual_metrics',zeros(size(err)),err,struct());
+  M.core=gxtxt_statistics_v1('from_numeric','math.numeric.comparison','residual_metrics',raw,context,struct(),provenance);
   if(derivative_mode)
-    if(n>=2),M.endpoint_max_abs=max(abs([err(1);err(end)]));endif
-    if(n>2),q=err(2:end-1);inner=feval(numeric_fn,'residual_metrics',zeros(size(q)),q,struct());M.interior_rmse=inner.rmse;endif
+    endpoint=err([1,end]);provenance.subset='endpoints';
+    raw=feval(numeric_fn,'residual_metrics',zeros(size(endpoint)),endpoint,struct());
+    M.endpoints=gxtxt_statistics_v1('from_numeric','math.numeric.comparison','residual_metrics',raw,context,struct(),provenance);
+    inner=err(2:end-1);provenance.subset='interior';raw=struct('n',0);
+    if(!isempty(inner)),raw=feval(numeric_fn,'residual_metrics',zeros(size(inner)),inner,struct());endif
+    M.interior=gxtxt_statistics_v1('from_numeric','math.numeric.comparison','residual_metrics',raw,context,struct(),provenance);
   endif
 endfunction
 
@@ -266,9 +273,12 @@ function write_metrics(path,module_id,module_version,source_dataset_id,output_da
     fprintf(fid,'[module]\nid=%s\nversion=%s\nvalidation=PASS\n',module_id,module_version);
     fprintf(fid,'\n[source]\ndataset_id=%s\nx_variable_id=%s\nfunction_variable_id=%s\nderivative_reference_variable_id=%s\nantiderivative_reference_variable_id=%s\nx_name=%s\nfunction_name=%s\nderivative_reference_name=%s\nantiderivative_reference_name=%s\nx_unit=%s\nfunction_unit=%s\nderivative_unit=%s\nintegral_unit=%s\nstorage_provider=%s\nsample_count=%d\ngrid_uniform=%d\ngrid_step=%.17g\nselection_id=%s\n',source_dataset_id,x_id,function_id,dref_id,Fref_id,ini_escape(x_name),ini_escape(function_name),ini_escape(derivative_name),ini_escape(integral_name),ini_escape(x_unit),ini_escape(function_unit),ini_escape(derivative_unit),ini_escape(integral_unit),source_provider,n,logical_num(grid_info.uniform),grid_info.step,ini_escape(selection_id));
     fprintf(fid,'\n[numeric_api]\nname=%s\napi_version=%s\noctave_function=%s\n',numeric.name,numeric.api_version,numeric.function_name);
-    fprintf(fid,'\n[differentiation]\nmethod=%s\nkernel=%s\nrmse=%.17g\nmae=%.17g\nmax_abs_error=%.17g\nendpoint_max_abs_error=%.17g\ninterior_rmse=%.17g\n',ini_escape(D.method),field_text(D,'kernel'),DM.rmse,DM.mae,DM.max_abs,DM.endpoint_max_abs,DM.interior_rmse);
+    fprintf(fid,'\n[differentiation]\nmethod=%s\nkernel=%s\n',ini_escape(D.method),field_text(D,'kernel'));
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',DM.core,struct('rmse','rmse','mae','mae','max_abs_error','max_abs_error')));
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',DM.endpoints,struct('endpoint_max_abs_error','max_abs_error')));
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',DM.interior,struct('interior_rmse','rmse')));
     fprintf(fid,'\n[definite_integration]\nmethod=%s\nkernel=%s\nnumerical=%.17g\nexact=%.17g\nerror=%.17g\n',ini_escape(I.method),field_text(I,'kernel'),def_num,def_exact,def_err);
-    fprintf(fid,'\n[cumulative_integration]\nmethod=%s\nrmse=%.17g\nmae=%.17g\nmax_abs_error=%.17g\n',ini_escape(C.method),IM.rmse,IM.mae,IM.max_abs);
+    fprintf(fid,'\n[cumulative_integration]\nmethod=%s\n%s\n',ini_escape(C.method),gxtxt_statistics_v1('ini_report',IM.core,struct('rmse','rmse','mae','mae','max_abs_error','max_abs_error')));
     fprintf(fid,'\n[output]\ndataset_id=%s\ncontract=table.generic\nstorage_provider=%s\n',output_dataset_id,output_provider);
   unwind_protect_cleanup
     fclose(fid);
@@ -285,9 +295,10 @@ function write_report(path,module_id,module_version,source_dataset_id,output_dat
     fprintf(fid,'Samples: %d; X range: %.12g .. %.12g; uniform=%s; step=%.12g\n',n,x0,x1,bool_text(grid_info.uniform),grid_info.step);
     if(!isempty(selection_id)),fprintf(fid,'Dataset Selection: %s\n',selection_id);else fprintf(fid,'Dataset Selection: none\n');endif
     fprintf(fid,'NUMERIC API: %s v%s (%s)\nOutput Dataset: %s (table.generic; provider=%s)\n\n',numeric.name,numeric.api_version,numeric.function_name,output_dataset_id,output_provider);
-    fprintf(fid,'Numerical differentiation\n-------------------------\nMethod: %s\nKernel: %s\nRMSE: %.12g\nMAE: %.12g\nMaximum absolute error: %.12g\nEndpoint maximum absolute error: %.12g\nInterior RMSE: %.12g\n\n',D.method,field_text(D,'kernel'),DM.rmse,DM.mae,DM.max_abs,DM.endpoint_max_abs,DM.interior_rmse);
+    fprintf(fid,'Numerical differentiation\n-------------------------\nMethod: %s\nKernel: %s\n%s\nEndpoints\n%s\nInterior\n%s\n\n',D.method,field_text(D,'kernel'), ...
+      gxtxt_statistics_v1('report',DM.core,{'n','rmse','mae','max_abs_error'}),gxtxt_statistics_v1('report',DM.endpoints,{'n','max_abs_error'}),gxtxt_statistics_v1('report',DM.interior,{'n','rmse'}));
     fprintf(fid,'Definite integration\n--------------------\nMethod: %s\nKernel: %s\nNumerical integral: %.12g\nExact/reference integral: %.12g\nError: %.12g\n\n',I.method,field_text(I,'kernel'),def_num,def_exact,def_err);
-    fprintf(fid,'Cumulative integration\n----------------------\nMethod: %s\nRMSE: %.12g\nMAE: %.12g\nMaximum absolute error: %.12g\n\n',C.method,IM.rmse,IM.mae,IM.max_abs);
+    fprintf(fid,'Cumulative integration\n----------------------\nMethod: %s\n%s\n\n',C.method,gxtxt_statistics_v1('report',IM.core,{'n','rmse','mae','max_abs_error'}));
     fprintf(fid,'The exact cumulative reference is shifted by its first selected value so both curves represent an integral starting at the first selected X sample.\n');
     fprintf(fid,'The module reports actual numerical error diagnostics and does not hide endpoint behavior.\n');
     fprintf(fid,'Generator sidecar metadata is not required or read by this plugin; analytical references come from the bound Dataset variables.\n\n');

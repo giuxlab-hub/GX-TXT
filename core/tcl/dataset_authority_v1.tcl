@@ -9,6 +9,7 @@ namespace eval ::GX {
     variable datasetAuthorityLoadedSession {}
     variable datasetAuthorityNotification {}
     variable datasetAuthorityFailure {}
+    variable datasetAuthorityReadSnapshot {}
 }
 proc ::GX::datasetAuthorityActive {{session {}}} {
     variable datasetAuthorityChannel;variable datasetAuthoritySession
@@ -36,8 +37,39 @@ proc ::GX::datasetAuthorityRecord {} {
 }
 proc ::GX::datasetAuthorityLoaded {session} {
     variable datasetAuthorityBaseline;variable datasetAuthorityLoadedSession
+    variable datasetAuthorityReadSnapshot
     set datasetAuthorityLoadedSession [file normalize $session]
     set datasetAuthorityBaseline [datasetAuthorityRecord]
+    # One bounded read hint, never another persistence or recovery authority.
+    # Exact registry bytes distinguish same-size edits within one timestamp tick.
+    set datasetAuthorityReadSnapshot {}
+    set path [datasetRegistryPath $session]
+    if {[file isfile $path] && [file type $path] eq "file" && [file size $path]<=4194304} {
+        set fd [open $path rb]
+        try {set bytes [read $fd 4194305]} finally {close $fd}
+        if {[string length $bytes]<=4194304} {
+            set datasetAuthorityReadSnapshot [list $datasetAuthorityLoadedSession $bytes]
+        }
+    }
+}
+proc ::GX::datasetAuthorityReadUnchanged {session} {
+    variable datasetAuthorityBaseline;variable datasetAuthorityLoadedSession
+    variable datasetAuthorityReadSnapshot
+    set session [file normalize $session]
+    if {$datasetAuthorityReadSnapshot eq {} || $session ne $datasetAuthorityLoadedSession ||
+        $session ne [lindex $datasetAuthorityReadSnapshot 0] ||
+        [datasetAuthorityRecord] ne $datasetAuthorityBaseline} {return 0}
+    set journal [file join $session metadata .dataset_transactions]
+    # Recovery/staging always goes through the existing locked authority. Check
+    # both sides of the read so an in-progress multi-file commit is never reused.
+    if {[glob -nocomplain -directory $journal txn-* stage-*] ne {}} {return 0}
+    set path [datasetRegistryPath $session]
+    if {![file isfile $path] || [file type $path] ne "file" || [file size $path]>4194304} {return 0}
+    set fd [open $path rb]
+    try {set bytes [read $fd 4194305]} finally {close $fd}
+    if {$bytes ne [lindex $datasetAuthorityReadSnapshot 1]} {return 0}
+    if {[glob -nocomplain -directory $journal txn-* stage-*] ne {}} {return 0}
+    return 1
 }
 proc ::GX::datasetAuthorityTransaction {session command args} {
     variable datasetAuthorityChannel;variable datasetAuthoritySession

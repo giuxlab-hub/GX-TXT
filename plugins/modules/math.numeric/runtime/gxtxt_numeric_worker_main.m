@@ -128,7 +128,10 @@ function v=parse_number(s,where)
   q=lower(strtrim(s));if(any(strcmp(q,{'nan','+nan','-nan'}))),v=NaN;return;endif;if(any(strcmp(q,{'inf','+inf','infinity','+infinity'}))),v=Inf;return;endif;if(any(strcmp(q,{'-inf','-infinity'}))),v=-Inf;return;endif;v=str2double(q);if(isnan(v)),error('GXTXT:Numeric','invalid numeric value in %s: %s',where,s);endif
 endfunction
 function opts=read_options(cfg)
+  % Preserve explicit LOWESS controls through the legacy Tcl request adapter.
+  % The public Tcl smoothing boundary rejects unknown controls before dispatch.
   opts=struct();names={'nonfinite','axis','probability','ties','scale','bin_mode','bin_count','bin_width','period','replace','scalar_first','method','extrapolation','start','stop','rtol','atol','chunk_rows','mode','rank_policy','rank_tolerance','condition_limit','exponent','weight_semantics','has_intercept','intercept','center_scale','window','degree','min_height','min_prominence','min_distance','distance_mode','relative_height','value','estimator','anchor_method','input_kind','weight_variable_id','max_iterations','tolerance','function_tolerance','derivative_order','nfft','normalization','representation','ordering','scaling','sampling'};
+  names{end+1}='robust_iterations';
   for i=1:numel(names),key=['options.' names{i}];if(gxtxt_ini_has(cfg,key)),opts.(names{i})=gxtxt_ini_get(cfg,key,'');endif,endfor
 endfunction
 function S=read_selection(cfg)
@@ -142,24 +145,9 @@ function model=read_polynomial_model(cfg)
   model=struct();model.coefficients=read_vector(cfg,'model_coefficients');if(has_data(cfg,'model_scaled_coefficients')),model.scaled_coefficients=read_vector(cfg,'model_scaled_coefficients');model.x_center=read_scalar(cfg,'model_x_center');model.x_scale=read_scalar(cfg,'model_x_scale');endif
 endfunction
 function write_result(path,S)
-  if(!isstruct(S)||numel(S)!=1),error('GXTXT:Numeric','worker result must be a scalar struct');endif;f=fopen(path,'w');if(f<0),error('GXTXT:Numeric','cannot create response file');endif
-  unwind_protect
-    names=fieldnames(S);fprintf(f,'[result]\nok=1\nfields=%s\n\n',strjoin(names,';'));
-    for i=1:numel(names)
-      name=names{i};value=S.(name);fprintf(f,'[result.%s]\n',name);
-      if(ischar(value)),fprintf(f,'type=string\nvalue=%s\n\n',single_line(value));
-      elseif(islogical(value)&&isscalar(value)),fprintf(f,'type=boolean\nvalue=%d\n\n',logical(value));
-      elseif((isnumeric(value)||islogical(value))&&isscalar(value)),fprintf(f,'type=number\nvalue=%s\n\n',number_text(double(value)));
-      elseif((isnumeric(value)||islogical(value))&&isempty(value)),fprintf(f,'type=vector\nvalue=\n\n');
-      elseif((isnumeric(value)||islogical(value))&&isvector(value)),fprintf(f,'type=vector\nvalue=%s\n\n',numeric_join(double(value(:))));
-      elseif((isnumeric(value)||islogical(value))&&ismatrix(value)),flat=reshape(double(value).',1,[]);fprintf(f,'type=matrix\nrows=%d\ncols=%d\nvalue=%s\n\n',rows(value),columns(value),numeric_join(flat));
-      else error('GXTXT:Numeric','result field %s has unsupported transport type',name);endif
-    endfor
-  unwind_protect_cleanup
-    fclose(f);
-  end_unwind_protect
+  % Reuse the shared typed result owner for flat legacy fields and new bounded
+  % observation receipts; retain the existing INI envelope and error contract.
+  gxtxt_scientific_result_write_v1(path,S);
 endfunction
 function write_error(path,err),f=fopen(path,'w');if(f<0),return;endif;id='';if(isfield(err,'identifier')),id=err.identifier;endif;fprintf(f,'[result]\nok=0\nfields=\n\n[error]\nidentifier=%s\nmessage=%s\n',single_line(id),single_line(err.message));fclose(f);endfunction
-function s=numeric_join(v),if(isempty(v)),s='';return;endif;parts=cell(1,numel(v));for i=1:numel(v),parts{i}=number_text(v(i));endfor;s=strjoin(parts,';');endfunction
-function s=number_text(v),if(isnan(v)),s='NaN';elseif(isinf(v)&&v>0),s='Inf';elseif(isinf(v)),s='-Inf';else s=sprintf('%.17g',v);endif,endfunction
 function s=single_line(s),s=strrep(s,sprintf('\r'),' ');s=strrep(s,sprintf('\n'),' ');endfunction

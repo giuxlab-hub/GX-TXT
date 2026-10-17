@@ -3,10 +3,12 @@ function prepared=pd_prepare_2d_family_grouped(session,G,requested,target,thresh
 % SPDX-License-Identifier: GPL-3.0-or-later
   n=numel(G);dataset_id=G(1).dataset_id;xid=G(1).x_variable_id;yid=G(1).y_variable_id;
   group_id=G(1).row_filters{1}.filter_variable_id;
-  text_group=strcmp(G(1).row_filters{1}.dtype,'string');
+  dtype=G(1).row_filters{1}.dtype;text_group=strcmp(dtype,'string');
+  integer_group=!isempty(regexp(dtype,'^(u?int(8|16|32|64)|bool)$','once'));
   members=cell(1,n);
   for g=1:n,members{g}=G(g).row_filters{1}.value;endfor
-  if(!text_group),members=cellfun(@str2double,members);endif
+  if(integer_group),members=gxtxt_table_integer_values_v1(members,dtype);
+  elseif(!text_group),members=cellfun(@str2double,members);endif
   ids={xid,yid,group_id};counts=zeros(1,n);invalid=0;total_rows=0;
   st=gxtxt_table_stream_open_dataset(session,dataset_id,ids,chunk_rows,struct());
   row_count=st.row_count;provider=st.storage_provider;schema=st.schema;range_mode=st.range_mode;
@@ -17,7 +19,7 @@ function prepared=pd_prepare_2d_family_grouped(session,G,requested,target,thresh
       if(ch.nrows>0)
         x=gxtxt_table_chunk_numeric(ch,xid);y=gxtxt_table_chunk_numeric(ch,yid);
         valid=isfinite(x(:))&isfinite(y(:));invalid+=sum(!valid);
-        group=member_column(ch,group_id,text_group);
+        group=member_column(ch,group_id,dtype,text_group,integer_group);
         [~,loc]=ismember(group,members);
         selected=loc(valid&loc>0);
         if(!isempty(selected)),counts+=accumarray(selected(:),1,[n 1])';endif
@@ -48,7 +50,7 @@ function prepared=pd_prepare_2d_family_grouped(session,G,requested,target,thresh
       if(ch.nrows>0)
         x=gxtxt_table_chunk_numeric(ch,xid);y=gxtxt_table_chunk_numeric(ch,yid);
         x=x(:);y=y(:);valid=isfinite(x)&isfinite(y);
-        group=member_column(ch,group_id,text_group);
+        group=member_column(ch,group_id,dtype,text_group,integer_group);
         [~,loc]=ismember(group,members);
         idx=find(valid&loc>0);
         if(!isempty(idx))
@@ -112,8 +114,9 @@ function prepared=pd_prepare_2d_family_grouped(session,G,requested,target,thresh
   endfor
 endfunction
 
-function values=member_column(ch,id,text_group)
+function values=member_column(ch,id,dtype,text_group,integer_group)
   if(text_group),values=gxtxt_table_chunk_column(ch,id);if(!iscell(values)),values=cellstr(values);endif;
+  elseif(integer_group),values=gxtxt_table_integer_values_v1(gxtxt_table_chunk_column(ch,id),dtype);values=values(:);
   else values=double(gxtxt_table_chunk_numeric(ch,id));values=values(:);endif
 endfunction
 function [x,y,s]=append_point(x,y,s,r)

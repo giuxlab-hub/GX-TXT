@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "native_3d_engine_api_v1.h"
+#include "../../../plugins/modules/math.numeric/api/c/gxtxt_numeric_reductions_v1.h"
 #include "native_3d_scientific_figure_api_v1.h"
 #include <vtkCubeAxesActor.h>
 #include <vtkAxesActor.h>

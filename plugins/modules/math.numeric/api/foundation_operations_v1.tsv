@@ -102,15 +102,15 @@ variational|euler_lagrange_residual|functional,values,extra|numeric arrays or ex
 variational|constrained|functional,values,extra|numeric arrays or execution-scoped callback|structured|Constrained in the variational family|callback
 statistics|confidence_interval|samples,other,extra|numeric observations and options|structured|Confidence interval in the statistics family|data_only
 statistics|robust_location|samples,other,extra|numeric observations and options|structured|Robust location in the statistics family|data_only
-statistics|robust_regression|samples,other,extra|numeric observations and options|structured|Robust regression in the statistics family|data_only
-statistics|covariance_diagnostics|samples,other,extra|numeric observations and options|structured|Covariance diagnostics in the statistics family|data_only
-statistics|partial_correlation|samples,other,extra|numeric observations and options|structured|Partial correlation in the statistics family|data_only
-statistics|multiple_testing|samples,other,extra|numeric observations and options|structured|Multiple testing in the statistics family|data_only
+statistics|robust_regression|samples,other,extra|design matrix and response; optional positive Huber constant|structured|Real or complex Huber IRLS iterate, residual components and actual stopping facts|data_only
+statistics|covariance_diagnostics|samples,other,extra|real or complex observations by rows; a vector is one variable|structured|Sample covariance components with variable identities, eigenvalues and native conditioning diagnostics|data_only
+statistics|partial_correlation|samples,other,extra|aligned real observation vectors and control columns|structured|Covariance-pseudoinverse correlation with actual rank and normalization facts; no sampling inference|data_only
+statistics|multiple_testing|samples,other,extra|dimensionless p-values and method option|structured|Bonferroni, Holm or BH adjustment with original hypothesis positions and supplied family size|data_only
 statistics|bootstrap_ci|samples,other,extra|numeric observations and options|structured|Bootstrap ci in the statistics family|data_only
 statistics|permutation_test|samples,other,extra|numeric observations and options|structured|Permutation test in the statistics family|data_only
-statistics|logistic_regression|samples,other,extra|numeric observations and options|structured|Logistic regression in the statistics family|data_only
-statistics|glm|samples,other,extra|numeric observations and options|structured|Glm in the statistics family|data_only
+statistics|logistic_regression|samples,other,extra|real design and dimensionless binary response|structured|Logistic Newton iterate, fitted probability and actual stopping facts; no inferred parameter covariance|data_only
+statistics|glm|samples,other,extra|real design and dimensionless binary or count response|structured|Binomial logit or Poisson log-link IRLS iterate, fitted means, score and actual stopping facts|data_only
 statistics|survival_kaplan_meier|samples,other,extra|numeric observations and options|structured|Survival kaplan meier in the statistics family|data_only
-statistics|kmeans|samples,other,extra|numeric observations and options|structured|Kmeans in the statistics family|data_only
+statistics|kmeans|samples,other,extra|real observation rows; explicit seed and integer clusters|structured|Seeded native cluster centers, assignments, populations and squared-distance objectives with captured settings|data_only
 ode|solve|rhs,time_span,initial_state|execution-scoped callback and numeric state|structured|Solve in the ode family|callback
 constrained|solve|objective,initial,constraints|execution-scoped callback and constraints|structured|Solve in the constrained family|callback

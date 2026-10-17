@@ -15,7 +15,7 @@ proc ::GX::native2DRequireAdapter {} {
     if {[catch {set info [::GX::Native2D::core api_info]} reason]} {
         error "The loaded Native2D adapter does not support this framework; restart with the installed shared CORE adapter. $reason"
     }
-    foreach capability {retained_spline_tangents calibrated_reference_images scene_preview_views atomic_symmetric_construction retained_component_solver graphical_dimensions driven_dimensions local_sketch_rank relationship_hit_regions canvas_construction native_viewport_clip retained_control_descriptors epoch_checked_references selection_constraint_compatibility atomic_constraint_driving endpoint_frame point_frame point_distance bridge_c0_c1 bounded_spline_range native_spline_object selection_replace selection_state selection_paged device_point_hit bounded_compare drag_active aspect requested_view direction_marker grid background polar display_sample numeric_pack numeric_gaps binary_points bounded_points object_sample render_lod curve_render object_style fit_selected} {
+    foreach capability {retained_spline_tangents calibrated_reference_images scene_preview_views atomic_symmetric_construction retained_component_solver graphical_dimensions driven_dimensions local_sketch_rank relationship_hit_regions canvas_construction native_viewport_clip retained_control_descriptors epoch_checked_references selection_constraint_compatibility atomic_constraint_driving endpoint_frame point_frame point_distance bridge_c0_c1 bounded_spline_range native_spline_object selection_replace selection_state selection_paged device_point_hit bounded_compare drag_active aspect requested_view direction_marker grid background polar display_sample numeric_pack numeric_companions numeric_gaps binary_points bounded_points object_sample render_lod curve_render object_style fit_selected} {
         if {$capability ni [dict get $info capabilities]} {error "The loaded Native2D adapter lacks required capability '$capability'"}
     }
     return $info
@@ -60,7 +60,53 @@ proc ::GX::native2DLoadNumericRowsWithGaps {scene xyFile gapFile {progress ""}} 
     } finally {close $xy;if {$gaps ne ""} {close $gaps}}
 }
 
-proc ::GX::native2DGridForm {window scene changed {parent ""}} {
+proc ::GX::_native2DGridPresentation {presentation} {
+    if {$presentation eq {}} {return {}}
+    foreach key [dict keys $presentation] {if {$key ni {x y guard note polar_compatible}} {error "Unknown grid presentation field '$key'"}}
+    foreach axis {x y} {
+        set plan [dict get $presentation $axis]
+        foreach key {scale offset inverse_scale inverse_offset unit} {if {![dict exists $plan $key]} {error "Grid axis $axis requires '$key'"}}
+        foreach key {scale offset inverse_scale inverse_offset} {dict set plan $key [uiFieldNormalize {type number} [dict get $plan $key]]}
+        if {[dict get $plan scale]==0||[dict get $plan inverse_scale]==0} {error {Grid presentation scales must be nonzero}}
+        if {[string length [dict get $plan unit]]>256} {error {Grid unit label is too long}}
+        dict set presentation $axis $plan
+    }
+    dict set presentation polar_compatible [uiFieldNormalize {type boolean} [datasetPublicationV2DictDefault $presentation polar_compatible 0]]
+    return $presentation
+}
+proc ::GX::_native2DGridPresentedValue {value plan inverse displacement} {
+    set prefix [expr {$inverse?"inverse_":""}]
+    set scale [dict get $plan ${prefix}scale];set offset [dict get $plan ${prefix}offset]
+    if {$displacement} {set scale [expr {abs($scale)}];set offset 0.0}
+    if {$scale==1&&$offset==0} {return $value}
+    return [uiFieldNormalize {type number} [expr {$scale*$value+$offset}]]
+}
+proc ::GX::_native2DGridPresentationValues {values presentation inverse} {
+    if {$presentation eq {}} {return $values}
+    foreach axis {x y} {
+        set plan [dict get $presentation $axis]
+        foreach key [list origin_$axis polar_origin_$axis spacing_$axis] {
+            dict set values $key [_native2DGridPresentedValue [dict get $values $key] $plan $inverse [string match spacing_* $key]]
+        }
+    }
+    if {[dict get $presentation polar_compatible]} {
+        foreach key {radius_min radius_max radial_spacing} {dict set values $key [_native2DGridPresentedValue [dict get $values $key] [dict get $presentation x] $inverse 1]}
+    }
+    return $values
+}
+proc ::GX::_native2DGridPresentationGuard {presentation} {
+    set guard [datasetPublicationV2DictDefault $presentation guard {}]
+    if {$guard ne {}} {uplevel #0 $guard}
+}
+proc ::GX::native2DGridPresentationApply {scene changed presentation values} {
+    set presentation [_native2DGridPresentation $presentation]
+    _native2DGridPresentationGuard $presentation
+    if {$presentation ne {}&&![dict get $presentation polar_compatible]&&[dict get $values coordinate_mode] ne "cartesian"} {error {Polar readout requires compatible axis presentation}}
+    native2DGridApply $scene $changed [_native2DGridPresentationValues $values $presentation 1]
+}
+proc ::GX::native2DGridForm {window scene changed {parent ""} {presentation {}}} {
+    set presentation [_native2DGridPresentation $presentation]
+    _native2DGridPresentationGuard $presentation
     set grid [::GX::Native2D::core grid $scene]
     set fields {};set values {}
     foreach {key label} {visible {Show grid} snap_enabled {Snap to grid} major_visible {Major lines} minor_visible {Minor lines} axes_visible {Origin axes}} {
@@ -107,9 +153,30 @@ proc ::GX::native2DGridForm {window scene changed {parent ""}} {
         } else {set section polar}
         dict set fields $key section $section
     }
-    set d [::GX::uiFieldFormCreate $window "Construction grid / view" $fields $values [list ::GX::native2DGridApply $scene $changed] $parent {visibility Visibility grid Grid lines Lines axes Axes background Background polar {Polar / advanced}}]
+    set values [_native2DGridPresentationValues $values $presentation 0]
+    if {$presentation ne {}} {
+        foreach axis {x y} {
+            foreach key [list origin_$axis spacing_$axis polar_origin_$axis] {
+                dict set fields $key label "[dict get $fields $key label] ([dict get $presentation $axis unit])"
+                if {[dict exists $fields $key default]} {dict set fields $key default [dict get $values $key]}
+            }
+        }
+        if {[dict get $presentation polar_compatible]} {
+            foreach key {radius_min radius_max radial_spacing} {dict set fields $key label "[dict get $fields $key label] ([dict get $presentation x unit])"}
+        } else {
+            dict set fields coordinate_mode values {cartesian};dict set values coordinate_mode cartesian
+        }
+        dict set fields rotation label {Grid rotation in geometry coordinates (degrees)}
+    }
+    set d [::GX::uiFieldFormCreate $window "Construction grid / view" $fields $values [list ::GX::native2DGridPresentationApply $scene $changed $presentation] $parent {visibility Visibility grid Grid lines Lines axes Axes background Background polar {Polar / advanced}}]
+    if {$presentation ne {}&&![dict get $presentation polar_compatible]} {uiFieldFormSectionEnabled $d polar 0}
+    set note [datasetPublicationV2DictDefault $presentation note {}]
+    if {$note ne {}} {
+        ttk::label $d.coordinateNote -text $note -wraplength 690 -justify left
+        pack $d.coordinateNote -side top -fill x -before $d.viewport -padx 10 -pady 6
+    }
     wm geometry $d 760x490
-    ttk::button $d.actions.reset -text "Reset grid" -command [list ::GX::native2DGridReset $window $scene $changed $parent]
+    ttk::button $d.actions.reset -text "Reset grid" -command [list ::GX::native2DGridReset $window $scene $changed $parent $presentation]
     pack $d.actions.reset -side left -before $d.actions.close -padx 4
 }
 proc ::GX::native2DGridApply {scene changed values} {
@@ -131,12 +198,13 @@ proc ::GX::native2DGridApply {scene changed values} {
     ::GX::Native2D::core presentation $scene [dict create grid $grid background [::GX::uiFieldColorToRGBA [dict get $values background]] polar $polar coordinate_mode [dict get $values coordinate_mode]]
     if {$changed ne ""} {uplevel #0 $changed}
 }
-proc ::GX::native2DGridReset {window scene changed parent} {
+proc ::GX::native2DGridReset {window scene changed parent {presentation {}}} {
+    _native2DGridPresentationGuard $presentation
     set empty [::GX::Native2D::core scene]
     try {set grid [::GX::Native2D::core grid $empty]} finally {::GX::Native2D::core destroy $empty}
     ::GX::Native2D::core grid $scene $grid
     if {$changed ne ""} {uplevel #0 $changed}
-    native2DGridForm $window $scene $changed $parent
+    native2DGridForm $window $scene $changed $parent $presentation
 }
 proc ::GX::native2DCanvasGrid {scene canvas {tag construction_grid}} {
     set grid [::GX::Native2D::core grid $scene]

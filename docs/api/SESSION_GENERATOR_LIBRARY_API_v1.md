@@ -170,6 +170,12 @@ It records library ID/version, generator ID/version/type and generation timestam
 
 Noise-bearing examples use explicit deterministic seeds and record their ground truth in the generated Session.
 
+Library1.1.0 also includes `calibrated_digitizer`1.0.0: an independent raster,
+ordered pixel/physical references, units, calibration and quantization assumptions.
+It imports no tested scientific module and embeds no completed analysis. Existing
+installed libraries are preserved; the standalone generator ZIP can be imported
+through the same public library operations.
+
 ## Security boundary
 
 Imported generator code is trusted installed code, not arbitrary code executed during import. Python execution occurs only after an explicit user generation request. Descriptors cannot configure arbitrary shell commands, absolute entry paths, traversal paths or URLs.

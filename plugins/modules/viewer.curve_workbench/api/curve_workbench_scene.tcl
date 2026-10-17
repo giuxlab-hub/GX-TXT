@@ -5,6 +5,7 @@
 proc ::GX::CurveWorkbench::_draw {w} {
     variable st
     if {![info exists st($w,scene)]||![winfo exists $w.right.viewport.canvas]} return
+    if {[_coordinateFrameSync $w]} {_curveList $w}
     _semanticSync $w
     # Gizmo drawing and hit testing use complete CAD target bounds. Point and
     # control membership remain owned by the shared semantic selection set.
@@ -14,6 +15,8 @@ proc ::GX::CurveWorkbench::_draw {w} {
         if {[info exists st($w,$key)]&&$st($w,$key) ne {}} {lappend feedback $st($w,$key)}
     }
     ::GX::native2DSceneFeedback $st($w,scene) $feedback
+    _coordinatePolicy $w
+    _coordinateMetricPolicy $w
     _residualLayout $w
     _drawScene $w
     _drawGizmo $w

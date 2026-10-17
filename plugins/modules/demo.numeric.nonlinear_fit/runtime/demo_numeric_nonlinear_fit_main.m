@@ -18,8 +18,8 @@ function demo_numeric_nonlinear_fit_main(args)
     error('demo.numeric.nonlinear_fit: bind both X variable and Y variable before running');
   endif
 
-  [~,~,x_meta]=gxtxt_analysis_source_variable_meta(cfg,'primary',x_token);
-  [~,~,y_meta]=gxtxt_analysis_source_variable_meta(cfg,'primary',y_token);
+  [x_unit,~,x_meta]=gxtxt_analysis_source_variable_meta(cfg,'primary',x_token);
+  [y_unit,~,y_meta]=gxtxt_analysis_source_variable_meta(cfg,'primary',y_token);
   if(!isfield(x_meta,'found') || !x_meta.found)
     error('demo.numeric.nonlinear_fit: X binding could not be resolved in primary source: %s',x_token);
   endif
@@ -41,7 +41,9 @@ function demo_numeric_nonlinear_fit_main(args)
   reference=read_ground_truth(truth_path);
   expected=[reference.A reference.k reference.c];
 
-  model=@(p,z) p(1).*exp(-p(2).*z)+p(3);
+  rate_unit='unspecified';if(!isempty(x_unit)),rate_unit=['1/' x_unit];endif
+  response_unit=y_unit;if(isempty(response_unit)),response_unit='unspecified';endif
+  model=struct('expression','A*exp(-k*x)+c','parameter_ids',{{'A','k','c'}},'parameter_units',{{response_unit,rate_unit,response_unit}});
   opts=struct('solver','auto','max_iterations',500,'tolerance',1e-9);
   result=gxtxt_numeric_v1('dataset_nonlinear_fit',session,source_id,x_var,y_var,model,[4;0.5;0.2],opts);
   recovered=result.parameters(:).';
@@ -54,6 +56,11 @@ function demo_numeric_nonlinear_fit_main(args)
   [x,measured]=read_source_dataset(session,source_id,x_var,y_var);
   fitted=result.predicted(:);
   if(numel(x)!=numel(fitted)), error('demo.numeric.nonlinear_fit: fitted/source length mismatch'); endif
+
+  statistics_lifetime=gxtxt_statistics_scope_v1();
+  context=struct('orientation','y_of_x','x_unit',x_unit,'y_unit',y_unit,'constraints','none','noise_model','unspecified');
+  result.core=gxtxt_statistics_v1('from_numeric','math.numeric.nonlinear','nonlinear_fit',result,context,struct(),struct('producer','demo.numeric.nonlinear_fit'));
+  if(!result.converged),error('demo.numeric.nonlinear_fit: solver did not converge');endif
 
   derived_id='demo.nonlinear.fit';
   publish_fit_dataset(session,derived_id,source_id,x_var,y_var,x,measured,fitted,result);
@@ -125,10 +132,11 @@ function R=read_ground_truth(path)
 endfunction
 
 function publish_fit_dataset(session,derived_id,source_id,x_var,y_var,x,measured,fitted,result)
-  options=struct('storage','csv','producer_version','1.0.5', ...
+  options=struct('storage','csv','producer_version','1.1.0', ...
                  'source_dataset_ids',source_id,'source_variable_ids',[x_var ';' y_var], ...
                  'provenance','NUMERIC_API_v1 dataset_nonlinear_fit', ...
                  'replace_owned',true);
+  options.statistical_results=struct('training',result.core);
   P=gxtxt_publication_v2_open(session,'demo.numeric.nonlinear_fit',derived_id,'table.generic',options);
   complete=false;
   unwind_protect
@@ -153,8 +161,9 @@ function write_metrics(outdir,source_id,derived_id,x_var,y_var,x_name,y_name,exp
       fprintf(fid,'expected_%s=%.15g\nrecovered_%s=%.15g\nabsolute_error_%s=%.15g\ntolerance_%s=%.15g\n', ...
               names{i},expected(i),names{i},recovered(i),names{i},errors(i),names{i},tolerance(i));
     endfor
-    fprintf(fid,'solver=%s\nconverged=%d\nsse=%.15g\nrmse=%.15g\nr_squared=%.15g\nnoise=%s\nseed=%s\n', ...
-            result.solver,result.converged,result.sse,result.rmse,result.r_squared,reference.noise,reference.seed);
+    fprintf(fid,'solver=%s\nconverged=%d\nnoise=%s\nseed=%s\n',result.solver,result.converged,reference.noise,reference.seed);
+    % Preserve legacy rmse identity as the residual-DOF-scaled Numeric value.
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('ini_report',result.core,struct('sse','sse','rmse','weighted_residual_standard_deviation','r_squared','r_squared')));
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect
@@ -174,8 +183,9 @@ function write_report(outdir,source_id,derived_id,x_var,y_var,x_name,y_name,expe
       fprintf(fid,'%s: expected %.9g; recovered %.9g; absolute error %.9g; tolerance %.9g\n', ...
               names{i},expected(i),recovered(i),errors(i),tolerance(i));
     endfor
-    fprintf(fid,'Solver: %s; converged: %d; SSE: %.9g; RMSE: %.9g; R-squared: %.9g\n', ...
-            result.solver,result.converged,result.sse,result.rmse,result.r_squared);
+    fprintf(fid,'Solver: %s; converged: %d\n%s\n%s\n',result.solver,result.converged, ...
+      gxtxt_statistics_v1('parameter_report',result.core), ...
+      gxtxt_statistics_v1('report',result.core,{'sse','weighted_residual_standard_deviation','r_squared','dof'}));
   unwind_protect_cleanup
     fclose(fid);
   end_unwind_protect

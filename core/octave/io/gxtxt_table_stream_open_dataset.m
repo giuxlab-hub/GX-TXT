@@ -5,7 +5,7 @@ function S=gxtxt_table_stream_open_dataset(session,dataset_id,variable_ids,chunk
   if(ischar(variable_ids)),variable_ids={variable_ids};endif
   if(nargin<4||isempty(chunk_rows)),chunk_rows=5000;endif
   if(nargin<5||isempty(options)),options=struct();endif
-  start=field_or(options,'start',0);count=field_or(options,'count',-1);require_direct=field_or(options,'require_direct',false);numeric_transport=field_or(options,'numeric_transport','auto');
+  start=field_or(options,'start',0);count=field_or(options,'count',-1);require_direct=field_or(options,'require_direct',false);numeric_transport=field_or(options,'numeric_transport','resource');
   here=fileparts(mfilename('fullpath'));root=fileparts(fileparts(fileparts(here)));
   bridge=fullfile(root,'core','tcl','table_stream_v3_bridge.tcl');
   if(exist(bridge,'file')!=2),error('GXTXT:TableStream','Table Stream v3 bridge is missing');endif

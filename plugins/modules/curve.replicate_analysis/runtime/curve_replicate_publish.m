@@ -1,89 +1,83 @@
-function D=curve_replicate_publish(session,source_ids,traces,results,numeric_fn)
-% Publish compact long-form analysis Datasets for Plot Dataset API v3.
+function D=curve_replicate_publish(session,source_ids,traces,results,reports)
+% Publish canonical long-form Datasets with captured CORE interpretation.
 % SPDX-License-Identifier: GPL-3.0-or-later
-  module_id='curve.replicate_analysis';D=struct();
   if(!iscell(source_ids)),source_ids={source_ids};endif
-  source_ids=source_ids(!cellfun(@isempty,source_ids));
-
-  % One long-form Dataset contains every accepted trace.  trace_index is the
-  % stable row-filter key used by Plot Dataset; no per-trace Dataset fan-out.
-  tx=[];ty=[];tidx=[];tsrc=[];trep=[];tfam=[];
+  source_ids=source_ids(!cellfun(@isempty,source_ids));u=results(1);D=struct();
+  D.trace_id='curve.replicate.traces';blocks={};
   for i=1:numel(traces)
-    t=traces(i);n=numel(t.x);
-    tx=[tx;t.x(:)];ty=[ty;t.y(:)];tidx=[tidx;repmat(i,n,1)];
-    tsrc=[tsrc;repmat(t.source_index,n,1)];trep=[trep;repmat(t.replicate_index,n,1)];
-    tfam=[tfam;repmat(t.family_value,n,1)];
+    t=traces(i);blocks{end+1}={t.x,t.y,i,t.source_index,t.replicate_index,t.family_value};
   endfor
-  D.trace_id='curve.replicate.traces';
-  publish_table(session,module_id,D.trace_id,source_ids, ...
-    {'x',tx,'independent';'y',ty,'measured';'trace_index',tidx,'identifier'; ...
-     'source_index',tsrc,'category';'replicate_index',trep,'replicate';'family_value',tfam,'family'});
+  records=reports.trace_records;
+  for key=fieldnames(reports.source_records)',records.(key{1})=reports.source_records.(key{1});endfor
+  publish_blocks(session,D.trace_id,source_ids, ...
+    {'x',u.x_unit,'independent';'y',u.y_unit,'measured';'trace_index','1','identifier'; ...
+     'source_index','1','category';'replicate_index','1','replicate';'family_value',u.family_unit,'family'},blocks,records);
 
-  % One long-form Dataset contains every family profile and uncertainty field.
-  px=[];pfi=[];pfv=[];pmean=[];pmedian=[];pstd=[];psem=[];psw=[];psb=[];pst=[];
-  plstd=[];pustd=[];plsem=[];pusem=[];pltotal=[];putotal=[];
-  for i=1:numel(results)
-    r=results(i);n=numel(r.x);fi=repmat(i,n,1);fv=repmat(r.family_value,n,1);
-    px=[px;r.x(:)];pfi=[pfi;fi];pfv=[pfv;fv];pmean=[pmean;r.y_mean(:)];pmedian=[pmedian;r.y_median(:)];
-    pstd=[pstd;r.y_std(:)];psem=[psem;r.y_sem(:)];psw=[psw;r.sigma_within(:)];psb=[psb;r.sigma_between(:)];pst=[pst;r.sigma_total(:)];
-    plstd=[plstd;r.y_mean(:)-r.y_std(:)];pustd=[pustd;r.y_mean(:)+r.y_std(:)];
-    plsem=[plsem;r.y_mean(:)-r.y_sem(:)];pusem=[pusem;r.y_mean(:)+r.y_sem(:)];
-    pltotal=[pltotal;r.y_mean(:)-r.sigma_total(:)];putotal=[putotal;r.y_mean(:)+r.sigma_total(:)];
+  D.profile_id='curve.replicate.profiles';blocks={};segments={};offset=0;
+  columns=u.core_statistics.producer_columns;fields=gxtxt_statistics_v1('numeric_fields',u.core_statistics.prototype);
+  schema={'x',u.x_unit,'independent';'family_index','1','identifier';'family_value',u.family_unit,'family'};
+  for k=1:rows(columns)
+    unit=fields.(columns{k,1}).unit_text;if(strcmp(unit,'unspecified')),unit='';endif
+    schema(end+1,:)={columns{k,2},unit,'derived'};
   endfor
-  D.profile_id='curve.replicate.profiles';
-  publish_table(session,module_id,D.profile_id,source_ids, ...
-    {'x',px,'independent';'family_index',pfi,'identifier';'family_value',pfv,'family'; ...
-     'mean',pmean,'derived';'median',pmedian,'derived';'std',pstd,'uncertainty';'sem',psem,'uncertainty'; ...
-     'sigma_within',psw,'uncertainty';'sigma_between',psb,'uncertainty';'sigma_total',pst,'uncertainty'; ...
-     'lower_std',plstd,'derived';'upper_std',pustd,'derived';'lower_sem',plsem,'derived';'upper_sem',pusem,'derived'; ...
-     'lower_sigma_total',pltotal,'derived';'upper_sigma_total',putotal,'derived'});
+  for i=1:numel(results)
+    r=results(i);block={r.x,i,r.family_value};
+    for k=1:rows(columns),block{end+1}=r.numeric_profile.(columns{k,1});endfor
+    blocks{end+1}=block;n=numel(r.x);
+    if(isempty(segments)||!isequal(segments{end}.prototype.context,r.core_statistics.prototype.context))
+      segments{end+1}=struct('prototype',r.core_statistics.prototype,'column_variables',r.core_statistics.column_variables,'row_start',offset,'row_count',n);
+    else segments{end}.row_count+=n;endif
+    offset+=n;
+  endfor
+  records=struct();
+  for i=1:numel(segments)
+    s=segments{i};records.(sprintf('profile_%d',i))=gxtxt_statistics_v1('bind_columns',s.prototype,s.column_variables,s.row_count,s.row_start);
+  endfor
+  publish_blocks(session,D.profile_id,source_ids,schema,blocks,records);
 
   valid=find([results.variance_components_identifiable]);D.summary_valid=!isempty(valid);
-  if(D.summary_valid)
-    n=numel(valid);labels=cell(1,n);summary_family_values=zeros(n,1);vals=zeros(n,3,3);
-    for i=1:n
-      r=results(valid(i));labels{i}=r.family_label;summary_family_values(i)=r.family_value;
-      components={r.sigma_within,r.sigma_between,r.sigma_total};
-      for j=1:3
-        s=feval(numeric_fn,'statistics',components{j}(:),struct());
-        vals(i,j,1)=s.rms;vals(i,j,2)=s.mean;vals(i,j,3)=s.max;
-      endfor
-    endfor
-  else
-    n=1;labels={'unavailable'};summary_family_values=NaN;vals=zeros(1,3,3);
-  endif
-  x=(1:n)';D.summary_labels=labels;D.summary_id='curve.replicate.family_summary';
-  publish_table(session,module_id,D.summary_id,source_ids, ...
-    {'family_index',x,'independent';'family_value',summary_family_values,'family';'x_within',x-0.25,'independent'; ...
-     'x_between',x,'independent';'x_total',x+0.25,'independent'; ...
-     'within_rms',vals(:,1,1),'uncertainty';'between_rms',vals(:,2,1),'uncertainty'; ...
-     'total_rms',vals(:,3,1),'uncertainty'; ...
-     'within_mean',vals(:,1,2),'uncertainty';'between_mean',vals(:,2,2),'uncertainty'; ...
-     'total_mean',vals(:,3,2),'uncertainty'; ...
-     'within_max',vals(:,1,3),'uncertainty';'between_max',vals(:,2,3),'uncertainty'; ...
-     'total_max',vals(:,3,3),'uncertainty'});
+  if(isempty(valid)),valid=1;placeholder=true;else placeholder=false;endif
+  blocks={};labels={};
+  for i=1:numel(valid)
+    gi=valid(i);r=results(gi);indices=(gi-1)*4+(2:4);
+    if(placeholder),family=NaN;labels{end+1}='unavailable';else family=r.family_value;labels{end+1}=r.family_label;endif
+    v=reports.component_values;
+    blocks{end+1}={i,family,i-.25,i,i+.25,v.root_mean_square(indices(1)),v.root_mean_square(indices(2)),v.root_mean_square(indices(3)), ...
+      v.mean(indices(1)),v.mean(indices(2)),v.mean(indices(3)),v.maximum(indices(1)),v.maximum(indices(2)),v.maximum(indices(3))};
+  endfor
+  D.summary_labels=labels;D.summary_id='curve.replicate.family_summary';
+  publish_blocks(session,D.summary_id,source_ids, ...
+    {'family_index','1','independent';'family_value',u.family_unit,'family';'x_within','1','independent';'x_between','1','independent';'x_total','1','independent'; ...
+     'within_rms',u.y_unit,'uncertainty';'between_rms',u.y_unit,'uncertainty';'total_rms',u.y_unit,'uncertainty'; ...
+     'within_mean',u.y_unit,'uncertainty';'between_mean',u.y_unit,'uncertainty';'total_mean',u.y_unit,'uncertainty'; ...
+     'within_max',u.y_unit,'uncertainty';'between_max',u.y_unit,'uncertainty';'total_max',u.y_unit,'uncertainty'},blocks,reports.component_records);
 endfunction
 
-function publish_table(session,module_id,id,source_ids,cols)
-  opts=struct('storage','auto','replace_owned',true,'producer_version','15.2', ...
+function publish_blocks(session,id,source_ids,schema,blocks,records)
+  opts=struct('storage','auto','replace_owned',true,'producer_version','15.3', ...
     'source_dataset_ids',{source_ids},'source','Replicate Curve Analysis', ...
-    'provenance','Replicate Curve Analysis v15.2; compact long-form derived Dataset');
+    'provenance','Replicate Curve Analysis v15.3; captured CORE statistics and source-unit normalization','statistical_results',records);
   P=struct();opened=false;finalized=false;
   try
-    P=gxtxt_publication_v2_open(session,module_id,id,'table.generic',opts);opened=true;
+    P=gxtxt_publication_v2_open(session,'curve.replicate_analysis',id,'table.generic',opts);opened=true;
     P=gxtxt_publication_v2_declare_dimension(P,'row',0,true);
-    for k=1:rows(cols)
-      name=cols{k,1};spec=struct('dtype','float64','dimension_ids','row', ...
-        'name',name,'unit','','semantic_role',cols{k,3},'axis_kind','explicit');
-      if(k==1),spec.coordinate_role='coordinate';
-      else spec.coordinate_role='data';spec.coordinate_variable_ids=cols{1,1};endif
-      P=gxtxt_publication_v2_declare_variable(P,name,spec);
+    for k=1:rows(schema)
+      spec=struct('dtype','float64','dimension_ids','row','name',schema{k,1},'unit',schema{k,2},'semantic_role',schema{k,3},'axis_kind','explicit');
+      if(k==1),spec.coordinate_role='coordinate';else spec.coordinate_role='data';spec.coordinate_variable_ids=schema{1,1};endif
+      P=gxtxt_publication_v2_declare_variable(P,schema{k,1},spec);
     endfor
-    n=numel(cols{1,2});chunk=50000;
-    for first=1:chunk:n
-      last=min(n,first+chunk-1);items=cell(rows(cols),2);
-      for k=1:rows(cols),items{k,1}=cols{k,1};v=cols{k,2};items{k,2}=v(first:last);endfor
-      P=gxtxt_publication_v2_append(P,'row',items);
+    for bi=1:numel(blocks)
+      block=blocks{bi};n=numel(block{1});
+      for first=1:50000:n
+        last=min(n,first+49999);items=cell(rows(schema),2);
+        for k=1:rows(schema)
+          value=block{k};items{k,1}=schema{k,1};
+          if(isscalar(value)),items{k,2}=repmat(value,last-first+1,1);
+          elseif(numel(value)==n),items{k,2}=value(first:last);
+          else error('curve.replicate_analysis: inconsistent published row span');endif
+        endfor
+        P=gxtxt_publication_v2_append(P,'row',items);
+      endfor
     endfor
     [P,~]=gxtxt_publication_v2_finalize(P);finalized=true;opened=false;
   catch err

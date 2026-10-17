@@ -24,7 +24,7 @@ function curvefit_family_render_public(outdir,cfg,D,hname,gname,yname,mode)
   endif
   if(any(strcmp(enabled,ids{2})))
     graph=ids{2};title_text=mode_title(cfg,graph,'Curve Family Fitting - residuals','Curve Family Validation - residuals',mode);
-    axes=plot_axes(cfg,graph,hname,['Residual [' strrep(yname,'_',' ') ']']);
+    axes=plot_axes(cfg,graph,hname,physical_label('Predicted minus observed',D.units.response));
     ms=positive(ini_get(cfg,['plot.' graph '.marker_size'],'4'),4);
     series={family_trace('residual',D.result_id,'horizontal','residual','Residual','line_marker',gname,struct('marker','circle','marker_size',ms))};
     annotations=zero_annotation(cfg,graph);
@@ -57,8 +57,8 @@ function curvefit_family_render_public(outdir,cfg,D,hname,gname,yname,mode)
     graph=ids{5};title_text=mode_title(cfg,graph,'Curve Family Fitting - error by family','Curve Family Validation - error by group',mode);
     metric=lower(strtrim(ini_get(cfg,['plot.' graph '.metric'],'rmse')));
     if(!any(strcmp(metric,{'rmse','mae','max_abs_error'}))),metric='rmse';endif
-    names=struct('rmse','RMSE','mae','MAE','max_abs_error','MaxAbsError');
-    axes=plot_axes(cfg,graph,gname,[names.(metric) ' [' strrep(yname,'_',' ') ']']);
+    names=D.metric_labels;
+    axes=plot_axes(cfg,graph,gname,physical_label(names.(metric),D.units.response));
     ticks=arrayfun(@num2str,1:numel(D.group_labels),'UniformOutput',false);
     axes.x.tick_positions=strjoin(ticks,';');axes.x.tick_labels=strjoin(D.group_labels,';');
     series={trace(metric,D.metrics_id,'group_index',metric,names.(metric),'bar',struct('opacity',0.6))};
@@ -107,3 +107,7 @@ function b=parse_bool(raw,def),s=lower(strtrim(raw));if(any(strcmp(s,{'1','true'
 function a=split_list(raw),raw=strrep(raw,',',';');if(isempty(strtrim(raw))),a={};return;endif;a=strsplit(raw,';');a=cellfun(@strtrim,a,'UniformOutput',false);a=a(!cellfun(@isempty,a));endfunction
 function k=make_key(s),k=regexprep(s,'[^A-Za-z0-9_]','_');if(isempty(k)||!isletter(k(1))),k=['k_' k];endif;endfunction
 function v=ini_get(d,key,def),k=make_key(key);if(isfield(d,k)),v=d.(k);else v=def;endif;endfunction
+
+function label=physical_label(name,unit)
+  label=name;if(!isempty(unit)),label=[name ' [' unit ']'];endif
+endfunction

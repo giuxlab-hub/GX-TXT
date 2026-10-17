@@ -307,53 +307,93 @@ function out=statistics_action(action,a,b,c,opts)
   finite(a,'sample');x=a(:);
   switch(action)
     case 'confidence_interval'
-      alpha=option(opts,'alpha',0.05);mu=mean(x);se=std(x)/sqrt(numel(x));q=tinv(1-alpha/2,numel(x)-1);
-      out=struct('estimate',mu,'lower',mu-q*se,'upper',mu+q*se,'confidence',1-alpha);
+      alpha=option(opts,'alpha',0.05);
+      if(!isreal(x)||!isnumeric(alpha)||!isscalar(alpha)||!isreal(alpha)||!isfinite(alpha)||alpha<=0||alpha>=1),error('GXTXT:Numeric:InvalidArguments','mean confidence interval requires real observations and alpha strictly between zero and one');endif
+      n=numel(x);mu=mean(x);se=NaN;q=NaN;
+      if(n>1),se=std(x)/sqrt(n);q=gxtxt_numeric_v1('student_t_quantile',1-alpha/2,n-1).values;endif
+      out=struct('estimate',mu,'lower',mu-q*se,'upper',mu+q*se,'confidence',1-alpha, ...
+        'n',n,'standard_error',se,'degrees_of_freedom',n-1,'method','student_t_mean');
     case 'robust_location'
-      m=median(x);scale=max(1.4826*median(abs(x-m)),eps);constant=option(opts,'huber_constant',1.345);
+      constant=option(opts,'huber_constant',1.345);
+      if(!isreal(x)||!isnumeric(constant)||!isscalar(constant)||!isreal(constant)||!isfinite(constant)||constant<=0),error('GXTXT:Numeric:InvalidArguments','Huber location requires real observations and a positive finite constant');endif
+      m=median(x);scale=max(1.4826*median(abs(x-m)),eps);converged=false;
       for k=1:100
         r=(x-m)/scale;weight=min(1,constant./max(abs(r),eps));next=sum(weight.*x)/sum(weight);
-        if(abs(next-m)<1e-10*scale),m=next;break;endif;m=next;
+        if(abs(next-m)<1e-10*scale),m=next;converged=true;break;endif;m=next;
       endfor
-      out=struct('location',m,'scale',scale,'iterations',k,'method','Huber');
+      out=struct('location',m,'scale',scale,'iterations',k,'method','Huber','n',numel(x), ...
+        'huber_constant',constant,'converged',converged,'scale_method','initial_median_MAD_1.4826_with_absolute_eps_floor');
     case 'robust_regression'
       finite(a,'design matrix');finite(b,'response');X=a;y=b(:);if(rows(X)!=numel(y)),error('GXTXT:Numeric:DimensionMismatch','design rows must match response');endif
-      beta=X\y;constant=option(opts,'huber_constant',1.345);
+      constant=option(opts,'huber_constant',1.345);
+      if(!isnumeric(constant)||!isscalar(constant)||!isreal(constant)||!isfinite(constant)||constant<=0),error('GXTXT:Numeric:InvalidArguments','Huber regression requires a positive finite constant');endif
+      beta=X\y;converged=false;
       for k=1:100
         residual=y-X*beta;scale=max(1.4826*median(abs(residual-median(residual))),eps);
         weight=min(1,constant*scale./max(abs(residual),eps));next=(X'*(weight.*X))\(X'*(weight.*y));
-        if(norm(next-beta)<1e-10*max(1,norm(beta))),beta=next;break;endif;beta=next;
+        update_norm=norm(next-beta);threshold=1e-10*max(1,norm(beta));
+        if(update_norm<threshold),beta=next;converged=true;break;endif;beta=next;
       endfor
-      out=struct('coefficients',beta,'residual',y-X*beta,'iterations',k,'method','Huber IRLS');
+      residual=y-X*beta;
+      out=struct('coefficients',beta,'residual',residual,'iterations',k,'method','Huber IRLS', ...
+        'coefficients_real',real(beta),'coefficients_imaginary',imag(beta),'residual_real',real(residual),'residual_imaginary',imag(residual), ...
+        'n',rows(X),'p',columns(X),'input_kind',ternary(isreal(X)&&isreal(y),'real','complex'), ...
+        'converged',converged,'huber_constant',constant,'last_scale',scale,'last_update_norm',update_norm,'last_threshold',threshold,'tolerance',1e-10,'iteration_limit',100);
     case 'covariance_diagnostics'
-      finite(a,'observations');S=cov(a);out=struct('covariance',S,'eigenvalues',eig(S),'condition_number',cond(S),'rank',rank(S));
+      finite(a,'observations');S=cov(a);eigenvalues=eig(S);
+      if(isvector(a)),observations=numel(a);else,observations=rows(a);endif
+      out=struct('covariance',S,'eigenvalues',eigenvalues,'condition_number',cond(S),'rank',rank(S), ...
+        'covariance_real',real(S),'covariance_imaginary',imag(S),'eigenvalues_real',real(eigenvalues), ...
+        'eigenvalues_imaginary',imag(eigenvalues),'n',observations,'variable_count',rows(S), ...
+        'method','centered_sample_covariance_n_minus_one','input_kind',ternary(isreal(a),'real','complex'));
     case 'partial_correlation'
-      finite(b,'second sample');finite(c,'control matrix');X=[x,b(:),c];P=pinv(cov(X));out=struct('correlation',-P(1,2)/sqrt(P(1,1)*P(2,2)));
+      finite(b,'second sample');finite(c,'control matrix');
+      if(!isreal(a)||!isreal(b)||!isreal(c)||!isvector(a)||!isvector(b)||numel(x)<2||numel(b)!=numel(x)||rows(c)!=numel(x)),error('GXTXT:Numeric:InvalidArguments','partial correlation requires aligned real sample vectors and control columns with at least two rows');endif
+      X=[x,b(:),c];S=cov(X);P=pinv(S);denominator=sqrt(P(1,1)*P(2,2));
+      out=struct('correlation',-P(1,2)/denominator,'n',rows(X),'variable_count',columns(X),'control_count',columns(c), ...
+        'covariance_rank',rank(S),'normalization_valid',isreal(denominator)&&isfinite(denominator)&&denominator>0, ...
+        'method','covariance_pseudoinverse_normalization');
     case 'multiple_testing'
+      if(!isreal(x)||any(x<0)||any(x>1)),error('GXTXT:Numeric:InvalidArguments','multiple testing requires real p-values in the closed interval zero to one');endif
       method=option(opts,'method','bonferroni');if(strcmp(method,'bonferroni')),p=min(1,x*numel(x));elseif(strcmp(method,'holm')),[s,ix]=sort(x);q=max(cummax((numel(x):-1:1)'.*s),0);p=zeros(size(x));p(ix)=min(1,q);elseif(strcmp(method,'bh')),[s,ix]=sort(x);q=flipud(cummin(flipud(numel(x)*s./(1:numel(x))')));p=zeros(size(x));p(ix)=min(1,q);else,error('GXTXT:Numeric:InvalidMethod','unknown correction');endif
-      out=struct('adjusted_p',p);
+      out=struct('adjusted_p',p,'original_p',x,'hypothesis_index',(1:numel(x))','family_size',numel(x),'method',method);
     case 'bootstrap_ci'
       count=option(opts,'replicates',1000);seed=option(opts,'seed',[]);if(isempty(seed)||count<100),error('GXTXT:Numeric:SeedRequired','bootstrap requires seed and at least 100 replicates');endif
+      alpha=option(opts,'alpha',0.05);
+      if(!isreal(x)||!isnumeric(count)||!isscalar(count)||!isreal(count)||!isfinite(count)||count!=fix(count)||!isnumeric(alpha)||!isscalar(alpha)||!isreal(alpha)||!isfinite(alpha)||alpha<=0||alpha>=1),error('GXTXT:Numeric:InvalidArguments','bootstrap requires real samples, an integer replicate count and alpha in (0,1)');endif
+      if(!isnumeric(seed)||!isscalar(seed)||!isreal(seed)||!isfinite(seed)||seed<0||seed!=fix(seed)),error('GXTXT:Numeric:InvalidArguments','bootstrap requires an explicit nonnegative integer seed');endif
       previous=rng();unwind_protect
         rng(seed,'twister');estimates=zeros(count,1);for k=1:count,indices=randi(numel(x),numel(x),1);estimates(k)=mean(x(indices));endfor
       unwind_protect_cleanup,rng(previous);end_unwind_protect
-      alpha=option(opts,'alpha',0.05);out=struct('estimate',mean(x),'lower',quantile(estimates,alpha/2),'upper',quantile(estimates,1-alpha/2),'replicates',count);
+      variance=var(estimates,0);
+      out=struct('estimate',mean(x),'lower',quantile(estimates,alpha/2,1,5),'upper',quantile(estimates,1-alpha/2,1,5),'replicates',count, ...
+        'n_x',numel(x),'n_y',0,'method','bootstrap','alternative','two_sided','confidence',1-alpha, ...
+        'inference','percentile_confidence_interval','quantile_definition','Hyndman-Fan type 5 piecewise linear interpolation', ...
+        'distribution_variance',variance,'bootstrap_standard_error',sqrt(variance),'seed',seed,'random_generator','twister');
     case 'permutation_test'
       finite(b,'second sample');count=option(opts,'replicates',1000);seed=option(opts,'seed',[]);if(isempty(seed)||count<100),error('GXTXT:Numeric:SeedRequired','permutation test requires seed and at least 100 replicates');endif
+      if(!isreal(x)||!isreal(b)||!isnumeric(count)||!isscalar(count)||!isreal(count)||!isfinite(count)||count!=fix(count)),error('GXTXT:Numeric:InvalidArguments','permutation test requires real samples and an integer replicate count');endif
+      if(!isnumeric(seed)||!isscalar(seed)||!isreal(seed)||!isfinite(seed)||seed<0||seed!=fix(seed)),error('GXTXT:Numeric:InvalidArguments','permutation test requires an explicit nonnegative integer seed');endif
       y=b(:);observed=mean(x)-mean(y);pooled=[x;y];extreme=0;previous=rng();unwind_protect
         rng(seed,'twister');for k=1:count,p=pooled(randperm(numel(pooled)));delta=mean(p(1:numel(x)))-mean(p(numel(x)+1:end));extreme+=(abs(delta)>=abs(observed));endfor
       unwind_protect_cleanup,rng(previous);end_unwind_protect
-      out=struct('difference',observed,'p_value',(extreme+1)/(count+1),'replicates',count);
+      out=struct('difference',observed,'p_value',(extreme+1)/(count+1),'replicates',count, ...
+        'n_x',numel(x),'n_y',numel(y),'extreme_count',extreme,'method','permutation_independent','alternative','two_sided', ...
+        'inference','monte_carlo_permutation_p_plus_one','tail_tolerance',0,'seed',seed,'random_generator','twister');
     case 'logistic_regression'
       finite(a,'design matrix');finite(b,'binary outcome');X=a;y=b(:);if(rows(X)!=numel(y)||any(y!=0&y!=1)),error('GXTXT:Numeric:DimensionMismatch','binary outcomes must match design rows');endif
+      if(!isreal(X)||!isreal(y)),error('GXTXT:Numeric:InvalidArguments','Logistic regression requires real design and binary response');endif
       beta=zeros(columns(X),1);for k=1:100
         z=X*beta;p=1./(1+exp(-z));w=max(p.*(1-p),1e-10);gradient=X'*(y-p);H=X'*(w.*X);step=H\gradient;beta+=step;
-        if(norm(step)<1e-9),break;endif
+        update_norm=norm(step);if(update_norm<1e-9),break;endif
       endfor
-      out=struct('coefficients',beta,'probability',1./(1+exp(-X*beta)),'iterations',k,'converged',norm(step)<1e-9);
+      out=struct('coefficients',beta,'probability',1./(1+exp(-X*beta)),'iterations',k,'converged',update_norm<1e-9, ...
+        'coefficients_real',real(beta),'coefficients_imaginary',imag(beta),'n',rows(X),'p',columns(X),'input_kind','real', ...
+        'method','logistic_newton_weight_floor','family','binomial','link','logit','last_update_norm',update_norm,'last_threshold',1e-9,'tolerance',1e-9,'iteration_limit',100);
     case 'glm'
       finite(a,'design matrix');finite(b,'response');X=a;y=b(:);
       if(rows(X)!=numel(y)),error('GXTXT:Numeric:DimensionMismatch','GLM design rows must match responses');endif
+      if(!isreal(X)||!isreal(y)),error('GXTXT:Numeric:InvalidArguments','GLM requires real design and response');endif
       family=option(opts,'family','poisson');
       if(strcmp(family,'binomial'))
         if(any(y!=0&y!=1)),error('GXTXT:Numeric:InvalidResponse','binomial GLM needs zero/one outcomes');endif
@@ -361,6 +401,7 @@ function out=statistics_action(action,a,b,c,opts)
         if(any(y<0)||any(y!=fix(y))),error('GXTXT:Numeric:InvalidResponse','Poisson GLM needs nonnegative counts');endif
       else,error('GXTXT:Numeric:InvalidMethod','GLM family must be binomial or poisson');endif
       beta=zeros(columns(X),1);tolerance=option(opts,'tolerance',1e-8);limit=option(opts,'max_iterations',100);
+      if(!isnumeric(tolerance)||!isscalar(tolerance)||!isreal(tolerance)||!isfinite(tolerance)||tolerance<=0||!isnumeric(limit)||!isscalar(limit)||!isreal(limit)||!isfinite(limit)||limit<1||limit!=fix(limit)),error('GXTXT:Numeric:InvalidArguments','GLM requires a positive finite tolerance and a positive integer iteration limit');endif
       for k=1:limit
         eta=X*beta;
         if(strcmp(family,'binomial')),mu=1./(1+exp(-max(-40,min(40,eta))));variance=max(mu.*(1-mu),1e-8);
@@ -377,21 +418,36 @@ function out=statistics_action(action,a,b,c,opts)
           step*=scale;
         endif
         beta+=step;
-        if(norm(step)<tolerance*max(1,norm(beta))),break;endif
+        update_norm=norm(step);threshold=tolerance*max(1,norm(beta));if(update_norm<threshold),break;endif
       endfor
       eta=X*beta;if(strcmp(family,'binomial')),fitted=1./(1+exp(-eta));else,fitted=exp(eta);endif
-      out=struct('coefficients',beta,'fitted_mean',fitted,'family',family,'link',ternary(strcmp(family,'binomial'),'logit','log'),'iterations',k,'converged',norm(step)<tolerance*max(1,norm(beta)),'score_norm',norm(X'*(y-fitted)));
+      out=struct('coefficients',beta,'fitted_mean',fitted,'family',family,'link',ternary(strcmp(family,'binomial'),'logit','log'),'iterations',k,'converged',update_norm<threshold,'score_norm',norm(X'*(y-fitted)), ...
+        'coefficients_real',real(beta),'coefficients_imaginary',imag(beta),'n',rows(X),'p',columns(X),'input_kind','real', ...
+        'method','glm_clipped_irls','last_update_norm',update_norm,'last_threshold',threshold,'tolerance',tolerance,'iteration_limit',limit);
     case 'survival_kaplan_meier'
       finite(a,'event times');finite(b,'event indicators');if(numel(a)!=numel(b)||any(b(:)!=0&b(:)!=1)),error('GXTXT:Numeric:DimensionMismatch','event times and censoring indicators must match');endif
-      times=unique(a(:));survival=ones(numel(times),1);risk=numel(a);s=1;
-      for k=1:numel(times),at=sum(a(:)==times(k));events=sum(a(:)==times(k)&b(:)==1);s*=1-events/risk;survival(k)=s;risk-=at;endfor
-      out=struct('time',times,'survival',survival,'method','Kaplan-Meier');
+      if(!isreal(a)||!isreal(b)),error('GXTXT:Numeric:InvalidArguments','Kaplan-Meier requires real event coordinates and zero/one event indicators');endif
+      [times,unused,group]=unique(a(:));removed=accumarray(group,ones(numel(a),1));events=accumarray(group,b(:));
+      survival=ones(numel(times),1);at_risk=zeros(numel(times),1);risk=numel(a);s=1;
+      for k=1:numel(times),at_risk(k)=risk;s*=1-events(k)/risk;survival(k)=s;risk-=removed(k);endfor
+      out=struct('time',times,'survival',survival,'method','Kaplan-Meier','n',numel(a), ...
+        'at_risk',at_risk,'events',events,'censored',removed-events);
     case 'kmeans'
       finite(a,'observations');clusters=option(opts,'clusters',2);seed=option(opts,'seed',[]);if(isempty(seed)),error('GXTXT:Numeric:SeedRequired','kmeans requires deterministic seed');endif
+      replicates=option(opts,'replicates',5);
+      if(!isreal(a)||!isnumeric(clusters)||!isscalar(clusters)||!isreal(clusters)||!isfinite(clusters)||clusters!=fix(clusters)||clusters<1||clusters>rows(a)||!isnumeric(replicates)||!isscalar(replicates)||!isreal(replicates)||!isfinite(replicates)||replicates!=fix(replicates)||replicates<1),error('GXTXT:Numeric:InvalidArguments','kmeans requires real observations, an integer cluster count within the row count, and a positive integer replicate count');endif
+      if(!isnumeric(seed)||!isscalar(seed)||!isreal(seed)||!isfinite(seed)||seed<0||seed!=fix(seed)),error('GXTXT:Numeric:InvalidArguments','kmeans requires an explicit nonnegative integer seed');endif
       pkg('load','statistics');previous=rng();unwind_protect
-        rng(seed,'twister');[labels,centroids]=kmeans(a,clusters,'Replicates',option(opts,'replicates',5));
+        rng(seed,'twister');[labels,centroids,within_ss]=kmeans(a,clusters,'Replicates',replicates, ...
+          'Start','plus','Distance','sqeuclidean','EmptyAction','singleton','MaxIter',100);
       unwind_protect_cleanup,rng(previous);end_unwind_protect
-      out=struct('labels',labels,'centroids',centroids);
+      packages=pkg('list','statistics');
+      out=struct('labels',labels,'centroids',centroids,'within_ss',within_ss, ...
+        'cluster_counts',accumarray(labels,ones(rows(a),1),[clusters,1]),'total_within_ss',sum(within_ss), ...
+        'n',rows(a),'feature_count',columns(a),'cluster_count',clusters,'replicates',replicates,'seed',seed, ...
+        'random_generator','twister','method','native_kmeans_sqeuclidean','start_method','plus', ...
+        'empty_action','singleton','max_iterations',100,'convergence','not_reported', ...
+        'backend','Octave statistics kmeans','backend_version',packages{1}.version);
     otherwise,error('GXTXT:Numeric:UnknownOperation','unknown statistics action');
   endswitch
 endfunction

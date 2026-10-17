@@ -25,7 +25,24 @@ proc ::GX::PythonScriptEditorUI::_editorModified {} {
     }
 }
 
-proc ::GX::PythonScriptEditorUI::_propertyModified {} { _setModified 1 }
+proc ::GX::PythonScriptEditorUI::_propertyModified {name element operation} {
+    variable ui
+    variable propertyValues
+    if {$element ni {scope scriptId name description version requiredApis}} return
+    set value $ui($element)
+    if {![dict exists $propertyValues $element] || [dict get $propertyValues $element] ne $value} {
+        dict set propertyValues $element $value
+        _setModified 1
+    }
+}
+proc ::GX::PythonScriptEditorUI::_watchProperties {} {
+    variable ui
+    variable propertyValues
+    set propertyValues {}
+    foreach key {scope scriptId name description version requiredApis} {dict set propertyValues $key $ui($key)}
+    catch {trace remove variable ui write ::GX::PythonScriptEditorUI::_propertyModified}
+    trace add variable ui write ::GX::PythonScriptEditorUI::_propertyModified
+}
 
 proc ::GX::PythonScriptEditorUI::_parametersModified {} {
     variable ui
@@ -137,6 +154,7 @@ proc ::GX::PythonScriptEditorUI::_confirmAbandon {} {
 
 proc ::GX::PythonScriptEditorUI::_loadDocument {documentId} {
     variable ui
+    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken)]} {return 0}
     if {![_confirmAbandon]} { return 0 }
     if {[catch {set full [::GX::PythonScriptEditor::workspaceRead $documentId]} failure]} {
         tk_messageBox -parent $ui(window) -icon error -title "Open failed" -message $failure
@@ -242,6 +260,7 @@ proc ::GX::PythonScriptEditorUI::_parametersFromEditor {} {
 
 proc ::GX::PythonScriptEditorUI::_save {} {
     variable ui
+    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken)]} {return 0}
     set name [string trim $ui(name)]
     if {$name eq ""} {
         tk_messageBox -parent $ui(window) -icon error -title "Script name" -message "Script name is required."
@@ -268,6 +287,7 @@ proc ::GX::PythonScriptEditorUI::_save {} {
 
 proc ::GX::PythonScriptEditorUI::_saveAs {} {
     variable ui
+    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken)]} {return 0}
     set name [string trim $ui(name)]
     if {$name eq ""} { set name "Untitled script" }
     set copyName "$name (copy)"
@@ -298,6 +318,7 @@ proc ::GX::PythonScriptEditorUI::_saveAs {} {
 
 proc ::GX::PythonScriptEditorUI::_delete {} {
     variable ui
+    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken)]} {return 0}
     if {$ui(currentId) eq ""} return
     set answer [tk_messageBox -parent $ui(window) -icon warning -type yesno -default no -title "Delete script" -message "Delete '$ui(name)' ($ui(currentId))? The Script Registry source will be removed. Historical execution snapshots remain."]
     if {$answer ne "yes"} return
@@ -398,40 +419,12 @@ proc ::GX::PythonScriptEditorUI::_copyId {} {
 
 proc ::GX::PythonScriptEditorUI::_run {} {
     variable ui
-    if {$ui(currentId) eq ""} {
-        tk_messageBox -parent $ui(window) -icon info -title "Run Python script" -message "Save this Python script before running it."
-        return
-    }
-    if {$ui(modified)} {
-        if {![_save]} return
-    }
-    set ::GX::scriptWorkspaceChoice $ui(currentId)
-    ::GX::scriptWorkspaceRunDialog
+    ::GX::scriptWorkspaceOpenEditorRunner $ui(window) $ui(currentId) $ui(modified) ::GX::PythonScriptEditorUI::_save $ui(currentSha) $ui(sessionToken)
 }
-
-proc ::GX::PythonScriptEditorUI::_undo {} {
-    variable ui
-    if {![catch {$ui(text) edit undo}]} {_setModified 1; _scheduleRefresh}
-    focus $ui(text)
-}
-
-proc ::GX::PythonScriptEditorUI::_redo {} {
-    variable ui
-    if {![catch {$ui(text) edit redo}]} {_setModified 1; _scheduleRefresh}
-    focus $ui(text)
-}
-
-proc ::GX::PythonScriptEditorUI::_copy {} {
-    variable ui
-    event generate $ui(text) <<Copy>>
-    focus $ui(text)
-}
-
-proc ::GX::PythonScriptEditorUI::_paste {} {
-    variable ui
-    event generate $ui(text) <<Paste>>
-    focus $ui(text)
-}
+proc ::GX::PythonScriptEditorUI::_undo {} {variable ui; ::GX::uiTextEdit $ui(window) undo}
+proc ::GX::PythonScriptEditorUI::_redo {} {variable ui; ::GX::uiTextEdit $ui(window) redo}
+proc ::GX::PythonScriptEditorUI::_copy {} {variable ui; ::GX::uiTextEdit $ui(window) copy}
+proc ::GX::PythonScriptEditorUI::_paste {} {variable ui; ::GX::uiTextEdit $ui(window) paste}
 
 proc ::GX::PythonScriptEditorUI::_find {{direction forward}} {
     variable ui
@@ -561,11 +554,64 @@ proc ::GX::PythonScriptEditorUI::_close {} {
     catch {destroy $ui(window)}
 }
 
+proc ::GX::PythonScriptEditorUI::_buildMenus {w} {
+    ttk::frame $w.toolbar -padding {8 4}
+    pack $w.toolbar -side top -fill x
+    foreach {key label} {file File edit Edit run Run help Help} {
+        ttk::menubutton $w.toolbar.$key -text $label -menu $w.toolbar.$key.menu
+        menu $w.toolbar.$key.menu -tearoff 0 -postcommand [list ::GX::PythonScriptEditorUI::_menuState $key]
+    }
+    set m $w.toolbar.file.menu
+    foreach {label shortcut command} {
+        New Ctrl+N _new
+        {Import .py...} Ctrl+O _import
+        Save Ctrl+S _save
+        {Save As...} {} _saveAs
+        {Export .py...} {} _export
+        Delete {} _delete
+        {Copy ID} {} _copyId
+    } {$m add command -label $label -accelerator $shortcut -command ::GX::PythonScriptEditorUI::$command}
+
+    $m add separator
+    $m add command -label Close -command ::GX::PythonScriptEditorUI::_close
+    set m $w.toolbar.edit.menu
+    foreach {label shortcut operation} {Undo Ctrl+Z undo Redo Ctrl+Y redo Cut Ctrl+X cut Copy Ctrl+C copy Paste Ctrl+V paste {Select all} Ctrl+A select_all} {
+        $m add command -label $label -accelerator $shortcut -command [list ::GX::uiTextEdit $w $operation]
+    }
+    $m add separator
+    $m add command -label Find -accelerator Ctrl+F -command [list focus $w.p.center.find.e]
+    $m add command -label {Find next} -accelerator F3 -command {::GX::PythonScriptEditorUI::_find forward}
+    $m add command -label {Find previous} -accelerator Shift+F3 -command {::GX::PythonScriptEditorUI::_find backward}
+    $m add command -label {Go to line...} -accelerator Ctrl+G -command ::GX::PythonScriptEditorUI::_gotoLineDialog
+    set m $w.toolbar.run.menu
+    $m add command -label {Open Script Runner...} -command ::GX::PythonScriptEditorUI::_run
+    $m add command -label {Script Library...} -command ::GX::scriptLibraryDialog
+    $m add command -label {Script Jobs Manager...} -command ::GX::scriptJobsDialog
+    $w.toolbar.help.menu add command -label {Script Bridge help} -command ::GX::PythonScriptEditorUI::_bridgeHelp
+    ::GX::uiMenuRowAttach $w.toolbar [list $w.toolbar.file $w.toolbar.edit $w.toolbar.run $w.toolbar.help]
+}
+proc ::GX::PythonScriptEditorUI::_menuState {group} {
+    variable ui
+    set m $ui(window).toolbar.$group.menu
+    if {$group eq "edit"} {
+        set index 0
+        foreach operation {undo redo cut copy paste select_all} {
+            $m entryconfigure $index -state [expr {[::GX::uiTextEditCan $ui(window) $operation] ? "normal" : "disabled"}]
+            incr index
+        }
+    } elseif {$group eq "file"} {
+        foreach index {5 6} {$m entryconfigure $index -state [expr {$ui(currentId) eq {} ? "disabled" : "normal"}]}
+
+    }
+}
+
 proc ::GX::PythonScriptEditorUI::_build {} {
     variable ui
     variable window
+    catch {trace remove variable ui write ::GX::PythonScriptEditorUI::_propertyModified}
     set w $window
     set ui(window) $w
+    set ui(sessionToken) [::GX::interactiveDocumentSessionToken]
     set ui(currentId) ""
     set ui(currentSha) ""
     set ui(modified) 0
@@ -586,41 +632,7 @@ proc ::GX::PythonScriptEditorUI::_build {} {
     wm minsize $w 900 560
     wm protocol $w WM_DELETE_WINDOW ::GX::PythonScriptEditorUI::_close
 
-    ttk::frame $w.toolbar -padding {8 6}
-    pack $w.toolbar -side top -fill x
-    set column 0
-    foreach spec {
-        {new New ::GX::PythonScriptEditorUI::_new}
-        {import {Import .py...} ::GX::PythonScriptEditorUI::_import}
-        {save Save ::GX::PythonScriptEditorUI::_save}
-        {copy {Save As...} ::GX::PythonScriptEditorUI::_saveAs}
-        {export {Export .py...} ::GX::PythonScriptEditorUI::_export}
-        {delete Delete ::GX::PythonScriptEditorUI::_delete}
-        {copyid {Copy ID} ::GX::PythonScriptEditorUI::_copyId}
-    } {
-        lassign $spec name label cmd
-        ttk::button $w.toolbar.$name -text $label -command $cmd
-        grid $w.toolbar.$name -row 0 -column $column -sticky w -padx {0 5} -pady {0 4}
-        incr column
-    }
-    set column 0
-    foreach spec {
-        {undo Undo ::GX::PythonScriptEditorUI::_undo}
-        {redo Redo ::GX::PythonScriptEditorUI::_redo}
-        {copycode Copy ::GX::PythonScriptEditorUI::_copy}
-        {pastecode Paste ::GX::PythonScriptEditorUI::_paste}
-    } {
-        lassign $spec name label cmd
-        ttk::button $w.toolbar.$name -text $label -command $cmd
-        grid $w.toolbar.$name -row 1 -column $column -sticky w -padx {0 5}
-        incr column
-    }
-    ttk::button $w.toolbar.goto -text "Go to line..." -command ::GX::PythonScriptEditorUI::_gotoLineDialog
-    ttk::button $w.toolbar.run -text "Run registered..." -command ::GX::PythonScriptEditorUI::_run
-    ttk::button $w.toolbar.help -text "Bridge help" -command ::GX::PythonScriptEditorUI::_bridgeHelp
-    grid $w.toolbar.goto -row 1 -column 4 -sticky w -padx {0 5}
-    grid $w.toolbar.run -row 1 -column 5 -sticky w -padx {0 5}
-    grid $w.toolbar.help -row 1 -column 6 -sticky w -padx {0 5}
+    _buildMenus $w
 
     ttk::panedwindow $w.p -orient horizontal
     pack $w.p -side top -fill both -expand 1 -padx 8 -pady {0 6}
@@ -663,9 +675,6 @@ proc ::GX::PythonScriptEditorUI::_build {} {
     grid $w.p.center.props.re -row 2 -column 1 -columnspan 3 -sticky ew -padx {0 6}
     grid columnconfigure $w.p.center.props 1 -weight 1
     grid columnconfigure $w.p.center.props 3 -weight 1
-    bind $w.p.center.props.ne <KeyRelease> ::GX::PythonScriptEditorUI::_propertyModified
-    bind $w.p.center.props.ve <KeyRelease> ::GX::PythonScriptEditorUI::_propertyModified
-    bind $w.p.center.props.re <KeyRelease> ::GX::PythonScriptEditorUI::_propertyModified
 
     ttk::frame $w.p.center.desc
     pack $w.p.center.desc -side top -fill x -pady {0 5}
@@ -673,7 +682,6 @@ proc ::GX::PythonScriptEditorUI::_build {} {
     ttk::entry $w.p.center.desc.e -textvariable ::GX::PythonScriptEditorUI::ui(description)
     pack $w.p.center.desc.l -side left -padx {0 6}
     pack $w.p.center.desc.e -side left -fill x -expand 1
-    bind $w.p.center.desc.e <KeyRelease> ::GX::PythonScriptEditorUI::_propertyModified
 
     ttk::frame $w.p.center.params
     pack $w.p.center.params -side top -fill x -pady {0 5}
@@ -747,7 +755,7 @@ gxtxt_context
 
 Execution
 
-Save a Session script here, then select its session: ID in Python Script Analysis. User scripts appear in Script Library and can be assigned to a Session. Run registered uses the existing Script Execution dialog. The analysis run executes an exact snapshot and records its SHA-256.
+Save a Session script here, then select its session: ID in Python Script Analysis. User scripts appear in Script Library and can be assigned to a Session. Run > Open Script Runner opens the existing dialog for an explicit saved revision without submitting a Job. The analysis run executes an exact snapshot and records its SHA-256.
 
 The bridge is not a sandbox.}
     $w.p.right.ref configure -state disabled
@@ -764,6 +772,9 @@ The bridge is not a sandbox.}
     bind $w <F3> {::GX::PythonScriptEditorUI::_find forward; break}
     bind $w <Shift-F3> {::GX::PythonScriptEditorUI::_find backward; break}
 
+    ::GX::uiTextEditingAttach $w [list $ui(text) $w.p.center.props.ie $w.p.center.props.ne $w.p.center.desc.e $w.p.center.find.e $w.p.center.props.ve $w.p.center.props.re $w.p.center.params.t]
+    bind $w.p.center.find.e <Escape> [list focus $ui(text)]
+    _watchProperties
     _refreshDocuments
     set docs [$ui(tree) children {}]
     if {[llength $docs]} { _loadDocument [lindex $docs 0] } else { _new }

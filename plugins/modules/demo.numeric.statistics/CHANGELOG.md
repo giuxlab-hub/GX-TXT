@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 — GX-TXT 0.9.8.10-dev-097
+
+- Uses the public CORE statistical interpretation API for scalar rows, statuses, units and reports.
+- Preserves Dataset/statistic IDs and legacy metric keys; adds explicit status/reason/quantity columns and validated metadata to both Datasets.
+- Reuses Numeric quartiles without a second computation and uses common typed transport for nonfinite values.
+- Keeps relative weight units explicit and distinguishes singleton sample variance from population zero.
+
 ## 1.0.1 — GX-TXT 0.9.8.05
 
 - Uses public plot.dataset variants and shared numerical reductions for summary views.

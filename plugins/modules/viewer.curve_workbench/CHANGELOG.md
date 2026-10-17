@@ -1,4 +1,55 @@
-# viewer.curve_workbench 2.15.2
+# viewer.curve_workbench
+
+## 2.19.0
+
+Move/Pivot and axis dimensions use independent scientific display units while
+retaining canonical Native2D geometry, constraints and parameter expressions.
+Keep metric operation guards and distinguish affine origins from displacement.
+Trace the CAD unit label through toolbar layout and correct numeric forms' active
+curve fallback and inline null-reference handling.
+
+Add explicit independent scientific axes for new point curves and unbound or
+missing-unit sources. Preserve declarations, original values, dependencies,
+constraints, Undo/Redo, publication and Workspace reopen. Route CAD unit checks
+and small-curve publication through the actual coordinate-frame owner; Y locks
+use Y units. Known Dataset units require compatible conversion or explicit
+normalization instead of relabelling.
+
+## 2.18.0 — dev097 integration in progress
+
+Accepted-model Workbench transfer retains exact supported Native2D primitives,
+independent axis units, original parameter mappings and immutable model resources.
+Unsupported representations are explicitly sampled; no refit or statistics are
+computed. Public Numeric/Fitter operations and CORE nested resource adoption
+serve both scripting languages.
+Workbench/current API manual chronology is moved to existing release history;
+compatibility contracts and literal document paths remain unchanged.
+
+## 2.17.0 — dev097 integration in progress
+
+Independent scientific axis display uses CORE Unit Registry/Metadata presentation
+for ticks, cursor, paged points, retained handles, numeric edits and X selection.
+Named Workspaces retain display choices and the canonical reference for persistent
+Dataset magnification; transient zoom remains independent. Unlike axes use the
+existing Native host scientific viewport policy and offer signed Y comparison,
+without raw mixed-axis physical length/path choices. Canonical publication now
+preserves coordinate/sketch annotations through the public metadata overlay.
+Grid origins/spacing now use captured CORE forward/inverse plans with stale-frame
+guards. Exports preserve converted tick/axis text and the same visible palette,
+points-only mode and source/control markers as the view. Fixed white default
+Native styles leaking into Workbench export; shared exporter corrects centered
+text and compound direction markers.
+Compatible mixed-unit comparisons and geometric metrics now use CORE affine
+evaluation frames. Display changes refresh comparison units; residual labels,
+highlights, source-tuple/deviation publication and Workspace reopen retain the
+recorded frame. Readable metric labels preserve canonical saved identifiers.
+Dimension/transform dialogs, multiple-source viewport frames and unbound unit
+declarations remain part of the integrated work, not claimed complete here.
+
+## 2.16.0 — dev097 shared comparison semantics
+
+Native comparisons use public CORE statistical-result interpretation and typed
+publication records, with source/geometry unit changes invalidating saved results.
 
 Reuse shared CORE Viewer command validation and authoritative Workspace titles while preserving retained geometry and existing History.
 
@@ -86,3 +137,19 @@ Mixed typed workspace, canvas retained creation/preview/Escape, Native defining 
 
 Retained geometry/CAD/constraints/measurements/organization/units/recipes, exact mixed/polar/family publication and reentrancy-safe point selection; complete real-GUI validation.
 
+
+## 2.16.0 (dev097)
+
+Comparison reports and publications use public CORE statistical interpretations
+of Numeric's native reductions. Preserve signed X deviations and sampling policy;
+reject mixed-unit Euclidean comparisons. Persist typed records, refresh legacy
+receipts and invalidate comparisons when coordinate identities or units change.
+
+
+- dev097 checkpoint 43: retain independent source frames; automatically align
+  compatible newly loaded bindings through CORE, with explicit existing-source
+  alignment, per-frame view state and complete-source reconstruction on reopen.
+- Preserve transient pan/zoom during whole-Workspace physical conversions and
+  retain explicit undeclared-source unit assumptions through CORE presentation.
+- Reject unnormalized custom source formulas before physical comparison and
+  show geometric metrics in the selected display unit. Scientific IDs unchanged.

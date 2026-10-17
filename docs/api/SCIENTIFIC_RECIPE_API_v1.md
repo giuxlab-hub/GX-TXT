@@ -108,3 +108,12 @@ read-only status text or each individual timed operation. The shared strip
 adjusts its common height to the current font/control metrics, retains horizontal
 timeline scrolling and exposes context actions through the existing configurable
 Viewer command catalog. These are host GUI services, not Script Bridge commands.
+
+
+`data_decode(encoded, expected_format)` / Tcl `scientificRecipeDataDecode`
+is the additive owner-neutral inert envelope decoder. It enforces strict base64,
+a dictionary payload, the 8 MiB bound and the exact versioned `gxtxt.*.vN`
+format. It does not validate an owner's scientific payload or execute it.
+`scientificRecipeDecode` retains the existing geometry/history validation.
+Fitter's distinct `gxtxt.fit_recipe.v1` contract is validated and executed only
+through its existing public `DATASET_CURVE_FIT_API_v1` owner.

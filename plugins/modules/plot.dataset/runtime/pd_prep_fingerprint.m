@@ -5,7 +5,7 @@ function fp=pd_prep_fingerprint(info,cfg,opts,kind,graph)
   if(strcmp(kind,'2d'))
     if(isempty(graph)),graph='plot.dataset.xy';endif
     variant='';pg=strtrim(gxtxt_ini_get(cfg,'plot_variant.graph_id',''));if(strcmp(pg,graph)),variant=strtrim(gxtxt_ini_get(cfg,'plot_variant.variant_id',''));endif
-    budget=pd_2d_display_budget(opts.target_points);p={'PLOT_DATASET_PREP_2D_V3_1_COMPAT',graph,variant,opts.reduction_mode,sprintf('%d',budget),sprintf('%d',opts.auto_reduce_threshold)};
+    budget=pd_2d_display_budget(opts.target_points);p={'PLOT_DATASET_PREP_2D_V3_2_EXACT_INTEGER',graph,variant,opts.reduction_mode,sprintf('%d',budget),sprintf('%d',opts.auto_reduce_threshold)};
     n=str2double(gxtxt_ini_get(cfg,'graph_series.count','0'));matched=0;
     for i=1:round(n)
       key=sprintf('graph_series.%d.',i);if(!strcmp(gxtxt_ini_get(cfg,[key 'graph_id'],''),graph)),continue;endif
@@ -40,6 +40,8 @@ function fp=pd_prep_fingerprint(info,cfg,opts,kind,graph)
     if(V.enabled)
       for vi=1:numel(V.series)
         Q=V.series(vi);aids=fp_aux_ids(Q);
+        optional=pd_uncertainty_aux_ids(Q);
+        if(!isempty(optional)),p=[p {'uncertainty_finite_runs_v1',Q.id,numel(optional)} optional];endif
         if(isfield(Q,'kind')&&any(strcmp(lower(strtrim(Q.kind)),{'histogram','box_whisker'})))
           % Distribution preparation is intentionally unreduced; distinguish
           % it from an ordinary trace cache prepared with display reduction.

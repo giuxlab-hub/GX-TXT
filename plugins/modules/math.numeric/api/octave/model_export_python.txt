@@ -1,0 +1,81 @@
+def _piecewise(u, knots, c, normalized):
+    i = np.clip(np.searchsorted(knots, u, side='right')-1, 0, len(knots)-2)
+    z = u-knots[i]
+    if normalized:
+        z = z/(knots[i+1]-knots[i])
+    return ((c[i, 0]*z+c[i, 1])*z+c[i, 2])*z+c[i, 3]
+
+
+def _erf(x):
+    from scipy.special import erf
+    return erf(x)
+
+
+def _voigt(x, sigma, gamma):
+    from scipy.special import voigt_profile
+    if np.any(np.asarray(sigma) <= 0) or np.any(np.asarray(gamma) < 0):
+        raise ValueError('Voigt needs sigma > 0 and gamma >= 0')
+    return voigt_profile(x, sigma, gamma)
+
+
+def _logistic(x):
+    e = np.exp(-np.abs(x))
+    return np.where(np.asarray(x) >= 0, 1/(1+e), e/(1+e))
+
+
+def _positive(x):
+    return np.maximum(x, 0)
+
+
+def _exprel(x):
+    x = np.asarray(x, dtype=float)
+    result = np.empty_like(x)
+    small = np.abs(x) < 1e-4
+    z = x[small]
+    result[small] = 1+z*(.5+z*(1/6+z*(1/24+z*(1/120+z/720))))
+    with np.errstate(over='ignore', invalid='ignore'):
+        moderate = (~small) & (x < 50)
+        result[moderate] = np.expm1(x[moderate])/x[moderate]
+        large = x >= 50
+        result[large] = np.exp(x[large]-np.log(x[large]))*(-np.expm1(-x[large]))
+    return result
+
+
+def _shockley(v, saturation, thermal, resistance):
+    # Monotone junction identity u + (Rs*Is/Vt)*expm1(u) = V/Vt.
+    # This evaluates the frozen model; it does not fit or estimate parameters.
+    arrays = np.broadcast_arrays(v, saturation, thermal, resistance)
+    answer = np.empty(arrays[0].shape)
+    for index in np.ndindex(answer.shape):
+        voltage, si, vt, rs = [np.longdouble(a[index]) for a in arrays]
+        if si <= 0 or vt <= 0 or rs < 0:
+            raise ValueError('Invalid diode parameters')
+        b = voltage/vt
+        z = rs*si/vt
+        u = b
+        if rs > 0 and b != 0:
+            low, high = min(b, 0), max(b, 0)
+            high = min(b, np.log1p(b/z)) if b > 0 else min(0, b+z)
+            u = high if b > 0 else min(high, b/(1+z))
+            for _ in range(4096):
+                term = z*np.exp(u) if u < -.5 else z*np.expm1(u)
+                rhs = b+z if u < -.5 else b
+                f = u+term-rhs
+                if abs(f) <= 8*np.finfo(np.longdouble).eps*max(abs(rhs), abs(u), abs(term)):
+                    break
+                if f > 0:
+                    high = u
+                else:
+                    low = u
+                following = u-f/(1+z*np.exp(u))
+                if following == u:
+                    break
+                if not low < following < high:
+                    following = low+(high-low)/2
+                if following == u:
+                    break
+                u = following
+            else:
+                raise ValueError('Diode evaluation did not converge')
+        answer[index] = si*np.expm1(u)
+    return answer

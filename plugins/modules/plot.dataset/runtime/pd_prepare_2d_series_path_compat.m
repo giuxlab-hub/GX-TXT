@@ -59,7 +59,7 @@ function S=pd_prepare_2d_series_path_compat(path,xname,yname,requested,target,th
 endfunction
 
 function [x,y,seq]=append_row(x,y,seq,r),x(end+1,1)=r.x;y(end+1,1)=r.y;seq(end+1,1)=r.source_row;endfunction
-function [x,y,seq]=flush_rows(x,y,seq,r1,r2)
-  if(isempty(r1)&&isempty(r2)),return;endif;if(isempty(r1)),[x,y,seq]=append_row(x,y,seq,r2);return;endif;if(isempty(r2)),[x,y,seq]=append_row(x,y,seq,r1);return;endif
-  if(r1.seq==r2.seq),[x,y,seq]=append_row(x,y,seq,r1);elseif(r1.seq<r2.seq),[x,y,seq]=append_row(x,y,seq,r1);[x,y,seq]=append_row(x,y,seq,r2);else [x,y,seq]=append_row(x,y,seq,r2);[x,y,seq]=append_row(x,y,seq,r1);endif
+function [x,y,seq]=flush_rows(x,y,seq,first_row,second_row)
+  if(isempty(first_row)&&isempty(second_row)),return;endif;if(isempty(first_row)),[x,y,seq]=append_row(x,y,seq,second_row);return;endif;if(isempty(second_row)),[x,y,seq]=append_row(x,y,seq,first_row);return;endif
+  if(first_row.seq==second_row.seq),[x,y,seq]=append_row(x,y,seq,first_row);elseif(first_row.seq<second_row.seq),[x,y,seq]=append_row(x,y,seq,first_row);[x,y,seq]=append_row(x,y,seq,second_row);else [x,y,seq]=append_row(x,y,seq,second_row);[x,y,seq]=append_row(x,y,seq,first_row);endif
 endfunction

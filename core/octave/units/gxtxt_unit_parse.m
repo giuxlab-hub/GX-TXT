@@ -22,6 +22,9 @@ function U = gxtxt_unit_parse(unit)
   for i=1:numel(parts)
     tok=strtrim(parts{i});if(isempty(tok)),error('GXTXT:Unit','invalid unit expression: %s',unit);endif
     if(i>1),op=ops{i-1}{1};if(strcmp(op,'/')),sign=-1;else sign=1;endif;else sign=1;endif
+    % Captured rate units use literal reciprocal forms such as 1/s. Preserve
+    % their identity while treating the exact token 1 as a neutral factor.
+    if(strcmp(tok,'1')),continue;endif
     m=regexp(tok,'^([A-Za-z]+)(?:\^([+-]?[0-9]+))?$','tokens','once');if(isempty(m)),error('GXTXT:Unit','unsupported unit token: %s',tok);endif
     sym=m{1};pw=1;if(numel(m)>1&&!isempty(m{2})),pw=str2double(m{2});endif;pw*=sign;
     try [sc,base,bd]=single_unit(sym);

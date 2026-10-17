@@ -19,6 +19,13 @@ function pd_preview_export(fig,ax,P,groups,point_order,cfg,graph,out,labels,lw,m
     'fov',get(ax,'cameraviewangle'),'projection',get(ax,'projection'), ...
     'background',get(ax,'color'),'clim',get(ax,'clim'),'colormap',colormap(ax), ...
     'view',get(ax,'view'),'line_width',lw,'point_size',ms,'stats',P.stats,'layers',{{}});
+  meta.coordinate_policies=struct();meta.calibration_applied=false;
+  for role={'x','y','z'}
+    m=P.([role{1} '_meta']);
+    if(isfield(m,'coordinate_context'))
+      c=m.coordinate_context;meta.coordinate_policies.(role{1})=c.variables.(m.variable_id);
+    endif
+  endfor
   if(!isnumeric(meta.background)),meta.background=get(fig,'color');endif
   if(!isnumeric(meta.background)||numel(meta.background)!=3),error('Native3D preview: transparent backgrounds require a CORE alpha-background API; static graph preserved');endif
   cb=findobj(fig,'tag','colorbar');meta.colorbar_visible=!isempty(cb);meta.colorbar_label='';

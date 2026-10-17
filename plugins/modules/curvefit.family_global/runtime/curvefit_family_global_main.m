@@ -10,6 +10,7 @@ function curvefit_family_global_main(args)
   config_path = arg_value(args,'--config','');
   if (isempty(config_path)), error('curvefit.family_global: --config is required'); endif
   cfg = read_ini(config_path);
+  statistics_scope=gxtxt_statistics_scope_v1();
   numeric_fn = curvefit_numeric_api(cfg,{'nonlinear_least_squares','residual_metrics'});
   outdir = ini_get(cfg,'runtime.output_dir','');
   if (isempty(outdir)), error('curvefit.family_global: runtime.output_dir missing'); endif
@@ -21,21 +22,19 @@ function curvefit_family_global_main(args)
     addpath(thisdir);
     model_script = ini_get(cfg,'model.script','');
     if (isempty(model_script) || exist(model_script,'file') != 2), error('Model script not found: %s',model_script); endif
+    model_source_sha256=hash('sha256',fileread(model_script));
+    curvefit_family_recipe_guard(cfg);
     addpath(fileparts(model_script));
     model_fun_name = ini_get(cfg,'model.function','');
     if (isempty(model_fun_name)), error('curvefit.family_global: model.function missing'); endif
     model_fun = str2func(model_fun_name);
 
-    data_path = ini_get(cfg,'dataset.path','');
-    if (exist(data_path,'file') != 2), error('Dataset not found: %s',data_path); endif
-
     % Semantic model bindings are independent from presentation orientation.
     x_name = resolved_binding(cfg,'x','model.x_column','X_V');
     fam_name = resolved_binding(cfg,'family','model.family_column','Vg_V');
     y_name = resolved_binding(cfg,'y','model.y_column','Y_mA');
-    [x, family, y] = read_named_csv3(data_path,x_name,fam_name,y_name);
-    valid = isfinite(x) & isfinite(family) & isfinite(y);
-    x=x(valid); family=family(valid); y=y(valid);
+    [x, family, y,source_audit] = curvefit_family_source(cfg,x_name,fam_name,y_name);
+    curvefit_family_recipe_guard(cfg,source_audit);
     progress_stage_safe('loading_data','Dataset loaded','determinate',max(numel(y),1));
     progress_update_safe(numel(y),max(numel(y),1),'loading_data','Dataset loaded');
 
@@ -44,8 +43,11 @@ function curvefit_family_global_main(args)
 
     param_names = split_semicolon(ini_get(cfg,'model.param_names',''));
     if (isempty(param_names)), error('curvefit.family_global: model.param_names missing'); endif
+    base_param_names=param_names;
+    parameter_plan=curvefit_family_parameter_plan(cfg,base_param_names,family);
+    param_names=parameter_plan.slot_ids;
     model_id = ini_get(cfg,'model.id','');
-    dataset_id = ini_get(cfg,'dataset.id','');
+    dataset_id = source_audit.dataset_id;
     training_domain = empty_training_domain(x_name,fam_name,model_id,0,[]);
     training_domain_source = 'unavailable';
     parameter_path = '';
@@ -61,6 +63,7 @@ function curvefit_family_global_main(args)
     if (!any(strcmp(presentation_orientation,{'x_by_family','family_by_x'})))
       error('curvefit.family_global: invalid presentation_orientation: %s',presentation_orientation);
     endif
+    [statistical_context,publication_units]=curvefit_family_context(cfg,x_name,fam_name,y_name,presentation_orientation);
 
     if (strcmp(operation_mode,'fit'))
       progress_stage_safe('preparing_fit','Preparing fit','indeterminate',0);
@@ -69,19 +72,19 @@ function curvefit_family_global_main(args)
       lb = parse_num_list(ini_get(cfg,'model.param_lower',''));
       ub = parse_num_list(ini_get(cfg,'model.param_upper',''));
       if (isempty(theta0) || numel(theta0) != numel(lb) || numel(theta0) != numel(ub)), error('Invalid model parameter vectors'); endif
-      if (numel(theta0) != numel(param_names)), error('Model parameter names and vectors have inconsistent lengths'); endif
-      if (any(!isfinite(theta0)) || any(!isfinite(lb)) || any(!isfinite(ub))), error('Model parameter vectors contain non-numeric values'); endif
-      if (any(lb > ub)), error('Model lower bounds exceed upper bounds'); endif
+      if (numel(theta0) != numel(base_param_names)), error('Model parameter names and vectors have inconsistent lengths'); endif
+      [theta0,lb,ub,fixed_mask]=curvefit_family_parameter_vectors(cfg,parameter_plan,theta0,lb,ub);
+      parameter_plan.fixed_mask=fixed_mask;
 
       solver = lower(strtrim(ini_get(cfg,'config.solver','auto')));
       max_iter = str2double(ini_get(cfg,'config.max_iter','2000')); if (!isfinite(max_iter) || max_iter < 1), max_iter=2000; endif
       tol = str2double(ini_get(cfg,'config.tolerance','1e-8')); if (!isfinite(tol) || tol <= 0), tol=1e-8; endif
 
       progress_stage_safe('optimizing','Optimizing model parameters','indeterminate',0);
-      fit_opts=struct('solver',solver,'lower_bounds',lb(:),'upper_bounds',ub(:), ...
+      fit_opts=struct('solver',solver,'lower_bounds',lb(:),'upper_bounds',ub(:),'fixed_mask',fixed_mask, ...
                       'max_iterations',round(max_iter),'tolerance',tol, ...
                       'bounded_fminsearch','penalty_clip','fallback_on_solver_error',strcmp(solver,'auto'));
-      fit_model=@(th,predictors) model_fun(th,predictors(:,1),predictors(:,2));
+      fit_model=@(th,predictors) curvefit_family_parameter_evaluate(model_fun,parameter_plan,th,predictors(:,1),predictors(:,2));
       fit_result=feval(numeric_fn,'nonlinear_fit',fit_model,[x(:),family(:)],y(:),theta0(:),fit_opts);
       theta=fit_result.parameters(:)';
       resnorm=fit_result.sse;
@@ -89,7 +92,8 @@ function curvefit_family_global_main(args)
 
       parameter_source = 'optimized';
       parameter_source_detail = ['solver:' solver_used];
-      parameters_optimized = true;
+      parameters_optimized = fit_result.free_parameter_count>0;
+      if(!parameters_optimized),parameter_source='fixed_initial';parameter_source_detail='no_optimizer_all_parameters_fixed';endif
       training_domain = build_training_domain(x,family,y,x_name,fam_name,model_id);
       if(strcmp(training_domain.domain_type,'convex_hull'))
         training_domain_source = fullfile(outdir,'fit_domain.csv');
@@ -110,8 +114,9 @@ function curvefit_family_global_main(args)
       else
         raw_parameter_path = strtrim(ini_get(cfg,'config.parameter_csv_path',''));
         parameter_path = resolve_parameter_path(raw_parameter_path,config_path,outdir);
-        ps = gxtxt_read_parameter_set(parameter_path,param_names,model_id);
-        theta = ps.values(:)';
+        ps = gxtxt_read_parameter_set(parameter_path,{},model_id);
+        [parameter_plan,theta]=curvefit_family_parameter_replay_plan(cfg,base_param_names,family,ps,model_id);
+        param_names=parameter_plan.slot_ids;
         validate_fixed_parameter_vector(theta,param_names,'parameter CSV');
         parameter_source_detail = parameter_path;
         domain_candidate = fullfile(fileparts(parameter_path),'fit_domain.csv');
@@ -136,16 +141,37 @@ function curvefit_family_global_main(args)
     progress_stage_safe('computing_predictions','Computing model predictions','indeterminate',0);
     % The mathematical model always receives physical model inputs in this order.
     % presentation_orientation never swaps these arguments.
-    pred = model_fun(theta,x,family);
+    pred = curvefit_family_parameter_evaluate(model_fun,parameter_plan,theta,x,family);
     pred = pred(:);
     if (numel(pred) != numel(y)), error('curvefit.family_global: model output length does not match dataset'); endif
-    if (any(!isfinite(pred))), error('curvefit.family_global: model produced non-finite predictions'); endif
+    if (!isreal(pred)||any(!isfinite(pred))), error('curvefit.family_global: model must produce finite real predictions'); endif
+    if(!strcmp(model_source_sha256,hash('sha256',fileread(model_script))))
+      error('curvefit.family_global: mathematical model source changed during execution; no result was published');
+    endif
+    curvefit_family_recipe_guard(cfg,source_audit);
+    session=strtrim(ini_get(cfg,'runtime.session',''));
+    if(!isempty(session)&&!isequal(source_audit.source_identity,gxtxt_curve_source_dataset_identity_v1(session,dataset_id)))
+      error('curvefit.family_global: source content or scientific schema changed during model execution; no result was published');
+    endif
 
     progress_stage_safe('computing_metrics','Computing residuals and metrics','indeterminate',0);
     resid = pred-y;
     global_metrics=feval(numeric_fn,'residual_metrics',y,pred,struct());
     if (strcmp(operation_mode,'evaluate')), resnorm=global_metrics.sse; endif
-    rmse=global_metrics.rmse;mae=global_metrics.mae;r2=global_metrics.r2;
+    statistical_provenance=struct('producer','curvefit.family_global','mathematical_model_id',model_id,'mathematical_model_source_sha256',model_source_sha256, ...
+      'source_dataset_id',dataset_id,'operation_mode',operation_mode,'source_audit',rmfield(source_audit,'source_row_ordinals'),'parameter_map',parameter_plan,'parameter_values',theta);
+    source_row_ordinals=source_audit.source_row_ordinals;
+    statistical_results=struct();
+    if(strcmp(operation_mode,'fit'))
+      fit_result.model=struct('parameter_ids',{param_names},'parameter_units',{parameter_plan.slot_units});
+      training_context=statistical_context;training_context.sample_role='training';
+      statistical_results.global=gxtxt_statistics_v1('from_numeric','math.numeric.nonlinear','nonlinear_fit',fit_result,training_context,global_metrics,statistical_provenance);
+    else
+      statistical_results.global=gxtxt_statistics_v1('from_numeric','math.numeric.comparison','residual_metrics',global_metrics,statistical_context,struct(),statistical_provenance);
+    endif
+    global_values=gxtxt_statistics_values_v1(statistical_results.global);
+    rmse=global_values.rmse;mae=global_values.mae;
+    r2=global_values.r_squared;if(strcmp(operation_mode,'evaluate')),r2=global_values.centered_comparison_score;endif
 
     minimum_abs_y_for_relative_error = str2double(ini_get(cfg,'config.minimum_abs_y_for_relative_error','1e-12'));
     if (!isfinite(minimum_abs_y_for_relative_error) || minimum_abs_y_for_relative_error < 0)
@@ -159,17 +185,31 @@ function curvefit_family_global_main(args)
     % Domain classification always uses the mathematical-model input order (x,family),
     % never the presentation orientation and never measured Y.
     [domain_role,domain_role_code] = classify_training_domain_shared(x,family,training_domain);
-    domain_metrics = compute_domain_metrics(y,pred,domain_role_code,numeric_fn);
+    domain_metrics = compute_domain_metrics(y,pred,domain_role_code,numeric_fn,global_metrics);
 
     [horizontal,group,horizontal_name,group_name] = presentation_view(x,family,x_name,fam_name,presentation_orientation);
-    group_metrics = compute_group_metrics(group,y,pred,numeric_fn);
-    group_domain_metrics = compute_group_domain_metrics(group,y,pred,domain_role_code,numeric_fn);
+    group_metrics = curvefit_family_group_metrics(group,y,pred,numeric_fn);
+    group_domain_metrics = compute_group_domain_metrics(group,y,pred,domain_role_code,numeric_fn,group_metrics);
+    domain_provenance=statistical_provenance;domain_provenance.domain_roles=domain_metrics.domain_role;
+    [domain_records,domain_metrics]=curvefit_family_statistics(domain_metrics,statistical_context,domain_provenance,'domain');
+    group_provenance=statistical_provenance;group_provenance.presentation_orientation=presentation_orientation;group_provenance.group_values=group_metrics.group_value;
+    [group_records,group_metrics]=curvefit_family_statistics(group_metrics,statistical_context,group_provenance,'group');
+    cross_provenance=group_provenance;cross_provenance.group_values=group_domain_metrics.group_value;cross_provenance.domain_roles=group_domain_metrics.domain_role;
+    [cross_records,group_domain_metrics]=curvefit_family_statistics(group_domain_metrics,statistical_context,cross_provenance,'group_domain');
+    for part={domain_records,group_records,cross_records}
+      for name=fieldnames(part{1})',statistical_results.(name{1})=part{1}.(name{1});endfor
+    endfor
+    metadata=gxtxt_statistics_v1('publication_metadata',statistical_results);
+    f=fopen(fullfile(outdir,'fit_statistics.tcldict'),'w');if(f<0),error('Cannot write statistical metadata');endif
+    fprintf(f,'%s\n',metadata);fclose(f);
     % Legacy cache/output name retained for compatibility; values follow active presentation grouping.
     family_metrics = group_metrics;
 
     progress_stage_safe('building_render_cache','Building render cache','indeterminate',0);
     X=x; Y_measured=y; Y_fitted=pred; Y_predicted=pred; residual=resid;
     parameters_used=theta;
+    [family_unit,~,~]=gxtxt_analysis_source_variable_meta(cfg,'primary',fam_name);
+    parameter_state=struct('plan',parameter_plan,'values',theta,'operation_mode',operation_mode,'family_unit',family_unit);
     domain_model_x_min=min(x); domain_model_x_max=max(x);
     domain_model_family_min=min(family); domain_model_family_max=max(family);
     domain_measured_y_min=min(y); domain_measured_y_max=max(y);
@@ -180,7 +220,7 @@ function curvefit_family_global_main(args)
     training_domain_model_family_name=training_domain.model_family_name;
     training_domain_tolerance=training_domain.tolerance_norm;
     save(fullfile(outdir,'render_cache.mat'),'x','family','y','pred','X','Y_measured','Y_fitted','Y_predicted','resid','residual', ...
-         'relative_error_mask','relative_residual_percent','minimum_abs_y_for_relative_error','family_metrics','group_metrics', ...
+         'source_audit','source_row_ordinals','parameter_plan','parameter_state','base_param_names','model_source_sha256','statistical_results','statistical_context','statistical_provenance','publication_units','global_metrics','relative_error_mask','relative_residual_percent','minimum_abs_y_for_relative_error','family_metrics','group_metrics', ...
          'group_domain_metrics','domain_metrics','domain_role','domain_role_code', ...
          'training_domain_type','training_domain_vertices','training_domain_source','training_domain_model_id', ...
          'training_domain_model_x_name','training_domain_model_family_name','training_domain_tolerance', ...
@@ -192,7 +232,18 @@ function curvefit_family_global_main(args)
     session=strtrim(ini_get(cfg,'runtime.session',''));
     if(!isempty(session))
       progress_stage_safe('rendering_graphs','Publishing and rendering public Plot Variants','indeterminate',0);
-      graph_data=curvefit_family_publish(session,dataset_id,horizontal,group,y,pred,resid,relative_residual_percent,group_metrics);
+      graph_data=curvefit_family_publish(session,dataset_id,horizontal,group,y,pred,resid,relative_residual_percent,group_metrics,statistical_results,publication_units,source_audit,parameter_state);
+      % Retain the exact bounded CORE commit receipts, not a later registry read.
+      % These are UTF-8 bytes already serialized by CORE, not scientific arrays.
+      for name=fieldnames(graph_data.publications)'
+        path=fullfile(outdir,['publication_' name{1} '.tcldict']);fid=fopen(path,'wb');
+        if(fid<0),error('curvefit.family_global: cannot retain publication receipt');endif
+        unwind_protect
+          fwrite(fid,uint8(graph_data.publications.(name{1})),'uint8');
+        unwind_protect_cleanup
+          fclose(fid);
+        end_unwind_protect
+      endfor
       curvefit_family_render_public(outdir,cfg,graph_data,horizontal_name,group_name,y_name,operation_mode);
     endif
 
@@ -200,7 +251,8 @@ function curvefit_family_global_main(args)
     output_total = 6 + double(domain_available);
     progress_stage_safe('writing_outputs','Writing scientific outputs','determinate',output_total);
     output_done=0;
-    write_parameters(fullfile(outdir,'fit_parameters.csv'),param_names,theta); output_done++; progress_update_safe(output_done,output_total,'writing_outputs','Writing scientific outputs');
+    parameter_model_id='';if(parameter_plan.has_local),parameter_model_id=model_id;endif
+    write_parameters(fullfile(outdir,'fit_parameters.csv'),param_names,theta,parameter_model_id); output_done++; progress_update_safe(output_done,output_total,'writing_outputs','Writing scientific outputs');
     if (domain_available)
       write_fit_domain(fullfile(outdir,'fit_domain.csv'),training_domain); output_done++; progress_update_safe(output_done,output_total,'writing_outputs','Writing scientific outputs');
     else
@@ -212,11 +264,11 @@ function curvefit_family_global_main(args)
     write_metrics_by_domain(fullfile(outdir,'fit_metrics_by_domain.csv'),domain_metrics); output_done++; progress_update_safe(output_done,output_total,'writing_outputs','Writing scientific outputs');
     write_metrics_by_family_domain(fullfile(outdir,'fit_metrics_by_family_domain.csv'),group_domain_metrics); output_done++; progress_update_safe(output_done,output_total,'writing_outputs','Writing scientific outputs');
     write_summary(fullfile(outdir,'fit_summary.txt'),cfg,operation_mode,parameter_source,parameter_source_detail,parameters_optimized, ...
-                  solver_used,numel(y),resnorm,rmse,mae,r2,param_names,theta, ...
+                  solver_used,statistical_results,param_names,theta, ...
                   x_name,fam_name,y_name,presentation_orientation,horizontal_name,group_name,x,family,y, ...
-                  training_domain,training_domain_source,domain_metrics); output_done++; progress_update_safe(output_done,output_total,'writing_outputs','Writing scientific outputs');
+                  training_domain,training_domain_source,domain_metrics,source_audit,parameter_plan); output_done++; progress_update_safe(output_done,output_total,'writing_outputs','Writing scientific outputs');
 
-    fprintf('[curvefit.family_global] mode=%s rows=%d solver=%s RMSE=%g R2=%g\n',operation_mode,numel(y),solver_used,rmse,r2);
+    fprintf('[curvefit.family_global] mode=%s rows=%d solver=%s\n%s\n',operation_mode,numel(y),solver_used,gxtxt_statistics_v1('report',statistical_results.global,{'rmse','mae','r_squared','centered_comparison_score'}));
     progress_complete_safe('completed','Curve fitting analysis completed');
   catch err
     progress_fail_safe('failed','Curve fitting module failed; see log for details');
@@ -262,19 +314,6 @@ function name = resolved_binding(cfg,role,model_key,def)
   if (strncmp(name,'primary.',8)), name=name(9:end); endif
 endfunction
 
-function [x,f,y] = read_named_csv3(path,xname,fname,yname)
-  fid=fopen(path,'r'); if(fid<0), error('Cannot open CSV'); endif
-  header=fgetl(fid); fclose(fid);
-  counts=[numel(strfind(header,',')), numel(strfind(header,';')), numel(strfind(header,sprintf('\t')))];
-  [~,di]=max(counts);
-  if (di==2), delim=';'; elseif (di==3), delim=sprintf('\t'); else delim=','; endif
-  names=strsplit(strtrim(header),delim); names=cellfun(@(s) strip_csv_token(s),names,'UniformOutput',false);
-  ix=find(strcmp(names,xname),1); iff=find(strcmp(names,fname),1); iy=find(strcmp(names,yname),1);
-  if(isempty(ix)||isempty(iff)||isempty(iy)), error('Required CSV columns not found: %s, %s, %s',xname,fname,yname); endif
-  data=dlmread(path,delim,1,0);
-  x=data(:,ix); f=data(:,iff); y=data(:,iy);
-endfunction
-
 function validate_fixed_parameter_vector(theta,names,source_label)
   if (numel(theta) != numel(names))
     error('curvefit.family_global: %s has %d values but selected model requires %d parameters',source_label,numel(theta),numel(names));
@@ -302,12 +341,6 @@ endfunction
 
 function b = is_absolute_path(path)
   b = (!isempty(path) && path(1)=='/') || !isempty(regexp(path,'^[A-Za-z]:[\\\\/]','once'));
-endfunction
-
-function s = strip_csv_token(s)
-  s=strtrim(s);
-  if (numel(s)>=2 && s(1)=='"' && s(end)=='"'), s=s(2:end-1); endif
-  s=strtrim(strrep(s,'""','"'));
 endfunction
 
 function d = empty_training_domain(xname,fname,model_id,training_n,y)
@@ -397,67 +430,50 @@ function remove_if_exists(path)
   if(exist(path,'file')==2),unlink(path);endif
 endfunction
 
-function metrics=compute_domain_metrics(y,pred,codes,numeric_fn)
+function metrics=compute_domain_metrics(y,pred,codes,numeric_fn,all_metrics)
   roles={'all','in_domain','out_of_domain','unknown'};
   metrics=init_metric_table(roles);
   masks={true(size(codes)),codes==1,codes==2,codes==0};
-  for i=1:numel(roles),metrics=assign_metric(metrics,i,y,pred,masks{i},numeric_fn);endfor
+  for i=1:numel(roles)
+    if(i==1),m=all_metrics;else m=[];endif
+    metrics=assign_metric(metrics,i,y,pred,masks{i},numeric_fn,m);
+  endfor
 endfunction
 
 function metrics=init_metric_table(roles)
-  n=numel(roles); metrics=struct(); metrics.domain_role=roles(:); metrics.n=zeros(n,1); metrics.sse=NaN(n,1); metrics.rmse=NaN(n,1); metrics.mae=NaN(n,1); metrics.max_abs_error=NaN(n,1); metrics.r2=NaN(n,1);
+  n=numel(roles); metrics=struct(); metrics.domain_role=roles(:); metrics.n=zeros(n,1); metrics.sse=NaN(n,1); metrics.rmse=NaN(n,1); metrics.mae=NaN(n,1); metrics.max_abs_error=NaN(n,1); metrics.r2=NaN(n,1);metrics.response_variance=NaN(n,1);
 endfunction
 
-function metrics=assign_metric(metrics,i,y,pred,mask,numeric_fn)
+function metrics=assign_metric(metrics,i,y,pred,mask,numeric_fn,m)
   idx=find(mask); n=numel(idx); metrics.n(i)=n; if(n==0),return;endif
-  m=feval(numeric_fn,'residual_metrics',y(idx),pred(idx),struct());
+  if(isempty(m)),m=feval(numeric_fn,'residual_metrics',y(idx),pred(idx),struct());endif
   metrics.sse(i)=m.sse;metrics.rmse(i)=m.rmse;metrics.mae(i)=m.mae;
-  metrics.max_abs_error(i)=m.max_abs_error;metrics.r2(i)=m.r2;
+  metrics.max_abs_error(i)=m.max_abs_error;metrics.r2(i)=m.r2;metrics.response_variance(i)=m.response_variance;
 endfunction
 
-function metrics=compute_group_domain_metrics(g,y,pred,codes,numeric_fn)
+function metrics=compute_group_domain_metrics(g,y,pred,codes,numeric_fn,group_metrics)
   groups=unique(g); roles={'all','in_domain','out_of_domain','unknown'}; nr=numel(groups)*numel(roles);
-  metrics=struct(); metrics.group_value=zeros(nr,1); metrics.domain_role=cell(nr,1); metrics.n=zeros(nr,1); metrics.sse=NaN(nr,1); metrics.rmse=NaN(nr,1); metrics.mae=NaN(nr,1); metrics.max_abs_error=NaN(nr,1); metrics.r2=NaN(nr,1);
+  metrics=struct(); metrics.group_value=zeros(nr,1); metrics.domain_role=cell(nr,1); metrics.n=zeros(nr,1); metrics.sse=NaN(nr,1); metrics.rmse=NaN(nr,1); metrics.mae=NaN(nr,1); metrics.max_abs_error=NaN(nr,1); metrics.r2=NaN(nr,1);metrics.response_variance=NaN(nr,1);
   row=0;
   for k=1:numel(groups)
     base=(g==groups(k));
     masks={base,base&(codes==1),base&(codes==2),base&(codes==0)};
     for j=1:numel(roles)
       row=row+1; metrics.group_value(row)=groups(k); metrics.domain_role{row}=roles{j};
-      tmp=init_metric_table({roles{j}}); tmp=assign_metric(tmp,1,y,pred,masks{j},numeric_fn);
-      metrics.n(row)=tmp.n(1);metrics.sse(row)=tmp.sse(1);metrics.rmse(row)=tmp.rmse(1);metrics.mae(row)=tmp.mae(1);metrics.max_abs_error(row)=tmp.max_abs_error(1);metrics.r2(row)=tmp.r2(1);
+      m=[];if(j==1),m=struct();for name={'n','sse','rmse','mae','max_abs_error','r2','response_variance'},m.(name{1})=group_metrics.(name{1})(k);endfor;endif
+      tmp=init_metric_table({roles{j}}); tmp=assign_metric(tmp,1,y,pred,masks{j},numeric_fn,m);
+      metrics.n(row)=tmp.n(1);metrics.sse(row)=tmp.sse(1);metrics.rmse(row)=tmp.rmse(1);metrics.mae(row)=tmp.mae(1);metrics.max_abs_error(row)=tmp.max_abs_error(1);metrics.r2(row)=tmp.r2(1);metrics.response_variance(row)=tmp.response_variance(1);
     endfor
   endfor
 endfunction
 
 function write_metrics_by_domain(path,metrics)
-  fid=fopen(path,'w');if(fid<0),error('Cannot write %s',path);endif
-  unwind_protect
-    fprintf(fid,'domain_role,n,sse,rmse,mae,r2\n');
-    for i=1:numel(metrics.domain_role)
-      fprintf(fid,'%s,%d,',metrics.domain_role{i},metrics.n(i));write_csv_metric(fid,metrics.sse(i));fprintf(fid,',');write_csv_metric(fid,metrics.rmse(i));fprintf(fid,',');write_csv_metric(fid,metrics.mae(i));fprintf(fid,',');write_csv_metric(fid,metrics.r2(i));fprintf(fid,'\n');
-    endfor
-  unwind_protect_cleanup
-    fclose(fid);
-  end_unwind_protect
+  curvefit_family_metric_csv(path,metrics,{'domain_role'},{'n','sse','rmse','mae','r2'});
 endfunction
-
 function write_metrics_by_family_domain(path,metrics)
-  fid=fopen(path,'w');if(fid<0),error('Cannot write %s',path);endif
-  unwind_protect
-    fprintf(fid,'group_value,domain_role,n,sse,rmse,mae,max_abs_error,r2\n');
-    for i=1:numel(metrics.group_value)
-      fprintf(fid,'%.17g,%s,%d,',metrics.group_value(i),metrics.domain_role{i},metrics.n(i));
-      write_csv_metric(fid,metrics.sse(i));fprintf(fid,',');write_csv_metric(fid,metrics.rmse(i));fprintf(fid,',');write_csv_metric(fid,metrics.mae(i));fprintf(fid,',');write_csv_metric(fid,metrics.max_abs_error(i));fprintf(fid,',');write_csv_metric(fid,metrics.r2(i));fprintf(fid,'\n');
-    endfor
-  unwind_protect_cleanup
-    fclose(fid);
-  end_unwind_protect
+  curvefit_family_metric_csv(path,metrics,{'group_value','domain_role'},{'n','sse','rmse','mae','max_abs_error','r2'});
 endfunction
 
-function write_csv_metric(fid,v)
-  if(isfinite(v)),fprintf(fid,'%.17g',v);endif
-endfunction
 
 function [h,g,hname,gname] = presentation_view(x,f,xname,fname,orientation)
   if (strcmp(orientation,'family_by_x'))
@@ -467,8 +483,9 @@ function [h,g,hname,gname] = presentation_view(x,f,xname,fname,orientation)
   endif
 endfunction
 
-function write_parameters(path,names,theta)
+function write_parameters(path,names,theta,model_id)
   fid=fopen(path,'w'); if(fid<0), error('Cannot write %s',path); endif
+  if(!isempty(model_id)),fprintf(fid,'# model_id=%s\n# family_parameter_schema=gxtxt.family_parameters.v1\n',model_id);endif
   fprintf(fid,'parameter,value\n');
   for i=1:numel(theta), if(i<=numel(names)), n=names{i}; else n=sprintf('p%d',i); endif; fprintf(fid,'%s,%.17g\n',n,theta(i)); endfor
   fclose(fid);
@@ -494,36 +511,14 @@ function write_predictions(path,x,f,y,p,r,rel,relmask,domain_role,xname,fname,yn
   end_unwind_protect
 endfunction
 
-function metrics = compute_group_metrics(g,y,pred,numeric_fn)
-  groups=unique(g); n_group=numel(groups);
-  metrics=struct('family_value',groups(:),'group_value',groups(:),'n',zeros(n_group,1),'sse',zeros(n_group,1), ...
-                 'rmse',zeros(n_group,1),'mae',zeros(n_group,1),'max_abs_error',zeros(n_group,1), ...
-                 'r2',NaN(n_group,1));
-  for k=1:n_group
-    idx=find(g==groups(k));m=feval(numeric_fn,'residual_metrics',y(idx),pred(idx),struct());
-    metrics.n(k)=m.n;metrics.sse(k)=m.sse;metrics.rmse(k)=m.rmse;
-    metrics.mae(k)=m.mae;metrics.max_abs_error(k)=m.max_abs_error;metrics.r2(k)=m.r2;
-  endfor
-endfunction
 
 function write_metrics_by_family(path,metrics)
-  fid=fopen(path,'w'); if(fid<0), error('Cannot write %s',path); endif
-  unwind_protect
-    % Historical filename/header retained; family_value is the active presentation group.
-    fprintf(fid,'family_value,n,sse,rmse,mae,max_abs_error,r2\n');
-    for i=1:numel(metrics.family_value)
-      fprintf(fid,'%.17g,%d,%.17g,%.17g,%.17g,%.17g,', ...
-              metrics.family_value(i),metrics.n(i),metrics.sse(i),metrics.rmse(i),metrics.mae(i),metrics.max_abs_error(i));
-      if (isfinite(metrics.r2(i))), fprintf(fid,'%.17g\n',metrics.r2(i)); else fprintf(fid,'\n'); endif
-    endfor
-  unwind_protect_cleanup
-    fclose(fid);
-  end_unwind_protect
+  curvefit_family_metric_csv(path,metrics,{'family_value'},{'n','sse','rmse','mae','max_abs_error','r2'});
 endfunction
 
 function write_summary(path,cfg,operation_mode,parameter_source,parameter_source_detail,parameters_optimized, ...
-                       solver,n,resnorm,rmse,mae,r2,names,theta,xname,fname,yname,orientation,hname,gname,x,f,y, ...
-                       training_domain,training_domain_source,domain_metrics)
+                       solver,statistical_results,names,theta,xname,fname,yname,orientation,hname,gname,x,f,y, ...
+                       training_domain,training_domain_source,domain_metrics,source_audit,parameter_plan)
   fid=fopen(path,'w'); if(fid<0), error('Cannot write %s',path); endif
   unwind_protect
     fprintf(fid,'GX-TXT Curve Family Fitting\n');
@@ -531,16 +526,25 @@ function write_summary(path,cfg,operation_mode,parameter_source,parameter_source
     fprintf(fid,'Dataset: %s\n',ini_get(cfg,'dataset.id',''));
     fprintf(fid,'Model: %s\n',ini_get(cfg,'model.id',''));
     fprintf(fid,'Bindings: x=%s, family=%s, y=%s\n',xname,fname,yname);
+    fprintf(fid,'Source rows: %d; used: %d; omitted: %d; missing: %d\n',source_audit.row_count,source_audit.used_row_count,source_audit.omitted_row_count,source_audit.missing_row_count);
+    fprintf(fid,'Source row policy: %s; exact zero-based ordinals retained in render_cache.mat\n',source_audit.row_policy);
+    if(isstruct(source_audit.source_identity)),fprintf(fid,'Source SHA256: %s\nScientific schema identity: %s\n',source_audit.source_identity.sha256,source_audit.source_identity.schema_identity);endif
     fprintf(fid,'Operation mode: %s\n',operation_mode);
     fprintf(fid,'Parameters optimized: %s\n',bool_text(parameters_optimized));
     fprintf(fid,'Parameter source: %s\n',parameter_source);
     fprintf(fid,'Parameter source detail: %s\n',parameter_source_detail);
+    fprintf(fid,'Parameter mapping: %s\n',parameter_plan.schema);
+    for i=1:numel(parameter_plan.base_parameter_ids)
+      fprintf(fid,'  Original model parameter %s: %s\n',parameter_plan.base_parameter_ids{i},parameter_plan.scopes{i});
+    endfor
+    if(parameter_plan.has_local)
+      fprintf(fid,'Local parameter identities explicitly qualify physical family values; all estimates belong to one joint fit.\n');
+    endif
     fprintf(fid,'Presentation orientation: %s\n',orientation);
     fprintf(fid,'Presentation horizontal: %s\n',hname);
     fprintf(fid,'Presentation group: %s\n',gname);
     if (strcmp(operation_mode,'fit')), fprintf(fid,'Solver: %s\n',solver); else fprintf(fid,'Solver: not used\n'); endif
-    fprintf(fid,'Rows: %d\nResidual sum of squares: %.12g\nRMSE: %.12g\nMAE: %.12g\nR2: ',n,resnorm,rmse,mae);
-    write_summary_number(fid,r2); fprintf(fid,'\n');
+    fprintf(fid,'%s\n',gxtxt_statistics_v1('report',statistical_results.global,{'n','sse','rmse','mae','r_squared','centered_comparison_score','dof','covariance'}));
     fprintf(fid,'Evaluated model X range: %.17g .. %.17g\n',min(x),max(x));
     fprintf(fid,'Evaluated model family range: %.17g .. %.17g\n',min(f),max(f));
     fprintf(fid,'Measured Y range: %.17g .. %.17g\n',min(y),max(y));
@@ -559,9 +563,9 @@ function write_summary(path,cfg,operation_mode,parameter_source,parameter_source
       fprintf(fid,'In-domain points: %d\n',domain_metric_n(domain_metrics,'in_domain'));
       fprintf(fid,'Out-of-domain points: %d\n',domain_metric_n(domain_metrics,'out_of_domain'));
       fprintf(fid,'Unknown-domain points: %d\n',domain_metric_n(domain_metrics,'unknown'));
-      write_summary_metric_block(fid,'ALL DATA',domain_metrics,'all');
-      write_summary_metric_block(fid,'IN-DOMAIN VALIDATION',domain_metrics,'in_domain');
-      write_summary_metric_block(fid,'OUT-OF-DOMAIN EXTRAPOLATION',domain_metrics,'out_of_domain');
+      write_summary_metric_block(fid,'ALL DATA',statistical_results.domain_block_0001,'domain_000001');
+      write_summary_metric_block(fid,'IN-DOMAIN VALIDATION',statistical_results.domain_block_0001,'domain_000002');
+      write_summary_metric_block(fid,'OUT-OF-DOMAIN EXTRAPOLATION',statistical_results.domain_block_0001,'domain_000003');
     endif
 
     fprintf(fid,'Parameters:\n');
@@ -571,24 +575,14 @@ function write_summary(path,cfg,operation_mode,parameter_source,parameter_source
   end_unwind_protect
 endfunction
 
-function write_summary_metric_block(fid,title_txt,metrics,role)
-  idx=find(strcmp(metrics.domain_role,role),1);
-  fprintf(fid,'\n%s\n',title_txt);
-  if (isempty(idx) || metrics.n(idx)==0)
-    fprintf(fid,'N: 0\nRMSE: N/A\nMAE: N/A\nR2: N/A\n');
-    return;
-  endif
-  fprintf(fid,'N: %d\nRMSE: %.12g\nMAE: %.12g\nR2: ',metrics.n(idx),metrics.rmse(idx),metrics.mae(idx));
-  write_summary_number(fid,metrics.r2(idx)); fprintf(fid,'\n');
+function write_summary_metric_block(fid,title_txt,table,role)
+  fprintf(fid,'\n%s\n%s\n',title_txt,gxtxt_statistics_v1('table_report',table,{role},{'n','rmse','mae','centered_comparison_score'}));
 endfunction
 
 function n=domain_metric_n(metrics,role)
   idx=find(strcmp(metrics.domain_role,role),1); if(isempty(idx)),n=0;else n=metrics.n(idx);endif
 endfunction
 
-function write_summary_number(fid,v)
-  if(isfinite(v)),fprintf(fid,'%.12g',v);else fprintf(fid,'N/A');endif
-endfunction
 
 function s = bool_text(b), if(b), s='yes'; else s='no'; endif; endfunction
 

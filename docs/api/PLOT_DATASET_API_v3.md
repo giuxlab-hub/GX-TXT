@@ -202,3 +202,11 @@ Ticks/grid/font layout follows Native3D's scientific presentation rather than Oc
 pixel layout. Logarithmic/reversed axes still require a nonlinear calibrated coordinate
 mapping contract and are rejected, never labeled as linear. Other providers/base graphs
 need an exact prepared-scene identity API. Transparent figure backgrounds remain unsupported.
+
+## Display-unit suffixes
+
+An explicit axis or colorbar label ending with the exact source-unit suffix
+` [unit]` follows the selected display unit. For example, `Frequency [Hz]`
+becomes `Frequency [kHz]` when the plotted coordinates use kHz. Other user
+wording is preserved. 2D, 3D and the 3D preview export use the same helper;
+canonical Dataset values and units do not change.

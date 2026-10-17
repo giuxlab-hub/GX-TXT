@@ -25,7 +25,7 @@ namespace eval ::GX {
 }
 
 proc ::GX::datasetWriterCapabilityNames {} {
-    return {complete_variable range_write append_write hyperslab_write multidimensional groups implicit_axis typed_numeric sequential_chunks human_readable}
+    return {complete_variable range_write append_write hyperslab_write multidimensional groups implicit_axis typed_numeric managed_binary_write sequential_chunks human_readable}
 }
 
 proc ::GX::datasetWriterProviderRegister {provider commandPrefix capabilities version} {
@@ -149,9 +149,11 @@ proc ::GX::datasetPublicationV2Prepare {session moduleId definition} {
     foreach key {dataset_id contract} { if {![dict exists $definition $key] || [string trim [dict get $definition $key]] eq ""} { error "Publication definition is missing '$key'" } }
     set datasetId [datasetPublicationV2ValidateId dataset [dict get $definition dataset_id]]
     set contract [string trim [dict get $definition contract]]
+    ::GX::StatisticsV1::validatePublication $moduleId $definition
     if {[dict exists $definition structured_metadata]} {
         if {[catch {dict size [dict get $definition structured_metadata]}]} {error "structured_metadata must be a dictionary"}
         dict for {key value} [dict get $definition structured_metadata] {_datasetMetadataUserKey $key}
+        ::GX::StatisticsV1::validateMetadata [dict get $definition structured_metadata]
         _datasetMetadataPortableSerialize [dict get $definition structured_metadata]
     }
     set currentSession $session
@@ -218,6 +220,7 @@ proc ::GX::datasetPublicationV2SetPlanMetadata {plan metadata} {
     datasetPublicationV2RequirePlan $plan
     if {$datasetPublicationPlan($plan,status) ne "prepared"} {error "Publication plan metadata is immutable after opening a writer"}
     dict for {key value} $metadata {_datasetMetadataUserKey $key}
+    ::GX::StatisticsV1::validatePublication $datasetPublicationPlan($plan,module_id) [dict create structured_metadata $metadata]
     _datasetMetadataPortableSerialize $metadata
     dict set datasetPublicationPlan($plan,definition) structured_metadata $metadata
 }
@@ -378,8 +381,31 @@ proc ::GX::datasetPublicationV2IsBinaryBlock {values} {
     return [expr {![catch {dict get $values __gxtxt_binary_block} marker] && $marker eq "1"}]
 }
 
+proc ::GX::datasetPublicationV2IsResource {values} {
+    return [expr {![catch {dict get $values __gxtxt_binary_resource} marker] && $marker eq "1"}]
+}
+proc ::GX::datasetPublicationV2WriterCapabilities {writer} {
+    variable datasetPublicationWriter
+    datasetPublicationV2RequireWriter $writer
+    return [datasetWriterProviderCapabilities $datasetPublicationWriter($writer,provider)]
+}
+proc ::GX::datasetPublicationV2ValidateResource {values} {
+    set count [datasetPublicationV2ElementCount [datasetPublicationV2Shape [dict get $values shape]]]
+    set resource [datasetBinaryResourceValidate [dict get $values resource] $count]
+    if {![info exists ::env(GXTXT_BRIDGE_WORKSPACE)] || [file normalize [dict get $resource resource_root]] ne [file normalize $::env(GXTXT_BRIDGE_WORKSPACE)]} {
+        error {Publication resource is outside its delegated execution scope}
+    }
+    return $resource
+}
+proc ::GX::datasetPublicationV2ResourceFields {values} {
+    set r [datasetPublicationV2ValidateResource $values]
+    set fields {}
+    foreach key {version dtype endian order shape count byte_count resource_id resource_root} {lappend fields [datasetB64Encode [dict get $r $key]]}
+    return [join $fields \t]
+}
+
 proc ::GX::datasetPublicationV2PayloadCount {values} {
-    if {[datasetPublicationV2IsBinaryBlock $values]} {
+    if {[datasetPublicationV2IsBinaryBlock $values] || [datasetPublicationV2IsResource $values]} {
         return [datasetPublicationV2ElementCount [datasetPublicationV2Shape [dict get $values shape]]]
     }
     return [llength $values]
@@ -411,7 +437,7 @@ proc ::GX::datasetPublicationV2ValuesPayload {shape values} {
     set expected [datasetPublicationV2ElementCount $shape]
     set received [datasetPublicationV2PayloadCount $values]
     if {$received != $expected} { error "Value count mismatch: expected $expected, received $received" }
-    if {[datasetPublicationV2IsBinaryBlock $values]} {
+    if {[datasetPublicationV2IsBinaryBlock $values] || [datasetPublicationV2IsResource $values]} {
         set blockShape [datasetPublicationV2Shape [dict get $values shape]]
         if {$blockShape ne $shape} { error "Binary block shape mismatch: expected [join $shape {;}], received [join $blockShape {;}]" }
     }
@@ -419,6 +445,11 @@ proc ::GX::datasetPublicationV2ValuesPayload {shape values} {
 }
 
 proc ::GX::datasetPublicationV2ValidateTypedValues {variable values} {
+    if {[datasetPublicationV2IsResource $values]} {
+        datasetPublicationV2ValidateResource $values
+        if {[dict get $variable dtype] eq "string"} {error {Numeric resource cannot write a string variable}}
+        return
+    }
     if {[datasetPublicationV2IsBinaryBlock $values]} { datasetPublicationV2ValidateBinaryBlock $variable $values; return }
     set dtype [dict get $variable dtype]
     if {$dtype eq "string"} { return }
@@ -474,6 +505,7 @@ proc ::GX::datasetPublicationV2MaterializeBinaryBlock {variable values} {
 }
 
 proc ::GX::datasetPublicationV2MaterializeValues {variable values} {
+    if {[datasetPublicationV2IsResource $values]} {error {This provider does not support managed binary resources}}
     if {[datasetPublicationV2IsBinaryBlock $values]} { return [datasetPublicationV2MaterializeBinaryBlock $variable $values] }
     return $values
 }
@@ -665,7 +697,10 @@ proc ::GX::_datasetPublicationV2Commit {writer sha integritySeconds providerResu
         datasetRegister $datasetId [datasetPublicationV2RegistryFields $writer $sha $integritySeconds]
         saveDatasetRegistry $session
         datasetAuthorityFault after_registry
-        datasetMetadataWrite $session $datasetId [_scientificPublicationMetadata $session $datasetId [datasetPublicationV2DictDefault $definition structured_metadata {}] [datasetPublicationV2DictDefault $definition source_dataset_ids {}] [expr {$datasetPublicationPlan($plan,operation) eq "replacing"}]]
+        set statisticalSchema {}
+        foreach variableId $datasetPublicationWriter($writer,variable_ids) {lappend statisticalSchema $datasetPublicationWriter($writer,variable,$variableId)}
+        set publicationMetadata [::GX::StatisticsV1::sealPublicationBindings [datasetPublicationV2DictDefault $definition structured_metadata {}] $statisticalSchema $sha]
+        datasetMetadataWrite $session $datasetId [_scientificPublicationMetadata $session $datasetId $publicationMetadata [datasetPublicationV2DictDefault $definition source_dataset_ids {}] [expr {$datasetPublicationPlan($plan,operation) eq "replacing"}]]
         _datasetFrameworkMetadataUpdate $session $datasetId [dict create dataset_namespace [dict get $definition dataset_namespace]]
         datasetAuthorityFault after_metadata
     } on error {failure options} {
@@ -861,32 +896,36 @@ proc ::GX::hdf5DatasetWriter {operation token args} {
         write_variable {
             lassign $args variableId payload; set channel $hdf5WriterState($token,channel); set locator $hdf5WriterState($token,locator,$variableId)
             set values [dict get $payload values]; set prefix "[datasetB64Encode $locator]\t[datasetB64Encode [join [dict get $payload shape] {;}]]"
-            if {[datasetPublicationV2IsBinaryBlock $values]} { puts $channel "BWRITE\t$prefix\t[join [datasetPublicationV2BinaryFields $values] \t]" } else { puts $channel "WRITE\t$prefix\t[datasetPublicationV2EncodeValues $values]" }
+            if {[datasetPublicationV2IsResource $values]} {puts $channel "RWRITE\t$prefix\t[datasetPublicationV2ResourceFields $values]"
+            } elseif {[datasetPublicationV2IsBinaryBlock $values]} { puts $channel "BWRITE\t$prefix\t[join [datasetPublicationV2BinaryFields $values] \t]" } else { puts $channel "WRITE\t$prefix\t[datasetPublicationV2EncodeValues $values]" }
             flush $channel; datasetPublicationV2Hdf5Read $channel; return
         }
         write_range {
             lassign $args variableId start values; set channel $hdf5WriterState($token,channel); set prefix "[datasetB64Encode $hdf5WriterState($token,locator,$variableId)]\t$start"
-            if {[datasetPublicationV2IsBinaryBlock $values]} { puts $channel "BRANGE\t$prefix\t[join [datasetPublicationV2BinaryFields $values] \t]" } else { puts $channel "RANGE\t$prefix\t[datasetPublicationV2EncodeValues $values]" }
+            if {[datasetPublicationV2IsResource $values]} {puts $channel "RRANGE\t$prefix\t[datasetPublicationV2ResourceFields $values]"
+            } elseif {[datasetPublicationV2IsBinaryBlock $values]} { puts $channel "BRANGE\t$prefix\t[join [datasetPublicationV2BinaryFields $values] \t]" } else { puts $channel "RANGE\t$prefix\t[datasetPublicationV2EncodeValues $values]" }
             flush $channel; datasetPublicationV2Hdf5Read $channel; return
         }
         append {
             lassign $args dimensionId data; set channel $hdf5WriterState($token,channel)
             dict for {variableId item} $data {
                 set values [dict get $item values]; set prefix "[datasetB64Encode $hdf5WriterState($token,locator,$variableId)]\t[dict get $item axis]\t[datasetB64Encode [join [dict get $item shape] {;}]]"
-                if {[datasetPublicationV2IsBinaryBlock $values]} { puts $channel "BAPPEND\t$prefix\t[join [datasetPublicationV2BinaryFields $values] \t]" } else { puts $channel "APPEND\t$prefix\t[datasetPublicationV2EncodeValues $values]" }
+                if {[datasetPublicationV2IsResource $values]} {puts $channel "RAPPEND\t$prefix\t[datasetPublicationV2ResourceFields $values]"
+                } elseif {[datasetPublicationV2IsBinaryBlock $values]} { puts $channel "BAPPEND\t$prefix\t[join [datasetPublicationV2BinaryFields $values] \t]" } else { puts $channel "APPEND\t$prefix\t[datasetPublicationV2EncodeValues $values]" }
                 flush $channel; datasetPublicationV2Hdf5Read $channel
             }
             return
         }
         write_hyperslab {
             lassign $args variableId starts counts values; set channel $hdf5WriterState($token,channel); set prefix "[datasetB64Encode $hdf5WriterState($token,locator,$variableId)]\t[datasetB64Encode [join $starts {;}]]\t[datasetB64Encode [join $counts {;}]]"
-            if {[datasetPublicationV2IsBinaryBlock $values]} { puts $channel "BHYPER\t$prefix\t[join [datasetPublicationV2BinaryFields $values] \t]" } else { puts $channel "HYPER\t$prefix\t[datasetPublicationV2EncodeValues $values]" }
+            if {[datasetPublicationV2IsResource $values]} {puts $channel "RHYPER\t$prefix\t[datasetPublicationV2ResourceFields $values]"
+            } elseif {[datasetPublicationV2IsBinaryBlock $values]} { puts $channel "BHYPER\t$prefix\t[join [datasetPublicationV2BinaryFields $values] \t]" } else { puts $channel "HYPER\t$prefix\t[datasetPublicationV2EncodeValues $values]" }
             flush $channel; datasetPublicationV2Hdf5Read $channel; return
         }
         flush { puts $hdf5WriterState($token,channel) FLUSH; flush $hdf5WriterState($token,channel); datasetPublicationV2Hdf5Read $hdf5WriterState($token,channel); return }
         diagnostics {
             set channel $hdf5WriterState($token,channel); puts $channel STATS; flush $channel; set p [datasetPublicationV2Hdf5Read $channel]
-            return [dict create process_id [lindex $p 2] elements_written [lindex $p 3] max_request_elements [lindex $p 4] append_calls [lindex $p 5] hyperslab_elements_written [lindex $p 6] binary_blocks [lindex $p 7] binary_bytes [lindex $p 8]]
+            return [dict create process_id [lindex $p 2] elements_written [lindex $p 3] max_request_elements [lindex $p 4] append_calls [lindex $p 5] hyperslab_elements_written [lindex $p 6] binary_blocks [lindex $p 7] binary_bytes [lindex $p 8] resource_blocks [lindex $p 9] resource_bytes [lindex $p 10]]
         }
         finalize {
             set channel $hdf5WriterState($token,channel); puts $channel VALIDATE; flush $channel; datasetPublicationV2Hdf5Read $channel
@@ -904,7 +943,7 @@ proc ::GX::hdf5DatasetWriter {operation token args} {
 }
 
 ::GX::datasetWriterProviderRegister csv ::GX::csvDatasetWriter [dict create complete_variable 1 range_write 0 append_write 1 hyperslab_write 0 multidimensional 0 groups 0 implicit_axis 1 typed_numeric 0 sequential_chunks 1 human_readable 1] 1
-::GX::datasetWriterProviderRegister hdf5 ::GX::hdf5DatasetWriter [dict create complete_variable 1 range_write 1 append_write 1 hyperslab_write 1 multidimensional 1 groups 1 implicit_axis 1 typed_numeric 1 sequential_chunks 1 human_readable 0] 1
+::GX::datasetWriterProviderRegister hdf5 ::GX::hdf5DatasetWriter [dict create complete_variable 1 range_write 1 append_write 1 hyperslab_write 1 multidimensional 1 groups 1 implicit_axis 1 typed_numeric 1 managed_binary_write 1 sequential_chunks 1 human_readable 0] 1
 
 # Additive runtime discovery; the v1 section and contract remain unchanged.
 proc ::GX::datasetPublicationRuntimeAppend {runtime moduleId} {
@@ -986,3 +1025,6 @@ proc ::GX::datasetPublicationV2PublishBatch {session moduleId requests {command 
     datasetPublicationV2BatchPreflight $session $moduleId $requests
     return [datasetCatalogTransaction ::GX::_datasetPublicationV2BatchExecute [file normalize $session] $moduleId $requests $command]
 }
+
+source [file join [file dirname [info script]] dataset_publication_managed_columns_v2.tcl]
+source [file join [file dirname [info script]] dataset_publication_managed_variables_v2.tcl]

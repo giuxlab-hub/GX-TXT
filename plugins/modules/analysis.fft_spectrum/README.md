@@ -1,9 +1,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 # FFT Spectrum & Error Analysis (`analysis.fft_spectrum`)
 
-The module obtains FFT, window generation, detrending and reusable median
-statistics through the public `math.numeric` API. Spectrum scaling, FFT
-normalization and scientific analysis policy belong to this module.
+Version **2.3.0** delegates the complete retained FFT lobe estimator to public `math.numeric`. CORE statistical semantics owns quality definitions, units, availability, metrics and reports. Normal and Temporal Set spectrum publications retain their canonical identities and capture source lineage plus the interpreted summary.
 
 It consumes the public Temporal Set API v1 and recalculates stable output IDs
 using Dataset Publication API v2 same-owner replacement. Publication is
@@ -301,3 +299,9 @@ available. Environments without GNU Octave must report that part as `SKIP`.
 ## License
 
 GNU GPL v3 or later.
+
+CORE distinguishes corrected amplitude lobe RSS from raw coherent FFT-bin powers.
+Existing level-floor and lobe-overlap conventions are explicit. Component reports
+use bounded CORE rows, preserving unavailable levels without discarding valid
+amplitudes. Numerical policies and prior scientific Datasets are preserved;
+legacy metric keys now include statistical status and quantity identifiers.

@@ -8,7 +8,7 @@ set runtimeIni [file normalize [lindex $argv 1]]
 
 namespace eval ::UVVis {
     variable moduleId analysis.spectroscopy.uvvis
-    variable moduleVersion 1.1.2
+    variable moduleVersion 1.2.0
 }
 
 proc ::UVVis::datasetProvenance {session datasetId} {
@@ -93,6 +93,9 @@ proc ::UVVis::publishTable {session datasetId columns schemas sourceIds provenan
         producer_version $moduleVersion source_dataset_ids $sourceIds source_variable_ids {} \
         source [join $sourceIds {;}] provenance $provenance \
         notes {Derived UV/Vis output; full original spectra and their Spectral Family remain unchanged.} replace_owned 1]
+    if {[dict exists $provenance statistical_results]} {
+        dict set definition structured_metadata [::GX::StatisticsV1::publicationMetadata [dict get $provenance statistical_results]]
+    }
     set plan [::GX::datasetPublicationV2Prepare $session $moduleId $definition]
     set writer [::GX::datasetPublicationV2OpenWriter $plan]
     try {
@@ -111,13 +114,16 @@ proc ::UVVis::publishTable {session datasetId columns schemas sourceIds provenan
         return -options $options $message
     }
 }
-proc ::UVVis::writeReport {path details standards heldout unknown} {
+proc ::UVVis::writeReport {path details standards heldout unknown statistics} {
+    ::GX::StatisticsV1::validate $statistics
     set fd [open $path w]
     fconfigure $fd -encoding utf-8 -translation lf
     try {
-        puts $fd "# UV/Vis Spectral Family Quantitation 1.1.2\n"
+        puts $fd "# UV/Vis Spectral Family Quantitation 1.2.0\n"
         puts $fd "This report complements canonical Datasets. Inspect the full measured spectra, individual responses and residuals before interpreting the calibration.\n"
         dict for {key value} $details {puts $fd "- **$key:** $value"}
+        puts $fd "\n[::GX::StatisticsV1::parameterReport $statistics]\n"
+        puts $fd [::GX::StatisticsV1::report $statistics {n residual_standard_deviation r_squared dof reduced_chi_squared}]
         puts $fd "\n## Calibration standards (individual measurements retained)\n"
         puts $fd "| Member | Concentration | Response | Fitted response | Residual |"
         puts $fd "|---|---:|---:|---:|---:|"
@@ -183,17 +189,20 @@ proc ::UVVis::run {configPath} {
     foreach id $heldoutIds {if {![dict exists $seen $id]} {error "Unknown held-out member ID '$id'"}}
     if {[llength $x] < 3} {error "At least three calibration standards must remain after holdout"}
     set fit [::GX::NumericAPIv1::linearRegression $x $y]
+    set statistics [::GX::StatisticsV1::fromNumeric math.numeric.linear linear_regression $fit \
+        [dict create orientation y_of_x x_unit % y_unit 1 constraints none x_variable_id concentration y_variable_id response] \
+        {} [dict create producer $moduleId]]
     set slope [dict get $fit slope]
     set intercept [dict get $fit intercept]
     if {abs($slope) < 1e-12} {error "Calibration slope is too close to zero for inverse prediction"}
-    set r2 [dict get $fit r_squared]
     set fitted [dict get $fit predicted]
     set residuals [dict get $fit residuals]
     set sourceIds [list $familyId]
     if {$blank ne ""} {lappend sourceIds $blankId}
     set provenance [dict create analytical_wavelength_nm $wavelength blank_mode $blankMode \
         heldout_member_ids $heldoutIds regression_api NUMERIC_API_v1 regression_method unweighted_linear_least_squares \
-        slope $slope intercept $intercept r_squared $r2 source_family $familyId]
+        slope $slope intercept $intercept r_squared [::GX::StatisticsV1::scalarValue $statistics r_squared] \
+        source_family $familyId statistical_results [dict create calibration $statistics]]
     set responseSchema [dict create member_id [dict create dtype string] \
         concentration [dict create unit %] response [dict create unit 1] role [dict create dtype string]]
     publishTable $session "$familyId.selected_responses" $responseColumns $responseSchema $sourceIds $provenance
@@ -272,12 +281,9 @@ proc ::UVVis::run {configPath} {
         [dict create family_dataset $familyId member_count [dict get $family member_count] \
             selected_wavelength_nm $wavelength suggested_lambda_max_nm $peakPosition \
             blank_correction $blankMode calibration_standard_count [llength $x] \
-            slope_A_per_wt_percent $slope intercept_A $intercept r_squared $r2 \
-            residual_rmse_A [dict get $fit residual_rmse] \
-            slope_standard_error [lindex [dict get $fit standard_errors] 1] \
-            intercept_standard_error [lindex [dict get $fit standard_errors] 0] \
+            slope_A_per_wt_percent $slope intercept_A $intercept \
             calibration_range_wt_percent "[lindex $sortedX 0]..[lindex $sortedX end]"] \
-        $standardReport $validationReport $unknownReport
+        $standardReport $validationReport $unknownReport $statistics
     set familyPlotId $familyId
     if {$blank ne ""} {
         set familyColumns [dict create member_id {} parameter_value {} spectral_x {} spectral_y {}]
@@ -304,6 +310,7 @@ proc ::UVVis::run {configPath} {
     puts "UNKNOWN_DATASET=$unknownDataset"
     puts "SELECTED_WAVELENGTH_NM=$wavelength"
     puts "RESIDUAL_SPREAD=$residualSpread"
-    puts "PASS UV/Vis analysis: [dict get $family member_count] full spectra, [llength $x] standards, [llength $validationRows] held-out, A($wavelength), R2=$r2"
+    puts "PASS UV/Vis analysis: [dict get $family member_count] full spectra, [llength $x] standards, [llength $validationRows] held-out, A($wavelength)"
+    puts [::GX::StatisticsV1::report $statistics {r_squared residual_standard_deviation}]
 }
 ::UVVis::run $runtimeIni

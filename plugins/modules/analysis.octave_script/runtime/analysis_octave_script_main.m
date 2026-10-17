@@ -3,7 +3,7 @@ function analysis_octave_script_main(args, framework_root)
 % SPDX-License-Identifier: GPL-3.0-or-later
 
   module_id = 'analysis.octave_script';
-  module_version = '1.3.0';
+  module_version = '1.4.0';
   bridge_started = false;
   original_pwd = pwd();
   original_path = path();

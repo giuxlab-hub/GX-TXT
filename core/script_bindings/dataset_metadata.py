@@ -1,6 +1,6 @@
 """Python/Octave Script Bridge registration owned by Dataset Metadata API v1."""
 # SPDX-License-Identifier: GPL-3.0-or-later
-from gxtxt_script_bridge_server import BridgeError
+from gxtxt_script_bridge_server import BridgeError, NumericArray
 
 REGISTRATION = {
     "api_id": "DATASET_METADATA_API_v1", "api_version": 1,
@@ -48,9 +48,88 @@ REGISTRATION["operations"]["private_owner"] = {
     "result_contract": "module_id and owner_prefix",
 }
 
+for _name, _summary, _arguments, _result in (
+    ("coordinate_read", "Read verified Dataset coordinate settings", [("dataset_id", "Dataset ID")], "versioned coordinate context"),
+    ("coordinate_inspect", "Diagnose stale coordinate settings without applying them", [("dataset_id", "Dataset ID")], "status, reason, revision and current context when valid"),
+    ("coordinate_update", "Persist display, view or calibration settings atomically", [("dataset_id", "Dataset ID"), ("updates", "Variable ID to settings struct"), ("expected_revision", "nonnegative integer")], "versioned coordinate context"),
+    ("coordinate_reset", "Reset coordinate settings to identity", [("dataset_id", "Dataset ID"), ("expected_revision", "nonnegative integer")], "versioned coordinate context"),
+    ("coordinate_validate", "Validate a stored coordinate context against its source", [("dataset_id", "Dataset ID"), ("context", "stored versioned context")], "validated stored context"),
+    ("coordinate_values", "Convert bounded coordinate readouts with explicit effective mode", [("dataset_id", "Dataset ID"), ("variable_id", "stable Variable ID"), ("values", "bounded real array"), ("options", "optional mode/unit/direction/source_unit_assumption struct")], "values, physical unit and source revision"),
+    ("coordinate_view_range", "Apply persistent magnification to a canonical reference range", [("dataset_id", "Dataset ID"), ("variable_id", "stable Variable ID"), ("reference_range", "two canonical endpoints")], "canonical viewport range and revision"),
+    ("coordinate_snapshot_values", "Present a captured context without asserting current source validity", [("context", "resolved coordinate snapshot"), ("variable_id", "stable Variable ID"), ("values", "bounded real array"), ("options", "optional mode/unit/direction/source_unit_assumption struct")], "values, unit, revision and snapshot_only verification"),
+    ("coordinate_snapshot_view_range", "Apply captured magnification without source IO", [("context", "resolved coordinate snapshot"), ("variable_id", "stable Variable ID"), ("reference_range", "two canonical endpoints")], "canonical viewport range, revision and snapshot_only verification"),
+    ("coordinate_snapshot_affine_plan", "Classify captured presentation from an explicit Native unit frame", [("context", "resolved coordinate snapshot"), ("variable_id", "stable Variable ID"), ("native_unit", "physical unit of input geometry"), ("options", "optional mode/unit/direction/source_unit_assumption struct")], "affine flag, finite scale/offset when established, and snapshot_only verification"),
+):
+    REGISTRATION["operations"][_name] = dict(name=_name, summary=_summary,
+        arguments=[dict(name=n, kind=k, required=n!="options") for n,k in _arguments],
+        argument_convention=", ".join(n for n,k in _arguments), result_convention=_result, result_contract=_result)
+
+
+def _coordinate_context(host, value):
+    result=host.as_dict(value)
+    for key in ("schema_version", "revision"):
+        result[key]=int(result[key])
+    if "persistent" in result:
+        result["persistent"]=bool(int(result["persistent"]))
+    variables={}
+    for vid,settings in host.as_dict(result["variables"]).items():
+        settings=host.as_dict(settings)
+        settings["source"]=host.as_dict(settings["source"])
+        for key in ("view_factor", "view_pivot", "calibration_factor", "input_origin", "output_origin"):
+            settings[key]=float(settings[key])
+        variables[vid]=settings
+    result["variables"]=variables
+    return result
+
+
+def _bounded_coordinate_values(values):
+    if isinstance(values, NumericArray):
+        count=1
+        for length in values.shape:
+            count*=int(length)
+        if count>4096 or values.dtype.startswith("complex") or values.dtype=="bool":
+            raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "Coordinate presentation requires at most 4096 real elements")
+        return NumericArray(values.values, [count, 1], dtype=values.dtype), values.shape
+    if isinstance(values, (int, float)) and not isinstance(values, bool):
+        return [values], None
+    raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "Coordinate values require a bounded real scalar or array")
+
 def invoke(host, operation, args):
-    if operation in ("update", "unset", "private_update", "private_unset") and args:
+    if operation=="coordinate_snapshot_affine_plan" and len(args) in (3,4):
+        result=host.as_dict(host.call("::GX::datasetCoordinateSnapshotAffinePlan",*args))
+        result["revision"]=int(result["revision"]);result["affine"]=bool(int(result["affine"]))
+        for key in ("scale", "offset"):
+            if key in result: result[key]=float(result[key])
+        return result
+    if operation in ("update", "unset", "private_update", "private_unset", "coordinate_update", "coordinate_reset") and args:
         host.call("::GX::_datasetNamespaceRequireModuleWrite", host.session, host.module_id, args[0])
+    commands={"coordinate_read": ("Read",1), "coordinate_update": ("Update",3), "coordinate_reset": ("Reset",2), "coordinate_validate": ("Validate",2)}
+    if operation in commands and len(args)==commands[operation][1]:
+        return _coordinate_context(host, host.call("::GX::datasetCoordinate"+commands[operation][0], host.session, *args))
+    if operation=="coordinate_inspect" and len(args)==1:
+        result=host.as_dict(host.call("::GX::datasetCoordinateInspect",host.session,args[0]))
+        result["revision"]=int(result["revision"])
+        if "context" in result:
+            result["context"]=_coordinate_context(host,result["context"])
+        return result
+    if operation in ("coordinate_values", "coordinate_snapshot_values") and len(args) in (3,4):
+        values,shape=_bounded_coordinate_values(args[2])
+        command=("::GX::datasetCoordinateValues",host.session) if operation=="coordinate_values" else ("::GX::datasetCoordinateSnapshotValues",)
+        result=host.as_dict(host.call(*command,args[0],args[1],values,args[3] if len(args)==4 else {}))
+        converted=[float(v) for v in host.as_list(result["values"])]
+        result["values"]=converted[0] if shape is None else NumericArray(converted,shape)
+        result["revision"]=int(result["revision"])
+        return result
+    if operation in ("coordinate_view_range", "coordinate_snapshot_view_range") and len(args)==3:
+        values,shape=_bounded_coordinate_values(args[2])
+        command=("::GX::datasetCoordinateViewRange",host.session) if operation=="coordinate_view_range" else ("::GX::datasetCoordinateSnapshotViewRange",)
+        result=host.as_dict(host.call(*command,args[0],args[1],values))
+        for key in ("canonical_range", "reference_range"):
+            result[key]=NumericArray([float(v) for v in host.as_list(result[key])],[2,1])
+        result["revision"]=int(result["revision"])
+        for key in ("view_factor", "view_pivot"):
+            result[key]=float(result[key])
+        return result
     if operation == "private_owner" and not args:
         context = host.dataset_private_context()
         return {key: context[key] for key in ("module_id", "owner_prefix")}

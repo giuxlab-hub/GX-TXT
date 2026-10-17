@@ -1,5 +1,10 @@
 # Covariance and Correlation changes
 
+## 1.1.0 — dev097
+
+- Public CORE statistical interpretation and persisted result records.
+- Reconciled module, package and current producer identities for this release.
+
 ## 1.0.1
 
 - Classified the independently packaged module as a managed external plugin.

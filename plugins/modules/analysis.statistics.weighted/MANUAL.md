@@ -5,3 +5,12 @@ Choose a numeric measurement and a second, explicitly identified variable. **Sta
 The public `NUMERIC_API_v1` weighted statistics and weighted quantiles operations compute counts, sum of weights, weighted mean, population and unbiased weighted variance/standard deviation, weighted median, IQR, effective sample size, and weighted empirical-CDF inverse quantiles. The summary Dataset separates `measurement_uncertainty_of_mean` (known independent measurement uncertainties, `sqrt(1 / sum(weights))` in the inverse-variance model) from `sampling_standard_error_of_mean` (optional `sqrt(unbiased_weighted_variance / effective_n)` under the sampling model). The latter is a sampling estimate of replicate variability; it is not a measurement-uncertainty conversion. Unsupported estimates are NaN with a status field explaining why.
 
 The result is two `table.generic` Datasets, `<prefix>.summary` and `<prefix>.quantiles`. Provenance records the stable source Dataset and variable IDs, Selection, weight model, mean-SE model, and nonfinite policy. Source rows are read through Analysis Source and Table Stream APIs and never modified. The selected vectors are retained in memory.
+
+## Statistical interpretation (dev097)
+
+Published results include the public `STATISTICAL_RESULT_SEMANTICS_API_v1`
+record, with units, statuses, reasons and source identity. Numeric computes all
+estimates. Sampling standard errors assume independent observations with finite
+variance; they do not establish Gaussian noise or confidence intervals. A single
+finite observation has no estimated sample spread or sampling standard error.
+Existing output variable IDs remain unchanged.

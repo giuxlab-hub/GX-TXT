@@ -356,10 +356,14 @@ proc ::GX::configurationCacheDirectory {} {
     return $path
 }
 
-proc ::GX::configurationSave {} {
+proc ::GX::configurationSave {{fields {}} {apply 1}} {
     variable configurationSchema
     variable configurationValues
     variable configurationSaved
+    if {![string is boolean -strict $apply]} {error {Configuration apply flag must be boolean}}
+    foreach id $fields {
+        if {![dict exists $configurationSchema $id] || [dict get $configurationSchema $id scope] ni {user module}} {error "Cannot persist Configuration field: $id"}
+    }
     set path [configurationPath]
     file mkdir [file dirname $path]
     set temp "${path}.[pid].tmp"
@@ -370,7 +374,7 @@ proc ::GX::configurationSave {} {
         puts $fd "\[user\]"
         set saved $configurationSaved
         dict for {id descriptor} $configurationSchema {
-            if {[dict get $descriptor scope] in {user module}} {dict set saved $id [configurationValidate $id [dict get $configurationValues $id]]}
+            if {[dict get $descriptor scope] in {user module} && ($fields eq {} || $id in $fields)} {dict set saved $id [configurationValidate $id [dict get $configurationValues $id]]}
         }
         foreach id [lsort -dictionary [dict keys $saved]] {putKV $fd $id [dict get $saved $id]}
     } finally { close $fd }
@@ -379,7 +383,7 @@ proc ::GX::configurationSave {} {
     if {$existed} {file copy -force -- $path $backup}
     try {
         file rename -force -- $temp $path
-        configurationApply
+        if {$apply} {configurationApply}
         set configurationSaved $saved
     } on error {message options} {
         if {$existed} {file rename -force -- $backup $path} else {file delete -force -- $path}
