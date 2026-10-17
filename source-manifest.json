@@ -1,0 +1,144 @@
+{
+  "schema": "gxtxt.public-validation-sources/1",
+  "referenceFramework": "0.9.8.10-dev-102",
+  "referenceMainCommit": "93d326af356ce1bc9237e93d0ebff8c0f87f75ee",
+  "officialArchiveSha256": "48630fae9171721ee164d390a0139b5dbaabc1a70dcb059b0a0338c690abdded",
+  "sourceOfTruth": "Accepted official dev102 archive, validation/official_dev102 Tcl cases with reused helper source from official_dev099 and official_dev100",
+  "license": "GPL-3.0-or-later",
+  "totalCases": 19,
+  "totalHelpers": 3,
+  "copiedFiles": [
+    {
+      "path": "validation/official_dev099/project_common.tcl",
+      "bytes": 2743,
+      "sha256": "dea405f41854d7f56b20e2df9728a85e1960508e51f45b65f0bbf6863fd8a344",
+      "kind": "shared-test-helper"
+    },
+    {
+      "path": "validation/official_dev099/workspace_common.tcl",
+      "bytes": 791,
+      "sha256": "ee40aff81ea2dd2a55ccf15e34f3b40b4a199bd0d45bc1b55824f5fa13e28486",
+      "kind": "shared-test-helper"
+    },
+    {
+      "path": "validation/official_dev100/worksheet_fixture.tcl",
+      "bytes": 1243,
+      "sha256": "d72a900c0bc18c3557c7f472d2b5defedea04a00aaf3b8b63632a5663e0c2f23",
+      "kind": "shared-test-helper"
+    },
+    {
+      "path": "validation/official_dev102/automation_contracts.tcl",
+      "bytes": 6289,
+      "sha256": "900a7b5ee6079fc088e8a771f93838fa282db00dcee8cdefbd2b38b45fea7f3b",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/core_contracts.tcl",
+      "bytes": 6910,
+      "sha256": "88f7bb5b1889d5071f81b347c288b80af1dac993d3793b1e382f2858676a17e9",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/deposited_gui.tcl",
+      "bytes": 2913,
+      "sha256": "c69000c2d402d33be40f4c5632d9449617d40d39b2d03da8afad45a73a11997e",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/grid_benchmark_gui.tcl",
+      "bytes": 5059,
+      "sha256": "6f531b8de63f62603c33628d41cd3919dba5e779d978ca5a8f88bddf20d5cce7",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/legacy_publication.tcl",
+      "bytes": 8255,
+      "sha256": "d495a8968fe77d289327543c1ccbe0afc20ee5ef035b2d5014b2249ebe402c86",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/metadata_acquisition.tcl",
+      "bytes": 3156,
+      "sha256": "90665fc26cefdc1a39da8c3f6831c706d2e5fe50081db1b1af64fa29ead812a1",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/metadata_bridge.tcl",
+      "bytes": 4242,
+      "sha256": "bd0ac5e47c793cf6e7fdcfd5e115b5abd837b3c4712362759e956aff5a1e8ad6",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/native_paths.tcl",
+      "bytes": 1585,
+      "sha256": "8722c411141dbe243bae9a41d7fcba81eec9fe4fbd1729eee1fd96b10e021782",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/preview_gui.tcl",
+      "bytes": 6052,
+      "sha256": "ccaea929b96441bc778becbfb90b9868db350731673062c4ca78dfc162c14ff5",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/replicate_bridges.tcl",
+      "bytes": 3208,
+      "sha256": "143d95cae0de5860c6e50fd096378f45d93105da9cfb3d1a21566fa2ad9921d9",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/replicate_contracts.tcl",
+      "bytes": 7546,
+      "sha256": "6faec3be71ffcaa28eb4898993a676de1d50c9ad8a942d668781bc166b766c23",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/replicate_equivalence.tcl",
+      "bytes": 1563,
+      "sha256": "45412a74ab4c326c3dfc1fafa80aa3882cc2d38ae3422d7b9404166a0c992673",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/replicate_gui.tcl",
+      "bytes": 7176,
+      "sha256": "4ec3bf64ddc6358d556318d3b9b401bd5531cb7abfd6a651b2979df2818feb8e",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/replicate_xy.tcl",
+      "bytes": 6013,
+      "sha256": "e39f568992c2cfed77b1434db883123ccb1cade2fcafce374aeeadc660baff24",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/replicate_xy_gui.tcl",
+      "bytes": 3041,
+      "sha256": "a92e0b07606adad29c1b7f6829205842cf962d20de9da2e7a38f13f404eaef88",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/selectors_gui.tcl",
+      "bytes": 4614,
+      "sha256": "975e6bce631260699adfc337e5970d76e0dd0d586857b840a70efec1513a0f94",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/worksheet_contracts.tcl",
+      "bytes": 5878,
+      "sha256": "8e33ba71c98fb9c366554dea7653a4627f237824967857b93b37ae800c7f0a61",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/worksheet_gui.tcl",
+      "bytes": 3655,
+      "sha256": "f88ac2c3d05f17d032681a50bb8c954f2e9829a07795e40dbcd3bf008d2c0b08",
+      "kind": "scientific-validation-case"
+    },
+    {
+      "path": "validation/official_dev102/worksheet_workflows_gui.tcl",
+      "bytes": 12214,
+      "sha256": "2f4a8d99f1a43a7d220b4be983b8b188ac38d6d1e5af74923c0c1e4f86d02e65",
+      "kind": "scientific-validation-case"
+    }
+  ]
+}

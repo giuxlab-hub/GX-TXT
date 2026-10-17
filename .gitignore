@@ -1,0 +1,23 @@
+# Never version local run outputs, credentials, Sessions or generated scientific resources.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+runs/
+output/
+results/
+scratch/
+tmp/
+*.sqlite
+*.sqlite3
+*.lock
+*.log
+*.tcldict
+*.permit
+*.png
+*.pdf
+*.tar.gz
+*.zip
+.DS_Store
+Thumbs.db
