@@ -1,0 +1,88 @@
+{
+  "schema": "gxtxt.public-validation-sources/5",
+  "referenceFramework": "0.9.8.10-dev-107",
+  "referenceMainCommit": "2e404977430906f6bc711239d5d934b72f0a6080",
+  "officialArchiveSha256": "f5ffd37b22a98544a6f678ff0c7835bb10a9e05b778e21008d775beac58e33ce",
+  "selectedCount": 11,
+  "sourceOnly": true,
+  "runnerStatus": "NOT RUN",
+  "files": [
+    {
+      "path": "validation/official_dev107/cpp_policy_cases.py",
+      "sourcePath": "validation/unified_dev107/cpp_policy_cases.py",
+      "bytes": 3105,
+      "sha256": "1b901afe611af1193b5c9418735ad7434ab8bdf871fce73cac72d23e3fc1c772",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev107/component_gallery_gui.tcl",
+      "sourcePath": "validation/unified_dev107/component_gallery_gui.tcl",
+      "bytes": 2839,
+      "sha256": "a25417630ba7649ad1fd4c58dbda387d96370c751fd11357e9badf51adb5f269",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev107/native_gui_helpers.tcl",
+      "sourcePath": "validation/unified_dev107/native_gui_helpers.tcl",
+      "bytes": 2473,
+      "sha256": "78d71a9e697a3e649bf974ccd6db521936704febfe2ff73e963896670a8dc476",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev107/native2d_temporary_gui.tcl",
+      "sourcePath": "validation/unified_dev107/native2d_temporary_gui.tcl",
+      "bytes": 2447,
+      "sha256": "cf92891aca177a8770b8ff444c00f3cbb849718d7f0047aad2e635f03a4f789e",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev107/native3d_component_gui.tcl",
+      "sourcePath": "validation/unified_dev107/native3d_component_gui.tcl",
+      "bytes": 3548,
+      "sha256": "07aa9415b7f4347c6ef48f4a724832a96f716347d86ea6c0aa3d5f67290b9816",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev107/plot_display_gui.tcl",
+      "sourcePath": "validation/unified_dev107/plot_display_gui.tcl",
+      "bytes": 1731,
+      "sha256": "3e51497e02d703d129a2dfa7a676a234691af97decdea2c1fb204728bde90322",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev107/debugger_gui.tcl",
+      "sourcePath": "validation/unified_dev107/debugger_gui.tcl",
+      "bytes": 3343,
+      "sha256": "a5b378de7f4b7c99b5e93d5097146863016a143701c2ae3e3fa7cc94e4ebafd5",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev107/debug_edges_gui.tcl",
+      "sourcePath": "validation/unified_dev107/debug_edges_gui.tcl",
+      "bytes": 8313,
+      "sha256": "f47154d4befad8fc343257344b8b0ae1adc6732363a263f64b48a22141b8b200",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev107/editor_layout_cases_gui.tcl",
+      "sourcePath": "validation/unified_dev107/editor_layout_cases_gui.tcl",
+      "bytes": 10736,
+      "sha256": "479c5445c376c825b6542a82a49bae017c8bf8bf49ac360afa5bdc388958d6df",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev107/demo_command_ownership_gui.tcl",
+      "sourcePath": "validation/unified_dev107/demo_command_ownership_gui.tcl",
+      "bytes": 1783,
+      "sha256": "159692ddc3269c1d3dd3013c16fd0cadfb9df5c00dceac6d1c330292f273e2fb",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev107/development_parity.py",
+      "sourcePath": "validation/unified_dev107/development_parity.py",
+      "bytes": 1714,
+      "sha256": "e67b358dd99e225754ff47478f1f63b5f3c6755359323763b4ac09e0a9fb3fe6",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    }
+  ]
+}

@@ -78,3 +78,11 @@ The dev-106 public source commit (db10ef525670944f031bcb33b8d9968d6bcac312) foll
 The selected material covers document/source and XML contracts, managed debugger services, native document interfaces, Signal and Statistical APIs and GUI inspection workflows. Some tests require a prepared Debian/X11 workspace, compatible native libraries and synthetic scientific fixtures. **No dev-106 cases are executed automatically**; the opt-in runner remains restricted to reviewed dev-102 CLI cases. Source verification covers all published release manifests.
 
 No private scientific Sessions, confidential test PDFs, dependent document-extraction generators, deployment scripts, internal acceptance evidence, credentials or original test outputs are included.
+
+## GX-TXT dev-107 validation sources (NOT RERUN)
+
+GX-TXT dev-107 (source commit 2e404977430906f6bc711239d5d934b72f0a6080) adds restricted C++ Viewer authoring, independent native display components and shared Script Workspace GUI controls. This branch includes 11 selected original source-only cases and helpers under validation/official_dev107/, copied byte-identically from the official validation/unified_dev107/ release directory. Their source identities and SHA-256 are in source-manifest-dev107.json.
+
+These tests were not rerun during publication. The CLI runner still allows only the original reviewed dev-102 cases. GUI tests require prepared Debian X11 and native components. C++ policy tests and debugger interactions must be invoked only in controlled disposable environments.
+
+The WordPress debugger guide package and its supporting tutorial directory are intentionally withheld, together with original acceptance evidence, private Sessions, developer files, sensitive teaching PDFs and any dependent generators.

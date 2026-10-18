@@ -111,3 +111,23 @@ Framework: 0.9.8.10-dev-106. Main commit: db10ef525670944f031bcb33b8d9968d6bcac3
 | streams_gui.tcl | Separated logs and Unicode | Manual Debian X11 GUI only |
 
 These original sources may need supplementary controlled fixtures and a version-specific bootstrap that are not distributed here. They are not universal standalone test commands, not automatic runner entries and not new runtime PASS evidence.
+
+## Dev-107 — original source-only test selection
+
+Reference release: 0.9.8.10-dev-107, main 2e404977430906f6bc711239d5d934b72f0a6080. Original location: validation/unified_dev107/. Status: NOT RERUN.
+
+| Filename | Coverage | Execution policy |
+| --- | --- | --- |
+| cpp_policy_cases.py | Resolved Clang authoring policy and explicit refusals | Manual / controlled Debian fixture only |
+| component_gallery_gui.tcl | Viewer component previews and lifecycle | Manual / controlled Debian fixture only |
+| native_gui_helpers.tcl | Shared controlled UI test helpers | Manual / controlled Debian fixture only |
+| native2d_temporary_gui.tcl | Session-free Native2D display and interactions | Manual / controlled Debian fixture only |
+| native3d_component_gui.tcl | Independent Native3D GUI host lifetime | Manual / controlled Debian fixture only |
+| plot_display_gui.tcl | RAM-only public Plot display | Manual / controlled Debian fixture only |
+| debugger_gui.tcl | Managed Python/Octave debugging presentation | Manual / controlled Debian fixture only |
+| debug_edges_gui.tcl | Debugger edge and lifetime behavior | Manual / controlled Debian fixture only |
+| editor_layout_cases_gui.tcl | Script Workspace pane layout and persistence | Manual / controlled Debian fixture only |
+| demo_command_ownership_gui.tcl | Viewer demo commands and ownership | Manual / controlled Debian fixture only |
+| development_parity.py | Restricted Viewer development parity checks | Manual / controlled Debian fixture only |
+
+No private debugger WordPress package, its tutorial images, original user Sessions, release install scripts, receipts or credentials were added. These source-only tests are not automatically executed; several require original supporting fixtures.

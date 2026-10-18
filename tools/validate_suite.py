@@ -155,15 +155,45 @@ def verify(announce=True):
                 or any(token.lower() in raw.decode("utf-8").lower() for token in BANNED)):
             raise ValueError("Unverified dev-106 scientific source: " + name)
         recent106.add(name)
+    dev107 = json.loads((ROOT / "source-manifest-dev107.json").read_text(encoding="utf-8"))
+    if (dev107.get("schema") != "gxtxt.public-validation-sources/5"
+            or dev107.get("referenceFramework") != "0.9.8.10-dev-107"
+            or dev107.get("referenceMainCommit") != "2e404977430906f6bc711239d5d934b72f0a6080"
+            or dev107.get("officialArchiveSha256") != "f5ffd37b22a98544a6f678ff0c7835bb10a9e05b778e21008d775beac58e33ce"
+            or dev107.get("selectedCount") != 11
+            or dev107.get("sourceOnly") is not True
+            or dev107.get("runnerStatus") != "NOT RUN"
+            or len(dev107.get("files", [])) != 11):
+        raise ValueError("Unrecognized dev-107 source-only inventory")
+    recent107 = set()
+    for entry in dev107["files"]:
+        name = entry["path"]
+        rel = Path(name)
+        if (rel.is_absolute() or ".." in rel.parts
+                or name in (seen | newer | recent | recent106 | recent107)
+                or not name.startswith("validation/official_dev107/")
+                or rel.suffix.lower() not in (".tcl", ".py")
+                or entry.get("sourcePath") != "validation/unified_dev107/" + rel.name):
+            raise ValueError("Invalid dev-107 scientific test path: " + name)
+        candidate = ROOT / rel
+        if candidate.is_symlink() or not candidate.is_file() or not candidate.resolve().is_relative_to(ROOT):
+            raise ValueError("Dev-107 test source missing: " + name)
+        raw = candidate.read_bytes()
+        if (len(raw) != entry["bytes"]
+                or hashlib.sha256(raw).hexdigest() != entry["sha256"]
+                or any(token.lower() in raw.decode("utf-8").lower() for token in BANNED)
+                or "GXTXT_SCRIPT_WORKSPACE_DEBUGGER_GUIDE_WP_dev107" in raw.decode("utf-8")):
+            raise ValueError("Unverified or excluded dev-107 test: " + name)
+        recent107.add(name)
     for candidate in (ROOT / "validation").rglob("*"):
         if candidate.is_symlink():
             raise ValueError("Unexpected symlink: " + str(candidate))
-        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer | recent | recent106):
+        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer | recent | recent106 | recent107):
             raise ValueError("Unreviewed file inside validation tree: " + str(candidate))
     if not (ROOT / "LICENSE").is_file():
         raise ValueError("GPL license missing")
     if announce:
-        print("PASS: 63 verified original files: 19 dev-102 tests, 3 helpers, 11 dev-103 tests, 16 dev-104 tests and 14 dev-106 tests.")
+        print("PASS: 74 verified original files: 19 dev-102 tests, 3 helpers, 11 dev-103 tests, 16 dev-104 tests, 14 dev-106 tests and 11 dev-107 tests.")
         print("PASS: reviewed public inputs only, no private test PDFs or deployment scripts.")
         print("Runtime scientific/GUI tests: NOT RUN by source verification.")
     return info
