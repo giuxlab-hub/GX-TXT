@@ -4,10 +4,37 @@
   "sourceRepository": "https://github.com/giuxlab-hub/GX-TXT",
   "coverage": {
     "first": "095",
-    "last": "106",
-    "count": 11
+    "last": "107",
+    "count": 12
   },
   "releases": [
+    {
+      "id": "107",
+      "sha": "2e404977430906f6bc711239d5d934b72f0a6080",
+      "en": {
+        "title": "Restricted C++ Viewer development and independent native display components",
+        "intro": "GX-TXT expands the public Viewer architecture with a bounded C++ authoring workspace, reusable Native2D/Native3D/Plot presentation components and a more consistent Script Workspace debugger interface.",
+        "highlights": [
+          "Viewer Development API v1 integrates a restricted Clang 19 C++ subset, a fixed SDK, explicitly granted capabilities, source/project revision checks and a managed separate native worker. This does not permit arbitrary desktop code execution.",
+          "Native3D GUI Host v2 provides independently owned embedded Viewers with asynchronous rendering and native scene/camera interaction. Session-free Native2D and Plot v4 demonstrations remain RAM-only and do not create scientific Dataset records.",
+          "Python and GNU Octave Script Workspaces share a configurable pane/assistant layout with debugger call stack, variable observation, breakpoint context and exact source identity guards.",
+          "The Viewer Interface Builder adds integrated component examples, public UI event handling and candidate review without changing the authority of existing CORE numerical or scientific publication services."
+        ],
+        "caveat": "Restricted authoring currently supports C++ only. The project-write grant applies to the authorized process tree, not the entire account, and is not a hostile-native-code sandbox certification. Asynchronous Pause is not supported for GNU Octave; publication itself did not rerun Debian scientific tests or certify Windows GUI behavior."
+      },
+      "it": {
+        "title": "Sviluppo Viewer C++ controllato e componenti grafici nativi indipendenti",
+        "intro": "GX-TXT estende l’architettura dei Viewer con un ambiente di sviluppo C++ vincolato, componenti Native2D/Native3D/Plot riutilizzabili e un’interfaccia più coerente per il debugger degli Script Workspace.",
+        "highlights": [
+          "Viewer Development API v1 integra un sottoinsieme C++ verificato con Clang 19, SDK fisso, capacità autorizzate esplicitamente, controllo delle revisioni di sorgenti e progetti ed esecuzione nativa in un worker separato. Non consente codice desktop arbitrario.",
+          "Native3D GUI Host v2 permette Viewer integrati con ciclo di vita indipendente, rendering asincrono e interazione nativa con scena e camera. Le dimostrazioni Native2D e Plot v4 senza Session restano in RAM e non pubblicano Dataset scientifici.",
+          "I Workspace Python e GNU Octave condividono una disposizione configurabile di pannelli e assistenti, con stack, variabili, breakpoint e controlli sull’identità del codice.",
+          "Viewer Interface Builder aggiunge esempi di componenti integrati, gestione degli eventi tramite API pubbliche e revisione dei candidati, senza modificare le autorità scientifiche CORE esistenti."
+        ],
+        "caveat": "Lo sviluppo controllato supporta attualmente solo C++. Il permesso di scrittura vale per l’albero dei processi autorizzati, non per tutto l’account, e non certifica un ambiente sicuro contro codice nativo ostile. La pausa asincrona di GNU Octave non è supportata; la pubblicazione non costituisce un nuovo collaudo scientifico Debian né una verifica della GUI Windows."
+      },
+      "doc": "docs/api/VIEWER_DEVELOPMENT_API_v1.md"
+    },
     {
       "id": "106",
       "sha": "db10ef525670944f031bcb33b8d9968d6bcac312",
