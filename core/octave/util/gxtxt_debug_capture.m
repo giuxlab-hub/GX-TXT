@@ -1,9 +1,15 @@
-function gxtxt_debug_capture(__gx_dbg_destination, __gx_dbg_token, __gx_dbg_sha)
+function gxtxt_debug_capture(__gx_dbg_destination, __gx_dbg_token, __gx_dbg_sha, __gx_dbg_context_stack, __gx_dbg_context_active)
 % Observe the actual paused native frame; never evaluate researcher expressions.
 % Prefix inspector locals to avoid shadowing names in an Octave debug context.
 % SPDX-License-Identifier: GPL-3.0-or-later
-  __gx_dbg_stack = dbstack('-completenames');
-  if (!isempty(__gx_dbg_stack)), __gx_dbg_stack=__gx_dbg_stack(2:end); endif
+  if (nargin >= 5)
+    __gx_dbg_stack = __gx_dbg_context_stack;
+    __gx_dbg_active = __gx_dbg_context_active;
+  else
+    [__gx_dbg_stack, __gx_dbg_active] = dbstack('-completenames');
+    if (!isempty(__gx_dbg_stack)), __gx_dbg_stack=__gx_dbg_stack(2:end); endif
+    __gx_dbg_active = __gx_dbg_active - 1;
+  endif
   __gx_dbg_info = evalin('caller','whos');
   __gx_dbg_locals=struct();__gx_dbg_globals=struct();
   for __gx_dbg_k=1:min(numel(__gx_dbg_info),128)
@@ -33,7 +39,17 @@ function gxtxt_debug_capture(__gx_dbg_destination, __gx_dbg_token, __gx_dbg_sha)
     if (__gx_dbg_info(__gx_dbg_k).global), __gx_dbg_globals.(__gx_dbg_name)=__gx_dbg_item; endif
   endfor
   __gx_dbg_record=struct('schema','gxtxt.script_debug.v1','backend','gnu_octave_native','state','PAUSED','source_sha256',__gx_dbg_sha,'token',__gx_dbg_token,'stack',__gx_dbg_stack,'locals',__gx_dbg_locals,'globals',__gx_dbg_globals,'line',0,'function','');
-  if (!isempty(__gx_dbg_stack)),__gx_dbg_record.line=__gx_dbg_stack(1).line;__gx_dbg_record.function=__gx_dbg_stack(1).name;endif
+  % dbstack's active index includes this observer frame. Do not assume that
+  % the first stopped frame is the frame selected through dbup/dbdown.
+  __gx_dbg_selected = max(1, min(numel(__gx_dbg_stack), __gx_dbg_active));
+  __gx_dbg_record.selected_frame = __gx_dbg_selected - 1;
+  __gx_dbg_record.native_active_index = __gx_dbg_active;
+  if (!isempty(__gx_dbg_stack))
+    __gx_dbg_record.line=__gx_dbg_stack(__gx_dbg_selected).line;
+    __gx_dbg_record.function=__gx_dbg_stack(__gx_dbg_selected).name;
+    __gx_dbg_record.execution_line=__gx_dbg_stack(1).line;
+    __gx_dbg_record.execution_function=__gx_dbg_stack(1).name;
+  endif
   __gx_dbg_temporary=[__gx_dbg_destination '.pending'];__gx_dbg_fd=fopen(__gx_dbg_temporary,'w');
   if (__gx_dbg_fd<0),error('Cannot write managed debugger observation');endif
   unwind_protect

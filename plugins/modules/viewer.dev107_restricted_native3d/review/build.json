@@ -1,0 +1,88 @@
+{
+  "adapter_sha256": "9548d5df4ad9d99b2714fc2c633434a0b5dadf1a601b11b0c3cf807081cc0b3e",
+  "binary_sha256": "527bcf5a8ba3e0aba3609faf924b0f7849bc6c71beaa1d9bc2c2673437bcfa9f",
+  "capabilities": [
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "operations": [
+        "value_set",
+        "text_set"
+      ],
+      "version": 1
+    },
+    {
+      "api_id": "VIEWER_COMPONENT_DEMO_API_v1",
+      "operations": [
+        "open"
+      ],
+      "version": 1
+    },
+    {
+      "api_id": "NUMERIC_API_v1",
+      "operations": [
+        "array_binary.add"
+      ],
+      "version": 1
+    },
+    {
+      "api_id": "NATIVE_3D_GUI_HOST_API_v2",
+      "operations": [
+        "demo_bind"
+      ],
+      "version": 2
+    }
+  ],
+  "code_generation_invoked": true,
+  "compiler_version": "19.1.7",
+  "link_policy": "fixed SDK adapter; no author libraries/flags; no undefined symbols",
+  "log": "\n\n",
+  "schema": "gxtxt.viewer_build.v1",
+  "status": "BUILT",
+  "validation": {
+    "author_ast_kinds": [
+      "ArraySubscriptExpr",
+      "BinaryOperator",
+      "CXXMemberCallExpr",
+      "CompoundAssignOperator",
+      "CompoundStmt",
+      "DeclRefExpr",
+      "FloatingLiteral",
+      "FunctionDecl",
+      "IfStmt",
+      "ImplicitCastExpr",
+      "IntegerLiteral",
+      "MemberExpr",
+      "ParmVarDecl",
+      "StringLiteral"
+    ],
+    "code_generation_invoked": false,
+    "compiler_sha256": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
+    "compiler_version": "19.1.7",
+    "design_sha256": "a1ef68c49ea6b7716fcfafaafe20a8f2917c6a3409c2118f839b9ec2672e9cd2",
+    "diagnostics": [],
+    "functions": [
+      "on_event"
+    ],
+    "policy_sha256": "52f01965541608162b00eb176a8a95e138a049a39b65bbe4fb7651254b964182",
+    "profile": "cpp_view_v1",
+    "project_profile": "numeric_view_v1",
+    "project_sha256": "60f6c48268e4247e60d5c3d5cd833537f1bbd96a5bace9091fe39550024c3df7",
+    "resolved_call_graph": {
+      "on_event": []
+    },
+    "schema": "gxtxt.cpp_validation.v1",
+    "sdk_calls": [
+      "demo",
+      "number",
+      "numeric_add",
+      "text"
+    ],
+    "sdk_sha256": "d9d7f56959fede6c3b5a44e3a985bf0556c7c1eca8d07cb499b95a3efd2aa6c3",
+    "source_sha256": "493e6f87e3ef0f47990cc6c47fa3fdb3e407088986edc10b76c69c4f312b7108",
+    "stages": [
+      "clang_raw_lexer",
+      "clang_resolved_ast"
+    ],
+    "status": "PASS"
+  }
+}

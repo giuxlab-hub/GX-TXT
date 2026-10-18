@@ -69,7 +69,9 @@ class ManagedDebugger(bdb.Bdb):
         locals_={name:safe_value(value) for name,value in islice(current.f_locals.items(),128) if type(name) is str and not name.startswith('__')}
         globals_={name:safe_value(value) for name,value in islice(current.f_globals.items(),128) if type(name) is str and not name.startswith('__')}
         stack=[dict(index=i,file=f.f_code.co_filename,line=f.f_lineno,function=f.f_code.co_name) for i,f in enumerate(frames)]
-        return dict(line=frame.f_lineno,function=frame.f_code.co_name,stack=stack,selected_frame=selected,locals=locals_,globals=globals_,breakpoints=self.get_file_breaks(self.source))
+        # Inspection follows the selected native frame; retain the actual stop
+        # separately so a caller selection cannot mislabel its locals/arrow.
+        return dict(line=current.f_lineno,function=current.f_code.co_name,execution_line=frame.f_lineno,execution_function=frame.f_code.co_name,stack=stack,selected_frame=selected,locals=locals_,globals=globals_,breakpoints=self.get_file_breaks(self.source))
     def user_line(self,frame):
         if str(Path(frame.f_code.co_filename).resolve())!=self.source:return
         self.publish('PAUSED',**self.stack_snapshot(frame))

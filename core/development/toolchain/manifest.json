@@ -1,0 +1,13 @@
+{
+  "compiler": "clang-19",
+  "version": "19.1.7",
+  "debian_package": "1:19.1.7-3+b1",
+  "driver_sha256": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
+  "prerequisites": [
+    "libclang-cpp19",
+    "libllvm19",
+    "libstdc++6",
+    "libc6"
+  ],
+  "license": "COPYRIGHT.clang-19"
+}

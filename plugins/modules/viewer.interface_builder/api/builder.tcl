@@ -63,6 +63,7 @@ proc ::GX::InterfaceBuilder::add {} {
         choice {set p {label Choice choices {First Second} default First}}
         dataset_selector {set p {label Dataset}}
         native2d - plot {set p [dict create title {Scientific view}];set parent canvas}
+        native3d {set p {title Native3D width 560 height 360 projection perspective axes_world 1 navigation_cube_visible 1 demo 1};set parent canvas}
         progress {set p {maximum 100}}
         log {set p {text {}};set parent footer}
         table {set p {columns {Name Value Unit}}}
@@ -245,6 +246,19 @@ proc ::GX::InterfaceBuilder::paletteInfo {} {
     set text .gxInterfaceDesigner.body.right.api.text;$text configure -state normal;$text delete 1.0 end;$text insert end $cap;$text configure -state disabled
 }
 proc ::GX::InterfaceBuilder::apiGuide {} {variable s;if {![info exists s(apiId)]} {set s(apiId) VIEWER_GUI_HOST_API_v1};::GX::documentationBrowserOpenApi $s(apiId)}
+proc ::GX::InterfaceBuilder::gallery {} {
+    variable s;set s(presentationMode) Demo
+    set selected [lindex [.gxInterfaceDesigner.body.left.palette selection] 0]
+    return [::GX::viewerGuiComponentGalleryOpen $selected]
+}
+proc ::GX::InterfaceBuilder::presentationMode {} {
+    variable s
+    switch $s(presentationMode) {
+        Design {::GX::viewerGuiComponentGalleryClose;set s(status) {Design mode · project and Undo/Redo retained}}
+        Demo {gallery}
+        {Runtime Test} {::GX::viewerGuiComponentGalleryClose;connectHandlers}
+    }
+}
 proc ::GX::InterfaceBuilder::clearTrace {} {::GX::viewerGuiTraceClear .gxInterfacePreview;.gxInterfaceDesigner.body.right.events.trace delete 1.0 end}
 proc ::GX::InterfaceBuilder::event {record} {
     variable s
@@ -591,14 +605,20 @@ proc ::GX::InterfaceBuilder::open {{context {}}} {
         dict set handlers $id [dict create command [list ::GX::InterfaceBuilder::safe {*}$method]]
     }
     foreach {id label method keys} {copy Copy copy Ctrl+c cut Cut {copy 1} Ctrl+x paste Paste paste Ctrl+v} {dict set catalog $id [dict create label $label default $keys clipboard_operation $id];dict set handlers $id [dict create command [list ::GX::InterfaceBuilder::safe {*}$method]]}
-    foreach {id label method} {import_existing {Import Existing Viewer…} importDialog compare {Compare with Original Viewer} compare bind_source {Bind Dataset…} sourceDialog generate {Generate installable Viewer…} generate cancel_generate {Cancel generation} cancelGenerate plugins {Plugin Manager…} pluginManager connect_handlers {Connect installed test handlers…} connectHandlers disconnect_handlers {Disconnect test handlers} disconnectHandlers} {dict set catalog $id [dict create label $label];dict set handlers $id [dict create command [list ::GX::InterfaceBuilder::safe $method]]}
+    foreach {id label method} {gallery {Component Gallery / Demo…} gallery import_existing {Import Existing Viewer…} importDialog compare {Compare with Original Viewer} compare bind_source {Bind Dataset…} sourceDialog generate {Generate installable Viewer…} generate cancel_generate {Cancel generation} cancelGenerate plugins {Plugin Manager…} pluginManager connect_handlers {Connect installed test handlers…} connectHandlers disconnect_handlers {Disconnect test handlers} disconnectHandlers} {dict set catalog $id [dict create label $label];dict set handlers $id [dict create command [list ::GX::InterfaceBuilder::safe $method]]}
     ::GX::viewerCommandCatalogRegister viewer.interface_builder.designer $catalog {} designer_shortcuts viewer.interface_builder
     ::GX::viewerCommandsAttach $w viewer.interface_builder.designer $handlers {} {} {session_scoped 0}
-    foreach {name label ids} {file File {new open save save_as import_existing - generate cancel_generate plugins - close} edit Edit {undo redo - copy cut paste duplicate remove up down align} design Design {add preview bind_source validate - connect_handlers disconnect_handlers} inspect Inspect {analyze compare}} {
+    foreach {name label ids} {file File {new open save save_as import_existing - generate cancel_generate plugins - close} edit Edit {undo redo - copy cut paste duplicate remove up down align} design Design {add gallery preview bind_source validate - connect_handlers disconnect_handlers} inspect Inspect {analyze compare}} {
         ::GX::viewerGuiMenuMount $w $w.menus.$name $ids;$w.menus add cascade -label $label -underline 0 -menu $w.menus.$name
     }
     ttk::frame $w.toolbar;pack $w.toolbar -fill x
-    ::GX::viewerCommandToolbarCreate $w $w.toolbar {add duplicate remove undo redo preview validate analyze generate plugins}
+    ::GX::viewerCommandToolbarCreate $w $w.toolbar {add gallery duplicate remove undo redo preview validate analyze generate plugins}
+    ttk::frame $w.modes;pack $w.modes -fill x -padx 5 -pady 3
+    ttk::label $w.modes.label -text {Workspace mode:}
+    set s(presentationMode) Design
+    ttk::combobox $w.modes.choice -state readonly -values {Design Demo {Runtime Test}} -textvariable ::GX::InterfaceBuilder::s(presentationMode) -width 18
+    bind $w.modes.choice <<ComboboxSelected>> {::GX::InterfaceBuilder::safe presentationMode}
+    pack $w.modes.label $w.modes.choice -side left -padx 3
     ttk::label $w.status -textvariable ::GX::InterfaceBuilder::s(status) -wraplength 900 -anchor w;pack $w.status -side bottom -fill x -padx 6 -pady 5
     ttk::panedwindow $w.body -orient horizontal;pack $w.body -fill both -expand 1
     ttk::frame $w.body.left;ttk::frame $w.body.center;ttk::notebook $w.body.right
@@ -612,6 +632,9 @@ proc ::GX::InterfaceBuilder::open {{context {}}} {
     ttk::scrollbar $w.body.left.paletteScroll -orient vertical -command [list $w.body.left.palette yview]
     $w.body.left.palette configure -yscrollcommand [list $w.body.left.paletteScroll set]
     place $w.body.left.paletteScroll -in $w.body.left.palette -relx 1 -x -15 -y 20 -width 15 -relheight 1 -height -20
+    ttk::scrollbar $w.body.left.paletteHorizontal -orient horizontal -command [list $w.body.left.palette xview]
+    $w.body.left.palette configure -xscrollcommand [list $w.body.left.paletteHorizontal set]
+    pack $w.body.left.paletteHorizontal -side bottom -fill x -before $w.body.left.palette
     bind $w.body.left.palette <Double-1> {::GX::InterfaceBuilder::safe add;break}
     bind $w.body.left.palette <<TreeviewSelect>> ::GX::InterfaceBuilder::paletteInfo
     ttk::label $w.body.left.treeTitle -text {Component hierarchy} -font TkHeadingFont;pack $w.body.left.treeTitle -fill x

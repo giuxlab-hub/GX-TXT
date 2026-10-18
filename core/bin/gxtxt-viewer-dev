@@ -1,0 +1,5 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-or-later
+set -eu
+framework_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+exec /usr/bin/python3 -I -B "$framework_dir/core/python/gxtxt_viewer_development.py" "$@"

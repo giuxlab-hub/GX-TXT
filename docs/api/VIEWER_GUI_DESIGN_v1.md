@@ -45,7 +45,7 @@ Help/Workspace/History components use their existing footer/menu owners.
 
 ## Runtime and source boundary
 
-`viewerGuiDesignCompose design window module provider ?preview|runtime?
+`viewerGuiDesignCompose design window module provider ?preview|runtime|demo?
 ?handlers? ?context?` uses identical public constructors in Preview and installed
 Viewers. Context accepts the existing workspace_id and an optional logical
 command_catalog owned by the actual installed module. Its default is
@@ -62,9 +62,30 @@ The optional Plot context `prepared_model 1` is for an already prepared public
 Plot presentation snapshot. Scientific bindings retain source IDs and units;
 diagnostic exports summarize models without copying scientific arrays.
 Session changes block native input until the source is reopened.
-No Plot Dataset implementation is changed by the facade. Independent Native3D
-multi-window design lifetime is an explicit CORE gap; its existing singleton
-host is not silently taken from an ordinary Viewer.
+No Plot Dataset implementation is changed by the facade. Native3D is available
+through `NATIVE_3D_GUI_HOST_API_v2@2`, with independent child widget, scene,
+camera, source generation, subscriptions and renderer worker per instance. The
+legacy v1 singleton remains compatible. Native3D properties include dimensions,
+projection, default camera triples, axes/orientation cube and an explicit RAM
+`demo` flag. `viewerGuiDesignNative3DSet window component source` binds either
+`{kind demo}` or `{kind scientific module M provider P}` through that public owner.
+Actual ready/view_changed/selected/error/source_changed events retain native
+provenance. See the v2 guide for bounds, picking and lifetime restrictions.
+
+`viewerGuiDesignTemporarySceneSet window component native2d|plot|native3d`
+explicitly mounts the matching B1 RAM display through its public owner. It clears
+any previous scientific binding and records separate `demo_bindings`, never
+canonical source IDs. Rebinding a canonical source clears its old demo marker.
+Runtime Inspect reports DEMO_BOUND and the actual native receipt, instead of
+claiming a scientific source or a stale protected Plot widget. Fit/Zoom actions
+use the corresponding public temporary/native host; ordinary scientific source
+slots continue to require their original explicit binding.
+
+Demo composition rejects domain handlers, has no scientific Session token and
+uses the existing host-owned inert Workspace/History/Help samples. The Dataset
+selector receives explicit sample choices rather than querying canonical data.
+The dynamic Component Gallery uses these exact constructors; see
+[VIEWER_COMPONENT_DEMO_API_v1](VIEWER_COMPONENT_DEMO_API_v1.md).
 
 `viewerGuiDesignValues window`, `viewerGuiDesignValueSet window id value` and
 `viewerGuiDesignTableSet window id rows` provide public UI access. Tables are

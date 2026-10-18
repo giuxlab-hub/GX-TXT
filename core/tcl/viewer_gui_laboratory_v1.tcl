@@ -224,6 +224,7 @@ proc ::GX::viewerGuiTestPlan {window {families {structure negative lifecycle}}} 
             }
             negative {foreach kind {duplicate invalid_parent missing_handler bad_version bad_callback bad_property} {lappend plan [dict create id negative:$kind family negative label "Reject $kind"]}}
             lifecycle {foreach kind {mapped geometry focus grab} {lappend plan [dict create id lifecycle:$kind family lifecycle label "Observe $kind"]}}
+            demo {foreach kind {ownership handlers provenance} {lappend plan [dict create id demo:$kind family demo label "Synthetic demonstration $kind"]}}
             scientific {foreach component [dict get $::GX::ViewerGui::instances $window design components] {if {[dict get $component type] in {native2d plot native3d}} {lappend plan [dict create id source:[dict get $component id] family scientific component [dict get $component id] label {Scientific binding readiness; navigation requires an explicit scenario}]}}}
             default {error "Unknown finite GUI test family '$family'."}
         }
@@ -274,6 +275,16 @@ proc ::GX::_viewerGuiTestStep {id} {
                 focus {set observed [dict get $inspection focus];if {$observed eq {} || ![winfo exists $observed]} {set status BLOCKED}}
                 grab {set observed [dict get $inspection grab];if {$observed ne {}} {error {A dialog grab is active; this is not a valid unobstructed comparison.}}}
             }
+        } elseif {[string match demo:* $kind]} {
+            set instance [dict get $::GX::ViewerGui::instances $w]
+            if {[dict get $instance mode] ne {demo}||[dict get $instance handlers] ne {}||[dict get $instance token] ne {}} {error {Demo has an unauthorized domain handler or scientific lifetime}}
+            set observed [dict create author demo_fixture source_identity {} fixture_version 1 mode demo handler_count 0]
+            set example [dict get $inspection components example]
+            if {[dict get $example type] in {menu context_menu}} {
+                dict set observed menu_posting {Native menus are expected to be unmapped between explicit interactions}
+                if {![llength [dict get $example menu_entries]]} {error {The native demonstration menu has no entries}}
+            } elseif {![dict get $example mapped]} {error {The real example widget is hidden or unmapped}}
+            if {[dict exists $instance workspace_provider]||[dict exists $::GX::ScientificHistory::viewers $w]} {error {Demo registered a scientific Workspace or History}}
         } elseif {[string match source:* $kind]} {
             set observed [dict get $inspection components [dict get $case component]]
             if {[dict get $observed status] ne {SOURCE_BOUND}} {set status BLOCKED}

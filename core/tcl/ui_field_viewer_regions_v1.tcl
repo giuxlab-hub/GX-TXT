@@ -146,7 +146,7 @@ proc ::GX::uiFieldComponentCapabilities {} {
     }
     return $result
 }
-proc ::GX::uiFieldComponentCreate {widget type properties variableName callback} {
+proc ::GX::uiFieldComponentCreate {widget type properties variableName callback {context {}}} {
     if {![dict exists [uiFieldComponentCapabilities] $type]} {error {Unsupported public UI Field component.}}
     set label [datasetPublicationV2DictDefault $properties label {}]
     switch $type {
@@ -180,7 +180,10 @@ proc ::GX::uiFieldComponentCreate {widget type properties variableName callback}
             ttk::label $widget.caption -text $label -anchor w
             ttk::combobox $widget.entry -state readonly -textvariable $variableName
             pack $widget.caption $widget.entry -fill x
-            datasetSelectorAttach $widget.entry [list ::GX::uiFieldDatasetChoices]
+            if {[dict exists $context demo_choices]} {
+                if {[dict keys $context] ne {demo_choices}||[llength [dict get $context demo_choices]]>32||[string bytelength $context]>8192} {error {Invalid bounded display-only selector context}}
+                $widget.entry configure -values [dict get $context demo_choices]
+            } else {datasetSelectorAttach $widget.entry [list ::GX::uiFieldDatasetChoices]}
             bind $widget.entry <<ComboboxSelected>> $callback
             uiFieldSelectorWithinViewer $widget.entry [winfo toplevel $widget]
         }

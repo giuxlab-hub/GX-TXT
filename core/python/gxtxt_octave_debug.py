@@ -19,10 +19,12 @@ def main():
     def send(text):os.write(master,(text+'\n').encode('utf-8'))
     def publish(state,**values):
         nonlocal sequence
-        sequence+=1;atomic(directory/'state.json',dict(schema='gxtxt.script_debug.v1',backend='gnu_octave_native',state=state,sequence=sequence,source_sha256=sha,job_id=os.environ.get('GXTXT_JOB_ID',''),**values))
+        sequence+=1;atomic(directory/'state.json',dict(schema='gxtxt.script_debug.v1',backend='gnu_octave_native',state=state,sequence=sequence,source=str(snapshot),source_sha256=sha,job_id=os.environ.get('GXTXT_JOB_ID',''),**values))
     def capture():
         nonlocal pending_capture
-        send('gxtxt_debug_capture('+literal(native)+','+literal(token)+','+literal(sha)+');');pending_capture=True
+        # Query dbstack in the selected native debug context, before entering
+        # the observer function (which otherwise reports its own caller frame).
+        send("[__gx_dbg_native_stack,__gx_dbg_native_frame]=dbstack('-completenames');gxtxt_debug_capture("+literal(native)+','+literal(token)+','+literal(sha)+",__gx_dbg_native_stack,__gx_dbg_native_frame);clear __gx_dbg_native_stack __gx_dbg_native_frame;");pending_capture=True
     normal_prompt=('GXTXT_'+token+'> ').encode('ascii')
     snapshot=Path(config['runtime']['output_dir'])/'executed_script.m'
     native_heading=re.compile(rb'(?m)^stopped in [^\r\n]+ at line [0-9]+ \['+re.escape(str(snapshot).encode('utf-8'))+rb'\][ \t]*\r?\n')
@@ -63,7 +65,7 @@ def main():
                 if observed.pop('token',None)!=token or observed.get('source_sha256')!=sha:raise ValueError('Native debugger observation identity mismatch')
                 if not observed.get('line') or not observed.get('stack'):raise RuntimeError('Native prompt did not yield an actual paused source frame')
                 if isinstance(observed.get('stack'),dict):observed['stack']=[observed['stack']]
-                observed['selected_frame']=0
+                observed.setdefault('selected_frame',0)
                 observed.pop('state',None);observed.pop('sequence',None);observed.pop('schema',None);observed.pop('backend',None);observed.pop('source_sha256',None)
                 publish('PAUSED',**observed);paused=True;pending_capture=False
             control=directory/'command.json'
@@ -73,7 +75,7 @@ def main():
                     last_command=message['id']
                     if message.get('token')!=token or message.get('source_sha256')!=sha:raise ValueError('Native debugger command identity mismatch')
                     operation=message['operation']
-                    if operation=='pause':os.kill(child.pid,signal.SIGINT)
+                    if operation=='pause':raise ValueError('Asynchronous Pause is unsupported by this native Octave CLI adapter; no interrupt signal was sent')
                     elif operation=='stop':child.terminate()
                     elif operation=='frame' and paused:
                         frame=int(message.get('frame',0));send('dbdown(100);');

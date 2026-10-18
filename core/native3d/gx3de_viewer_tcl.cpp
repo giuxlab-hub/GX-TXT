@@ -742,7 +742,31 @@ void fillScene(Tcl_Interp *ip,State &state,Tcl_Obj *scene,bool preview) {
         bool visible=yes(field(ip,layer.value,"visible"));double opacity=number(field(ip,layer.value,"opacity"),"opacity");
         try {
             if(field(ip,layer.value,"source_mode")=="dataset") {gx3de_object *object=datasetObject(ip,state.scene,layer.value);state.add(ip,object,layer.id,layer.value,visible,opacity);}
-            else importArtifact(ip,state,layer.id,layer.value,visible,opacity,preview&&field(ip,layer.value,"texture").empty());
+            else if(field(ip,layer.value,"source_mode")=="memory_geometry") {
+                // Display-only geometry enters the same public native mesh ABI.
+                // It has no Dataset identity, path, publication or CAD authority.
+                Tcl_Obj *vertices=get(ip,layer.value,"vertices"),*triangles=get(ip,layer.value,"triangles");
+                int nv=0,nt=0;Tcl_Obj **vv=nullptr,**tt=nullptr;
+                if(!vertices||!triangles||Tcl_ListObjGetElements(ip,vertices,&nv,&vv)!=TCL_OK||
+                   Tcl_ListObjGetElements(ip,triangles,&nt,&tt)!=TCL_OK||nv<3||nv>10000||nt<1||nt>20000)
+                    throw std::runtime_error("RAM geometry requires 3..10000 vertices and 1..20000 triangles");
+                std::vector<gx3de_vec3> points;std::vector<uint32_t> indices;
+                for(int i=0;i<nv;++i) {
+                    int n=0;Tcl_Obj **xyz=nullptr;
+                    if(Tcl_ListObjGetElements(ip,vv[i],&n,&xyz)!=TCL_OK||n!=3)throw std::runtime_error("RAM vertex requires XYZ");
+                    points.push_back({number(str(xyz[0]),"X"),number(str(xyz[1]),"Y"),number(str(xyz[2]),"Z")});
+                }
+                for(int i=0;i<nt;++i) {
+                    int n=0;Tcl_Obj **ids=nullptr;
+                    if(Tcl_ListObjGetElements(ip,tt[i],&n,&ids)!=TCL_OK||n!=3)throw std::runtime_error("RAM triangle requires three indices");
+                    for(int j=0;j<3;++j) {auto id=integer(str(ids[j]),"RAM triangle index");
+                        if(id>=static_cast<uint64_t>(nv))throw std::runtime_error("RAM triangle index outside vertices");
+                        indices.push_back(static_cast<uint32_t>(id));}
+                }
+                gx3de_object *object=nullptr;
+                check(gx3de_object_create_mesh(state.scene,points.data(),points.size(),indices.data(),nt,&object),"create RAM display mesh");
+                state.add(ip,object,layer.id,layer.value,visible,opacity);
+            } else importArtifact(ip,state,layer.id,layer.value,visible,opacity,preview&&field(ip,layer.value,"texture").empty());
         } catch(const std::exception &e) {
             std::string source=field(ip,layer.value,"source_mode")=="artifact"?field(ip,layer.value,"resource_path"):field(ip,layer.value,"dataset_id");
             throw std::runtime_error("3D layer "+layer.id+" ("+source+"): "+e.what());

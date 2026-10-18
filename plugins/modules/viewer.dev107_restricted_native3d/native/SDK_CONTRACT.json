@@ -1,0 +1,70 @@
+{
+  "schema": "gxtxt.viewer_development_policy.v1",
+  "profile": "cpp_view_v1",
+  "sdk_version": 1,
+  "language": "C++17 restricted",
+  "python_authoring": false,
+  "source_limit_bytes": 65536,
+  "allowed_sdk_calls": [
+    "text",
+    "number",
+    "flag",
+    "numeric_add",
+    "demo",
+    "numeric_sqrt"
+  ],
+  "allowed_state_members": [
+    "values",
+    "counter"
+  ],
+  "allowed_event_members": [
+    "kind",
+    "component",
+    "value"
+  ],
+  "state_values": 16,
+  "string_limit_bytes": 256,
+  "process_timeout_seconds": 12,
+  "compile_timeout_seconds": 30,
+  "capabilities": {
+    "VIEWER_GUI_HOST_API_v1": {
+      "version": 1,
+      "operations": [
+        "value_set",
+        "text_set"
+      ]
+    },
+    "VIEWER_COMPONENT_DEMO_API_v1": {
+      "version": 1,
+      "operations": [
+        "open"
+      ]
+    },
+    "NATIVE_3D_GUI_HOST_API_v2": {
+      "version": 2,
+      "operations": [
+        "demo_bind"
+      ]
+    },
+    "NUMERIC_API_v1": {
+      "version": 1,
+      "operations": [
+        "array_binary.add",
+        "array_unary.sqrt"
+      ]
+    }
+  },
+  "profiles": {
+    "synthetic_view_v1": [
+      "VIEWER_GUI_HOST_API_v1",
+      "VIEWER_COMPONENT_DEMO_API_v1",
+      "NATIVE_3D_GUI_HOST_API_v2"
+    ],
+    "numeric_view_v1": [
+      "VIEWER_GUI_HOST_API_v1",
+      "VIEWER_COMPONENT_DEMO_API_v1",
+      "NATIVE_3D_GUI_HOST_API_v2",
+      "NUMERIC_API_v1"
+    ]
+  }
+}

@@ -489,7 +489,8 @@ proc ::GX::Engine3D::column {datasetId variableId} {
     }
     return [expr {$position-1}]
 }
-proc ::GX::Engine3D::preparedScene {scene} {
+proc ::GX::Engine3D::preparedScene {scene} {return [::GX::native3DScenePrepare $scene]}
+proc ::GX::native3DScenePrepare {scene} {
     set layers [dict get $scene layers]
     dict for {id layer} $layers {
         if {[::GX::datasetPublicationV2DictDefault $layer texture {}] ne {}} {
@@ -503,23 +504,23 @@ proc ::GX::Engine3D::preparedScene {scene} {
         if {[dict get $layer source_mode] ne "dataset"} continue
         set ds [dict get $layer dataset_id]
         foreach axis {x y z} {
-            dict set layer ${axis}_column [column $ds [dict get $layer ${axis}_variable_id]]
+            dict set layer ${axis}_column [::GX::Engine3D::column $ds [dict get $layer ${axis}_variable_id]]
         }
         set scalarId [dict get $layer scalar_array]
         if {$scalarId ne ""} {
             if {![catch {column $ds $scalarId} c]} {dict set layer scalar_column $c}
         }
         set radiusId [dict get $layer radius_array]
-        if {$radiusId ne ""} {dict set layer radius_column [column $ds $radiusId]}
+        if {$radiusId ne ""} {dict set layer radius_column [::GX::Engine3D::column $ds $radiusId]}
         set opacityId [dict get $layer opacity_array]
-        if {$opacityId ne ""} {dict set layer opacity_column [column $ds $opacityId]}
+        if {$opacityId ne ""} {dict set layer opacity_column [::GX::Engine3D::column $ds $opacityId]}
         dict for {attributeId attribute} [dict get $layer attributes] {
             set ids [::GX::splitList [dict get $attribute variable_ids]]
             if {[dict get $attribute kind] eq "scalar" && [llength $ids] == 1} {
-                dict set layer scalar_column [column $ds [lindex $ids 0]]
+                dict set layer scalar_column [::GX::Engine3D::column $ds [lindex $ids 0]]
             } elseif {[dict get $attribute kind] eq "vector" && [llength $ids] == 3} {
                 set columns {}
-                foreach v $ids {lappend columns [column $ds $v]}
+                foreach v $ids {lappend columns [::GX::Engine3D::column $ds $v]}
                 dict set layer vector_columns [join $columns {;}]
             }
         }

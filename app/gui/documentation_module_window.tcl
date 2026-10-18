@@ -34,6 +34,14 @@ proc ::GX::documentationBrowserManualPathAllowed {module path} {
     }
     error {The requested link is outside this module's documentation and declared API references.}
 }
+proc ::GX::documentationBrowserDemoCreate {widget callback} {
+    ttk::labelframe $widget -text {DEMO / Help presentation} -padding 8
+    ttk::label $widget.label -text {The manual is real; the component sample carries no scientific state.} -wraplength 500
+    ttk::button $widget.manual -text {Open Builder manual} -command [list ::GX::documentationBrowserOpenModuleWindow viewer.interface_builder [winfo toplevel $widget]]
+    ttk::button $widget.contract -text {Inspect Help sample contract} -command [list {*}$callback help_sample]
+    pack $widget.label $widget.manual $widget.contract -anchor w -padx 3 -pady 3
+    return $widget
+}
 proc ::GX::documentationBrowserOpenModuleWindow {module {parent {}}} {
     variable ::GX::DocumentationManual::state
     set w .gxManual_[binary encode hex [encoding convertto utf-8 $module]]
@@ -73,10 +81,81 @@ proc ::GX::documentationBrowserOpenModuleWindow {module {parent {}}} {
 }
 proc ::GX::documentationBrowserManualDestroyed {w actual} {
     if {$w ne $actual} return
+    documentationBrowserManualImagesClear $w
     array unset ::GX::DocumentationManual::state "$w,*"
 }
 proc ::GX::documentationBrowserManualResize {w actual width} {
-    if {$w eq $actual && [winfo exists $w.status]} {$w.status configure -wraplength [expr {max(100,$width-18)}]}
+    if {$w eq $actual && [winfo exists $w.status]} {
+        $w.status configure -wraplength [expr {max(100,$width-18)}]
+        documentationBrowserManualImagesFit $w
+    }
+}
+proc ::GX::documentationBrowserManualImagesClear {w} {
+    variable ::GX::DocumentationManual::state
+    if {[info exists state($w,images)]} {
+        foreach pair $state($w,images) {foreach photo $pair {catch {image delete $photo}}}
+    }
+    set state($w,images) {}
+}
+proc ::GX::documentationBrowserManualImagesFit {w} {
+    variable ::GX::DocumentationManual::state
+    if {![info exists state($w,images)] || ![winfo exists $w.body.text]} return
+    set available [expr {max(160,[winfo width $w.body.text]-35)}]
+    foreach pair $state($w,images) {
+        lassign $pair displayed original
+        set factor [expr {max(1,int(ceil([image width $original]/double($available))))}]
+        $displayed copy $original -subsample $factor $factor -shrink
+    }
+}
+proc ::GX::documentationBrowserManualImage {w text relative caption} {
+    variable ::GX::DocumentationManual::state
+    # Only bounded packaged PNG assets beneath this module's documentation
+    # directory are rendered. A Markdown document never supplies executable code.
+    set root [file normalize [file dirname [moduleField $state($w,module) descriptor]]]
+    set path [file normalize [file join [file dirname $state($w,path)] $relative]]
+    if {[file pathtype $relative] ne {relative} || [string first "$root/" $path]!=0 || ![file isfile $path] || [file type $path] eq {link} || [file extension $path] ne {.png} || [file size $path]>8388608} {
+        $text insert end "Image unavailable: $caption\n";return
+    }
+    set fd [open $path rb]
+    try {set header [read $fd 24]} finally {close $fd}
+    binary scan $header H16@16II signature width height
+    if {$signature ne {89504e470d0a1a0a} || $width<1 || $height<1 || $width>4096 || $height>4096} {
+        $text insert end "Image unavailable: invalid packaged PNG dimensions\n";return
+    }
+    if {[catch {set original [image create photo -file $path]} message]} {$text insert end "Image unavailable: $caption ($message)\n";return}
+    set displayed [image create photo]
+    lappend state($w,images) [list $displayed $original]
+    documentationBrowserManualImagesFit $w
+    $text image create end -image $displayed
+    $text insert end "\n$caption\n\n"
+    set tag gx_manual_image_[llength $state($w,images)]
+    $text insert end {Open screenshot at full size} $tag
+    $text insert end "\n\n"
+    $text tag configure $tag -foreground #145da0 -underline 1
+    $text tag bind $tag <Button-1> [list ::GX::documentationBrowserManualImageOpen $w $path $caption]
+}
+proc ::GX::documentationBrowserManualImageOpen {parent path caption} {
+    set w $parent.screenshot
+    catch {destroy $w}
+    toplevel $w;wm title $w $caption
+    uiFieldWindowFit $w 1100 760;wm minsize $w 350 250
+    ttk::button $w.close -text Close -command [list destroy $w]
+    grid $w.close -row 0 -column 0 -sticky w -padx 5 -pady 5
+    set photo [image create photo -file $path]
+    canvas $w.image -highlightthickness 0 -xscrollcommand [list $w.x set] -yscrollcommand [list $w.y set]
+    $w.image create image 0 0 -anchor nw -image $photo
+    $w.image configure -scrollregion [list 0 0 [image width $photo] [image height $photo]]
+    ttk::scrollbar $w.x -orient horizontal -command [list $w.image xview]
+    ttk::scrollbar $w.y -command [list $w.image yview]
+    grid $w.image -row 1 -column 0 -sticky nsew
+    grid $w.y -row 1 -column 1 -sticky ns
+    grid $w.x -row 2 -column 0 -sticky ew
+    grid rowconfigure $w 1 -weight 1;grid columnconfigure $w 0 -weight 1
+    bind $w <Escape> [list destroy $w]
+    bind $w <Destroy> [list ::GX::documentationBrowserManualImageClosed $w $photo %W]
+}
+proc ::GX::documentationBrowserManualImageClosed {w photo actual} {
+    if {$w eq $actual} {catch {image delete $photo}}
 }
 proc ::GX::documentationBrowserManualUnavailable {w message} {
     set ::GX::DocumentationManual::state($w,status) $message
@@ -102,19 +181,25 @@ proc ::GX::documentationBrowserManualShow {w path {anchor {}} {record 1}} {
     set state($w,path) $path;set state($w,status) "[moduleField $state($w,module) name $state($w,module)] — [file tail $path]"
     set text $w.body.text
     foreach tag [$text tag names] {if {[string match gx_manual_* $tag]} {$text tag delete $tag}}
-    markupRenderStringToWidget $text $source
+    documentationBrowserManualImagesClear $w
+    markupRenderStringToWidget $text $source [list ::GX::documentationBrowserManualImage $w]
     # Relative links use this host's path/history, never the main Help state.
     set display [$text get 1.0 end-1c];set at 0;set number 0
+    $text configure -state normal
     while {[regexp -indices -start $at {\[[^]]+\]\([^)]+\)} $display range]} {
         lassign $range first last
-        if {[regexp {\[[^]]+\]\(([^)]+)\)} [string range $display $first $last] -> target] && {gx_codeblock} ni [$text tag names "1.0 + $first chars"]} {
+        set literal [string range $display $first $last]
+        set index [$text search -exact -- $literal 1.0 end]
+        if {$index ne {} && [regexp {\[([^]]+)\]\(([^)]+)\)} $literal -> label target] && {gx_codeblock} ni [$text tag names $index]} {
             set tag gx_manual_link_[incr number]
-            $text tag add $tag "1.0 + $first chars" "1.0 + [expr {$last+1}] chars"
+            $text delete $index "$index + [string length $literal] chars"
+            $text insert $index $label $tag
             $text tag configure $tag -foreground #145da0 -underline 1
             $text tag bind $tag <Button-1> [list ::GX::documentationBrowserManualFollow $w $target]
         }
         set at [expr {$last+1}]
     }
+    $text configure -state disabled
     $text see 1.0
     if {$anchor ne {}} {documentationBrowserManualAnchor $w $anchor}
     documentationBrowserManualEnable $w
@@ -147,10 +232,18 @@ proc ::GX::documentationBrowserManualFollow {w target} {
 }
 proc ::GX::documentationBrowserManualAnchor {w anchor} {
     set text $w.body.text
+    foreach tag {gx_h1 gx_h2 gx_h3} {
+        foreach {first last} [$text tag ranges $tag] {
+            set heading [string tolower [string trim [$text get $first $last]]]
+            regsub -all {[^[:alnum:] _-]} $heading {} heading
+            regsub -all {[ _]+} $heading {-} heading
+            if {$heading eq $anchor} {$text yview $first;return}
+        }
+    }
     set label [string map {- { } _ { }} $anchor]
     set index [$text search -nocase -exact -- $label 1.0]
     if {$index eq {}} {set index [$text search -exact -- "id=\"$anchor\"" 1.0]}
-    if {$index ne {}} {$text see $index} else {set ::GX::DocumentationManual::state($w,status) "Anchor unavailable: $anchor"}
+    if {$index ne {}} {$text yview $index} else {set ::GX::DocumentationManual::state($w,status) "Anchor unavailable: $anchor"}
 }
 proc ::GX::documentationBrowserManualSearch {w} {
     variable ::GX::DocumentationManual::state

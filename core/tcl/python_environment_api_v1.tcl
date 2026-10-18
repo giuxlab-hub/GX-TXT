@@ -63,29 +63,44 @@ proc ::GX::pythonImportsOpen {editor} {
     ttk::frame $w -padding 6
     scriptWorkspaceAssistMount $editor $w
     set text $::GX::PythonScriptEditorUI::ui(text)
-    set state($w,editor) $editor;set state($w,token) [interactiveDocumentSessionToken];set state($w,runtime) [runtimeToolResolve python]
+    set state($w,editor) $editor;set state($w,token) [scriptWorkspaceSessionToken];set state($w,runtime) [runtimeToolResolve python]
+    set state($w,inventoryRequest) {};set state($w,previewRequest) {}
     set state($w,statement) {import math};set state($w,search) {};set state($w,status) {Select a module or type an explicit import. Preview before Apply.}
     ttk::label $w.title -text {Manage imports — Overview}
     ttk::entry $w.search -textvariable ::GX::PythonImports::state($w,search)
-    ttk::treeview $w.modules -columns {origin} -show {tree headings} -height 7
+    ttk::frame $w.catalog
+    ttk::treeview $w.modules -columns {origin} -show {tree headings} -height 3
     $w.modules heading #0 -text {Import name};$w.modules heading origin -text {Origin / availability}
+    ttk::scrollbar $w.catalog.v -command [list $w.modules yview]
+    ttk::scrollbar $w.catalog.h -orient horizontal -command [list $w.modules xview]
+    $w.modules configure -yscrollcommand [list $w.catalog.v set] -xscrollcommand [list $w.catalog.h set]
+    grid $w.modules -in $w.catalog -row 0 -column 0 -sticky nsew
+    grid $w.catalog.v -row 0 -column 1 -sticky ns
+    grid $w.catalog.h -row 1 -column 0 -sticky ew
+    grid columnconfigure $w.catalog 0 -weight 1;grid rowconfigure $w.catalog 0 -weight 1
     ttk::entry $w.statement -textvariable ::GX::PythonImports::state($w,statement)
     ttk::frame $w.actions
     foreach {name label command} [list add {Add choice} [list ::GX::pythonImportsChoose $w] preview {Preview source changes} [list ::GX::pythonImportsPreview $w] apply Apply [list ::GX::pythonImportsApply $w] cancel Cancel [list destroy $w]] {ttk::button $w.actions.$name -text $label -command $command;pack $w.actions.$name -side left -padx 2}
     set state($w,statements) {}
     set view [sourceSurfaceCreate $w.preview {mode read_only language python}]
-    $view configure -height 12 -width 38
+    $view configure -height 3 -width 38
     ttk::label $w.status -textvariable ::GX::PythonImports::state($w,status) -wraplength 360
-    pack $w.title $w.search $w.modules $w.statement $w.actions -fill x -pady 3
-    pack $w.preview -fill both -expand 1;pack $w.status -fill x
+    pack $w.title $w.search $w.catalog $w.statement $w.actions -fill x -pady 2
+    pack $w.status -side bottom -fill x
+    pack $w.preview -fill both -expand 1
+    bind $w.actions <Configure> [list ::GX::uiFieldControlsLayout $w.actions %w]
+    bind $w.status <Configure> {%W configure -wraplength [expr {max(120,%w-8)}]}
+    bind $w <Destroy> [list ::GX::pythonImportsDestroyed $w %W]
+    $w.actions.apply state disabled
     bind $w.modules <<TreeviewSelect>> [list ::GX::pythonImportsModuleSelected $w]
     bind $w.search <KeyRelease> [list ::GX::pythonImportsFilter $w]
-    scriptJobAsync [pythonEnvironmentCommand inventory --limit 2000] {} [list ::GX::pythonImportsInventory $w] {timeout_ms 30000 max_bytes 4194304 ui_lifetime 1 label {Import module inventory}}
+    set state($w,inventoryRequest) [scriptJobAsync [pythonEnvironmentCommand inventory --limit 2000] {} [list ::GX::pythonImportsInventory $w] {timeout_ms 30000 max_bytes 4194304 ui_lifetime 1 label {Import module inventory}}]
     return $w
 }
 proc ::GX::pythonImportsInventory {w response} {
     if {![winfo exists $w]} return
     variable ::GX::PythonImports::state
+    set state($w,inventoryRequest) {}
     if {![dict get $response ok]} {set state($w,status) [dict get $response error];return}
     set state($w,inventory) [dict get $response result entries];pythonImportsFilter $w
 }
@@ -107,25 +122,37 @@ proc ::GX::pythonImportsPreview {w} {
     set state($w,original) [sourceSurfaceGet $::GX::PythonScriptEditorUI::ui(text)]
     set command [pythonEnvironmentCommand organize]
     foreach statement $state($w,statements) {lappend command --statement $statement}
-    scriptJobAsync $command $state($w,original) [list ::GX::pythonImportsPreviewed $w] {timeout_ms 15000 max_bytes 16777216 ui_lifetime 1 label {Import insertion preview}}
+    if {$state($w,previewRequest) ne {}} {scriptJobRequestCancel $state($w,previewRequest)}
+    $w.actions.apply state disabled
+    set state($w,previewRequest) [scriptJobAsync $command $state($w,original) [list ::GX::pythonImportsPreviewed $w] {timeout_ms 15000 max_bytes 16777216 ui_lifetime 1 label {Import insertion preview}}]
 }
 proc ::GX::pythonImportsPreviewed {w response} {
     if {![winfo exists $w]} return
     variable ::GX::PythonImports::state
+    set state($w,previewRequest) {}
     if {![dict get $response ok]} {set state($w,status) [dict get $response error];return}
     set state($w,result) [dict get $response result]
     sourceSurfaceSet $w.preview [dict get $state($w,result) source]
+    $w.actions.apply state !disabled
     set state($w,status) "Preview only. Duplicates: [dict get $state($w,result) duplicates]. Apply makes one undoable edit."
 }
 proc ::GX::pythonImportsApply {w} {
     variable ::GX::PythonImports::state
     if {[catch {
         if {![info exists state($w,result)]} {error {Preview the proposed imports first}}
-        if {$state($w,token) ne [interactiveDocumentSessionToken] || $state($w,runtime) ne [runtimeToolResolve python]} {error {Session or interpreter changed; reopen Manage imports}}
+        if {($::GX::PythonScriptEditorUI::ui(scope) ne {user} && $state($w,token) ne [scriptWorkspaceSessionToken]) || $state($w,runtime) ne [runtimeToolResolve python]} {error {Session or interpreter changed; reopen Manage imports}}
         if {[sourceSurfaceGet $::GX::PythonScriptEditorUI::ui(text)] ne $state($w,original)} {error {Source changed after preview; generate a new preview}}
         if {[dict get $state($w,result) changed]} {sourceSurfaceReplace $::GX::PythonScriptEditorUI::ui(text) [dict get $state($w,result) source]}
         destroy $w
     } reason]} {set state($w,status) $reason}
+}
+proc ::GX::pythonImportsDestroyed {w actual} {
+    if {$w ne $actual} return
+    variable ::GX::PythonImports::state
+    foreach key {inventoryRequest previewRequest} {
+        if {[info exists state($w,$key)] && $state($w,$key) ne {}} {catch {scriptJobRequestCancel $state($w,$key)}}
+    }
+    array unset state $w,*
 }
 
 proc ::GX::pythonEnvironmentConfigurationChanged {id} {

@@ -627,7 +627,7 @@ def build_viewer(project_path: Path, source_directory: Path, output: Path) -> tu
     backend = slug + '_gui'; workspace = slug + '_' + provider + '_interface_state'
     api = r'''# Generated interface connector. Edit handlers.tcl for science.
 # SPDX-License-Identifier: GPL-3.0-or-later
-if {![llength [info commands ::GX::viewerGuiDesignCompose]]} {error {This Viewer requires the dev104 CORE Viewer design capability.}}
+if {![llength [info commands ::GX::viewerGuiDesignCompose]]} {error {This Viewer requires the public CORE Viewer design capability.}}
 namespace eval @NS@ {variable root [file dirname [file dirname [info script]]]}
 namespace eval @NS@::Handlers {}
 if {![info exists @NS@::handlersLoaded]} {
@@ -635,6 +635,7 @@ if {![info exists @NS@::handlersLoaded]} {
     source [file join [set @NS@::root] handlers.tcl]
     set @NS@::handlersLoaded 1
 }
+foreach {api version} [dict get [::GX::viewerGuiDesignRead [file join [set @NS@::root] gui design.tcldict]] requirements] {::GX::workbenchExtensionRequireApi $api}
 proc @NS@::design {} {return [::GX::viewerGuiDesignRead [file join [set @NS@::root] gui design.tcldict]]}
 proc @NS@::handlers {} {
     set result {}
@@ -661,7 +662,7 @@ proc @NS@::dispatch {operation scene} {return [open [::GX::datasetPublicationV2D
         api = api.replace(key, value)
     descriptor_text = ini_section('meta', dict(api_version=1, id=module_id, kind='viewer',
         group='Viewers', name=title, version=version, selectable=1, default_enabled=1,
-        core=0, runner='service', order=900, depends='plot.dataset',
+        core=0, runner='service', order=900, depends='plot.dataset' if any(c['type']=='plot' for c in components) else '',
         description='Declarative Viewer interface using public CORE owners.'))
     descriptor_text += ini_section('viewers', dict(api_version=1, ids=provider))
     descriptor_text += ini_section('viewer.' + provider, dict(name=title, backend=backend,
@@ -673,7 +674,7 @@ proc @NS@::dispatch {operation scene} {return [open [::GX::datasetPublicationV2D
         name='Generated Viewer connector', entrypoint='api/viewer.tcl', namespace=namespace,
         capabilities='viewer_backend;viewer_gui_manifest'))
     descriptor_text += ini_section('documentation', dict(api_version=1, guide='MANUAL.md',
-        api_refs='VIEWER_GUI_HOST_API_v1;UI_FIELD_API_v1;SCRIPT_JOB_API_v1'))
+        api_refs=';'.join(sorted(set(dictionary(design['requirements'])) | {'SCRIPT_JOB_API_v1'}))))
     if any(c['type'] == 'workspace' for c in components):
         descriptor_text += ini_section('workspaces', dict(api_version=1, ids=workspace))
         descriptor_text += ini_section('workspace.' + workspace, dict(entrypoint='api/viewer.tcl',
@@ -690,7 +691,7 @@ proc @NS@::dispatch {operation scene} {return [open [::GX::datasetPublicationV2D
         'api/viewer.tcl': api.encode('utf-8'),
         'module.ini': descriptor_text.encode('utf-8'),
         'plugin-package.ini': ini_section('package', dict(api_version=1, id=module_id,
-            name=title, version=version, type='module', framework_min='0.9.8.10-dev-104', framework_max='')).encode(),
+            name=title, version=version, type='module', framework_min='0.9.8.10-dev-107' if 'NATIVE_3D_GUI_HOST_API_v2' in dictionary(design['requirements']) else '0.9.8.10-dev-104', framework_max='')).encode(),
         'API_CONTRACTS.json': (json.dumps(dict(schema='gxtxt.viewer_handler_contracts.v1',
             module_id=module_id, provider_id=provider, handlers=contracts,
             api_requirements={key: int(value) for key, value in dictionary(design['requirements']).items()},
@@ -708,6 +709,8 @@ proc @NS@::dispatch {operation scene} {return [open [::GX::datasetPublicationV2D
             'Regeneration preserves handlers.tcl byte for byte.\n').encode('utf-8'),
         'LICENSE': b'Generated interface assets: GPL-3.0-or-later.\nHandwritten handlers retain their own notices.\n',
     }
+    if 'NATIVE_3D_GUI_HOST_API_v2' in dictionary(design['requirements']):
+        generated['MANUAL.md'] += ('''\n## Embedded Native3D viewport\n\nThis design requires the public `NATIVE_3D_GUI_HOST_API_v2` contract, version 2,\nprovided by CORE in GX-TXT dev107. The generated connector declares that capability;\nit does not depend on an exact unrelated Analysis or Viewer module release.\n\nOpen this installed Viewer from the standard Viewers catalogue. Its `native3d`\ncomponent is a child of the Viewer, with an independent scene, camera and worker.\nDrag the viewport with the left pointer button to orbit. Shift-drag pans. The\nmouse wheel zooms. Use the native Fit, Reset, Front and Top controls to recover\na useful view. Arrow keys orbit; F fits and R restores the isometric view when\nthe viewport has keyboard focus. The orientation cube is a rendered orientation\nindicator; direct cube-face clicking is not an exposed interaction contract.\n\nA short pointer click performs actual native geometry hit testing. Selection\nreceipts identify the layer and native world/local hit; no scientific edit or\nDataset publication follows from selection. Resize or hide/show a containing tab\nwithout transferring the camera to another Viewer. Closing this Viewer releases\nonly its own worker and callbacks.\n\n### Presentation properties\n\nBuilder exposes bounded width/height, perspective or orthographic projection,\ncamera position/target/up, world axes and orientation-indicator visibility.\nApply these in the normal property inspector, then Save/Open the design. These\nare presentation settings, not scientific coordinate calibration.\n\n### Explicit demonstration and scientific bindings\n\nA component with `demo=1` renders a deterministic RAM cube and axes. This is\nexplicitly synthetic, display-only content, with no Session, Dataset or files.\nA component without that flag starts empty until an authorized handler explicitly\nbinds a source through the public CORE host. Gallery and Runtime Test are distinct\nmodes; an ordinary unconnected scientific action remains `not_connected`.\n\nFor real data, obtain the opaque viewport handle from the public Viewer host\nand call `native3DViewportBind` with `kind scientific`, the registered module\nand provider. CORE resolves the current Dataset identity, units and Session\nrevision through its public provider and Dataset owners. No raw user-file path\nor private renderer state is accepted by this binding. Stale scientific identity\nblocks interaction until an explicit valid rebind. `native3DViewportUnbind`\nreturns the component to its empty state.\n\nThe full contract is in the installed public API guide\n`NATIVE_3D_GUI_HOST_API_v2`: create/configure/bind/unbind/update, navigation and\ncamera, command/pick, subscribe/unsubscribe, inspect and release. Native rendering\nerrors are reported visibly; rebind only after correcting the source or runtime\nproblem. This guide does not claim unsupported mesh editing or scientific output.\n''').encode('utf-8')
     handlers = source_directory / 'handlers.tcl'
     if handlers.is_symlink(): raise ValueError('A handwritten handler source must be an ordinary file')
     if handlers.exists() and handlers.stat().st_size > 8 * 1024 * 1024:

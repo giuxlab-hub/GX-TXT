@@ -1,3 +1,7 @@
+# 1.4.0
+
+Generated ordinary Viewers retain declared public CORE requirements/API guides and require only actual Plot dependencies; original handwritten handlers remain separate.
+
 # 1.3.0
 
 - Add a Viewer profile consumed by the standard Viewer Interface Builder.

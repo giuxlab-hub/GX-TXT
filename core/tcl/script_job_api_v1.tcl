@@ -2,7 +2,7 @@
 # CORE local durable Job API. UI callbacks use nonblocking fileevents only.
 namespace eval ::GX {variable scriptJobRequests {};variable scriptJobCounter 0;variable scriptJobShutdownHook 0}
 proc ::GX::scriptJobApiInfo {} {
-    return [dict create api_name SCRIPT_JOB_API_v1 api_version 1 scope {local remote_references} authority core operations {submit wait list describe inspect log_read inspect_run run_log_read run_summaries cancel recover configure view_list history_hide history_restore history_candidates workspace_save workspace_open workspace_rename workspace_delete view_remember} persistence durable gui_lifetime independent presentation_scope user_configuration auxiliary_operations {scriptJobAsync scriptJobRequestCancel} auxiliary_limits {timeout_ms max_bytes process_group ui_lifetime label}]
+    return [dict create api_name SCRIPT_JOB_API_v1 api_version 1 scope {local remote_references} authority core operations {submit wait list describe inspect log_read inspect_run run_log_read run_summaries cancel recover configure debug_read debug_control debug_capabilities view_list history_hide history_restore history_candidates workspace_save workspace_open workspace_rename workspace_delete view_remember} persistence durable gui_lifetime independent presentation_scope user_configuration auxiliary_operations {scriptJobAsync scriptJobRequestCancel} auxiliary_limits {timeout_ms max_bytes process_group ui_lifetime label}]
 }
 proc ::GX::scriptJobRoot {} {
     if {[info exists ::env(GXTXT_JOB_ROOT)]} {return [file normalize $::env(GXTXT_JOB_ROOT)]}
@@ -185,6 +185,7 @@ proc ::GX::scriptJobStreamPublish {id role datasetId {session {}}} {
 
 proc ::GX::scriptJobDebugSubmit {reference parameters {options {}} {callback {}}} {dict set options debug 1;tailcall ::GX::scriptJobSubmit $reference $parameters $options $callback}
 proc ::GX::scriptJobDebugRead {id} {scriptJobCall debug_read $id}
+proc ::GX::scriptJobDebugCapabilities {language} {scriptJobCall debug_capabilities $language}
 proc ::GX::scriptJobDebugControl {id operation sourceSha {frame 0}} {
     if {$operation eq {stop}} {return [scriptJobCancel $id]}
     scriptJobCall debug_control $id $operation $sourceSha $frame

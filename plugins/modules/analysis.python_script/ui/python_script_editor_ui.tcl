@@ -81,7 +81,7 @@ proc ::GX::PythonScriptEditorUI::_updateStatus {} {
         set pos "Ln [lindex $parts 0], Col [expr {[lindex $parts 1] + 1}]"
     }
     set revision [expr {[info exists ui(revision)] && $ui(revision) ne "" ? "r$ui(revision)" : "new"}]
-    set hash [expr {[info exists ui(currentSha)] && $ui(currentSha) ne "" ? $ui(currentSha) : "no SHA-256 yet"}]
+    set hash [expr {[info exists ui(currentSha)] && $ui(currentSha) ne "" ? "[string range $ui(currentSha) 0 11]…" : "pending"}]
     set ui(status) "$id  |  $revision  |  SHA-256 $hash  |  $state  |  $pos"
     if {[info exists ui(window)] && [winfo exists $ui(window)]} {
         set star [expr {$state eq "modified" ? " *" : ""}]
@@ -103,12 +103,13 @@ proc ::GX::PythonScriptEditorUI::_confirmAbandon {} {
 
 proc ::GX::PythonScriptEditorUI::_loadDocument {documentId} {
     variable ui
-    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken)]} {return 0}
+    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken) [lindex [split $documentId :] 0]]} {return 0}
     if {![_confirmAbandon]} { return 0 }
     if {[catch {set full [::GX::PythonScriptEditor::workspaceRead $documentId]} failure]} {
         tk_messageBox -parent $ui(window) -icon error -title "Open failed" -message $failure
         return 0
     }
+    set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(currentId) $documentId
     set ui(currentSha) [dict get $full sha256]
     set ui(revision) [dict get $full revision]
@@ -171,7 +172,7 @@ proc ::GX::PythonScriptEditorUI::_new {} {
     set ui(currentSha) ""
     set ui(revision) ""
     set ui(revision) ""
-    set ui(scope) session
+    set ui(scope) [::GX::scriptWorkspaceDefaultScope]
     set ui(scriptId) ""
     set ui(name) "Untitled script"
     set ui(version) "1.0.0"
@@ -209,7 +210,7 @@ proc ::GX::PythonScriptEditorUI::_parametersFromEditor {} {
 
 proc ::GX::PythonScriptEditorUI::_save {} {
     variable ui
-    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken)]} {return 0}
+    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken) $ui(scope)]} {return 0}
     set name [string trim $ui(name)]
     if {$name eq ""} {
         tk_messageBox -parent $ui(window) -icon error -title "Script name" -message "Script name is required."
@@ -236,7 +237,7 @@ proc ::GX::PythonScriptEditorUI::_save {} {
 
 proc ::GX::PythonScriptEditorUI::_saveAs {} {
     variable ui
-    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken)]} {return 0}
+    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken) $ui(scope)]} {return 0}
     set name [string trim $ui(name)]
     if {$name eq ""} { set name "Untitled script" }
     set copyName "$name (copy)"
@@ -267,7 +268,7 @@ proc ::GX::PythonScriptEditorUI::_saveAs {} {
 
 proc ::GX::PythonScriptEditorUI::_delete {} {
     variable ui
-    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken)]} {return 0}
+    if {![::GX::scriptWorkspaceEditorSessionValid $ui(window) $ui(sessionToken) [lindex [split $ui(currentId) :] 0]]} {return 0}
     if {$ui(currentId) eq ""} return
     set answer [tk_messageBox -parent $ui(window) -icon warning -type yesno -default no -title "Delete script" -message "Delete '$ui(name)' ($ui(currentId))? The Script Registry source will be removed. Historical execution snapshots remain."]
     if {$answer ne "yes"} return
@@ -279,18 +280,14 @@ proc ::GX::PythonScriptEditorUI::_delete {} {
     set ui(currentSha) ""
     set ui(revision) ""
     set ui(scriptId) ""
-    set ui(scope) session
+    set ui(scope) [::GX::scriptWorkspaceDefaultScope]
     _acceptBaseline
     _refreshDocuments
     _new
 }
 
 proc ::GX::PythonScriptEditorUI::_decodeUtf8Bytes {bytes} {
-    set source [encoding convertfrom utf-8 $bytes]
-    if {[encoding convertto utf-8 $source] ne $bytes} {
-        error "Python source must be valid UTF-8."
-    }
-    return $source
+    return [::GX::scriptWorkspaceDecodeUtf8 $bytes]
 }
 
 proc ::GX::PythonScriptEditorUI::_import {} {
@@ -316,7 +313,7 @@ proc ::GX::PythonScriptEditorUI::_import {} {
     set ui(currentSha) ""
     set ui(revision) ""
     set ui(scriptId) ""
-    set ui(scope) session
+    set ui(scope) [::GX::scriptWorkspaceDefaultScope]
     set ui(name) [file tail [file rootname $path]]
     set ui(version) "1.0.0"
     set ui(requiredApis) ""
@@ -483,16 +480,19 @@ The bridge is not a sandbox. Ordinary Python filesystem/process capabilities rem
 proc ::GX::PythonScriptEditorUI::_close {} {
     variable ui
     if {![_confirmAbandon]} return
+    if {![::GX::scriptDebugPrepareEditorClose $ui(window)]} return
+    ::GX::scriptWorkspaceLayoutRemember $ui(window)
     catch {destroy $ui(window)}
 }
 
 proc ::GX::PythonScriptEditorUI::_buildMenus {w} {
     ttk::frame $w.toolbar -padding {8 4}
     pack $w.toolbar -side top -fill x
-    foreach {key label} {file File edit Edit run Run help Help} {
+    foreach {key label} {file File edit Edit view View run Run help Help} {
         ttk::menubutton $w.toolbar.$key -text $label -menu $w.toolbar.$key.menu
         menu $w.toolbar.$key.menu -tearoff 0 -postcommand [list ::GX::PythonScriptEditorUI::_menuState $key]
     }
+    ::GX::scriptWorkspaceViewMenu $w $w.toolbar.view.menu Python
     set m $w.toolbar.file.menu
     foreach {label shortcut command} {
         New Ctrl+N _new
@@ -523,7 +523,9 @@ proc ::GX::PythonScriptEditorUI::_buildMenus {w} {
     $m add command -label {Script Library...} -command ::GX::scriptLibraryDialog
     $m add command -label {Script Jobs Manager...} -command ::GX::scriptJobsDialog
     $w.toolbar.help.menu add command -label {Script Bridge help} -command ::GX::PythonScriptEditorUI::_bridgeHelp
-    ::GX::uiMenuRowAttach $w.toolbar [list $w.toolbar.file $w.toolbar.edit $w.toolbar.run $w.toolbar.help]
+    $w.toolbar.help.menu add command -label {Viewer manual / Debugger guide…} -accelerator F1 -command [list ::GX::documentationBrowserOpenModuleWindow analysis.python_script $w]
+    bind $w <F1> [list ::GX::documentationBrowserOpenModuleWindow analysis.python_script $w]
+    ::GX::uiMenuRowAttach $w.toolbar [list $w.toolbar.file $w.toolbar.edit $w.toolbar.view $w.toolbar.run $w.toolbar.help]
 }
 proc ::GX::PythonScriptEditorUI::_menuState {group} {
     variable ui
@@ -546,12 +548,12 @@ proc ::GX::PythonScriptEditorUI::_build {} {
     catch {trace remove variable ui write ::GX::PythonScriptEditorUI::_propertyModified}
     set w $window
     set ui(window) $w
-    set ui(sessionToken) [::GX::interactiveDocumentSessionToken]
+    set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(currentId) ""
     set ui(currentSha) ""
     set ui(modified) 0
     set ui(name) ""
-    set ui(scope) session
+    set ui(scope) [::GX::scriptWorkspaceDefaultScope]
     set ui(scriptId) ""
     set ui(version) "1.0.0"
     set ui(requiredApis) ""
@@ -564,7 +566,7 @@ proc ::GX::PythonScriptEditorUI::_build {} {
     toplevel $w
     wm title $w "Python Script Workspace"
     wm geometry $w 1180x760
-    wm minsize $w 900 560
+    wm minsize $w 850 550
     wm protocol $w WM_DELETE_WINDOW ::GX::PythonScriptEditorUI::_close
 
     _buildMenus $w
@@ -586,8 +588,12 @@ proc ::GX::PythonScriptEditorUI::_build {} {
         $ui(tree) heading $c -text $label
         $ui(tree) column $c -width $width -stretch $stretch
     }
+    ::GX::scriptWorkspaceExplorerPresentation $ui(tree)
     ttk::scrollbar $w.p.left.ts -orient vertical -command [list $ui(tree) yview]
     $ui(tree) configure -yscrollcommand [list $w.p.left.ts set]
+    ttk::scrollbar $w.p.left.hs -orient horizontal -command [list $ui(tree) xview]
+    $ui(tree) configure -xscrollcommand [list $w.p.left.hs set]
+    pack $w.p.left.hs -side bottom -fill x
     pack $w.p.left.ts -side right -fill y
     pack $ui(tree) -side left -fill both -expand 1
     bind $ui(tree) <<TreeviewSelect>> ::GX::PythonScriptEditorUI::_treeSelected
@@ -676,9 +682,10 @@ Save a Session script here, then select its session: ID in Python Script Analysi
 The bridge is not a sandbox.}
     $w.p.right.ref configure -state disabled
     pack $w.p.right.ref -side top -fill both -expand 1
+    ::GX::scriptWorkspaceReferenceScroll $w.p.right $w.p.right.ref
 
     ttk::label $w.status -textvariable ::GX::PythonScriptEditorUI::ui(status) -anchor w -padding {8 4}
-    pack $w.status -side bottom -fill x
+    pack $w.status -side bottom -fill x -before $w.p
 
     bind $w <Control-s> {::GX::PythonScriptEditorUI::_save; break}
     bind $w <Control-n> {::GX::PythonScriptEditorUI::_new; break}
@@ -690,6 +697,7 @@ The bridge is not a sandbox.}
 
     ::GX::uiTextEditingAttach $w [list $ui(text) $w.p.center.props.ie $w.p.center.props.ne $w.p.center.desc.e $w.p.center.find.e $w.p.center.props.ve $w.p.center.props.re $w.p.center.params.t]
     bind $w.p.center.find.e <Escape> [list focus $ui(text)]
+    ::GX::scriptWorkspaceLayoutInit $w
     _watchProperties
     # A rebuilt empty shell must not inherit the previous document baseline.
     _acceptBaseline
@@ -701,7 +709,6 @@ The bridge is not a sandbox.}
 
 proc ::GX::PythonScriptEditorUI::open {} {
     variable window
-    if {$::GX::currentSession eq ""} {error "Open a Session before opening Python Script Workspace."}
     if {[winfo exists $window]} {
         wm deiconify $window
         raise $window

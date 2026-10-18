@@ -247,6 +247,22 @@ proc ::GX::_scientificHistoryStripApply {window settings} {
     } else {pack forget $frame}
     scientificHistoryViewerRefresh $window
 }
+proc ::GX::scientificHistoryDemoCreate {widget callback} {
+    ttk::labelframe $widget -text {DEMO / simulated local History · no canonical record} -padding 8
+    ttk::notebook $widget.pages
+    ttk::frame $widget.pages.description;ttk::frame $widget.pages.history
+    $widget.pages add $widget.pages.description -text Description
+    $widget.pages add $widget.pages.history -text History
+    ttk::label $widget.pages.description.text -text {Synthetic instrument layout · presentation changes only} -wraplength 500
+    pack $widget.pages.description.text -fill x -padx 6 -pady 8
+    listbox $widget.pages.history.list -height 3 -exportselection 0
+    $widget.pages.history.list insert end {0 · Synthetic baseline} {1 · Synthetic view position} {2 · Synthetic label change}
+    pack $widget.pages.history.list -fill both -expand 1
+    bind $widget.pages.history.list <<ListboxSelect>> [list {*}$callback simulated_history_selection]
+    bind $widget.pages <<NotebookTabChanged>> [list {*}$callback simulated_history_page]
+    pack $widget.pages -fill both -expand 1
+    return $widget
+}
 proc ::GX::scientificHistoryViewerStrip {window parent status {configurationId {}} {layout {-fill x}}} {
     set frame $parent.historyStrip
     ttk::frame $frame -height [expr {max(32,[font metrics TkDefaultFont -linespace]+12)}]

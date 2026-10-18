@@ -109,7 +109,7 @@
 # Full release history: CHANGELOG.md
 
 namespace eval ::GX {
-    variable version "0.9.8.10-dev-106"
+    variable version "0.9.8.10-dev-107"
     variable scriptDir [file dirname [file normalize [info script]]]
     variable cfg
     variable ch
@@ -269,6 +269,7 @@ source [file join $::GX::scriptDir core tcl interactive_document_resource_api_v1
 source [file join $::GX::scriptDir core tcl session_workspace_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl file_publication_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_gui_host_v1.tcl]
+source [file join $::GX::scriptDir core tcl native3d_gui_host_v2.tcl]
 source [file join $::GX::scriptDir core tcl statistical_result_semantics_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_geometry_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_organization_v1.tcl]
@@ -276,6 +277,10 @@ source [file join $::GX::scriptDir core tcl native3d_section_comparison_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_geometry_export_v1.tcl]
 source [file join $::GX::scriptDir core tcl native2d_geometry_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl native2d_viewport_host_v1.tcl]
+source [file join $::GX::scriptDir core tcl native2d_temporary_display_v1.tcl]
+source [file join $::GX::scriptDir core tcl native_plot_display_v1.tcl]
+source [file join $::GX::scriptDir core tcl viewer_component_demo_v1.tcl]
+source [file join $::GX::scriptDir core tcl viewer_development_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl native2d_preview_v1.tcl]
 source [file join $::GX::scriptDir core tcl workbench_extension_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_recipe_api_v1.tcl]

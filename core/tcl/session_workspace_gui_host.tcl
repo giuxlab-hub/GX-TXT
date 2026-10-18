@@ -61,6 +61,16 @@ proc ::GX::_workspaceHostDestroyed {widget actual} {
     foreach name {adapters hosts menus views titles} {if {[dict exists [set ::GX::SessionWorkspace::$name] $widget]} {dict unset ::GX::SessionWorkspace::$name $widget}}
     catch {image delete gxWorkspacePreview_[string map {. _} $widget]}
 }
+proc ::GX::sessionWorkspaceDemoCreate {widget callback} {
+    ttk::labelframe $widget -text {DEMO / simulated Workspace controls} -padding 8
+    ttk::label $widget.label -text {Synthetic interface layout · not a registered Workspace}
+    ttk::menubutton $widget.commands -text {Workspace sample} -menu $widget.commands.menu
+    menu $widget.commands.menu -tearoff 0
+    foreach label {{New workspace…} {Open workspace…} Save {Save as / Duplicate…} Rename… {Session Workspaces…} Close Delete… Notes… Preview… Import… Export… Refresh} {$widget.commands.menu add command -label $label -state disabled}
+    ttk::button $widget.inspect -text {Inspect inert sample} -command [list {*}$callback workspace_sample]
+    pack $widget.label $widget.commands $widget.inspect -anchor w -padx 3 -pady 3
+    return $widget
+}
 proc ::GX::sessionWorkspaceViewerMenu {menu provider callbacks parent} {
     set context [_workspaceHostContext $provider $callbacks $parent]
     dict set ::GX::SessionWorkspace::adapters $parent $context

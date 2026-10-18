@@ -7,6 +7,16 @@ For current interface contracts consult the API references under [docs/api](docs
 
 ## 0.9.8.10 - development revisions
 
+### 0.9.8.10-dev-107
+
+- Extend the shared Script Workspace GUI Host with persistent pane layouts, source and assistant visibility controls, complete managed debugger observation, and strict Session token/lifetime handling for Python and GNU Octave.
+- Introduce public Native3D GUI Host API v2 with independent component lifetimes, asynchronous native workers, bounded RAM scene binding, preserved camera/selection and no replacement of the existing Native3D v1 host.
+- Add temporary Session-free native Plot Dataset v4 and Native2D display APIs plus reusable Viewer component demonstrations, preserving canonical Dataset and Publication ownership.
+- Add restricted Viewer Development API v1 and a dedicated development workspace: fixed C++ SDK, Clang 19 lexical/AST admission, explicit capability requests, versioned project state, managed project-write grants and separate native worker execution.
+- Integrate supported C++ authored Viewer demonstrations using existing CORE components and public Numeric capabilities; generated candidates require validation and explicit review before activation.
+- Preserve existing scientific source and prior modules. Source-only documentation for WordPress distribution is not included in the GitHub tree.
+- Scope limitations: restricted authoring is C++ only; this is not an arbitrary-code/hostile-native-code sandbox; project-write grants limit the author process tree but do not isolate the entire account; Octave asynchronous Pause remains unsupported; full GUI/platform matrix is not asserted by publication.
+
 ### 0.9.8.10-dev-106
 
 - Release development sequence continues directly from dev-104; dev-105 was intentionally skipped and has no publication entry.

@@ -730,15 +730,19 @@ proc ::GX::launchGui_before_plugin_install_v1 {} {
 # v0.9.2 refinement: Session files renders Markdown notes by default.
 # The source markup is shown only inside the GX-Markup editor.
 # -----------------------------------------------------------------------------
-proc ::GX::markupRenderStringToWidget {w src} {
+proc ::GX::markupRenderStringToWidget {w src {imageCommand {}}} {
     if {![winfo exists $w]} return
     markupConfigurePreviewTags $w
     $w configure -state normal -wrap word
     $w delete 1.0 end
     set inCode 0
     foreach line [split $src "\n"] {
-        if {[string trim $line] eq "```"} { set inCode [expr {!$inCode}]; continue }
+        if {[regexp {^```[[:alnum:]_+.-]*$} [string trim $line]]} { set inCode [expr {!$inCode}]; continue }
         if {$inCode} { $w insert end "$line\n" gx_codeblock; continue }
+        if {$imageCommand ne {} && [regexp {^!\[([^]]*)\]\(([^)]+)\)[[:space:]]*$} $line -> caption relative]} {
+            {*}$imageCommand $w $relative $caption
+            continue
+        }
         if {[regexp {^(#{1,3})[[:space:]]+(.*)$} $line -> marks body]} {
             $w insert end $body "gx_h[string length $marks]"
             $w insert end "\n"

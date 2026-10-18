@@ -139,7 +139,7 @@ proc ::GX::OctaveScriptEditor::workspaceList {} {
         dict set m reference "[dict get $m scope]:[dict get $m id]"
         lappend out $m
     }
-    foreach d [documentList] {
+    foreach d [expr {$::GX::currentSession eq {} ? {} : [documentList]}] {
         dict set d reference "legacy:[dict get $d id]"
         dict set d scope legacy
         lappend out $d
@@ -157,8 +157,10 @@ proc ::GX::OctaveScriptEditor::workspaceRead {reference} {
     set m [::GX::scriptRegistryDescribe $reference]
     if {[dict get $m language] ne "Octave"} {error "This Workspace edits Octave scripts only."}
     set ch [open [dict get $m source_path] r]
-    fconfigure $ch -encoding utf-8
-    try {set code [read $ch]} finally {close $ch}
+    fconfigure $ch -encoding binary -translation binary
+    try {set bytes [read $ch]} finally {close $ch}
+    set code [encoding convertfrom utf-8 $bytes]
+    if {[encoding convertto utf-8 $code] ne $bytes} {error {Registered Octave source contains invalid UTF-8 bytes.}}
     dict set m reference $reference
     dict set m script_id [dict get $m id]
     dict set m code $code
@@ -223,7 +225,6 @@ proc ::GX::OctaveScriptEditor::_ensureUi {} {
 }
 
 proc ::GX::OctaveScriptEditor::_launch {} {
-    requireSession
     _ensureUi
     return [::GX::OctaveScriptEditorUI::open]
 }

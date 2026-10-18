@@ -1,3 +1,7 @@
+# 1.4.0
+
+Shared independently controlled editor panes, native debugger icons and red breakpoint gutter, honest snapshot/lifetime guards, no-Session User authoring, tested nested/Numeric examples and illustrated manuals.
+
 # 1.3.0 — Debian dev106
 
 Unified public source/document, managed execution and scientific Viewer integration. The module manual documents usage and the shared public API contracts; advanced debugging remains qualified by the documented limits.

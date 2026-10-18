@@ -1,0 +1,72 @@
+{
+  "capabilities": [
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "operations": [
+        "value_set",
+        "text_set"
+      ],
+      "version": 1
+    },
+    {
+      "api_id": "VIEWER_COMPONENT_DEMO_API_v1",
+      "operations": [
+        "open"
+      ],
+      "version": 1
+    },
+    {
+      "api_id": "NUMERIC_API_v1",
+      "operations": [
+        "array_binary.add"
+      ],
+      "version": 1
+    },
+    {
+      "api_id": "NATIVE_3D_GUI_HOST_API_v2",
+      "operations": [
+        "demo_bind"
+      ],
+      "version": 2
+    }
+  ],
+  "design": "design.gxtxt-viewer",
+  "language": "cpp",
+  "module_id": "viewer.dev107_restricted_native3d",
+  "profile": "numeric_view_v1",
+  "provenance": {
+    "scientific_source": null,
+    "template": "restricted_cpp_viewer_v1"
+  },
+  "schema": "gxtxt.viewer_development_project.v1",
+  "source": "handlers.cpp",
+  "tests": {
+    "events": [
+      {
+        "component": 0,
+        "kind": 0,
+        "value": 0.0
+      },
+      {
+        "component": 4,
+        "kind": 1,
+        "value": 18.0
+      },
+      {
+        "component": 4,
+        "kind": 1,
+        "value": 20.0
+      },
+      {
+        "component": 5,
+        "kind": 2,
+        "value": 25.0
+      }
+    ],
+    "expected_counter": 3,
+    "expected_values": {
+      "0": 298.15
+    }
+  },
+  "version": "1.0.0"
+}

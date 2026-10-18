@@ -1,3 +1,7 @@
+# 1.6.0
+
+Shared independently controlled panes, repaired physical gutter, genuine GNU Octave native frames/steps and honest unsupported asynchronous Pause, no-Session authoring and illustrated examples/manuals.
+
 # 1.5.0 — Debian dev106
 
 Unified public source/document, managed execution and scientific Viewer integration. The module manual documents usage and the shared public API contracts; advanced debugging remains qualified by the documented limits.

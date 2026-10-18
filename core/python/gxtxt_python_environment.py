@@ -53,7 +53,7 @@ def inventory(limit=1500,offset=0):
     return dict(identity=identity(),total=len(names),offset=offset,limit=limit,entries=rows,qualification='No discovered package was imported; import names and distribution names remain distinct')
 def analyze(source,paths=None):
     digest=hashlib.sha256(source.encode('utf-8')).hexdigest()
-    try:tree=ast.parse(source)
+    try:tree=ast.parse(source.removeprefix('\ufeff'))
     except SyntaxError as e:return dict(identity=identity(),source_sha256=digest,status='ERROR',issues=[dict(status='ERROR',module='',line=e.lineno or 0,column=e.offset or 0,reason=e.msg)],imports=[])
     imports=[]
     class Visitor(ast.NodeVisitor):
@@ -85,7 +85,9 @@ def analyze(source,paths=None):
     missing=[x for x in imports if x['status']=='MISSING'];status='MISSING' if missing else 'WARNING' if any(x['status'] in {'UNKNOWN','OPTIONAL'} for x in imports) else 'AVAILABLE'
     return dict(identity=identity(),source_sha256=digest,status=status,imports=imports,issues=missing,qualification='Static inference only. Imported attributes and runtime side effects are not evaluated')
 def organize(source,statements):
-    tree=ast.parse(source);before=hashlib.sha256(source.encode()).hexdigest();newline='\r\n' if '\r\n' in source else '\n'
+    marker='\ufeff' if source.startswith('\ufeff') else ''
+    body=source.removeprefix('\ufeff')
+    tree=ast.parse(body);before=hashlib.sha256(source.encode()).hexdigest();newline='\r\n' if '\r\n' in source else '\n'
     existing={ast.dump(n,include_attributes=False) for n in ast.walk(tree) if isinstance(n,(ast.Import,ast.ImportFrom))}
     names={}
     for n in tree.body:
@@ -105,7 +107,7 @@ def organize(source,statements):
             names[bound]=signature
         existing.add(signature)
         (future if isinstance(n,ast.ImportFrom) and n.module=='__future__' else ordinary).append(statement.strip())
-    lines=source.splitlines(keepends=True);doc_end=0
+    lines=body.splitlines(keepends=True);doc_end=0
     if tree.body and isinstance(tree.body[0],ast.Expr) and isinstance(tree.body[0].value,ast.Constant) and isinstance(tree.body[0].value.value,str):doc_end=tree.body[0].end_lineno
     header=doc_end
     if not doc_end:
@@ -125,7 +127,7 @@ def organize(source,statements):
     for index,items in sorted(insertions.items(),reverse=True):
         prefix=newline if index and not lines[index-1].endswith(('\n','\r')) else ''
         lines[index:index]=[prefix+newline.join(items)+newline]
-    result=''.join(lines);ast.parse(result)
+    result=marker+''.join(lines);ast.parse(result.removeprefix('\ufeff'))
     return dict(source=result,before_sha256=before,after_sha256=hashlib.sha256(result.encode()).hexdigest(),statements=statements,duplicates=duplicates,changed=result!=source)
 def main():
     a=argparse.ArgumentParser();a.add_argument('operation',choices=['inventory','preflight','organize']);a.add_argument('--source');a.add_argument('--statement',action='append',default=[]);a.add_argument('--offset',type=int,default=0);a.add_argument('--limit',type=int,default=1500);a.add_argument('--report');args=a.parse_args()
@@ -134,7 +136,7 @@ def main():
         else:
             raw=Path(args.source).read_bytes() if args.source else sys.stdin.buffer.read(4194305)
             if len(raw)>4194304:raise ValueError('Python source limit is 4 MiB')
-            encoding,_=tokenize.detect_encoding(io.BytesIO(raw).readline);source=raw.decode(encoding)
+            encoding,_=tokenize.detect_encoding(io.BytesIO(raw).readline);source=raw.decode('utf-8' if encoding=='utf-8-sig' else encoding)
             result=analyze(source) if args.operation=='preflight' else organize(source,args.statement)
             result['original_bytes_sha256']=hashlib.sha256(raw).hexdigest()
         if args.report:

@@ -57,3 +57,17 @@ produce a visible diagnostic. Final symbolic-link files are refused before readi
 other URL schemes are not executed. HTML, MathJax, arbitrary image formats and
 full browser layout are not promised by this renderer. Manual text is never a
 script and has no Save/Edit callback. File reading retains the 2 MiB limit.
+
+Independent module windows also render standalone Markdown PNG image lines
+(using a Markdown image reference with a relative PNG path) through the existing markup owner's optional
+trusted image callback. Paths must be relative and remain inside the installed
+module root. Files are limited to 8 MiB and dimensions to 4096 × 4096; remote
+images and final symbolic links are refused. Ordinary markup consumers need not
+provide this callback and acquire no new file-reading capability.
+
+Screenshots scale to the manual's available width. **Open screenshot at full
+size** opens a separate native scrollable image window; closing either host
+releases its owned photo resources. These are display resources, never a second
+documentation store. Language-labelled fenced code blocks render as code.
+Section links use normalized heading anchors, with the existing text-search
+fallback for older documents. Manual search and history remain per module.

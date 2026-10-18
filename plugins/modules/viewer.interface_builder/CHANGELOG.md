@@ -1,3 +1,7 @@
+# 1.1.0
+
+Dynamic28-component Gallery with real RAM native2D/Plot and independent Native3D v2 host, typed synthetic states, mode/owner/event boundaries and four complete public example designs.
+
 # Viewer Interface Builder 1.0.0
 
 - Two native windows with public CORE Preview and a separate visual model.

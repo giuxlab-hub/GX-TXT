@@ -84,13 +84,14 @@ proc ::GX::viewerGuiComponentCapabilities {} {
     } {dict set result $type [dict create label $label api_id $api api_version [expr {$type eq {plot} ? 4 : 1}] owner core/tcl/viewer_gui_host_api_v1.tcl properties $properties events [expr {$type in {native2d plot} ? {selection view_changed} : {invoke}}] status AVAILABLE]}
     dict set result checkbutton properties plot_visibility dictionary
     foreach type {field toggle choice dataset_selector entry combobox checkbutton list} {dict set result $type properties change_action identifier}
-    dict set result native3d [dict create label {Native3D — host boundary} api_id NATIVE_3D_GUI_HOST_API_v1 api_version 1 owner core/tcl/native3d_gui_host_v1.tcl properties {} events {} status CORE_GAP reason {The existing single scene host does not yet declare a portable design component with independent multi-window scene lifetime.}]
+    dict set result native3d [dict create label {Native3D embedded viewport} api_id NATIVE_3D_GUI_HOST_API_v2 api_version 2 owner core/tcl/native3d_gui_host_v2.tcl properties {title string width number height number projection choice camera_position string camera_target string camera_up string axes_world boolean navigation_cube_visible boolean demo boolean} events {ready view_changed selected error source_changed released} status AVAILABLE]
     foreach {type owner} {native2d core/tcl/native2d_viewport_curve_source.tcl plot plugins/modules/plot.dataset/api/plot_dataset_api_v4.tcl menu core/tcl/configuration_viewer_commands.tcl help app/gui/documentation_module_window.tcl workspace core/tcl/session_workspace_api_v1.tcl history core/tcl/scientific_recipe_history.tcl} {dict set result $type owner $owner}
     dict for {type descriptor} $result {
         dict set descriptor supported_parents [expr {$type eq {menu} ? {menubar} : ($type eq {context_menu} ? {canvas} : ($type eq {command_toolbar} ? {toolbar} : ($type in {workspace history help} ? {footer} : ($type eq {tab} ? {tabs} : {toolbar inspector canvas footer panel section splitter tab}))))}]
         dict set descriptor construction [expr {[dict exists [uiFieldComponentCapabilities] $type] ? {::GX::uiFieldComponentCreate} : {::GX::viewerGuiDesignCompose}}]
         dict set descriptor callback_signature [expr {$type eq {action} ? {window action -> status} : {CORE event -> component ID and redacted detail}}]
         dict set descriptor limitations [expr {$type in {native2d plot} ? {Empty until an explicit public scientific source binding; display is not scientific authority.} : ($type in {history workspace} ? {Requires a current Session; saved state uses existing Workspace/History owners.} : ($type eq {table} ? {Read-only bounded pages; no Worksheet formulas or editing.} : {Only declared properties and events are supported.}))}]
+        if {[info exists ::GX::ComponentDemo::specs]&&[dict exists $::GX::ComponentDemo::specs $type]} {dict set descriptor demo [dict create api_id VIEWER_COMPONENT_DEMO_API_v1 fixture_version 1 provenance demo_fixture]}
         dict set result $type $descriptor
     }
     return $result
@@ -98,6 +99,7 @@ proc ::GX::viewerGuiComponentCapabilities {} {
 proc ::GX::viewerGuiDesignAction {window id} {
     if {![viewerGuiDesignGuard $window]} {return [dict create status rejected message {Viewer belongs to a previous Session.}]}
     set instance [dict get $::GX::ViewerGui::instances $window]
+    if {[dict get $instance mode] eq {demo}} {return [viewerGuiDemoAction $window $id]}
     set correlation [viewerGuiTraceEmit $window $id invoke [dict create status started]]
     set started [clock microseconds]
     set status not_connected
@@ -114,7 +116,20 @@ proc ::GX::viewerGuiDesignAction {window id} {
                     if {$op eq {fit}} {native2DViewportCurveNavigate $widget.curve fit} else {native2DViewportCurveNavigate $widget.curve zoom [expr {$id eq {zoom_in} ? 1.25 : 0.8}] [expr {[winfo width $widget.curve]/2}] [expr {[winfo height $widget.curve]/2}]}
                     set status completed
                 }
-                if {[winfo exists $widget.plot]} {
+                if {[dict exists $instance demo_bindings $component]} {
+                    set fixture [dict get $instance demo_bindings $component fixture]
+                    set temporary [dict get $instance demo_bindings $component widget]
+                    if {$fixture eq {native2d}} {
+                        if {$id eq {fit}} {native2DTemporaryDisplayNavigate $temporary fit} else {native2DTemporaryDisplayNavigate $temporary zoom [expr {$id eq {zoom_in}?1.25:0.8}] [expr {[winfo width $temporary]/2}] [expr {[winfo height $temporary]/2}]}
+                    } elseif {$fixture eq {plot}} {nativePlotDisplayView $widget.plot [expr {$id eq {fit}?{fit}:{zoom}}] [expr {$id eq {zoom_in}?1.25:0.8}]}
+                    set status completed
+                }
+                if {[dict exists $instance native3d $component]} {
+                    set h [dict get $instance native3d $component]
+                    if {$id eq {fit}} {native3DViewportCommand $h preset fit_scene} else {native3DViewportNavigate $h zoom [expr {$id eq {zoom_in}?-1:1}] 0}
+                    set status completed
+                }
+                if {[winfo exists $widget.plot]&&![dict exists $instance demo_bindings $component]} {
                     if {$id eq {fit}} {::GX::PlotDatasetAPIv4::widgetView $widget.plot fit} else {
                         foreach panel [dict get $instance bindings $component spec panels] {::GX::PlotDatasetAPIv4::widgetView $widget.plot zoom [dict get $panel id] [expr {$id eq {zoom_in} ? 1.25 : 0.8}] .5 .5}
                     }
@@ -148,6 +163,8 @@ proc ::GX::viewerGuiDesignActionEnabled {window id} {
         return [expr {$id eq {undo} ? [dict get $record cursor]>0 : [dict get $record cursor]<[llength [dict get $record steps]]}]
     }
     if {$id in {fit zoom_in zoom_out}} {
+        if {[dict exists $instance demo_bindings]&&[dict size [dict get $instance demo_bindings]]} {return 1}
+        if {[dict exists $instance native3d]} {dict for {component h} [dict get $instance native3d] {if {[dict get [native3DViewportInspect $h] status] eq {ready}} {return 1}}}
         dict for {component binding} [dict get $instance bindings] {
             set widget [dict get $instance widgets $component]
             if {[dict get $binding kind] eq {native2d} && [winfo exists $widget.curve] && ![catch {native2DViewportCurveDescribe $widget.curve} state] && [dict get $state status] eq {ready}} {return 1}
@@ -180,7 +197,8 @@ proc ::GX::viewerGuiDesignComponent {window id} {
 }
 proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} {handlers {}} {context {}}} {
     set design [viewerGuiDesignValidate $design]
-    if {$mode ni {preview runtime}} {error {Choose preview or runtime mode.}}
+    if {$mode ni {preview runtime demo}} {error {Choose preview, demo or runtime mode.}}
+    if {$mode eq {demo} && $handlers ne {}} {error {Synthetic demonstrations cannot connect domain handlers}}
     set catalog [dict create gui_inspect [dict create label {Inspect interface}]]
     set commands [dict create gui_inspect [dict create command [list ::GX::viewerGuiRuntimeInspect $window]]]
     set menus {};set history 0;set workspace 0;set help 0;set regions {canvas}
@@ -194,7 +212,7 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
             set id [dict get $properties action]
             dict set catalog $id [dict create label [dict get $properties label] default [datasetPublicationV2DictDefault $properties shortcut {}]]
         } elseif {$type eq {menu}} {lappend menus $properties} elseif {$type eq {history}} {set history 1} elseif {$type eq {workspace}} {set workspace 1} elseif {$type eq {help}} {set help 1}
-        set parent [dict get $component parent];if {$parent in {toolbar inspector footer} && $type ni {menu context_menu workspace help}} {lappend regions $parent}
+        set parent [dict get $component parent];if {$parent in {toolbar inspector footer} && ($type ni {menu context_menu workspace help}||$mode eq {demo})} {lappend regions $parent}
     }
     set commandCatalog [datasetPublicationV2DictDefault $context command_catalog $module.$provider.design_commands]
     set shortcutKey design_shortcuts_[format %08x [zlib crc32 [list [dict get $design module_id] [dict get $design provider_id]]]]
@@ -202,7 +220,9 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
     set manifest [dict create schema gxtxt.viewer_gui_manifest.v1 viewer_id $module provider_id $provider command_catalog $commandCatalog window $window title [dict get $design title] handlers $commands menus $menus geometry [dict get $design geometry] toolbar_mode declarative help $help]
     foreach component [dict get $design components] {if {[dict get $component type] eq {context_menu}} {dict set manifest context_actions [dict get $component properties actions]}}
     if {[dict exists $design shell inspector_width]} {dict set manifest inspector_width [dict get $design shell inspector_width]}
-    set token {};catch {set token [interactiveDocumentSessionToken]}
+    if {$mode eq {demo}} {set history 0;set workspace 0;set help 0;lappend regions footer}
+    if {[dict exists $design shell status]} {lappend regions footer}
+    set token {};if {$mode ne {demo}} {catch {set token [interactiveDocumentSessionToken]}}
     set slots [viewerGuiCompose $manifest]
     set payload {};set workspaceId [datasetPublicationV2DictDefault $context workspace_id {}]
     set stamp {}
@@ -214,7 +234,7 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
         set index 0;set widgets {};set actionWidgets {};set policies {}
         foreach component [dict get $design components] {
             set id [dict get $component id];set type [dict get $component type];set parent [dict get $component parent];set p [dict get $component properties]
-            if {$type in {menu context_menu workspace history help}} continue
+            if {$type in {menu context_menu}||($type in {workspace history help}&&$mode ne {demo})} continue
             if {[dict exists $slots $parent]} {set host [dict get $slots $parent]} else {set host [dict get $widgets $parent]}
             if {$parent eq {footer}} {
                 if {![winfo exists $window.footer.designed]} {ttk::frame $window.footer.designed;pack $window.footer.designed -fill x -before [dict get $slots status]}
@@ -222,9 +242,25 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
             }
             set widget $host.$id
             set ::GX::ViewerGui::values($window,$id) [datasetPublicationV2DictDefault $p default [expr {$type in {toggle checkbutton progress} ? 0 : {}}]]
-            if {$type eq {command_toolbar}} {
+            if {$mode eq {demo}&&$type in {workspace history help}} {
+                viewerGuiLifecycleDemoCreate $widget $type [list ::GX::viewerGuiDemoLifecycleEvent $window $id]
+            } elseif {$mode eq {demo}&&$type eq {native2d}} {
+                native2DTemporaryDisplayCreate $widget [list ::GX::viewerGuiDemoNativeEvent $window $id]
+                dict set ::GX::ViewerGui::instances $window demo_bindings $id [dict create fixture native2d widget $widget provenance display_only_RAM scientific_source {}]
+            } elseif {$mode eq {demo}&&$type eq {plot}} {
+                ttk::frame $widget
+                nativePlotDisplayCreate $widget.plot [viewerGuiDemoPlotModel] [list ::GX::viewerGuiDemoNativeEvent $window $id]
+                pack $widget.plot -fill both -expand 1
+                dict set ::GX::ViewerGui::instances $window demo_bindings $id [dict create fixture plot widget $widget.plot provenance display_only_RAM scientific_source {}]
+            } elseif {$type eq {command_toolbar}} {
                 set widget $host
                 viewerGuiActionsMount $window $widget [dict get $p actions]
+            } elseif {$type eq {native3d}} {
+                set options $p;dict unset options title;dict unset options demo
+                set handle [native3DViewportCreate $widget $options]
+                dict set ::GX::ViewerGui::instances $window native3d $id $handle
+                foreach event {ready view_changed selected error source_changed} {native3DViewportSubscribe $handle $event [list ::GX::_viewerGuiNative3DEvent $window $id]}
+                if {[datasetPublicationV2DictDefault $p demo 0]} {native3DViewportBind $handle {kind demo};dict set ::GX::ViewerGui::instances $window demo_bindings $id [dict create fixture native3d widget $widget provenance display_only_RAM scientific_source {}]}
             } elseif {$type in {native2d plot}} {
                 ttk::frame $widget
                 # Empty is genuinely empty. Scientific sources are loaded only
@@ -233,7 +269,9 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
             } else {
                 set callback [list ::GX::viewerGuiDesignFieldChanged $window $id]
                 if {$type eq {action}} {set callback [list ::GX::viewerCommandInvoke $window [dict get $p action]]}
-                uiFieldComponentCreate $widget $type $p ::GX::ViewerGui::values($window,$id) $callback
+                set componentContext {}
+                if {$mode eq {demo}&&$type eq {dataset_selector}} {set componentContext {demo_choices {{Synthetic sensor A} {Synthetic sensor B} {Synthetic calibration}}}}
+                uiFieldComponentCreate $widget $type $p ::GX::ViewerGui::values($window,$id) $callback $componentContext
             }
             dict set widgets $id $widget
             if {$type eq {action}} {dict lappend actionWidgets [dict get $p action] $widget}
@@ -285,6 +323,7 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
         set menuIndex 0
         foreach component [dict get $design components] {
             set id [dict get $component id]
+            if {$mode eq {demo}&&[dict get $component type] in {workspace history help}} continue
             switch [dict get $component type] {
                 menu {dict set widgets $id $window.menus.actions[incr menuIndex]}
                 context_menu {dict set widgets $id $window.context}
@@ -566,6 +605,7 @@ proc ::GX::viewerGuiDesignPlotSet {window component spec {context {}}} {
     pack $plot -fill both -expand 1
     viewerGuiSourceScopeAttach $window $component $plot
     if {[dict exists $::GX::ViewerGui::instances $window slots context_menu]} {viewerGuiContextMount $window $plot}
+    if {[dict exists $::GX::ViewerGui::instances $window demo_bindings $component]} {dict unset ::GX::ViewerGui::instances $window demo_bindings $component}
     dict set ::GX::ViewerGui::instances $window bindings $component [dict create kind plot spec $spec context $context]
     if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Bind Plot $component"}
     viewerGuiActionsRefresh $window
@@ -660,6 +700,7 @@ proc ::GX::viewerGuiDesignSourceSet {window component request {expectedSource {}
     pack $canvas -fill both -expand 1
     viewerGuiSourceScopeAttach $window $component $canvas
     if {[dict exists $::GX::ViewerGui::instances $window slots context_menu]} {viewerGuiContextMount $window $canvas}
+    if {[dict exists $::GX::ViewerGui::instances $window demo_bindings $component]} {dict unset ::GX::ViewerGui::instances $window demo_bindings $component}
     dict set ::GX::ViewerGui::instances $window bindings $component [dict create kind native2d request $request source_id [dict get $descriptor source_id]]
     if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Bind scientific source $component"}
     viewerGuiTraceEmit $window $component source_bound [dict create status loading source_identity [dict get [native2DViewportCurveDescribe $canvas] source]]
@@ -736,6 +777,11 @@ proc ::GX::viewerGuiDesignValidate design {
         if {$type eq {splitter} && [datasetPublicationV2DictDefault $properties orientation horizontal] ni {horizontal vertical}} {error {Splitter orientation must be horizontal or vertical.}}
         if {$type eq {field} && [datasetPublicationV2DictDefault $properties datatype string] ni {string integer double number boolean choice color}} {error {Unsupported UI Field datatype.}}
         if {$type eq {plot} && [datasetPublicationV2DictDefault $properties empty_style canvas] ni {blank canvas}} {error {Unsupported empty Plot style.}}
+        if {$type eq {native3d}} {
+            if {[datasetPublicationV2DictDefault $properties projection perspective] ni {perspective orthographic}} {error {Native3D projection must be perspective or orthographic.}}
+            foreach key {camera_position camera_target camera_up} {if {[dict exists $properties $key]} {viewerTriple [dict get $properties $key] $key}}
+            foreach key {width height} {if {[dict exists $properties $key]&&[dict get $properties $key]<160} {error {Native3D dimensions must be at least 160 pixels.}}}
+        }
         if {$type eq {list} && [datasetPublicationV2DictDefault $properties selectmode browse] ni {browse single multiple extended}} {error {Unsupported native list selection mode.}}
         set layout [dict get $component layout]
         foreach key [dict keys $layout] {if {$key ni {row column rowspan columnspan weight padding sticky minimum_width minimum_height manager side fill expand anchor padx pady}} {error "Unsupported layout property '$key'."}}
@@ -867,7 +913,13 @@ proc ::GX::viewerGuiRuntimeInspect window {
             dict set row class [winfo class $widget]
             dict set row mapped [winfo ismapped $widget]
             dict set row rectangle [list [expr {[winfo rootx $widget]-[winfo rootx $window]}] [expr {[winfo rooty $widget]-[winfo rooty $window]}] [winfo width $widget] [winfo height $widget]]
-            if {$type in {native2d plot}} {
+            if {$type eq {native3d}} {dict set row native_state [native3DViewportInspect [dict get $instance native3d $id]]}
+            if {[dict exists $instance demo_bindings $id]} {
+                dict set row status DEMO_BOUND
+                dict set row demo_binding [dict get $instance demo_bindings $id]
+                if {$type eq {native2d}} {dict set row native_state [native2DTemporaryDisplayInspect [dict get $instance demo_bindings $id widget]]}
+                if {$type eq {plot}} {dict set row native_state [nativePlotDisplayInspect $widget.plot]}
+            } elseif {$type in {native2d plot}} {
                 if {[dict exists $instance bindings $id]} {dict set row scientific_binding [viewerGuiScientificBindingSummary [dict get $instance bindings $id]];dict set row status SOURCE_BOUND} else {dict set row status UNBOUND_SOURCE_SLOT}
                 if {$type eq {native2d} && [winfo exists $widget.curve] && ![catch {native2DViewportCurveDescribe $widget.curve} native]} {dict set row native_metrics [dict get $native metrics];dict set row readiness [dict get $native status]}
                 if {$type eq {plot} && [winfo exists $widget.plot]} {
@@ -1004,3 +1056,34 @@ proc ::GX::viewerGuiDesignContextSet {window value} {
     dict set ::GX::ViewerGui::instances $window domain_state $value
 }
 proc ::GX::viewerGuiDesignContextGet {window} {return [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] domain_state {}]}
+
+proc ::GX::_viewerGuiNative3DEvent {window id handle event detail} {
+    if {![viewerGuiDesignGuard $window]} return
+    viewerGuiTraceEmit $window $id $event $detail
+    viewerGuiActionsRefresh $window
+}
+proc ::GX::viewerGuiDesignNative3DSet {window component source} {
+    if {![viewerGuiDesignGuard $window]} {error {Viewer belongs to a previous Session}}
+    set definition [viewerGuiDesignComponent $window $component]
+    if {[dict get $definition type] ne {native3d}} {error {Select a Native3D component}}
+    set result [native3DViewportBind [dict get $::GX::ViewerGui::instances $window native3d $component] $source]
+    if {[dict exists $::GX::ViewerGui::instances $window demo_bindings $component]} {dict unset ::GX::ViewerGui::instances $window demo_bindings $component}
+    viewerGuiActionsRefresh $window
+    return $result
+}
+proc ::GX::viewerGuiDesignTemporarySceneSet {window component fixture {callback {}}} {
+    if {![viewerGuiDesignGuard $window]} {error {Viewer belongs to a previous lifetime}}
+    set definition [viewerGuiDesignComponent $window $component]
+    set type [dict get $definition type]
+    if {$fixture ni {native2d plot native3d}||$type ne $fixture} {error {Temporary fixture must match the declared native component}}
+    set widget [dict get $::GX::ViewerGui::instances $window widgets $component]
+    if {$type eq {native3d}} {set result [native3DViewportBind [dict get $::GX::ViewerGui::instances $window native3d $component] {kind demo}]} else {
+        foreach child [winfo children $widget] {destroy $child}
+        if {$type eq {native2d}} {set result [native2DTemporaryDisplayCreate $widget.demo $callback]} else {set result [nativePlotDisplayCreate $widget.plot [viewerGuiDemoPlotModel] $callback]}
+        pack $result -fill both -expand 1
+    }
+    if {[dict exists $::GX::ViewerGui::instances $window bindings $component]} {dict unset ::GX::ViewerGui::instances $window bindings $component}
+    dict set ::GX::ViewerGui::instances $window demo_bindings $component [dict create fixture $fixture widget [expr {$type eq {native3d}?$widget:$result}] provenance display_only_RAM scientific_source {}]
+    viewerGuiActionsRefresh $window
+    return $result
+}

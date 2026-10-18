@@ -1,6 +1,6 @@
 # CORE Script Job API v1
 
-Dev104 auxiliary GUI requests extend the existing nonblocking
+Auxiliary GUI requests use the existing nonblocking
 `scriptJobAsync command payload callback ?options?` transport. Options are
 timeout_ms, max_bytes, process_group, ui_lifetime and label; old callers keep
 their existing defaults. `scriptJobRequestCancel request ?reason?` cancels only
@@ -233,9 +233,9 @@ or missing completed receipt produces diagnostics and an invalid status.
 
 Scientific Execution can return an opaque remote Job ID. `scriptJobDescribe`, `scriptJobInspect`, `scriptJobLogRead`, `scriptJobCancel`, and `scriptJobWait` route that ID to its original node-local Supervisor through the configured authenticated agent. They preserve source Session and durable Job identity. A remote wait observes that Supervisor and does not create a client-side admission lease. Transport unavailability is distinct from terminal scientific failure. Local submit/list/history/resource-policy behavior remains account-local; remote transport does not add a scheduler or merge unrelated node journals into the local history.
 
-## Debian dev106 streams, preflight and native debugging
+## Managed streams, preflight and native debugging
 
-New managed Jobs retain independent actual `program.stdout`, `program.stderr`
+Managed Jobs retain independent actual `program.stdout`, `program.stderr`
 and lifecycle/preflight `diagnostic.log` streams, described by `streams.json`.
 `scriptJobStreamRead id role ?offset? ?count?` reads a bounded source page;
 `scriptJobStreamPublish id role dataset_id` explicitly publishes that source
@@ -254,6 +254,23 @@ JSON sideband. A native prompt alone never establishes a stopped source frame.
 A 600-second debugger lease bounds detached pauses. CORE workers are ineligible.
 Command credentials remain private and are omitted from public receipts.
 
+`scriptJobDebugCapabilities language` returns the actual managed adapter's
+backend, supported controls, `pause_supported` and `pause_reason`. Debug
+observations include the same capabilities. Python bdb supports asynchronous
+Pause at a traceable statement. The GNU Octave CLI adapter supports native
+breakpoints, Continue, Into/Over/Out, frame selection and managed Stop, but has
+no verified asynchronous Pause. It advertises Pause unavailable, disables the
+GUI control and refuses a public Pause command before writing any sideband
+command or sending an interrupt. A stale direct Octave adapter command also
+fails explicitly. An interrupt that terminates a loop cannot be represented
+as successful pausing. This limit does not disable ordinary GNU Octave
+execution or its verified native breakpoint/step/frame behavior.
+
+Paused observations report selected `line`/`function` and `selected_frame`
+separately from actual `execution_line`/`execution_function`. Stack, bounded
+locals and source arrow belong to one observation and exact snapshot. External
+frames retain their real file/line rather than marking unrelated editor source.
+
 Python Run and Debug perform non-executing import preflight in the exact selected
 runtime/Job working directory. Missing unconditional imports or syntax/encoding
 errors refuse admission by default. An explicit import_policy=continue option
@@ -261,7 +278,7 @@ records the caller's override; the ordinary GUI asks before setting it. Optional
 conditional, relative and dynamic imports retain qualified results. No package
 is installed or imported by inventory/preflight. See PYTHON_ENVIRONMENT_API_v1.
 
-Private Dataset Preview services now execute an installed immutable CORE service
+Private Dataset Preview services execute an installed immutable CORE service
 source with verified provenance, outside the Session Script Registry. Exact
 legacy worker identities remain preserved and hidden from ordinary selection and
 Results; changed/unverified legacy identities are explicit conflicts, never

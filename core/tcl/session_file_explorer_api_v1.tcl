@@ -91,6 +91,10 @@ proc ::GX::sessionFileExplorerPopulate {} {
 
 proc ::GX::sessionFileExplorerRunCaptions {token generation response} {
     variable ui
+    variable currentSession
+    # Session close can finish before this owned asynchronous read returns.
+    # Check lifetime before asking a Session-required authority for its token.
+    if {$currentSession eq {} || ![file isdirectory $currentSession] || ![info exists ui(sessionRunCaptionGeneration)] || ![info exists ui(sessionFileTree)] || ![winfo exists $ui(sessionFileTree)]} return
     if {$token ne [interactiveDocumentSessionToken] || $generation!=$ui(sessionRunCaptionGeneration) || ![winfo exists $ui(sessionFileTree)]} return
     if {![dict get $response ok]} {append ui(sessionFileInfo) " — Run metadata unavailable: [dict get $response error]";return}
     foreach run [dict get $response result] {

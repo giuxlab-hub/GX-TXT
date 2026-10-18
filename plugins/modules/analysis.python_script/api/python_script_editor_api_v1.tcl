@@ -93,7 +93,6 @@ proc ::GX::PythonScriptEditor::_ensureUi {} {
 proc ::GX::PythonScriptEditor::viewerDispatch {action scene} {
     switch -- $action {
         open - rerender {
-            if {$::GX::currentSession eq ""} {error "Open a Session before opening Python Script Workspace."}
             _ensureUi
             return [::GX::PythonScriptEditorUI::open]
         }

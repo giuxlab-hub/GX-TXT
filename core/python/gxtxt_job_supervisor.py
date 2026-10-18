@@ -723,6 +723,9 @@ def main():
     if args.operation=='serve':serve(root);return
     c=connect(root)
     if args.operation=='submit':result=admit(c,root,read_request());ensure(root)
+    elif args.operation=='debug_capabilities':
+        from gxtxt_debug_control import capabilities
+        result=capabilities(args.args[0])
     elif args.operation=='list':result=[status(r) for r in c.execute("SELECT * FROM jobs WHERE COALESCE(json_extract(record,'$.origin'),'user_script') != 'core_service' ORDER BY created DESC LIMIT 100")]
     elif args.operation=='wait_begin':result=wait_begin(c,args.args[0]);ensure(root)
     elif args.operation=='wait_end':result=wait_end(c,args.args[0])
