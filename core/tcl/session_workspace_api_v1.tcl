@@ -317,6 +317,10 @@ proc ::GX::_workspaceRemapResources {value mapping depth} {
     if {![catch {dict get $value api_id} marker]&&$marker eq "INTERACTIVE_DOCUMENT_RESOURCE_API_v1"} {
         set sha [dict get $value sha256]
         if {![dict exists $mapping $sha]} {error {Workspace references an unpackaged resource}}
+        if {![dict exists $value metadata]} {
+            _documentResourceProvenanceReference $value
+            return [dict remove [dict get $mapping $sha] metadata]
+        }
         return [dict merge [dict get $mapping $sha] [dict create metadata [_workspaceRemapResources [dict get $value metadata] $mapping [expr {$depth+1}]]]]
     }
     if {[catch {llength $value} n]||$n==0} {return $value}
@@ -388,10 +392,12 @@ proc ::GX::_workspacePackageReferences {value depth resultName} {
     upvar 1 $resultName result
     if {$depth>64} {error {Workspace resource nesting exceeds limit}}
     if {![catch {dict get $value api_id} marker]&&$marker eq "INTERACTIVE_DOCUMENT_RESOURCE_API_v1"} {
+        set compact [expr {![dict exists $value metadata]}]
+        set value [_documentResourceProvenanceReference $value]
         set sha [dict get $value sha256]
         if {![regexp {^[a-f0-9]{64}$} $sha]} {error {Invalid packaged resource identity}}
         if {[dict exists $result $sha]&&[dict get $result $sha size_bytes]!=[dict get $value size_bytes]} {error {Conflicting resource sizes}}
-        dict set result $sha $value
+        if {!$compact || ![dict exists $result $sha]} {dict set result $sha $value}
         _workspacePackageReferences [dict get $value metadata] [expr {$depth+1}] result
         return
     }

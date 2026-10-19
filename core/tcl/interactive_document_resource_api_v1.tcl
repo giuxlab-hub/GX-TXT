@@ -185,6 +185,13 @@ proc ::GX::interactiveDocumentResourceCloseReader {token} {
     if {![dict exists $readers $token]} {error "Unknown or closed Document resource reader"}
     close [dict get $readers $token channel];dict unset readers $token
 }
+proc ::GX::_documentResourceProvenanceReference {reference} {
+    if {[dict exists $reference metadata]} {return $reference}
+    if {[lsort [dict keys $reference]] ne {api_id document_id owner_generation sha256 size_bytes}} {error {Invalid compact Document resource provenance identity}}
+    set expanded [dict merge $reference [dict create metadata {}]]
+    _documentResourceIdentity $expanded
+    return $expanded
+}
 proc ::GX::_documentResourceReferences {value document depth budgetName referencesName} {
     upvar 1 $budgetName budget $referencesName references
     # Scientific arrays and history snapshots can contain millions of scalars,
@@ -194,16 +201,24 @@ proc ::GX::_documentResourceReferences {value document depth budgetName referenc
     if {[string first INTERACTIVE_DOCUMENT_RESOURCE_API_v1 $value]<0&&[string first \\ $value]<0} return
     if {[incr budget]>1000000||$depth>64} {error "Document resource reference scan exceeds its bounded limit"}
     if {![catch {dict get $value api_id} marker]&&$marker eq "INTERACTIVE_DOCUMENT_RESOURCE_API_v1"} {
+        set compact [expr {![dict exists $value metadata]}]
+        set value [_documentResourceProvenanceReference $value]
         if {[dict get $value document_id] eq $document} {
             set sha [dict get $value sha256];set identity [dict remove $value metadata]
-            if {![dict exists $references $sha]||[dict get $references $sha] ne $identity} {
+            if {$compact} {
+                # Scientific Job provenance intentionally retains an immutable
+                # content identity without resource metadata. It still pins the
+                # original blob: verify full generation/size/hash conservatively
+                # as scientific data. Do not invent disposable-cache semantics.
+                interactiveDocumentResourceInfo $value
+            } elseif {![dict exists $references $sha]||[dict get $references $sha] ne $identity} {
                 if {[_documentResourceDisposable [dict get $value metadata]]} {_documentResourceIdentity $value} else {interactiveDocumentResourceInfo $value}
             }
             dict set references $sha $identity
         }
         # Retained image resources can themselves own a managed raster receipt.
         # Follow metadata even when the outer resource belongs to another owner.
-        _documentResourceReferences [dict get $value metadata] $document [expr {$depth+1}] budget references
+        if {!$compact} {_documentResourceReferences [dict get $value metadata] $document [expr {$depth+1}] budget references}
         return
     }
     if {[catch {llength $value} count]||$count<1} return

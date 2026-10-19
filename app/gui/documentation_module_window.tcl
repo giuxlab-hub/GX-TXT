@@ -336,7 +336,7 @@ proc ::GX::documentationBrowserAttachViewerHelp {module viewer window} {
     if {$end ne {none}} {for {set index 0} {$index<=$end} {incr index} {
         if {[$help type $index] ni {command cascade}} continue
         set label [$help entrycget $index -label]
-        if {[regexp -nocase {user manual} $label]} {set manual 1}
+        if {[regexp -nocase {(user|viewer|developer) manual} $label]} {set manual 1}
         if {[regexp -nocase {^about} $label]} {set about 1}
     }}
     if {!$manual} {$help add command -label {User Manual…} -accelerator F1 -state $available -command [list ::GX::documentationBrowserOpenModuleWindow $module $window]}
@@ -350,5 +350,8 @@ proc ::GX::documentationBrowserAboutModule {module viewer parent} {
     set data [parseIni $descriptor]
     set text "[descriptorValue $data meta name $module]\nModule: $module\nViewer: $viewer\nVersion: [descriptorValue $data meta version {}]\n\n[descriptorValue $data meta description {}]"
     foreach field {author license} {set value [descriptorValue $data meta $field {}];if {$value ne {}} {append text "\n[string totitle $field]: $value"}}
+    append text "\nProvider: $module / $viewer"
+    set apis [descriptorValue $data documentation api_refs [descriptorValue $data public_apis ids {}]]
+    if {$apis ne {}} {append text "\nPublic APIs: [join [splitList $apis] {, }]"}
     tk_messageBox -parent $parent -title {About Module} -icon info -message $text
 }

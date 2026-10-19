@@ -46,7 +46,7 @@ Resolution priority is `binding`, then `variable_config`, then `variable`.
 - `source`: keep the canonical/source unit.
 - an explicit dimensionally compatible display unit.
 
-For time, the standard choices include `ns`, `us`, `ms`, `s`, `min`, `h`, `day`. SI-prefixed compatible choices are offered for supported dimensions such as current, voltage, frequency, power, energy, length and mass.
+For time, the standard choices include `ns`, `us`, `ms`, `s`, `min`, `h`, `day`. SI-prefixed compatible choices are offered for supported dimensions such as current, voltage, frequency, capacitance (`pF` through `F`), inductance (`nH` through `H`), power, energy, length and mass. Farads and henries use the same intrinsic dimension rules as Numeric expressions; circuit values are stored in base SI units.
 
 GX-TXT v0.9.7.1 also recognizes the semantic level units `FS`, `dB` and `dBFS`. They are offered only when the source metadata already use the same semantic unit. The selector never offers or performs implicit `FS -> dBFS`, `dB -> dBFS`, or dimensionless-to-full-scale conversion.
 

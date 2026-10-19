@@ -1,3 +1,7 @@
+## 1.1.0 — dev108
+
+Actual admitted-source C++ debugger via approved GUI and structured public CLI; source-bound restricted authoring, bounded Builder history, canonical Save and reviewed presentation-copy facilities; comprehensive illustrated manual and canonical About.
+
 # Changes
 
 ## 1.0.0

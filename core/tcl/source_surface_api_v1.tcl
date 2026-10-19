@@ -163,6 +163,7 @@ proc ::GX::_sourceSurfacePrepared {p revision response} {
     foreach category $::GX::SourceSurface::categories {$p.text tag remove source_$category 1.0 end}
     set language [dict get $state($p,options) language]
     if {$language in {matlab matlab-octave}} {set language octave}
+    if {$language eq {cpp}} {set language c}
     if {[catch {configurationGet source.highlight.$language} enabled]} {set enabled 1}
     if {$enabled} {after idle [list ::GX::_sourceSurfaceTags $p $revision 0]}
     _sourceSurfaceGutter $p
@@ -448,8 +449,13 @@ proc ::GX::sourceSurfaceScheme {operation} {
 proc ::GX::sourceSurfaceFind {widget pattern {direction forward}} {
     if {$pattern eq {}} {return {}}
     set p [sourceSurfaceParent $widget];set t $p.text
+    set previous [$t tag ranges search_hit]
+    set backwardStart {insert - 1c}
+    if {[llength $previous]==2 && [$t compare insert == [lindex $previous 1]] && [string equal -nocase [$t get {*}$previous] $pattern]} {
+        set backwardStart "[lindex $previous 0] - 1c"
+    }
     $t tag remove search_hit 1.0 end
-    if {$direction eq {backward}} {set found [$t search -backwards -nocase -- $pattern {insert - 1c} 1.0];if {$found eq {}} {set found [$t search -backwards -nocase -- $pattern end 1.0]}
+    if {$direction eq {backward}} {set found [$t search -backwards -nocase -- $pattern $backwardStart 1.0];if {$found eq {}} {set found [$t search -backwards -nocase -- $pattern end 1.0]}
     } else {set found [$t search -nocase -- $pattern {insert + 1c} end];if {$found eq {}} {set found [$t search -nocase -- $pattern 1.0 end]}}
     if {$found eq {}} {return {}}
     set stop "$found + [string length $pattern] chars"

@@ -1,3 +1,7 @@
+## 1.7.0 — dev108
+
+Canonical Help About, comprehensive illustrated manual and bounded public argument binding; shared source editing and library refresh corrections. Asynchronous Octave Pause remains explicitly unsupported.
+
 # 1.6.0
 
 Shared independently controlled panes, repaired physical gutter, genuine GNU Octave native frames/steps and honest unsupported asynchronous Pause, no-Session authoring and illustrated examples/manuals.

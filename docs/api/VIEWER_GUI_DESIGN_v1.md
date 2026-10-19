@@ -38,6 +38,29 @@ returning. Failure preserves the caller's model. Undo retains at most 50 design
 snapshots and no scientific arrays. Handler contracts declare the exact
 `{window action}` arguments and an explicit unbound/presentation/mutating effect.
 An effect declaration alone never executes or authorizes a callback.
+
+Dev108 preserves the component declaration list during `reparent`. Its one-based
+positions are the restricted C++ SDK component identities. A parent may appear
+later in that list: validation checks the complete ID map, container types and
+acyclic dependencies; native composition and the Builder hierarchy derive their
+parent-first construction order without changing the saved list. Moving an
+existing control into a later container therefore requires no C++ renumbering.
+Deep subtree copy/duplicate/remove follows dependencies, including children that
+precede their parents. Duplicate appends new declarations; remove necessarily
+removes indices and requires the author to review affected SDK references.
+`reorder ID STEP` remains a signed sibling layout step, never a request for an
+absolute SDK index. Packed/menu sibling order changes can change declaration
+positions and must be reviewed; ordinary grid cell swaps change layout only.
+Undo/Redo restores exact design snapshots. Missing/noncontainer/cyclic parents
+fail before committing a model or constructing widgets. Existing parent-first
+files retain their saved order and need no migration.
+
+Notebook selections persist as logical child-tab IDs in the existing interface
+state's `values` entry for each `tabs` component. Capture reads actual native
+selection; restore accepts only a declared direct tab child. Legacy empty values
+keep the native default. No widget paths or second presentation registry are
+serialized. This preserves nested RC/AC/interpolation views across Workspace
+save/reopen without scientific recomputation.
 Input components may declare `change_action`; Bind creates its stable handler
 contract. Return followed by FocusOut commits a changed value only once. Menus,
 context menus and command toolbars select the same command catalog. Logical
@@ -187,3 +210,48 @@ implementation. Unbound domain Undo/Redo returns `not_connected` if there is no
 local GUI-history step to navigate; it never fabricates the original domain
 history. Authors connecting their domain backend must deliberately revise the
 snapshot/enablement contract as that backend's state changes.
+
+## Native command-container project icons (dev108)
+
+`command_toolbar`, `menu` and `context_menu` accept optional `command_icons`.
+Each key is an existing ID in that component's `actions`; each value contains
+only `icon`, state-resource IDs and the existing typed presentation fields.
+The ordinary Icon Library Command target selector edits one binding transaction.
+No opaque JSON entry is required. Rename updates nested references; removing a
+referenced asset is rejected; Remove binding, Undo/Redo, Save/Open and generated
+Module resources use the same catalog/model owners. The existing Configuration
+command owner still decides enablement, dispatch and shortcuts.
+
+Toolbar controls support normal/disabled/hover and declared selected resources
+where the actual native control has selected semantics. Plain command buttons
+have no selection state. Native command menus support normal/disabled image,
+image+text/text and placement; custom spacing, hover/selected image variants and
+icon-only tooltips are explicitly unavailable. Assign rejects unsupported
+requests and keeps its error visible in Icon Library. Menu Preview is an actual
+native menu. Older designs without command_icons retain their appearance.
+
+## Declared scientific probe references (dev108)
+
+The existing Scientific section accepts `scientific_probe_diagram`,
+`scientific_probe_plot` and `scientific_probe_mode` as typed identifier properties.
+They connect an electrical Native2D diagram, canonical Plot and voltage/current
+choice through the existing Host owner. Supply all three atomically using the
+ordinary Builder properties operation. Exact registered-provider mapping,
+completed-publication/source guards and unavailable-current behavior are in
+`VIEWER_GUI_HOST_API_v1`; the restricted Development contract lists the existing
+required grants. No guessed net names, separate graph model or raw endpoint
+access is needed.
+
+## Existing navigation command IDs
+
+The Host already implements the reserved presentation commands `fit`, `zoom_in`
+and `zoom_out`. Declare the corresponding ordinary handler contract (arguments
+`window action`, effect `presentation`) and an action/menu/toolbar using that
+exact command ID. A canonical Plot binding enables them; the Host delegates
+fit/zoom to public Plot widgetView before authored C++ dispatch. No `plot_view`
+C++ method is needed for these commands. They operate on the Viewer's supported
+bound display components, so use a separate intended Viewer context if several
+different bound canvases should not navigate together. Existing diagram commands
+with domain-specific IDs retain their separate callback behavior. Native Plot
+wheel zoom, middle-button pan and double-click fit also remain available to human
+developers; approved automated gestures have their own bounded testing contract.

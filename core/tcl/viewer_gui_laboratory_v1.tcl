@@ -114,9 +114,13 @@ proc ::GX::viewerGuiEnvironment {window} {
 proc ::GX::viewerGuiTestFixtureValidate {window options} {
     if {![dict exists $options fixture_root] || ![dict exists $options permitted_commands]} {return 0}
     set root [file normalize [dict get $options fixture_root]]
-    if {![file isfile [file join $root .gxtxt-gui-test-fixture]] || $::GX::currentSession eq {}} {return 0}
+    set marker [file join $root .gxtxt-gui-test-fixture]
+    if {![file isfile $marker] || $::GX::currentSession eq {}} {return 0}
+    file lstat $marker st
+    if {$st(type) ne {file} || $st(nlink)!=1 || $st(size)>1024} {return 0}
     set session [file normalize $::GX::currentSession]
-    return [string match $root/* $session]
+    set prefix [file split $root];set parts [file split $session]
+    return [expr {[llength $parts]>[llength $prefix] && [lrange $parts 0 [expr {[llength $prefix]-1}]] eq $prefix}]
 }
 proc ::GX::viewerGuiReplayStart {window scenario callback {options {}}} {
     _viewerGuiLabPrune

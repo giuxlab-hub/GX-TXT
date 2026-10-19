@@ -113,6 +113,10 @@ proc ::GX::uiFieldViewerSection {parent id title} {
 }
 
 proc ::GX::_uiFieldViewerInspectorFocus {window widget} {
+    # Tk also reports FocusIn for every ancestor of the receiving control.
+    # Revealing those containers can scroll an already visible pointer target
+    # between its button press and release. Reveal only the actual focus leaf.
+    if {![winfo exists $window] || $widget ne [focus -displayof $window]} return
     set content $window.body.inspector.scroll.content
     if {[string first "$content." $widget]==0} {uiFieldScrollSee $window.body.inspector.scroll $content $widget}
 }
@@ -133,7 +137,7 @@ proc ::GX::uiFieldComponentCapabilities {} {
         checkbutton {Native boolean control without a field wrapper} {label string default boolean}
         list {Native read-only item list and selection} {items list height number selectmode choice}
         field {Validated typed value} {label string datatype choice default string choices list min number max number}
-        action {ViewerCommands action button} {label string action identifier tooltip string shortcut string}
+        action {ViewerCommands action button} {label string action identifier tooltip string shortcut string event_value number}
         toggle {Boolean value} {label string default boolean}
         choice {Bounded choice selector} {label string default string choices list}
         dataset_selector {Live canonical Dataset selector} {label string}
@@ -143,6 +147,9 @@ proc ::GX::uiFieldComponentCapabilities {} {
         table {Read-only table; no Worksheet editing} {columns list}
     } {
         dict set result $type [dict create label $description api_id UI_FIELD_API_v1 api_version 1 owner core/tcl/ui_field_viewer_regions_v1.tcl properties $properties events [expr {$type in {field toggle choice dataset_selector entry combobox checkbutton list} ? {changed} : ($type eq {action} ? {invoke} : {})}] status AVAILABLE]
+    }
+    foreach type {action label status checkbutton toggle} {
+        foreach {key datatype} {icon string icon_disabled string icon_hover string icon_selected string presentation choice icon_position choice icon_size number icon_spacing number} {dict set result $type properties $key $datatype}
     }
     return $result
 }
@@ -154,7 +161,11 @@ proc ::GX::uiFieldComponentCreate {widget type properties variableName callback 
         section {ttk::labelframe $widget -text [datasetPublicationV2DictDefault $properties title Section] -padding [datasetPublicationV2DictDefault $properties padding 6]}
         splitter {ttk::panedwindow $widget -orient [datasetPublicationV2DictDefault $properties orientation horizontal]}
         tabs {ttk::notebook $widget}
-        label - status {ttk::label $widget -text [datasetPublicationV2DictDefault $properties text {}] -anchor w -justify left -wraplength [datasetPublicationV2DictDefault $properties wraplength 400]}
+        label - status {
+            set maximum [datasetPublicationV2DictDefault $properties wraplength 400]
+            ttk::label $widget -text [datasetPublicationV2DictDefault $properties text {}] -anchor w -justify left -wraplength $maximum
+            if {$maximum>0} {bind $widget <Configure> +[list ::GX::_uiFieldComponentTextWrap $widget $maximum %W %w]}
+        }
         entry {ttk::entry $widget -textvariable $variableName -width [datasetPublicationV2DictDefault $properties width 20];if {$callback ne {}} {bind $widget <Return> $callback;bind $widget <FocusOut> $callback}}
         combobox {ttk::combobox $widget -state readonly -textvariable $variableName -values [datasetPublicationV2DictDefault $properties choices {}] -width [datasetPublicationV2DictDefault $properties width 20];uiFieldSelectorWithinViewer $widget [winfo toplevel $widget];if {$callback ne {}} {bind $widget <<ComboboxSelected>> $callback}}
         checkbutton {ttk::checkbutton $widget -text $label -variable $variableName -command $callback}
@@ -167,7 +178,8 @@ proc ::GX::uiFieldComponentCreate {widget type properties variableName callback 
             if {$datatype eq {choice}} {dict set descriptor values [datasetPublicationV2DictDefault $properties choices {}]}
             uiFieldCreate $widget $descriptor $variableName $callback
             if {$label ne {}} {
-                ttk::label $widget.caption -text $label -anchor w
+                ttk::label $widget.caption -text $label -anchor w -justify left -wraplength 400
+                bind $widget.caption <Configure> +[list ::GX::_uiFieldComponentTextWrap $widget.caption 400 %W %w]
                 grid $widget.caption -row 0 -column 0 -sticky ew
                 grid configure $widget.entry -row 1
                 if {[winfo exists $widget.reset]} {grid configure $widget.reset -row 1}
@@ -177,7 +189,8 @@ proc ::GX::uiFieldComponentCreate {widget type properties variableName callback 
         action {ttk::button $widget -text $label -command $callback;set tip [datasetPublicationV2DictDefault $properties tooltip {}];if {$tip ne {}} {bind $widget <Enter> [list ::GX::plotsToolbarTipSchedule $widget $tip];bind $widget <Leave> ::GX::plotsToolbarTipHide}}
         dataset_selector {
             ttk::frame $widget
-            ttk::label $widget.caption -text $label -anchor w
+            ttk::label $widget.caption -text $label -anchor w -justify left -wraplength 400
+            bind $widget.caption <Configure> +[list ::GX::_uiFieldComponentTextWrap $widget.caption 400 %W %w]
             ttk::combobox $widget.entry -state readonly -textvariable $variableName
             pack $widget.caption $widget.entry -fill x
             if {[dict exists $context demo_choices]} {
@@ -244,6 +257,45 @@ proc ::GX::uiFieldComponentRead {widget type} {
     if {$class in {Entry TEntry TCombobox Spinbox TSpinbox}} {return [$widget get]}
     error {This component has no public scalar/list/log value.}
 }
+proc ::GX::_uiFieldComponentTextWrap {widget maximum actual width} {
+    if {$actual ne $widget || ![winfo exists $widget] || $width<2} return
+    # Auto-wrap may change height, but must not drive its own allocated width
+    # through nested grid/notebook request negotiation. A stretched label gets
+    # a constant one-character horizontal request; natural-size labels keep
+    # their declared maximum and normal text-dependent request.
+    set stretched 0
+    switch -- [winfo manager $widget] {
+        grid {
+            set layout [grid info $widget];set sticky [dict get $layout -sticky]
+            if {[string first e $sticky]>=0 && [string first w $sticky]>=0} {
+                set parent [dict get $layout -in];set start [dict get $layout -column]
+                for {set col $start} {$col<$start+[dict get $layout -columnspan]} {incr col} {
+                    if {[grid columnconfigure $parent $col -weight]>0} {set stretched 1;break}
+                }
+            }
+        }
+        pack {set stretched [expr {[dict get [pack info $widget] -fill] in {x both}}]}
+        default {return}
+    }
+    set wanted [expr {$stretched?1:0}]
+    if {[$widget cget -width]!=$wanted} {$widget configure -width $wanted}
+    set available [expr {[winfo width $widget]-2}]
+    set padding [$widget cget -padding]
+    if {$padding eq {}} {set padding [ttk::style lookup [$widget cget -style] -padding]}
+    if {[llength $padding]} {
+        set left [lindex $padding 0];set right [lindex $padding [expr {[llength $padding]>2?2:0}]]
+        incr available [expr {-[winfo pixels $widget $left]-[winfo pixels $widget $right]}]
+    }
+    if {[$widget cget -compound] in {left right} && [llength [$widget cget -image]]} {
+        set photo [lindex [$widget cget -image] 0]
+        if {[lsearch -exact [image names] $photo]>=0} {
+            set gap [ttk::style lookup [$widget cget -style] -space];if {![string is integer -strict $gap]} {set gap 4}
+            incr available [expr {-[image width $photo]-$gap}]
+        }
+    }
+    set wrap [expr {$stretched?max(1,min($maximum,$available)):$maximum}]
+    if {[$widget cget -wraplength]!=$wrap} {$widget configure -wraplength $wrap}
+}
 proc ::GX::uiFieldScrollableCreate {frame {width 320}} {
     ttk::frame $frame
     set background [ttk::style lookup TFrame -background];if {$background eq {}} {set background #d9d9d9}
@@ -255,24 +307,32 @@ proc ::GX::uiFieldScrollableCreate {frame {width 320}} {
     bind $frame.scroll <Configure> [list $frame.scroll itemconfigure content -width %w]
     bind $frame.scroll.content <Configure> [list $frame.scroll configure -scrollregion [list 0 0 %w %h]]
     pack $frame.bar -side right -fill y;pack $frame.scroll -fill both -expand 1
-    set root [winfo toplevel $frame];set tag GXScrollFrame$frame
-    bindtags $root [linsert [bindtags $root] 0 $tag]
-    bind $tag <FocusIn> [list ::GX::_uiFieldScrollableFocus $frame %W]
-    bind $tag <MouseWheel> [list ::GX::_uiFieldScrollableWheel $frame %W %D]
-    foreach {event delta} {<Button-4> 1 <Button-5> -1} {bind $tag $event [list ::GX::_uiFieldScrollableWheel $frame %W $delta]}
-    bind $frame <Destroy> [list ::GX::_uiFieldScrollableDispose $frame $root $tag %W]
+    set root [winfo toplevel $frame]
+    # Descendant bindtags contain the toplevel path, not the toplevel's own
+    # extra tags. Bind that existing path so real child focus and wheels arrive.
+    bind $root <FocusIn> +[list ::GX::_uiFieldScrollableFocus $frame %W]
+    bind $root <MouseWheel> +[list ::GX::_uiFieldScrollableWheel $frame %W %D]
+    foreach {event delta} {<Button-4> 1 <Button-5> -1} {bind $root $event +[list ::GX::_uiFieldScrollableWheel $frame %W $delta]}
+    bind $frame <Destroy> [list ::GX::_uiFieldScrollableDispose $frame $root %W]
     return $frame.scroll.content
 }
-proc ::GX::_uiFieldScrollableFocus {frame widget} {if {[winfo exists $frame] && [string match $frame.scroll.content.* $widget]} {uiFieldScrollSee $frame.scroll $frame.scroll.content $widget}}
+proc ::GX::_uiFieldScrollableFocus {frame widget} {
+    if {[winfo exists $frame] && $widget eq [focus -displayof $frame] && [string match $frame.scroll.content.* $widget]} {
+        uiFieldScrollSee $frame.scroll $frame.scroll.content $widget
+    }
+}
 proc ::GX::_uiFieldScrollableWheel {frame widget delta} {
     if {![winfo exists $frame] || ![string match $frame.* $widget]} return
-    if {$widget ne $frame.scroll && [winfo class $widget] in {Treeview Listbox Text Canvas}} return
+    if {$widget ne "${frame}.scroll" && [winfo class $widget] in {Treeview Listbox Text Canvas}} return
     $frame.scroll yview scroll [expr {$delta>0 ? -3 : 3}] units
 }
-proc ::GX::_uiFieldScrollableDispose {frame root tag actual} {
+proc ::GX::_uiFieldScrollableDispose {frame root actual} {
     if {$frame ne $actual} return
-    foreach sequence [bind $tag] {bind $tag $sequence {}}
-    if {[winfo exists $root]} {set tags [bindtags $root];set at [lsearch -exact $tags $tag];if {$at>=0} {bindtags $root [lreplace $tags $at $at]}}
+    if {![winfo exists $root]} return
+    foreach {event callback} [list <FocusIn> [list ::GX::_uiFieldScrollableFocus $frame %W] <MouseWheel> [list ::GX::_uiFieldScrollableWheel $frame %W %D] <Button-4> [list ::GX::_uiFieldScrollableWheel $frame %W 1] <Button-5> [list ::GX::_uiFieldScrollableWheel $frame %W -1]] {
+        set keep {};foreach line [split [bind $root $event] \n] {if {$line ne $callback} {lappend keep $line}}
+        bind $root $event [join $keep \n]
+    }
 }
 proc ::GX::uiFieldDatasetChoices {} {return [dict get [datasetCatalogSnapshot] dataset_ids]}
 proc ::GX::uiFieldViewerRegionsSet {window regions} {

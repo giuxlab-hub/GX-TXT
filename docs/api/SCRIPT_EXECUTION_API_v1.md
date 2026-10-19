@@ -20,6 +20,16 @@ source provenance and creation/update timestamps. Its qualified reference is
 identity. Existing Octave records keep their `source.m` bytes and format;
 Python records store `source.py` in the same registry structure.
 
+Dev108 adds optional `default_arguments` (default empty for existing records):
+inert single-line UTF-8 text, at most4096 bytes, with no NUL. The existing Registry
+Save/Update/Read/assignment serialization preserves it. Octave Workspace's
+Default arguments field and Save copy use this metadata. Ordinary execution
+freezes it as `config.arguments`; the public Script Bridge exposes the unchanged
+text at `gxtxt_context().arguments_raw`. It is not a shell command or the trusted
+runner's process `argv()`. The ordinary Runner review shows saved nonempty text.
+Analysis runtime templates retain their existing explicit argument override.
+Named typed parameters remain a separate schema/context property.
+
 On save and revision, the registry discovers literal `gxtxt_api_require(...)`
 declarations without running the source. `script.ini` stores `declared_apis`
 and `explicit_apis` separately; `required_apis` is their union. The

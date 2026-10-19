@@ -36,6 +36,8 @@ proc ::GX::unitTclBaseDims {base} {
         s {return [dict create s 1]}
         Hz {return [dict create s -1]}
         Ohm {return [dict create V 1 A -1]}
+        F {return [dict create A 1 s 1 V -1]}
+        H {return [dict create V 1 s 1 A -1]}
         W {return [dict create V 1 A 1]}
         J {return [dict create V 1 A 1 s 1]}
         K {return [dict create K 1]}
@@ -51,7 +53,7 @@ proc ::GX::unitTclSingle {sym} {
     if {$sym eq "min"} {return [list 60.0 s [unitTclBaseDims s]]}
     if {$sym eq "h"} {return [list 3600.0 s [unitTclBaseDims s]]}
     if {$sym eq "day"} {return [list 86400.0 s [unitTclBaseDims s]]}
-    set bases {A V s Hz Ohm W J K mol m g}
+    set bases {A V s Hz Ohm F H W J K mol m g}
     if {[lsearch -exact $bases $sym] >= 0} {return [list 1.0 $sym [unitTclBaseDims $sym]]}
     foreach p {da G M k h d c m u n p} {
         if {[string length $sym] <= [string length $p]} continue
@@ -108,7 +110,7 @@ proc ::GX::unitTclCompatible_before_unit_registry {a b} {
 }
 
 proc ::GX::unitSelectorCandidates_before_unit_registry {} {
-    return {ns us ms s min h day pA nA uA mA A kA MA GA pV nV uV mV V kV MV GV pHz nHz uHz mHz Hz kHz MHz GHz pW nW uW mW W kW MW GW pJ nJ uJ mJ J kJ MJ GJ pm nm um mm cm m km pg ng ug mg g kg K mol Ohm kOhm MOhm FS dB dBFS ppm pH}
+    return {ns us ms s min h day pA nA uA mA A kA MA GA pV nV uV mV V kV MV GV pHz nHz uHz mHz Hz kHz MHz GHz pF nF uF mF F nH uH mH H pW nW uW mW W kW MW GW pJ nJ uJ mJ J kJ MJ GJ pm nm um mm cm m km pg ng ug mg g kg K mol Ohm kOhm MOhm FS dB dBFS ppm pH}
 }
 
 proc ::GX::unitDisplayChoicesForSource {sourceUnit {includeInherit 0}} {

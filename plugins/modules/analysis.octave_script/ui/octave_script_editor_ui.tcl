@@ -152,6 +152,7 @@ proc ::GX::OctaveScriptEditorUI::_new {} {
     set ui(currentId) ""
     set ui(currentSha) ""
     set ui(scope) [::GX::scriptWorkspaceDefaultScope]
+    set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(scriptId) ""
     set ui(name) "Untitled script"
     set ui(arguments) ""
@@ -175,7 +176,7 @@ proc ::GX::OctaveScriptEditorUI::_save {} {
         return 0
     }
     set code [$ui(text) get 1.0 "end-1c"]
-    set command [list ::GX::OctaveScriptEditor::workspaceSave $ui(currentId) $ui(currentSha) $ui(scope) $ui(scriptId) $name $ui(description) $code]
+    set command [list ::GX::OctaveScriptEditor::workspaceSave $ui(currentId) $ui(currentSha) $ui(scope) $ui(scriptId) $name $ui(description) $code $ui(arguments)]
     if {[catch {set result [uplevel #0 $command]} failure]} {
         tk_messageBox -parent $ui(window) -icon error -title "Save failed" -message $failure
         return 0
@@ -201,7 +202,7 @@ proc ::GX::OctaveScriptEditorUI::_saveCopy {} {
     set suffix 2
     while {[lsearch -exact [lmap m [::GX::scriptRegistryList $ui(scope)] {dict get $m id}] "${base}_$suffix"] >= 0} {incr suffix}
     set ui(scriptId) "${base}_$suffix"
-    if {[catch {set result [::GX::OctaveScriptEditor::workspaceSave "" "" $ui(scope) $ui(scriptId) $copyName $ui(description) $code]} failure]} {
+    if {[catch {set result [::GX::OctaveScriptEditor::workspaceSave "" "" $ui(scope) $ui(scriptId) $copyName $ui(description) $code $ui(arguments)]} failure]} {
         tk_messageBox -parent $ui(window) -icon error -title "Save copy failed" -message $failure
         return
     }
@@ -243,6 +244,7 @@ proc ::GX::OctaveScriptEditorUI::_delete {} {
     set ui(currentSha) ""
     set ui(scriptId) ""
     set ui(scope) [::GX::scriptWorkspaceDefaultScope]
+    set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     _acceptBaseline
     _refreshDocuments
     _new
@@ -271,6 +273,7 @@ proc ::GX::OctaveScriptEditorUI::_import {} {
     set ui(currentSha) ""
     set ui(scriptId) ""
     set ui(scope) [::GX::scriptWorkspaceDefaultScope]
+    set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(name) [file tail [file rootname $path]]
     set ui(arguments) ""
     set ui(description) "Imported from [file tail $path]. The registered script is independent of the original file."
@@ -464,6 +467,7 @@ proc ::GX::OctaveScriptEditorUI::_buildMenus {w} {
     $m add command -label {Register legacy as User...} -command {::GX::OctaveScriptEditorUI::_registerLegacy user}
     $w.toolbar.help.menu add command -label {Script Bridge help} -command ::GX::OctaveScriptEditorUI::_bridgeHelp
     $w.toolbar.help.menu add command -label {Viewer manual / Debugger guide…} -accelerator F1 -command [list ::GX::documentationBrowserOpenModuleWindow analysis.octave_script $w]
+    $w.toolbar.help.menu add command -label {About…} -command [list ::GX::documentationBrowserAboutModule analysis.octave_script octave_script_editor $w]
     bind $w <F1> [list ::GX::documentationBrowserOpenModuleWindow analysis.octave_script $w]
     ::GX::uiMenuRowAttach $w.toolbar [list $w.toolbar.file $w.toolbar.edit $w.toolbar.view $w.toolbar.run $w.toolbar.help]
 }
@@ -482,7 +486,7 @@ proc ::GX::OctaveScriptEditorUI::_menuState {group} {
         $m entryconfigure 2 -state [expr {$legacy ? "disabled" : "normal"}]
     } elseif {$group eq "run"} {
         set legacy [string match legacy:* $ui(currentId)]
-        foreach index {3 4} {$m entryconfigure $index -state [expr {$legacy ? "normal" : "disabled"}]}
+        foreach index {4 5} {$m entryconfigure $index -state [expr {$legacy ? "normal" : "disabled"}]}
     }
 }
 
@@ -498,6 +502,7 @@ proc ::GX::OctaveScriptEditorUI::_build {} {
     set ui(modified) 0
     set ui(name) ""
     set ui(scope) [::GX::scriptWorkspaceDefaultScope]
+    set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(scriptId) ""
     set ui(arguments) ""
     set ui(description) ""

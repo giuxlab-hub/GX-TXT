@@ -65,7 +65,10 @@ proc ::GX::uiTextEdit {window operation} {
         copy {event generate $widget <<Copy>>}
         paste {
             if {[winfo class $widget] eq "Text"} {
-                if {[catch {clipboard get -displayof $widget} content]} {return 0}
+                # Tk's local `clipboard get` decodes independent 4000-byte
+                # chunks and can split UTF-8 scalars. Tk's normal selection
+                # helper requests UTF8_STRING with its platform fallback.
+                if {[catch {::tk::GetSelection $widget CLIPBOARD} content]} {return 0}
                 # Tk's X11 Text class inserts after a selection by default.
                 # Editors require replacement as one local undo transaction.
                 set separators [$widget cget -autoseparators]

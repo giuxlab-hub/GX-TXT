@@ -191,7 +191,7 @@ proc ::GX::viewerGuiComponentGallerySelect {} {
     if {$::GX::ComponentDemo::state ni $states} {set ::GX::ComponentDemo::state default}
     set t .gxComponentGallery.body.right.apiBox.text;$t configure -state normal;$t delete 1.0 end
     dict for {key value} [dict get $row capability] {$t insert end "$key: $value\n\n"}
-    $t insert end "Fixture version: 1\nProvenance: demo_fixture\nScientific source: none\n\nIcons: no general public icon property; no private icon parity is claimed."
+    $t insert end "Fixture version: 1\nProvenance: demo_fixture\nScientific source: none\n\nIcons: supported properties are listed above for this component. Use Interface Builder Icon Library to import validated project resources, assign supported states and preview the generated appearance. Native menu limitations are documented in the public GUI Host guide. This synthetic Gallery fixture does not certify an authored project's icon bindings."
     $t configure -state disabled
     .gxComponentGallery.body.right.instructions configure -text [dict get $row example instructions]
 }
@@ -205,6 +205,7 @@ proc ::GX::viewerGuiComponentGalleryOpen {{selected {}}} {
     if {[winfo exists $w]} {raise $w;return $w}
     toplevel $w;wm title $w {Component Gallery · Demo / synthetic content};wm geometry $w 1000x740+60+60;wm minsize $w 760 560
     ttk::label $w.banner -text {Demo / synthetic content — public components, local sample state, no scientific handlers} -font TkHeadingFont -wraplength 900
+    bind $w.banner <Configure> +[list ::GX::_uiFieldComponentTextWrap $w.banner 900 %W %w]
     pack $w.banner -fill x -padx 8 -pady 8
     ttk::frame $w.controls
     foreach {id label command} {show {Show example / Try interaction} ::GX::viewerGuiComponentGalleryShow reset Reset ::GX::viewerGuiComponentGalleryShow guide {Open public API guide} ::GX::viewerGuiComponentGalleryGuide close {Return to Design} ::GX::viewerGuiComponentGalleryClose} {ttk::button $w.controls.$id -text $label -command $command;pack $w.controls.$id -side left -padx 3}
@@ -226,6 +227,7 @@ proc ::GX::viewerGuiComponentGalleryOpen {{selected {}}} {
     dict for {type row} [viewerGuiComponentDemoCatalog] {$w.body.list.types insert {} end -id $type -text $type -values [dict get $row capability status];incr count}
     ttk::label $w.body.right.count -text "$count runtime capabilities · fixture version 1" -font TkHeadingFont
     ttk::label $w.body.right.instructions -wraplength 620 -justify left -padding 6
+    bind $w.body.right.instructions <Configure> +[list ::GX::_uiFieldComponentTextWrap $w.body.right.instructions 620 %W %w]
     ttk::label $w.body.right.apiTitle -text {Exact public API / owner / supported properties and limitations}
     ttk::frame $w.body.right.apiBox
     text $w.body.right.apiBox.text -wrap word -height 12 -state disabled
@@ -238,6 +240,10 @@ proc ::GX::viewerGuiComponentGalleryOpen {{selected {}}} {
     ttk::scrollbar $w.body.right.eventsBox.bar -command [list $w.body.right.eventsBox.text yview]
     $w.body.right.eventsBox.text configure -yscrollcommand [list $w.body.right.eventsBox.bar set]
     pack $w.body.right.eventsBox.bar -side right -fill y;pack $w.body.right.eventsBox.text -fill both -expand 1
+    foreach id {count apiTitle eventsTitle} {
+        $w.body.right.$id configure -wraplength 620
+        bind $w.body.right.$id <Configure> +[list ::GX::_uiFieldComponentTextWrap $w.body.right.$id 620 %W %w]
+    }
     foreach id {count instructions apiTitle apiBox eventsTitle eventsBox} {pack $w.body.right.$id -fill [expr {$id in {apiBox eventsBox} ? {both} : {x}}] -expand [expr {$id in {apiBox eventsBox}}] -padx 5 -pady 3}
     pack $w.body -fill both -expand 1 -padx 6 -pady 6
     bind $w.body.list.types <<TreeviewSelect>> ::GX::viewerGuiComponentGallerySelect

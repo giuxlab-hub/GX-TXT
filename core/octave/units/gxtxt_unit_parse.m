@@ -44,7 +44,7 @@ function [sc,base,d]=single_unit(sym)
   if(strcmp(sym,'h')),sc=3600;base='s';d=base_dims('s');return;endif
   if(strcmp(sym,'day')),sc=86400;base='s';d=base_dims('s');return;endif
   % Exact base symbols first, so m means metre while mA means milliampere.
-  bases={'A','V','s','Hz','Ohm','W','J','K','mol','m','g'};
+  bases={'A','V','s','Hz','Ohm','F','H','W','J','K','mol','m','g'};
   if(any(strcmp(sym,bases))),prefix='';base=sym;else
     prefixes={'da','G','M','k','h','d','c','m','u','n','p'};prefix='';base='';
     for i=1:numel(prefixes),pr=prefixes{i};if(length(sym)>length(pr)&&strcmp(sym(1:length(pr)),pr)&&any(strcmp(sym(length(pr)+1:end),bases))),prefix=pr;base=sym(length(pr)+1:end);break;endif;endfor
@@ -57,7 +57,7 @@ function s=prefix_scale(p)
 endfunction
 function d=base_dims(b)
   d=struct();switch b
-    case 'A',d.A=1;case 'V',d.V=1;case 's',d.s=1;case 'Hz',d.s=-1;case 'Ohm',d.V=1;d.A=-1;case 'W',d.V=1;d.A=1;case 'J',d.V=1;d.A=1;d.s=1;case 'K',d.K=1;case 'mol',d.mol=1;case 'm',d.m=1;case 'g',d.g=1;
+    case 'A',d.A=1;case 'V',d.V=1;case 's',d.s=1;case 'Hz',d.s=-1;case 'Ohm',d.V=1;d.A=-1;case 'F',d.A=1;d.s=1;d.V=-1;case 'H',d.V=1;d.s=1;d.A=-1;case 'W',d.V=1;d.A=1;case 'J',d.V=1;d.A=1;d.s=1;case 'K',d.K=1;case 'mol',d.mol=1;case 'm',d.m=1;case 'g',d.g=1;
   endswitch
 endfunction
 function d=merge_dims(d,a,mul)

@@ -99,3 +99,15 @@ an opaque History snapshot in a managed blob can retain the full dependencies
 in its resource metadata. Existing Collect/export/import scanners preserve them;
 after import, restore can explicitly remap embedded owner references through
 that same existing authority. No separate dependency registry is introduced.
+
+## Compact scientific provenance during reference collection (dev108)
+
+Scientific Job provenance uses an exact compact identity containing `api_id`,
+`document_id`, `owner_generation`, `sha256`, `size_bytes`, without duplicating
+resource metadata. Reference collection recognizes that exact shape and pins
+its original blob after conservative generation/size/SHA verification. It does
+not assume disposable-cache semantics or invent source metadata. Foreign
+Document/Workspace provenance also retains the original owner's blob. Missing
+identity fields, stale generation, wrong size and corrupt bytes reject instead
+of permitting collection. Full receipts still recurse through their metadata;
+ordinary public resource read APIs still require full receipts with metadata.

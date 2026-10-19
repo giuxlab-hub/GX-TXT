@@ -74,7 +74,7 @@ proc ::GX::viewerGuiComponentCapabilities {} {
     set result [uiFieldComponentCapabilities]
     foreach {type label api properties} {
         command_toolbar {Responsive command toolbar} CONFIGURATION_API_v1 {actions list}
-        native2d {Native2D scientific viewport} NATIVE2D_VIEWPORT_HOST_v1 {title string}
+        native2d {Native2D scientific viewport} NATIVE2D_VIEWPORT_HOST_v1 {title string diagram_catalog choice document_slot identifier}
         plot {Native Plot Dataset v4 host} PLOT_DATASET_API_v4 {title string spec dictionary empty_style choice}
         context_menu {Viewer contextual command menu} CONFIGURATION_API_v1 {actions list}
         menu {Viewer command menu} CONFIGURATION_API_v1 {label string actions list}
@@ -83,6 +83,24 @@ proc ::GX::viewerGuiComponentCapabilities {} {
         history {Description / History and Undo / Redo} SCIENTIFIC_RECIPE_API_v1 {}
     } {dict set result $type [dict create label $label api_id $api api_version [expr {$type eq {plot} ? 4 : 1}] owner core/tcl/viewer_gui_host_api_v1.tcl properties $properties events [expr {$type in {native2d plot} ? {selection view_changed} : {invoke}}] status AVAILABLE]}
     dict set result checkbutton properties plot_visibility dictionary
+    foreach type {toggle checkbutton action} {dict set result $type properties component_visibility identifier}
+    foreach type {menu context_menu command_toolbar} {dict set result $type properties visibility_commands dictionary}
+    foreach {key datatype} {scientific_provider string scientific_parameters dictionary scientific_destination identifier scientific_status identifier scientific_log identifier} {dict set result section properties $key $datatype}
+    foreach {key datatype} {scientific_sweep_axes dictionary scientific_sweep_enabled identifier scientific_sweep_case identifier scientific_sweep_workers identifier scientific_sweep_fail_fast identifier} {dict set result section properties $key $datatype}
+    foreach key {scientific_probe_diagram scientific_probe_plot scientific_probe_mode scientific_probe_ac_form} {dict set result section properties $key identifier}
+    foreach key {scientific_netlist scientific_netlist_diagram scientific_netlist_action} {dict set result section properties $key identifier}
+    foreach key {plot_dataset plot_x plot_y plot_probe plot_x_scale plot_y_scale} {dict set result section properties $key identifier}
+    foreach key {plot_series plot_series_label plot_series_axis plot_series_enabled plot_panel plot_panel_title plot_series_target plot_series_status} {dict set result section properties $key identifier}
+    dict set result section properties plot_series_commands dictionary
+    foreach key {numeric_dataset numeric_expression numeric_start numeric_count numeric_output_unit numeric_x numeric_status numeric_report numeric_source numeric_statistic numeric_observed numeric_relative_floor} {dict set result section properties $key identifier}
+    foreach key {numeric_variables numeric_parameters} {dict set result section properties $key dictionary}
+    dict set result section properties numeric_kind choice
+    foreach key {numeric_y numeric_query_dataset numeric_query_x numeric_query_start numeric_query_count numeric_method numeric_extrapolation numeric_real numeric_imaginary numeric_projection} {dict set result section properties $key identifier}
+    dict set result plot properties plot_form identifier
+    foreach type {action label status checkbutton toggle} {
+        foreach {key datatype} {icon string icon_disabled string icon_hover string icon_selected string presentation choice icon_position choice icon_size number icon_spacing number} {dict set result $type properties $key $datatype}
+    }
+    foreach type {command_toolbar menu context_menu} {dict set result $type properties command_icons dictionary}
     foreach type {field toggle choice dataset_selector entry combobox checkbutton list} {dict set result $type properties change_action identifier}
     dict set result native3d [dict create label {Native3D embedded viewport} api_id NATIVE_3D_GUI_HOST_API_v2 api_version 2 owner core/tcl/native3d_gui_host_v2.tcl properties {title string width number height number projection choice camera_position string camera_target string camera_up string axes_world boolean navigation_cube_visible boolean demo boolean} events {ready view_changed selected error source_changed released} status AVAILABLE]
     foreach {type owner} {native2d core/tcl/native2d_viewport_curve_source.tcl plot plugins/modules/plot.dataset/api/plot_dataset_api_v4.tcl menu core/tcl/configuration_viewer_commands.tcl help app/gui/documentation_module_window.tcl workspace core/tcl/session_workspace_api_v1.tcl history core/tcl/scientific_recipe_history.tcl} {dict set result $type owner $owner}
@@ -109,7 +127,16 @@ proc ::GX::viewerGuiDesignAction {window id} {
         set navigate [expr {$id eq {undo} ? [dict get $record cursor]>0 : [dict get $record cursor]<[llength [dict get $record steps]]}]
     }
     try {
-        if {$navigate} {scientificHistoryViewerNavigate $window $id;set status completed} elseif {$id in {fit zoom_in zoom_out}} {
+        if {$navigate} {scientificHistoryViewerNavigate $window $id;set status completed} elseif {[set seriesAction [_viewerGuiPlotSeriesAction $window $id]] ne {}} {
+            viewerGuiDesignPlotSeries $window {*}$seriesAction;set status completed
+        } elseif {[set netlistForm [_viewerGuiScientificNetlistAction $window $id]] ne {}} {
+            viewerGuiDesignScientificNetlist $window $netlistForm;set status completed
+        } elseif {[dict exists [viewerGuiDesignVisibilityCommands [dict get $instance design]] $id]} {
+            set target [dict get [viewerGuiDesignVisibilityCommands [dict get $instance design]] $id]
+            viewerGuiDesignComponentVisible $window $target [expr {![viewerGuiDesignComponentVisibleGet $window $target]}]
+            if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Toggle pane $target"}
+            set status completed
+        } elseif {$id in {fit zoom_in zoom_out}} {
             dict for {component widget} [dict get $instance widgets] {
                 if {[winfo exists $widget.curve] && ![catch {native2DViewportCurveDescribe $widget.curve}]} {
                     set op [expr {$id eq {fit} ? {fit} : {zoom}}]
@@ -181,6 +208,13 @@ proc ::GX::viewerGuiDesignActionEnabled {window id} {
 proc ::GX::viewerGuiDesignCapture window {
     set bindings [dict get $::GX::ViewerGui::instances $window bindings]
     dict for {id binding} $bindings {
+        if {[dict get $binding kind] eq {diagram}} {
+            set widget [dict get $::GX::ViewerGui::instances $window widgets $id].diagram
+            if {[dict exists $::GX::Native2DDiagram::viewports $widget]} {
+                set token [dict get $::GX::Native2DDiagram::viewports $widget projection scene_token]
+                dict set bindings $id view_state [dict get [native2DGeometryCall $token view_state {}] view_state]
+            }
+        }
         if {[dict get $binding kind] eq {plot}} {
             set widget [dict get $::GX::ViewerGui::instances $window widgets $id].plot
             if {[winfo exists $widget]} {
@@ -205,6 +239,7 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
     dict for {id contract} [dict get $design handlers] {
         dict set catalog $id [dict create label [datasetPublicationV2DictDefault $contract label [string totitle [string map {_ { }} $id]]] default [datasetPublicationV2DictDefault $contract default {}]]
         dict set commands $id [dict create command [list ::GX::viewerGuiDesignAction $window $id] enabled [list ::GX::viewerGuiDesignActionEnabled $window $id]]
+        if {[dict exists [viewerGuiDesignVisibilityCommands $design] $id]} {dict set commands $id checked [list ::GX::viewerGuiDesignVisibilityChecked $window $id]}
     }
     foreach component [dict get $design components] {
         set properties [dict get $component properties];set type [dict get $component type]
@@ -227,12 +262,12 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
     set payload {};set workspaceId [datasetPublicationV2DictDefault $context workspace_id {}]
     set stamp {}
     if {$workspaceId ni {{} new}} {set item [sessionWorkspaceGet $workspaceId];set payload [dict get $item payload];set stamp [list [dict get $item generation] [dict get $item revision] [dict get $item sha256]]} else {set workspaceId {}}
-    dict set ::GX::ViewerGui::instances $window [dict create design $design mode $mode handlers $handlers slots $slots widgets {} token $token opened_us [clock microseconds] traces {} subscriptions {} workspace_id $workspaceId workspace_stamp $stamp bindings {} restoring 0 help $help]
+    dict set ::GX::ViewerGui::instances $window [dict create design $design module [dict get $design module_id] provider [dict get $design provider_id] mode $mode handlers $handlers slots $slots widgets {} token $token opened_us [clock microseconds] traces {} subscriptions {} workspace_id $workspaceId workspace_stamp $stamp bindings {} restoring 0 help $help]
     bind $window <Destroy> +[list ::GX::viewerGuiDesignDispose $window %W]
     bind $window <Configure> +[list ::GX::_viewerGuiGeometrySchedule $window %W]
     try {
         set index 0;set widgets {};set actionWidgets {};set policies {}
-        foreach component [dict get $design components] {
+        foreach component [_viewerGuiDesignParentOrder [dict get $design components]] {
             set id [dict get $component id];set type [dict get $component type];set parent [dict get $component parent];set p [dict get $component properties]
             if {$type in {menu context_menu}||($type in {workspace history help}&&$mode ne {demo})} continue
             if {[dict exists $slots $parent]} {set host [dict get $slots $parent]} else {set host [dict get $widgets $parent]}
@@ -273,6 +308,7 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
                 if {$mode eq {demo}&&$type eq {dataset_selector}} {set componentContext {demo_choices {{Synthetic sensor A} {Synthetic sensor B} {Synthetic calibration}}}}
                 uiFieldComponentCreate $widget $type $p ::GX::ViewerGui::values($window,$id) $callback $componentContext
             }
+            if {[dict exists $p icon]&&[dict get $p icon] ne {}} {uiFieldIconApply $widget $p [dict get $design icons [dict get $p icon]] [dict get $design icons]}
             dict set widgets $id $widget
             if {$type eq {action}} {dict lappend actionWidgets [dict get $p action] $widget}
             set parentType {};foreach ancestor [dict get $design components] {if {[dict get $ancestor id] eq $parent} {set parentType [dict get $ancestor type];break}}
@@ -299,6 +335,7 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
         dict for {key policy} $policies {lassign $key host axis index;grid ${axis}configure $host $index -weight [dict get $policy weight] -minsize [dict get $policy minsize]}
         dict set ::GX::ViewerGui::instances $window widgets $widgets
         viewerCommandWidgetsAttach $window $actionWidgets
+        _viewerGuiVisibilityInitialize $window
         if {$payload ne {}} {viewerGuiDesignRestore $window $payload}
         dict set ::GX::ViewerGui::instances $window committed_values [viewerGuiDesignValues $window]
         dict set ::GX::ViewerGui::instances $window saved [viewerGuiDesignCapture $window]
@@ -308,8 +345,8 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
             scientificHistoryViewerStrip $window [dict get $slots footer] [dict get $slots status]
         }
         if {$workspace && $token ne {}} {
-            set wp [string map {. _ - _} $module]_${provider}_interface_state
-            set open [list ::GX::viewerGuiDesignWorkspaceOpen $module $provider $design $mode $handlers]
+            set wp [datasetPublicationV2DictDefault $context workspace_provider [string map {. _ - _} $module]_${provider}_interface_state]
+            set open [datasetPublicationV2DictDefault $context workspace_open [list ::GX::viewerGuiDesignWorkspaceOpen $module $provider $design $mode $handlers]]
             sessionWorkspaceProviderRegister $wp [dict create module_id $module viewer_provider $provider type {Designed Viewer state} schema gxtxt.viewer_interface_state.v1 version 1 validate ::GX::viewerGuiDesignStateValidate open $open]
             set callbacks [dict create current [list ::GX::viewerGuiDesignCurrent $window] save [list ::GX::viewerGuiDesignWorkspaceSave $window] dirty [list ::GX::viewerGuiDesignDirty $window] close [list ::GX::viewerGuiDesignWorkspaceClose $window] open $open discard [list destroy $window]]
             dict set ::GX::ViewerGui::instances $window workspace_provider $wp
@@ -334,6 +371,7 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
         }
         dict set ::GX::ViewerGui::instances $window widgets $widgets
         uiFieldViewerRegionsSet $window [lsort -unique $regions]
+        _viewerGuiCommandIconsMount $window
         if {[dict exists $design shell status]} {[dict get $slots status] configure -text [dict get $design shell status]}
         if {$mode eq {runtime} && [dict exists $design initial_action]} {viewerGuiDesignAction $window [dict get $design initial_action]}
         if {$workspaceId eq {}} {dict set ::GX::ViewerGui::instances $window saved [viewerGuiDesignCapture $window]}
@@ -347,6 +385,10 @@ proc ::GX::viewerGuiDesignDispose {window actual} {
     if {[llength [info commands ::GX::viewerGuiLaboratoryDispose]]} {viewerGuiLaboratoryDispose $window}
     if {[dict exists $::GX::ViewerGui::instances $window resize_timer]} {after cancel [dict get $::GX::ViewerGui::instances $window resize_timer]}
     if {[dict exists $::GX::ViewerGui::instances $window]} {
+        if {[dict exists $::GX::ViewerGui::instances $window scientific_preparations]} {
+            dict for {form receipt} [dict get $::GX::ViewerGui::instances $window scientific_preparations] {_viewerGuiScientificPreparationDiscard $receipt}
+        }
+        if {[dict exists $::GX::ViewerGui::instances $window scientific_retained_preparations]} {dict for {form receipt} [dict get $::GX::ViewerGui::instances $window scientific_retained_preparations] {_viewerGuiScientificPreparationDiscard $receipt}}
         foreach component [dict get $::GX::ViewerGui::instances $window design components] {
             set tag GXGuiComponent$window.[dict get $component id]
             foreach sequence [bind $tag] {bind $tag $sequence {}}
@@ -363,6 +405,7 @@ proc ::GX::viewerGuiDesignFieldChanged {window id args} {
     set value $::GX::ViewerGui::values($window,$id)
     if {[dict exists $::GX::ViewerGui::instances $window committed_values $id] && [dict get $::GX::ViewerGui::instances $window committed_values $id] eq $value} {return}
     dict set ::GX::ViewerGui::instances $window committed_values $id $value
+    if {[dict exists $component properties component_visibility] && [dict get $component type] in {toggle checkbutton}} {viewerGuiDesignComponentVisible $window [dict get $component properties component_visibility] $value}
     if {[dict exists $component properties plot_visibility]} {
         set target [dict get $component properties plot_visibility]
         set plot [dict get $::GX::ViewerGui::instances $window widgets [dict get $target component]].plot
@@ -482,6 +525,7 @@ proc ::GX::viewerGuiDesignModelEdit {model operation args} {
     for {set i 0} {$i<[llength $components]} {incr i} {if {[dict get [lindex $components $i] id] eq $id} {set index $i;break}}
     set prior $design
     switch $operation {
+        icon {set design [viewerGuiIconEdit $design {*}$args];set components [dict get $design components]}
         add {
             set item [lindex $args 0];set actions {}
             set capability [dict get [viewerGuiComponentCapabilities] [dict get $item type]]
@@ -490,6 +534,11 @@ proc ::GX::viewerGuiDesignModelEdit {model operation args} {
             if {[dict exists $item properties change_action]} {lappend actions [dict get $item properties change_action]}
             foreach action $actions {if {$action ne {-} && ![dict exists $design handlers $action]} {dict set design handlers $action [dict create arguments {window action} effect unbound]}}
             lappend components $item
+        }
+        properties {
+            if {$index<0} {error {Select a component}}
+            set item [lindex $components $index];dict set item properties [dict merge [dict get $item properties] [lindex $args 1]]
+            lset components $index $item
         }
         property - layout - constraints {
             if {$index<0} {error {Select a component.}}
@@ -508,21 +557,35 @@ proc ::GX::viewerGuiDesignModelEdit {model operation args} {
             } elseif {$type in {field toggle choice dataset_selector entry combobox checkbutton list}} {dict set item properties change_action $action} else {error {This component emits no bindable action/change event.}}
             lset components $index $item
         }
-        remove - duplicate - reparent {
+        reparent {
             if {$index<0} {error {Select a component.}}
             set subtree [list $id]
-            foreach item $components {if {[dict get $item parent] in $subtree} {lappend subtree [dict get $item id]}}
+            foreach item [_viewerGuiDesignParentOrder $components] {if {[dict get $item parent] in $subtree} {lappend subtree [dict get $item id]}}
+            set parent [lindex $args 1]
+            if {$parent in $subtree} {error {A container cannot be placed inside itself.}}
+            set item [lindex $components $index]
+            dict set item parent $parent
+            dict set item layout [_viewerGuiDesignRelocateLayout [dict get $item layout] $components $parent $subtree]
+            # Declaration positions are the restricted SDK identities.
+            # Construction order is derived separately, never persisted.
+            lset components $index $item
+        }
+        remove - duplicate {
+            if {$index<0} {error {Select a component.}}
+            set subtree [list $id]
+            foreach item [_viewerGuiDesignParentOrder $components] {if {[dict get $item parent] in $subtree} {lappend subtree [dict get $item id]}}
             if {$operation eq {remove}} {set kept {};foreach item $components {if {[dict get $item id] ni $subtree} {lappend kept $item}};set components $kept} else {
                 set parent [dict get [lindex $components $index] parent]
                 if {$operation eq {reparent}} {set parent [lindex $args 1];if {$parent in $subtree} {error {A container cannot be placed inside itself.}}}
                 set existing {};foreach item $components {lappend existing [dict get $item id]}
                 set additions {};set kept {};set mapping {}
+                foreach old $subtree {set fresh $old;set n 1;while {$fresh in $existing} {set fresh ${old}_copy[incr n]};dict set mapping $old $fresh;lappend existing $fresh}
                 foreach item $components {
                     set old [dict get $item id]
                     if {$old ni $subtree || $operation eq {duplicate}} {lappend kept $item}
                     if {$old ni $subtree} continue
                     set fresh $old
-                    if {$operation eq {duplicate}} {set n 1;while {$fresh in $existing} {set fresh ${old}_copy[incr n]};dict set mapping $old $fresh;dict set item id $fresh;lappend existing $fresh}
+                    if {$operation eq {duplicate}} {set fresh [dict get $mapping $old];dict set item id $fresh}
                     if {$old eq $id} {
                         dict set item parent $parent
                         set excluded [expr {$operation eq {reparent} ? $subtree : {}}]
@@ -577,7 +640,7 @@ proc ::GX::viewerGuiDesignModelEdit {model operation args} {
         metadata {if {[lindex $args 0] eq {inspector_width}} {dict set design shell inspector_width [lindex $args 1]} else {dict set design [lindex $args 0] [lindex $args 1]}}
         default {error {Unknown Viewer design edit operation.}}
     }
-    dict set design components [_viewerGuiDesignParentOrder $components];set design [viewerGuiDesignValidate $design]
+    dict set design components $components;set design [viewerGuiDesignValidate $design]
     if {$design eq $prior} {return $model}
     set past [dict get $model past];lappend past $prior
     dict set model past [lrange $past end-49 end];dict set model future {};dict set model design $design;dict incr model revision
@@ -600,13 +663,21 @@ proc ::GX::viewerGuiDesignPlotSet {window component spec {context {}}} {
     if {[dict exists $definition properties title]} {dict set spec title [dict get $definition properties title]}
     modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
     set widget [dict get $::GX::ViewerGui::instances $window widgets $component]
-    foreach child [winfo children $widget] {destroy $child}
-    set plot [::GX::PlotDatasetAPIv4::widgetCreate $widget.plot $spec $context]
-    pack $plot -fill both -expand 1
-    viewerGuiSourceScopeAttach $window $component $plot
-    if {[dict exists $::GX::ViewerGui::instances $window slots context_menu]} {viewerGuiContextMount $window $plot}
+    if {[winfo exists $widget.plot]} {
+        # The existing Plot owner validates/model-builds before configure, so
+        # domain/source errors retain the prior native frame and binding.
+        set plot [::GX::PlotDatasetAPIv4::widgetConfigure $widget.plot $spec $context]
+    } else {
+        set plot [::GX::PlotDatasetAPIv4::widgetCreate $widget.plot $spec $context]
+        foreach child [winfo children $widget] {if {$child ne $plot} {destroy $child}}
+        pack $plot -fill both -expand 1
+        _viewerGuiPlotAttach $window $component $plot
+        viewerGuiSourceScopeAttach $window $component $plot
+        if {[dict exists $::GX::ViewerGui::instances $window slots context_menu]} {viewerGuiContextMount $window $plot}
+    }
     if {[dict exists $::GX::ViewerGui::instances $window demo_bindings $component]} {dict unset ::GX::ViewerGui::instances $window demo_bindings $component}
     dict set ::GX::ViewerGui::instances $window bindings $component [dict create kind plot spec $spec context $context]
+    _viewerGuiPlotBindingChanged $window $component
     if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Bind Plot $component"}
     viewerGuiActionsRefresh $window
     return $plot
@@ -645,11 +716,16 @@ proc ::GX::viewerGuiDesignRestore {window state} {
     try {
         viewerGuiDesignContextSet $window [datasetPublicationV2DictDefault $state domain_state {}]
         dict for {id choices} [datasetPublicationV2DictDefault $state choices {}] {if {[dict exists $::GX::ViewerGui::instances $window widgets $id]} {viewerGuiDesignChoicesSet $window $id $choices}}
-        dict for {id visible} [datasetPublicationV2DictDefault $state visibility {}] {if {[dict exists $::GX::ViewerGui::instances $window widgets $id]} {viewerGuiDesignComponentVisible $window $id $visible}}
+        _viewerGuiVisibilityRestore $window [datasetPublicationV2DictDefault $state visibility {}]
         dict for {id value} [dict get $state values] {
             if {![info exists ::GX::ViewerGui::values($window,$id)]} continue
             set definition [viewerGuiDesignComponent $window $id]
-            if {[dict get $definition type] in {field toggle choice dataset_selector progress entry combobox checkbutton list}} {viewerGuiDesignValueSet $window $id $value} else {set ::GX::ViewerGui::values($window,$id) $value}
+            if {[dict get $definition type] eq {tabs} && $value ne {}} {
+                set page [viewerGuiDesignComponent $window $value]
+                if {[dict get $page type] ne {tab} || [dict get $page parent] ne $id} {error {Saved notebook selection must name its own declared tab}}
+                set widgets [dict get $::GX::ViewerGui::instances $window widgets]
+                if {[viewerGuiDesignComponentVisibleGet $window $value]} {[dict get $widgets $id] select [dict get $widgets $value]}
+            } elseif {[dict get $definition type] in {field toggle choice dataset_selector progress entry combobox checkbutton list}} {viewerGuiDesignValueSet $window $id $value} else {set ::GX::ViewerGui::values($window,$id) $value}
         }
         set desired [datasetPublicationV2DictDefault $state bindings {}]
         set prior [dict get $::GX::ViewerGui::instances $window bindings]
@@ -663,13 +739,17 @@ proc ::GX::viewerGuiDesignRestore {window state} {
         }
         dict for {id binding} $desired {
             if {[dict exists $prior $id] && [dict get $prior $id] eq $binding} continue
-            if {[dict get $binding kind] eq {native2d}} {viewerGuiDesignSourceSet $window $id [dict get $binding request] [dict get $binding source_id]} elseif {[dict get $binding kind] eq {plot}} {
+            if {[dict get $binding kind] eq {diagram}} {viewerGuiDesignDiagramSet $window $id [dict get $binding document_id] [dict get $binding payload] [datasetPublicationV2DictDefault $binding view_state {}]
+            } elseif {[dict get $binding kind] eq {native2d}} {viewerGuiDesignSourceSet $window $id [dict get $binding request] [dict get $binding source_id]} elseif {[dict get $binding kind] eq {plot}} {
                 set plot [viewerGuiDesignPlotSet $window $id [dict get $binding spec] [datasetPublicationV2DictDefault $binding context {}]]
                 dict for {panel seriesStates} [datasetPublicationV2DictDefault $binding visibility {}] {dict for {series visible} $seriesStates {::GX::PlotDatasetAPIv4::widgetVisibility $plot $panel $series $visible}}
                 if {[dict exists $binding view_axes]} {::GX::PlotDatasetAPIv4::widgetView $plot restore [dict get $binding view_axes]}
                 dict set ::GX::ViewerGui::instances $window bindings $id $binding
             }
         }
+        _viewerGuiNumericRestore $window
+        _viewerGuiScientificRestore $window
+        _viewerGuiVisibilitySync $window
     } finally {dict set ::GX::ViewerGui::instances $window restoring 0}
 }
 proc ::GX::viewerGuiDesignSave {path design} {set design [viewerGuiDesignValidate $design];resourceLifecycleWriteBytes $path [encoding convertto utf-8 $design];return $path}
@@ -723,7 +803,7 @@ proc ::GX::viewerGuiDesignTableSet {window id rows} {
 }
 proc ::GX::viewerGuiDesignValidate design {
     foreach field {schema title module_id provider_id version geometry requirements components handlers origin} {if {![dict exists $design $field]} {error "Viewer design requires '$field'."}}
-    foreach field [dict keys $design] {if {$field ni {schema title module_id provider_id version geometry requirements components handlers origin shell initial_action}} {error "Unknown Viewer design field '$field'."}}
+    foreach field [dict keys $design] {if {$field ni {schema title module_id provider_id version geometry requirements components handlers origin shell initial_action icons}} {error "Unknown Viewer design field '$field'."}}
     if {[dict exists $design initial_action] && ![dict exists $design handlers [dict get $design initial_action]]} {error {Initial action must name a declared public handler}}
     if {[dict exists $design shell]} {
         foreach key [dict keys [dict get $design shell]] {if {$key ni {inspector_width status}} {error {Unknown Viewer shell property.}}}
@@ -735,19 +815,36 @@ proc ::GX::viewerGuiDesignValidate design {
     if {![regexp {^viewer\.[a-z][a-z0-9_]*$} [dict get $design module_id]] || ![regexp {^[a-z][a-z0-9_]*$} [dict get $design provider_id]] || ![regexp {^[0-9]+\.[0-9]+\.[0-9]+$} [dict get $design version]]} {error {Use a stable viewer.lowercase_id, provider ID and semantic version.}}
     if {![regexp {^[0-9]{3,4}x[0-9]{3,4}$} [dict get $design geometry]]} {error {Runtime geometry must be WIDTHxHEIGHT.}}
     if {[string bytelength $design]>4194304 || [llength [dict get $design components]]>1000} {error {Viewer design exceeds its 4 MiB / 1000-component bound.}}
+    set icons [viewerGuiIconsValidate [datasetPublicationV2DictDefault $design icons {}]]
     set capabilities [viewerGuiComponentCapabilities];set ids {};set cells {};set singletons {}
     set versions {VIEWER_GUI_HOST_API_v1 1}
     dict for {type capability} $capabilities {if {[dict get $capability status] eq {AVAILABLE}} {dict set versions [dict get $capability api_id] [dict get $capability api_version]}}
+    foreach {api command} {SCIENTIFIC_EXECUTION_API_v1 ::GX::scientificExecutionApiInfo SCRIPT_JOB_API_v1 ::GX::scriptJobApiInfo PARALLEL_EXECUTION_API_v1 ::GX::parallelExecutionApiInfo} {
+        if {[llength [info commands $command]]} {dict set versions $api [dict get [$command] api_version]}
+    }
+    if {[dict exists $design requirements NUMERIC_API_v1]} {
+        modulePublicApiActivate math.numeric NUMERIC_API_v1
+        dict set versions NUMERIC_API_v1 [dict get [::GX::NumericAPIv1::apiInfo] api_version]
+    }
     dict for {api version} [dict get $design requirements] {if {![dict exists $versions $api] || ![string is integer -strict $version] || [dict get $versions $api]!=$version} {error "Unavailable CORE API/version: $api @ $version"}}
+    # Index every declaration first: a parent may follow its child without
+    # changing either one's public one-based SDK component number.
+    foreach component [dict get $design components] {
+        foreach key {id type parent properties layout} {if {![dict exists $component $key]} {error "Component requires '$key'."}}
+        set id [dict get $component id]
+        if {![regexp {^[a-z][a-z0-9_]*$} $id] || [dict exists $ids $id] || $id in {toolbar inspector canvas footer menubar}} {error "Duplicate or invalid component ID '$id'."}
+        dict set ids $id [dict get $component type]
+    }
+    _viewerGuiVisibilityDesignValidate $design
+    _viewerGuiDesignParentOrder [dict get $design components]
     foreach component [dict get $design components] {
         foreach key {id type parent properties layout} {if {![dict exists $component $key]} {error "Component requires '$key'."}}
         foreach key [dict keys $component] {if {$key ni {id type parent properties layout}} {error "Unknown component field '$key'."}}
         set id [dict get $component id];set type [dict get $component type];set parent [dict get $component parent]
-        if {![regexp {^[a-z][a-z0-9_]*$} $id] || [dict exists $ids $id] || $id in {toolbar inspector canvas footer menubar}} {error "Duplicate or invalid component ID '$id'."}
         if {![dict exists $capabilities $type] || [dict get $capabilities $type status] ne {AVAILABLE}} {error "Unavailable CORE component '$type'."}
         set api [dict get $capabilities $type api_id]
         if {![dict exists $design requirements $api]} {error "Component '$id' needs a declared $api capability requirement."}
-        if {$parent ni {toolbar inspector canvas footer menubar} && ![dict exists $ids $parent]} {error "Parent '$parent' must be an earlier container."}
+        if {$parent ni {toolbar inspector canvas footer menubar} && ![dict exists $ids $parent]} {error "Parent '$parent' must be a declared container."}
         if {$type in {command_toolbar context_menu history workspace help}} {
             if {$type in $singletons} {error "Only one '$type' host belongs to a Viewer shell."}
             lappend singletons $type
@@ -774,7 +871,23 @@ proc ::GX::viewerGuiDesignValidate design {
             if {$datatype eq {list} && [catch {llength $value}]} {error "Property '$key' requires a valid list."}
             if {$key in {width height wraplength padding} && (![string is integer -strict $value] || $value<0 || $value>2000)} {error "Property '$key' requires an integer from 0 to 2000."}
         }
+        _viewerGuiCommandIconsValidate $type $properties $icons
+        if {[dict exists $properties icon]&&[dict get $properties icon] ne {}} {
+            if {![dict exists $icons [dict get $properties icon]]} {error "Missing project icon: [dict get $properties icon]"}
+            if {[datasetPublicationV2DictDefault $properties presentation icon_text] eq {icon_only} && [string trim [datasetPublicationV2DictDefault $properties label [datasetPublicationV2DictDefault $properties text {}]]] eq {} && [string trim [datasetPublicationV2DictDefault $properties tooltip {}]] eq {}} {error {Icon-only controls require an accessible text label or tooltip}}
+            if {[datasetPublicationV2DictDefault $properties presentation icon_text] ni {icon_only text_only icon_text}||[datasetPublicationV2DictDefault $properties icon_position left] ni {left right top bottom}||[datasetPublicationV2DictDefault $properties icon_size 24] ni {16 24 32 48}||[datasetPublicationV2DictDefault $properties icon_spacing 4] ni {0 2 4 6 8 12}} {error {Invalid typed icon presentation, placement, size or spacing}}
+        }
+        foreach key {icon_disabled icon_hover icon_selected} {
+            set stateIcon [datasetPublicationV2DictDefault $properties $key {}]
+            if {$stateIcon eq {}} continue
+            if {[datasetPublicationV2DictDefault $properties icon {}] eq {} || ![dict exists $icons $stateIcon]} {error "Icon state $key requires a normal icon and an existing project resource"}
+        }
         if {$type eq {splitter} && [datasetPublicationV2DictDefault $properties orientation horizontal] ni {horizontal vertical}} {error {Splitter orientation must be horizontal or vertical.}}
+        if {$type eq {native2d} && [datasetPublicationV2DictDefault $properties diagram_catalog {}] ne {}} {native2DGeometryDiagramCatalog [dict get $properties diagram_catalog]}
+        if {$type eq {section} && [dict exists $properties scientific_provider]} {
+            if {![dict exists $design requirements SCIENTIFIC_EXECUTION_API_v1] || [dict get $design requirements SCIENTIFIC_EXECUTION_API_v1]!=1} {error {Scientific form requires SCIENTIFIC_EXECUTION_API_v1@1}}
+            if {[dict get $properties scientific_provider] ne {core.ngspice.circuit}} {error {Unsupported declared scientific source profile}}
+        }
         if {$type eq {field} && [datasetPublicationV2DictDefault $properties datatype string] ni {string integer double number boolean choice color}} {error {Unsupported UI Field datatype.}}
         if {$type eq {plot} && [datasetPublicationV2DictDefault $properties empty_style canvas] ni {blank canvas}} {error {Unsupported empty Plot style.}}
         if {$type eq {native3d}} {
@@ -827,6 +940,9 @@ proc ::GX::viewerGuiDesignValidate design {
         if {{command_toolbar} in $singletons && [dict get $component parent] eq {toolbar} && [dict get $component type] ne {command_toolbar}} {error {Use either the responsive command toolbar or custom toolbar components.}}
         foreach id $actions {if {$id ne {-} && ![dict exists $design handlers $id]} {error "Missing handler contract '$id'."}}
     }
+    _viewerGuiScientificDesignValidate $design
+    _viewerGuiPlotDesignValidate $design
+    _viewerGuiNumericDesignValidate $design
     return [dict create {*}$design]
 }
 proc ::GX::viewerGuiDesignValueSet {window id value} {
@@ -848,12 +964,19 @@ proc ::GX::viewerGuiDesignValueSet {window id value} {
     }
     set ::GX::ViewerGui::values($window,$id) $value
     dict set ::GX::ViewerGui::instances $window committed_values $id $value
+    # Keep the shared field owner's baseline coherent with programmatic values.
+    # The Design baseline above suppresses a duplicate authored change event.
+    if {$type in {field toggle choice}} {uiFieldCommit $widget}
     viewerGuiActionsRefresh $window;return $value
 }
 proc ::GX::viewerGuiDesignValues window {
     set result {};set design [dict get $::GX::ViewerGui::instances $window design]
     foreach component [dict get $design components] {
         set id [dict get $component id]
+        if {[dict get $component type] eq {tabs} && [dict exists $::GX::ViewerGui::instances $window widgets $id]} {
+            set widget [dict get $::GX::ViewerGui::instances $window widgets $id]
+            if {[winfo exists $widget]} {dict set result $id [file tail [string map {. /} [$widget select]]];continue}
+        }
         if {[info exists ::GX::ViewerGui::values($window,$id)]} {dict set result $id $::GX::ViewerGui::values($window,$id)}
     }
     return $result
@@ -864,6 +987,10 @@ proc ::GX::viewerGuiDesignWorkspaceClose window {
 }
 proc ::GX::viewerGuiDesignWorkspaceOpen {module provider design mode handlers context} {
     if {$context ne {} && ![catch {sessionWorkspaceGet $context} item]} {set context [dict create workspace_id [dict get $item workspace_id]]}
+    set descriptor [viewerProviderDefinition $module $provider]
+    if {{restricted_cpp} in [split [datasetPublicationV2DictDefault $descriptor capabilities {}] {;}] && {RESTRICTED_VIEWER_CLIENT_API_v1} in [modulePublicApiIds $module]} {
+        return [viewerDevelopmentInstalledOpen $module $provider [file dirname [moduleField $module descriptor]] $context]
+    }
     set id [datasetPublicationV2DictDefault $context workspace_id {}]
     if {$id ni {{} new}} {set item [sessionWorkspaceGet $id];set payload [dict get $item payload];viewerGuiDesignStateValidate $payload;set design [dict get $payload design]}
     set window .designed_[incr ::GX::ViewerGui::serial]
@@ -989,6 +1116,10 @@ proc ::GX::viewerGuiPublishedWindows {module provider} {
 
 proc ::GX::viewerGuiScientificBindingSummary {binding} {
     set kind [dict get $binding kind]
+    if {$kind eq {diagram}} {
+        set owner [dict get $binding document_receipt]
+        return [dict create kind diagram document_id [dict get $owner id] generation [dict get $owner generation] revision [dict get $owner revision] sha256 [dict get $owner sha256] catalog [dict get $binding payload catalog] component_count [dict size [dict get $binding payload components]] wire_count [dict size [dict get $binding payload wires]] authority INTERACTIVE_DOCUMENT_API_v1 payload redacted]
+    }
     if {$kind eq {native2d}} {
         set request [dict get $binding request]
         set result [dict create kind $kind source_id [dict get $binding source_id]]
@@ -1028,17 +1159,13 @@ proc ::GX::viewerGuiDesignChoicesSet {window component choices} {
     if {[llength $choices]>4096} {error {Choice projection exceeds 4096 entries}}
     set definition [viewerGuiDesignComponent $window $component]
     set widget [dict get $::GX::ViewerGui::instances $window widgets $component]
-    if {[dict get $definition type] eq {choice}} {set widget $widget.entry}
+    if {[dict get $definition type] eq {choice} || ([dict get $definition type] eq {field} && [datasetPublicationV2DictDefault [dict get $definition properties] datatype string] eq {choice})} {uiFieldChoicesSet $widget $choices;set widget $widget.entry}
     if {[winfo class $widget] ne {TCombobox}} {error {The component is not a public choice control}}
     $widget configure -values $choices
     dict set ::GX::ViewerGui::instances $window choice_options $component $choices
 }
 proc ::GX::viewerGuiDesignComponentVisible {window component visible} {
-    if {![string is boolean -strict $visible]} {error {Visibility must be boolean}}
-    set widget [dict get $::GX::ViewerGui::instances $window widgets $component]
-    if {[winfo manager $widget] eq {pack}} {error {Use the existing grid component layout for conditional fields}}
-    if {$visible} {grid $widget} else {grid remove $widget}
-    dict set ::GX::ViewerGui::instances $window component_visibility $component $visible
+    return [_viewerGuiComponentVisibilityApply $window $component $visible]
 }
 proc ::GX::viewerGuiDesignTextSet {window component content} {
     set definition [viewerGuiDesignComponent $window $component]
@@ -1087,3 +1214,10 @@ proc ::GX::viewerGuiDesignTemporarySceneSet {window component fixture {callback 
     viewerGuiActionsRefresh $window
     return $result
 }
+
+source [file join [file dirname [info script]] viewer_gui_icons_v1.tcl]
+source [file join [file dirname [info script]] viewer_gui_visibility_v1.tcl]
+source [file join [file dirname [info script]] viewer_gui_diagrams_v1.tcl]
+source [file join [file dirname [info script]] viewer_gui_scientific_v1.tcl]
+source [file join [file dirname [info script]] viewer_gui_plot_bindings_v1.tcl]
+source [file join [file dirname [info script]] viewer_gui_numeric_v1.tcl]

@@ -7,6 +7,17 @@ import math
 from pathlib import Path
 import resource
 import sys
+import os
+import time
+
+CHANNEL = Path(sys.argv[2]) if len(sys.argv)==3 and sys.argv[1]=='--debug-channel' else None
+
+def receive(limit):
+    if CHANNEL is None:return json.loads(sys.stdin.readline(limit))
+    path=CHANNEL/'worker-input.json'
+    while not path.exists():time.sleep(.01)
+    if path.is_symlink() or path.stat().st_size>limit:raise ValueError('Invalid debugger worker input')
+    result=json.loads(path.read_text());path.unlink();return result
 
 class State(ctypes.Structure):
     _fields_ = [('values', ctypes.c_double*16), ('counter', ctypes.c_uint)]
@@ -15,14 +26,22 @@ class Event(ctypes.Structure):
     _fields_ = [('kind', ctypes.c_int), ('component', ctypes.c_uint), ('value', ctypes.c_double)]
 
 def send(value):
-    print(json.dumps(value, allow_nan=False, separators=(',', ':')), flush=True)
+    if CHANNEL is None:print(json.dumps(value, allow_nan=False, separators=(',', ':')), flush=True)
+    else:
+        stage=CHANNEL/'worker-output.pending'
+        stage.write_text(json.dumps(value,allow_nan=False))
+        os.replace(stage,CHANNEL/'worker-output.json')
+
+def runtime_limits():
+    return dict(cpu_seconds=3, address_space_bytes=256*1024**2, file_size_bytes=1024**2, core_dump_bytes=0)
 
 def main():
+    limits=runtime_limits()
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-    resource.setrlimit(resource.RLIMIT_AS, (256*1024**2, 256*1024**2))
-    resource.setrlimit(resource.RLIMIT_CPU, (3, 3))
-    resource.setrlimit(resource.RLIMIT_FSIZE, (1024**2, 1024**2))
-    request = json.loads(sys.stdin.readline(65537))
+    resource.setrlimit(resource.RLIMIT_AS, (limits['address_space_bytes'], limits['address_space_bytes']))
+    resource.setrlimit(resource.RLIMIT_CPU, (limits['cpu_seconds'], limits['cpu_seconds']))
+    resource.setrlimit(resource.RLIMIT_FSIZE, (limits['file_size_bytes'], limits['file_size_bytes']))
+    request = receive(65537)
     library = ctypes.CDLL(str(Path(request['library']).resolve()))
     state = State((ctypes.c_double*16)(*request['state']['values']), request['state']['counter'])
     event = Event(request['event']['kind'], request['event']['component'], request['event']['value'])
@@ -39,7 +58,7 @@ def main():
             if len(message.encode()) > 256: raise ValueError('Native SDK text exceeds 256 bytes')
             send({'request':count, 'operation':operation, 'component':component,
                   'left':left, 'right':right, 'text':message})
-            response = json.loads(sys.stdin.readline(8193))
+            response = receive(8193)
             if response.get('request') != count or not response.get('ok'):
                 raise ValueError(response.get('error', 'Invalid SDK broker response'))
             value = float(response.get('value', 0))

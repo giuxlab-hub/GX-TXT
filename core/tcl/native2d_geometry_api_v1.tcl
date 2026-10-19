@@ -2,6 +2,7 @@
 # Document- and Session-scoped retained Native2D geometry. Public callers see
 # opaque logical tokens; only this authority maps them to native scene IDs.
 namespace eval ::GX::Native2DGeometry {variable scenes {};variable serial 0}
+source [file join [file dirname [info script]] native2d_diagram_document_v1.tcl]
 proc ::GX::native2DGeometryPathValidate {points topology} {
     if {$topology ni {open closed}} {error {Explicit open/closed topology required}}
     native2DEnsure;set scene [::GX::Native2D::core scene]
@@ -1415,3 +1416,18 @@ proc ::GX::native2DConnectedObjects {scene seeds} {
 source [file join [file dirname [info script]] native2d_parts_api_v1.tcl]
 
 source [file join [file dirname [info script]] native2d_raster_api_v1.tcl]
+
+# Compatible discovery extension; original geometry operations keep their owner.
+rename ::GX::native2DGeometryApiInfo ::GX::_native2DGeometryApiInfoBeforeDiagrams
+proc ::GX::native2DGeometryApiInfo {} {
+    set info [_native2DGeometryApiInfoBeforeDiagrams]
+    dict set info diagram_commands {native2DGeometryDiagramCatalogRegister native2DGeometryDiagramCatalog native2DGeometryDiagramCreate native2DGeometryDiagramRead native2DGeometryDiagramValidate native2DGeometryDiagramEdit native2DGeometryDiagramEndpoint native2DGeometryDiagramProject}
+    dict set info diagram_format gxtxt.native2d.diagram.v1
+    dict set info diagram_authority INTERACTIVE_DOCUMENT_API_v1
+    dict set info diagram_connectivity explicit_stable_ports_and_junctions
+    dict set info diagram_edit_modes {commit preview}
+    dict set info diagram_edit_preview_semantics {same_source_and_candidate_validation_without_document_or_id_allocation}
+    dict set info diagram_route_fields {id route start end}
+    dict set info diagram_route_semantics {same_stable_wire_id_typed_bends_or_existing_terminal_reconnection}
+    return $info
+}

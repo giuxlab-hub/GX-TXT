@@ -530,6 +530,8 @@ proc ::GX::pluginInstallRefreshButtons {} {
     if {$id ne {} && [winfo exists .gxPluginManager.status]} {
         set runtime [pluginRuntimeInfo $id]
         set ::GX::ui(pluginManagerStatus) "[dict get $runtime status]: $id. Installed [dict get $runtime installed_version]; active [dict get $runtime active_version]. [dict get $runtime reason]"
+    } elseif {[winfo exists .gxPluginManager.status]} {
+        set ::GX::ui(pluginManagerStatus) {Select an installed plugin to inspect its installed and active implementation versions.}
     }
 }
 proc ::GX::pluginManagerSelectedId {} {

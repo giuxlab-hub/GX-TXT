@@ -1,3 +1,7 @@
+## 1.4.1 — dev108
+
+Existing generated Viewer packaging preserves declared project-owned icon source/raster resources and exact relative manual assets through the standard Module package owner.
+
 # 1.4.0
 
 Generated ordinary Viewers retain declared public CORE requirements/API guides and require only actual Plot dependencies; original handwritten handlers remain separate.

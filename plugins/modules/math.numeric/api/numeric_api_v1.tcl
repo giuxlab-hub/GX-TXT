@@ -45,6 +45,9 @@ proc ::GX::NumericAPIv1::apiInfo {} {
     return [dict create api_name NUMERIC_API_v1 api_version $apiVersion module_id $moduleId \
         module_version [::GX::moduleField $moduleId version ""] octave_available [octaveAvailable] \
         capabilities [capabilities] \
+        dataset_expression_methods {expressionDataset expressionDatasetCaptured} \
+        dataset_pointwise_methods {interpolateDatasetCaptured complexDatasetCaptured} \
+        captured_array_owner MANAGED_RESOURCE_API_v1 \
         octave_callback_operations {nonlinear_fit dataset_nonlinear_fit root_find minimize_1d minimize}]
 }
 proc ::GX::NumericAPIv1::_operationCatalog {} {
@@ -189,7 +192,7 @@ proc ::GX::NumericAPIv1::callOperation {id operands {options {kind struct fields
 }
 # Canonical identity facade: the public caller supplies Dataset/Variable IDs;
 # trusted transport resolves the current Session privately for its CORE reader.
-proc ::GX::NumericAPIv1::expressionDataset {expression bindings parameters options} {
+proc ::GX::NumericAPIv1::_datasetExpressionTyped {expression bindings parameters options} {
     set nodes {}
     dict for {symbol binding} $bindings {
         if {[lsort [dict keys $binding]] ne {dataset_id variable_id}} {_error {Expression bindings require exactly Dataset and Variable identities}}
@@ -210,9 +213,51 @@ proc ::GX::NumericAPIv1::expressionDataset {expression bindings parameters optio
         elseif {$key in {start count}} {dict set optionNodes $key [::GX::ScientificTransportv1::array {1 1} [list $value]]} \
         else {_error "Unknown Dataset expression option '$key'"}
     }
-    return [callOperation dataset_expression [list [::GX::ScientificTransportv1::text [::GX::sessionInspectionCurrentSession]] \
+    return [list [list [::GX::ScientificTransportv1::text [::GX::sessionInspectionCurrentSession]] \
         [::GX::ScientificTransportv1::text $expression] [::GX::ScientificTransportv1::struct $nodes] \
         [::GX::ScientificTransportv1::struct $parameterNodes]] [::GX::ScientificTransportv1::struct $optionNodes]]
+}
+proc ::GX::NumericAPIv1::expressionDataset {expression bindings parameters options} {
+    lassign [_datasetExpressionTyped $expression $bindings $parameters $options] operands typedOptions
+    return [callOperation dataset_expression $operands $typedOptions]
+}
+proc ::GX::NumericAPIv1::_expressionCaptureGuard {document owner sources} {
+    set current [::GX::interactiveDocumentRead $document]
+    foreach key {generation revision sha256} {if {[dict get $current $key] ne [dict get $owner $key]} {_error {Numeric result Document changed during computation}}}
+    dict for {dataset revision} $sources {if {[::GX::datasetRevisionToken $dataset] ne $revision} {_error {Numeric expression source Dataset changed during computation}}}
+}
+proc ::GX::NumericAPIv1::expressionDatasetCaptured {document expression bindings parameters options} {
+    set owner [::GX::interactiveDocumentRead $document];set sources {}
+    dict for {symbol binding} $bindings {set dataset [dict get $binding dataset_id];dict set sources $dataset [::GX::datasetRevisionToken $dataset]}
+    lassign [_datasetExpressionTyped $expression $bindings $parameters $options] operands typedOptions
+    set typedOptions [_operationOptions dataset_expression $operands $typedOptions]
+    set empty [::GX::ScientificTransportv1::empty]
+    return [::GX::ScientificTransportv1::withCapturedColumns math.numeric gxtxt_numeric_catalog_call_v1 dataset_expression invoke \
+        [dict create kind cell items $operands] $empty $empty $typedOptions {values} \
+        [list ::GX::NumericAPIv1::_expressionCaptured $document $owner $sources [dict get $options count]]]
+}
+proc ::GX::NumericAPIv1::_expressionCaptured {document owner sources expectedRows transported path} {
+    _expressionCaptureGuard $document $owner $sources
+    set envelope [dict get $transported values];set result [dict get $envelope sample];set capture [dict get $envelope capture]
+    set rows [dict get $capture row_count];set fields [dict get $capture fields]
+    if {$expectedRows==1} {
+        if {$rows!=0 || $fields ne {} || [llength [dict get $result values]]!=1} {_error {Single-row expression result has an invalid capture shape}}
+        set rows 1
+    } elseif {$rows!=$expectedRows || $fields ne {values} || [dict get $capture shapes] ne [list [list $rows 1]]} {_error {Numeric expression captured shape differs from its requested rows}}
+    set metadata [dict create format gxtxt.numeric_matrix_le_v1 dtype float64 endian little order C columns {value} row_count $rows unit [dict get $result unit] numeric_api NUMERIC_API_v1 operation dataset_expression expression_receipt [dict remove $result values] source_revisions $sources]
+    if {$rows==1} {
+        set value [dict get $result values]
+        set reference [::GX::managedResourceWrite $document $metadata [binary format q* $value]]
+    } else {
+        set generation [::GX::managedResourceNumericOwner $document]
+        set reference [::GX::managedResourceImportNumeric $document $generation $path $metadata]
+    }
+    _expressionCaptureGuard $document $owner $sources
+    dict unset result values
+    dict set result row_count $rows;dict set result resource $reference
+    dict set result array [::GX::ScientificTransportv1::resourceArray $reference [list $rows 1] float64]
+    dict set result transport [dict get $transported transport]
+    return $result
 }
 proc ::GX::NumericAPIv1::callOperationCaptured {document id operands context {options {kind struct fields {}}} {provenance {}}} {
     ::GX::interactiveDocumentRead $document
@@ -222,6 +267,82 @@ proc ::GX::NumericAPIv1::callOperationCaptured {document id operands context {op
     return [::GX::ScientificTransportv1::withCapturedColumns math.numeric gxtxt_numeric_catalog_call_v1 $id invoke \
         [dict create kind cell items $operands] $empty $empty $options $fields \
         [list ::GX::StatisticsV1::fromProviderColumns $document $id $context $provenance]]
+}
+# Pointwise vectors are not statistical result profiles. Preserve their actual
+# fields through the existing captured transport and immutable Resource owner.
+proc ::GX::NumericAPIv1::_pointwiseCaptured {document owner sources operation field fields unit rows transported path} {
+    _expressionCaptureGuard $document $owner $sources
+    set envelope [dict get $transported values];set result [dict get $envelope sample];set capture [dict get $envelope capture]
+    if {$rows==1} {
+        if {[dict get $capture row_count]!=0 || [dict get $capture fields] ne {} || [llength [dict get $result $field]]!=1} {_error {Single-row pointwise capture shape differs}}
+        set bytes [binary format q* [dict get $result $field]]
+    } else {
+        if {[dict get $capture row_count]!=$rows || [dict get $capture fields] ne $fields} {_error {Pointwise capture fields or row count differ}}
+        foreach shape [dict get $capture shapes] {if {$shape ne [list $rows 1]} {_error {Pointwise captured field is not an aligned column}}}
+        # The existing worker writes contiguous float64 little-endian columns.
+        # Slice exact bytes only; no numerical conversion or arithmetic occurs.
+        if {[file size $path]!=$rows*8*[llength $fields]} {_error {Pointwise capture byte count differs}}
+        set fd [open $path rb]
+        try {seek $fd [expr {[lsearch -exact $fields $field]*$rows*8}];set bytes [read $fd [expr {$rows*8}]]} finally {close $fd}
+    }
+    foreach name $fields {dict unset result $name}
+    set metadata [dict create format gxtxt.numeric_matrix_le_v1 dtype float64 endian little order C columns {value} row_count $rows unit $unit numeric_api NUMERIC_API_v1 operation $operation pointwise_receipt $result source_revisions $sources]
+    set reference [::GX::managedResourceWrite $document $metadata $bytes]
+    _expressionCaptureGuard $document $owner $sources
+    return [dict merge $result [dict create row_count $rows unit $unit resource $reference array [::GX::ScientificTransportv1::resourceArray $reference [list $rows 1] float64] transport [dict get $transported transport]]]
+}
+proc ::GX::NumericAPIv1::_datasetColumnCapture {document dataset variable start count unit} {
+    return [expressionDatasetCaptured $document column [dict create column [dict create dataset_id $dataset variable_id $variable]] {} [dict create start $start count $count output_unit $unit]]
+}
+proc ::GX::NumericAPIv1::_boundedDatasetRows {spec keys} {
+    if {[lsort [dict keys $spec]] ne [lsort $keys]} {_error {Dataset pointwise input fields differ from the declared contract}}
+    foreach key {start count} {if {![string is entier -strict [dict get $spec $key]]} {_error {Dataset row ranges must be explicit integers}}}
+    if {[dict get $spec start]<0 || [dict get $spec count]<1 || [dict get $spec count]>65536} {_error {Dataset pointwise rows require nonnegative start and count1..65536}}
+}
+proc ::GX::NumericAPIv1::interpolateDatasetCaptured {document source query {options {method linear extrapolation error}}} {
+    requireCapability interpolation
+    _boundedDatasetRows $source {dataset_id x_variable_id y_variable_id start count}
+    _boundedDatasetRows $query {dataset_id variable_id start count}
+    if {[lsort [dict keys $options]] ne {extrapolation method} || [dict get $options method] ni {linear pchip} || [dict get $options extrapolation] ne {error}} {_error {Captured Dataset interpolation supports explicit linear/pchip and extrapolation=error}}
+    set owner [::GX::interactiveDocumentRead $document];set sources {}
+    foreach spec [list $source $query] {set id [dict get $spec dataset_id];dict set sources $id [::GX::datasetRevisionToken $id]}
+    set dataset [dict get $source dataset_id];set queryDataset [dict get $query dataset_id]
+    set xmeta [::GX::datasetVariableV3ById $dataset [dict get $source x_variable_id]]
+    set ymeta [::GX::datasetVariableV3ById $dataset [dict get $source y_variable_id]]
+    set qmeta [::GX::datasetVariableV3ById $queryDataset [dict get $query variable_id]]
+    set x [_datasetColumnCapture $document $dataset [dict get $source x_variable_id] [dict get $source start] [dict get $source count] [dict get $xmeta unit]]
+    set y [_datasetColumnCapture $document $dataset [dict get $source y_variable_id] [dict get $source start] [dict get $source count] [dict get $ymeta unit]]
+    # Public Dataset expression performs actual physical unit conversion, not
+    # merely dimension matching. Different scales therefore remain coherent.
+    set q [_datasetColumnCapture $document $queryDataset [dict get $query variable_id] [dict get $query start] [dict get $query count] [dict get $xmeta unit]]
+    _expressionCaptureGuard $document $owner $sources
+    set operands [list [dict get $x array] [dict get $y array] [dict get $q array]]
+    set fields {};dict for {key value} $options {dict set fields $key [::GX::ScientificTransportv1::text $value]}
+    set typedOptions [_operationOptions interpolate $operands [::GX::ScientificTransportv1::struct $fields]]
+    set empty [::GX::ScientificTransportv1::empty]
+    set result [::GX::ScientificTransportv1::withCapturedColumns math.numeric gxtxt_numeric_catalog_call_v1 interpolate invoke [dict create kind cell items $operands] $empty $empty $typedOptions {xq yq} [list ::GX::NumericAPIv1::_pointwiseCaptured $document $owner $sources interpolate yq {xq yq} [dict get $ymeta unit] [dict get $query count]]]
+    dict set result source $source;dict set result query $query;dict set result options $options
+    dict set result source_x_unit [dict get $xmeta unit];dict set result query_x_unit [dict get $qmeta unit]
+    return $result
+}
+proc ::GX::NumericAPIv1::complexDatasetCaptured {document dataset realVariable imaginaryVariable projection options} {
+    requireCapability complex_unary
+    _boundedDatasetRows [dict merge $options [dict create dataset_id $dataset]] {dataset_id start count}
+    if {$projection ni {magnitude phase_rad phase_deg}} {_error {Captured split-complex projection must be magnitude, phase_rad or phase_deg}}
+    set owner [::GX::interactiveDocumentRead $document]
+    set sources [dict create $dataset [::GX::datasetRevisionToken $dataset]]
+    set realmeta [::GX::datasetVariableV3ById $dataset $realVariable]
+    set real [_datasetColumnCapture $document $dataset $realVariable [dict get $options start] [dict get $options count] [dict get $realmeta unit]]
+    set imaginary [_datasetColumnCapture $document $dataset $imaginaryVariable [dict get $options start] [dict get $options count] [dict get $realmeta unit]]
+    _expressionCaptureGuard $document $owner $sources
+    set operation complex_unary.$projection
+    set unit [dict get $realmeta unit];if {$projection eq {phase_rad}} {set unit rad};if {$projection eq {phase_deg}} {set unit deg}
+    set operands [list [dict get $real array] [dict get $imaginary array]]
+    set empty [::GX::ScientificTransportv1::empty];set typedOptions [_operationOptions $operation $operands [::GX::ScientificTransportv1::struct {}]]
+    set result [::GX::ScientificTransportv1::withCapturedColumns math.numeric gxtxt_numeric_catalog_call_v1 $operation invoke [dict create kind cell items $operands] $empty $empty $typedOptions {values} [list ::GX::NumericAPIv1::_pointwiseCaptured $document $owner $sources $operation values {values} $unit [dict get $options count]]]
+    dict set result dataset_id $dataset;dict set result real_variable_id $realVariable;dict set result imaginary_variable_id $imaginaryVariable
+    dict set result projection $projection;dict set result options $options
+    return $result
 }
 # Shared Selection resolution for typed catalog and declared-model callers.
 proc ::GX::NumericAPIv1::_typedDatasetOptions {operands options} {

@@ -163,6 +163,20 @@ proc ::GX::datasetRevisionToken {datasetId {session {}}} {
     # when payload SHA-256 stays unchanged.
     return [list dataset-revision-v1 [file normalize $session] $datasetId $record $hash]
 }
+proc ::GX::_datasetRevisionPortableEqual {current saved} {
+    # Persistent results travel with their canonical Dataset and Document. The
+    # carrier directory is not a scientific revision. Interpret the opaque token
+    # only here, in its owner; retain every identity/schema/metadata field.
+    # This comparison is for revalidating saved results, never live CAS guards.
+    foreach token [list $current $saved] {
+        if {[catch {llength $token} size] || $size!=5 ||
+            [lindex $token 0] ne {dataset-revision-v1} ||
+            [lindex $token 1] eq {} || [lindex $token 2] eq {}} {return 0}
+    }
+    expr {[lindex $current 2] eq [lindex $saved 2] &&
+        [lindex $current 3] eq [lindex $saved 3] &&
+        [lindex $current 4] eq [lindex $saved 4]}
+}
 proc ::GX::datasetAuthorityFault {point} {
     # Fault injection is an explicit process-local validation hook, never set
     # by runtime/script requests or persisted configuration.

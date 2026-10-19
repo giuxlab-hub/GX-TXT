@@ -1,3 +1,7 @@
+## 1.63.0 — dev108
+
+Public captured Dataset expression, interpolation and split-complex operations preserve managed resource and statistical result authority. Restricted callers receive only specifically approved existing Numeric operations.
+
 # Numeric integration changes
 
 ##1.61.0

@@ -173,6 +173,7 @@ proc ::GX::PythonScriptEditorUI::_new {} {
     set ui(revision) ""
     set ui(revision) ""
     set ui(scope) [::GX::scriptWorkspaceDefaultScope]
+    set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(scriptId) ""
     set ui(name) "Untitled script"
     set ui(version) "1.0.0"
@@ -281,6 +282,7 @@ proc ::GX::PythonScriptEditorUI::_delete {} {
     set ui(revision) ""
     set ui(scriptId) ""
     set ui(scope) [::GX::scriptWorkspaceDefaultScope]
+    set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     _acceptBaseline
     _refreshDocuments
     _new
@@ -314,6 +316,7 @@ proc ::GX::PythonScriptEditorUI::_import {} {
     set ui(revision) ""
     set ui(scriptId) ""
     set ui(scope) [::GX::scriptWorkspaceDefaultScope]
+    set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(name) [file tail [file rootname $path]]
     set ui(version) "1.0.0"
     set ui(requiredApis) ""
@@ -524,6 +527,7 @@ proc ::GX::PythonScriptEditorUI::_buildMenus {w} {
     $m add command -label {Script Jobs Manager...} -command ::GX::scriptJobsDialog
     $w.toolbar.help.menu add command -label {Script Bridge help} -command ::GX::PythonScriptEditorUI::_bridgeHelp
     $w.toolbar.help.menu add command -label {Viewer manual / Debugger guide…} -accelerator F1 -command [list ::GX::documentationBrowserOpenModuleWindow analysis.python_script $w]
+    $w.toolbar.help.menu add command -label {About…} -command [list ::GX::documentationBrowserAboutModule analysis.python_script python_script_editor $w]
     bind $w <F1> [list ::GX::documentationBrowserOpenModuleWindow analysis.python_script $w]
     ::GX::uiMenuRowAttach $w.toolbar [list $w.toolbar.file $w.toolbar.edit $w.toolbar.view $w.toolbar.run $w.toolbar.help]
 }
@@ -554,6 +558,7 @@ proc ::GX::PythonScriptEditorUI::_build {} {
     set ui(modified) 0
     set ui(name) ""
     set ui(scope) [::GX::scriptWorkspaceDefaultScope]
+    set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(scriptId) ""
     set ui(version) "1.0.0"
     set ui(requiredApis) ""

@@ -110,3 +110,30 @@ and displays evaluated samples with the existing native Plot widget. Its
 Document persists formulas, units and numerical viewport; explicit Dataset and
 Graph publication preserve canonical scientific identities/provenance. See its
 [user guide](../../plugins/modules/viewer.mathematics_explorer/docs/USER_GUIDE.md).
+
+## Captured Dataset expression vectors (dev108, GAP004)
+
+Tcl `::GX::NumericAPIv1::expressionDatasetCaptured document expression bindings
+parameters options` accepts the exact same explicit canonical inputs, units and
+row interval as expressionDataset. It invokes the same public Numeric operation
+once through existing binary Scientific Transport, then imports its one real
+column into the owning canonical Document through MANAGED_RESOURCE_API_v1
+`gxtxt.numeric_matrix_le_v1` (float64, little endian, column value, C order).
+No statistical estimate/profile is fabricated for a pointwise vector.
+
+The result retains expression/dimension/source/parameter/alignment receipts,
+row_count, an immutable managed resource and an ordinary typed managed_array
+node, plus actual transport counters. It deliberately omits the raw values
+vector: use public managedResourceNumericPage or pass its typed array to an
+eligible public Numeric captured operation. Do not treat a transport prototype
+sample as the vector. A requested single row is preserved as exactly one actual
+value/resource; all longer captures must match their exact requested shape.
+
+The owner Document generation/revision/SHA and all canonical input Dataset
+revisions are checked before/after computation and import. Invalid units/domain,
+short/nonfinite rows or a changed source reject. Numerical publication remains
+explicit and belongs to existing Dataset Publication; Plot reads its canonical
+Dataset/Variable identities. This API adds no new array store, file path grant,
+number engine, binary format or statistics semantics. The restricted SDK exposes
+only separately reviewed typed operations; this Tcl method alone grants no
+general C++ API access.

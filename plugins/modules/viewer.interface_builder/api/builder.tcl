@@ -5,6 +5,7 @@ proc ::GX::InterfaceBuilder::safe {method args} {
     variable s
     if {[catch {[namespace current]::$method {*}$args} result options]} {
         set s(status) $result
+        if {[winfo exists .gxInterfaceIcons]} {set ::GX::InterfaceBuilder::icon(status) $result}
         if {[winfo exists .gxInterfaceDesigner.body.right.diagnostics.text]} {.gxInterfaceDesigner.body.right.diagnostics.text insert end "$result\n"}
         return [dict create status failed message $result]
     }
@@ -145,7 +146,7 @@ proc ::GX::InterfaceBuilder::preview {} {
                 foreach previous [dict get $old components] {
                     if {[dict get $previous id] ne $id || [dict get $previous type] ne [dict get $item type]} continue
                     if {[dict exists $retained values $id] && [::GX::datasetPublicationV2DictDefault [dict get $previous properties] default {}] eq [::GX::datasetPublicationV2DictDefault [dict get $item properties] default {}]} {dict set keepValues $id [dict get $retained values $id]}
-                    if {[dict exists $retained bindings $id]} {dict set keepBindings $id [dict get $retained bindings $id]}
+                    if {[dict exists $retained bindings $id] && [::GX::datasetPublicationV2DictDefault [dict get $previous properties] diagram_catalog {}] eq [::GX::datasetPublicationV2DictDefault [dict get $item properties] diagram_catalog {}]} {dict set keepBindings $id [dict get $retained bindings $id]}
                 }
             }
             dict set retained values $keepValues;dict set retained bindings $keepBindings
@@ -278,7 +279,7 @@ proc ::GX::InterfaceBuilder::refresh {} {
     set tree .gxInterfaceDesigner.body.left.tree
     $tree delete [$tree children {}]
     foreach region {toolbar inspector canvas footer menubar} {$tree insert {} end -id $region -text [string totitle $region] -open 1}
-    foreach item [dict get [design] components] {$tree insert [dict get $item parent] end -id [dict get $item id] -text "[dict get $item id] · [dict get $item type]" -open 1}
+    foreach item [::GX::_viewerGuiDesignParentOrder [dict get [design] components]] {$tree insert [dict get $item parent] end -id [dict get $item id] -text "[dict get $item id] · [dict get $item type]" -open 1}
     if {[$tree exists $s(selected)]} {$tree selection set $s(selected)} else {set s(selected) canvas;$tree selection set canvas}
     preview;properties;set s(status) "Design revision [dict get $s(model) revision] — [llength [dict get [design] components]] CORE components"
     if {$priorFocus ne {} && [winfo exists $priorFocus] && [winfo toplevel $priorFocus] eq {.gxInterfaceDesigner}} {after idle [list focus $priorFocus]}
@@ -286,7 +287,7 @@ proc ::GX::InterfaceBuilder::refresh {} {
 proc ::GX::InterfaceBuilder::copy {{cut 0}} {
     variable s
     set ids [list $s(selected)];set items {};set contracts {}
-    foreach item [dict get [design] components] {
+    foreach item [::GX::_viewerGuiDesignParentOrder [dict get [design] components]] {
         if {[dict get $item parent] in $ids} {lappend ids [dict get $item id]}
         if {[dict get $item id] in $ids} {lappend items $item}
     }
@@ -605,14 +606,14 @@ proc ::GX::InterfaceBuilder::open {{context {}}} {
         dict set handlers $id [dict create command [list ::GX::InterfaceBuilder::safe {*}$method]]
     }
     foreach {id label method keys} {copy Copy copy Ctrl+c cut Cut {copy 1} Ctrl+x paste Paste paste Ctrl+v} {dict set catalog $id [dict create label $label default $keys clipboard_operation $id];dict set handlers $id [dict create command [list ::GX::InterfaceBuilder::safe {*}$method]]}
-    foreach {id label method} {gallery {Component Gallery / Demo…} gallery import_existing {Import Existing Viewer…} importDialog compare {Compare with Original Viewer} compare bind_source {Bind Dataset…} sourceDialog generate {Generate installable Viewer…} generate cancel_generate {Cancel generation} cancelGenerate plugins {Plugin Manager…} pluginManager connect_handlers {Connect installed test handlers…} connectHandlers disconnect_handlers {Disconnect test handlers} disconnectHandlers} {dict set catalog $id [dict create label $label];dict set handlers $id [dict create command [list ::GX::InterfaceBuilder::safe $method]]}
+    foreach {id label method} {diagram_profile {Native2D diagram profile…} diagramProfile icons {Icon Library / Manager…} icons gallery {Component Gallery / Demo…} gallery import_existing {Import Existing Viewer…} importDialog compare {Compare with Original Viewer} compare bind_source {Bind Dataset…} sourceDialog generate {Generate installable Viewer…} generate cancel_generate {Cancel generation} cancelGenerate plugins {Plugin Manager…} pluginManager connect_handlers {Connect installed test handlers…} connectHandlers disconnect_handlers {Disconnect test handlers} disconnectHandlers} {dict set catalog $id [dict create label $label];dict set handlers $id [dict create command [list ::GX::InterfaceBuilder::safe $method]]}
     ::GX::viewerCommandCatalogRegister viewer.interface_builder.designer $catalog {} designer_shortcuts viewer.interface_builder
     ::GX::viewerCommandsAttach $w viewer.interface_builder.designer $handlers {} {} {session_scoped 0}
-    foreach {name label ids} {file File {new open save save_as import_existing - generate cancel_generate plugins - close} edit Edit {undo redo - copy cut paste duplicate remove up down align} design Design {add gallery preview bind_source validate - connect_handlers disconnect_handlers} inspect Inspect {analyze compare}} {
+    foreach {name label ids} {file File {new open save save_as import_existing - generate cancel_generate plugins - close} edit Edit {undo redo - copy cut paste duplicate remove up down align} design Design {add gallery icons diagram_profile preview bind_source validate - connect_handlers disconnect_handlers} inspect Inspect {analyze compare}} {
         ::GX::viewerGuiMenuMount $w $w.menus.$name $ids;$w.menus add cascade -label $label -underline 0 -menu $w.menus.$name
     }
     ttk::frame $w.toolbar;pack $w.toolbar -fill x
-    ::GX::viewerCommandToolbarCreate $w $w.toolbar {add gallery duplicate remove undo redo preview validate analyze generate plugins}
+    ::GX::viewerCommandToolbarCreate $w $w.toolbar {add gallery icons duplicate remove undo redo preview validate analyze generate plugins}
     ttk::frame $w.modes;pack $w.modes -fill x -padx 5 -pady 3
     ttk::label $w.modes.label -text {Workspace mode:}
     set s(presentationMode) Design
@@ -706,3 +707,6 @@ proc ::GX::InterfaceBuilder::open {{context {}}} {
 }
 proc ::GX::InterfaceBuilder::dispatch {operation scene} {return [open [::GX::datasetPublicationV2DictDefault $scene open_context {}]]}
 ::GX::viewerBackendRegister viewer_interface_builder_tk ::GX::InterfaceBuilder::dispatch
+
+source [file join [file dirname [info script]] icons.tcl]
+source [file join [file dirname [info script]] diagrams.tcl]

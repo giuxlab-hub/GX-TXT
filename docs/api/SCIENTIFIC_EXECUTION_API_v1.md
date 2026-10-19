@@ -34,13 +34,94 @@ Observations use descriptor identity, size, nanosecond modification/change times
 
 ## Security and limitations
 
+## Canonical electrical circuit provider (dev108 additive extension)
+
+`scientificExecutionCircuitInspect document_id ?parameters?` reads and validates the existing
+Native2D diagram Document and inspects its deterministic netlist without creating
+a Job. It returns `document` (ID, generation, revision, SHA and owner), provider
+ID/version, `analyses`, snapshot `source_sha256`, reviewable `netlist`, typed
+`probes`, explicit terminal `net_mapping` and `model_origin`. Supported format is
+`gxtxt.native2d.diagram.v1`, catalog `electrical.basic`. The existing diagram
+owner remains the sole editable authority.
+
+`scientificExecutionCircuitPrepare document_id parameters ?options?` uses the
+same inspection, stores exact snapshot bytes as a managed resource owned by that
+Document, then calls the ordinary Scientific Execution preparation. Options are
+`node_id`, `remote_session_id`, `expected_generation`, `expected_revision` and
+`expected_sha256`. Requested source guards must match. Returned inspection adds
+opaque `preparation` and `source_resource`; submit/discard use that token through
+the existing methods. Ordinary Submit rechecks the source before admission.
+Explicit remote selection never falls back locally. Capability inspection on the
+selected node must advertise `core.ngspice.circuit` and an available `spice` tool.
+
+`core.ngspice.circuit@1.0.0` accepts only the bounded managed diagram snapshot:
+R/C/L, independent voltage/current sources, explicit ground, diode and NPN.
+Names need their device prefix plus 1..31 ASCII letters/digits/underscores and
+must be unique ignoring case. Values are finite base-SI numbers. Explicit wire
+endpoints join pins/junctions; mere coordinate crossings do not. Identical net
+labels join nets ignoring case. All ground symbols are node0. Open device pins,
+disconnected floating islands, conflicting names and arbitrary directives are
+rejected. This does not prove absence of every singular DC topology; real solver
+diagnostics and result validation still apply.
+
+Parameters (all types/bounds/defaults are discoverable with Describe):
+
+| Analysis | Parameters | Raw output |
+| --- | --- | --- |
+| `op` (default) | none | observation index, node V and independent voltage-source branch A |
+| `tran` | `step_seconds` (default1e-5), `stop_seconds` (default.005) | time in seconds, V and A |
+| `ac` | `ac_grid` dec/lin/oct, `points` default30, `start_hz` default1, `stop_hz` default100000 | frequency Hz, real/imaginary V and A |
+| `dc` | exact independent `source` name, `dc_start` default0, `dc_stop` default5, nonzero progressing `dc_step` default.1 | source value V or A, node V and branch A |
+
+Voltage waveform `dc` uses value; `pulse` uses initial/value/delay/rise/rise/width/
+period; `sine` uses initial offset/value amplitude/frequency/delay. `ac` is the
+small-signal amplitude. Current sources currently provide DC and AC amplitude.
+R/C/L values use ohm/F/H. Positive branch current follows ngspice's source sign
+convention. Original generic educational diode/NPN parameter cards are supplied
+under GPL-3.0-or-later with their exact text in the netlist; these are illustrative
+models, not manufacturer-certified parts.
+
+For physical-parameter campaigns, `override_component` is an exact stable diagram
+component ID and `override_value` is its finite base-SI scalar value. The admitted
+targets are R/C/L and independent voltage/current source `value` attributes; all
+normal type/minimum checks still apply. An absent component or unsupported target
+is rejected. Inspection shows the parameterized netlist. The canonical diagram
+is preserved; original snapshot SHA and captured typed Job parameters jointly
+identify each child solve. Existing Parallel Execution/Script Job admission must
+coordinate campaigns, without provider-owned pools.
+
+`scientificExecutionImportTable job output_token producer definition callback
+?source_guard?` publishes immutable declared CSV columns using the existing
+Dataset Publication writer, cooperatively in bounded record pages. Optional guard
+has exactly `document_id generation revision sha256` and is checked before opening
+the writer and on each page, including final publication. Session lifetime, source
+generation, completed Job state and original local Dataset inputs are checked;
+cancel or failure aborts the writer. Remote immutable tables can be adopted into
+the explicit local Session through the actual protocol. Remote Jobs with Dataset
+inputs still require node-authoritative input validation and are refused by this
+local adoption path. `ImportResults` keeps its original node-authoritative meaning.
+The circuit provider has no Dataset inputs. Provenance in the publication
+definition must retain original Job/provider/circuit identities and units.
+
+The Job publishes `waveform` CSV with stable typed column IDs/units and `netlist`
+text. Summary contains actual solver/version, analysis, row count, circuit/deck
+hashes and model origin. AC output is raw complex parts, without private magnitude
+or phase calculation. Public Numeric complex/vector operations must compute any
+derived quantities, interpolation, analytical references and error statistics.
+No new numerical library or solver launcher/scheduler is introduced. Canonical
+publication uses the existing `scientificExecutionImportTable` and Dataset
+Publication v2; permanent plots consume those canonical variables through Plot.
+
+This contract does not certify the authored Viewer or every analysis/device
+combination. See the evidence-indexed dev108 acceptance matrix for actual tests.
+
 These APIs enforce the declared boundary for compliant clients. GX-TXT's in-process Tcl/Python plugins share OS privileges: this is **not an OS sandbox against hostile code**. Trusted providers can execute native solver code and must be reviewed. Provider-specific parsers, safe arguments and bounded resources remain required. Remote execution uses an authenticated HTTPS compute agent over the same node-local Supervisor. No remote scheduler, shell-command submission or cloud-provider adapter is implied.
 
 The bounded RC provider accepts the documented 1 kΩ/1 µF netlist with a fixed safe grammar and controlled transient options. It does not accept arbitrary ngspice control commands, includes or shell expressions and is not a circuit CAD editor. Electromagnetics uses its own registered domain provider and importer over this same execution authority.
 
 ## Compute nodes and destination
 
-`scientificExecutionNodeRegister node_id descriptor` stores an account-local Configuration descriptor containing `endpoint` (HTTPS), `ca_file`, `client_cert`, `client_key`, logical `session_id`, and optional `enabled`. Use Configuration → Execution for registration, capability testing and destination selection. Credential files remain outside scientific Sessions; the key must be private to its owner. Registration is host-only because it configures credentials. `NodeList` returns a redacted list; `NodeInspect node_id` reports actual Linux architecture, cores, registered providers, tool availability and Supervisor policy. Python/Octave expose `node_list`, `node_inspect`, and `destination`.
+`scientificExecutionNodeRegister node_id descriptor` stores an account-local Configuration descriptor containing `endpoint` (HTTPS), `ca_file`, `client_cert`, `client_key`, logical `session_id`, and optional `enabled`. Use Configuration → Execution for registration, capability testing and destination selection. Credential files remain outside scientific Sessions; the key must be private to its owner. Registration is host-only because it configures credentials. `NodeList` returns a redacted list; `NodeInspect node_id` reports actual Linux architecture, cores, registered providers, tool availability and Supervisor policy. Dev108 additively includes `core_apis`: `scientificExecutionCoreCapabilities` inspects the actual public Numeric API version/operation and foundation catalogs, Octave availability, Statistical Result Semantics, Script Job and Parallel Execution contracts. It activates the bundled public Numeric service independently of its optional analysis checkbox. This is installed capability inspection, not scientific execution acceptance; no numerical-library presence probe is performed. Existing clients may ignore the additional field. Python/Octave expose `node_list`, `node_inspect`, and `destination`.
 
 `scientificExecutionDestination ?local|auto|node_id?` persists the destination. An explicit `Prepare` option `node_id` overrides it; `remote_session_id` can select another granted logical Session. Auto chooses an enabled reachable node advertising the requested available provider, otherwise local. A remote preparation retains the local Session lifetime, input SHA and optional Document revision guards. Inputs use bounded SHA-verified managed-resource staging; identical scoped inputs reuse a verified resource. The remote host validates its own registered provider and runtime. Remote preparations retain their nonce receipt until explicit Discard so retries return the same durable Job rather than submitting twice.
 
@@ -58,3 +139,46 @@ from different source bytes can correctly refuse Preview preparation because its
 expected renderer/source key differs; restart and request the current representation
 rather than bypassing that guard. Durable scientific Jobs remain attached to their
 Supervisor identity across the agent restart.
+
+### Bounded physical parameter collections
+
+`core.ngspice.circuit` additionally accepts `component_values`, an inert Tcl
+dictionary (at most4KiB/eight targets) mapping exact stable component IDs to
+finite base-SI values. Only R/C/L/independent V/I value attributes may be
+overridden; missing targets, duplicate keys, conflicting single/mapped overrides
+and invalid physical minima reject at inspection. The earlier optional
+`override_component`/`override_value` pair remains compatible. Source topology,
+original values and canonical Document SHA remain unchanged; exact normalized
+overrides appear in inspection, Job parameters and solver summaries. No authored
+raw netlist directives or code are admitted.
+
+`scientificExecutionCircuitSweepPrepare document baseParameters items ?options?`
+accepts1..16 items `{id UNIQUE_ID parameters TYPED_OVERRIDES}`. It validates every
+merged parameter set before any Job submission, captures one source guard and
+managed original circuit resource, and returns only ordinary Scientific Execution
+preparations plus exact item/provider identities. Options match circuit Prepare.
+If preparation fails, already prepared handles are discarded; no simulation was
+admitted. Explicit values/grids generated by callers must use public Numeric
+operations when scientific calculation is required.
+
+`scientificExecutionCircuitSweepSubmit receipt ?options?` coordinates ordinary
+Submit calls using existing Parallel Execution. Options: workers, fail_fast,
+progress_command, run_id. Callback coordination intentionally reports its actual
+serial worker_count/fallback. Every callback returns immediately after ordinary
+Job admission; the existing durable Script Job Supervisor alone schedules child
+processes under actual destination CPU/RAM/worker policy. No extra scheduler or
+thread pool exists. `ADMISSION_FINISHED` describes submission, never successful
+physics completion. Per-item errors/not_executed and known canonical Job IDs are
+retained in the coordination result; query each real Job for progress, logs,
+cancellation, reconnection and completed outputs.
+
+Preparation handles are scoped to the existing process/Session lifetime. Retain
+handles on uncertain remote admission for idempotent retry with the original
+nonce; do not resubmit a fresh preparation blindly. Persist known durable child
+Job references and source/parameter identities in existing Document/Workspace
+state. A preparation receipt alone is not durable across application restart.
+The caller must discard successful remote preparations after storing their Job
+receipts, and explicitly discard abandoned/unsubmitted preparations. Mutating the
+source between preparation/submissions rejects; partial admissions remain real
+Jobs and must be shown/recovered rather than erased. GUI/SDK exposure and actual
+concurrency/scientific acceptance require separate evidence.

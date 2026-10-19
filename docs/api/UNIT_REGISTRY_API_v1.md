@@ -44,7 +44,7 @@ numeric or presentation symbol; a Semantic role identifies scientific meaning.
 
 CORE Tcl uses `unitTclSingle`, `unitTclDimensionKey` and `unitTclCompatible`;
 CORE Octave uses `gxtxt_unit_parse`, `gxtxt_unit_compatible` and
-`gxtxt_unit_convert`. Both support base A/V/s/Hz/Ohm/W/J/K/mol/m/g, SI prefixes,
+`gxtxt_unit_convert`. Both support base A/V/s/Hz/Ohm/F/H/W/J/K/mol/m/g, SI prefixes,
 min/h/day and simple products, divisions and integer powers. The exact token
 `1` is a neutral dimensionless factor, including reciprocal units such as
 `1/s` and `1/ms`. For example, `1/ms` converts to Hz with scale 1000.

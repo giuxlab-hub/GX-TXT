@@ -154,6 +154,11 @@ proc ::GX::scriptLibraryRefresh {} {
             -values [list [dict get $m scope] [dict get $m language] [dict get $m id] [dict get $m version]]
     }
     catch {scriptWorkspaceRefreshChoices}
+    # Registry inventory changed/refreshed. Update open editors' Explorer rows
+    # through their existing owners, without loading a document or draft buffer.
+    foreach refresh {::GX::PythonScriptEditorUI::_refreshDocuments ::GX::OctaveScriptEditorUI::_refreshDocuments} {
+        if {[llength [info commands $refresh]]} {catch {{*}$refresh}}
+    }
 }
 
 proc ::GX::scriptLibrarySelect {} {

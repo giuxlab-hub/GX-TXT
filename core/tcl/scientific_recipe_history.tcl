@@ -99,18 +99,23 @@ proc ::GX::scientificHistoryViewerPrepareEdit {window} {
     if {$cursor<[llength [dict get $record steps]]} {
         if {[tk_messageBox -parent $window -type okcancel -default cancel -icon warning -title {Branch Workspace History} \
             -message {Editing here discards later local History steps. Published Datasets and exported files remain. Restart editing here?}] ne "ok"} {return 0}
-        _scientificHistoryCommit $window [scientificHistoryBranch [dict get $adapter owner] $record $cursor]
+        # Branching truncates redo at the already displayed checkpoint. Replaying
+        # that same snapshot needlessly destroys/recreates native hosts, losing
+        # the active selection, gesture and keyboard focus before this edit.
+        _scientificHistoryCommit $window [scientificHistoryBranch [dict get $adapter owner] $record $cursor] 0
     }
     return 1
 }
-proc ::GX::_scientificHistoryCommit {window record} {
+proc ::GX::_scientificHistoryCommit {window record {restoreSnapshot 1}} {
     set adapter [_scientificHistoryGuard $window]
     set prior [dict get $adapter record]
     set state [scientificHistoryState $record]
     scientificHistoryValidate [dict get $adapter owner] $record
+    if {![string is boolean -strict $restoreSnapshot]} {error {History snapshot restoration flag must be boolean}}
+    if {!$restoreSnapshot && $state ne [scientificHistoryState $prior]} {error {History may retain native state only at the same current checkpoint}}
     dict set ::GX::ScientificHistory::viewers $window restoring 1
     try {
-        uplevel #0 [list {*}[dict get $adapter callbacks restore] $state]
+        if {$restoreSnapshot} {uplevel #0 [list {*}[dict get $adapter callbacks restore] $state]}
         uplevel #0 [list {*}[dict get $adapter callbacks commit] $record]
         dict set ::GX::ScientificHistory::viewers $window record $record
         dict set ::GX::ScientificHistory::viewers $window browsing 0

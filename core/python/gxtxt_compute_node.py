@@ -133,7 +133,8 @@ class Node:
             import gxtxt_job_supervisor as supervisor
             c = supervisor.connect(supervisor.root_path(os.environ['GXTXT_JOB_ROOT']))
             policy = supervisor.policy(c); c.close()
-            return dict(result=host.tcl_arg(dict(node_id=self.config['node_id'], os=platform.system(), architecture=platform.machine(), cores=os.cpu_count(), providers=[host.tcl_arg(p) for p in providers], policy=policy))), []
+            core_apis = host.call('::GX::scientificExecutionCoreCapabilities')
+            return dict(result=host.tcl_arg(dict(node_id=self.config['node_id'], os=platform.system(), architecture=platform.machine(), cores=os.cpu_count(), providers=[host.tcl_arg(p) for p in providers], policy=policy, core_apis=core_apis))), []
         if operation == 'dataset.catalog':
             entries = []
             for dataset in host.as_list(host.call('::GX::datasetRegistryIds')):

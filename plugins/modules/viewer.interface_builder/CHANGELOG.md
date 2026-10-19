@@ -1,3 +1,7 @@
+## 1.2.0 — dev108
+
+Typed project Icon Library and shared original catalog, actual state previews and command icon bindings; stable hierarchy and shared component profiles, responsive Gallery and illustrated public authoring reference.
+
 # 1.1.0
 
 Dynamic28-component Gallery with real RAM native2D/Plot and independent Native3D v2 host, typed synthetic states, mode/owner/event boundaries and four complete public example designs.

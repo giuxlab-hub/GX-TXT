@@ -4,7 +4,7 @@ GX-TXT is a desktop scientific workbench for working with **experimental measure
 
 Within the same Session you can inspect and compare measurements, perform numerical, statistical and spectral analyses or curve fitting, run registered Python and GNU Octave scripts through the Script Bridge, and create scientific 2D/3D plots and interactive viewers. Derived results stay connected to their source Datasets, while independent modules extend the workflow through public CORE APIs.
 
-**Source version:** 0.9.8.10-dev-107  
+**Source version:** 0.9.8.10-dev-108  
 **License:** GNU GPL-3.0-or-later (see [LICENSE](LICENSE)). Third-party packages and assets retain their applicable licenses.
 
 **Project website:** [GX-TXT on GitHub Pages](https://giuxlab-hub.github.io/GX-TXT/) · [Italian version](https://giuxlab-hub.github.io/GX-TXT/it/).
@@ -65,6 +65,11 @@ Within the same Session you can inspect and compare measurements, perform numeri
 - Temporary RAM-only Native2D and Plot v4 displays for Viewer design and interactive previews, without creating scientific Datasets
 - Restricted C++ Viewer Development API v1 with fixed SDK, Clang policy checks and managed out-of-process native execution under bounded project-write grants
 - Official Viewer development workspace and bounded native example Viewers, retaining separate public API contracts and explicit execution limitations
+- Circuit Workbench for integrated native 2D electronic diagrams, typed component properties, public scientific netlist/sweep services and source-aware plots through CORE
+- Reusable public icon catalogs, Viewer component profiles, visibility and structured scientific controls for Interface Builder and installable Viewers
+- Managed restricted-C++ debugger and reproducible viewer GUI tests with bounded public API capability checks
+- Updated Python/Octave Script Workspace manuals, canonical Help/About and script-source life-cycle handling
+- Numeric 1.63 managed captured expressions and split-complex outputs, Plot Dataset 4.2.2 retained native frames and source cursor/axis behavior
 - Managed registered local scientific solver Jobs and authorized scientific source I/O with Session-bound publication, cancellation and complete retained provenance
 - Planar static electromagnetic FEM using Gmsh/GetDP and native 2D/3D field plotting with exact mesh and source identities
 - Fitter panel configuration, shared documentation browsing and bounded unit-aware mathematical functions through public Numeric operations
@@ -74,7 +79,7 @@ Within the same Session you can inspect and compare measurements, perform numeri
 
 Available capabilities depend on the installed modules and their optional runtime dependencies.
 
-For current scientific workflows and controls, start with [Viewer Development](docs/api/VIEWER_DEVELOPMENT_API_v1.md), [Native3D GUI Host v2](docs/api/NATIVE_3D_GUI_HOST_API_v2.md), [Native Plot display](docs/api/NATIVE_PLOT_DISPLAY_API_v1.md), [Script Workspace GUI Host](docs/api/SCRIPT_WORKSPACE_GUI_HOST.md), [Source/Script editor API](docs/api/SOURCE_SURFACE_API_v1.md), [Python environments](docs/api/PYTHON_ENVIRONMENT_API_v1.md), [XML documents](docs/api/XML_DOCUMENT_API_v1.md), [dev-106 user workflows](docs/DEV106_USER_WORKFLOWS.md), [Viewer Interface Builder](docs/api/VIEWER_GUI_DESIGN_v1.md), [Project organization](docs/api/PROJECT_ORGANIZATION_v1.md), [Scientific Print/PDF](docs/api/PRINT_DOCUMENT_API_v1.md), [Scientific Studio workflows](docs/guides/SCIENTIFIC_STUDIO_WORKFLOWS.md), [Scientific Execution and compute nodes](docs/api/SCIENTIFIC_EXECUTION_API_v1.md), [Dataset Preview](docs/api/DATASET_PREVIEW_API_v1.md), [Replicate / Consensus Curves](plugins/modules/viewer.replicate_curve_analysis/MANUAL.md), [Replicate scientific API](docs/api/CURVE_REPLICATE_ANALYSIS_API_v1.md), [Worksheet 2.1 public extensions](docs/api/SCIENTIFIC_WORKSHEET_DEV102.md), [Viewer GUI Integration Manifest](docs/api/VIEWER_GUI_HOST_API_v1.md), [Plot Dataset v4 API](docs/api/PLOT_DATASET_API_v4.md) and [public tutorials](docs/guides/tutorials_dev097/index.html).
+For current scientific workflows and controls, start with [Circuit Workbench manual](plugins/modules/viewer.circuit_workbench/MANUAL.md), [Viewer GUI design](docs/api/VIEWER_GUI_DESIGN_v1.md), [Viewer Development](docs/api/VIEWER_DEVELOPMENT_API_v1.md), [Native3D GUI Host v2](docs/api/NATIVE_3D_GUI_HOST_API_v2.md), [Native Plot display](docs/api/NATIVE_PLOT_DISPLAY_API_v1.md), [Script Workspace GUI Host](docs/api/SCRIPT_WORKSPACE_GUI_HOST.md), [Source/Script editor API](docs/api/SOURCE_SURFACE_API_v1.md), [Python environments](docs/api/PYTHON_ENVIRONMENT_API_v1.md), [XML documents](docs/api/XML_DOCUMENT_API_v1.md), [dev-106 user workflows](docs/DEV106_USER_WORKFLOWS.md), [Viewer Interface Builder](docs/api/VIEWER_GUI_DESIGN_v1.md), [Project organization](docs/api/PROJECT_ORGANIZATION_v1.md), [Scientific Print/PDF](docs/api/PRINT_DOCUMENT_API_v1.md), [Scientific Studio workflows](docs/guides/SCIENTIFIC_STUDIO_WORKFLOWS.md), [Scientific Execution and compute nodes](docs/api/SCIENTIFIC_EXECUTION_API_v1.md), [Dataset Preview](docs/api/DATASET_PREVIEW_API_v1.md), [Replicate / Consensus Curves](plugins/modules/viewer.replicate_curve_analysis/MANUAL.md), [Replicate scientific API](docs/api/CURVE_REPLICATE_ANALYSIS_API_v1.md), [Worksheet 2.1 public extensions](docs/api/SCIENTIFIC_WORKSHEET_DEV102.md), [Viewer GUI Integration Manifest](docs/api/VIEWER_GUI_HOST_API_v1.md), [Plot Dataset v4 API](docs/api/PLOT_DATASET_API_v4.md) and [public tutorials](docs/guides/tutorials_dev097/index.html).
 
 ## Getting started
 

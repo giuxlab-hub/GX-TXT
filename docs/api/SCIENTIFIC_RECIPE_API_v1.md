@@ -85,6 +85,11 @@ The host commit uses Session Workspace/Interactive Document transactions.
 `scientificHistoryViewerChanged` commits one semantic operation, rolling back
 live state on precommit failure. Navigation separates durable Undo/Redo from
 read-only browsing. `PrepareEdit` requires confirmed branching after Undo;
+accepting a branch truncates redo at the same current checkpoint without
+replaying that snapshot. This retains the active native editor, selection and
+keyboard focus before the requested edit. Ordinary Undo/Redo/navigation still
+restore their target snapshots; a different checkpoint cannot use the retained
+native-state path. Cancelling a branch leaves the record and source unchanged.
 `ViewerClear` guards latest state and offers protected portable backup before
 calling Recipe Rebase. Export/publication side effects are outside local Undo.
 The common `ViewerStrip` presents a compact Description/History selector and

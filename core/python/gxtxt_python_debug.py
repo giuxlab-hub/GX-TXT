@@ -33,7 +33,7 @@ class ManagedDebugger(bdb.Bdb):
     def __init__(self,source,breakpoints):
         super().__init__();self.source=str(Path(source).resolve());self.directory=Path(os.environ['GXTXT_DEBUG_DIRECTORY']);self.token=os.environ['GXTXT_DEBUG_TOKEN'];self.seq=0;self.last_check=0;self.last_command='';self.deadline=time.monotonic()+600
         self.source_sha=hashlib.sha256(Path(source).read_bytes()).hexdigest()
-        self.frames=[]
+        self.frames=[];self.termination_reason=None
         for line in breakpoints:
             error=self.set_break(self.source,int(line))
             if error:raise ValueError(f'Breakpoint {line}: {error}')
@@ -54,11 +54,11 @@ class ManagedDebugger(bdb.Bdb):
         self._set_stopinfo(self.botframe,None,-1)
         self.publish('RUNNING',line=0)
     def trace_dispatch(self,frame,event,arg):
-        if time.monotonic()>self.deadline:self.set_quit();return None
+        if time.monotonic()>self.deadline:self.termination_reason='timeout';self.set_quit();raise bdb.BdbQuit
         if time.monotonic()-self.last_check>.04:
             self.last_check=time.monotonic();command=self.command()
             if command and command['operation']=='pause':self.set_step()
-            elif command and command['operation']=='stop':self.set_quit()
+            elif command and command['operation']=='stop':self.termination_reason='stop';self.set_quit();raise bdb.BdbQuit
         return super().trace_dispatch(frame,event,arg)
     def stack_snapshot(self,frame,selected=0):
         frames=[];cursor=frame
@@ -85,7 +85,7 @@ class ManagedDebugger(bdb.Bdb):
                 elif op=='over':self.set_next(frame);self.publish('CONTINUING',line=frame.f_lineno);return
                 elif op=='out':self.set_return(frame);self.publish('CONTINUING',line=frame.f_lineno);return
                 elif op=='continue':self.set_continue();return
-                elif op=='stop':self.set_quit();return
+                elif op=='stop':self.termination_reason='stop';self.set_quit();return
                 else:self.publish('PAUSED',**self.stack_snapshot(frame),diagnostic='Command is unavailable in this stopped state')
             time.sleep(.04)
     def user_return(self,frame,return_value):
@@ -98,7 +98,10 @@ def run_debug(code,namespace,source,breakpoints):
     debugger=ManagedDebugger(source,breakpoints)
     try:
         debugger.run(code,namespace,namespace)
-        debugger.publish('CANCELLED' if debugger.quitting else 'COMPLETED',line=0)
+        # bdb.run sets quitting=True in its finally even on normal completion.
+        # Only an actual managed Stop/timeout may establish those outcomes.
+        state={'stop':'CANCELLED','timeout':'TIMED_OUT'}.get(debugger.termination_reason,'COMPLETED')
+        debugger.publish(state,line=0)
     except BaseException as exc:
         debugger.publish('FAILED',line=0,error_type=type(exc).__name__)
         raise

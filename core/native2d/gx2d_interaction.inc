@@ -261,7 +261,9 @@ gx2d_status gx2d_interaction_pick(const gx2d_scene *s,gx2d_id id,gx2d_point devi
         }
         if(closest<=tolerance)return gx2d_reference_create(s,id,GX2D_ENTITY_SEGMENT,chosen,out);return GX2D_NOT_FOUND;
     }
-    if(o->kind==GX2D_POINT_OBJECT)return GX2D_NOT_FOUND;
+    /* Point sets have no connecting stroke. A missed point must not send the
+     * whole mixed selection scope through the curve-only segment evaluator. */
+    if(o->kind==GX2D_POINT_OBJECT||o->kind==GX2D_POINT_SET)return GX2D_NOT_FOUND;
     code=gx2d_nearest_segment(s,id,p,&hit);if(code!=GX2D_OK)return code;gx2d_world_to_device(s,hit.point,&q);if(dist(device,q)>tolerance)return GX2D_NOT_FOUND;
     if(o->sketch){gx2d_sketch_family f=o->sketch->family;
         if(f==GX2D_SKETCH_LINE||f==GX2D_SKETCH_CONSTRUCTION_LINE)return gx2d_reference_create(s,id,GX2D_ENTITY_SEGMENT,0,out);

@@ -1,0 +1,208 @@
+{
+  "schema": "gxtxt.viewer_shared_icons.v1",
+  "icons": [
+    {
+      "id": "capacitor",
+      "title": "Capacitor",
+      "category": "Electrical",
+      "license": "GPL-3.0-or-later",
+      "source": "capacitor.svg"
+    },
+    {
+      "id": "current",
+      "title": "Current",
+      "category": "Electrical",
+      "license": "GPL-3.0-or-later",
+      "source": "current.svg"
+    },
+    {
+      "id": "delete",
+      "title": "Delete",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "delete.svg"
+    },
+    {
+      "id": "diode",
+      "title": "Diode",
+      "category": "Electrical",
+      "license": "GPL-3.0-or-later",
+      "source": "diode.svg"
+    },
+    {
+      "id": "fit",
+      "title": "Fit",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "fit.svg"
+    },
+    {
+      "id": "ground",
+      "title": "Ground",
+      "category": "Electrical",
+      "license": "GPL-3.0-or-later",
+      "source": "ground.svg"
+    },
+    {
+      "id": "inductor",
+      "title": "Inductor",
+      "category": "Electrical",
+      "license": "GPL-3.0-or-later",
+      "source": "inductor.svg"
+    },
+    {
+      "id": "junction",
+      "title": "Junction",
+      "category": "Electrical",
+      "license": "GPL-3.0-or-later",
+      "source": "junction.svg"
+    },
+    {
+      "id": "label",
+      "title": "Label",
+      "category": "Electrical",
+      "license": "GPL-3.0-or-later",
+      "source": "label.svg"
+    },
+    {
+      "id": "npn",
+      "title": "Npn",
+      "category": "Electrical",
+      "license": "GPL-3.0-or-later",
+      "source": "npn.svg"
+    },
+    {
+      "id": "pan",
+      "title": "Pan",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "pan.svg"
+    },
+    {
+      "id": "pause",
+      "title": "Pause",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "pause.svg"
+    },
+    {
+      "id": "play",
+      "title": "Run",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "play.svg"
+    },
+    {
+      "id": "probe",
+      "title": "Probe",
+      "category": "Electrical",
+      "license": "GPL-3.0-or-later",
+      "source": "probe.svg"
+    },
+    {
+      "id": "properties",
+      "title": "Properties",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "properties.svg"
+    },
+    {
+      "id": "redo",
+      "title": "Redo",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "redo.svg"
+    },
+    {
+      "id": "resistor",
+      "title": "Resistor",
+      "category": "Electrical",
+      "license": "GPL-3.0-or-later",
+      "source": "resistor.svg"
+    },
+    {
+      "id": "rotate",
+      "title": "Rotate",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "rotate.svg"
+    },
+    {
+      "id": "save",
+      "title": "Save",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "save.svg"
+    },
+    {
+      "id": "select",
+      "title": "Select",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "select.svg"
+    },
+    {
+      "id": "step_into",
+      "title": "Step into",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "step_into.svg"
+    },
+    {
+      "id": "step_out",
+      "title": "Step out",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "step_out.svg"
+    },
+    {
+      "id": "step_over",
+      "title": "Step over",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "step_over.svg"
+    },
+    {
+      "id": "stop",
+      "title": "Stop",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "stop.svg"
+    },
+    {
+      "id": "undo",
+      "title": "Undo",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "undo.svg"
+    },
+    {
+      "id": "voltage",
+      "title": "Voltage",
+      "category": "Electrical",
+      "license": "GPL-3.0-or-later",
+      "source": "voltage.svg"
+    },
+    {
+      "id": "wire",
+      "title": "Wire",
+      "category": "Electrical",
+      "license": "GPL-3.0-or-later",
+      "source": "wire.svg"
+    },
+    {
+      "id": "zoom_in",
+      "title": "Zoom in",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "zoom_in.svg"
+    },
+    {
+      "id": "zoom_out",
+      "title": "Zoom out",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source": "zoom_out.svg"
+    }
+  ]
+}

@@ -2469,6 +2469,37 @@ retained exact geometry and independent export. Shared CORE distinguishes
 interpolation from unweighted fixed-knot approximation and refuses unvalidated
 parameter inference. See [knot model contracts](../../../docs/api/KNOT_SPLINE_MODELS_v1.md).
 
+## Captured Dataset expressions and pointwise vectors (dev108)
+
+Discover the additive Tcl methods through `NumericAPIv1::apiInfo`:
+
+| Method | Explicit inputs |
+| --- | --- |
+| `expressionDatasetCaptured document expression bindings parameters options` | Existing Dataset expression contract; options declare `start count output_unit`. |
+| `interpolateDatasetCaptured document source query ?options?` | Source has exactly `dataset_id x_variable_id y_variable_id start count`; query has exactly `dataset_id variable_id start count`. Options are `method linear|pchip` and `extrapolation error`. |
+| `complexDatasetCaptured document dataset real_id imaginary_id projection options` | Projection is `magnitude`, `phase_rad` or `phase_deg`; options explicitly declare `start count`. |
+
+The canonical Interactive Document must already exist. Every input range has
+`start >= 0`, `count` from1 to65536; selection never silently means all rows.
+Dataset Variables use canonical identities and units. Source X/Y and query X
+are materialized through public Dataset expressions. Interpolation converts
+query X into source X units through Numeric before the existing `interpolate`
+operation. Duplicate/nonmonotonic abscissas, incompatible units and out-of-domain
+queries fail under that operation's policy. Returned values have query row
+count, source Y units and original query order. Complex inputs use the same rows;
+the imaginary unit is converted to the real unit through Numeric. Magnitude
+retains that unit; phase has `rad` or `deg`. Those labels do not imply an angle
+unit-conversion facility.
+
+Each returns `array`, `resource_id`, `metadata`, `row_count` and `unit` using
+managed `gxtxt.numeric_matrix_le_v1`, binary64 little-endian, one `value` column
+in C order. All scientific computation uses the existing Numeric backend;
+column extraction and storage perform serialization only. Document generation,
+revision/SHA and all Dataset revisions are checked before and after calculation.
+Vectors have no inferred statistical interpretation: explicit public reductions
+and statistics own that interpretation. Failure publishes no Dataset and does
+not overwrite a previous result. Existing ordinary calls remain compatible.
+
 ## Pixel and shared calibration uncertainty
 
 `digitization_uncertainty` accepts bounded physical calibration Jacobians and

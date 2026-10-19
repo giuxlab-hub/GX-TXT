@@ -821,3 +821,48 @@ saved owner payloads. See [axis presentation](NATIVE2D_AXIS_PRESENTATION_v1.md)
 for exact fields, mapped numeric anchors, supported formats and calibrated units.
 Python and Octave use the same typed request and response dictionaries/structs.
 This is presentation metadata; it never changes Dataset values or scene geometry.
+
+## Canonical diagram edit validation and History (dev108)
+
+`native2DGeometryDiagramEdit document expected operation request ?mode?` keeps
+its existing four-argument commit behavior. Optional `mode` is `commit` (default)
+or `preview`; other values are rejected. Both modes require the same exact
+Document generation/revision/SHA and run the same typed request, catalog,
+component/value/name/topology and complete candidate-payload validators.
+`native2DGeometryApiInfo` advertises `diagram_edit_modes`.
+
+Preview returns `status VALIDATED`, the unchanged `source` receipt,
+`object_id`, `operation` and `proposed_payload`. A prospective object ID is not
+allocated or reserved: the canonical payload, revision and `next_id` remain
+unchanged. Commit revalidates the source and candidate; a preview is no authority
+to commit after a source or Session change. No new runtime SDK method or generic
+Document mutation grant is exposed to restricted C++.
+
+The existing Native2D diagram viewport previews a candidate before a History
+branch confirmation. Thus an invalid duplicate component name, invalid value or
+malformed edit cannot discard a legitimate redo tail. A valid edit still needs
+normal branch confirmation before its guarded canonical commit. Accepting a
+same-checkpoint History branch retains the live editor/selection/focus; ordinary
+Undo/Redo/navigation still restore snapshots. Cancelling a keyboard command
+returns `status cancelled` without a canonical mutation or Tk background error;
+other errors retain their existing diagnostics. Native pointer/dialog editing
+uses the same model/History authority and validated source receipts.
+
+## Existing wire route and endpoint edits (dev108; GAP039)
+
+The existing `route` operation accepts the exact allowed keys `id`, `route`,
+`start`, `end`. `id` identifies an existing wire and at least one other key is
+required. Omitting a field preserves it; legacy `id/route` calls retain their
+original behavior. `start/end` are existing stable component-pin pairs or
+junction IDs, validated by the same complete diagram model. They must differ.
+`route` is an ordered list of at most128 two-coordinate finite points, each
+within+/-1000000. Neither geometric crossings nor bend coordinates create an
+electrical join. The wire ID and `next_id` allocator remain unchanged. Preview
+and guarded commit use the same request and topology validation.
+
+For example, `native2DGeometryDiagramEdit $id $receipt route
+{id wire_4 start junction_3 end {component_2 n} route {{40 60} {80 60}}}`
+reconnects that wire and replaces its bends in one canonical commit.
+`native2DGeometryApiInfo` exposes `diagram_route_fields` and
+`diagram_route_semantics`. This extends an existing operation; it introduces no
+API family, raw Document access or new restricted C++ Host method.

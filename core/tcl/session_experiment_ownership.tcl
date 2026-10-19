@@ -16,7 +16,7 @@ proc ::GX::ExperimentClone::dependencies {value doc depth} {
         if {$resourcePath in $paths} {clarify $doc {resource is registered scientific payload}}
         ::GX::interactiveDocumentResourceInfo $value
         dict lappend ::GX::ExperimentClone::resources [dict get $doc id] $value
-        dependencies [dict get $value metadata] $doc [expr {$depth+1}]
+        dependencies [dict get [::GX::_documentResourceProvenanceReference $value] metadata] $doc [expr {$depth+1}]
         return
     }
     if {![catch {dict get $value source_mode} mode] && $mode eq "dataset"} {clarify $doc {Dataset source mode}}

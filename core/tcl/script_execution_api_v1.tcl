@@ -50,7 +50,7 @@ proc ::GX::scriptRegistryPath {scope id {session ""}} {
 }
 
 proc ::GX::scriptRegistryDefaults {} {
-    return [dict create id "" name "" language Octave scope "" description "" version 1.0.0 \
+    return [dict create id "" name "" language Octave scope "" description "" version 1.0.0 default_arguments "" \
         revision 1 sha256 "" required_apis "" declared_apis "" explicit_apis "" source_scope "" source_id "" source_sha256 "" \
         created_at "" updated_at "" parameters [dict create] callables [dict create]]
 }
@@ -64,9 +64,10 @@ proc ::GX::scriptRegistryValidate {metadata} {
     if {[string trim [dict get $m name]] eq ""} { error "Script display name is required." }
     if {![regexp {^[0-9]+\.[0-9]+\.[0-9]+$} [dict get $m version]]} { error "Script version must be major.minor.patch." }
     if {![string is integer -strict [dict get $m revision]] || [dict get $m revision] < 1} { error "Script revision must be >= 1." }
-    foreach key {name description required_apis declared_apis explicit_apis source_scope source_id source_sha256} {
+    foreach key {name description required_apis declared_apis explicit_apis source_scope source_id source_sha256 default_arguments} {
         if {[regexp {[\r\n]} [dict get $m $key]]} { error "Script $key must be one line." }
     }
+    if {[string bytelength [dict get $m default_arguments]]>4096 || [string first \x00 [dict get $m default_arguments]]>=0} {error {Default arguments must be bounded inert text without NUL}}
     set params [dict get $m parameters]
     if {[catch {dict size $params}]} { error "Script parameter schema must be a dictionary." }
     dict for {name descriptor} $params {
@@ -123,7 +124,7 @@ proc ::GX::scriptRegistryWrite {metadata code {session ""}} {
     try {
         puts $ch "; GX-TXT CORE Script Registry v1"
         puts $ch "\[script\]"
-        foreach key {id name language scope description version revision sha256 required_apis declared_apis explicit_apis source_scope source_id source_sha256 created_at updated_at} {
+        foreach key {id name language scope description version revision sha256 required_apis declared_apis explicit_apis source_scope source_id source_sha256 created_at updated_at default_arguments} {
             putKV $ch $key [dict get $m $key]
         }
         putKV $ch parameter_ids [join [lsort -dictionary [dict keys [dict get $m parameters]]] {;}]
@@ -149,7 +150,7 @@ proc ::GX::scriptRegistryRead {scope id {session ""}} {
     if {![file isfile $path]} { error "Registered script '$scope:$id' is incomplete." }
     set ini [parseIni $path]
     set m [scriptRegistryDefaults]
-    foreach key {id name language scope description version revision sha256 required_apis declared_apis explicit_apis source_scope source_id source_sha256 created_at updated_at} {
+    foreach key {id name language scope description version revision sha256 required_apis declared_apis explicit_apis source_scope source_id source_sha256 created_at updated_at default_arguments} {
         if {[dict exists $ini script.$key]} { dict set m $key [dict get $ini script.$key] }
     }
     if {![dict exists $ini script.explicit_apis]} { dict set m explicit_apis [dict get $m required_apis] }
@@ -316,7 +317,7 @@ proc ::GX::scriptExecutionPrepare {reference parameters {session ""} {runtimeTem
         } finally {unset ::GX::scriptRuntimeOutputOverride}
     }
     set extraApis ""
-    set argumentsRaw ""
+    set argumentsRaw [datasetPublicationV2DictDefault $m default_arguments {}]
     set workingDirectory $session
     if {$runtimeTemplate ne ""} {
         if {![file isfile $runtimeTemplate]} { error "Script runtime template is missing: $runtimeTemplate" }

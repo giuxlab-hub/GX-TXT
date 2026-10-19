@@ -164,17 +164,17 @@ proc ::GX::OctaveScriptEditor::workspaceRead {reference} {
     dict set m reference $reference
     dict set m script_id [dict get $m id]
     dict set m code $code
-    dict set m arguments ""
+    dict set m arguments [::GX::datasetPublicationV2DictDefault $m default_arguments {}]
     return $m
 }
-proc ::GX::OctaveScriptEditor::workspaceSave {reference expectedSha scope scriptId name description code} {
+proc ::GX::OctaveScriptEditor::workspaceSave {reference expectedSha scope scriptId name description code {arguments {}}} {
     if {$scope ni {user session}} {error "Choose User or Session scope."}
     ::GX::scriptRegistryId $scriptId
     if {$reference eq "" || [string match legacy:* $reference]} {
-        set result [::GX::scriptRegistrySave $scope $scriptId $name $code [dict create language Octave description $description]]
+        set result [::GX::scriptRegistrySave $scope $scriptId $name $code [dict create language Octave description $description default_arguments $arguments]]
     } else {
         if {$reference ne "$scope:$scriptId"} {error "Registered script scope and ID cannot change; use Save copy."}
-        set result [::GX::scriptRegistryUpdate $scope $scriptId $expectedSha [dict create name $name description $description] $code]
+        set result [::GX::scriptRegistryUpdate $scope $scriptId $expectedSha [dict create name $name description $description default_arguments $arguments] $code]
     }
     dict set result reference "$scope:$scriptId"
     catch {::GX::sessionScriptExplorerPopulate}

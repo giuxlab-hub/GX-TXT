@@ -93,13 +93,19 @@ proc ::GX::sessionWorkspaceViewerMenuRefresh {menu} {
     $menu entryconfigure 13 -state [expr {[dict get $states actions] ? {normal} : {disabled}}]
     foreach action [dict get $config actions] {$menu entryconfigure $i -state [expr {[dict get $states $action] ? {normal} : {disabled}}];incr i}
 }
-proc ::GX::sessionWorkspaceViewerAction {provider callbacks parent action} {
+proc ::GX::sessionWorkspaceViewerAction {provider callbacks parent action {errorMode dialog}} {
+    if {$errorMode ni {dialog propagate}} {error {Workspace error mode must be dialog or propagate.}}
     if {[dict exists $::GX::SessionWorkspace::adapters $parent]} {set context [dict get $::GX::SessionWorkspace::adapters $parent]} else {set context [_workspaceHostContext $provider $callbacks $parent]}
     set id {};catch {set id [_workspaceHostCurrent $context]}
     if {$action eq {close} && [dict get $context token] ne [_workspaceHostToken] && [dict exists $callbacks discard]} {
         # Closing a stale Viewer releases only its live handles. Its old Session
         # remains untouched; a stale window must never save into the new Session.
         return [uplevel #0 [dict get $callbacks discard]]
+    }
+    if {$errorMode eq {propagate}} {
+        # Structured host clients need the same guarded dispatch error, rather
+        # than a modal message box that hides failure from their receipt.
+        return [sessionWorkspaceHostDispatch $context [expr {$action in {open manager preview} ? {manager} : $action}] $id]
     }
     if {$action in {open manager preview}} {return [sessionWorkspaceHostInvoke $context manager $id]}
     sessionWorkspaceHostInvoke $context $action $id

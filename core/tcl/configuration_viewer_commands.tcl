@@ -4,6 +4,7 @@
 namespace eval ::GX::ViewerCommands {
     variable catalogs {}
     variable windows {}
+    variable checked
 }
 
 proc ::GX::viewerShortcutNormalize {value {clipboardOperation {}}} {
@@ -156,6 +157,7 @@ proc ::GX::viewerCommandsDetach {window} {
         }
     }
     bind $tag <KeyPress> {}
+    array unset ::GX::ViewerCommands::checked $window,*
     dict unset windows $window
 }
 proc ::GX::viewerCommandEnabled {window id} {
@@ -210,6 +212,15 @@ proc ::GX::viewerCommandWidgetsRefresh {window} {
     dict for {id widgets} [dict get $::GX::ViewerCommands::windows $window command_widgets] {
         set active [expr {[viewerCommandApplicable $window $id] && [viewerCommandEnabled $window $id]}]
         foreach widget $widgets {if {[winfo exists $widget]} {$widget state [expr {$active ? {!disabled} : {disabled}}]}}
+    }
+}
+proc ::GX::viewerCommandToolbarStatesRefresh {window} {
+    if {![dict exists $::GX::ViewerCommands::windows $window toolbar]} return
+    dict for {id widget} [dict get $::GX::ViewerCommands::windows $window toolbar buttons] {
+        if {[winfo exists $widget]} {
+            set active [expr {[viewerCommandApplicable $window $id] && [viewerCommandEnabled $window $id]}]
+            $widget state [expr {$active ? {!disabled} : {disabled}}]
+        }
     }
 }
 proc ::GX::viewerCommandToolbarRefresh {window} {
@@ -272,7 +283,12 @@ proc ::GX::viewerCommandAccelerator {window id} {
 }
 proc ::GX::viewerCommandMenuAdd {window menu id} {
     set module [dict get $::GX::ViewerCommands::windows $window module]
-    $menu add command -label [dict get [viewerCommandCatalog $module] $id label] \
+    set kind command;set options {}
+    if {[dict exists $::GX::ViewerCommands::windows $window handlers $id checked]} {
+        set kind checkbutton
+        set options [list -variable ::GX::ViewerCommands::checked($window,$id)]
+    }
+    $menu add $kind {*}$options -label [dict get [viewerCommandCatalog $module] $id label] \
         -command [list ::GX::viewerCommandInvoke $window $id] -accelerator [viewerCommandAccelerator $window $id] \
         -state [expr {[viewerCommandEnabled $window $id] ? "normal" : "disabled"}]
     viewerCommandMenuTrack $window $menu [$menu index end] $id
@@ -283,11 +299,23 @@ proc ::GX::viewerCommandMenuTrack {window menu index id} {
 }
 proc ::GX::viewerCommandMenusRefresh {window} {
     if {![dict exists $::GX::ViewerCommands::windows $window]} return
+    # History and field changes already refresh this owner. Update mounted
+    # toolbar states too, without triggering another layout/menu refresh.
+    viewerCommandToolbarStatesRefresh $window
     dict for {entry id} [dict get $::GX::ViewerCommands::windows $window menus] {
         lassign $entry menu index
         if {![winfo exists $menu]} continue
+        if {[dict exists $::GX::ViewerCommands::windows $window handlers $id checked]} {
+            set checked 0
+            catch {set checked [uplevel #0 [dict get $::GX::ViewerCommands::windows $window handlers $id checked]]}
+            set ::GX::ViewerCommands::checked($window,$id) [expr {[string is boolean -strict $checked] && $checked}]
+        }
         $menu entryconfigure $index -accelerator [viewerCommandAccelerator $window $id] \
             -state [expr {[viewerCommandApplicable $window $id] && [viewerCommandEnabled $window $id] ? "normal" : "disabled"}]
+        if {[dict exists $::GX::ViewerCommands::windows $window menu_icon_bindings $entry]} {
+            set icon [dict get $::GX::ViewerCommands::windows $window menu_icon_bindings $entry]
+            uiFieldMenuIconApply $menu $index [dict get $icon properties] [dict get $icon asset] [dict get $icon catalog]
+        }
     }
     viewerCommandWidgetsRefresh $window
 }

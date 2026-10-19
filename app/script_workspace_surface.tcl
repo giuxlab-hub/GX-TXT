@@ -153,7 +153,7 @@ proc ::GX::scriptWorkspaceSessionToken {} {
 proc ::GX::scriptWorkspaceDefaultScope {} {return [expr {$::GX::currentSession eq {} ? {user} : {session}}]}
 proc ::GX::scriptWorkspaceEditorSessionValid {parent token {scope session}} {
     if {$scope eq {user}} {return 1}
-    if {$::GX::currentSession eq {} || ($token ne {} && $token ne [interactiveDocumentSessionToken])} {
+    if {$::GX::currentSession eq {} || $token eq {} || $token ne [interactiveDocumentSessionToken]} {
         tk_messageBox -parent $parent -icon error -title {Editor Session changed} -message {The editor belongs to a different or closed Session. Export any unsaved buffer if needed, then reopen the editor in the intended Session before saving, deleting, registering or opening its Runner.}
         return 0
     }
@@ -201,7 +201,9 @@ proc ::GX::scriptWorkspaceRunDialog {{reference {}} {previous {}}} {
     set scriptRunUi(rerun) [expr {$previous ne {}}]
     set scriptRunUi(reviewed) 0
     set row 0
-    ttk::label $w.info -text "[dict get $m language]  $reference  v[dict get $m version]  SHA-256: [dict get $m sha256]" -wraplength 600
+    set reviewInfo "[dict get $m language]  $reference  v[dict get $m version]  SHA-256: [dict get $m sha256]"
+    if {[datasetPublicationV2DictDefault $m default_arguments {}] ne {}} {append reviewInfo "\nSaved default arguments: [dict get $m default_arguments]"}
+    ttk::label $w.info -text $reviewInfo -wraplength 600
     grid $w.info -row $row -column 0 -columnspan 2 -sticky ew -padx 8 -pady 8
     incr row
     dict for {name descriptor} [dict get $m parameters] {

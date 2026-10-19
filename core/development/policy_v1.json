@@ -5,13 +5,33 @@
   "language": "C++17 restricted",
   "python_authoring": false,
   "source_limit_bytes": 65536,
+  "manual_limit_bytes": 262144,
   "allowed_sdk_calls": [
     "text",
     "number",
     "flag",
     "numeric_add",
     "demo",
-    "numeric_sqrt"
+    "numeric_sqrt",
+    "numeric_exp",
+    "diagram_open",
+    "diagram_tool",
+    "diagram_command",
+    "scientific_discover",
+    "scientific_prepare",
+    "scientific_submit",
+    "scientific_status",
+    "scientific_cancel",
+    "scientific_reconnect",
+    "scientific_log",
+    "scientific_import",
+    "plot_discover",
+    "plot_bind",
+    "numeric_discover",
+    "numeric_evaluate",
+    "numeric_statistics",
+    "numeric_compare",
+    "numeric_publish"
   ],
   "allowed_state_members": [
     "values",
@@ -50,7 +70,73 @@
       "version": 1,
       "operations": [
         "array_binary.add",
-        "array_unary.sqrt"
+        "array_unary.sqrt",
+        "array_unary.exp",
+        "dataset_expression",
+        "array_reduce.rms",
+        "array_reduce.minimum",
+        "array_reduce.maximum",
+        "statistics",
+        "residual_metrics",
+        "interpolate",
+        "complex_unary.magnitude",
+        "complex_unary.phase_rad",
+        "complex_unary.phase_deg",
+        "uniform_grid"
+      ]
+    },
+    "NATIVE2D_VIEWPORT_HOST_v1": {
+      "version": 1,
+      "operations": [
+        "diagram_create",
+        "diagram_command"
+      ]
+    },
+    "SESSION_WORKSPACE_API_v1": {
+      "version": 1,
+      "operations": [
+        "create",
+        "get",
+        "update",
+        "list"
+      ]
+    },
+    "SCIENTIFIC_RECIPE_API_v1": {
+      "version": 1,
+      "operations": [
+        "scientificHistoryViewerRecord",
+        "scientificHistoryViewerNavigate"
+      ]
+    },
+    "SCIENTIFIC_EXECUTION_API_v1": {
+      "version": 1,
+      "operations": [
+        "node_list",
+        "circuit_prepare",
+        "circuit_sweep_prepare",
+        "circuit_sweep_submit",
+        "submit",
+        "status",
+        "cancel",
+        "reconnect",
+        "log",
+        "import_table"
+      ]
+    },
+    "PARALLEL_EXECUTION_API_v1": {
+      "version": 1,
+      "operations": ["parallelExecutionExecute"]
+    },
+    "PLOT_DATASET_API_v4": {
+      "version": 4,
+      "operations": [
+        "widgetCreate"
+      ]
+    },
+    "DATASET_PUBLICATION_API_v2": {
+      "version": 2,
+      "operations": [
+        "datasetPublicationV2Finalize"
       ]
     }
   },
@@ -58,13 +144,40 @@
     "synthetic_view_v1": [
       "VIEWER_GUI_HOST_API_v1",
       "VIEWER_COMPONENT_DEMO_API_v1",
-      "NATIVE_3D_GUI_HOST_API_v2"
+      "NATIVE_3D_GUI_HOST_API_v2",
+      "NATIVE2D_VIEWPORT_HOST_v1"
     ],
     "numeric_view_v1": [
       "VIEWER_GUI_HOST_API_v1",
       "VIEWER_COMPONENT_DEMO_API_v1",
       "NATIVE_3D_GUI_HOST_API_v2",
-      "NUMERIC_API_v1"
+      "NUMERIC_API_v1",
+      "NATIVE2D_VIEWPORT_HOST_v1",
+      "DATASET_PUBLICATION_API_v2"
+    ],
+    "document_view_v1": [
+      "VIEWER_GUI_HOST_API_v1",
+      "VIEWER_COMPONENT_DEMO_API_v1",
+      "NATIVE_3D_GUI_HOST_API_v2",
+      "NUMERIC_API_v1",
+      "NATIVE2D_VIEWPORT_HOST_v1",
+      "SESSION_WORKSPACE_API_v1",
+      "SCIENTIFIC_RECIPE_API_v1",
+      "PLOT_DATASET_API_v4",
+      "DATASET_PUBLICATION_API_v2"
+    ],
+    "scientific_view_v1": [
+      "VIEWER_GUI_HOST_API_v1",
+      "VIEWER_COMPONENT_DEMO_API_v1",
+      "NATIVE_3D_GUI_HOST_API_v2",
+      "NUMERIC_API_v1",
+      "NATIVE2D_VIEWPORT_HOST_v1",
+      "SESSION_WORKSPACE_API_v1",
+      "SCIENTIFIC_RECIPE_API_v1",
+      "SCIENTIFIC_EXECUTION_API_v1",
+      "PARALLEL_EXECUTION_API_v1",
+      "PLOT_DATASET_API_v4",
+      "DATASET_PUBLICATION_API_v2"
     ]
   }
 }

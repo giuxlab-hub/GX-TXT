@@ -1,3 +1,7 @@
+## 1.5.0 — dev108
+
+Canonical Help About and comprehensive illustrated manual; shared source editing, library refresh and Python debugger lifetime corrections.
+
 # 1.4.0
 
 Shared independently controlled editor panes, native debugger icons and red breakpoint gutter, honest snapshot/lifetime guards, no-Session User authoring, tested nested/Numeric examples and illustrated manuals.

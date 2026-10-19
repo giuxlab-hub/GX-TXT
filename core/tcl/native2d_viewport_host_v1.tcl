@@ -2,6 +2,7 @@
 # Tk chrome is a sibling of the geometry canvas. Placement never touches Native
 # view state; semantic anchors are resolved only in device/widget coordinates.
 namespace eval ::GX::ViewportHost {variable hosts {};variable tips {};variable serial 0;variable toggles}
+source [file join [file dirname [info script]] native2d_diagram_viewport_v1.tcl]
 proc ::GX::native2DViewportHostCreate {container canvas scene changed} {
     variable ::GX::ViewportHost::hosts
     # Chrome must share the canvas's actual geometry owner. Sibling overlays
@@ -385,7 +386,7 @@ proc ::GX::native2DViewportPanelContent {host id widget} {
 }
 
 proc ::GX::native2DViewportHostApiInfo {} {
-    return [dict create api_id NATIVE2D_VIEWPORT_HOST_v1 api_version 1 host_only 1 operations {create panel_create panel_widget panel_content panel_show panel_collapse layout controls context_menu glyph tooltip tool_state see_widget scroll_wheel dispose curve_create curve_describe curve_navigate curve_hit curve_destroy}]
+    return [dict create api_id NATIVE2D_VIEWPORT_HOST_v1 api_version 1 host_only 1 operations {create panel_create panel_widget panel_content panel_show panel_collapse layout controls context_menu glyph tooltip tool_state see_widget scroll_wheel dispose curve_create curve_describe curve_navigate curve_hit curve_destroy diagram_create diagram_command diagram_edit} diagram_commands {native2DGeometryDiagramViewportCreate native2DGeometryDiagramViewportCommand native2DGeometryDiagramViewportEdit} diagram_authority INTERACTIVE_DOCUMENT_API_v1 diagram_renderer NATIVE2D_API_v1]
 }
 
 # Public state-managed existing ttk controls; caller supplies controller truth.

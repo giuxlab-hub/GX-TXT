@@ -109,7 +109,7 @@
 # Full release history: CHANGELOG.md
 
 namespace eval ::GX {
-    variable version "0.9.8.10-dev-107"
+    variable version "0.9.8.10-dev-108"
     variable scriptDir [file dirname [file normalize [info script]]]
     variable cfg
     variable ch

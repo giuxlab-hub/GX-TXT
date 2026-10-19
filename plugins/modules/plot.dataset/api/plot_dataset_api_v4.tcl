@@ -276,7 +276,10 @@ proc ::GX::PlotDatasetAPIv4::modelFromSpec {spec {context {}}} {
         dict set panel series $output
         foreach axis {x left right} {
             if {[_get [_get $axes $axis {}] label {}] eq {}&&[llength $output]} {
-                set member [lindex $output 0];set id [dict get $member [expr {$axis eq {x}?{x_variable_id}:{y_variable_id}}]]
+                set member {}
+                foreach candidate $output {if {$axis eq {x} || [_get $candidate axis left] eq $axis} {set member $candidate;break}}
+                if {$member eq {}} continue
+                set id [dict get $member [expr {$axis eq {x}?{x_variable_id}:{y_variable_id}}]]
                 set variable [::GX::datasetVariableV3ById [dict get $member dataset_id] $id]
                 set label [_get $variable display_label $id];if {$label eq {}} {set label [_get $variable name $id]};set unit [_get [_get $axes $axis {}] display_unit [_get $variable unit {}]];if {$unit in {source auto inherit}} {set unit [_get $variable unit {}]}
                 if {$unit ne {}&&$unit ne {source}} {append label " ($unit)"};dict set axes $axis label $label

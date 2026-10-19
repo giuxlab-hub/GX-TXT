@@ -1,8 +1,19 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # A typed provider facade over the existing durable Script Job authority.
 namespace eval ::GX::ScientificExecution {variable providers {};variable prepared {};variable serial 0}
+proc ::GX::scientificExecutionCoreCapabilities {} {
+    # Inspect the actual approved public services on this installation. An
+    # optional analysis checkbox is distinct from public service activation.
+    set numeric [dict create available 0 reason {}]
+    if {[catch {
+        modulePublicApiActivate math.numeric NUMERIC_API_v1
+        set numeric [dict merge [::GX::NumericAPIv1::apiInfo] [dict create available 1 operations [::GX::NumericAPIv1::listOperations] foundation_operations [::GX::NumericAPIv1::listFoundationOperations]]]
+    } message]} {dict set numeric reason $message}
+    set statistics [::GX::StatisticsV1::apiInfo]
+    return [dict create numeric $numeric statistics $statistics scientific_execution [scientificExecutionApiInfo] script_job [scriptJobApiInfo] parallel_execution [parallelExecutionApiInfo] scope {Installed public API/catalog and actual declared runtime availability; not execution acceptance}]
+}
 proc ::GX::scientificExecutionApiInfo {} {
-    return [dict create api_id SCIENTIFIC_EXECUTION_API_v1 api_version 1 authority SCRIPT_JOB_API_v1 backend {local remote} operations {node_list node_inspect destination discover describe prepare discard submit status log cancel outputs read_output read_records freeze_resource import_results reconnect} security_boundary cooperating_trusted_provider_not_OS_sandbox persistence existing_Job_journal]
+    return [dict create api_id SCIENTIFIC_EXECUTION_API_v1 api_version 1 authority SCRIPT_JOB_API_v1 backend {local remote} operations {core_capabilities node_list node_inspect destination discover describe prepare discard submit status log cancel outputs read_output read_records freeze_resource import_results reconnect circuit_inspect circuit_prepare circuit_sweep_prepare circuit_sweep_submit import_table import_table_cancel} circuit_format gxtxt.native2d.diagram.v1 circuit_provider core.ngspice.circuit security_boundary cooperating_trusted_provider_not_OS_sandbox persistence existing_Job_journal]
 }
 proc ::GX::scientificExecutionRegister {id descriptor} {
     variable ::GX::ScientificExecution::providers
@@ -235,11 +246,27 @@ proc ::GX::_scientificRcImport {jobId outputToken bytes request} {
 
 source [file join [file dirname [info script]] scientific_execution_remote.tcl]
 ::GX::scientificExecutionRegisterBuiltins
+source [file join [file dirname [info script]] scientific_execution_circuit.tcl]
 
 # Bounded cooperative CSV result adoption through existing output and Publication owners.
 namespace eval ::GX::ScientificTableImport {variable serial 0;variable tasks {}}
-proc ::GX::scientificExecutionImportTable {id outputToken producer definition callback} {
-    set job [_scientificExecutionJob $id]
+proc ::GX::_scientificExecutionPublicationJob {id} {
+    if {[scientificExecutionRemoteId $id]} {
+        set status [scientificExecutionStatus $id]
+        if {[dict exists $status source_identities datasets] && [dict size [dict get $status source_identities datasets]]} {error {Remote source Datasets require node-authoritative publication validation}}
+        return [dict merge $status [dict create scientific_request [dict create source_identities [datasetPublicationV2DictDefault $status source_identities {}]]]]
+    }
+    return [_scientificExecutionJob $id]
+}
+proc ::GX::_scientificExecutionPublicationGuard {guard} {
+    if {$guard eq {}} return
+    if {[lsort [dict keys $guard]] ne {document_id generation revision sha256}} {error {Publication source guard needs document_id/generation/revision/sha256}}
+    set current [interactiveDocumentRead [dict get $guard document_id]]
+    foreach field {generation revision sha256} {if {[dict get $current $field] ne [dict get $guard $field]} {return -code error -errorcode {GX SCIENTIFIC STALE_SOURCE} {Scientific source changed before result publication}}}
+}
+proc ::GX::scientificExecutionImportTable {id outputToken producer definition callback {sourceGuard {}}} {
+    _scientificExecutionPublicationGuard $sourceGuard
+    set job [_scientificExecutionPublicationJob $id]
     if {[dict get $job state] ne {COMPLETED}} {error {Only a completed scientific Job may publish a result table}}
     if {[dict exists $job scientific_request source_identities datasets]} {dict for {dataset expected} [dict get $job scientific_request source_identities datasets] {if {[datasetRevisionToken $dataset] ne $expected} {error {Scientific source changed after computation; rerun before publication}}}}
     set output [scientificExecutionReadRecords $id $outputToken 0 65536]
@@ -251,7 +278,7 @@ proc ::GX::scientificExecutionImportTable {id outputToken producer definition ca
         foreach col [dict get $output columns] {datasetPublicationV2DeclareVariable $writer [dict get $col id] [dict create dtype [dict get $col dtype] unit [datasetPublicationV2DictDefault $col unit {}] dimension_ids row]}
     } on error {message options} {catch {datasetPublicationV2Abort $writer};return -options $options $message}
     set ticket scientific-table-import-[incr ::GX::ScientificTableImport::serial]
-    dict set ::GX::ScientificTableImport::tasks $ticket [dict create job $id output $outputToken writer $writer session_token [interactiveDocumentSessionToken] generation [dict get $output source_generation] offset 0 rows 0 callback $callback cancelled 0]
+    dict set ::GX::ScientificTableImport::tasks $ticket [dict create job $id output $outputToken writer $writer session_token [interactiveDocumentSessionToken] generation [dict get $output source_generation] offset 0 rows 0 callback $callback cancelled 0 source_guard $sourceGuard]
     after 1 [list ::GX::_scientificExecutionImportTableStep $ticket]
     return $ticket
 }
@@ -262,12 +289,14 @@ proc ::GX::_scientificExecutionImportTableStep {ticket} {
     set rc [catch {
         if {[dict get $task cancelled]} {error {Result publication cancelled}}
         if {[dict get $task session_token] ne [interactiveDocumentSessionToken]} {error {Result publication Session changed}}
+        _scientificExecutionPublicationGuard [dict get $task source_guard]
         set page [scientificExecutionReadRecords [dict get $task job] [dict get $task output] [dict get $task offset] 65536 [dict get $task generation]]
         set data {};foreach col [dict get $page columns] {dict set data [dict get $col id] {}}
         foreach row [dict get $page records] {foreach col [dict get $page columns] value $row {dict lappend data [dict get $col id] $value}}
         if {[llength [dict get $page records]]} {dict incr task rows [datasetPublicationV2Append $writer row $data]}
         if {[dict get $page next_offset]>=[dict get $page size_bytes]} {
-            set job [_scientificExecutionJob [dict get $task job]]
+            set job [_scientificExecutionPublicationJob [dict get $task job]]
+            if {[dict get $job state] ne {COMPLETED}} {error {Scientific Job is no longer completed}}
             if {[dict exists $job scientific_request source_identities datasets]} {dict for {dataset expected} [dict get $job scientific_request source_identities datasets] {if {[datasetRevisionToken $dataset] ne $expected} {error {Scientific source changed before result publication}}}}
             set receipt [datasetPublicationV2Finalize $writer];set completed 1
             dict unset ::GX::ScientificTableImport::tasks $ticket

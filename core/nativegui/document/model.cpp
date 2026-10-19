@@ -126,6 +126,19 @@ static int scancmd(ClientData,Tcl_Interp*ip,int objc,Tcl_Obj *const objv[]){
         if((cstyle&&starts(i,"/*"))||(octave&&starts(i,"%{"))){const char*end=octave?"%}":"*/";auto e=s.find(end,i+2);i=e==string::npos?s.size():e+2;emit("comment",a,i);continue;}
         bool comment=(cstyle&&starts(i,"//"))||((python||lang=="perl"||lang=="tcl"||lang=="tk")&&c=='#')||(octave&&(c=='%'||c=='#'))||(lang=="fortran"&&c=='!');
         if(comment){auto e=s.find('\n',i);i=e==string::npos?s.size():e;emit("comment",a,i);continue;}
+        if(lang=="cpp") {
+            size_t raw=string::npos;
+            for(const char*prefix:{"R\"","u8R\"","uR\"","UR\"","LR\""}) {
+                if(starts(i,prefix)){raw=i+strlen(prefix);break;}
+            }
+            if(raw!=string::npos) {
+                auto open=s.find('(',raw);
+                if(open!=string::npos&&open-raw<=16&&s.substr(raw,open-raw).find_first_of(" ()\\\t\r\n")==string::npos) {
+                    string end=")"+s.substr(raw,open-raw)+"\"";
+                    auto close=s.find(end,open+1);i=close==string::npos?s.size():close+end.size();emit("string",a,i);continue;
+                }
+            }
+        }
         bool transpose=octave&&c=='\''&&i>0&&(isalnum((unsigned char)s[i-1])||s[i-1]==')'||s[i-1]==']'||s[i-1]=='.');
         if((c=='\''||c=='"'||(lang=="javascript"&&c=='`'))&&!transpose){char q=c;bool triple=python&&i+2<s.size()&&s[i+1]==q&&s[i+2]==q;i+=triple?3:1;while(i<s.size()){
             if(s[i]=='\\'){size_t e=std::min(s.size(),i+2);emit("escape",i,e);i=e;continue;}
@@ -150,6 +163,13 @@ static int scancmd(ClientData,Tcl_Interp*ip,int objc,Tcl_Obj *const objv[]){
             continue;
         }
         if(c=='('||c=='[')grouping++;else if((c==')'||c==']')&&grouping>0)grouping--;
+        if(lang=="c"||lang=="cpp") {
+            if(c=='{')structure.emplace_back(lines[a],cols[a]);
+            else if(c=='}'&&!structure.empty()) {
+                auto top=structure.back();structure.pop_back();
+                if(lines[a]>top.first){Tcl_Obj*f=Tcl_NewListObj(0,nullptr);add(ip,f,Tcl_NewIntObj(top.first));add(ip,f,Tcl_NewIntObj(lines[a]));add(ip,folds,f);}
+            }
+        }
         i++;
     }
     put(ip,result,"tokens",tokens);put(ip,result,"folds",folds);put(ip,result,"line_count",Tcl_NewIntObj(line));put(ip,result,"characters",Tcl_NewIntObj(ch));put(ip,result,"bytes",Tcl_NewIntObj(length));put(ip,result,"truncated",Tcl_NewBooleanObj(count>=200000));put(ip,result,"engine",str("gxtxt.native_source.v1"));Tcl_SetObjResult(ip,result);return TCL_OK;

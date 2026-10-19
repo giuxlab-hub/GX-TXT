@@ -145,7 +145,17 @@ proc ::GX::native2DCanvasDrawObject {canvas object background {tags {}}} {
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Renderer-neutral presentation data. No Tk item inspection or geometry math.
 proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
-    foreach key [dict keys $options] {if {$key ni {point_budget x_label y_label x_tick_labels y_tick_labels title legend object_labels font_size include_construction_reference axis_presentation}} {error "Unknown Native2D snapshot option '$key'"}}
+    foreach key [dict keys $options] {if {$key ni {point_budget x_label y_label x_tick_labels y_tick_labels title legend object_labels font_size include_construction_reference axis_presentation annotations axes_visible}} {error "Unknown Native2D snapshot option '$key'"}}
+    set axesVisible [uiFieldNormalize {type boolean} [datasetPublicationV2DictDefault $options axes_visible 1]]
+    set annotations [datasetPublicationV2DictDefault $options annotations {}]
+    if {[llength $annotations]>512 || [string bytelength $annotations]>131072} {error {Native2D annotations exceed bounded presentation contract}}
+    foreach annotation $annotations {
+        foreach key [dict keys $annotation] {if {$key ni {point text anchor id}} {error {Unknown Native2D annotation field}}}
+        if {[dict exists $annotation id] && ![regexp {^[A-Za-z][A-Za-z0-9_.-]{0,63}$} [dict get $annotation id]]} {error {Invalid stable Native2D annotation identifier}}
+        if {[llength [dict get $annotation point]]!=2 || [string bytelength [dict get $annotation text]]>256 || [string first \x00 [dict get $annotation text]]>=0} {error {Invalid bounded Native2D annotation}}
+        foreach coordinate [dict get $annotation point] {uiFieldNormalize {type number} $coordinate}
+        if {[datasetPublicationV2DictDefault $annotation anchor sw] ni {n ne e se s sw w nw center}} {error {Invalid Native2D annotation anchor}}
+    }
     foreach axis {x y} {
         if {[dict exists $options ${axis}_tick_labels]} {
             set labels [dict get $options ${axis}_tick_labels]
@@ -186,6 +196,7 @@ proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
     # the same numeric positions for both labels and grid primitives.
     if {!$includeReference && ![dict exists $options x_tick_labels] && ![dict exists $options y_tick_labels]} {set gridLines {}}
     foreach axis {x y} {
+        if {!$axesVisible} continue
         set ticks [dict get $plans $axis ticks]
         if {[dict exists $options ${axis}_tick_labels]} {
             set ticks {};set i 0
@@ -238,7 +249,15 @@ proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
         incr row;set y [expr {$y+$font+5}]
     }
     if {$total>$row} {lappend texts [dict create position [list [expr {$left+42}] $y] text "+[expr {$total-$row}] more curves (see table)" anchor w rotation 0 font_size $font color $textColor]}
-    return [dict create api_id NATIVE2D_PRESENTATION_SNAPSHOT_v1 api_version 1 presentation $presentation view $view axis_plans $plans axis_presentation $descriptor point_budget $budget include_construction_reference $includeReference excluded_object_ids $excluded objects $objects grid_primitives $gridLines legend_primitives $legendLines texts $texts legend $legend]
+    foreach annotation $annotations {
+        set position [::GX::Native2D::core device $scene [dict get $annotation point]]
+        lassign $position px py
+        if {$px<$left || $px>$width-$right || $py<$top || $py>$height-$bottom} continue
+        set text [dict create position $position text [dict get $annotation text] anchor [datasetPublicationV2DictDefault $annotation anchor sw] rotation 0 font_size $font color $textColor role annotation]
+        if {[dict exists $annotation id]} {dict set text annotation_id [dict get $annotation id]}
+        lappend texts $text
+    }
+    return [dict create api_id NATIVE2D_PRESENTATION_SNAPSHOT_v1 api_version 1 presentation $presentation view $view axis_plans $plans axis_presentation $descriptor axes_visible $axesVisible point_budget $budget include_construction_reference $includeReference excluded_object_ids $excluded objects $objects grid_primitives $gridLines legend_primitives $legendLines texts $texts legend $legend]
 }
 proc ::GX::native2DCanvasSnapshot {canvas snapshot} {
     set background [uiFieldColorComposite [uiFieldColorFromRGBA [dict get $snapshot presentation background]] #FFFFFF]
@@ -271,8 +290,24 @@ proc ::GX::native2DCanvasSnapshot {canvas snapshot} {
         set rgb [dict get [uiFieldColorComposite [uiFieldColorFromRGBA [dict get $text color]] $background] rgb]
         set tags axis_label
         if {[dict exists $text object_id]} {set tags [list legend_label native_legend legend_object_[dict get $text object_id]]}
+        if {[dict exists $text annotation_id]} {set tags [list native_annotation native_annotation_[dict get $text annotation_id]]}
         $canvas create text {*}[dict get $text position] -text [dict get $text text] -anchor [dict get $text anchor] -angle [dict get $text rotation] -fill $rgb -font [list Sans [expr {-round([dict get $text font_size])}]] -tags $tags
     }
+}
+proc ::GX::native2DAnnotationHit {canvas x y} {
+    # Identity and hit regions come from actual rendered text, including font
+    # metrics and resize. Text content is never an identity or geometry oracle.
+    set x [$canvas canvasx $x];set y [$canvas canvasy $y]
+    foreach item [lreverse [$canvas find withtag native_annotation]] {
+        set bounds [$canvas bbox $item]
+        if {[llength $bounds]!=4} continue
+        lassign $bounds left top right bottom
+        if {$x<$left || $x>$right || $y<$top || $y>$bottom} continue
+        foreach tag [$canvas gettags $item] {
+            if {[regexp {^native_annotation_([A-Za-z][A-Za-z0-9_.-]{0,63})$} $tag -> id]} {return [dict create hit 1 annotation_id $id bounds $bounds]}
+        }
+    }
+    return [dict create hit 0]
 }
 proc ::GX::native2DLegendHit {canvas x y} {
     # Exact regions come from this renderer's actual Tk items, including font,

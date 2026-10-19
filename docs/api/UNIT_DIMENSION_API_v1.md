@@ -12,8 +12,13 @@ GX-TXT v0.8.4 adds a deliberately small unit/dimension layer for Scientific Anal
 Supported base symbols:
 
 ```text
-A V s Hz Ohm W J K mol m g
+A V s Hz Ohm F H W J K mol m g
 ```
+
+Dev108 adds linear farads (`F = A*s/V`) and henries (`H = V*s/A`)
+through the existing Tcl and Octave parsers. Existing SI prefixes apply, including
+`uF`, `nF`, `mH`; `Ohm*F` has the dimension of time and `H/Ohm` also has
+the dimension of time. These are physical units, not model-specific aliases.
 
 `Ω` is accepted as `Ohm`, and `µ` as `u`.
 

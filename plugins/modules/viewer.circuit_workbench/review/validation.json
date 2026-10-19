@@ -1,0 +1,65 @@
+{
+  "author_ast_kinds": [
+    "ArraySubscriptExpr",
+    "BinaryOperator",
+    "CXXMemberCallExpr",
+    "CompoundAssignOperator",
+    "CompoundStmt",
+    "DeclRefExpr",
+    "FunctionDecl",
+    "IfStmt",
+    "ImplicitCastExpr",
+    "IntegerLiteral",
+    "MemberExpr",
+    "ParmVarDecl",
+    "StringLiteral"
+  ],
+  "canonical_lifecycle_scope": "declared diagram Viewer state through existing guarded Workspace/History owners",
+  "code_generation_invoked": false,
+  "compiler_sha256": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
+  "compiler_version": "19.1.7",
+  "design_sha256": "86311e9933f2072c517636ee07e91c65336653ba49092179e437c6bf8cb91fdf",
+  "diagnostics": [],
+  "functions": [
+    "on_event"
+  ],
+  "policy_sha256": "68af74c5241fdf782baf3ebab01720022f9272eb83ead49d0644fa0745267492",
+  "profile": "cpp_view_v1",
+  "project_profile": "scientific_view_v1",
+  "project_sha256": "7ad3ba6a6493a1c447417e1d6e29b51d50fac61817d757c2af67940e9b0299f0",
+  "resolved_call_graph": {
+    "on_event": []
+  },
+  "schema": "gxtxt.cpp_validation.v1",
+  "sdk_calls": [
+    "diagram_command",
+    "diagram_open",
+    "diagram_tool",
+    "number",
+    "numeric_compare",
+    "numeric_discover",
+    "numeric_evaluate",
+    "numeric_exp",
+    "numeric_publish",
+    "numeric_statistics",
+    "plot_bind",
+    "plot_discover",
+    "scientific_cancel",
+    "scientific_discover",
+    "scientific_import",
+    "scientific_log",
+    "scientific_prepare",
+    "scientific_reconnect",
+    "scientific_status",
+    "scientific_submit",
+    "text"
+  ],
+  "sdk_sha256": "41610ccc9bfb310ce2fd7b45f5a26b1535296c9cfde272e1e036eca02c25cf47",
+  "source_sha256": "2d640a1126647b9c5645ebb6951bf26dcf5e99baa2756fdee67af32ff4c1f202",
+  "stages": [
+    "clang_raw_lexer",
+    "clang_resolved_ast"
+  ],
+  "status": "PASS",
+  "workspace_callback_contract_sha256": "628efb4ebf0bfd9e2a91c06d6f0a79b3fce91810764b8c604255e971db2e06bf"
+}

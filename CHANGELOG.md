@@ -7,6 +7,17 @@ For current interface contracts consult the API references under [docs/api](docs
 
 ## 0.9.8.10 - development revisions
 
+### 0.9.8.10-dev-108
+
+- Expand shared Viewer Interface Builder with a typed, project-owned icon library, native icon bindings, component profiles, visibility and reproducible GUI source/event inspection using public CORE services.
+- Add a normal scientific Circuit Workbench Viewer built through the restricted C++ authoring and approved Builder/Development facilities, with editable electronic circuit diagrams, structured scientific netlists, simulation/sweep orchestration and provenance-bound result visualization.
+- Extend approved native diagram ownership, plot preview, GUI scientific controls and Numeric services rather than implementing module-private scientific computation or graphics subsystems.
+- Add real restricted-C++ debugger operations through managed author source identity, controlled native workers and structured GUI/CLI controls. The authorized scope remains narrower than arbitrary native debugging.
+- Update Python and GNU Octave Script Workspace integration, source identity, Help/About and illustrated manuals, preserving actual debugger capabilities and explicit Octave asynchronous Pause refusal.
+- Update math.numeric 1.63.0 with managed captured numeric operations and typed split-complex results; revise plot.dataset 4.2.2 for valid-frame retention, unit presentation and native source cursor behavior.
+- Update Viewer Interface Builder 1.2.0, Viewer Development Workspace 1.1.0, Script Module Builder 1.4.1 and related public packages. New public icon assets and exact scientific component documentation accompany source changes.
+- Scope: Debian installed acceptance evidence is separate from public-source static checks. C++ authoring grants do not constitute an account-wide hostile-native-code sandbox; unsupported scientific/deployment behaviors are not inferred from program appearance.
+
 ### 0.9.8.10-dev-107
 
 - Extend the shared Script Workspace GUI Host with persistent pane layouts, source and assistant visibility controls, complete managed debugger observation, and strict Session token/lifetime handling for Python and GNU Octave.

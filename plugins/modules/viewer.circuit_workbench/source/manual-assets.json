@@ -1,0 +1,103 @@
+{
+  "assets": {
+    "circuit-native": {
+      "bytes": 46406,
+      "capture_id": "5630921d782b426e94a33b23ef9406fc",
+      "geometry": "1100x720+25+77",
+      "height": 782,
+      "session": "[private scientific validation Session withheld]",
+      "sha256": "ddc50050dfc864a7a98b4a31c1f9c2d3a7465137e3b43ba80d72c31ffb54839d",
+      "source_snapshot": {
+        "design_sha256": "715fb2456b759f0bb4f4f2ec131b2c4ed67b4da436fd502ecc0dc2674b20a906",
+        "project_sha256": "bd71c3cf3701d972cd5a727d97aa1a3a80a1b9cc0353d42fa1ba5359276078f4",
+        "source_sha256": "ee5e0dcaa274fff63c199ee040aa9bdafdb9aad9b73a83b91cc435609a96cba2"
+      },
+      "width": 1110
+    },
+    "local-waveform": {
+      "bytes": 95412,
+      "capture_id": "344d3657439649978ea75c02760c2b7d",
+      "geometry": "1100x720+25+77",
+      "height": 782,
+      "session": "[private scientific validation Session withheld]",
+      "sha256": "0a4207f676c37baf7eebc020db3d3140a89ce41d3fdf91e34cb0436bf2b8bdd5",
+      "source_snapshot": {
+        "design_sha256": "715fb2456b759f0bb4f4f2ec131b2c4ed67b4da436fd502ecc0dc2674b20a906",
+        "project_sha256": "bd71c3cf3701d972cd5a727d97aa1a3a80a1b9cc0353d42fa1ba5359276078f4",
+        "source_sha256": "ee5e0dcaa274fff63c199ee040aa9bdafdb9aad9b73a83b91cc435609a96cba2"
+      },
+      "width": 1110
+    },
+    "numeric-local-comparison": {
+      "bytes": 84274,
+      "capture_id": "ddefbdd05b094b72991a63e1ed06715c",
+      "geometry": "1100x720+25+77",
+      "height": 782,
+      "session": "[private scientific validation Session withheld]",
+      "sha256": "5f4f0c396402f14a50ead85f3617cf12453d0f1891b006dfd22f1fe2431e478e",
+      "source_snapshot": {
+        "design_sha256": "715fb2456b759f0bb4f4f2ec131b2c4ed67b4da436fd502ecc0dc2674b20a906",
+        "project_sha256": "bd71c3cf3701d972cd5a727d97aa1a3a80a1b9cc0353d42fa1ba5359276078f4",
+        "source_sha256": "ee5e0dcaa274fff63c199ee040aa9bdafdb9aad9b73a83b91cc435609a96cba2"
+      },
+      "width": 1110
+    },
+    "numeric-remote-comparison": {
+      "bytes": 84338,
+      "capture_id": "204015d68dc14bfa8c3a3823dfde8370",
+      "geometry": "1100x720+25+77",
+      "height": 782,
+      "session": "[private scientific validation Session withheld]",
+      "sha256": "e90eea62a0534fed903cc34df350a3ac153497525dfe5a3d23b8c85d2128bb28",
+      "source_snapshot": {
+        "design_sha256": "715fb2456b759f0bb4f4f2ec131b2c4ed67b4da436fd502ecc0dc2674b20a906",
+        "project_sha256": "bd71c3cf3701d972cd5a727d97aa1a3a80a1b9cc0353d42fa1ba5359276078f4",
+        "source_sha256": "ee5e0dcaa274fff63c199ee040aa9bdafdb9aad9b73a83b91cc435609a96cba2"
+      },
+      "width": 1110
+    },
+    "numeric-remote-statistics": {
+      "bytes": 94283,
+      "capture_id": "85d858a907f64fd7a123d6815c9e47cd",
+      "geometry": "1100x720+25+77",
+      "height": 782,
+      "session": "[private scientific validation Session withheld]",
+      "sha256": "d82f074916077ed26f0f00d31a5c302226bc126344185f309ea1a10e4c7248c1",
+      "source_snapshot": {
+        "design_sha256": "715fb2456b759f0bb4f4f2ec131b2c4ed67b4da436fd502ecc0dc2674b20a906",
+        "project_sha256": "bd71c3cf3701d972cd5a727d97aa1a3a80a1b9cc0353d42fa1ba5359276078f4",
+        "source_sha256": "ee5e0dcaa274fff63c199ee040aa9bdafdb9aad9b73a83b91cc435609a96cba2"
+      },
+      "width": 1110
+    },
+    "reference-canonical-plot": {
+      "bytes": 76719,
+      "capture_id": "32fab6d2ebae485282e2f512fc1a95f1",
+      "geometry": "1100x720+25+77",
+      "height": 782,
+      "session": "[private scientific validation Session withheld]",
+      "sha256": "bec2e36c26d10240d06297c859be371fc406ab11d80f23e2a9eab5962db2f8e0",
+      "source_snapshot": {
+        "design_sha256": "715fb2456b759f0bb4f4f2ec131b2c4ed67b4da436fd502ecc0dc2674b20a906",
+        "project_sha256": "bd71c3cf3701d972cd5a727d97aa1a3a80a1b9cc0353d42fa1ba5359276078f4",
+        "source_sha256": "ee5e0dcaa274fff63c199ee040aa9bdafdb9aad9b73a83b91cc435609a96cba2"
+      },
+      "width": 1110
+    },
+    "remote-waveform": {
+      "bytes": 66619,
+      "capture_id": "300ec066e1be45748b652269f7f9638f",
+      "geometry": "1100x720+25+77",
+      "height": 782,
+      "session": "[private scientific validation Session withheld]",
+      "sha256": "93da025334802ed50772839b4b6c58f1281fb8dc7f3e688e64df338ba7ecf253",
+      "source_snapshot": {
+        "design_sha256": "715fb2456b759f0bb4f4f2ec131b2c4ed67b4da436fd502ecc0dc2674b20a906",
+        "project_sha256": "bd71c3cf3701d972cd5a727d97aa1a3a80a1b9cc0353d42fa1ba5359276078f4",
+        "source_sha256": "ee5e0dcaa274fff63c199ee040aa9bdafdb9aad9b73a83b91cc435609a96cba2"
+      },
+      "width": 1110
+    }
+  },
+  "schema": "gxtxt.viewer_manual_assets.v1"
+}

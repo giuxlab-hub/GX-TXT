@@ -1,0 +1,93 @@
+[
+  {
+    "image": "images/rc-circuit.png",
+    "original": "[private original capture path withheld]",
+    "sha256": "b7b5f1cb88cc2e31e2700d1d1b93c4515eb41c5dcb423fd39d62f288469be392",
+    "caption": "Primary independent installed1.9.2 native schematic/palette review.",
+    "capture": "actual Debian native pixels; no synthetic/redrawn image"
+  },
+  {
+    "image": "images/rc-remote-job.png",
+    "original": "[private original capture path withheld]",
+    "sha256": "f41872dcbeafd9877564f5eb9818134ddfdf56033e0f53ed20751ce439079646",
+    "caption": "Primary independent installed1.9.2 native Jobs and original remote reference.",
+    "capture": "actual Debian native pixels; no synthetic/redrawn image"
+  },
+  {
+    "image": "images/rc-waveforms.png",
+    "original": "[private original capture path withheld]",
+    "sha256": "2df4e06498f187d8ecad33c6ac61fb33b90d8d83113da9f4aa3161c2ce12303c",
+    "caption": "Primary independent installed1.9.2 saved local/remote/analytical traces.",
+    "capture": "actual Debian native pixels; no synthetic/redrawn image"
+  },
+  {
+    "image": "images/view-menu.png",
+    "original": "[private original capture path withheld]",
+    "sha256": "921ac6dd7d15e5959276138702d8b9ee44861c43e041e29f24fb31fedbf6bbf9",
+    "caption": "Primary actual posted native checked View menu.",
+    "capture": "actual Debian native pixels; no synthetic/redrawn image"
+  },
+  {
+    "image": "images/rlc-bode.png",
+    "original": "[private original capture path withheld]",
+    "sha256": "23c21ae796329ab74b2b7dac6f5906cc1c871cf4a15321b27db757c7bb42f8d8",
+    "caption": "Restricted author actual1.9.2 native dual-axis RLC; primary independently viewed original pixels and checked full published data through public Numeric.",
+    "capture": "actual Debian native pixels; no synthetic/redrawn image"
+  },
+  {
+    "image": "images/wire-properties.png",
+    "original": "[private original capture path withheld]",
+    "sha256": "dd77e78b36d944c0b038c7d822118e2a4a431aed890b8b9989739ada93096fdd",
+    "caption": "Independent fresh cumulative CORE native wire Properties, actual assigned Circuit1.9.2; primary separately viewed screenshot.",
+    "capture": "actual Debian native pixels; no synthetic/redrawn image"
+  },
+  {
+    "image": "images/wire-properties-minimum.png",
+    "original": "[private original capture path withheld]",
+    "sha256": "224464bb8d0a4ba8664dbad94638ab299e71a95a1a1d92782fa2eaca2c778c2a",
+    "caption": "Same native dialog480x320, actual scroll to bottom and pinned Apply/Close; primary viewed screenshot.",
+    "capture": "actual Debian native pixels; no synthetic/redrawn image"
+  },
+  {
+    "image": "images/diode-rectifier.png",
+    "original": "[private original capture path withheld]",
+    "sha256": "e809f8ddab123452c459f501996580270d6c8b6eb1905a9a9a4aa5df94841980",
+    "caption": "Primary actual installed1.9.2 three canonical transient curves, independent full508row physical check.",
+    "capture": "actual Debian native pixels; no synthetic/redrawn image"
+  },
+  {
+    "image": "images/ladder-circuit.png",
+    "original": "[private original capture path withheld]",
+    "sha256": "ab57fffb6e7779217cf08024cc0af93ebc2a1f2c57647216b429029192487189",
+    "caption": "Primary actual six-component ladder, stable sourceid15rev24, original icon palette and routed junctions.",
+    "capture": "actual Debian native pixels; no synthetic/redrawn image"
+  },
+  {
+    "image": "images/ladder-voltage-current.png",
+    "original": "[private original capture path withheld]",
+    "sha256": "5ebfabefe09ed12acc6d808f6d3cb5145ac9cdc6b4ef033970b2a9f8a5bbc1a1",
+    "caption": "Primary actual current040 three canonical magnitude traces: Vleft/Aright/logHz; savedreferencecursor identified accurately.",
+    "capture": "actual Debian native pixels; no synthetic/redrawn image"
+  },
+  {
+    "image": "images/ladder-row-probe.png",
+    "original": "[private original capture path withheld]",
+    "sha256": "b724ebcf7ba839122311f462dc50eefa269326cfeb8795810420978079fe89b0",
+    "caption": "Primary native pointer selected an actual canonical voltage row; readout carries original Dataset/zero-basedrow/Hz/V.",
+    "capture": "actual Debian native pixels; no synthetic/redrawn image"
+  },
+  {
+    "image": "images/negative-open-terminal.png",
+    "original": "[private original capture path withheld]",
+    "sha256": "3901ab4fb7aa786511f1c13a5f0f4a8100c76d3a4ded38128744406940146e58",
+    "caption": "Primary native Prepare refuses unwired R1 with useful message and no inventedJob.",
+    "capture": "actual Debian native pixels; no synthetic/redrawn image"
+  },
+  {
+    "image": "images/remote-cancelled-case.png",
+    "original": "[private original capture path withheld]",
+    "sha256": "f9225a2886a78aa4171fe1c3e46d363ff47938760ddc5029757ab907a41121e9",
+    "caption": "Primary actual native sameJobReconnect and selectedcase4Log after independent genuine remote running-to-CANCELLED campaign; prior successfulPlotretained.",
+    "capture": "actual Debian native pixels; no synthetic/redrawn image"
+  }
+]

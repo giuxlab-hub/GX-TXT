@@ -12,7 +12,7 @@ namespace eval ::GX::UiField {
     variable controlsTrailing {}
 }
 proc ::GX::uiFieldApiInfo {} {
-    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldDialogCreate uiFieldDialogPresent uiFieldDialogClose uiFieldFocusWhenMapped uiFieldViewerSection uiFieldFormCreate uiFieldFormSectionEnabled uiFieldViewerShellCreate uiFieldSelectorWithinViewer uiFieldSelectorPost uiFieldSelectorClose uiMenuPopup uiMenuWorkarea uiMenuRowAttach uiMenuRowAppend uiFieldControlsAppend uiFieldComponentCapabilities uiFieldComponentCreate uiFieldComponentRead uiFieldComponentLayout uiFieldScrollableCreate uiFieldViewerRegionsSet uiFieldDatasetChoices}]
+    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldChoicesSet uiFieldDialogCreate uiFieldDialogPresent uiFieldDialogClose uiFieldFocusWhenMapped uiFieldViewerSection uiFieldFormCreate uiFieldFormSectionEnabled uiFieldViewerShellCreate uiFieldSelectorWithinViewer uiFieldSelectorPost uiFieldSelectorClose uiMenuPopup uiMenuWorkarea uiMenuRowAttach uiMenuRowAppend uiFieldControlsAppend uiFieldInspectionColumnsFit uiFieldInspectionColumnsSchedule uiFieldIconApply uiFieldMenuIconApply uiFieldComponentCapabilities uiFieldComponentCreate uiFieldComponentRead uiFieldComponentLayout uiFieldScrollableCreate uiFieldViewerRegionsSet uiFieldDatasetChoices}]
 }
 
 # Viewer-bounded choice projection. The combobox remains the value/variable
@@ -315,6 +315,16 @@ proc ::GX::uiFieldCommit {widget} {
     if {$canonical ne [dict get $state committed] && [dict get $state changed] ne ""} {uplevel #0 [list {*}[dict get $state changed] $value]}
     return 1
 }
+proc ::GX::uiFieldChoicesSet {widget choices} {
+    variable ::GX::UiField::widgets
+    if {![dict exists $widgets $widget] || [dict get $widgets $widget descriptor type] ne {choice}} {error {Select an existing typed choice field}}
+    if {[llength $choices]>4096 || [string bytelength $choices]>1048576 || [string first \x00 $choices]>=0} {error {Choice projection exceeds bounded UI Field contract}}
+    dict set widgets $widget descriptor values $choices
+    $widget.entry configure -values $choices
+    upvar #0 [dict get $widgets $widget variable] value
+    $widget.entry state [expr {$value in $choices ? {!invalid} : {invalid}}]
+    return $choices
+}
 proc ::GX::uiFieldColorReadableText {background} {
     set color [dict get [uiFieldColorComposite $background #FFFFFF] rgb]
     scan [string range $color 1 end] %2x%2x%2x r g b
@@ -462,8 +472,14 @@ proc ::GX::uiFieldScrollSee {viewport content widget} {
     # packed into a different geometry parent, without depending on ancestry.
     set y [expr {[winfo rooty $widget]-[winfo rooty $content]}];set h [winfo height $widget]
     set top [$viewport canvasy 0];set bottom [$viewport canvasy [winfo height $viewport]]
-    if {$y<$top} {$viewport yview moveto [expr {$y/double(max(1,$total))}]}
-    if {$y+$h>$bottom} {$viewport yview moveto [expr {max(0,($y+$h-[winfo height $viewport])/double(max(1,$total)))}]}
+    # Canvas scrolling rounds to its increment. Leave a full increment of
+    # clearance so focused native controls cannot remain under the next panel.
+    set margin [expr {max(4,[$viewport cget -yscrollincrement])+4}]
+    if {$h>[winfo height $viewport] || $y<$top} {
+        $viewport yview moveto [expr {max(0,($y-$margin)/double(max(1,$total)))}]
+    } elseif {$y+$h>$bottom} {
+        $viewport yview moveto [expr {max(0,($y+$h+$margin-[winfo height $viewport])/double(max(1,$total)))}]
+    }
 }
 proc ::GX::uiFieldFormApply {window} {
     variable ::GX::UiField::forms
@@ -727,9 +743,18 @@ namespace eval ::GX::UiField {variable tableLayoutAfter {}}
 proc ::GX::uiFieldInspectionColumnsFit {tree} {
     ttk::style configure GXInspection.Treeview -font TkDefaultFont -rowheight [expr {[font metrics TkDefaultFont -linespace]+8}]
     if {[$tree cget -style] ne "GXInspection.Treeview"} {$tree configure -style GXInspection.Treeview}
-    foreach column [$tree cget -columns] {
+    set columns [$tree cget -columns]
+    if {{tree} in [$tree cget -show]} {set columns [linsert $columns 0 #0]}
+    set rows [$tree children {}]
+    foreach column $columns {
+        # A not-yet-populated tree may have an intentionally blank #0 heading.
+        # Preserve its declared initial width until real identity text exists.
+        if {$column eq {#0} && ![llength $rows]} continue
         set width [expr {[font measure TkHeadingFont [$tree heading $column -text]]+22}]
-        foreach id [$tree children {}] {set width [expr {max($width,[font measure TkDefaultFont [$tree set $id $column]]+22)}]}
+        foreach id $rows {
+            if {$column eq {#0}} {set text [$tree item $id -text]} else {set text [$tree set $id $column]}
+            set width [expr {max($width,[font measure TkDefaultFont $text]+22)}]
+        }
         set width [expr {min(32767,$width)}]
         if {[$tree column $column -width]!=$width||[$tree column $column -stretch]} {$tree column $column -width $width -stretch 0}
         $tree column $column -minwidth [expr {[font measure TkHeadingFont [$tree heading $column -text]]+22}]

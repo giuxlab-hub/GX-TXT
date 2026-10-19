@@ -84,6 +84,15 @@ Commands and naming forms capture the Session token, host window incarnation and
 
 Curve Viewer and Dataset Curve Fit adopt the optional lifecycle callbacks. Their scientific Native2D editors and current History/autosave owners remain unchanged. Other Viewer adapters continue using the backward-compatible four-callback surface; no mass migration is claimed. Curve Workbench keeps its specialized geometry/Undo controls.
 
+`sessionWorkspaceViewerAction provider callbacks parent action ?errorMode?`
+uses those same guarded host actions. The default `dialog` retains native error
+dialogs. Structured host clients may pass `propagate` to receive the original
+Tcl error instead; no modal dialog consumes it. Session lifetime, provider,
+generation/revision and callback checks are identical. This optional argument
+is host-only and does not expose callbacks or GUI opening to Script Bridge.
+The restricted Development `gui_test workspace_save` projection uses this mode
+so a stale or rejected Save returns a failure receipt rather than an old stamp.
+
 Example (host-side Tcl):
 
 ```tcl

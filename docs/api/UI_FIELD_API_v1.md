@@ -1,5 +1,19 @@
 # Declarative UI Field API v1
 
+Dev108 native label/status components that stretch horizontally (weighted grid
+columns with east/west sticky, or pack fill x/both) wrap to the smaller of their
+declared positive `wraplength` (default400) and current allocated text width.
+The text width excludes horizontal padding and an adjacent image. Their constant
+minimum width request prevents wrapped text from repeatedly resizing its own
+container. Natural, unweighted or unfilled labels retain their natural width
+request and declared wrapping maximum. Explicit zero preserves intentional
+no-wrap behavior. Native Configure bindings own
+presentation only; field values, commands and scientific state are unchanged.
+Captions of typed field/toggle/choice and Dataset-selector controls also wrap
+within their allocated native width (maximum400px). Long descriptive labels
+remain readable in narrow inspectors without changing the author's label,
+component identity or bound value; ordinary focus scrolling reveals later rows.
+
 Host presentation helpers `uiFieldColorToRGBA`, `uiFieldColorFromRGBA` and
 `uiFieldColorComposite` convert canonical RGB/alpha descriptors and composite
 against an explicit background. Numeric components remain in [0,1].
@@ -60,6 +74,16 @@ frame to the shared grid layout, including later layouts supplied with an
 explicit child list. It preserves existing child order and puts appended
 controls last. The transient registration is removed with its frame. It does
 not own the appended control's actions, menu or scientific state.
+
+`uiFieldInspectionColumnsFit tree` measures current heading and row text using
+the actual Tk fonts, including visible tree-column `#0` identities. It updates
+native column widths and font-based row height without changing row data,
+selection, callbacks or scientific state. Long cells use the caller's ordinary
+horizontal scrollbar. It is a presentation operation on an existing Treeview.
+Call `uiFieldInspectionColumnsSchedule tree` after asynchronous row population;
+it coalesces repeated requests into one idle fit and tolerates widget destruction.
+Fitting only the initial empty table cannot account for later stack, variable,
+API-catalog or diagnostic text. Existing script tables retain this same owner.
 
 
 ## Inspector scrolling
@@ -160,3 +184,62 @@ releases the owned grab, destroys the dialog and restores its parent's focus.
 These are host-only operations; domain validation remains with the consumer.
 
 Shared dialogs without explicit dimensions size to their negotiated content request after mapping, then clamp placement to the screen. The global work-area mapper does not leave them frozen at Tk's provisional size. Explicit caller dimensions remain supported. Focus/grab acquisition checks both owner and target visibility; unmapping releases only that dialog's owned grab.
+
+## Dynamic typed choices (dev108)
+
+`uiFieldChoicesSet field_widget choices` updates both the existing typed choice descriptor and its native selector, bounded to4096 choices/1MiB without NULs. Current value is preserved and marked invalid when absent; ordinary selection, commit and Reset use the updated descriptor. `viewerGuiDesignChoicesSet` delegates to this owner for choice and choice-field controls, retaining plain combobox support.
+## Project icon state images and relative spacing (dev108)
+
+Compatible `action/label/status/checkbutton/toggle` properties now include
+`icon_disabled`, `icon_hover`, `icon_selected`, each an optional existing project
+resource ID. A nonempty state ID requires a normal `icon`. Empty IDs retain native
+normal-image behavior. These are presentation only; they never change command
+IDs, callbacks, enablement, values, scientific data or Workspace identity.
+
+`uiFieldIconApply widget properties normalAsset ?projectCatalog?` retains its
+original three-argument use. The optional catalog resolves only declared state
+IDs; Ttk's existing image state list owns selection, with disabled before selected
+before active/hover. Native checkbuttons/toggles have real selected states. A
+plain action does not become a toggle merely because it has a selected image;
+its domain owner must actually select it. Passive labels do not acquire invented
+interactive hover behavior. Image-only controls retain accessible text and get a
+native tooltip fallback; missing both text and tooltip is rejected by the design.
+
+`icon_spacing` is the actual image/text gap in logical pixels, independent of
+outside control padding. Existing Ttk `Button/Checkbutton/Label.label` elements
+expose `-space`; a derived style preserves the caller's base style, layout, colors,
+font and enablement while setting that native option. No padded replacement
+bitmap, second renderer or command binding is needed. Theme changes reapply
+presentation through the same owner; display photos and gap follow Tk scaling
+within the existing bounded icon raster size. A runtime widget cache is destroyed
+with its widget and contains presentation references only, not another asset store.
+
+The Builder's existing Icon Library provides typed state-resource choices and
+normal/disabled/hover/selected previews. Its existing scrollable UI Field inspector
+keeps controls reachable at narrow sizes. Assign is one ordinary model transaction;
+rename preserves all four logical bindings and Remove binding clears them together.
+Legacy designs without icons/state properties retain their existing appearance.
+Native command containers declare `command_icons`, a dictionary from an existing
+container command ID to the same project icon presentation fields. The Builder
+Icon Library exposes a typed Command target selector. Command IDs, callbacks and
+true Configuration-owned enablement remain unchanged. Toolbar buttons reuse
+`uiFieldIconApply`; existing native tooltips are retained without a second tooltip.
+Menus/context menus use `uiFieldMenuIconApply menu index properties asset catalog`
+and refresh their normal/disabled image with the existing command state owner.
+They support image+text/text, left/right/top/bottom and logical sizes16/24/32/48.
+Native Tk command menus expose no hover/selected image variant, custom image/text
+spacing or icon-only tooltip contract; those requests reject explicitly. Their
+typed inspector limits presentation choices and explains the restriction.
+Nested rename/Remove-reference checking, model Undo/Redo and ordinary Module
+packaging retain the same owned catalog bytes and stable command bindings.
+
+Wrapped declarative labels and field/Dataset captions use the actual allocated
+width. Horizontally stretched weighted-grid or fill-x/both labels keep a stable
+one-character width request so wrapping changes height without causing nested
+notebook geometry feedback. Natural-size/unweighted labels retain their declared
+wrap maximum and natural width request. Side-by-side icons reserve their actual
+image width/spacing. Interactive sash resizing continues through the existing
+layout owner. Inspector/scroll-frame FocusIn handlers reveal only the actual
+focused control, ignoring ancestor FocusIn notifications that could move a
+visible checkbox between its pointer press and release. These are presentation
+corrections; field values, source identity, callbacks and History are unchanged.

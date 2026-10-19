@@ -76,8 +76,11 @@ proc ::GX::_scriptJobRequestSignal {request signal} {
     set kill [auto_execok kill];if {$kill eq {}} return
     foreach child [dict get $entry pids] {
         if {![string is integer -strict $child] || $child<=1} continue
-        if {[dict get $entry options process_group]} {catch {exec {*}$kill -$signal -- -$child 2>/dev/null}}
-        catch {exec {*}$kill -$signal -- $child 2>/dev/null}
+        set delivered 0
+        if {[dict get $entry options process_group]} {set delivered [expr {![catch {exec {*}$kill -$signal -- -$child 2>/dev/null}]}]}
+        # A successful group signal already includes its leader. Sending it
+        # again to that PID can interrupt the worker's terminal cleanup handler.
+        if {!$delivered} {catch {exec {*}$kill -$signal -- $child 2>/dev/null}}
     }
 }
 proc ::GX::scriptJobRequestCancel {request {reason cancelled}} {

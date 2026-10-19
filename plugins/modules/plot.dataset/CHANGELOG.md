@@ -1,3 +1,7 @@
+## 4.2.2 — dev108
+
+Preserve valid Plot frames on failed updates, truthful single-point and axis-unit presentation, shared multi-panel X bounds and native source cursor/provenance behavior through existing Plot contracts.
+
 ## 4.2.1
 
 Support explicitly retained presentation dependencies while preserving strict scientific source, schema and calibration guards.
