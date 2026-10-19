@@ -4,10 +4,37 @@
   "sourceRepository": "https://github.com/giuxlab-hub/GX-TXT",
   "coverage": {
     "first": "095",
-    "last": "107",
-    "count": 12
+    "last": "108",
+    "count": 13
   },
   "releases": [
+    {
+      "id": "108",
+      "sha": "6371001a219a4e611ce89c8b396c62294e6b979c",
+      "en": {
+        "title": "Circuit Workbench and shared scientific Viewer capabilities",
+        "intro": "GX-TXT dev-108 extends the Viewer development platform to practical electronic circuit diagrams, controlled scientific simulation workflows and native result displays, while refining Script Workspaces, numerical operations and Plot Dataset.",
+        "highlights": [
+          "Circuit Workbench 1.9.3 provides an editable native electronic diagram with named components, wires, typed properties, scientific netlist generation and managed local/remote simulation with source-aware results.",
+          "Shared Viewer Interface Builder and Development Workspace gain a source-traceable icon catalog, licensed native image resources, component profiles, GUI state tests and restricted C++ debugger controls.",
+          "Public Numeric 1.63.0 extends managed captured expression, interpolation and complex-data handling. Plot Dataset 4.2.2 improves preservation of valid frames, unit display, multi-panel axes and source cursor behavior.",
+          "Python and GNU Octave Script Workspaces gain revised source/editing lifetime behavior, canonical Help/About and illustrated operating manuals; generated Viewer packages retain declared project-owned assets."
+        ],
+        "caveat": "The release follows the accepted Debian scientific integration scope; this publication did not rerun those scientific tests or validate Windows GUI. C++ authoring remains restricted and is not a general hostile-native-code sandbox. GNU Octave asynchronous Pause is still unavailable."
+      },
+      "it": {
+        "title": "Circuit Workbench e nuove funzioni scientifiche condivise per i Viewer",
+        "intro": "GX-TXT dev-108 estende gli strumenti per sviluppare Viewer con schemi elettronici modificabili, simulazioni scientifiche gestite e visualizzazione nativa dei risultati, migliorando Script Workspace, servizi numerici e Plot Dataset.",
+        "highlights": [
+          "Circuit Workbench 1.9.3 consente di modificare schemi elettronici nativi con componenti nominati, fili, proprietà tipizzate, netlist scientifiche e simulazioni locali/remote gestite con risultati collegati alle sorgenti.",
+          "Viewer Interface Builder e Development Workspace aggiungono un catalogo condiviso di icone con licenze e identità tracciate, profili dei componenti, test delle interazioni GUI e controlli di debug C++ vincolati.",
+          "Numeric 1.63.0 estende espressioni, interpolazioni e gestione di valori complessi tramite risorse CORE. Plot Dataset 4.2.2 migliora la conservazione dei grafici validi, unità, assi multipannello e cursore associato alla sorgente.",
+          "Gli Script Workspace Python e GNU Octave migliorano il ciclo di vita del sorgente e offrono Help/About e manuali illustrati; i pacchetti Viewer generati mantengono le risorse dichiarate dal progetto."
+        ],
+        "caveat": "Le verifiche scientifiche della release riguardano il contesto Debian accettato, non nuove prove GUI Windows. Lo sviluppo C++ resta ristretto e non equivale a un sandbox contro codice nativo ostile. La pausa asincrona di GNU Octave rimane non disponibile."
+      },
+      "doc": "plugins/modules/viewer.circuit_workbench/MANUAL.md"
+    },
     {
       "id": "107",
       "sha": "2e404977430906f6bc711239d5d934b72f0a6080",
