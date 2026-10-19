@@ -1,0 +1,116 @@
+{
+  "schema": "gxtxt.public-validation-sources/6",
+  "referenceFramework": "0.9.8.10-dev-108",
+  "referenceMainCommit": "6371001a219a4e611ce89c8b396c62294e6b979c",
+  "officialArchiveSha256": "9299864520f552e7a8dd47766917ed5c323fd1e79e3825ef704cd2d448365e51",
+  "selectedCount": 15,
+  "sourceOnly": true,
+  "runnerStatus": "NOT RUN",
+  "files": [
+    {
+      "path": "validation/official_dev108/circuit_provider_contract.tcl",
+      "sourcePath": "validation/dev108/circuit_provider_contract.tcl",
+      "bytes": 8260,
+      "sha256": "a862d8b154e86c0a0ceebcc04929558fbea2b08825897d8033cf8ecb5908ac17",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev108/diagram_contracts.tcl",
+      "sourcePath": "validation/dev108/diagram_contracts.tcl",
+      "bytes": 5596,
+      "sha256": "84da41ffde9c7cdfd03f184b3efec3ea9c932c28610af406d5bf27e8e8867de9",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev108/design_identity_contract.tcl",
+      "sourcePath": "validation/dev108/design_identity_contract.tcl",
+      "bytes": 5918,
+      "sha256": "5bc62152ec0b18b23f070a7cf0e7266b40cbc8f1b35bed2ac97e1b78ae8c4f73",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev108/electrical_units.tcl",
+      "sourcePath": "validation/dev108/electrical_units.tcl",
+      "bytes": 3262,
+      "sha256": "4a60cc567e315f827bf0e1a3314f75c04540f4bb68dba5dd6bf98de5d873a5dd",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev108/cpp_debug_contract.py",
+      "sourcePath": "validation/dev108/cpp_debug_contract.py",
+      "bytes": 3940,
+      "sha256": "b8283361617c089dddf8c15286f6f59b07289aab902ecf6538f80084a5aa202a",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev108/numeric_sdk_contract.py",
+      "sourcePath": "validation/dev108/numeric_sdk_contract.py",
+      "bytes": 4884,
+      "sha256": "5f6f76f933ff8e0878027a8804af67d0b3878236ddc8077a7d76e4c9e87daa61",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev108/portable_numeric_guard_contract.tcl",
+      "sourcePath": "validation/dev108/portable_numeric_guard_contract.tcl",
+      "bytes": 3593,
+      "sha256": "165d15edde444f5e5a5945768403396b9cb07534c190267d70f8678fa8bbf407",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev108/octave_arguments_contract.tcl",
+      "sourcePath": "validation/dev108/octave_arguments_contract.tcl",
+      "bytes": 3232,
+      "sha256": "52110d597d9ff0230ec4ec6cddc4971bc64998f75fcb2587e7493100f1147a87",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev108/icon_contracts.py",
+      "sourcePath": "validation/dev108/icon_contracts.py",
+      "bytes": 1926,
+      "sha256": "ca2a1415e259d526207d8e08637b64e6980b95bcef27e9b5234baf5888cbecb6",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev108/icon_theme_contract.tcl",
+      "sourcePath": "validation/dev108/icon_theme_contract.tcl",
+      "bytes": 1433,
+      "sha256": "22379c347a4d51b1dccdab4b7637ee553c9f2b570721ae0bb7c7d954e720588d",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev108/manual_asset_contract.py",
+      "sourcePath": "validation/dev108/manual_asset_contract.py",
+      "bytes": 5011,
+      "sha256": "de1d4c825cb83b3e75bc2e186cdccf03c5ed91d129ab809b99f1b7c8b2f4dc08",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev108/plot_series_sdk.py",
+      "sourcePath": "validation/dev108/plot_series_sdk.py",
+      "bytes": 3173,
+      "sha256": "39290bca8f13eac5f9cc94369b5631cb1de22e8aee61bfa16612bd5e45279cfc",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev108/gui_test_contract.py",
+      "sourcePath": "validation/dev108/gui_test_contract.py",
+      "bytes": 3400,
+      "sha256": "f861dc8932dd0c48de3f608597204d242c111b70f9ef79ee2da87d8b11121c07",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev108/builder_history_contract.py",
+      "sourcePath": "validation/dev108/builder_history_contract.py",
+      "bytes": 3687,
+      "sha256": "c12c4a13deb9aeb32bb96ef2362e1c5e39ba39616c71b6168d3e5ab3716dbdfe",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev108/plot_cursor_native.tcl",
+      "sourcePath": "validation/dev108/plot_cursor_native.tcl",
+      "bytes": 4531,
+      "sha256": "47369254e492ea8878b38b340ad9dfb1a5cf1e5d0e1fabd1595a0f13f7124adf",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    }
+  ]
+}

@@ -131,3 +131,27 @@ Reference release: 0.9.8.10-dev-107, main 2e404977430906f6bc711239d5d934b72f0a60
 | development_parity.py | Restricted Viewer development parity checks | Manual / controlled Debian fixture only |
 
 No private debugger WordPress package, its tutorial images, original user Sessions, release install scripts, receipts or credentials were added. These source-only tests are not automatically executed; several require original supporting fixtures.
+
+## Dev-108 original scientific validation sources
+
+Baseline: 0.9.8.10-dev-108, main 6371001a219a4e611ce89c8b396c62294e6b979c. Exact original sources in validation/dev108/, reviewed public copies in validation/official_dev108/. **NOT RERUN**.
+
+| Original source | Scope | Execution policy |
+| --- | --- | --- |
+| circuit_provider_contract.tcl | Public circuit provider typed source, netlist and run contract | Manual / isolated compatible Debian only |
+| diagram_contracts.tcl | Canonical native diagram document and identity | Manual / isolated compatible Debian only |
+| design_identity_contract.tcl | Viewer design identity and retained source | Manual / isolated compatible Debian only |
+| electrical_units.tcl | Explicit unit and circuit quantity semantics | Manual / isolated compatible Debian only |
+| cpp_debug_contract.py | Restricted C++ author debugger admission and state contract | Manual / isolated compatible Debian only |
+| numeric_sdk_contract.py | Public Numeric restricted SDK capability contract | Manual / isolated compatible Debian only |
+| portable_numeric_guard_contract.tcl | Portable scientific Numeric grant and source guard | Manual / isolated compatible Debian only |
+| octave_arguments_contract.tcl | GNU Octave bounded argument binding | Manual / isolated compatible Debian only |
+| icon_contracts.py | Public icon declaration and licensed resource semantics | Manual / isolated compatible Debian only |
+| icon_theme_contract.tcl | Native icon theme/adaptive rendering | Manual / isolated compatible Debian only |
+| manual_asset_contract.py | Source-relative installed manual assets and checksums | Manual / isolated compatible Debian only |
+| plot_series_sdk.py | Shared Plot series native scientific binding | Manual / isolated compatible Debian only |
+| gui_test_contract.py | Managed public GUI test lifecycle | Manual / isolated compatible Debian only |
+| builder_history_contract.py | Viewer Builder source/history guarantees | Manual / isolated compatible Debian only |
+| plot_cursor_native.tcl | Native source cursor and scientific identity | Manual / isolated compatible Debian only |
+
+Some tests depend on separately prepared controlled fixtures and native runtimes; the branch provides original source, not invented runtime PASS results. No added dev-108 case is registered in the automatic execution subset.

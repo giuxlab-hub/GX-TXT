@@ -86,3 +86,11 @@ GX-TXT dev-107 (source commit 2e404977430906f6bc711239d5d934b72f0a6080) adds res
 These tests were not rerun during publication. The CLI runner still allows only the original reviewed dev-102 cases. GUI tests require prepared Debian X11 and native components. C++ policy tests and debugger interactions must be invoked only in controlled disposable environments.
 
 The WordPress debugger guide package and its supporting tutorial directory are intentionally withheld, together with original acceptance evidence, private Sessions, developer files, sensitive teaching PDFs and any dependent generators.
+
+## GX-TXT dev-108 validation sources (NOT RERUN)
+
+The accepted dev-108 public source commit 6371001a219a4e611ce89c8b396c62294e6b979c adds Circuit Workbench and extends Numeric, Plot Dataset, native Viewer components, restricted C++ debugging and the shared Viewer GUI API. The validation branch includes **15 selected Tcl/Python source-only cases** under validation/official_dev108/, copied byte-identically from the official validation/dev108/ tree. Original source paths and SHA-256 checksums are in source-manifest-dev108.json.
+
+These cases were not executed as part of public-source publication. GUI and numerical checks require dedicated Debian test installations, C++/Octave dependencies and synthetic fixtures. The opt-in runner remains limited to the originally reviewed dev-102 CLI cases.
+
+Internal acceptance evidence, private Sessions, confidential PDFs and dependent generators, credentials and the separately withheld WordPress debugger package are not included.
