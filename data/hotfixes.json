@@ -1,0 +1,78 @@
+{
+  "schema": "gxtxt.pages.hotfix-registry/1",
+  "entries": [
+    {
+      "id": "dev108-viewer-cache",
+      "framework": "0.9.8.10-dev-108",
+      "target_release_id": "108",
+      "original_commit": "6371001a219a4e611ce89c8b396c62294e6b979c",
+      "source_git_blob": "5d77772e22ce6eb0befcdc3e32ac783c7d46fbb0",
+      "hotfix_branch": "maintenance/dev108",
+      "hotfix_commit": "16a2dc488b393865fa85706a3b9d91bbc78b5387",
+      "tag": "v0.9.8.10-dev-108-hotfix.1",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-108-hotfix.1",
+      "asset_name": "GXTXT_dev108_viewer_compile_cache_TTY_patch_v2.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-108-hotfix.1/GXTXT_dev108_viewer_compile_cache_TTY_patch_v2.zip",
+      "asset_sha256": "4f90e0ed8b510e442a8d80db219e7abbe80ffd59098afa70e69cb4921fd89885",
+      "asset_bytes": 10487,
+      "source_path": "core/python/gxtxt_viewer_development.py",
+      "source_patched_sha256": "4a528770f077f85ee6cb724809fcd9d7e25bfdbbfbea193b236f7466970ab7d3",
+      "status": "EXPERIMENTAL_OFFLINE_TESTED",
+      "published_date": "2026-10-20",
+      "offline_test_cases_passed": 6,
+      "live_debian_gui_validation": "NOT_RUN",
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-109",
+      "en": {
+        "label": "Experimental dev-108-only hotfix",
+        "title": "Viewer C++ compilation cache and terminal diagnostics",
+        "lead": "A temporary correction for repeated native Viewer compilation, with source-bound cache invalidation and visibility into actual Clang builds.",
+        "problem": "On the unmodified dev-108, repeating an action on the same restricted C++ Viewer may compile viewer.so again even when the underlying project has not changed.",
+        "behavior": [
+          "Reuses a previous compiled release binary only when all recorded project, source, design, SDK, compiler, policy, adapter and backend fingerprints match.",
+          "An actual compilation attempts to emit COMPILE START and a completion/failure message to the controlling terminal, with a project-local log fallback.",
+          "Explicit Build/Export and debugger builds are excluded from the cache. Each new Viewer runtime project can legitimately compile once."
+        ],
+        "caution": [
+          "Exactly the original dev-108 source is required; the installer refuses other versions or any modified target. All dev-109 and later revisions are incompatible by design.",
+          "Six isolated unit tests passed; the live Debian GUI/Clang recompilation behavior has NOT been verified.",
+          "Project-local build receipts and binaries are not cryptographically authenticated against malicious authors; use this optimization only with trusted Viewer projects."
+        ],
+        "install_intro": "Close GX-TXT, first roll back any previous v1 patch, unpack the downloaded ZIP in a separate folder and execute these commands from that folder:",
+        "run_intro": "After restarting from a terminal, repeat an unchanged action on the same Viewer. A cache hit should not produce a new COMPILE START. If no terminal output is available, inspect the relevant project log.",
+        "rollback": "Use the exact ROLLBACK command printed by the installer. The original file is preserved under .gxtxt_patch_backups; a later unrelated edit makes rollback refuse the overwrite.",
+        "download": "Download the original patch ZIP",
+        "source": "Maintenance source branch",
+        "release": "GitHub hotfix release",
+        "return": "All GX-TXT releases",
+        "sha": "ZIP SHA-256",
+        "status_label": "Verification status"
+      },
+      "it": {
+        "label": "Hotfix sperimentale esclusiva dev-108",
+        "title": "Cache di compilazione Viewer C++ e diagnostica sul terminale",
+        "lead": "Una correzione temporanea contro le ricompilazioni ripetute dei Viewer nativi, con invalidazione della cache e segnalazione delle compilazioni Clang effettive.",
+        "problem": "Nella dev-108 originale, ripetendo un comando dello stesso Viewer C++ può essere ricompilato viewer.so anche quando il progetto non è cambiato.",
+        "behavior": [
+          "Riutilizza un binario precedentemente compilato soltanto se coincidono tutti gli hash di progetto, sorgente, design, SDK, compilatore, policy, adapter e backend.",
+          "Una compilazione effettiva prova a segnalare COMPILE START e l'esito sul terminale di controllo, usando un log locale al progetto quando il terminale non è disponibile.",
+          "Build/Export espliciti e compilazioni del debugger non sfruttano la cache. Un nuovo progetto runtime del Viewer può legittimamente compilare una volta."
+        ],
+        "caution": [
+          "Richiede esattamente la dev-108 originale; l'installer rifiuta altre versioni o un file bersaglio già modificato. La dev-109 e ogni revisione successiva sono incompatibili per definizione.",
+          "Sono passati sei test unitari isolati, ma NON è stata verificata l'integrazione reale della GUI Debian con Clang.",
+          "Ricevute e binari conservati nel progetto non sono autenticati crittograficamente contro manomissioni intenzionali: utilizzare questa cache solo con progetti Viewer attendibili."
+        ],
+        "install_intro": "Chiudere GX-TXT, annullare prima un'eventuale patch v1, estrarre lo ZIP fuori dal framework ed eseguire questi comandi dalla cartella estratta:",
+        "run_intro": "Dopo il riavvio da terminale, ripetere un'azione invariata nello stesso Viewer. Un riutilizzo della cache non dovrebbe emettere un nuovo COMPILE START. Se il terminale non mostra messaggi, consultare il log del progetto.",
+        "rollback": "Eseguire il comando ROLLBACK stampato dall'installer. L'originale è conservato in .gxtxt_patch_backups; modifiche successive al file impediscono una sovrascrittura automatica.",
+        "download": "Scarica lo ZIP originale della patch",
+        "source": "Branch di manutenzione",
+        "release": "Pagina GitHub della hotfix",
+        "return": "Tutte le release GX-TXT",
+        "sha": "SHA-256 dello ZIP",
+        "status_label": "Stato delle verifiche"
+      }
+    }
+  ]
+}

@@ -5,6 +5,7 @@ const path = require('path');
 
 const site = path.resolve(__dirname, '..');
 const data = JSON.parse(fs.readFileSync(path.join(site, 'data', 'release-highlights.json'), 'utf8'));
+const hotfixes = JSON.parse(fs.readFileSync(path.join(site, 'data', 'hotfixes.json'), 'utf8'));
 const base = 'https://github.com/giuxlab-hub/GX-TXT';
 const siteBase = 'https://giuxlab-hub.github.io/GX-TXT/';
 
@@ -22,6 +23,15 @@ assert(data.sourceFile === 'CHANGELOG.md', 'The official source must remain the 
 assert(data.releases.length === data.coverage.count, 'Release count does not match coverage');
 assert(data.releases[0].id === data.coverage.last, 'Latest release must be first');
 assert(data.releases[data.releases.length - 1].id === data.coverage.first, 'First public release must be last');
+assert(hotfixes.schema === 'gxtxt.pages.hotfix-registry/1' && Array.isArray(hotfixes.entries), 'Invalid hotfix registry');
+const seenHotfixes = new Set();
+for (const hotfix of hotfixes.entries) {
+  assert(/^[a-z0-9-]+$/.test(hotfix.id) && !seenHotfixes.has(hotfix.id), 'Duplicate/invalid hotfix ID');
+  assert(data.releases.some(r => r.id === hotfix.target_release_id && r.sha === hotfix.original_commit), 'Hotfix target does not match published source');
+  assert(hotfix.exclusive_compatibility === true && hotfix.framework === '0.9.8.10-dev-' + hotfix.target_release_id, 'Invalid version-exclusive hotfix declaration');
+  assert(/^[a-f0-9]{64}$/.test(hotfix.asset_sha256) && hotfix.en?.label && hotfix.it?.label, 'Missing verified bilingual hotfix details');
+  seenHotfixes.add(hotfix.id);
+}
 const seenVersions = new Set(), seenShas = new Set();
 for (const r of data.releases) {
   assert(/^0[0-9]{2}$|^1[0-9]{2}$/.test(r.id), 'Invalid release ID: ' + r.id);
@@ -114,6 +124,19 @@ function render(lang) {
     const c = r[lang], version = '0.9.8.10-dev-' + r.id;
     const featured = index === 0;
     const bullets = c.highlights.map(b => '<li>' + escapeHTML(b) + '</li>').join('\n');
+
+    const maintenance = hotfixes.entries.filter(h => h.target_release_id === r.id).map(h => {
+      const notice = h[lang];
+      return [
+        '<div class="release-maintenance" aria-label="' + escapeHTML(notice.label) + '">',
+        '<strong>' + escapeHTML(notice.label) + '</strong>',
+        '<p>' + escapeHTML(notice.lead) + '</p>',
+        '<p>' + (italian ? 'Incompatibile per definizione con la dev-109 e successive. Verifica GUI reale non ancora completata.' : 'Incompatible by design with dev-109 and later. Live GUI acceptance is not yet established.') + '</p>',
+        '<a href="../hotfixes/' + encodeURIComponent(h.id) + '/">' + (italian ? 'Documentazione, download, controlli e rollback ↗' : 'Documentation, download, checks and rollback ↗') + '</a>',
+        '</div>'
+      ].join('\n');
+    }).join('\n');
+
     const header = [
       '<div class="release-head">',
       '  <div><div class="release-version">' + escapeHTML(version) + '</div>',
@@ -137,6 +160,7 @@ function render(lang) {
       '    <h3 class="release-group-label">' + escapeHTML(t.detailsLabel) + '</h3>',
       '    <ul class="release-bullets">' + bullets + '</ul>',
       '    <div class="release-scope"><span>' + escapeHTML(t.caveatLabel) + '</span><p>' + escapeHTML(c.caveat) + '</p></div>',
+      maintenance,
       actions,
       '  </article>',
       '</li>'

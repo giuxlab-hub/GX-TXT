@@ -96,6 +96,12 @@
 <li>Numeric 1.63.0 estende espressioni, interpolazioni e gestione di valori complessi tramite risorse CORE. Plot Dataset 4.2.2 migliora la conservazione dei grafici validi, unità, assi multipannello e cursore associato alla sorgente.</li>
 <li>Gli Script Workspace Python e GNU Octave migliorano il ciclo di vita del sorgente e offrono Help/About e manuali illustrati; i pacchetti Viewer generati mantengono le risorse dichiarate dal progetto.</li></ul>
     <div class="release-scope"><span>Ambito scientifico</span><p>Le verifiche scientifiche della release riguardano il contesto Debian accettato, non nuove prove GUI Windows. Lo sviluppo C++ resta ristretto e non equivale a un sandbox contro codice nativo ostile. La pausa asincrona di GNU Octave rimane non disponibile.</p></div>
+<div class="release-maintenance" aria-label="Hotfix sperimentale esclusiva dev-108">
+<strong>Hotfix sperimentale esclusiva dev-108</strong>
+<p>Una correzione temporanea contro le ricompilazioni ripetute dei Viewer nativi, con invalidazione della cache e segnalazione delle compilazioni Clang effettive.</p>
+<p>Incompatibile per definizione con la dev-109 e successive. Verifica GUI reale non ancora completata.</p>
+<a href="../hotfixes/dev108-viewer-cache/">Documentazione, download, controlli e rollback ↗</a>
+</div>
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/6371001a219a4e611ce89c8b396c62294e6b979c">Apri il commit esatto ↗</a>
 <a href="https://github.com/giuxlab-hub/GX-TXT/blob/6371001a219a4e611ce89c8b396c62294e6b979c/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
@@ -119,6 +125,7 @@
 <li>I Workspace Python e GNU Octave condividono una disposizione configurabile di pannelli e assistenti, con stack, variabili, breakpoint e controlli sull’identità del codice.</li>
 <li>Viewer Interface Builder aggiunge esempi di componenti integrati, gestione degli eventi tramite API pubbliche e revisione dei candidati, senza modificare le autorità scientifiche CORE esistenti.</li></ul>
     <div class="release-scope"><span>Ambito scientifico</span><p>Lo sviluppo controllato supporta attualmente solo C++. Il permesso di scrittura vale per l’albero dei processi autorizzati, non per tutto l’account, e non certifica un ambiente sicuro contro codice nativo ostile. La pausa asincrona di GNU Octave non è supportata; la pubblicazione non costituisce un nuovo collaudo scientifico Debian né una verifica della GUI Windows.</p></div>
+
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/2e404977430906f6bc711239d5d934b72f0a6080">Apri il commit esatto ↗</a>
 <a href="https://github.com/giuxlab-hub/GX-TXT/blob/2e404977430906f6bc711239d5d934b72f0a6080/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
@@ -142,6 +149,7 @@
 <li>I Workspace Python e GNU Octave aggiungono servizi condivisi per il codice, importazione strutturata, stato delle modifiche e Undo/Redo accurati, oltre al debug gestito con stack e controllo della revisione del sorgente.</li>
 <li>La consultazione dei Results usa selezioni indipendenti e distingue output del programma, stderr e diagnostica, con esportazione esplicita e pubblicazione come Dataset canonico.</li></ul>
     <div class="release-scope"><span>Ambito scientifico</span><p>La verifica scientifica/GUI riguarda il contesto Debian collaudato, non Windows. Restano incompleti alcuni scenari avanzati di debugger/breakpoint; la colorazione è lessicale e il renderer HTML minimale non mostra immagini o layout CSS e non esegue script o form.</p></div>
+
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/db10ef525670944f031bcb33b8d9968d6bcac312">Apri il commit esatto ↗</a>
 <a href="https://github.com/giuxlab-hub/GX-TXT/blob/db10ef525670944f031bcb33b8d9968d6bcac312/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
@@ -165,6 +173,7 @@
 <li>Lo studio Print/PDF compone pagine reali, PDF/immagini/testi originali, tabelle Dataset con tipi esatti, grafici e annotazioni con verifiche sulle sorgenti.</li>
 <li>La ricerca delle stampanti e delle funzioni CUPS è asincrona e annullabile; l’invio esplicito ricontrolla la validità delle sorgenti e del layout.</li></ul>
     <div class="release-scope"><span>Ambito scientifico</span><p>Una coda di stampa che accetta il lavoro non prova la stampa fisica. Alcuni percorsi Help non sono stati testati; componenti di progettazione Native3D e callback scientifici Replicate non vengono creati automaticamente. I test GUI sono stati eseguiti su Debian Xorg, non su Windows.</p></div>
+
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/d99268348aa55b62f3a1e21ec3672f04504a740d">Apri il commit esatto ↗</a>
 <a href="https://github.com/giuxlab-hub/GX-TXT/blob/d99268348aa55b62f3a1e21ec3672f04504a740d/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
@@ -188,6 +197,7 @@
 <li>Dataset Preview prepara le rappresentazioni scientifiche in modo asincrono, con avanzamento, annullamento e cache verificata eliminabile. Modificare i controlli lascia visibile l&#39;ultimo frame valido finché non si sceglie Render.</li>
 <li>Il catalogo raggruppa 30 provider Viewer, ciascuno con immagini scientifiche dedicate e disponibilità persistente. I comandi GUI condivisi e i dialoghi Replicate/Curve Workbench riutilizzano le autorità CORE.</li></ul>
     <div class="release-scope"><span>Ambito scientifico</span><p>I nodi di calcolo sono stati verificati con processi Linux separati e TLS su localhost, non tra due macchine fisiche. La preparazione iniziale di Preview può richiedere tempo; non si dichiarano test GUI Windows né intervalli avanzati di covarianza condivisa.</p></div>
+
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/e07376e0a62e0eecf1737da33c87bbbb41273f4b">Apri il commit esatto ↗</a>
 <a href="https://github.com/giuxlab-hub/GX-TXT/blob/e07376e0a62e0eecf1737da33c87bbbb41273f4b/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
@@ -211,6 +221,7 @@
 <li>Scientific Worksheet 2.1 aggiunge associazione guidata ai Dataset, riempimento, celle unite, stili e dimensioni, Filter Views limitate e Script Job Python con applicazione controllata.</li>
 <li>La visibilità delle curve in Preview diventa un&#39;operazione leggera; il manifesto pubblico per i Viewer coordina barre dei comandi, inspector, Workspace e History esistenti.</li></ul>
     <div class="release-scope"><span>Ambito scientifico</span><p>Non sono disponibili stimatori della covarianza a fattori condivisi né intervalli di confidenza/previsione; la corrispondenza fisica delle curve deve essere giustificata.</p></div>
+
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/93d326af356ce1bc9237e93d0ebff8c0f87f75ee">Apri il commit esatto ↗</a>
 <a href="https://github.com/giuxlab-hub/GX-TXT/blob/93d326af356ce1bc9237e93d0ebff8c0f87f75ee/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
@@ -233,6 +244,7 @@
 <li>Electromagnetics Studio integra Gmsh/GetDP per problemi statici lineari 2D planari, pubblicando nodi, celle triangolari e campi esatti per la visualizzazione nativa.</li>
 <li>Mathematics Explorer e le nuove operazioni Numeric introducono funzioni limitate con unità fisiche e ricerche numeriche di radici/estremi; si ampliano inoltre gli strumenti nativi per immagini e grafica 3D.</li></ul>
     <div class="release-scope"><span>Ambito scientifico</span><p>Questa versione copre provider locali e FEM statico planare; il CAM è soltanto progettato. Il servizio scientifico Replicate indipendente non era ancora disponibile nella dev-101.</p></div>
+
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/ab559c310a52db9bbad1d05bfc483b45ed0f3284">Apri il commit esatto ↗</a>
 <a href="https://github.com/giuxlab-hub/GX-TXT/blob/ab559c310a52db9bbad1d05bfc483b45ed0f3284/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
@@ -255,6 +267,7 @@
 <li>La griglia virtuale Native2D gestisce fogli estesi in modo interattivo, mantenendo distinti i dati scientifici completi e le rappresentazioni per la visualizzazione.</li>
 <li>Plot Dataset v4 aggiunge grafici nativi 2D/3D, grafici modificabili nello Worksheet con identità Graph/Clone conservate e presentazione degli assi per ciascuna vista.</li></ul>
     <div class="release-scope"><span>Ambito scientifico</span><p>L&#39;aggiornamento delle griglie grandi utilizza ancora il ridisegno limitato dell&#39;area visibile; non viene dichiarato un motore di ridisegno per singole tile.</p></div>
+
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/dcf22b0864dafd34753e1aa8ae42470721e62108">Apri il commit esatto ↗</a>
 <a href="https://github.com/giuxlab-hub/GX-TXT/blob/dcf22b0864dafd34753e1aa8ae42470721e62108/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
@@ -277,6 +290,7 @@
 <li>Le azioni dei Workspace proteggono le modifiche con Salva, Scarta e Annulla; il Plugin Manager conserva Job e risorse native attive durante gli aggiornamenti.</li>
 <li>I Viewer possono richiedere una singola analisi standard tramite la coda esistente; i controlli guidati dei segnali riutilizzano gli schemi delle operazioni dichiarate.</li></ul>
     <div class="release-scope"><span>Ambito scientifico</span><p>L&#39;apertura delle Session conserva la propria autorità: questa release non dichiara una riprogettazione generale delle prestazioni.</p></div>
+
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/5de04f5e6bd4cf87fc712fe1e561d66f8cd5521e">Apri il commit esatto ↗</a>
 <a href="https://github.com/giuxlab-hub/GX-TXT/blob/5de04f5e6bd4cf87fc712fe1e561d66f8cd5521e/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
@@ -299,6 +313,7 @@
 <li>Dataset Preview introduce filtri tipizzati, raggruppamento scientifico delle curve e confronti esatti tra interi, conservando identità delle righe e unità.</li>
 <li>Scientific Image Inspector diventa un Viewer opzionale; in Preview convivono immagine originale, elaborazioni e diagnostica della qualità delle curve.</li></ul>
     <div class="release-scope"><span>Ambito scientifico</span><p>La risoluzione dell&#39;immagine non determina da sola l&#39;incertezza fisica della misura: calibrazione e localizzazione rimangono dichiarazioni esplicite.</p></div>
+
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/c84faff8a87dad6cb82eba8f8ebff4387996c12c">Apri il commit esatto ↗</a>
 <a href="https://github.com/giuxlab-hub/GX-TXT/blob/c84faff8a87dad6cb82eba8f8ebff4387996c12c/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
@@ -321,6 +336,7 @@
 <li>Il fitting scientifico si amplia a osservazioni correlate/GLS, bootstrap, inferenza tramite profili, modelli complessi e superfici, oltre a diversi metodi spline.</li>
 <li>Il trasporto tipizzato nello Script Bridge conserva interi esatti e forme degli array; operazioni comuni per unità/coordinate e nuovi tutorial migliorano i flussi tra moduli.</li></ul>
     <div class="release-scope"><span>Ambito scientifico</span><p>Gli stimatori disponibili dipendono dal metodo e dalle ipotesi dichiarate; non tutti gli intervalli statistici sono supportati.</p></div>
+
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/edf2f324f5e3ada8fa2fb8c7a5e2a7dc8f6915ea">Apri il commit esatto ↗</a>
 <a href="https://github.com/giuxlab-hub/GX-TXT/blob/edf2f324f5e3ada8fa2fb8c7a5e2a7dc8f6915ea/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
@@ -343,6 +359,7 @@
 <li>Comandi dei Viewer, scorciatoie, Workspace salvati e History diventano controlli condivisi; le sezioni dei Dataset si possono esportare in TXT/PDF.</li>
 <li>Dataset Curve Fit introduce la traslazione reversibile degli ingressi positivi; Plot Dataset 3D legge coordinate scientifiche da CSV/HDF5 tramite Table Stream v3.</li></ul>
     <div class="release-scope"><span>Ambito scientifico</span><p>I valori dei Dataset e le identità delle esecuzioni originali rimangono distinti dalla configurazione della vista e dalle trasformazioni reversibili per il grafico.</p></div>
+
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/3130c8bcb70a1be46795ee6127f1160e5fc11587">Apri il commit esatto ↗</a>
 <a href="https://github.com/giuxlab-hub/GX-TXT/blob/3130c8bcb70a1be46795ee6127f1160e5fc11587/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
@@ -365,6 +382,7 @@
 <li>Il fitting può ricalcolare le selezioni modificate senza perdere le misure originali e i flussi già accettati.</li>
 <li>Script Jobs presenta nomi leggibili, identità immutabili delle esecuzioni e log dettagliati, paginati, copiabili, salvabili e seguibili.</li></ul>
     <div class="release-scope"><span>Ambito scientifico</span><p>È la prima copia pubblica dell&#39;attuale storia Git: lo sviluppo di GX-TXT era iniziato prima.</p></div>
+
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/5f8b17d3d8b16c4b1aaa24881c0f843e22d2a382">Apri il commit esatto ↗</a>
 <a href="https://github.com/giuxlab-hub/GX-TXT/blob/5f8b17d3d8b16c4b1aaa24881c0f843e22d2a382/CHANGELOG.md">CHANGELOG di questa versione ↗</a>

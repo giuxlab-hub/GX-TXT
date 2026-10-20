@@ -1,0 +1,25 @@
+/* GX-TXT version-locked maintenance hotfix pages. */
+.hotfix-hero{padding:82px 0 62px;max-width:1080px}
+.hotfix-id{font:700 12px/1.6 ui-monospace,Consolas,monospace;color:var(--amber);margin:16px 0}
+.hotfix-hero h1{max-width:960px;font-size:clamp(36px,5.5vw,64px);line-height:1.09;letter-spacing:-.05em;margin:16px 0 24px}
+.hotfix-hero .lead{font-size:18px;max-width:880px}
+.hotfix-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:32px 0}
+.hotfix-meta>div{border:1px solid var(--line);background:#142734;border-radius:12px;padding:18px}
+.hotfix-meta small{display:block;font-size:11px;color:var(--amber);font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.hotfix-meta strong{display:block;font-size:13px;margin-top:8px;overflow-wrap:anywhere}
+.hotfix-digest{font-size:12px;color:var(--muted);line-height:1.9;overflow-wrap:anywhere}
+.hotfix-digest code{font:650 12px ui-monospace,Consolas,monospace;color:var(--green)}
+.hotfix-content{max-width:950px}
+.hotfix-content h2{font-size:clamp(25px,3vw,35px);margin:18px 0;letter-spacing:-.035em}
+.hotfix-content h2:not(:first-child){margin-top:42px}
+.hotfix-content p,.hotfix-content li{color:var(--muted);font-size:15px;line-height:1.85}
+.hotfix-list{padding-left:22px;display:grid;gap:12px}
+.hotfix-warning{border-left:3px solid var(--amber);padding:20px 25px 20px 38px;background:#172732;border-radius:7px}
+.hotfix-content pre{background:#0b1a25;border:1px solid var(--line);padding:18px;border-radius:12px;overflow:auto}
+.hotfix-content pre code{font:13px/1.75 ui-monospace,Consolas,monospace;color:#e5f8ef}
+.hotfix-source{margin-top:35px;padding:22px 25px;border:1px solid var(--line);background:#162b39;border-radius:14px}
+.hotfix-source h3{margin:0 0 10px}
+.hotfix-source p{overflow-wrap:anywhere;margin:9px 0}
+.hotfix-source code{font-size:12px;color:var(--green)}
+.hotfix-source a{color:var(--green)}
+@media(max-width:680px){.hotfix-hero{padding:54px 0 44px}.hotfix-meta{grid-template-columns:1fr}.hotfix-hero .lead{font-size:16px}.hotfix-content pre{padding:12px}.hotfix-warning{padding:16px 17px 16px 30px}}
