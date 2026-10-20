@@ -10,12 +10,12 @@ function render(h,lang){
  const it=lang==='it',t=h[lang],url=base+(it?'it/':'')+'hotfixes/'+h.id+'/',other=base+(it?'':'it/')+'hotfixes/'+h.id+'/';
  const baseRel=it?'../../../':'../../',relReleases='../../releases/#dev-'+h.target_release_id;
  const tr=it ? {
-   tag:'GX-TXT / CORREZIONE DI MANUTENZIONE',back:'Torna alla cronologia',status:'Hotfix sperimentale',exact:'Compatibilità esclusiva',source:'Sorgenti della patch',problem:'Problema affrontato',changes:'Comportamento previsto',install:'Installazione sulla dev-108 originale',verification:'Verifica dopo il riavvio',rollback:'Ripristino della dev-108 originale',limits:'Limiti delle verifiche e della sicurezza',downloaded:'Pacchetto originale verificato',parent:'Commit originale dev-108',patched:'Commit della hotfix',version:'Solo 0.9.8.10-dev-108',none:'Mai sulla dev-109',lic:'GNU GPL-3.0-or-later',tests:'6 test isolati: PASS; GUI reale: non verificata'
+   tag:'GX-TXT / CORREZIONE DI MANUTENZIONE',back:'Torna alla cronologia',status:'Hotfix sperimentale',exact:'Compatibilità esclusiva',source:'Sorgenti della patch',problem:'Problema affrontato',changes:'Comportamento previsto',install:'Installazione sulla dev-108 originale',verification:'Verifica dopo il riavvio',rollback:'Ripristino della dev-108 originale',limits:'Limiti delle verifiche e della sicurezza',downloaded:'Pacchetto originale verificato',sha:'SHA-256 dello ZIP',parent:'Commit originale dev-108',patched:'Commit della hotfix',version:'Solo 0.9.8.10-dev-108',none:'Mai sulla dev-109',lic:'GNU GPL-3.0-or-later',tests:'6 test isolati: PASS; GUI reale: non verificata'
  } : {
-   tag:'GX-TXT / MAINTENANCE CORRECTION',back:'Back to release history',status:'Experimental hotfix',exact:'Strict compatibility',source:'Patch source',problem:'Problem addressed',changes:'Expected behavior',install:'Install only on unmodified dev-108',verification:'Verify after restart',rollback:'Restore original dev-108',limits:'Validation and security limitations',downloaded:'Verified original package',parent:'Original dev-108 commit',patched:'Hotfix commit',version:'Only 0.9.8.10-dev-108',none:'Never on dev-109',lic:'GNU GPL-3.0-or-later',tests:'6 isolated tests: PASS; live GUI: not verified'
+   tag:'GX-TXT / MAINTENANCE CORRECTION',back:'Back to release history',status:'Experimental hotfix',exact:'Strict compatibility',source:'Patch source',problem:'Problem addressed',changes:'Expected behavior',install:'Install only on unmodified dev-108',verification:'Verify after restart',rollback:'Restore original dev-108',limits:'Validation and security limitations',downloaded:'Verified original package',sha:'ZIP SHA-256',parent:'Original dev-108 commit',patched:'Hotfix commit',version:'Only 0.9.8.10-dev-108',none:'Never on dev-109',lic:'GNU GPL-3.0-or-later',tests:'6 isolated tests: PASS; live GUI: not verified'
  };
  const installCode=['ROOT="$HOME/gxtxt/gxtxt_pipeline_v09810dev_108"','python3 backport.py --check "$ROOT"','python3 -m unittest -v test_patch','python3 backport.py --apply "$ROOT"'].join('\n');
- const logCode='tail -f "/path/to/viewer-project/derived/viewer_compilation.log"';
+ const logCode=h.ui_compile_notice?'':'tail -f "/path/to/viewer-project/derived/viewer_compilation.log"';
  const bullets=(values)=>values.map(v=>'<li>'+esc(v)+'</li>').join('\n');
  const tags=['meta','og:title','og:description'];
  const title='GX-TXT '+h.framework+' — '+t.title;
@@ -51,6 +51,8 @@ function render(h,lang){
  '      <p class="hotfix-id">'+esc(h.framework)+' / '+esc(h.tag)+'</p>',
  '      <h1>'+esc(t.title)+'</h1>',
  '      <p class="lead">'+esc(t.lead)+'</p>',
+      h.superseded_by ? '<p class="lead"><strong>'+(it?'SUPERATA:':'SUPERSEDED:')+'</strong> '+(it?'Usare la nuova hotfix.2 (v3).':'Use the newer hotfix.2 (v3).')+' <a href="'+base+(it?'it/':'')+'hotfixes/'+h.superseded_by+'/">'+(it?'Vai alla v3 ↗':'See v3 ↗')+'</a></p>' : '',
+      h.previous_hotfix ? '<p class="lead">'+(it?'Sostituisce hotfix.1 (v2): eseguire prima il rollback precedente.':'Supersedes hotfix.1 (v2): roll back v2 before installation.')+' <a href="'+base+(it?'it/':'')+'hotfixes/'+h.previous_hotfix+'/">'+(it?'Pagina storica v2 ↗':'Historical v2 page ↗')+'</a></p>' : '',
  '      <div class="hotfix-meta">',
  '        <div><small>'+esc(tr.exact)+'</small><strong>'+esc(tr.version)+'</strong></div>',
  '        <div><small>'+esc(tr.status)+'</small><strong>'+esc(tr.tests)+'</strong></div>',
@@ -72,7 +74,7 @@ function render(h,lang){
  '      <pre><code>'+esc(installCode)+'</code></pre>',
  '      <h2>'+esc(tr.verification)+'</h2>',
  '      <p>'+esc(t.run_intro)+'</p>',
- '      <pre><code>'+esc(logCode)+'</code></pre>',
+ logCode ? '      <pre><code>'+esc(logCode)+'</code></pre>' : '',
  '      <h2>'+esc(tr.rollback)+'</h2>',
  '      <p>'+esc(t.rollback)+'</p>',
  '    </div></section>',
@@ -95,8 +97,9 @@ function render(h,lang){
 for(const h of registry.entries){
  assert(!seen.has(h.id)&&/^[a-z0-9-]+$/.test(h.id),'Unsafe/duplicate hotfix identifier');seen.add(h.id);
  assert(h.exclusive_compatibility&&h.framework==='0.9.8.10-dev-'+h.target_release_id,'Release scope mismatch');
- assert(h.original_commit==='6371001a219a4e611ce89c8b396c62294e6b979c'&&h.hotfix_commit==='16a2dc488b393865fa85706a3b9d91bbc78b5387','Unexpected source identities');
- assert(h.asset_sha256==='4f90e0ed8b510e442a8d80db219e7abbe80ffd59098afa70e69cb4921fd89885','Unknown published ZIP hash');
+ const known={'dev108-viewer-cache':{commit:'16a2dc488b393865fa85706a3b9d91bbc78b5387',sha:'4f90e0ed8b510e442a8d80db219e7abbe80ffd59098afa70e69cb4921fd89885'},'dev108-viewer-cache-popup-v3':{commit:'84dc3081feeebeb7997877fd3b03828dcc08c3c9',sha:'db482f071b9dad7e44f4eba3e34116d0f9b06e0a560ecda1fb2dcddd7b641f39'}};
+ assert(h.original_commit==='6371001a219a4e611ce89c8b396c62294e6b979c'&&known[h.id]&&h.hotfix_commit===known[h.id].commit,'Unexpected source identities');
+ assert(h.asset_sha256===known[h.id].sha,'Unknown published ZIP hash');
  for(const lang of ['en','it']){
   const rel=(lang==='it'?'it/':'')+'hotfixes/'+h.id+'/index.html',f=path.join(site,...rel.split('/'));
   fs.mkdirSync(path.dirname(f),{recursive:true});const html=render(h,lang);

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0c131d">
+  <meta name="author" content="Giux-Lab">
+  <meta name="description" content="Riduce le ricompilazioni ripetute dei Viewer invariati e indica nella GUI quando si compila o quando viene riutilizzato il binario.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="GX-TXT 0.9.8.10-dev-108 — Cache dei Viewer C++ con avviso grafico non modale">
+  <meta property="og:description" content="Riduce le ricompilazioni ripetute dei Viewer invariati e indica nella GUI quando si compila o quando viene riutilizzato il binario.">
+  <meta property="og:url" content="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev108-viewer-cache-popup-v3/">
+  <title>GX-TXT 0.9.8.10-dev-108 — Cache dei Viewer C++ con avviso grafico non modale</title>
+  <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev108-viewer-cache-popup-v3/">
+  <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev108-viewer-cache-popup-v3/">
+  <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev108-viewer-cache-popup-v3/">
+  <link rel="alternate" hreflang="x-default" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev108-viewer-cache-popup-v3/">
+  <link rel="stylesheet" href="../../../assets/style.css">
+  <link rel="stylesheet" href="../../../assets/hotfixes.css">
+  <link rel="icon" type="image/svg+xml" href="../../../assets/favicon.svg">
+</head>
+<body>
+  <a class="skip" href="#main">Vai al contenuto</a>
+  <header><div class="wrap header">
+    <a class="brand" href="../../../it/" aria-label="GX-TXT"><span class="logo" aria-hidden="true">GX</span><span><strong>GX-TXT</strong><small>Scientific workbench</small></span></a>
+    <nav aria-label="Main navigation"><a href="../../releases/#dev-108">Torna alla cronologia</a><a href="https://github.com/giuxlab-hub/GX-TXT">GitHub ↗</a><a href="https://giux-lab.it/" rel="author">Giux-Lab ↗</a></nav>
+    <div class="lang" aria-label="Language selection"><a href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev108-viewer-cache-popup-v3/" hreflang="en">EN</a> / <a href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev108-viewer-cache-popup-v3/" hreflang="it" aria-current="page">IT</a></div>
+  </div></header>
+  <main id="main">
+    <section class="wrap hotfix-hero">
+      <div class="tag">GX-TXT / CORREZIONE DI MANUTENZIONE</div>
+      <p class="hotfix-id">0.9.8.10-dev-108 / v0.9.8.10-dev-108-hotfix.2</p>
+      <h1>Cache dei Viewer C++ con avviso grafico non modale</h1>
+      <p class="lead">Riduce le ricompilazioni ripetute dei Viewer invariati e indica nella GUI quando si compila o quando viene riutilizzato il binario.</p>
+
+<p class="lead">Sostituisce hotfix.1 (v2): eseguire prima il rollback precedente. <a href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev108-viewer-cache/">Pagina storica v2 ↗</a></p>
+      <div class="hotfix-meta">
+        <div><small>Compatibilità esclusiva</small><strong>Solo 0.9.8.10-dev-108</strong></div>
+        <div><small>Hotfix sperimentale</small><strong>6 test isolati: PASS; GUI reale: non verificata</strong></div>
+        <div><small>Mai sulla dev-109</small><strong>0.9.8.10-dev-109 +</strong></div>
+      </div>
+      <div class="buttons">
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-108-hotfix.2/GXTXT_dev108_viewer_cache_compile_popup_patch_v3.zip">Scarica lo ZIP originale della patch v3 ↓</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-108-hotfix.2">GitHub Release hotfix.2 ↗</a>
+      </div>
+      <p class="hotfix-digest">SHA-256 dello ZIP: <code>db482f071b9dad7e44f4eba3e34116d0f9b06e0a560ecda1fb2dcddd7b641f39</code> <span>(13.082 bytes)</span></p>
+    </section>
+    <section class="section"><div class="wrap hotfix-content">
+      <h2>Problema affrontato</h2>
+      <p>Nella dev-108 originale, ripetere un comando dello stesso Viewer C++ può causare nuove compilazioni di viewer.so anche con il progetto invariato.</p>
+      <h2>Comportamento previsto</h2>
+      <ul class="hotfix-list"><li>Confronta hash del sorgente, design, progetto, SDK, compilatore, adattatore, policy e backend, più ricevuta e binario effettivo, prima di riutilizzare il Viewer compilato per lo stesso progetto.</li>
+<li>Solo all’avvio di una compilazione Clang reale per l’evento appare una piccola finestra Tk non modale: Compilazione C++ del viewer in corso...; si chiude a fine evento, errore o chiusura del Viewer.</li>
+<li>Dopo l’esito positivo la barra di stato indica COMPLETED (C++ compiled) oppure COMPLETED (C++ binary reused). Non richiede terminale né log di fallback e non altera stdout/stderr dei Script Job.</li>
+<li>Build/Export espliciti e debugger seguono i percorsi precedenti. Un nuovo progetto temporaneo può legittimamente compilare al primo utilizzo.</li></ul>
+      <h2>Installazione sulla dev-108 originale</h2>
+      <p>Chiudere GX-TXT. Se è stata applicata la v2, eseguirne prima il rollback usando il backup originale verificato; non sovrapporre le patch. Estrarre lo ZIP v3 fuori dal framework ed eseguire dalla cartella estratta i comandi seguenti sulla dev-108 originale:</p>
+      <pre><code>ROOT=&quot;$HOME/gxtxt/gxtxt_pipeline_v09810dev_108&quot;
+python3 backport.py --check &quot;$ROOT&quot;
+python3 -m unittest -v test_patch
+python3 backport.py --apply &quot;$ROOT&quot;</code></pre>
+      <h2>Verifica dopo il riavvio</h2>
+      <p>Riavviare GX-TXT e ripetere la stessa azione nel medesimo progetto Viewer C++ invariato. La prima compilazione può mostrare un popup breve; i successivi riutilizzi non dovrebbero mostrarlo. La barra di stato conferma se ha compilato o riutilizzato.</p>
+
+      <h2>Ripristino della dev-108 originale</h2>
+      <p>Utilizzare il comando ROLLBACK stampato dall’installatore v3. Ripristina entrambi i file dai backup verificati e rifiuta di sovrascrivere successive modifiche locali.</p>
+    </div></section>
+    <section class="section"><div class="wrap hotfix-content">
+      <h2>Limiti delle verifiche e della sicurezza</h2>
+      <ul class="hotfix-list hotfix-warning"><li>Esclusivamente per la dev-108 originale, commit 6371001a219a4e611ce89c8b396c62294e6b979c: verifica i file Python E Tcl. La dev-109 e tutte le altre versioni sono incompatibili per definizione.</li>
+<li>Hotfix.2 sostituisce hotfix.1, ma non può essere installata sopra la v2. Ripristinare prima i file originali con il rollback verificato della v2 oppure reinstallare una dev-108 pulita; non forzare la sovrascrittura.</li>
+<li>Sono passati sei test isolati, incluso il ciclo di vita del popup Tcl. Non è stato eseguito un collaudo completo in GX-TXT Debian con la GUI e Clang reali.</li>
+<li>Le ricevute e i binari in cache locali al progetto non sono una garanzia contro manomissioni intenzionali: usare soltanto progetti Viewer attendibili.</li></ul>
+      <div class="hotfix-source">
+        <h3>Sorgenti della patch</h3>
+        <p>Commit originale dev-108: <a href="https://github.com/giuxlab-hub/GX-TXT/commit/6371001a219a4e611ce89c8b396c62294e6b979c"><code>6371001a219a4e611ce89c8b396c62294e6b979c</code></a></p>
+        <p>Commit della hotfix: <a href="https://github.com/giuxlab-hub/GX-TXT/commit/84dc3081feeebeb7997877fd3b03828dcc08c3c9"><code>84dc3081feeebeb7997877fd3b03828dcc08c3c9</code></a></p>
+        <p><a href="https://github.com/giuxlab-hub/GX-TXT/tree/maintenance/dev108">Sorgenti del branch di manutenzione ↗</a></p>
+        <p>GNU GPL-3.0-or-later</p>
+      </div>
+    </div></section>
+  </main>
+  <footer><div class="wrap"><p>GX-TXT — Giux-Lab · GNU GPL-3.0-or-later</p><div class="links"><a href="../../releases/#dev-108">Torna alla cronologia</a><a href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev108-viewer-cache-popup-v3/" hreflang="en">EN</a><a href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev108-viewer-cache-popup-v3/" hreflang="it">IT</a></div></div></footer>
+</body>
+</html>
