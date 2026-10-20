@@ -21,7 +21,7 @@ proc ::GX::viewerDevelopmentStateJson {state} {
 }
 proc ::GX::viewerDevelopmentRequest {operation project callback {options {}}} {
     if {$operation ni {init validate build run test export api inspect manual_asset save check_source facility_request builder debug debug_control debug_status gui_test workspace_upgrade_review}} {error {Unknown restricted development operation}}
-    foreach key [dict keys $options] {if {$key ni {module_id event state file source request_json breakpoints target document debug_token}} {error {Unknown restricted development option}}}
+    foreach key [dict keys $options] {if {$key ni {module_id event state file source request_json breakpoints target document debug_token compile_token}} {error {Unknown restricted development option}}}
     set project [file normalize $project]
     set command [list /usr/bin/python3 -I -B [file join $::GX::scriptDir core python gxtxt_viewer_development.py] $operation $project --tcl]
     if {[dict exists $options module_id]} {lappend command --module-id [dict get $options module_id]}
@@ -34,6 +34,11 @@ proc ::GX::viewerDevelopmentRequest {operation project callback {options {}}} {
     if {[dict exists $options document]} {
         if {$operation ne {api} || ![regexp {^[A-Z][A-Z0-9_]*_v[0-9]+(?:\.md)?$} [dict get $options document]]} {error {Choose a catalogued public API identity without a path}}
         lappend command --document [dict get $options document]
+    }
+    if {[dict exists $options compile_token]} {
+        set token [dict get $options compile_token]
+        if {$operation ne {run} || ![regexp {^[a-zA-Z0-9_-]{1,96}$} $token]} {error {Invalid GUI compile-notice token}}
+        lappend command --compile-token $token
     }
     if {[dict exists $options debug_token]} {
         if {$operation ni {debug debug_status debug_control} || ![regexp {^[a-zA-Z0-9_-]{1,96}$} [dict get $options debug_token]]} {error {Debugger token must be bounded opaque request text}}
@@ -149,6 +154,40 @@ proc ::GX::_viewerDevelopmentPreviewValidated {w response} {
     documentationBrowserAttachViewerHelp $module $provider $w
     viewerDevelopmentInvoke $w __open__
 }
+# Per-event, nonmodal Tk notice. No Script Job stderr/stdout changes.
+proc ::GX::_viewerDevelopmentCompilePoll {window token} {
+    if {![dict exists $::GX::ViewerDevelopment::windows $window] || ![winfo exists $window]} return
+    set record [dict get $::GX::ViewerDevelopment::windows $window]
+    if {![dict exists $record compile_token] || [dict get $record compile_token] ne $token} return
+    set marker [file join [dict get $record project] derived tmp viewer-compiling-${token}.marker]
+    if {[file isfile $marker] && ![dict exists $record compile_notice_shown]} {
+        dict set ::GX::ViewerDevelopment::windows $window compile_notice_shown 1
+        set notice ${window}.cppBuildNotice
+        if {![winfo exists $notice]} {
+            toplevel $notice
+            wm title $notice {GX-TXT - C++ compilation}
+            wm transient $notice $window
+            wm resizable $notice 0 0
+            ttk::label $notice.message -text {Compilazione C++ del viewer in corso...} -padding {22 18}
+            pack $notice.message -fill both -expand 1
+        }
+    }
+    after 100 [list ::GX::_viewerDevelopmentCompilePoll $window $token]
+}
+proc ::GX::_viewerDevelopmentCompileFinish {window} {
+    if {![dict exists $::GX::ViewerDevelopment::windows $window]} return
+    set record [dict get $::GX::ViewerDevelopment::windows $window]
+    if {[dict exists $record compile_token]} {
+        set token [dict get $record compile_token]
+        set marker [file join [dict get $record project] derived tmp viewer-compiling-${token}.marker]
+        catch {file delete -- $marker}
+        dict unset ::GX::ViewerDevelopment::windows $window compile_token
+    }
+    if {[dict exists $record compile_notice_shown]} {
+        dict unset ::GX::ViewerDevelopment::windows $window compile_notice_shown
+    }
+    if {[winfo exists ${window}.cppBuildNotice]} {destroy ${window}.cppBuildNotice}
+}
 proc ::GX::viewerDevelopmentInvoke {window action} {
     if {![dict exists $::GX::ViewerDevelopment::windows $window]||![viewerGuiDesignGuard $window]} {return {status rejected message {Development Viewer lifetime ended}}}
     set r [dict get $::GX::ViewerDevelopment::windows $window]
@@ -176,14 +215,17 @@ proc ::GX::viewerDevelopmentInvoke {window action} {
     set values [viewerGuiDesignValues $window]
     if {$changed ne {}} {set value [uiFieldNormalize {type number} [dict get $values $changed]]} elseif {[dict exists $values temperature]} {set value [uiFieldNormalize {type number} [dict get $values temperature]]}
     dict incr r generation;set generation [dict get $r generation]
-    set request [viewerDevelopmentRequest run [dict get $r project] [list ::GX::_viewerDevelopmentRan $window $generation] [dict create event [dict create kind $kind component $component value $value] state [dict get $r state]]]
-    dict set r busy $request;dict set r status RUNNING
+    set token [format {compile_%d_%d} [pid] [clock microseconds]]
+    set request [viewerDevelopmentRequest run [dict get $r project] [list ::GX::_viewerDevelopmentRan $window $generation] [dict create event [dict create kind $kind component $component value $value] state [dict get $r state] compile_token $token]]
+    dict set r busy $request;dict set r status RUNNING;dict set r compile_token $token
     dict set ::GX::ViewerDevelopment::windows $window $r
     [dict get $::GX::ViewerGui::instances $window slots status] configure -text {C++ Demo · native event running in its bounded worker…}
+    after 100 [list ::GX::_viewerDevelopmentCompilePoll $window $token]
     return [dict create status submitted request $request]
 }
 proc ::GX::_viewerDevelopmentRan {window generation response} {
     if {![dict exists $::GX::ViewerDevelopment::windows $window]||![winfo exists $window]||[dict get $::GX::ViewerDevelopment::windows $window generation]!=$generation} return
+    ::GX::_viewerDevelopmentCompileFinish $window
     dict set ::GX::ViewerDevelopment::windows $window busy {}
     set status FAILED
     if {[dict get $response ok]} {
@@ -230,7 +272,14 @@ proc ::GX::_viewerDevelopmentRan {window generation response} {
     }
     dict set ::GX::ViewerDevelopment::windows $window status $status
     dict set ::GX::ViewerDevelopment::windows $window last_result $response
-    [dict get $::GX::ViewerGui::instances $window slots status] configure -text "Restricted Viewer · $status"
+    set compileDetail {}
+    if {$status eq {COMPLETED} && [dict get $response ok]} {
+        set result [dict get $response result]
+        if {[dict exists $result compile_cache_hit]} {
+            set compileDetail [expr {[dict get $result compile_cache_hit] ? { (C++ binary reused)} : { (C++ compiled)}}]
+        }
+    }
+    [dict get $::GX::ViewerGui::instances $window slots status] configure -text "Restricted Viewer · $status$compileDetail"
     viewerGuiTraceEmit $window window cpp_event [dict create status $status author restricted_cpp]
 }
 proc ::GX::_viewerDevelopmentStateEnvelope {window state} {
@@ -242,6 +291,7 @@ proc ::GX::_viewerDevelopmentStateEnvelope {window state} {
 proc ::GX::_viewerDevelopmentDisposed {window actual} {
     if {$window ne $actual||![dict exists $::GX::ViewerDevelopment::windows $window]} return
     set request [dict get $::GX::ViewerDevelopment::windows $window busy]
+    ::GX::_viewerDevelopmentCompileFinish $window
     if {$request ne {}} {scriptJobRequestCancel $request closed}
     set record [dict get $::GX::ViewerDevelopment::windows $window]
     dict unset ::GX::ViewerDevelopment::windows $window

@@ -1,0 +1,37 @@
+﻿{
+    "compatible_framework_versions":  [
+                                          "0.9.8.10-dev-108"
+                                      ],
+    "id":  "dev108-viewer-cache-compile-popup-v3",
+    "installer_requires_unmodified_original_dev108":  true,
+    "original_zip_sha256":  "db482f071b9dad7e44f4eba3e34116d0f9b06e0a560ecda1fb2dcddd7b641f39",
+    "runtime_notice":  "GUI nonmodal popup per compilation; completed status distinguishes compiled from reused",
+    "migration":  "Fully roll back v2 with its verified original backup, or restore pristine original dev-108; then check and apply v3",
+    "based_on_main_commit":  "6371001a219a4e611ce89c8b396c62294e6b979c",
+    "authority":  "maintenance/dev108 only; never merge into main or dev-109",
+    "original_zip":  "GXTXT_dev108_viewer_cache_compile_popup_patch_v3.zip",
+    "schema":  "gxtxt.hotfix.v1",
+    "supersedes":  "v0.9.8.10-dev-108-hotfix.1; NOT A STACKABLE UPDATE",
+    "modified_framework_files":  [
+                                     {
+                                         "path":  "core/python/gxtxt_viewer_development.py",
+                                         "sha256":  "af25e4221d7699c7e443cc6b195faad0aec1769e9557a02e723cd00dec3e4348",
+                                         "git_original":  "5d77772e22ce6eb0befcdc3e32ac783c7d46fbb0"
+                                     },
+                                     {
+                                         "path":  "core/tcl/viewer_development_api_v1.tcl",
+                                         "sha256":  "f88cdcf3b4f35a8348b16b3348cb71c203145c8c3a6a4bf25262bbbf21ad9a33",
+                                         "git_original":  "c8512866a872015d99938816a868f97ad2a4fc5d"
+                                     }
+                                 ],
+    "license":  "GPL-3.0-or-later",
+    "tests":  {
+                  "tk_fixture":  "PASS",
+                  "isolated_cases_passed":  6,
+                  "real_debian_gui_clang":  "NOT TESTED DURING PUBLICATION"
+              },
+    "logging":  "project-local compile marker; no /dev/tty and no changes to Script Job stdout/stderr",
+    "incompatible_framework_versions":  "all other versions, including dev-109 and later",
+    "framework_version_exact":  "0.9.8.10-dev-108",
+    "display_version":  "0.9.8.10-dev-108-hotfix.2"
+}

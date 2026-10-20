@@ -11,7 +11,6 @@ import re
 from pathlib import Path
 import select
 import signal
-import stat
 import subprocess
 import sys
 import tempfile
@@ -292,48 +291,20 @@ def workspace_callback_contract(meta, design, source_sha256):
     content = dict(schema='gxtxt.viewer_workspace_callback_contract.v1', source_sha256=source_sha256, project=project, design=semantic)
     return digest(json.dumps(content, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode())
 
-def _viewer_compile_notice(project, message):
-    """Report actual Clang builds without writing to managed stdout/stderr.
+def _viewer_compile_signal(project, token):
+    """Tell the matching GUI request an actual Clang build is starting.
 
-    Tcl Script Job merges the Python worker's stderr into its protocol stdout.
-    The controlling terminal is a separate destination, never an inherited fd.
-    When detached, retain a bounded project-local diagnostic log instead.
-    Logging is best-effort and cannot change the build outcome.
+    Never use stdout or stderr: Tcl's managed-job protocol merges both streams.
+    The token belongs to this one GUI event, not an arbitrary caller path.
+    Signalling is auxiliary and cannot influence build success or failure.
     """
-    name = str(project.name).replace('\n', ' ').replace('\r', ' ')[:96]
-    event = str(message).replace('\n', ' ').replace('\r', ' ')[:256]
-    now = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
-    line = ('[GX-TXT Viewer C++] ' + now + ' ' + name + ': ' + event + '\n').encode('utf-8')
+    if token is None:
+        return
     try:
-        fd = os.open('/dev/tty', os.O_WRONLY | os.O_NOCTTY | os.O_CLOEXEC | os.O_NONBLOCK)
-    except OSError:
-        fd = None
-    if fd is not None:
-        try:
-            if os.write(fd, line) == len(line):
-                return
-        except OSError:
-            pass
-        finally:
-            try:
-                os.close(fd)
-            except OSError:
-                pass
-    # No usable controlling terminal: do not contaminate the Job's protocol.
-    try:
-        path = project/'derived/viewer_compilation.log'
-        flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_CLOEXEC | os.O_NOFOLLOW
-        out = os.open(path, flags, 0o600)
-        try:
-            info = os.fstat(out)
-            if (stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and
-                    info.st_uid == os.geteuid() and info.st_size < 1048576):
-                os.write(out, line)
-        finally:
-            try:
-                os.close(out)
-            except OSError:
-                pass
+        path = project/'derived/tmp'/('viewer-compiling-' + token + '.marker')
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC | os.O_NOFOLLOW
+        fd = os.open(path, flags, 0o600)
+        os.close(fd)
     except OSError:
         pass
 
@@ -433,7 +404,7 @@ def validate(project, reuse_compiled=False):
 def build(project, debug=False):
     return _compile_admitted(project, *validate(project), debug=debug)
 
-def _compile_admitted(project, meta, report, design, requested, debug=False, reuse=False):
+def _compile_admitted(project, meta, report, design, requested, debug=False, reuse=False, compile_token=None):
     """Build explicitly, or reuse an identical admitted release binary for events.
 
     Admission still rechecks the live CORE design and requested capabilities.
@@ -447,9 +418,8 @@ def _compile_admitted(project, meta, report, design, requested, debug=False, reu
                 for key in ('source_sha256','design_sha256','project_sha256',
                             'sdk_sha256','policy_sha256','compiler_sha256')):
             return dict(cached, code_generation_invoked=False, cache_hit=True)
-    _viewer_compile_notice(project, 'COMPILE START (' + ('debug' if debug else 'release') + ')')
-    compile_started=time.monotonic()
     source=(project/'handlers.cpp').read_bytes()
+    _viewer_compile_signal(project, compile_token)
     with tempfile.TemporaryDirectory(prefix='build-',dir=project/'derived/tmp') as temporary:
         stage=Path(temporary);author=stage/'handlers.cpp';author.write_bytes(source)
         fixed=[*FLAGS,('-O0' if debug else '-O1'),('-g3' if debug else '-g0'),'-fPIC','-fvisibility=hidden','-fno-stack-protector',
@@ -465,17 +435,11 @@ def _compile_admitted(project, meta, report, design, requested, debug=False, reu
         ]
         logs=[]
         for command in commands:
-            try:
-                code,output,errors=bounded_command(command,stage,30)
-            except Exception as problem:
-                _viewer_compile_notice(project, 'COMPILE ERROR after %.3f s: %s' % (time.monotonic()-compile_started, str(problem)[:120]))
-                raise
+            code,output,errors=bounded_command(command,stage,30)
             logs.append((output+errors).decode(errors='replace').replace(str(stage),'<controlled-build>'))
             if code:
                 result={'status':'BUILD_FAILED','code_generation_invoked':True,'validation':report,'log':'\n'.join(logs)}
-                write_json(project/'derived/build.json',result)
-                _viewer_compile_notice(project, 'COMPILE FAILED after %.3f s (exit=%s)' % (time.monotonic()-compile_started, code))
-                return result
+                write_json(project/'derived/build.json',result);return result
         if digest(author.read_bytes())!=report['source_sha256'] or any(digest((project/name).read_bytes())!=report[key] for name,key in [('handlers.cpp','source_sha256'),('design.gxtxt-viewer','design_sha256'),('project.json','project_sha256')]):
             raise DevelopmentError('Project source/design/facilities changed during controlled build; rebuild explicitly','SOURCE_CHANGED')
         binary=(stage/'viewer.so').read_bytes()
@@ -497,7 +461,6 @@ def _compile_admitted(project, meta, report, design, requested, debug=False, reu
             result['cache_fingerprints']=fingerprints
             result['cache_hit']=False
         write_json(project/('derived/debug-build.json' if debug else 'derived/build.json'),result)
-        _viewer_compile_notice(project, 'COMPILE OK after %.3f s' % (time.monotonic()-compile_started))
         return result
 
 def finite(value):
@@ -591,9 +554,9 @@ def broker_message(project,message,by_index,requested,deadline):
     else: raise DevelopmentError('Unknown SDK operation','CAPABILITY_DENIED')
     return response,operations,numeric
 
-def run(project,event=None,state=None):
+def run(project,event=None,state=None,compile_token=None):
     meta,validation,design,requested=validate(project,reuse_compiled=True)
-    built=_compile_admitted(project,meta,validation,design,requested,reuse=True)
+    built=_compile_admitted(project,meta,validation,design,requested,reuse=True,compile_token=compile_token)
     if built['status']!='BUILT': return built
     if any(digest((project/name).read_bytes())!=validation[key] for name,key in [('handlers.cpp','source_sha256'),('design.gxtxt-viewer','design_sha256'),('project.json','project_sha256')]):
         raise DevelopmentError('Project changed after build; validate/build again','SOURCE_CHANGED')
@@ -639,7 +602,9 @@ def run(project,event=None,state=None):
             else:
                 result={'status':'COMPLETED','operations':operations,'numeric_receipts':numeric,'state':done['state'],
                         'source_sha256':validation['source_sha256'],'design_sha256':validation['design_sha256'],'project_sha256':validation['project_sha256'],'binary_sha256':built['binary_sha256'],'event':event,
-                        'execution':'compiled restricted C++ in isolated native worker; typed public CORE broker'}
+                        'execution':'compiled restricted C++ in isolated native worker; typed public CORE broker',
+                        'compile_cache_hit':bool(built.get('cache_hit',False)),
+                        'compiled_this_event':bool(built.get('code_generation_invoked',False))}
         except Exception as error:
             result={'status':'TIMED_OUT' if time.monotonic()>=deadline else 'FAILED','error':str(error),'code':getattr(error,'code','RUNTIME_ERROR'),'operations':[],'state':state}
         finally:
@@ -895,6 +860,7 @@ def main():
     parser.add_argument('--target',choices=['handlers.cpp','project.json','MANUAL.md','design.gxtxt-viewer','sdk_v1'],default='handlers.cpp',help='Fixed read-only Workspace source browser target for inspect')
     parser.add_argument('--document',help='Read-only installed public API manual identity for api; paths are refused')
     parser.add_argument('--debug-token',help='Opaque request identity for source-bound debugger status/control; no command text')
+    parser.add_argument('--compile-token',help='Opaque GUI build-notification identity for run only')
     parser.add_argument('--tcl',action='store_true',help='Transport the same result through the existing CORE managed-request protocol')
     words=sys.argv[1:];author_command=[]
     if '--' in words:
@@ -905,6 +871,8 @@ def main():
         if arguments.document and arguments.operation!='api': raise DevelopmentError('--document belongs only to api','DOCUMENT_TARGET')
         if arguments.debug_token is not None and (arguments.operation not in {'debug','debug_status','debug_control'} or not re.fullmatch(r'[a-zA-Z0-9_-]{1,96}',arguments.debug_token)):
             raise DevelopmentError('Debugger token must be bounded opaque text on a debugger request','DEBUG_STATE')
+        if arguments.compile_token is not None and (arguments.operation!='run' or not re.fullmatch(r'[a-zA-Z0-9_-]{1,96}',arguments.compile_token)):
+            raise DevelopmentError('Invalid GUI compile-notice identity','REQUEST_LIMIT')
         if arguments.operation=='init': result=initialize(project,arguments.module_id)
         else:
             grant=enforce_project_write(project)
@@ -970,7 +938,7 @@ def main():
                     if arguments.debug_token is not None and snapshot.get('debug_token')!=arguments.debug_token:
                         snapshot={'state':'STARTING','debug_token':arguments.debug_token,'sequence':0,'frames':[],'locals':[],'errors':[]}
                     result={'status':'SAVED','debug':snapshot}
-            elif arguments.operation=='run': result=run(project,arguments.event,arguments.state)
+            elif arguments.operation=='run': result=run(project,arguments.event,arguments.state,arguments.compile_token)
             elif arguments.operation=='test': result=test_project(project)
             else: result={'status':'CATALOG','apis':api_catalog(project),'profiles':POLICY['profiles'],'python_authoring':False}
             write_json(project/'derived/project-write-grant.json',grant)
