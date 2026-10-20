@@ -1,0 +1,30 @@
+{
+  "schema": "gxtxt.hotfix.v1",
+  "id": "dev108-viewer-compile-cache-tty-v2",
+  "display_version": "0.9.8.10-dev-108-hotfix.1",
+  "based_on_main_commit": "6371001a219a4e611ce89c8b396c62294e6b979c",
+  "framework_version_exact": "0.9.8.10-dev-108",
+  "compatible_framework_versions": [
+    "0.9.8.10-dev-108"
+  ],
+  "incompatible_framework_versions": "all other versions, including dev-109 and later",
+  "install_requires_unmodified_public_dev108_target": true,
+  "target_file": "core/python/gxtxt_viewer_development.py",
+  "required_original_git_blob": "5d77772e22ce6eb0befcdc3e32ac783c7d46fbb0",
+  "result_sha256": "4a528770f077f85ee6cb724809fcd9d7e25bfdbbfbea193b236f7466970ab7d3",
+  "original_archive": "GXTXT_dev108_viewer_compile_cache_TTY_patch_v2.zip",
+  "original_archive_sha256": "4f90e0ed8b510e442a8d80db219e7abbe80ffd59098afa70e69cb4921fd89885",
+  "modified_framework_file_count": 1,
+  "installer": "backport.py in original ZIP",
+  "rollback": "verified source backup and printed --rollback command from installer",
+  "runtime_logging": "best-effort /dev/tty; project-local derived/viewer_compilation.log when detached",
+  "validation": {
+    "offline_fixture_tests_passed": 6,
+    "live_debian_gui_compile_cache_test": "NOT RUN",
+    "actual_tty_message_test": "NOT RUN",
+    "dev109_compatibility": "INCOMPATIBLE_BY_POLICY"
+  },
+  "security_notice": "Cache receipts and binary in project-local writable state are not cryptographic trust attestations. Use only with trusted Viewer projects; do not rely on this as an untrusted-native-code sandbox.",
+  "license": "GPL-3.0-or-later",
+  "source_code_authority": "Distinct maintenance branch only. The published dev-108 main and future dev-109 must not include this temporary backport."
+}

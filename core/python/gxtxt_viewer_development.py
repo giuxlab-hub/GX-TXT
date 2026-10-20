@@ -11,6 +11,7 @@ import re
 from pathlib import Path
 import select
 import signal
+import stat
 import subprocess
 import sys
 import tempfile
@@ -291,9 +292,113 @@ def workspace_callback_contract(meta, design, source_sha256):
     content = dict(schema='gxtxt.viewer_workspace_callback_contract.v1', source_sha256=source_sha256, project=project, design=semantic)
     return digest(json.dumps(content, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode())
 
-def validate(project):
+def _viewer_compile_notice(project, message):
+    """Report actual Clang builds without writing to managed stdout/stderr.
+
+    Tcl Script Job merges the Python worker's stderr into its protocol stdout.
+    The controlling terminal is a separate destination, never an inherited fd.
+    When detached, retain a bounded project-local diagnostic log instead.
+    Logging is best-effort and cannot change the build outcome.
+    """
+    name = str(project.name).replace('\n', ' ').replace('\r', ' ')[:96]
+    event = str(message).replace('\n', ' ').replace('\r', ' ')[:256]
+    now = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    line = ('[GX-TXT Viewer C++] ' + now + ' ' + name + ': ' + event + '\n').encode('utf-8')
+    try:
+        fd = os.open('/dev/tty', os.O_WRONLY | os.O_NOCTTY | os.O_CLOEXEC | os.O_NONBLOCK)
+    except OSError:
+        fd = None
+    if fd is not None:
+        try:
+            if os.write(fd, line) == len(line):
+                return
+        except OSError:
+            pass
+        finally:
+            try:
+                os.close(fd)
+            except OSError:
+                pass
+    # No usable controlling terminal: do not contaminate the Job's protocol.
+    try:
+        path = project/'derived/viewer_compilation.log'
+        flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_CLOEXEC | os.O_NOFOLLOW
+        out = os.open(path, flags, 0o600)
+        try:
+            info = os.fstat(out)
+            if (stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and
+                    info.st_uid == os.geteuid() and info.st_size < 1048576):
+                os.write(out, line)
+        finally:
+            try:
+                os.close(out)
+            except OSError:
+                pass
+    except OSError:
+        pass
+
+
+def _viewer_compilation_cache_fingerprints(project):
+    """Bind a trusted build receipt to all relevant source and toolchain inputs."""
+    inputs = {
+        'source_sha256': project/'handlers.cpp',
+        'design_sha256': project/'design.gxtxt-viewer',
+        'project_sha256': project/'project.json',
+        'sdk_sha256': SDK,
+        'policy_sha256': DEVELOPMENT/'policy_v1.json',
+        'compiler_sha256': COMPILER,
+        'adapter_sha256': SDK.parent/'trusted_adapter_v1.cpp',
+        'toolchain_manifest_sha256': DEVELOPMENT/'toolchain/manifest.json',
+        'development_backend_sha256': Path(__file__),
+        'cpp_policy_backend_sha256': FRAMEWORK/'core/python/gxtxt_cpp_policy.py',
+    }
+    return {key: digest(path.read_bytes()) for key, path in inputs.items()}
+
+
+def _viewer_reusable_build(project):
+    """Reuse only the binary described by an exact, intact local build receipt.
+
+    A cache miss falls back to the existing validation and Clang build path.
+    Explicit Build/Export and debugger builds are deliberately unaffected.
+    """
+    receipt_path = project/'derived/build.json'
+    binary_path = project/'derived/viewer.so'
+    try:
+        for path, maximum in ((receipt_path, 1048576), (binary_path, 33554432)):
+            if (not path.is_file() or path.is_symlink() or
+                    path.stat().st_nlink != 1 or path.stat().st_size > maximum):
+                return None
+        receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
+        if (not isinstance(receipt, dict) or
+                receipt.get('schema') != 'gxtxt.viewer_build.v1' or
+                receipt.get('status') != 'BUILT' or
+                receipt.get('debug_symbols') is not False or
+                receipt.get('cache_schema') != 'gxtxt.viewer_compilation_cache.v1'):
+            return None
+        previous = receipt.get('validation')
+        if not isinstance(previous, dict) or previous.get('status') != 'PASS':
+            return None
+        current = _viewer_compilation_cache_fingerprints(project)
+        if receipt.get('cache_fingerprints') != current:
+            return None
+        for key in ('source_sha256', 'design_sha256', 'project_sha256',
+                    'sdk_sha256', 'policy_sha256', 'compiler_sha256'):
+            if previous.get(key) != current[key]:
+                return None
+        if receipt.get('adapter_sha256') != current['adapter_sha256']:
+            return None
+        if receipt.get('binary_sha256') != digest(binary_path.read_bytes()):
+            return None
+        return receipt
+    except (OSError, ValueError, TypeError, KeyError, UnicodeError):
+        return None
+
+
+def validate(project, reuse_compiled=False):
     meta=read_project(project)
-    report=validate_source((project/'handlers.cpp').read_bytes(),project/'derived/tmp')
+    cached=_viewer_reusable_build(project) if reuse_compiled else None
+    report=(dict(cached['validation']) if cached is not None else
+            validate_source((project/'handlers.cpp').read_bytes(),project/'derived/tmp'))
     admitted=dictionary(core(project,'validate_design',project/'design.gxtxt-viewer','with_catalog'))
     design=dictionary(admitted['design'])
     if design['module_id']!=meta['module_id'] or design['version']!=meta['version']:
@@ -328,13 +433,22 @@ def validate(project):
 def build(project, debug=False):
     return _compile_admitted(project, *validate(project), debug=debug)
 
-def _compile_admitted(project, meta, report, design, requested, debug=False):
-    """Compile only this request's freshly validated in-memory admission.
+def _compile_admitted(project, meta, report, design, requested, debug=False, reuse=False):
+    """Build explicitly, or reuse an identical admitted release binary for events.
 
-    No project-authored report or previous binary can supply this context.
-    The post-compile source/design/project checks below remain mandatory.
+    Admission still rechecks the live CORE design and requested capabilities.
+    The post-compile source/design/project checks remain mandatory.
     """
     if report['status']!='PASS': return {'status':'REJECTED','validation':report,'code_generation_invoked':False}
+    if reuse and not debug:
+        cached=_viewer_reusable_build(project)
+        if cached is not None and all(
+                cached['validation'].get(key)==report.get(key)
+                for key in ('source_sha256','design_sha256','project_sha256',
+                            'sdk_sha256','policy_sha256','compiler_sha256')):
+            return dict(cached, code_generation_invoked=False, cache_hit=True)
+    _viewer_compile_notice(project, 'COMPILE START (' + ('debug' if debug else 'release') + ')')
+    compile_started=time.monotonic()
     source=(project/'handlers.cpp').read_bytes()
     with tempfile.TemporaryDirectory(prefix='build-',dir=project/'derived/tmp') as temporary:
         stage=Path(temporary);author=stage/'handlers.cpp';author.write_bytes(source)
@@ -351,11 +465,17 @@ def _compile_admitted(project, meta, report, design, requested, debug=False):
         ]
         logs=[]
         for command in commands:
-            code,output,errors=bounded_command(command,stage,30)
+            try:
+                code,output,errors=bounded_command(command,stage,30)
+            except Exception as problem:
+                _viewer_compile_notice(project, 'COMPILE ERROR after %.3f s: %s' % (time.monotonic()-compile_started, str(problem)[:120]))
+                raise
             logs.append((output+errors).decode(errors='replace').replace(str(stage),'<controlled-build>'))
             if code:
                 result={'status':'BUILD_FAILED','code_generation_invoked':True,'validation':report,'log':'\n'.join(logs)}
-                write_json(project/'derived/build.json',result);return result
+                write_json(project/'derived/build.json',result)
+                _viewer_compile_notice(project, 'COMPILE FAILED after %.3f s (exit=%s)' % (time.monotonic()-compile_started, code))
+                return result
         if digest(author.read_bytes())!=report['source_sha256'] or any(digest((project/name).read_bytes())!=report[key] for name,key in [('handlers.cpp','source_sha256'),('design.gxtxt-viewer','design_sha256'),('project.json','project_sha256')]):
             raise DevelopmentError('Project source/design/facilities changed during controlled build; rebuild explicitly','SOURCE_CHANGED')
         binary=(stage/'viewer.so').read_bytes()
@@ -366,7 +486,18 @@ def _compile_admitted(project, meta, report, design, requested, debug=False):
                 'compiler_version':'19.1.7','link_policy':'fixed SDK adapter; no author libraries/flags; no undefined symbols',
                 'log':'\n'.join(logs),'capabilities':meta['capabilities']}
         result['debug_symbols']=debug
+        if not debug:
+            fingerprints=_viewer_compilation_cache_fingerprints(project)
+            if any(fingerprints.get(key)!=report.get(key) for key in
+                   ('source_sha256','design_sha256','project_sha256','sdk_sha256',
+                    'policy_sha256','compiler_sha256')) or (
+                    fingerprints['adapter_sha256']!=result['adapter_sha256']):
+                raise DevelopmentError('Build inputs changed during compilation','SOURCE_CHANGED')
+            result['cache_schema']='gxtxt.viewer_compilation_cache.v1'
+            result['cache_fingerprints']=fingerprints
+            result['cache_hit']=False
         write_json(project/('derived/debug-build.json' if debug else 'derived/build.json'),result)
+        _viewer_compile_notice(project, 'COMPILE OK after %.3f s' % (time.monotonic()-compile_started))
         return result
 
 def finite(value):
@@ -461,8 +592,8 @@ def broker_message(project,message,by_index,requested,deadline):
     return response,operations,numeric
 
 def run(project,event=None,state=None):
-    meta,validation,design,requested=validate(project)
-    built=_compile_admitted(project,meta,validation,design,requested)
+    meta,validation,design,requested=validate(project,reuse_compiled=True)
+    built=_compile_admitted(project,meta,validation,design,requested,reuse=True)
     if built['status']!='BUILT': return built
     if any(digest((project/name).read_bytes())!=validation[key] for name,key in [('handlers.cpp','source_sha256'),('design.gxtxt-viewer','design_sha256'),('project.json','project_sha256')]):
         raise DevelopmentError('Project changed after build; validate/build again','SOURCE_CHANGED')
