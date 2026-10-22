@@ -247,15 +247,47 @@ def verify(announce=True):
             raise ValueError("Unverified or owner-private dev-109 source: " + name)
         recent109.add(name)
 
+    dev110 = json.loads((ROOT / "source-manifest-dev110.json").read_text(encoding="utf-8"))
+    if (dev110.get("schema") != "gxtxt.public-validation-sources/8"
+            or dev110.get("referenceFramework") != "0.9.8.10-dev-110"
+            or dev110.get("referenceMainCommit") != "ccde3a0f62020941c6ed3756c4de3c135a4772e4"
+            or dev110.get("officialArchiveSha256") != "0d311db4c416462ecda70e9dce2cacace292c9e529725ba16213911a0eb0e9ba"
+            or dev110.get("developmentStatus") != "INTERMEDIATE_TASK210_SOURCE_SNAPSHOT"
+            or dev110.get("selectedCount") != 7
+            or dev110.get("sourceOnly") is not True
+            or dev110.get("runnerStatus") != "NOT RUN"
+            or len(dev110.get("files", [])) != 7):
+        raise ValueError("Unrecognized dev-110 source-only inventory")
+    recent110 = set()
+    for entry in dev110["files"]:
+        name = entry["path"]
+        rel = Path(name)
+        if (rel.is_absolute() or ".." in rel.parts
+                or name in (seen | newer | recent | recent106 | recent107 | recent108 | recent109 | recent110)
+                or not name.startswith("validation/official_dev110/")
+                or rel.suffix.lower() not in (".tcl", ".py")
+                or entry.get("sourcePath") != "validation/" + name.removeprefix("validation/official_dev110/")):
+            raise ValueError("Invalid dev-110 original source path: " + name)
+        candidate = ROOT / rel
+        if candidate.is_symlink() or not candidate.is_file() or not candidate.resolve().is_relative_to(ROOT):
+            raise ValueError("Missing dev-110 original test source: " + name)
+        raw = candidate.read_bytes()
+        if (len(raw) != entry["bytes"]
+                or hashlib.sha256(raw).hexdigest() != entry["sha256"]
+                or any(token.lower() in raw.decode("utf-8").lower() for token in BANNED)
+                or "GXTXT_SCRIPT_WORKSPACE_DEBUGGER_GUIDE_WP_dev107" in raw.decode("utf-8")):
+            raise ValueError("Unverified or owner-private dev-110 source: " + name)
+        recent110.add(name)
+
     for candidate in (ROOT / "validation").rglob("*"):
         if candidate.is_symlink():
             raise ValueError("Unexpected symlink: " + str(candidate))
-        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer | recent | recent106 | recent107 | recent108 | recent109):
+        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer | recent | recent106 | recent107 | recent108 | recent109 | recent110):
             raise ValueError("Unreviewed file inside validation tree: " + str(candidate))
     if not (ROOT / "LICENSE").is_file():
         raise ValueError("GPL license missing")
     if announce:
-        print("PASS: 115 verified original validation sources through dev-109; all manifests and source hashes verified.")
+        print("PASS: 122 verified original validation sources through dev-110; all manifests and source hashes verified.")
         print("PASS: reviewed public inputs only, no private test PDFs or deployment scripts.")
         print("Runtime scientific/GUI tests: NOT RUN by source verification.")
     return info

@@ -100,3 +100,9 @@ Internal acceptance evidence, private Sessions, confidential PDFs and dependent 
 These 15 selected original Tcl cases are copied byte-for-byte from the official dev-109 archive, with source SHA-256 recorded in source-manifest-dev109.json. They cover grouped Modules, Session Generator registration, Dataset Preview and Curve Workbench coordinate/geometry behaviors. Scientific main source reference: 940b94c4cd3cbe4200f23f3eb5a04c9d836bd3f0.
 
 **Publication does not execute these cases.** Their actual Debian display, scientific inputs and temporary Session fixtures are external prerequisites; previous validation suites and the original dev-102 opt-in runner remain unchanged. Internal developer/acceptance records, teaching PDFs, private Session data, version-specific dev-108 hotfix and credentials are excluded.
+
+## GX-TXT dev-110 intermediate TASK210 source cases
+
+The deposited dev-110 source is explicitly an intermediate TASK210 snapshot, not a final all-feature acceptance. Seven selected original Tcl/Python scientific-source cases are copied byte-identically into validation/official_dev110/, with exact SHA-256 and original archive paths in source-manifest-dev110.json. These cover bounded acquisition lifecycle, Print syntax, source-quality inspection, ScriptJob duplex and Session creation control contracts.
+
+**Not executed:** this public branch does not assert Debian GUI/Clang/Octave runtime acceptance; no official_dev110 package ZIP series exists in the deposited source, and historical dev-108 hotfixes are incompatible by policy. The existing dev-102 controlled CLI runner remains unchanged.

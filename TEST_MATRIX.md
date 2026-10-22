@@ -179,3 +179,19 @@ Reference framework 0.9.8.10-dev-109, public main 940b94c4cd3cbe4200f23f3eb5a04c
 | validation/coordinate_metric421/planner.tcl | validation/official_dev109/coordinate_metric421/planner.tcl | Debian controlled manual fixture only |
 
 These files are not added to any automatic or persistent runner. No prior PASS status is transferred from an unrelated installation.
+
+## Dev-110 intermediate TASK210 source-only validation
+
+Reference: source commit ccde3a0f62020941c6ed3756c4de3c135a4772e4. These seven original sources are distributed only for controlled independent reproduction. Execution was **NOT RUN** by this publication.
+
+| Original source path | Published source path | Publication status |
+| --- | --- | --- |
+| validation/task210_acquisition_lifecycle/contracts.tcl | validation/official_dev110/task210_acquisition_lifecycle/contracts.tcl | Byte-identical, NOT RUN |
+| validation/task210_acquisition_lifecycle/fresh.tcl | validation/official_dev110/task210_acquisition_lifecycle/fresh.tcl | Byte-identical, NOT RUN |
+| validation/task210_print/syntax_check.tcl | validation/official_dev110/task210_print/syntax_check.tcl | Byte-identical, NOT RUN |
+| validation/task210_quality_host/diagnostic_source.py | validation/official_dev110/task210_quality_host/diagnostic_source.py | Byte-identical, NOT RUN |
+| validation/task210_script_job_duplex/contracts.tcl | validation/official_dev110/task210_script_job_duplex/contracts.tcl | Byte-identical, NOT RUN |
+| validation/task210_script_job_duplex/worker.py | validation/official_dev110/task210_script_job_duplex/worker.py | Byte-identical, NOT RUN |
+| validation/task210_session_creation/tcl_contract.tcl | validation/official_dev110/task210_session_creation/tcl_contract.tcl | Byte-identical, NOT RUN |
+
+The original source snapshot leaves integrated GUI/Octave acceptance incomplete; no new PASS results are inferred.
