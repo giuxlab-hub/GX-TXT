@@ -1,0 +1,116 @@
+{
+  "schema": "gxtxt.public-validation-sources/7",
+  "referenceFramework": "0.9.8.10-dev-109",
+  "referenceMainCommit": "940b94c4cd3cbe4200f23f3eb5a04c9d836bd3f0",
+  "officialArchiveSha256": "679ec6c8fa929f8f8cfaab51706909100851f67b10279a3b1172dd9247908633",
+  "selectedCount": 15,
+  "sourceOnly": true,
+  "runnerStatus": "NOT RUN",
+  "files": [
+    {
+      "path": "validation/official_dev109/modules_dev109/controller_contract.tcl",
+      "sourcePath": "validation/modules_dev109/controller_contract.tcl",
+      "bytes": 3284,
+      "sha256": "f80abb4351127dd012f5f37b4656ec8249d7ff42132785403727fa925b3cbdae",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev109/modules_dev109/dependencies_remaining.tcl",
+      "sourcePath": "validation/modules_dev109/dependencies_remaining.tcl",
+      "bytes": 2729,
+      "sha256": "e0be18aee00ce9aeb6520ff0b405bc84859fccd0ab6b93fe56a7b3c8e0503c1d",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev109/modules_dev109/modal.tcl",
+      "sourcePath": "validation/modules_dev109/modal.tcl",
+      "bytes": 667,
+      "sha256": "a59ddbbb34e6675ab615641cd481fc85d65ec2d30da9099cda10dd431b2988dd",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev109/modules_dev109/native.tcl",
+      "sourcePath": "validation/modules_dev109/native.tcl",
+      "bytes": 1591,
+      "sha256": "5103b374f4e710e390306fc72d00c4f3c8ad2703f0a25db165004cff7493d374",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev109/session_generator_dev109/batch2_empty_actions.tcl",
+      "sourcePath": "validation/session_generator_dev109/batch2_empty_actions.tcl",
+      "bytes": 2419,
+      "sha256": "6d6b1f09d8dd671fb5959990e2d8b7a8d500c39831035ca22f08048eb84b2a6d",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev109/session_generator_dev109/batch2_metadata.tcl",
+      "sourcePath": "validation/session_generator_dev109/batch2_metadata.tcl",
+      "bytes": 2150,
+      "sha256": "50e289c375d3c2b7cc99c2a9a0fe4e96e19ebfed5614cca508414d75ac54c6e5",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev109/session_generator_dev109/generation.tcl",
+      "sourcePath": "validation/session_generator_dev109/generation.tcl",
+      "bytes": 3177,
+      "sha256": "fda31e129989aee0296d92804942ffc671cdb6da56f5b0db73986d6bdc1ed787",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev109/session_generator_dev109/geometry_final.tcl",
+      "sourcePath": "validation/session_generator_dev109/geometry_final.tcl",
+      "bytes": 2403,
+      "sha256": "90f6c61a426aa93e42ab9cfa3e723990a1d1cde89e24c50db960c9f0c15ba22b",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev109/main2_preview109/live_adoption.tcl",
+      "sourcePath": "validation/main2_preview109/live_adoption.tcl",
+      "bytes": 13611,
+      "sha256": "3ae7cbd1a6f60147dbb0b621303106e3b548a747b72c2e848cdab750d788b583",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev109/main2_preview109/native_image_cache_tail.tcl",
+      "sourcePath": "validation/main2_preview109/native_image_cache_tail.tcl",
+      "bytes": 1505,
+      "sha256": "495158e2c5299d48692994e2185cef7bb1bed5e14c8919d668a0af1e87310ce4",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev109/main2_preview109/native_numeric_tail.tcl",
+      "sourcePath": "validation/main2_preview109/native_numeric_tail.tcl",
+      "bytes": 2775,
+      "sha256": "9a9c2e333bbca28840a724de6f3f52bb838c83e97ba5300881493df94d2c8159",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev109/main2_preview109/native_raster_narrow.tcl",
+      "sourcePath": "validation/main2_preview109/native_raster_narrow.tcl",
+      "bytes": 2528,
+      "sha256": "f197eeb7dbe05a74a91828bd7dd603adf5f0c43b96e69e19bf14f083f0c8c7da",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev109/curve_frame_afterproof420/after10.tcl",
+      "sourcePath": "validation/curve_frame_afterproof420/after10.tcl",
+      "bytes": 3271,
+      "sha256": "842cc40bc9f0e75995c0e84c99d286378c7cefdbcd2850142513a08d7fc1bbf9",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev109/curve_frame_afterproof420/input04.tcl",
+      "sourcePath": "validation/curve_frame_afterproof420/input04.tcl",
+      "bytes": 6302,
+      "sha256": "8b1559123931c5e38e82aee0920c052d90fbbb968b1bbe48fb5c58db770ac34a",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev109/coordinate_metric421/planner.tcl",
+      "sourcePath": "validation/coordinate_metric421/planner.tcl",
+      "bytes": 3351,
+      "sha256": "b3ee2be29dc00907571a4b2a64b8a2ec592f7ea9b76a4021a30c19b28be40aa9",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    }
+  ]
+}

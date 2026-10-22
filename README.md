@@ -94,3 +94,9 @@ The accepted dev-108 public source commit 6371001a219a4e611ce89c8b396c62294e6b97
 These cases were not executed as part of public-source publication. GUI and numerical checks require dedicated Debian test installations, C++/Octave dependencies and synthetic fixtures. The opt-in runner remains limited to the originally reviewed dev-102 CLI cases.
 
 Internal acceptance evidence, private Sessions, confidential PDFs and dependent generators, credentials and the separately withheld WordPress debugger package are not included.
+
+## GX-TXT dev-109 scientific validation sources (NOT RERUN)
+
+These 15 selected original Tcl cases are copied byte-for-byte from the official dev-109 archive, with source SHA-256 recorded in source-manifest-dev109.json. They cover grouped Modules, Session Generator registration, Dataset Preview and Curve Workbench coordinate/geometry behaviors. Scientific main source reference: 940b94c4cd3cbe4200f23f3eb5a04c9d836bd3f0.
+
+**Publication does not execute these cases.** Their actual Debian display, scientific inputs and temporary Session fixtures are external prerequisites; previous validation suites and the original dev-102 opt-in runner remain unchanged. Internal developer/acceptance records, teaching PDFs, private Session data, version-specific dev-108 hotfix and credentials are excluded.

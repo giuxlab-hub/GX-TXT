@@ -155,3 +155,27 @@ Baseline: 0.9.8.10-dev-108, main 6371001a219a4e611ce89c8b396c62294e6b979c. Exact
 | plot_cursor_native.tcl | Native source cursor and scientific identity | Manual / isolated compatible Debian only |
 
 Some tests depend on separately prepared controlled fixtures and native runtimes; the branch provides original source, not invented runtime PASS results. No added dev-108 case is registered in the automatic execution subset.
+
+## GX-TXT dev-109 selected original validation source matrix
+
+Reference framework 0.9.8.10-dev-109, public main 940b94c4cd3cbe4200f23f3eb5a04c9d836bd3f0. **All dev-109 cases are SOURCE ONLY: NOT RERUN during publication.**
+
+| Original relative source | Public source | Execution |
+| --- | --- | --- |
+| validation/modules_dev109/controller_contract.tcl | validation/official_dev109/modules_dev109/controller_contract.tcl | Debian controlled manual fixture only |
+| validation/modules_dev109/dependencies_remaining.tcl | validation/official_dev109/modules_dev109/dependencies_remaining.tcl | Debian controlled manual fixture only |
+| validation/modules_dev109/modal.tcl | validation/official_dev109/modules_dev109/modal.tcl | Debian controlled manual fixture only |
+| validation/modules_dev109/native.tcl | validation/official_dev109/modules_dev109/native.tcl | Debian controlled manual fixture only |
+| validation/session_generator_dev109/batch2_empty_actions.tcl | validation/official_dev109/session_generator_dev109/batch2_empty_actions.tcl | Debian controlled manual fixture only |
+| validation/session_generator_dev109/batch2_metadata.tcl | validation/official_dev109/session_generator_dev109/batch2_metadata.tcl | Debian controlled manual fixture only |
+| validation/session_generator_dev109/generation.tcl | validation/official_dev109/session_generator_dev109/generation.tcl | Debian controlled manual fixture only |
+| validation/session_generator_dev109/geometry_final.tcl | validation/official_dev109/session_generator_dev109/geometry_final.tcl | Debian controlled manual fixture only |
+| validation/main2_preview109/live_adoption.tcl | validation/official_dev109/main2_preview109/live_adoption.tcl | Debian controlled manual fixture only |
+| validation/main2_preview109/native_image_cache_tail.tcl | validation/official_dev109/main2_preview109/native_image_cache_tail.tcl | Debian controlled manual fixture only |
+| validation/main2_preview109/native_numeric_tail.tcl | validation/official_dev109/main2_preview109/native_numeric_tail.tcl | Debian controlled manual fixture only |
+| validation/main2_preview109/native_raster_narrow.tcl | validation/official_dev109/main2_preview109/native_raster_narrow.tcl | Debian controlled manual fixture only |
+| validation/curve_frame_afterproof420/after10.tcl | validation/official_dev109/curve_frame_afterproof420/after10.tcl | Debian controlled manual fixture only |
+| validation/curve_frame_afterproof420/input04.tcl | validation/official_dev109/curve_frame_afterproof420/input04.tcl | Debian controlled manual fixture only |
+| validation/coordinate_metric421/planner.tcl | validation/official_dev109/coordinate_metric421/planner.tcl | Debian controlled manual fixture only |
+
+These files are not added to any automatic or persistent runner. No prior PASS status is transferred from an unrelated installation.
