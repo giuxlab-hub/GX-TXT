@@ -4,10 +4,39 @@
   "sourceRepository": "https://github.com/giuxlab-hub/GX-TXT",
   "coverage": {
     "first": "095",
-    "last": "109",
-    "count": 14
+    "last": "110",
+    "count": 15
   },
   "releases": [
+    {
+      "id": "110",
+      "sha": "ccde3a0f62020941c6ed3756c4de3c135a4772e4",
+      "en": {
+        "title": "TASK210 intermediate scientific source snapshot",
+        "intro": "GX-TXT dev-110 is a deposited intermediate TASK210 source snapshot, not a completed all-feature release. It introduces new scientific Preview infrastructure, updated Curve Digitizer integration and chromatography import modules while retaining explicitly unfinished GUI and scientific acceptance scope.",
+        "highlights": [
+          "Native Preview gains additional shared components for grouping, coordinates, retained overlays and source-bound data representations; Session creation and cache ownership receive targeted corrections.",
+          "Original Curve Digitizer 2.0.9 is integrated without changing its scientific Quality calculations; a separate CORE source-integrity observation accompanies the update.",
+          "Metrohm IC Net CHW and standard AIA/ANDI chromatography acquisition modules are added with provenance, bounded file parsing and independent qualification notes.",
+          "Session promotion and persistence, Generate dialog geometry, Modules settings, bounded Print tables, ScriptJob duplex and Scientific Library metadata host handling receive incremental improvements.",
+          "The preparation guide for Curve Digitizer is expanded with graphics and published scientific calibration/provenance concepts."
+        ],
+        "caveat": "INTERMEDIATE SOURCE SNAPSHOT. The official archive explicitly leaves integrated GUI/Octave qualification, certain native HTML runtime behaviors and further TASK210 scope incomplete. No new official_dev110 module ZIP series is deposited; dev109 official ZIPs remain unchanged. GitHub source publication does not certify installation/activation or a successful functional release. Both dev108 hotfixes remain incompatible with dev110 by policy."
+      },
+      "it": {
+        "title": "Snapshot intermedio TASK210 dei sorgenti scientifici",
+        "intro": "GX-TXT dev-110 è uno snapshot intermedio TASK210 depositato, non una release completa di tutte le funzionalità. Introduce infrastruttura Preview, una nuova integrazione del Curve Digitizer e moduli cromatografici, conservando esplicitamente le verifiche scientifiche e GUI ancora aperte.",
+        "highlights": [
+          "Preview acquisisce componenti condivisi per raggruppamento, coordinate, overlay persistenti e rappresentazioni collegate ai Dataset; migliora il controllo delle Session e delle cache.",
+          "È integrato il Curve Digitizer 2.0.9 originale senza alterare il calcolo scientifico di Quality; si aggiunge una verifica separata dell’identità dei sorgenti CORE.",
+          "Sono aggiunti importatori cromatografici Metrohm IC Net CHW e standard AIA/ANDI, con provenienza, lettura limitata dei file e note di qualificazione.",
+          "Sono introdotti miglioramenti incrementali per creazione/promozione Session, finestra Generate, Modules, intervalli di stampa, ScriptJob duplex e trasporto metadati Scientific Library.",
+          "La guida preparatoria del Curve Digitizer comprende nuovi grafici e spiegazioni su calibrazione, elaborazione e provenienza scientifica."
+        ],
+        "caveat": "SNAPSHOT INTERMEDIO. Nell’archivio risultano ancora incomplete verifiche GUI/Octave, aspetti del runtime HTML e altre attività TASK210. Non è presente una nuova serie di ZIP official_dev110: i pacchetti ufficiali dev109 restano invariati. La pubblicazione GitHub del sorgente non certifica installazione, attivazione o collaudo completo. Le hotfix della dev108 sono incompatibili con la dev110 per definizione."
+      },
+      "doc": "plugins/modules/acq.metrohm_icnet_chw/README.md"
+    },
     {
       "id": "109",
       "sha": "940b94c4cd3cbe4200f23f3eb5a04c9d836bd3f0",
