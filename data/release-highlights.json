@@ -4,10 +4,39 @@
   "sourceRepository": "https://github.com/giuxlab-hub/GX-TXT",
   "coverage": {
     "first": "095",
-    "last": "108",
-    "count": 13
+    "last": "109",
+    "count": 14
   },
   "releases": [
+    {
+      "id": "109",
+      "sha": "940b94c4cd3cbe4200f23f3eb5a04c9d836bd3f0",
+      "en": {
+        "title": "Stable installed Viewers, scientific editing and document tools",
+        "intro": "GX-TXT dev-109 separates restricted C++ Viewer development compilation from installed Viewer execution and extends the scientific workspace with richer Dataset tools, electronic diagrams, native CAD/electromagnetics and scientific documents.",
+        "highlights": [
+          "Installed restricted-C++ Viewers start and handle normal UI events without recompilation. Explicit author builds remain a separate supported development operation; this is the dev-109 CORE solution, NOT the dev-108-only hotfix.",
+          "Shared electrical diagrams gain more consistent wire junctions, terminal probing, schematic selection and engineering value controls; preserved scientific source and managed Job/provenance owners remain authoritative.",
+          "Curve Workbench and Dataset Preview improve dimensionality, calibrated axes, durable Session-local preview caches, large scientific labels and raw Dataset/schema inspection.",
+          "Scientific Print/PDF adds poster composition, and the document Viewer family extends bounded HTML, LaTeX editing/PDF production and shared source/asset publication interfaces.",
+          "Builder-based 3D CAD and Electromagnetics Studio viewers reuse established scientific geometry/FEM owners; Scientific Library Workspace and Modules/Script UI gain integrated presentation and controls."
+        ],
+        "caveat": "The accepted Debian release evidence is separate from this Windows static-source publication; no new Windows native or GUI scientific regression tests were executed. Dev-108 hotfix.1 and hotfix.2 remain strictly incompatible with dev-109 and must never be installed or merged into it. Original scientific Sessions and internal acceptance records are intentionally withheld."
+      },
+      "it": {
+        "title": "Viewer installati stabili, editing scientifico e nuovi strumenti documentali",
+        "intro": "GX-TXT dev-109 separa la compilazione dei Viewer C++ in sviluppo dall’esecuzione dei Viewer installati ed estende Dataset, schemi elettronici, CAD/elettromagnetismo e strumenti per documenti scientifici.",
+        "highlights": [
+          "I Viewer C++ installati si avviano e gestiscono le normali interazioni senza ricompilazione. Le compilazioni esplicite restano nel percorso di sviluppo: è la soluzione CORE della dev-109, non la hotfix temporanea della dev-108.",
+          "Gli schemi elettronici condivisi migliorano collegamenti e giunzioni, selezione, sondaggio dei terminali e valori ingegneristici; la proprietà dei dati scientifici resta ai servizi canonici e ai Job gestiti.",
+          "Curve Workbench e Dataset Preview affinano dimensionalità, assi calibrati, cache persistenti locali alle Session, titoli scientifici lunghi e accesso ai dati RAW/schema.",
+          "Print/PDF Studio aggiunge la composizione poster; i Viewer documentali estendono HTML, redazione LaTeX/PDF e API condivise per sorgenti e risorse.",
+          "Viewer CAD 3D ed Electromagnetics Studio realizzati con Builder riutilizzano i servizi geometrici e FEM esistenti; Scientific Library Workspace, Modules e Script UI migliorano controlli e presentazione."
+        ],
+        "caveat": "Le verifiche Debian della release sono separate dalla pubblicazione statica Windows; non sono stati ripetuti qui test scientifici GUI/native Windows. Le hotfix.1 e hotfix.2 della dev-108 sono incompatibili con la dev-109 per definizione: non vanno installate né integrate. Session scientifiche originali e ricevute interne non sono distribuite."
+      },
+      "doc": "docs/api/HTML_VIEWER_API_v1.md"
+    },
     {
       "id": "108",
       "sha": "6371001a219a4e611ce89c8b396c62294e6b979c",

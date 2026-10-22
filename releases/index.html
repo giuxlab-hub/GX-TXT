@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0c131d">
-  <title>GX-TXT development highlights | dev-095 to dev-108</title>
-  <meta name="description" content="The development of GX-TXT through 13 public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.">
+  <title>GX-TXT development highlights | dev-095 to dev-109</title>
+  <meta name="description" content="The development of GX-TXT through 14 public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.">
   <meta name="author" content="Giux-Lab">
   <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/releases/">
   <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/releases/">
@@ -17,8 +17,8 @@
   <link rel="stylesheet" href="../assets/releases.css">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="GX-TXT / Giux-Lab">
-  <meta property="og:title" content="GX-TXT development highlights | dev-095 to dev-108">
-  <meta property="og:description" content="The development of GX-TXT through 13 public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.">
+  <meta property="og:title" content="GX-TXT development highlights | dev-095 to dev-109">
+  <meta property="og:description" content="The development of GX-TXT through 14 public source releases: scientific Datasets, statistics, Curve Digitizer, Workspaces, Worksheet, managed simulation and Replicate curves.">
   <meta property="og:url" content="https://giuxlab-hub.github.io/GX-TXT/releases/">
 </head>
 
@@ -50,15 +50,15 @@
       <h1 id="releases-title">How the scientific workbench evolved.</h1>
       <p class="lead">A curated record of the features that mattered most in each published source version, from the first clean GitHub snapshot to the current milestone covered here.</p>
       <div class="buttons">
-        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/blob/6371001a219a4e611ce89c8b396c62294e6b979c/CHANGELOG.md">Read complete CHANGELOG ↗</a>
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/blob/940b94c4cd3cbe4200f23f3eb5a04c9d836bd3f0/CHANGELOG.md">Read complete CHANGELOG ↗</a>
         <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT">View project source ↗</a>
       </div>
     </div>
     <div class="release-stat" aria-label="COVERED SOURCE HISTORY">
       <div class="release-stat-head">GX-TXT / 0.9.8.10</div>
-      <div class="release-stat-number">13</div>
+      <div class="release-stat-number">14</div>
       <div class="release-stat-label">PUBLIC REVISIONS</div>
-      <div class="release-stat-row"><span>COVERED SOURCE HISTORY</span><strong>dev-095 → dev-108</strong></div>
+      <div class="release-stat-row"><span>COVERED SOURCE HISTORY</span><strong>dev-095 → dev-109</strong></div>
       <div class="release-stat-row"><span>PRIMARY REFERENCE</span><strong>Versioned CHANGELOG</strong></div>
     </div>
   </section>
@@ -66,6 +66,7 @@
     <div class="wrap">
       <nav class="release-jump" aria-label="Go to a release">
         <span>Go to a release</span>
+<a href="#dev-109" aria-label="GX-TXT 0.9.8.10-dev-109">dev-109</a>
 <a href="#dev-108" aria-label="GX-TXT 0.9.8.10-dev-108">dev-108</a>
 <a href="#dev-107" aria-label="GX-TXT 0.9.8.10-dev-107">dev-107</a>
 <a href="#dev-106" aria-label="GX-TXT 0.9.8.10-dev-106">dev-106</a>
@@ -81,13 +82,38 @@
 <a href="#dev-095" aria-label="GX-TXT 0.9.8.10-dev-095">dev-095</a>
       </nav>
       <ol class="release-timeline">
+<li class="release-entry" id="dev-109">
+  <div class="release-marker" aria-hidden="true"><span>109</span></div>
+  <article class="release-panel release-featured">
+<div class="release-head">
+  <div><div class="release-version">0.9.8.10-dev-109</div>
+  <h2>Stable installed Viewers, scientific editing and document tools</h2></div>
+  <span class="release-current">LATEST IN THIS TIMELINE</span>
+</div>
+    <p class="release-intro">GX-TXT dev-109 separates restricted C++ Viewer development compilation from installed Viewer execution and extends the scientific workspace with richer Dataset tools, electronic diagrams, native CAD/electromagnetics and scientific documents.</p>
+    <h3 class="release-group-label">Selected changes</h3>
+    <ul class="release-bullets"><li>Installed restricted-C++ Viewers start and handle normal UI events without recompilation. Explicit author builds remain a separate supported development operation; this is the dev-109 CORE solution, NOT the dev-108-only hotfix.</li>
+<li>Shared electrical diagrams gain more consistent wire junctions, terminal probing, schematic selection and engineering value controls; preserved scientific source and managed Job/provenance owners remain authoritative.</li>
+<li>Curve Workbench and Dataset Preview improve dimensionality, calibrated axes, durable Session-local preview caches, large scientific labels and raw Dataset/schema inspection.</li>
+<li>Scientific Print/PDF adds poster composition, and the document Viewer family extends bounded HTML, LaTeX editing/PDF production and shared source/asset publication interfaces.</li>
+<li>Builder-based 3D CAD and Electromagnetics Studio viewers reuse established scientific geometry/FEM owners; Scientific Library Workspace and Modules/Script UI gain integrated presentation and controls.</li></ul>
+    <div class="release-scope"><span>Scientific scope</span><p>The accepted Debian release evidence is separate from this Windows static-source publication; no new Windows native or GUI scientific regression tests were executed. Dev-108 hotfix.1 and hotfix.2 remain strictly incompatible with dev-109 and must never be installed or merged into it. Original scientific Sessions and internal acceptance records are intentionally withheld.</p></div>
+
+<div class="release-actions">
+<a href="https://github.com/giuxlab-hub/GX-TXT/commit/940b94c4cd3cbe4200f23f3eb5a04c9d836bd3f0">View exact Git commit ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/940b94c4cd3cbe4200f23f3eb5a04c9d836bd3f0/CHANGELOG.md">CHANGELOG at this revision ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/940b94c4cd3cbe4200f23f3eb5a04c9d836bd3f0/docs/api/HTML_VIEWER_API_v1.md">Relevant public documentation ↗</a>
+</div>
+  </article>
+</li>
+
 <li class="release-entry" id="dev-108">
   <div class="release-marker" aria-hidden="true"><span>108</span></div>
-  <article class="release-panel release-featured">
+  <article class="release-panel">
 <div class="release-head">
   <div><div class="release-version">0.9.8.10-dev-108</div>
   <h2>Circuit Workbench and shared scientific Viewer capabilities</h2></div>
-  <span class="release-current">LATEST IN THIS TIMELINE</span>
+
 </div>
     <p class="release-intro">GX-TXT dev-108 extends the Viewer development platform to practical electronic circuit diagrams, controlled scientific simulation workflows and native result displays, while refining Script Workspaces, numerical operations and Plot Dataset.</p>
     <h3 class="release-group-label">Selected changes</h3>
@@ -411,7 +437,7 @@
 
 <footer><div class="wrap">
 <div><p><strong>GX-TXT</strong> — Developed by <a href="https://giux-lab.it/" rel="author">Giux-Lab</a>.</p>
-<p>Open source · GNU GPL-3.0-or-later · 13 releases</p></div>
+<p>Open source · GNU GPL-3.0-or-later · 14 releases</p></div>
 <div class="links">
 <a href="../">Overview</a>
 <a href="../#guides">Guides</a>
