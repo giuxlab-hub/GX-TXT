@@ -1392,7 +1392,7 @@ static void renderer_scientific_figure(gx3de_target* target,gx3de_render_viewpor
         return;
     }
     const double W=target->width,H=target->height;
-    double sx,sy,sw,sh;figure_rect(vp->view,sx,sy,sw,sh);
+    double sx,sy,sw,sh;figure_rect(vp->view,sx,sy,sw,sh,vp->height);
     rv.renderer->SetBackgroundAlpha(1.0);rv.renderer->SetLayer(1);
     rv.renderer->SetViewport((vp->x+sx*vp->width)/W,
         1-(vp->y+(1-sy)*vp->height)/H,
@@ -1414,6 +1414,131 @@ static void renderer_scientific_figure(gx3de_target* target,gx3de_render_viewpor
     fc->SetViewAngle(2*std::atan(std::tan(fc->GetViewAngle()*3.141592653589793/360)/sh)*180/3.141592653589793);
     fc->SetWindowCenter(1-2*(sx+sw/2),1-2*(sy+sh/2));
 
+    // CubeAxes' automatic numeric tick count ignores projected space. Keep its
+    // calibrated axes and native major ticks, but label only the interior ticks
+    // that fit. Blank corner labels prevent adjacent axes from overprinting.
+    // The full array must match VTK 9.3's generated interval count: shorter
+    // arrays can change the interval or cause string subsampling.
+    auto axisLabels=vp->view->figure_axis_labels;
+    const double font=scientific_style(vp->view,"font_size",12*scale);
+    const double lows[3]={f.world_bounds.min.x,f.world_bounds.min.y,f.world_bounds.min.z};
+    const double highs[3]={f.world_bounds.max.x,f.world_bounds.max.y,f.world_bounds.max.z};
+    auto project=[&](const double* point){
+        fr->SetWorldPoint(point[0],point[1],point[2],1.0);fr->WorldToDisplay();
+        const auto* p=fr->GetDisplayPoint();return std::array<double,2>{p[0],p[1]};
+    };
+    auto footprint=[&](const double* point,double glyphDiagonal){
+        const auto* camera=fc->GetPosition();const auto* direction=fc->GetDirectionOfProjection();
+        double distance=0,depth=0;
+        for(int j=0;j<3;++j){double delta=point[j]-camera[j];distance+=delta*delta;depth+=delta*direction[j];}
+        const double tangent=std::tan(fc->GetViewAngle()*3.141592653589793/360);
+        const double h=std::max(1,fr->GetSize()[1]);
+        // Match CubeAxes::AutoScale, then its actual camera projection. The
+        // glyph diagonal bounds labels at any follower orientation.
+        const double worldScale=2*font*tangent*std::sqrt(distance)/h;
+        const double pixels=fc->GetParallelProjection()?h/(2*fc->GetParallelScale()):
+            (depth>0?h/(2*tangent*depth):std::numeric_limits<double>::infinity());
+        return glyphDiagonal*worldScale*pixels;
+    };
+    for(int axis=0;axis<3;++axis){
+        if(!axisLabels[axis].empty())continue; // Explicit scientific labels retain their order.
+        const double range=f.axis_max[axis]-f.axis_min[axis];
+        if(!(range>0)||!std::isfinite(range))continue;
+        // Match vtkCubeAxesActor::AdjustTicksComputeRange for its retained
+        // linear numeric range (FFix truncates; GetNumTicks adds one).
+        double decade=std::log10(range);
+        if(decade!=0)decade=std::copysign(std::abs(decade)+1e-9,decade);
+        if(decade<0)decade-=1;
+        const double base=std::pow(10.0,std::trunc(decade));
+        if(!(base>0)||!std::isfinite(base))continue;
+        const int baseTicks=int(std::trunc(range/base))+1;
+        const double major=base/(baseTicks<=2?5.0:baseTicks<5?2.0:1.0);
+        const double worldLength=highs[axis]-lows[axis];
+        const double worldMajor=major*(worldLength/range);
+        if(!(worldMajor>0)||!std::isfinite(worldMajor))continue;
+        const double intervalCount=worldLength/worldMajor;
+        if(!std::isfinite(intervalCount)||intervalCount<3||intervalCount>62)continue;
+        const int ticks=int(std::floor(intervalCount+2*std::numeric_limits<float>::epsilon()))+1;
+        if(ticks<int(std::trunc(range/major))+1)continue;
+        for(int count=std::min(3,ticks-2);count>=2;--count){
+            std::vector<int> indices;
+            for(int i=0;i<count;++i)indices.push_back(1+i*(ticks-3)/(count-1));
+            std::vector<std::string> labels;
+            for(int precision=5;precision<=17;++precision){
+                labels.clear();
+                for(int i=0;i<count;++i){
+                    const double value=f.axis_min[axis]+indices[i]*major;
+                    char text[64];std::snprintf(text,sizeof(text),"%.*g",precision,value);labels.emplace_back(text);
+                }
+                if(std::adjacent_find(labels.begin(),labels.end())==labels.end())break;
+            }
+            if(std::adjacent_find(labels.begin(),labels.end())!=labels.end())continue;
+            auto labelsFit=[&](const std::vector<std::string>& candidate){
+                std::vector<double> diagonals;
+                for(const auto& label:candidate){
+                    vtkNew<vtkVectorText> glyph;glyph->SetText(label.c_str());glyph->Update();
+                    double bounds[6];glyph->GetOutput()->GetBounds(bounds);
+                    diagonals.push_back(std::hypot(bounds[1]-bounds[0],bounds[3]-bounds[2]));
+                }
+                bool fits=true;
+                for(int edge=0;edge<4;++edge){
+                    double point[3];int bit=0;
+                    for(int j=0;j<3;++j)if(j!=axis)point[j]=(edge&(1<<bit++))?highs[j]:lows[j];
+                    std::array<double,2> previous{};double previousSize=0;
+                    for(int i=0;i<count;++i){
+                        const double t=indices[i]*major/range;point[axis]=(1-t)*lows[axis]+t*highs[axis];
+                        const auto pixel=project(point);const double size=footprint(point,diagonals[i]);
+                        if(i){const double gap=std::hypot(pixel[0]-previous[0],pixel[1]-previous[1]);
+                            if(!std::isfinite(gap)||!std::isfinite(size)||gap<(previousSize+size)/2+6*scale)fits=false;}
+                        previous=pixel;previousSize=size;
+                    }
+                }
+                return fits;
+            };
+            bool fits=labelsFit(labels);
+            if(!fits){
+                // Compact tick text may use fewer significant digits when its
+                // rounding stays below a tenth of one native major interval.
+                // Raw source values and calibration remain exact and unchanged.
+                for(int precision=4;precision>=3;--precision){
+                    std::vector<std::string> compact;bool accurate=true;
+                    for(int i=0;i<count;++i){
+                        const double value=f.axis_min[axis]+indices[i]*major;
+                        char text[64];std::snprintf(text,sizeof(text),"%.*g",precision,value);
+                        const double rounded=std::strtod(text,nullptr);
+                        if(!std::isfinite(rounded)||std::abs(rounded-value)>major*.1)accurate=false;
+                        compact.emplace_back(text);
+                    }
+                    if(accurate&&std::adjacent_find(compact.begin(),compact.end())==compact.end()&&labelsFit(compact)){
+                        labels=std::move(compact);fits=true;break;
+                    }
+                }
+            }
+            if(fits){
+                axisLabels[axis].assign(ticks,{});
+                for(int i=0;i<count;++i)axisLabels[axis][indices[i]]=std::move(labels[i]);
+                break;
+            }
+            if(count==2){
+                // A genuinely foreshortened axis cannot fit two values. Keep
+                // one interior value rather than knowingly overprinting text.
+                const int middle=ticks/2;const double value=f.axis_min[axis]+middle*major;
+                char text[64];std::snprintf(text,sizeof(text),"%.5g",value);
+                axisLabels[axis].assign(ticks,{});axisLabels[axis][middle]=text;
+            }
+        }
+    }
+    // SetAxisLabels alone does not invalidate VTK 9.3's cached tick intervals
+    // when only the viewport/camera changes. Recreate this presentation prop
+    // on effective-label changes, retaining every scientific actor and source.
+    if(rv.scientific_axes){
+        bool changed=false;
+        for(int axis=0;axis<3;++axis){auto* old=rv.scientific_axes->GetAxisLabels(axis);
+            if((old?old->GetNumberOfValues():0)!=static_cast<vtkIdType>(axisLabels[axis].size())){changed=true;break;}
+            for(size_t i=0;i<axisLabels[axis].size();++i)if(old->GetValue(i)!=axisLabels[axis][i]){changed=true;break;}
+        }
+        if(changed)rv.scientific_axes=nullptr;
+    }
     if(!rv.scientific_axes){
         rv.scientific_axes=vtkSmartPointer<vtkCubeAxesActor>::New();
         auto* a=rv.scientific_axes.GetPointer();
@@ -1447,12 +1572,14 @@ static void renderer_scientific_figure(gx3de_target* target,gx3de_render_viewpor
     calibrated->SetBounds(f.world_bounds.min.x,f.world_bounds.max.x,f.world_bounds.min.y,f.world_bounds.max.y,f.world_bounds.min.z,f.world_bounds.max.z);
     calibrated->SetXAxisRange(f.axis_min[0],f.axis_max[0]);calibrated->SetYAxisRange(f.axis_min[1],f.axis_max[1]);calibrated->SetZAxisRange(f.axis_min[2],f.axis_max[2]);
     calibrated->SetDrawXGridlines(scientific_style(vp->view,"xgrid",1)!=0);calibrated->SetDrawYGridlines(scientific_style(vp->view,"ygrid",1)!=0);calibrated->SetDrawZGridlines(scientific_style(vp->view,"zgrid",1)!=0);
-    calibrated->SetScreenSize(scientific_style(vp->view,"font_size",12*scale));
-    if(!vp->view->figure_axis_labels[0].empty()||!vp->view->figure_axis_labels[1].empty()||!vp->view->figure_axis_labels[2].empty()){double font=scientific_style(vp->view,"font_size",12*scale);calibrated->SetLabelOffset(std::max(8*scale,4.0*font));double titleOffset[2]={5.0*font,5.0*font};calibrated->SetTitleOffset(titleOffset);}
+    calibrated->SetScreenSize(font);
+    const bool explicitLabels=!vp->view->figure_axis_labels[0].empty()||!vp->view->figure_axis_labels[1].empty()||!vp->view->figure_axis_labels[2].empty();
+    calibrated->SetLabelOffset(explicitLabels?std::max(8*scale,4*font):8*scale);
+    double titleOffset[2]={explicitLabels?5*font:28*scale,explicitLabels?5*font:28*scale};calibrated->SetTitleOffset(titleOffset);
     for(int axis=0;axis<3;++axis){calibrated->GetTitleTextProperty(axis)->SetFontSize(int(scientific_style(vp->view,"axis_label_font_size",14*scale)));calibrated->GetLabelTextProperty(axis)->SetFontSize(int(scientific_style(vp->view,"font_size",12*scale)));}
     double gr=scientific_style(vp->view,"grid_r",grid),gg=scientific_style(vp->view,"grid_g",grid),gb=scientific_style(vp->view,"grid_b",grid);calibrated->GetXAxesGridlinesProperty()->SetColor(gr,gg,gb);calibrated->GetYAxesGridlinesProperty()->SetColor(gr,gg,gb);calibrated->GetZAxesGridlinesProperty()->SetColor(gr,gg,gb);
     calibrated->SetXTitle(f.axis_labels_utf8[0]);calibrated->SetYTitle(f.axis_labels_utf8[1]);calibrated->SetZTitle(f.axis_labels_utf8[2]);
-    for(int axis=0;axis<3;++axis){const auto& labels=vp->view->figure_axis_labels[axis];
+    for(int axis=0;axis<3;++axis){const auto& labels=axisLabels[axis];
         if(labels.empty()){calibrated->SetAxisLabels(axis,nullptr);continue;}
         vtkNew<vtkStringArray> values;for(const auto& label:labels)values->InsertNextValue(label);
         calibrated->SetAxisLabels(axis,values);
@@ -1470,7 +1597,12 @@ static void renderer_scientific_figure(gx3de_target* target,gx3de_render_viewpor
         if(value==f.legend_utf8){int alignment=int(scientific_style(vp->view,"legend_alignment",1));if(alignment==0)p->SetJustificationToLeft();else if(alignment==2)p->SetJustificationToRight();if(scientific_style(vp->view,"legend_background",0)!=0){p->SetBackgroundColor(scientific_style(vp->view,"legend_background_r",1),scientific_style(vp->view,"legend_background_g",1),scientific_style(vp->view,"legend_background_b",1));p->SetBackgroundOpacity(1);}if(scientific_style(vp->view,"legend_border",0)!=0){p->FrameOn();p->SetFrameColor(scientific_style(vp->view,"legend_border_r",.5),scientific_style(vp->view,"legend_border_g",.5),scientific_style(vp->view,"legend_border_b",.5));}}
         fr->AddActor2D(t);
     };
-    text(f.title_utf8,.45,.95,int(scientific_style(vp->view,"title_font_size",18*scale)/scale),false);text(f.legend_utf8,scientific_style(vp->view,"legend_x",.45),scientific_style(vp->view,"legend_y",.035),int(scientific_style(vp->view,"legend_font_size",12*scale)/scale),false);
+    const double titleFont=scientific_style(vp->view,"title_font_size",18*scale);
+    const double legendFont=scientific_style(vp->view,"legend_font_size",12*scale);
+    // The automatic legend uses the existing top annotation band rather than
+    // the projected X-title row. An explicitly requested legend_y is retained.
+    const double legendY=.95-(titleFont/2+legendFont/2+8*scale)/std::max(1u,vp->height);
+    text(f.title_utf8,.45,.95,int(titleFont/scale),false);text(f.legend_utf8,scientific_style(vp->view,"legend_x",.45),scientific_style(vp->view,"legend_y",legendY),int(legendFont/scale),false);
     if(f.colorbar_visible){
         vtkNew<vtkLookupTable> lut;lut->SetNumberOfTableValues(f.palette_count);
         lut->SetRange(f.scalar_min,f.scalar_max);lut->Build();

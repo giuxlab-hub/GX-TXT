@@ -24,15 +24,16 @@ proc ::GX::CurveWorkbench::_measurementState {w record} {
 }
 proc ::GX::CurveWorkbench::_measurementEvaluate {w definition} {
     variable st
-    set spec $definition;set fingerprints {};set units {};set sources {}
+    set spec $definition;set fingerprints {};set units {};set sources {};set frame {}
     foreach field {a b} {
         if {![dict exists $definition $field]||[dict get $definition $field] eq {}} {dict unset spec $field;continue}
         set id [dict get $definition $field];set record [_record $w $id]
         dict set spec $field [dict get $record native]
         set xy [_coordinateUnits $record]
-        if {[lindex $xy 0] ne [lindex $xy 1]} {error "Measurement geometry $id has incompatible X/Y units; normalize its coordinate frame first"}
-        if {[lindex $xy 0] ne {}} {::GX::unitRegistryHomogeneousCoordinatePlan [lindex $xy 0] [lindex $xy 0]}
-        lappend units [lindex $xy 0]
+        set actual [::GX::_native2DCoordinateFrame $xy [_coordinateSourceRelations $record]]
+        if {$frame ne {}&&$actual ne $frame} {error {Measurements require the same complete coordinate frame across targets}}
+        set frame $actual
+        lappend units [::GX::_native2DMeasurementCoordinateUnit [dict get $definition kind] $frame]
         dict set fingerprints $id [_measurementFingerprint $w $id]
         if {[dict get $record source] ne {}} {dict set sources $id [dict create dataset_id [dict get $record source] descriptor [::GX::datasetPublicationV2DictDefault $record source_descriptor {}]]}
     }

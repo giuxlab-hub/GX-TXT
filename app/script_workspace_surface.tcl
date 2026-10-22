@@ -188,10 +188,18 @@ proc ::GX::scriptWorkspaceOpenEditorRunner {parent reference dirty saveCommand e
 
 proc ::GX::scriptWorkspaceRunDialog {{reference {}} {previous {}}} {
     variable scriptRunUi
+    if {$::GX::currentSession eq {} || ![file isdirectory $::GX::currentSession]} {
+        tk_messageBox -parent . -icon info -title {Script Runner requires a Session} -message {Open the intended scientific Session before reviewing or running a registered script. No Job has been submitted.}
+        return
+    }
     if {$reference eq {}} {set reference $::GX::scriptWorkspaceChoice}
     if {$reference eq ""} { error "Select a registered script first." }
     set m [scriptRegistryDescribe $reference]
     set w .gxtxtScriptRun
+    if {$previous eq {} && [winfo exists $w] && $scriptRunUi(reference) eq $reference && $scriptRunUi(session_token) eq [interactiveDocumentSessionToken] && [dict get $scriptRunUi(metadata) sha256] eq [dict get $m sha256]} {
+        raise $w;focus $w
+        return $w
+    }
     catch {destroy $w}
     toplevel $w
     wm title $w "Run [dict get $m name]"
@@ -298,6 +306,7 @@ proc ::GX::scriptWorkspaceViewMenu {editor menu language} {
         $menu add checkbutton -label $label -variable ::GX::WorkspaceAssist::state($editor,debug_$key) -command [list ::GX::scriptWorkspaceDebugPaneToggle $editor $key]
     }
     $menu add separator
+    $menu add checkbutton -label {API Browser} -variable ::GX::ApiBrowser::state($editor.p.left.apiSplit,visible) -command [list ::GX::apiBrowserToggle $editor.p.left]
     $menu add command -label {Focus source / restore panes} -command [list ::GX::scriptWorkspaceFocusSource $editor]
     $menu add command -label {Reset editor layout} -command [list ::GX::scriptWorkspaceLayoutReset $editor]
     $menu add separator
@@ -331,6 +340,7 @@ proc ::GX::scriptWorkspaceLayoutInit {editor} {
     bind GXScriptWorkspaceAssistant <Destroy> {::GX::scriptWorkspaceAssistDestroyed %W %W}
     set center $editor.p.center
     if {[winfo exists $center.work]} return
+    apiBrowserMount $editor.p.left $state($editor,language)
     ttk::panedwindow $center.work -orient vertical
     pack $center.work -side top -fill both -expand 1 -before $center.edit
     pack forget $center.edit
@@ -380,10 +390,31 @@ proc ::GX::scriptWorkspacePaneToggle {editor key} {
         }
     } else {
         set p $editor.p;set w $p.$key
+        set state($editor,layoutPending) 1
         if {$state($editor,$key)} {if {$w ni [$p panes]} {if {$key eq {left}} {$p insert 0 $w -weight 1} else {$p add $w -weight 1}}} elseif {$w in [$p panes]} {$p forget $w}
-        after idle [list ::GX::scriptWorkspaceHorizontalSize $editor]
+        scriptWorkspaceLayoutSchedule $editor
     }
     scriptWorkspaceViewRefresh $editor
+    scriptWorkspaceLayoutRemember $editor
+}
+proc ::GX::scriptWorkspaceLayoutSchedule {editor} {
+    variable ::GX::WorkspaceAssist::state
+    if {[info exists state($editor,layoutTimer)]} {after cancel $state($editor,layoutTimer)}
+    set state($editor,layoutPending) 1
+    set state($editor,layoutTimer) [after idle [list ::GX::scriptWorkspaceLayoutSettle $editor]]
+}
+proc ::GX::scriptWorkspaceLayoutSettle {editor} {
+    variable ::GX::WorkspaceAssist::state
+    if {![winfo exists $editor.p]} return
+    unset -nocomplain state($editor,layoutTimer)
+    # ttk computes pane allocation lazily on add/forget. Let that allocation
+    # finish while remembering is suspended, then apply the retained geometry.
+    update idletasks
+    if {![winfo exists $editor.p]} return
+    scriptWorkspaceHorizontalSize $editor
+    update idletasks
+    if {![winfo exists $editor.p]} return
+    set state($editor,layoutPending) 0
     scriptWorkspaceLayoutRemember $editor
 }
 proc ::GX::scriptWorkspaceHorizontalSize {editor} {
@@ -393,8 +424,13 @@ proc ::GX::scriptWorkspaceHorizontalSize {editor} {
     set p $editor.p;set width [winfo width $p]
     if {$width<10} return
     set sides [$p panes]
-    if {"$p.left" in $sides} {$p sashpos 0 [expr {int($width*$left)}]}
-    if {"$p.right" in $sides} {$p sashpos [expr {[llength $sides]-2}] [expr {int($width*$right)}]}
+    if {[llength $sides]<2} return
+    set minimum [expr {min(120,max(60,int($width*.10)))}]
+    set sourceMinimum [expr {min(240,max(100,int($width*.30)))}]
+    set leftPixel [expr {max($minimum,min(int($width*$left),int(($width-$sourceMinimum)/2)))}]
+    set rightPixel [expr {min($width-$minimum,max(int($width*$right),$leftPixel+$sourceMinimum))}]
+    if {"$p.left" in $sides} {$p sashpos 0 $leftPixel}
+    if {"$p.right" in $sides} {$p sashpos [expr {[llength $sides]-2}] $rightPixel}
 }
 proc ::GX::scriptWorkspaceVerticalSize {editor height} {
     variable ::GX::WorkspaceAssist::state
@@ -409,8 +445,9 @@ proc ::GX::scriptWorkspaceLayoutReset {editor} {
     if {![winfo exists $editor.p]} return
     set p $editor.p
     set state($editor,fractions) {.19 .78};set state($editor,sourceFraction) .40
+    set state($editor,layoutPending) 1
     foreach side {left right} {if {"$p.$side" ni [$p panes]} {if {$side eq {left}} {$p insert 0 $p.$side -weight 1} else {$p add $p.$side -weight 1}}}
-    scriptWorkspaceHorizontalSize $editor
+    scriptWorkspaceLayoutSchedule $editor
     set state($editor,restoreSides) {}
     scriptWorkspaceViewRefresh $editor
     scriptWorkspaceLayoutRemember $editor
@@ -418,13 +455,16 @@ proc ::GX::scriptWorkspaceLayoutReset {editor} {
 proc ::GX::scriptWorkspaceFocusSource {editor} {
     variable ::GX::WorkspaceAssist::state
     set p $editor.p
+    scriptWorkspaceLayoutFractions $editor
+    set state($editor,layoutPending) 1
     if {$state($editor,restoreSides) eq {}} {
         set state($editor,restoreSides) [$p panes]
         foreach side {left right} {if {"$p.$side" in [$p panes]} {$p forget $p.$side}}
     } else {
         foreach side {left right} {set w $p.$side;if {$w in $state($editor,restoreSides) && $w ni [$p panes]} {if {$side eq {left}} {$p insert 0 $w -weight 1} else {$p add $w -weight 1}}}
-        set state($editor,restoreSides) {};scriptWorkspaceHorizontalSize $editor
+        set state($editor,restoreSides) {}
     }
+    scriptWorkspaceLayoutSchedule $editor
     focus $p.center.edit.text
     scriptWorkspaceViewRefresh $editor
 }
@@ -472,17 +512,24 @@ proc ::GX::scriptWorkspaceLayoutDestroyed {editor actual} {
     if {$editor ne $actual} return
     variable ::GX::WorkspaceAssist::state
     if {[info exists state($editor,initialTimer)]} {catch {after cancel $state($editor,initialTimer)}}
+    if {[info exists state($editor,layoutTimer)]} {after cancel $state($editor,layoutTimer)}
     dict for {panel owner} $::GX::WorkspaceAssist::panels {if {$owner eq $editor} {dict unset ::GX::WorkspaceAssist::panels $panel}}
     array unset state $editor,*
 }
 
 proc ::GX::scriptWorkspaceLayoutFractions {editor} {
     variable ::GX::WorkspaceAssist::state
-    if {![winfo exists $editor.p] || [winfo width $editor.p]<10} return
+    if {![winfo exists $editor.p] || [winfo width $editor.p]<10 || ([info exists state($editor,layoutPending)] && $state($editor,layoutPending))} return
     set p $editor.p;set panes [$p panes];set width [winfo width $p]
     lassign $state($editor,fractions) left right
-    if {"$p.left" in $panes && [llength $panes]>1} {set left [expr {[$p sashpos 0]/double($width)}]}
-    if {"$p.right" in $panes && [llength $panes]>1} {set right [expr {[$p sashpos [expr {[llength $panes]-2}]]/double($width)}]}
+    if {"$p.left" in $panes && [llength $panes]>1} {
+        set position [$p sashpos 0]
+        if {$position>=40 && $position<$width-100} {set left [expr {$position/double($width)}]}
+    }
+    if {"$p.right" in $panes && [llength $panes]>1} {
+        set position [$p sashpos [expr {[llength $panes]-2}]]
+        if {$position>100 && $position<=$width-40} {set right [expr {$position/double($width)}]}
+    }
     set state($editor,fractions) [list $left $right]
 }
 proc ::GX::scriptWorkspaceLayoutRemember {editor} {
@@ -491,8 +538,10 @@ proc ::GX::scriptWorkspaceLayoutRemember {editor} {
     scriptWorkspaceLayoutFractions $editor
     set work $editor.p.center.work
     if {"$work.tools" in [$work panes] && [winfo height $work]>10} {set state($editor,sourceFraction) [expr {[$work sashpos 0]/double([winfo height $work])}]}
-    set value [dict create properties $state($editor,properties) left [expr {"$editor.p.left" in [$editor.p panes]}] right [expr {"$editor.p.right" in [$editor.p panes]}] fractions $state($editor,fractions) source_fraction $state($editor,sourceFraction)]
     set key scripts.editor_layout.[string tolower $state($editor,language)]
+    set prior [configurationGet $key]
+    if {[catch {dict size $prior}]} {set prior {}}
+    set value [dict merge $prior [dict create properties $state($editor,properties) left [expr {"$editor.p.left" in [$editor.p panes]}] right [expr {"$editor.p.right" in [$editor.p panes]}] fractions $state($editor,fractions) source_fraction $state($editor,sourceFraction)]]
     configurationSet $key $value;configurationSave [list $key]
 }
 proc ::GX::scriptWorkspaceLayoutRestore {editor} {
@@ -505,6 +554,8 @@ proc ::GX::scriptWorkspaceLayoutRestore {editor} {
         foreach side {left right properties} {if {![string is boolean -strict [dict get $saved $side]]} {error {Invalid side visibility}}}
         foreach value [concat [dict get $saved fractions] [dict get $saved source_fraction]] {if {![string is double -strict $value] || $value<=.05 || $value>=.95} {error {Invalid splitter fraction}}}
         if {[llength [dict get $saved fractions]]!=2} {error {Two horizontal splitter fractions required}}
+        lassign [dict get $saved fractions] savedLeft savedRight
+        if {$savedRight-$savedLeft<.10} {error {Source pane requires usable width}}
     }]} {set saved {left 1 right 1 properties 1 fractions {.19 .78} source_fraction .40}}
     set state($editor,properties) [dict get $saved properties]
     scriptWorkspacePropertiesToggle $editor 1 0
@@ -513,7 +564,7 @@ proc ::GX::scriptWorkspaceLayoutRestore {editor} {
         set pane $editor.p.$side
         if {![dict get $saved $side] && $pane in [$editor.p panes]} {$editor.p forget $pane}
     }
-    scriptWorkspaceHorizontalSize $editor
+    scriptWorkspaceLayoutSchedule $editor
     scriptWorkspaceViewRefresh $editor
 }
 proc ::GX::scriptWorkspaceDebugPaneToggle {editor key} {

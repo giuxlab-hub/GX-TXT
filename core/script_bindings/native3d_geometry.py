@@ -17,7 +17,7 @@ for _operation in ("logical_id", "plane_frame", "indexed_mesh", "polydata", "mas
 for _family in ("selection_set", "layer", "saved_view"):
     for _action in ("create", "get", "list", "update", "delete"):
         _ARGS[_family+"_"+_action] = ["scene", "request"]
-for _operation in ("selection_set_activate", "layer_assign", "saved_view_restore"):
+for _operation in ("selection_set_activate", "selection_set_apply", "layer_assign", "saved_view_restore"):
     _ARGS[_operation] = ["scene", "request"]
 REGISTRATION = {
     "api_id": "NATIVE_3D_GEOMETRY_API_v1", "api_version": 1,
@@ -82,6 +82,8 @@ def _receipt(host, raw):
         result["source_bindings"] = bindings
     if "members" in result:
         result["members"] = [_receipt(host, item) for item in host.as_list(result["members"])]
+    if "selected_members" in result:
+        result["selected_members"] = [_receipt(host, item) for item in host.as_list(result["selected_members"])]
     if "rows" in result: result["rows"] = [_receipt(host,item) for item in host.as_list(result["rows"])]
     for field in ("section_resources", "contours"):
         if field in result: result[field] = [_receipt(host,item) for item in host.as_list(result[field])]

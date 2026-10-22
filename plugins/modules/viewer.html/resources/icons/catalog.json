@@ -1,0 +1,16 @@
+{
+  "schema": "gxtxt.viewer_icon_resources.v1",
+  "icons": {
+    "html_document": {
+      "title": "HTML document \u2014 page and globe",
+      "category": "Documents",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "0884772c026e95a5a89ccb954975d409146daec62f4b0b3cce4ffc31caafdab5",
+      "png_sha256": "ef2d20505e0d1e8e5c44af10cbf61374fb1957ef0b8d7087f6d27b5dd13b7213",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    }
+  }
+}

@@ -95,9 +95,12 @@ proc ::GX::stackedGraphPanels {path} {
     return $out
 }
 
+proc ::GX::axisOverrideFieldDefaults {} {
+    return {enabled 1 time_unit inherit x_unit inherit y_unit inherit y2_unit inherit align_ylabels inherit ylabel_x "" x_min "" x_max "" x_step "" x_format inherit y_min "" y_max "" y_step "" y_format inherit y2_min "" y2_max "" y2_step "" y2_format inherit xgrid inherit ygrid inherit ygrid_source inherit grid_color ""}
+}
 proc ::GX::axisOverrideEnsure_v0933_before_3d {gk panels} {
     variable axisOverride
-    foreach {field def} {enabled 1 time_unit inherit x_unit inherit y_unit inherit y2_unit inherit align_ylabels inherit ylabel_x "" x_min "" x_max "" x_step "" x_format inherit y_min "" y_max "" y_step "" y_format inherit y2_min "" y2_max "" y2_step "" y2_format inherit xgrid inherit ygrid inherit ygrid_source inherit grid_color ""} {
+    foreach {field def} [axisOverrideFieldDefaults] {
         if {![info exists axisOverride($gk,$field)]} { set axisOverride($gk,$field) $def }
     }
     set merged [expr {[info exists axisOverride($gk,panels)] ? $axisOverride($gk,panels) : {}}]

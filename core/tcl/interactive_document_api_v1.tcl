@@ -9,6 +9,9 @@ namespace eval ::GX {
     variable interactiveDocumentApiVersion 1
 }
 namespace eval ::GX::DocumentSessionScope {variable identity {};variable epoch 0;variable token ""}
+proc ::GX::interactiveDocumentApiInfo {} {
+    return [dict create api_id INTERACTIVE_DOCUMENT_API_v1 api_version 1 operations {interactiveDocumentCreate interactiveDocumentExists interactiveDocumentList interactiveDocumentRead interactiveDocumentUpdate interactiveDocumentDelete interactiveDocumentSessionToken interactiveDocumentLifecycleSubscribe interactiveDocumentLifecycleUnsubscribe} document_owner CORE source_encoding UTF-8 session_scoped 1 profiles [dict create tex_project [interactiveDocumentTeXApiInfo]]]
+}
 proc ::GX::_interactiveDocumentSessionChanged {args} {
     variable ::GX::DocumentSessionScope::identity
     variable ::GX::DocumentSessionScope::epoch
@@ -208,6 +211,11 @@ proc ::GX::_interactiveDocumentPayloadPath {session item} {
 }
 
 proc ::GX::interactiveDocumentCreate {moduleId providerId format formatVersion payload {documentId ""}} {
+    return [_interactiveDocumentCreateWithOrigin $moduleId $providerId $format $formatVersion $payload $documentId {}]
+}
+# The managed Workspace importer supplies a verified inert origin parent at
+# initial allocation. Public creation keeps its existing signature/semantics.
+proc ::GX::_interactiveDocumentCreateWithOrigin {moduleId providerId format formatVersion payload documentId originParent} {
     set session [_interactiveDocumentRequireSession]
     lassign [_interactiveDocumentValidateOwner $moduleId $providerId] moduleId providerId
     set format [_interactiveDocumentValidateSingleLine $format "Document format"]
@@ -221,7 +229,8 @@ proc ::GX::interactiveDocumentCreate {moduleId providerId format formatVersion p
     if {[dict exists $registry $documentId]} { error "Interactive Document '$documentId' already exists." }
     if {[file exists [file join $session metadata interactive_document_resources $documentId .retired.ini]]} {error "Document ID '$documentId' retains published scientific resources; choose a new ID"}
     set stored [_interactiveDocumentWritePayload $session $documentId $payload]
-    set origin [_originCreate interactive_document [dict create session_origin [sessionOriginRead $session]]]
+    set origin [_originCreate interactive_document [dict merge [dict create session_origin [sessionOriginRead $session]] $originParent]]
+    if {$originParent ne {}} {dict lappend origin events [dict create kind receive_workspace installation_id [installationIdentityCurrent] at [projectTimestamp]]}
     set now [clock format [clock seconds] -format "%Y-%m-%dT%H:%M:%S%z"]
     set item [dict create id $documentId module_id $moduleId provider_id $providerId format $format format_version $formatVersion sha256 [dict get $stored sha256] storage_name [dict get $stored storage_name] created_at $now updated_at $now revision 1 generation "document#[pid]-[clock clicks]"]
     if {[llength [info commands ::GX::_experimentDuplicationRegistrationReceipt]]} {
@@ -294,6 +303,9 @@ proc ::GX::interactiveDocumentUpdate {documentId payload {format ""} {formatVers
     set prior $item
     if {$format ne ""} { dict set item format [_interactiveDocumentValidateSingleLine $format "Document format"] }
     if {$formatVersion ne ""} { dict set item format_version [_interactiveDocumentValidateSingleLine $formatVersion "Document format version"] }
+    if {([dict get $item format] ne [dict get $prior format] || [dict get $item format_version] ne [dict get $prior format_version]) && [llength [info commands ::GX::_experimentDuplicationDocumentTransition]]} {
+        set item [_experimentDuplicationDocumentTransition $prior $item]
+    }
     set oldStorage [dict get $item storage_name]
     set stored [_interactiveDocumentWritePayload $session $documentId $payload]
     if {[dict get $stored sha256] eq [dict get $prior sha256] && [dict get $item format] eq [dict get $prior format] && [dict get $item format_version] eq [dict get $prior format_version]} {return [_interactiveDocumentPublicMetadata $item]}

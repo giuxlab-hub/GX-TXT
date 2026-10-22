@@ -30,6 +30,13 @@
       "source": "diode.svg"
     },
     {
+      "id": "electromagnetics",
+      "title": "Electromagnetics Studio",
+      "category": "Simulation & Modeling",
+      "license": "GPL-3.0-or-later",
+      "source": "electromagnetics.png"
+    },
+    {
       "id": "fit",
       "title": "Fit",
       "category": "Controls",

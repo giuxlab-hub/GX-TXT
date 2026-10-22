@@ -189,6 +189,18 @@ GX2D_API gx2d_status gx2d_image_calibrate(gx2d_scene *,gx2d_id,gx2d_point,gx2d_p
 GX2D_API gx2d_status gx2d_image_map(const gx2d_scene *,gx2d_id,gx2d_point,int,gx2d_point *);
 /* Source-pixel simple polygon validation. Bounds are clipped, vertices unchanged. */
 GX2D_API gx2d_status gx2d_image_roi_validate(const gx2d_scene *,gx2d_id,const gx2d_point *,size_t,gx2d_rect *,double *,int *);
+/* Nonmutating interaction over the SAME source-pixel ROI definitions. Handles
+ * and boundary hits are measured in device pixels through the actual view. */
+typedef enum {GX2D_ROI_NONE=0,GX2D_ROI_VERTEX=1,GX2D_ROI_BOUNDARY=2,GX2D_ROI_INTERIOR=3} gx2d_image_roi_hit_kind;
+typedef struct {gx2d_image_roi_hit_kind kind;size_t index;double distance;gx2d_point device;} gx2d_image_roi_hit;
+typedef enum {GX2D_ROI_TRANSLATE=1,GX2D_ROI_MOVE_VERTEX=2} gx2d_image_roi_edit_mode;
+GX2D_API gx2d_status gx2d_image_roi_project(const gx2d_scene *,gx2d_id,const gx2d_point *,size_t,gx2d_point *);
+GX2D_API gx2d_status gx2d_image_roi_pick(const gx2d_scene *,gx2d_id,const gx2d_point *,size_t,gx2d_point,double,gx2d_image_roi_hit *);
+/* Input/output arrays use canonical source pixels. Rectangle input has four
+ * stored corners; a moved corner retains the opposite original corner. A
+ * finite invalid proposal is returned with its validation status, never saved. */
+GX2D_API gx2d_status gx2d_image_roi_edit(const gx2d_scene *,gx2d_id,const gx2d_point *,size_t,int,gx2d_image_roi_edit_mode,size_t,gx2d_point,gx2d_point,gx2d_point *,gx2d_status *);
+
 /* Bounded ordered-path topology validation; shares ROI intersection predicates. */
 GX2D_API gx2d_status gx2d_path_validate(const gx2d_point *,size_t,int,double *,double *);
 /* Read-only preview transform, scaling device margins with output dimensions.

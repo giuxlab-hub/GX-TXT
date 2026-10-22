@@ -16,9 +16,13 @@ Bridge use the same operation IDs with `scene, request`.
 
 | Operation | Request and result |
 |---|---|
+| `raster_dataset_bind` | `dataset_id`, optional `options {expected_source_sha256 SHA state {...}}`; admits an actual `image.raster` Dataset and returns its original managed image resource, scoped `object_token`, native image state and canonical source identity. |
 | `raster_roi_set` | `object_token`, stable `roi_id`, `definition {kind rectangle|polygon points {{x y}...}}`; returns the native ROI collection. Rectangle takes two opposite corners and stores four normalized corners. Polygon takes 3–128 distinct ordered vertices without repeating the first. |
 | `raster_roi_get` | `object_token`; returns `revision`, actual `source_resource_id`, and `rois` keyed by stable ROI ID. |
 | `raster_roi_remove` | `object_token`, `roi_id`; removes that ROI and increments the native collection revision. |
+| `raster_roi_geometry` | `object_token`, existing `roi_id` or a source-pixel `definition`; returns canonical source points, projected device points and vertex handles. |
+| `raster_roi_pick` | `object_token`, `device {x y}`, nonnegative pixel `tolerance`, optional `roi_id`; resolves an actual native vertex, boundary or interior. Hidden image/layer targets are excluded. |
+| `raster_roi_propose` | `object_token`, `operation create`, `kind rectangle|polygon`, `device_points`; or `operation translate|vertex`, existing `roi_id`, `start_device`, `end_device`, and vertex `index`. Returns a nonmutating source-pixel definition and its native admission result. |
 | `raster_layer_get` | `object_token`; returns existing image identity attributes for `blend`, `mask_uuid`, `mask_channel`, `mask_invert`, `mask_only`, `roi_id`. Defaults are Over, no mask, luminance, false, false, no ROI. |
 | `raster_layer_update` | `object_token`, `changes`; accepts `blend`, `mask_object_token` (empty detaches), `mask_channel` (`luminance|alpha`), `mask_invert`, `mask_only`, `roi_id` (empty detaches). A mask source must be an owned image in the same scene. |
 
@@ -30,6 +34,38 @@ The receipt reports actual image intersection and clipped bounds. Native storage
 uses one existing `gx.image.rois` identity attribute; the existing 16 KiB total
 attribute-value bound applies to the collection. It contains vector coordinates,
 not millions of mask samples. Collection and per-ROI revisions identify edits.
+
+The three interaction operations accept optional `expected_revision` and
+`source_resource_id` guards; Set and Remove also accept `expected_revision`.
+Stale collection or foreign resource requests fail before modifying the ROI.
+Projection, picking, pixel conversion and edit proposals use the existing native
+image mapping and geometry kernel. Proposals never update `gx.image.rois`:
+the controller commits a valid definition explicitly through `raster_roi_set`.
+Rectangle proposals expose two opposite input corners and four canonical
+vertices/handles. A polygon draft with fewer than three vertices is reported as
+`INCOMPLETE`; an invalid completed proposal retains its projected ghost and
+reports its native admission failure without changing the accepted geometry.
+
+Dev109 kernel and public-adapter checks cover rotated/scaled images, edge and
+vertex picking, rectangle corner crossing, invalid polygons, locked/hidden
+targets, source/revision guards and snapshot restore. These checks do not
+constitute Builder, restricted SDK or installed human-GUI acceptance.
+
+Canonical raster binding uses the existing Dataset inspection/registry and
+Document Resource writer. The admitted bytes and SHA are preserved exactly;
+the original Dataset is neither converted nor published again. Source identity,
+Variable schema and content hash accompany the image's existing metadata.
+Source-pixel unit `px` is opaque and has no automatic conversion to metres.
+Physical calibration remains an explicit native image operation. Binding state
+may set scale, translation, rotation, opacity, visibility and lock only.
+A numerical XYZ Dataset or a caller-selected source filename is not admitted.
+Changed source identity/schema/content/file version rejects subsequent raster
+edits and hides dependent editors while retaining the previous valid frame.
+Portable restore verifies the original source once and reacquires its current
+Session file stamp. Transient file stamps/readers never enter the saved payload.
+Managed resource readers are released when their image or scene closes,
+including after Session expiry. This API addition alone does not establish
+Builder/SDK interaction or installed GUI acceptance.
 
 Use the existing `image_map` operation with `inverse 1` to convert scene/world
 pointer coordinates into source pixels. `image_map` without inverse maps them

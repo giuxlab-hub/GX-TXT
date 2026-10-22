@@ -266,7 +266,9 @@ proc ::GX::moduleSetEnabled_v081_before_contract_registry {id state {cascade 1}}
     } elseif {$cascade} {
         foreach other $moduleOrder {
             if {[lsearch -exact [splitList [moduleField $other depends ""]] $id] >= 0 && [moduleIsEnabled $other]} {
-                moduleSetEnabled $other 0 0
+                # The current module is already OFF, so enabled-consumer
+                # traversal also terminates for cycles and shared dependants.
+                moduleSetEnabled $other 0 1
             }
         }
     }
@@ -281,7 +283,11 @@ proc ::GX::applyModuleSelection_v078_workspace {raw} {
         if {[lsearch -exact $moduleOrder $id] >= 0} { moduleSetEnabled $id 1 0 }
     }
     foreach id $moduleOrder {
-        if {[moduleIsEnabled $id]} {
+        # Always-available UI/service providers are not a saved scientific
+        # activation. Their optional consumers must not resurrect modules that
+        # the user explicitly left OFF. Selected modules still resolve their
+        # declared dependencies through moduleSetEnabled above.
+        if {![moduleIsAlwaysAvailable $id] && [moduleIsEnabled $id]} {
             foreach dep [splitList [moduleField $id depends ""]] { moduleSetEnabled $dep 1 0 }
         }
     }

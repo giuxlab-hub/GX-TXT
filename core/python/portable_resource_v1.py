@@ -873,6 +873,18 @@ def main() -> None:
         manifest = inspect(Path(args.archive))
         identity = manifest["resource_identity"]
         dependencies = manifest.get("dependencies", [])
+        # The completed native validator has already proved that these paths
+        # exactly match the snapshot's Dataset identities and nested archives.
+        # They remain Clone-owned resources, distinct from outer dependencies
+        # that import adopts into the destination Session's Dataset registry.
+        native_snapshot = manifest["resource_type"] == "graph" and any(
+            entry["path"] == "graph/scientific/native_v4_snapshot.tcldict"
+            for entry in manifest["files"])
+        native_prefix = "graph/scientific/resources/"
+        native_dataset_ids = sorted(
+            entry["path"][len(native_prefix):-4] for entry in manifest["files"]
+            if native_snapshot and entry["role"] == "scientific_snapshot"
+            and entry["path"].startswith(native_prefix) and entry["path"].endswith(".zip"))
         if manifest["resource_type"] == "dataset":
             with zipfile.ZipFile(args.archive) as zf:
                 registry = validate_dataset_tree(zf, manifest, "dataset", identity.get("dataset_id"))["registry"]
@@ -904,6 +916,8 @@ def main() -> None:
                       "capture_mode": capture_mode,
                       "dependency_ids": ";".join(x["dataset_id"] for x in dependencies),
                       "dependency_count": len(dependencies),
+                      "native_snapshot_dataset_ids": ";".join(native_dataset_ids),
+                      "native_snapshot_dataset_count": len(native_dataset_ids),
                       "variable_ids": variable_ids, "archive_sha256": sha256_file(Path(args.archive)),
                       **{role + "_sha256": digest for role, digest in role_hashes.items()},
                       "integrity": "verified"})

@@ -134,13 +134,20 @@ proc ::GX::CurveWorkbench::_joinOpen {w} {
     lassign [_joinSource $w] source index
     set curves [dict keys $st($w,curves)];set target [lindex $curves 0]
     foreach id $curves {if {$id ne $source} {set target $id;break}}
-    ::GX::uiFieldFormCreate $w.join "Join $source point $index — Native coincidence relationship" [dict create name {type string label {Relationship name}} target [dict create type choice label {Target geometry logical ID} values $curves] target_index {type integer min 0 label {Target point index}} merge {type boolean label {Move source onto target (supported endpoints/points)}} tolerance {type number min 1e-15 label {Coincidence tolerance in working units}}] [dict create name join target $target target_index 0 merge 1 tolerance 1e-8] [list ::GX::CurveWorkbench::_joinApply $w $st($w,token) $source $index] $w
+    _coordinatePlaneAdmit $w [list $source]
+    lassign [_coordinateUnits [_record $w $source]] xUnit yUnit
+    set fields [dict create name {type string label {Relationship name}} target [dict create type choice label {Target geometry logical ID} values $curves] target_index {type integer min 0 label {Target point index}} merge {type boolean label {Move source onto target (supported endpoints/points)}} tolerance [dict create type number min 1e-15 label "Numeric plane coincidence tolerance (native X $xUnit / Y $yUnit)"]]
+    ::GX::uiFieldFormCreate $w.join "Join $source point $index — Native coincidence relationship" $fields [dict create name join target $target target_index 0 merge 1 tolerance 1e-8] [list ::GX::CurveWorkbench::_joinReviewedApply $w $st($w,token) $source $index $curves [_coordinateControlKey $w $curves]] $w
+}
+proc ::GX::CurveWorkbench::_joinReviewedApply {w token source index curves key values} {
+    _coordinateControlCheck $w $curves $key
+    return [_joinApply $w $token $source $index $values]
 }
 proc ::GX::CurveWorkbench::_joinApply {w token source index values} {
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen Join"}
     set target [dict get $values target];set targetIndex [dict get $values target_index]
-    _cadUnits $w [lsort -unique [list $source $target]]
+    _coordinatePlaneAdmit $w [lsort -unique [list $source $target]]
     _cancelGesture $w;_pointSyncApply $w
     set before [_snapshotIds $w [list $source]];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
     set receipt [::GX::Native2D::core constraint_join $st($w,scene) [dict get [_record $w $source] native] $index [dict get [_record $w $target] native] $targetIndex [dict get $values merge] [dict get $values tolerance]]
@@ -173,7 +180,7 @@ proc ::GX::CurveWorkbench::_joinTarget {w x y} {
     if {$hit eq {}} {return {}}
     set target [dict get $reverse [dict get $hit object]];dict unset hit object;dict set hit target $target
     dict set hit compatible 1
-    if {[catch {_cadUnits $w [list $source $target]} reason]} {dict set hit compatible 0;dict set hit reason $reason}
+    if {[catch {_coordinatePlaneAdmit $w [list $source $target]} reason]} {dict set hit compatible 0;dict set hit reason $reason}
     return $hit
 }
 rename ::GX::CurveWorkbench::_coordinates ::GX::CurveWorkbench::_coordinates_join_base

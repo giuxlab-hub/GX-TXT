@@ -5,6 +5,15 @@
 Plugin Install API v1 makes a descriptor-driven GX-TXT plugin installable,
 updatable, versioned and removable without editing the framework core.
 
+Dev109 preserves ordinary ALWAYS-module and CORE uninstallation protection.
+An independently installed Library Type Provider with actual descriptor
+`[library_type_provider] api_version=1` and `runner=service` may be uninstalled
+even though `selectable=0` keeps it out of runnable Analysis choices. It still
+must be managed, non-CORE and removed through this same Plugin Install owner;
+its registry references can then truthfully report provider unavailable. This
+exception does not make other ALWAYS modules removable or delete scientific
+library registrations/payloads as an implicit side effect.
+
 The plugin author adds one file to the package root:
 
 ```text

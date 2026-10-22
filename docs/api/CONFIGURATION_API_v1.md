@@ -1,5 +1,24 @@
 # Configuration API v1
 
+## Local LaTeX inventory (dev109)
+
+Configuration → Scripts places the read-only LaTeX environment directly after
+the existing Python environment. Refresh inspects actual native tool versions,
+TeX search roots and installed package/class/font filenames. It requires no
+Session, performs no package installation or document compilation, and reports
+resource presence separately from successful project compilation. Search shows
+at most 500 matching rows from the bounded 20,000-entry inventory.
+
+The existing managed auxiliary request owns the inventory worker and native
+version/search child process group. Cancel, refresh replacement and panel close
+retire that request; old generation callbacks cannot replace newer observations.
+Changing `runtime.latex` invalidates the previous rows and requires Refresh.
+Completion verifies the current configured executable and retires its request
+even when stale. Session changes alone do not invalidate a machine inventory.
+Missing runtimes and launch failures are visible panel diagnostics. This source
+contract requires separate real GUI/cancellation evidence; it is not acceptance
+of the LaTeX authoring Viewer or every installed TeX resource.
+
 `libraries.scientific_root` remains the persisted GX-TXT Library Root field.
 Managed scientific libraries live under its effective value. Consumers can
 query that value through the public CORE
@@ -97,9 +116,12 @@ The shared GUI client is `configurationModuleDialog module_id ?parent=.?`.
 Both surfaces use the same typed descriptors, validators, conflict checks and
 commit operation. The arrays in `ConfigurationEditor` are transient drafts only.
 Late registration refreshes clean projections and preserves dirty drafts. The
-ordinary Save user defaults page retains CORE values for unprojected fields;
-it no longer dereferences nonexistent Tk array entries. Appearance/Native3D keep
-their established projections; Resource Management owns the cache policy.
+ordinary Save user defaults page reads drafts only from fields backed by editors
+on the current page. Hidden fields retain their current CORE values even if a
+stale Tk array entry remains from an earlier projection. Printer observations,
+project presentation state and independently saved source schemes are preserved.
+Appearance, Source Surface palette/highlighting and Native3D keep their existing
+editor bindings; Resource Management owns the cache policy.
 
 ### Module-owned structured editors
 
@@ -196,3 +218,14 @@ explicit installed owner for Configuration registration and authenticated comman
 invocation. Omitting the owner retains the catalog identity as owner. This keeps
 multiple catalogs/shortcut fields for one module within the same existing command
 authority, including Surface Fitter. It does not register another module.
+
+Dev109 adds `::GX::configurationOpenPage page` (`open_page`) for ordinary GUI
+navigation to an existing Configuration page: storage, runtime, computation,
+execution, libraries, scripts, viewers or modules. It changes no values and
+requires the main GUI to be open. Restricted C++ Viewers can request only the
+fixed Runtime destination through `Host::em_command(form, "runtime")` with the
+explicit `CONFIGURATION_API_v1/open_page` grant; no widget path enters the SDK.
+
+The Scripts page shares its available height between the existing Python and
+LaTeX inventory panels. Each panel keeps its own scrollable tree and controls;
+resizing the page does not change configuration values or restart inventory.

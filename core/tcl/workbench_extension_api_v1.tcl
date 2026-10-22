@@ -9,7 +9,23 @@ proc ::GX::moduleEffectiveConfigSnapshot {module} {
     return $result
 }
 proc ::GX::workbenchExtensionCoreApis {} {
-    return [dict create CONFIGURATION_API_v1 ::GX::configurationApiInfo DOCUMENTATION_BROWSER_API_v1 ::GX::documentationBrowserApiInfo SCIENTIFIC_RECIPE_API_v1 ::GX::scientificRecipeApiInfo NATIVE2D_VIEWPORT_HOST_v1 ::GX::native2DViewportHostApiInfo VIEWER_DEVELOPMENT_API_v1 ::GX::viewerDevelopmentApiInfo VIEWER_COMPONENT_DEMO_API_v1 ::GX::viewerGuiComponentDemoApiInfo NATIVE2D_TEMPORARY_DISPLAY_API_v1 ::GX::native2DTemporaryDisplayApiInfo NATIVE_PLOT_DISPLAY_API_v1 ::GX::nativePlotDisplayApiInfo NATIVE_3D_GUI_HOST_API_v1 ::GX::native3DGuiHostApiInfo NATIVE_3D_GUI_HOST_API_v2 ::GX::native3DGuiHostApiInfoV2 SOURCE_SURFACE_API_v1 ::GX::sourceSurfaceApiInfo XML_DOCUMENT_API_v1 ::GX::xmlDocumentApiInfo PYTHON_ENVIRONMENT_API_v1 ::GX::pythonEnvironmentApiInfo PRINT_DOCUMENT_API_v1 ::GX::printDocumentApiInfo VIEWER_GUI_HOST_API_v1 ::GX::viewerGuiHostApiInfo DATASET_PUBLICATION_API_v2 ::GX::datasetPublicationV2Prepare DATASET_SCIENTIFIC_PROFILE_API_v1 ::GX::datasetProfileApiInfo GEOMETRY_EXCHANGE_API_v1 ::GX::geometryExchangeApiInfo SCIENTIFIC_MULTIVIEW_HOST_API_v1 ::GX::scientificMultiviewHostCapabilities SESSION_WORKSPACE_API_v1 ::GX::sessionWorkspaceApiInfo NOTE_DOCUMENT_API_v1 ::GX::noteDocumentApiInfo MANAGED_RESOURCE_API_v1 ::GX::managedResourceApiInfo NATIVE_2D_GEOMETRY_API_v1 ::GX::native2DGeometryApiInfo NATIVE_3D_GEOMETRY_API_v1 ::GX::native3DGeometryApiInfo DATASET_TRANSFORM_API_v1 ::GX::datasetTransformOperations WORKBENCH_EXTENSION_API_v1 ::GX::workbenchExtensionApiInfo UI_FIELD_API_v1 ::GX::uiFieldApiInfo CURVE_SOURCE_API_v1 ::GX::curveSourceApiInfo NATIVE2D_PRESENTATION_SNAPSHOT_v1 ::GX::native2DPresentationSnapshot]
+    set result [dict create CONFIGURATION_API_v1 ::GX::configurationApiInfo DOCUMENTATION_BROWSER_API_v1 ::GX::documentationBrowserApiInfo SCIENTIFIC_RECIPE_API_v1 ::GX::scientificRecipeApiInfo NATIVE2D_VIEWPORT_HOST_v1 ::GX::native2DViewportHostApiInfo VIEWER_DEVELOPMENT_API_v1 ::GX::viewerDevelopmentApiInfo VIEWER_COMPONENT_DEMO_API_v1 ::GX::viewerGuiComponentDemoApiInfo NATIVE2D_TEMPORARY_DISPLAY_API_v1 ::GX::native2DTemporaryDisplayApiInfo NATIVE_PLOT_DISPLAY_API_v1 ::GX::nativePlotDisplayApiInfo NATIVE_3D_GUI_HOST_API_v1 ::GX::native3DGuiHostApiInfo NATIVE_3D_GUI_HOST_API_v2 ::GX::native3DGuiHostApiInfoV2 SOURCE_SURFACE_API_v1 ::GX::sourceSurfaceApiInfo XML_DOCUMENT_API_v1 ::GX::xmlDocumentApiInfo PYTHON_ENVIRONMENT_API_v1 ::GX::pythonEnvironmentApiInfo PRINT_DOCUMENT_API_v1 ::GX::printDocumentApiInfo VIEWER_GUI_HOST_API_v1 ::GX::viewerGuiHostApiInfo DATASET_PUBLICATION_API_v2 ::GX::datasetPublicationV2Prepare DATASET_SCIENTIFIC_PROFILE_API_v1 ::GX::datasetProfileApiInfo GEOMETRY_EXCHANGE_API_v1 ::GX::geometryExchangeApiInfo SCIENTIFIC_MULTIVIEW_HOST_API_v1 ::GX::scientificMultiviewHostCapabilities SESSION_WORKSPACE_API_v1 ::GX::sessionWorkspaceApiInfo NOTE_DOCUMENT_API_v1 ::GX::noteDocumentApiInfo MANAGED_RESOURCE_API_v1 ::GX::managedResourceApiInfo NATIVE_2D_GEOMETRY_API_v1 ::GX::native2DGeometryApiInfo NATIVE_3D_GEOMETRY_API_v1 ::GX::native3DGeometryApiInfo DATASET_TRANSFORM_API_v1 ::GX::datasetTransformOperations WORKBENCH_EXTENSION_API_v1 ::GX::workbenchExtensionApiInfo UI_FIELD_API_v1 ::GX::uiFieldApiInfo CURVE_SOURCE_API_v1 ::GX::curveSourceApiInfo NATIVE2D_PRESENTATION_SNAPSHOT_v1 ::GX::native2DPresentationSnapshot]
+    # Existing public owners also participate in the same discovery authority.
+    # Presence here does not grant a restricted SDK capability.
+    return [dict merge $result {
+        FILE_PUBLICATION_API_v1 ::GX::filePublicationApiInfo
+        DATASET_VIEWER_API_v1 ::GX::datasetViewerApiInfo
+        INTERACTIVE_DOCUMENT_API_v1 ::GX::interactiveDocumentApiInfo
+        OCR_LAYOUT_API_v1 ::GX::OCRLayoutAPIv1::apiInfo
+        RESOURCE_MANAGEMENT_API_v1 ::GX::resourceManagementApiInfo
+        SCIENTIFIC_LIBRARY_MANAGER_API_v1 ::GX::ScientificLibraryManagerAPIv1::apiInfo
+        SCIENTIFIC_SPECTRUM_API_v1 ::GX::SpectrumAPIv1::apiInfo
+        SCIENTIFIC_SPECTRUM_IMPORT_API_v1 ::GX::SpectrumImportAPIv1::apiInfo
+        SCIENTIFIC_SPECTRUM_SESSION_API_v1 ::GX::SpectrumSessionAPIv1::apiInfo
+        SPECTRAL_FAMILY_API_v1 ::GX::SpectralFamilyAPIv1::apiInfo
+        TABLE_EXTRACTOR_API_v1 ::GX::TableExtractorAPIv1::apiInfo
+        WORKBENCH_RECOVERY_API_v1 ::GX::workbenchRecoveryApiInfo
+    }]
 }
 proc ::GX::workbenchExtensionRequireApi {api} {
     if {$api eq "SCIENTIFIC_RECIPE_API_v1"&&[llength [info commands ::GX::scientificRecipeApiInfo]]} {return}

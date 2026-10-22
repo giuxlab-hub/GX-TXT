@@ -210,9 +210,12 @@ proc ::GX::globalGraphicsDialog_v0933_before_3d {} {
 }
 
 proc ::GX::globalGraphicsDialog {} { ::GX::globalGraphicsDialog_v0933_before_3d }
+proc ::GX::legendOverrideFieldDefaults {} {
+    return {enabled 1 mode "" placement "" location "" alignment "" orientation "" layout "" columns "" background "" border "" border_color "" font_unit "" font_size "" external_margin_px "" manual_x "" manual_y ""}
+}
 proc ::GX::legendOverrideEnsure {gk} {
     variable legendOverride
-    foreach {field def} {enabled 1 mode "" placement "" location "" alignment "" orientation "" layout "" columns "" background "" border "" border_color "" font_unit "" font_size "" external_margin_px "" manual_x "" manual_y ""} {
+    foreach {field def} [legendOverrideFieldDefaults] {
         if {![info exists legendOverride($gk,$field)]} { set legendOverride($gk,$field) $def }
     }
     # Migrate old session state in memory without changing the source manifest.

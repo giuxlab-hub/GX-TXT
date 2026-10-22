@@ -26,8 +26,7 @@ proc ::GX::CurveWorkbench::_coordinateControlDelta {w id axis value {direction f
     return [::GX::uiFieldNormalize {type number} [expr {$value*[dict get $plan scale]}]]
 }
 proc ::GX::CurveWorkbench::_cadTransformUnits {w kind ids} {
-    _coordinateRequireFrame $w $ids
-    if {$kind in {rotate mirror}} {_cadUnits $w $ids}
+    _coordinatePlaneAdmit $w $ids
     if {$kind ni {translate scale rotate mirror}} {error {Unknown CAD transform}}
     return [_coordinateUnits [_record $w [lindex $ids 0]]]
 }
@@ -60,20 +59,31 @@ proc ::GX::CurveWorkbench::_constraintCoordinateGuard {w spec} {
     dict for {id record} $st($w,curves) {
         foreach key {a b axis} {if {[dict exists $spec $key]&&[dict get $spec $key] eq [dict get $record native]} {lappend ids $id}}
     }
-    set ids [lsort -unique $ids];_coordinateRequireFrame $w $ids
-    if {[dict get $spec kind] ni {lock_x lock_y horizontal_distance vertical_distance horizontal vertical}} {_cadUnits $w $ids}
+    set ids [lsort -unique $ids];_coordinatePlaneAdmit $w $ids
+    # Native constraints describe the explicitly chosen numeric plane. Image
+    # calibration remains with its existing physical image owner.
+}
+proc ::GX::CurveWorkbench::_coordinatePlaneParameterLabel {units parameter} {
+    set labels [lmap unit $units {expr {$unit eq {}?{numeric}:$unit}}]
+    return [format {%s · native plane X [%s], Y [%s]} $parameter {*}$labels]
 }
 proc ::GX::CurveWorkbench::_dimensionCoordinateInfo {w spec} {
     variable st
     set kind [dict get $spec kind]
-    if {$kind in {angle axis_angle}} {return {id {} axis x native_unit rad display_unit rad}}
+    set angular [expr {$kind in {angle axis_angle}}]
     set axis [expr {$kind in {lock_y vertical_distance}?"y":"x"}]
     dict for {id record} $st($w,curves) {
-        if {[dict get $record native] eq [dict get $spec a]} {return [dict merge [_coordinateAxis $w $id $axis] [dict create id $id axis $axis]]}
+        if {[dict get $record native] eq [dict get $spec a]} {
+            set units [_coordinateUnits $record]
+            if {$angular} {return [dict create id {} axis x native_unit rad display_unit [_coordinatePlaneParameterLabel $units rad]]}
+            if {$kind ni {lock_x lock_y horizontal_distance vertical_distance}&&([lindex $units 0] ne [lindex $units 1]||[_coordinateSourceRelations $record] ne {})} {return [dict create id {} axis x native_unit {} display_unit [_coordinatePlaneParameterLabel $units {numeric plane parameter}]]}
+            return [dict merge [_coordinateAxis $w $id $axis] [dict create id $id axis $axis]]
+        }
     }
     set unit $st($w,sketchUnit)
     set image [::GX::Native2D::core image_get $st($w,scene) [dict get $spec a]]
     if {$image ne {}} {set unit [dict get $image length_unit]}
+    if {$angular} {return [dict create id {} axis x native_unit rad display_unit [_coordinatePlaneParameterLabel [lrepeat 2 $unit] rad]]}
     return [dict create id {} axis $axis native_unit $unit display_unit $unit]
 }
 proc ::GX::CurveWorkbench::_dimensionDisplayedValue {w spec value {direction forward}} {

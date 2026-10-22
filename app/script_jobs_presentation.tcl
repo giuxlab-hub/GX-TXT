@@ -8,7 +8,7 @@ proc ::GX::scriptJobsBuildMenus {w} {
         menu $w.actions.$key.menu -tearoff 0 -postcommand ::GX::scriptJobsActionsRefresh
     }
     set m $w.actions.jobs.menu
-    foreach {label command} {{Open execution details} scriptJobsOpenSelected {Rerun selected...} scriptJobsRerunSelected {Cancel running jobs} scriptJobsCancelSelected {Copy Script ID} scriptJobsCopySelected Refresh scriptJobsRefresh {Reconnect / recover} scriptJobsRecover {Script Library...} scriptLibraryDialog Close scriptJobsClose} {$m add command -label $label -command [list ::GX::$command]}
+    foreach {label command} {{Open execution details} scriptJobsOpenSelected {Rerun selected...} scriptJobsRerunSelected {Cancel running jobs} scriptJobsCancelSelected {Copy Script ID} scriptJobsCopySelected Refresh scriptJobsRefresh {Reconnect / recover local journal} scriptJobsRecover {Script Library...} scriptLibraryDialog {Open/reconnect Job ID (local / remote)…} scriptJobsOpenIdDialog Close scriptJobsClose} {$m add command -label $label -command [list ::GX::$command]}
     set m $w.actions.history.menu
     $m add command -label {Hide selected / Remove from visible list} -command {::GX::scriptJobsHistory hide}
     $m add command -label {Restore selected} -command {::GX::scriptJobsHistory restore}
@@ -34,6 +34,41 @@ proc ::GX::scriptJobsBuildMenus {w} {
     ::GX::uiMenuRowAttach $w.actions [list $w.actions.jobs $w.actions.history $w.actions.view $w.actions.workspace $w.actions.settings $w.actions.help]
     menu $w.context -tearoff 0 -postcommand ::GX::scriptJobsActionsRefresh
     foreach {label command} {{Open execution details} ::GX::scriptJobsOpenSelected {Cancel running jobs} ::GX::scriptJobsCancelSelected {Hide selected execution(s)} {::GX::scriptJobsHistory hide} {Restore selected execution(s)} {::GX::scriptJobsHistory restore}} {$w.context add command -label $label -command $command}
+}
+
+proc ::GX::scriptJobsOpenIdDialog {} {
+    variable scriptJobsUi
+    set w .gxtxtScriptJobs.openId
+    if {[winfo exists $w]} {raise $w;focus $w.id;return $w}
+    if {![info exists scriptJobsUi(openId)]} {set scriptJobsUi(openId) {}}
+    set scriptJobsUi(openIdStatus) {}
+    uiFieldDialogCreate $w .gxtxtScriptJobs {Open or reconnect an existing Job}
+    ttk::label $w.help -text {Enter an exact local Job ID, or remote/NODE/SESSION/JOB. Remote NODE must already be enabled in Execution configuration; SESSION is its logical remote Session ID. This inspects the existing Job and retained combined log. It does not submit, copy, or recover a Job into the local journal.} -wraplength 560
+    ttk::label $w.label -text {Job ID}
+    ttk::entry $w.id -textvariable ::GX::scriptJobsUi(openId) -width 65
+    ttk::label $w.status -textvariable ::GX::scriptJobsUi(openIdStatus) -wraplength 560
+    ttk::frame $w.buttons
+    ttk::button $w.buttons.open -text {Open / reconnect} -command ::GX::scriptJobsOpenIdCommit
+    ttk::button $w.buttons.close -text Close -command [list ::GX::uiFieldDialogClose $w]
+    pack $w.buttons.open $w.buttons.close -side left -padx 4
+    pack $w.help $w.label $w.id $w.status $w.buttons -fill x -padx 8 -pady 5
+    bind $w.id <Return> {::GX::scriptJobsOpenIdCommit;break}
+    uiFieldDialogPresent $w $w.id 0
+    return $w
+}
+proc ::GX::scriptJobsOpenIdCommit {} {
+    variable scriptJobsUi
+    set id [string trim $scriptJobsUi(openId)]
+    if {$id eq {} || [string length $id]>512 || [regexp {[[:space:]]} $id]} {
+        set scriptJobsUi(openIdStatus) {Enter one exact Job ID (no spaces, at most 512 characters).}
+        return
+    }
+    if {[string match remote/* $id] && ![scientificExecutionRemoteId $id]} {
+        set scriptJobsUi(openIdStatus) {Remote Job IDs use remote/NODE/SESSION/JOB; preserve all four parts from the original receipt.}
+        return
+    }
+    scriptJobDetailsWindow $id
+    uiFieldDialogClose .gxtxtScriptJobs.openId
 }
 proc ::GX::scriptJobsSelectedRecords {} {
     if {![winfo exists .gxtxtScriptJobs] || ![info exists ::GX::scriptJobsUi(records)]} {return {}}

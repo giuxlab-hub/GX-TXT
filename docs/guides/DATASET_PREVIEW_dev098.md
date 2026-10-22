@@ -46,25 +46,47 @@ silently drawing only some groups.
 
 ## Image, points and Quality
 
+The shared Dataset Preview provides **Plot**, **Source image** and **Quality**
+tabs. Each uses the available Preview area independently. Resize the window
+to resize and redraw the retained scientific Plot; use **Fit**, **Zoom in**,
+**Zoom out**, or middle-button drag to pan. Tab changes and curve visibility
+do not request a new scientific preparation. An ordinary Dataset without a
+digitized raster keeps truthful source details rather than inventing an image.
+
 A legitimate Digitalizer publication shows its verified canonical source image,
 original raster point overlay, stable curve table and Quality v2 information.
-Show/Hide affects the raster and calibrated XY display; it changes no scientific
-rows. Point counts deduplicate original point identities across calibration
+In **Source image**, **Show / Hide** affects the raster overlay and calibrated
+XY display and survives tab changes; it changes no scientific rows.
+Point counts deduplicate original point identities across calibration
 realizations. Reduced raster displays use markers and report their retained/total
 counts. Raster positions retain the source pixel geometry and aspect.
 
-Only authenticated, geometry-preserving processed Image Datasets are offered as
+Only verified, geometry-preserving processed Image Datasets are offered as
 alternative main images. Choose explicitly when multiple branches exist. With a
 processed main image, the verified original appears at the bottom. Dataset IDs
-are links through the existing guarded Dataset Browser. Missing or invalid
-derivatives produce a visible fallback to the original; associations are never
-guessed from filenames or dates.
+are links through the existing guarded Dataset Browser. If the selected derivative
+is unavailable or fails its source checks, Preview explains the refusal and keeps
+**Original source image** available for explicit recovery. It does not silently
+substitute another selected image. Associations are never guessed from filenames
+or dates.
 
-Quality reports actual producer values and explanatory limitations. Diagnostic
+**Quality** reports actual producer values and explanatory limitations. Its
+scrollable table shows labels, values, units and meaning. Select a row for the
+complete diagnostic; **Inspect full published report…** and **Copy full published
+report** retain access to the original public report. Diagnostic
 flags and descriptive calibration spread are not physical standard uncertainties.
 Missing Quality is unavailable information, never zero error. Open the full report
 when a bounded summary is insufficient. The Preview neither recalibrates points
 nor estimates new physical uncertainty.
+
+This is the shared CORE Preview, using its existing Session cache and managed
+preparation Jobs. Scientific XY drawing delegates to Plot Dataset API v4;
+published digitization diagnostics come from the Digitizer's public Quality v2
+API. The image, overlay and table are representations of their canonical sources.
+A **Previous render** message qualifies the retained frame after source or pending
+settings change; select **Render** to prepare the current 2D view. **3D XYZ** has
+its own source/mapping status. Its **Exit** returns to the retained 2D view and
+message without applying pending 2D settings. **Render** explicitly returns to 2D.
 
 ## Bounds, ticks and navigation
 

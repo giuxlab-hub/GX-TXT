@@ -254,7 +254,8 @@ gx3de_result gx3de_gizmo_pick(gx3de_viewport* vp,uint32_t x,uint32_t y,
     // handles first choice at a crossing instead of VTK's depth tie-break.
     for(uint32_t candidate=1;candidate<=GX3DE_GIZMO_ROTATE_Z;++candidate)
         for(const auto& prop:it->props)if(prop.gizmo&&prop.gizmo_handle==candidate){
-            vtkNew<vtkCellPicker> picker;picker->SetTolerance(0.006);
+            vtkNew<vtkCellPicker> picker;
+            picker->SetTolerance(viewport_pick_tolerance(vp,3.0));
             picker->PickFromListOn();picker->AddPickList(prop.actor);
             if(picker->Pick(px,py,0,it->renderer)&&picker->GetActor()==prop.actor){
                 *gizmo=prop.gizmo;*handle=candidate;return GX3DE_OK;}}

@@ -23,7 +23,13 @@ namespace eval ::GX::Engine3D {
     variable photo ""
     variable lastPng ""
     variable latestPick [dict create]
+    variable selectionFrameDirty 0
     variable status "Ready"
+    variable sidebarMode auto
+    variable sidebarPending {}
+    variable escapeOwner {}
+    variable escapePrevious {}
+    variable escapeInstalled {}
     variable selectedLayer ""
     variable visible 1
     variable opacity 1
@@ -811,7 +817,12 @@ proc ::GX::Engine3D::pick {x y} {
     if {[dict get $latestPick hit]} {
         set status "Picked [dict get $latestPick layer_id] at [dict get $latestPick world_point]"
         set ::GX::Engine3D::selectedLayer [dict get $latestPick layer_id]
+        # Native picking installs its selection anchor AFTER computing the hit.
+        # Present that retained scene explicitly; unchanged canvas dimensions
+        # must not leave the previous selected object's frame onscreen.
+        set ::GX::Engine3D::selectionFrameDirty 1
         if {$::GX::Engine3D::selectionHook ne {}} {uplevel #0 [list {*}$::GX::Engine3D::selectionHook $latestPick]}
+        hostResize
     } else {set status "No geometry at $x,$y"}
     return $latestPick
 }
@@ -977,17 +988,20 @@ proc ::GX::Engine3D::gizmoMotion {x y} {
     set now [clock milliseconds]
     if {$now-$::GX::Engine3D::gizmoLastUpdate < 45} return
     set ::GX::Engine3D::gizmoLastUpdate $now
+    set transaction [gestureReceipt]
     if {[catch {set result [gizmoImageRequest [list gizmo_update $x $y]]} problem options]} {
-        abortGizmo
+        if {[gestureCurrent $transaction]} {abortGizmo}
         return -options $options $problem
     }
     set ::GX::Engine3D::status "Moving [dict get $result handle]: [dict get $result translation_world]"
 }
 proc ::GX::Engine3D::abortGizmo {} {
+    if {[catch {gestureReceipt} transaction] || ![gestureCurrent $transaction]} return
     set ::GX::Engine3D::pendingGizmoEnd ""
     if {$::GX::Engine3D::worker ne "" && !$::GX::Engine3D::workerBusy} {
         catch {rpc [list gizmo_end 0]}
     }
+    if {![gestureCurrent $transaction]} return
     set ::GX::Engine3D::gizmoActive 0
     set ::GX::Engine3D::dragMode ""
     catch {rerender}
@@ -998,20 +1012,30 @@ proc ::GX::Engine3D::finishGizmo {x y} {
         after 30 ::GX::Engine3D::completeGizmoEnd
         return
     }
-    if {[catch {
+    set transaction [gestureReceipt]
+    try {
         gizmoImageRequest [list gizmo_update $x $y]
+        if {![gestureCurrent $transaction]} return
         set result [rpc [list gizmo_end 1]]
+        if {![gestureCurrent $transaction]} {gestureNativeEnded $transaction;return}
         set layerId [dict get $result layer_id]
         set layer [::GX::viewerLayerGet [::GX::Engine3D::ownerModule] [::GX::Engine3D::ownerProvider] $layerId]
-        if {$::GX::Engine3D::editHook ne {}} {
+        set original [split [dict get $layer local_transform] {;}]
+        if {$original eq {} || $original eq {{}}} {set original {1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1}}
+        set changed 0;foreach prior $original current [dict get $result matrix] {if {$prior!=$current} {set changed 1;break}}
+        if {!$changed} {
+            set ::GX::Engine3D::status {Manipulator released without a geometry change}
+        } elseif {$::GX::Engine3D::editHook ne {}} {
             uplevel #0 [list {*}$::GX::Engine3D::editHook transform $layerId [dict create matrix [dict get $result matrix]]]
         } else {
             ::GX::viewerLayerSet [::GX::Engine3D::ownerModule] [::GX::Engine3D::ownerProvider] $layerId \
                 [dict replace $layer local_transform [join [dict get $result matrix] {;}]]
         }
-    } problem options]} {
-        abortGizmo
+    } on error {problem options} {
+        if {[gestureCurrent $transaction]} {abortGizmo}
         return -options $options $problem
+    } finally {
+        if {[gestureCurrent $transaction]} {set ::GX::Engine3D::dragMode {}}
     }
     set ::GX::Engine3D::gizmoActive 0
     rerender
@@ -1085,12 +1109,17 @@ proc ::GX::Engine3D::planeMotion {x y} {
 }
 proc ::GX::Engine3D::finishPlane {x y} {
     if {$::GX::Engine3D::workerBusy} {error "Wait for plane rendering to finish"}
-    if {[catch {
+    set transaction [gestureReceipt]
+    try {
         gizmoImageRequest [list plane_update $x $y]
+        if {![gestureCurrent $transaction]} return
         set result [rpc [list plane_end 1]]
-    } problem options]} {
-        catch {rpc [list plane_end 0]}
+        if {![gestureCurrent $transaction]} {gestureNativeEnded $transaction;return}
+    } on error {problem options} {
+        if {[gestureCurrent $transaction]} {catch {rpc [list plane_end 0]}}
         return -options $options $problem
+    } finally {
+        if {[gestureCurrent $transaction]} {set ::GX::Engine3D::dragMode {}}
     }
     set scene [::GX::viewerSceneGet [::GX::Engine3D::ownerModule] [::GX::Engine3D::ownerProvider]]
     switch -- $::GX::Engine3D::planeTarget {
@@ -1141,9 +1170,9 @@ proc ::GX::Engine3D::endDrag {x y} {
     set dx [expr {$x-$::GX::Engine3D::dragX}]
     set dy [expr {$y-$::GX::Engine3D::dragY}]
     set mode $::GX::Engine3D::dragMode
-    set ::GX::Engine3D::dragMode ""
     if {$mode eq "plane"} {finishPlane $x $y;return}
     if {$mode eq "gizmo"} {finishGizmo $x $y;return}
+    set ::GX::Engine3D::dragMode ""
     if {[expr {abs($dx)+abs($dy)}] < 4} {
         if {$mode eq "orbit"} {pick $x $y}
     } elseif {$mode in {orbit pan}} {
@@ -1156,6 +1185,13 @@ proc ::GX::Engine3D::endDrag {x y} {
 }
 proc ::GX::Engine3D::cancelGesture {{afterCommand {}}} {
     variable pendingGestureCancel;variable pendingGestureCancelJob
+    if {$pendingGestureCancel ne {} && [dict get $pendingGestureCancel gesture]==$::GX::Engine3D::gestureGeneration &&
+        [dict get $pendingGestureCancel worker]==$::GX::Engine3D::workerGeneration &&
+        [dict get $pendingGestureCancel session] eq [::GX::interactiveDocumentSessionToken]} {
+        # Key repeat must retain the original rollback mode while RPC yields.
+        if {$afterCommand ne {}} {dict set pendingGestureCancel after_command $afterCommand}
+        return
+    }
     incr ::GX::Engine3D::gestureGeneration
     set ::GX::Engine3D::pendingDragEnd {};set ::GX::Engine3D::pendingGizmoEnd {};set ::GX::Engine3D::cameraQueue {}
     if {$::GX::Engine3D::pendingDragJob ne {}} {after cancel $::GX::Engine3D::pendingDragJob;set ::GX::Engine3D::pendingDragJob {}}
@@ -1163,6 +1199,25 @@ proc ::GX::Engine3D::cancelGesture {{afterCommand {}}} {
     set pendingGestureCancel [dict create gesture $::GX::Engine3D::gestureGeneration worker $::GX::Engine3D::workerGeneration session [::GX::interactiveDocumentSessionToken] mode $::GX::Engine3D::dragMode starting $::GX::Engine3D::gestureStarting after_command $afterCommand]
     if {!$::GX::Engine3D::gestureStarting} {set ::GX::Engine3D::dragMode {}}
     cancelGestureReady
+}
+proc ::GX::Engine3D::gestureReceipt {} {
+    return [list $::GX::Engine3D::gestureGeneration $::GX::Engine3D::workerGeneration [::GX::interactiveDocumentSessionToken]]
+}
+proc ::GX::Engine3D::gestureCurrent {transaction} {
+    if {$::GX::Engine3D::pendingGestureCancel ne {} || [catch {gestureReceipt} current]} {return 0}
+    return [expr {$transaction eq $current}]
+}
+proc ::GX::Engine3D::gestureNativeEnded {transaction} {
+    # Escape during an end RPC must prevent the scientific edit. That RPC has
+    # already released native rollback state; render the retained authority
+    # rather than issuing a second end against a completed native transaction.
+    variable pendingGestureCancel
+    if {$pendingGestureCancel ne {} && [dict get $pendingGestureCancel worker]==[lindex $transaction 1] &&
+        [dict get $pendingGestureCancel session] eq [lindex $transaction 2]} {
+        dict set pendingGestureCancel mode {}
+        dict set pendingGestureCancel starting 0
+        cancelGestureReady
+    }
 }
 proc ::GX::Engine3D::cancelGestureReady {} {
     variable pendingGestureCancel;variable pendingGestureCancelJob
@@ -1229,10 +1284,13 @@ proc ::GX::Engine3D::setClippingPlanes {planes} {
     rerender
 }
 proc ::GX::Engine3D::setWorkingPlane {origin normal uAxis {visible 1}} {
-    ::GX::viewerSceneSet [::GX::Engine3D::ownerModule] [::GX::Engine3D::ownerProvider] [dict merge \
+    set view [::GX::viewerSceneSet [::GX::Engine3D::ownerModule] [::GX::Engine3D::ownerProvider] [dict merge \
         [::GX::viewerSceneGet [::GX::Engine3D::ownerModule] [::GX::Engine3D::ownerProvider]] \
         [dict create working_plane_origin $origin working_plane_normal $normal \
-            working_plane_u_axis $uAxis working_plane_visible $visible]]
+            working_plane_u_axis $uAxis working_plane_visible $visible]]]
+    foreach {field key} {planeOrigin working_plane_origin planeNormal working_plane_normal planeU working_plane_u_axis planeVisible working_plane_visible} {
+        set ::GX::Engine3D::$field [dict get $view $key]
+    }
     rerender
 }
 proc ::GX::Engine3D::refreshLayers {} {
@@ -1625,10 +1683,17 @@ proc ::GX::Engine3D::panel {{raiseWindow 1}} {
         wm geometry $window 1510x820
     }
     bind $window <Destroy> [list ::GX::Engine3D::hostDestroyed $window %W]
+    set ::GX::Engine3D::sidebarMode auto
+    ttk::button $window.controlsToggle -text {View controls} -command ::GX::Engine3D::hostSidebarToggle
+    pack $window.controlsToggle -side top -anchor e -padx 4 -pady 2
+    ::GX::native2DViewportTooltip $window.controlsToggle {Show or hide Native3D view, lighting and navigation controls. Narrow embedded views hide them automatically.}
+    bind $window <Configure> +[list ::GX::Engine3D::hostSidebarSchedule $window %W]
     ttk::frame $window.side
     pack $window.side -side left -fill y -padx 4 -pady 4
     canvas $window.side.scroll -width 460 -highlightthickness 0 \
-        -yscrollcommand [list $window.side.bar set]
+        -yscrollcommand [list $window.side.bar set] -xscrollcommand [list $window.side.xbar set]
+    ttk::scrollbar $window.side.xbar -orient horizontal -command [list $window.side.scroll xview]
+    pack $window.side.xbar -side bottom -fill x
     ttk::scrollbar $window.side.bar -orient vertical -command [list $window.side.scroll yview]
     pack $window.side.bar -side right -fill y
     pack $window.side.scroll -side left -fill y
@@ -1638,9 +1703,8 @@ proc ::GX::Engine3D::panel {{raiseWindow 1}} {
         pack $window.side.scroll.controls.planar -fill x -pady 5
     }
     $window.side.scroll create window 0 0 -anchor nw -window $window.side.scroll.controls -tags controls -width 460
-    bind $window.side.scroll <Configure> [list $window.side.scroll itemconfigure controls -width %w]
-    bind $window.side.scroll.controls <Configure> [list $window.side.scroll configure -scrollregion \
-        [list 0 0 %w %h]]
+    bind $window.side.scroll <Configure> [list ::GX::Engine3D::hostSidebarContentWidth $window.side.scroll %w]
+    bind $window.side.scroll.controls <Configure> [list ::GX::Engine3D::hostSidebarContentWidth $window.side.scroll {}]
     bind $window.side.scroll <MouseWheel> [list $window.side.scroll yview scroll -3 units]
     bind $window.side.scroll <Button-4> [list $window.side.scroll yview scroll -3 units]
     bind $window.side.scroll <Button-5> [list $window.side.scroll yview scroll 3 units]
@@ -1657,7 +1721,7 @@ proc ::GX::Engine3D::panel {{raiseWindow 1}} {
     bind $window.canvas <MouseWheel> {::GX::Engine3D::showError [list ::GX::Engine3D::cameraZoom [expr {%D/120.0}]]}
     bind $window.canvas <Button-4> {::GX::Engine3D::showError [list ::GX::Engine3D::cameraZoom 1]}
     bind $window.canvas <Button-5> {::GX::Engine3D::showError [list ::GX::Engine3D::cameraZoom -1]}
-    bind $window <Escape> {::GX::Engine3D::showError ::GX::Engine3D::cancelGesture}
+    hostEscapeInstall
     ttk::label $window.side.scroll.controls.title -text "Layers";pack $window.side.scroll.controls.title -fill x
     listbox $window.side.scroll.controls.layers -height 8 -width 32 -exportselection 0
     pack $window.side.scroll.controls.layers -fill x
@@ -1900,8 +1964,10 @@ proc ::GX::Engine3D::panel {{raiseWindow 1}} {
 }
 proc ::GX::Engine3D::close {} {
     if {$::GX::Engine3D::hostWidgetChanging} return
+    hostEscapeRemove
     incr ::GX::Engine3D::mountGeneration
     if {$::GX::Engine3D::resizePending ne {}} {catch {after cancel $::GX::Engine3D::resizePending};set ::GX::Engine3D::resizePending {}}
+    if {$::GX::Engine3D::sidebarPending ne {}} {after cancel $::GX::Engine3D::sidebarPending;set ::GX::Engine3D::sidebarPending {}}
     variable scientificDocumentId
     if {[info exists scientificDocumentId]&&$scientificDocumentId ne {}} {catch {::GX::PlotDatasetAPIv4::saveInteractivePresentation $scientificDocumentId};set scientificDocumentId {}}
     variable window
@@ -1932,6 +1998,7 @@ proc ::GX::Engine3D::close {} {
     set window .gx3de_viewer;set ::GX::Engine3D::embedded 0
     catch {file delete -- [tempPng]}
     set lastPng ""
+    set ::GX::Engine3D::selectionFrameDirty 0
 }
 proc ::GX::Engine3D::cancelRendering {{preservePending 0}} {
     set ::GX::Engine3D::cancelRequested 1
@@ -2006,7 +2073,9 @@ proc ::GX::native3DGuiHostMount {parent module provider {callbacks {}}} {
 }
 proc ::GX::Engine3D::hostRemoveWidget {} {
     variable window;variable resizePending
+    hostEscapeRemove
     if {$resizePending ne {}} {catch {after cancel $resizePending};set resizePending {}}
+    if {$::GX::Engine3D::sidebarPending ne {}} {after cancel $::GX::Engine3D::sidebarPending;set ::GX::Engine3D::sidebarPending {}}
     set ::GX::Engine3D::hostWidgetChanging 1
     try {if {[winfo exists $window]} {destroy $window}} finally {set ::GX::Engine3D::hostWidgetChanging 0}
 }
@@ -2031,14 +2100,83 @@ proc ::GX::native3DGuiHostResume {parent receipt} {
 proc ::GX::Engine3D::hostDestroyed {owner widget} {
     if {$widget eq $owner && !$::GX::Engine3D::hostWidgetChanging && $owner eq $::GX::Engine3D::window} {close}
 }
+# Tk sends child key events through their toplevel tag, not ancestor frames.
+# Keep one scoped binding on that actual toplevel, preserving its other handlers.
+proc ::GX::Engine3D::hostEscapeInstall {} {
+    hostEscapeRemove
+    variable escapeOwner;variable escapePrevious;variable escapeInstalled
+    set escapeOwner [winfo toplevel $::GX::Engine3D::window]
+    set escapePrevious [bind $escapeOwner <Escape>]
+    bind $escapeOwner <Escape> +[list ::GX::Engine3D::hostEscape %W]
+    set escapeInstalled [bind $escapeOwner <Escape>]
+}
+proc ::GX::Engine3D::hostEscapeRemove {} {
+    variable escapeOwner;variable escapePrevious;variable escapeInstalled
+    if {$escapeOwner ne {} && [winfo exists $escapeOwner]} {
+        set current [bind $escapeOwner <Escape>]
+        if {$current eq $escapeInstalled} {
+            bind $escapeOwner <Escape> $escapePrevious
+        } else {
+            # Another owner may have appended a handler since this mount.
+            set own [list ::GX::Engine3D::hostEscape %W]
+            set retained {};foreach line [split $current \n] {if {$line ne $own} {lappend retained $line}}
+            bind $escapeOwner <Escape> [join $retained \n]
+        }
+    }
+    set escapeOwner {};set escapePrevious {};set escapeInstalled {}
+}
+proc ::GX::Engine3D::hostEscape {widget} {
+    set host $::GX::Engine3D::window
+    if {![winfo exists $host] || ![winfo exists $widget]} return
+    if {$widget ne $host && [string first "$host." $widget]!=0} return
+    if {!$::GX::Engine3D::gizmoActive && $::GX::Engine3D::dragMode eq {} && !$::GX::Engine3D::gestureStarting && $::GX::Engine3D::pendingGestureCancel eq {}} return
+    showError ::GX::Engine3D::cancelGesture
+    return -code break
+}
 proc ::GX::Engine3D::hostViewportSize {} {
     set canvas $::GX::Engine3D::window.canvas
     if {![winfo exists $canvas] || [winfo width $canvas]<16 || [winfo height $canvas]<16} {return {960 640}}
-    return [list [expr {max(160,min(4096,[winfo width $canvas]))}] [expr {max(120,min(4096,[winfo height $canvas]))}]]
+    return [list [expr {max(16,min(4096,[winfo width $canvas]))}] [expr {max(16,min(4096,[winfo height $canvas]))}]]
+}
+proc ::GX::Engine3D::hostSidebarContentWidth {canvas width} {
+    if {![winfo exists $canvas] || ![winfo exists $canvas.controls]} return
+    if {$width eq {}} {set width [winfo width $canvas]}
+    # The viewport remains bounded; its existing scrollbar must reach the full
+    # requested controls, including captions enlarged by the configured font.
+    set contentWidth [expr {max(460,$width,[winfo reqwidth $canvas.controls])}]
+    if {[$canvas itemcget controls -width] != $contentWidth} {
+        $canvas itemconfigure controls -width $contentWidth
+    }
+    $canvas configure -scrollregion [list 0 0 $contentWidth [winfo reqheight $canvas.controls]]
+}
+proc ::GX::Engine3D::hostSidebarSchedule {owner actual} {
+    if {$actual ne $owner} return
+    if {$::GX::Engine3D::sidebarPending ne {}} {after cancel $::GX::Engine3D::sidebarPending}
+    set ::GX::Engine3D::sidebarPending [after idle ::GX::Engine3D::hostSidebarLayout]
+}
+proc ::GX::Engine3D::hostSidebarLayout {} {
+    set ::GX::Engine3D::sidebarPending {}
+    set window $::GX::Engine3D::window
+    if {![winfo exists $window.canvas] || ![winfo exists $window.side]} return
+    set width [winfo width $window]
+    set mode $::GX::Engine3D::sidebarMode
+    set shown [expr {$mode eq {show} || ($mode eq {auto} && (!$::GX::Engine3D::embedded || $width>=760))}]
+    if {$shown} {
+        set sideWidth [expr {$::GX::Engine3D::embedded ? max(200,min(360,int($width*.38))) : 460}]
+        $window.side.scroll configure -width $sideWidth
+        if {[winfo manager $window.side] eq {}} {pack $window.side -side left -fill y -padx 4 -pady 4 -before $window.canvas}
+    } else {pack forget $window.side}
+    $window.controlsToggle configure -text [expr {$shown ? {Hide view controls} : {Show view controls}}]
+}
+proc ::GX::Engine3D::hostSidebarToggle {} {
+    set window $::GX::Engine3D::window
+    if {![winfo exists $window.side]} return
+    set ::GX::Engine3D::sidebarMode [expr {[winfo manager $window.side] eq {} ? {show} : {hide}}]
+    hostSidebarLayout
 }
 proc ::GX::Engine3D::hostResizeSchedule {width height} {
     variable resizePending
-    if {$width<160||$height<120} return
+    if {$width<16||$height<16} return
     if {$resizePending ne {}} {catch {after cancel $resizePending}}
     set resizePending [after 150 ::GX::Engine3D::hostResize]
 }
@@ -2047,7 +2185,7 @@ proc ::GX::Engine3D::hostResize {} {
     set resizePending {}
     if {![winfo exists $::GX::Engine3D::window.canvas] || $worker eq {}} return
     if {$workerBusy} {set resizePending busy;return}
-    if {[hostViewportSize] eq $renderedSize || $::GX::Engine3D::photo eq {}} return
+    if {([hostViewportSize] eq $renderedSize && !$::GX::Engine3D::selectionFrameDirty) || $::GX::Engine3D::photo eq {}} return
     lassign [hostViewportSize] width height
     set destination [tempPng];set staged "$destination.resize.[pid].[clock clicks].png"
     try {
@@ -2056,6 +2194,7 @@ proc ::GX::Engine3D::hostResize {} {
         file rename -force -- $staged $destination
         set renderedSize [list $width $height]
         displayNativePng $destination
+        set ::GX::Engine3D::selectionFrameDirty 0
     } on error {message opts} {set ::GX::Engine3D::status "Viewport resize: $message"} finally {catch {file delete -- $staged}}
 }
 

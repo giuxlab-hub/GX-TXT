@@ -25,6 +25,20 @@ an analysis/viewer plugin. Existing API signatures remain available.
   `::GX::meshDatasetViewerOpen datasetId`: typed convenience entry points.
 
 The integrated Preview uses this same dispatch and existing media descriptors.
+For a canonical `molecular.structure` Dataset, the Dataset browser also offers
+**Open in Molecule Viewer**, beside the normal Preview/Open workflow and in its
+context menu. Host operation `datasetViewerOpenMolecule datasetId` verifies that
+contract and the installed, enabled `viewer.molecule_3d / molecule_3d` provider,
+then uses its normal Viewer dispatch with the exact Dataset ID. In that Viewer,
+**Open 3D structure** uses its existing Native3D chemistry representation and
+conformer controls. The integrated Preview retains its existing read-only
+structural decoder and geometry host. Numerical XYZ and crystal structures do
+not receive the molecular action. This introduces no conversion, renderer or
+canonical publication. A missing/disabled Molecule Viewer is an explicit
+availability condition. The dev109 focused installed GUI acceptance covers the
+ordinary browser/context-menu dispatch and the registered molecular practice
+Generator workflow; see the scoped molecular acceptance record.
+Successful rendering does not establish a universal cause for historical failures.
 Pending remains an acquisition source: Preview is available, canonical Open is
 not. An unsupported/corrupt source receives a diagnostic, never a made-up graph.
 
@@ -37,6 +51,12 @@ traces overlay only when their declared units and coordinate presentation polici
 agree. Explicit Dataset display-unit conversion uses CORE. No resampling, sorting,
 smoothing or canonical publication occurs. Families use
 explicit CORE read-only filter views, independently rendered member traces.
+The shared numeric Preview's native Plot model labels each axis with its
+Variable display label, falling back to its canonical name and then its stable
+Variable ID. The unit comes from the existing coordinate display policy, so an
+explicit seconds-to-milliseconds display conversion changes both shown values
+and the axis unit while preserving the source's declared seconds. Generic
+`X`/`Y` labels do not replace the selected scientific Variable identities.
 Shared filter discovery streams 2048 rows/chunk, with a 100000-row scan and 1024 distinct values per variable. Incomplete scans are labelled; only an explicit selection enables separate family curves.
 
 Canonical table pages use Dataset Preview/Table Stream. Array inspection uses
@@ -155,8 +175,19 @@ with no new renderer or persistent Viewer Document. Numerical selectors are expl
 rank-one nontext canonical IDs. Table Stream v3 reads at most 100000 original rows,
 2048 per chunk; at most 12000 finite triples retain one-based source-row IDs in VTP.
 No implicit topology, interpolation, data conversion or publication occurs. Last
-2D content is retained, and remains controlled by 2D Render. Family-filtered XYZ is
-currently diagnosed rather than silently stripped. See the numerical XYZ guide.
+2D content is retained, and remains controlled by 2D Render. Actual row predicates
+are diagnosed rather than silently stripped; independent 2D grouping and row order
+do not block an unfiltered XYZ request. See the numerical XYZ guide.
+
+In the retained Dataset Preview, XYZ selects and overlays the existing Plot pane,
+including when an incomplete 2D mapping initially disabled that tab. The Source
+image pane remains separate. Exit reveals the retained XY frame; when no valid XY
+controller exists, it returns to Source image instead. Explicit 2D Render and
+Preview release close that XYZ owner through the existing DatasetViewer lifecycle.
+Changing a Dataset or Session therefore cannot leave its worker attached to the
+next Dataset's pane. The dev109 host correction requires focused installed GUI
+verification; a prepared scene or a worker-ready receipt alone is not visible-frame
+acceptance.
 
 
 ## Native scientific figure consultation
@@ -213,13 +244,23 @@ units, camera navigation and the retained 2D preview remain unchanged.
 
 ## Independent scientific axes
 
-Scientific consultation explicitly selects Native2D `aspect auto`; calibrated
-Native geometry defaults remain unchanged. The standalone Viewer exposes an
-explicit calibrated equal-aspect toggle. Fit compares the current X/Y, overlays
-and filters with the rendered request, reloads changed selections, and otherwise
-fits the existing scene. Pan/zoom/resize preserve navigation. Scientific Preview
-receipts add `view_bounds`, `axis_aspect=auto` and combined `displayed_points`.
-Curve Source's ordered extrema/row/gap policies remain unchanged; no data conversion.
+Scientific consultation uses public Plot v4 with `aspect auto`. The standalone
+Viewer exposes **Equal numeric aspect**: equal displayed numeric increments on
+X/Y receive equal screen lengths. This is a view choice, not physical calibration
+or a declaration that unlike X/Y quantities have a shared geometric unit.
+Calibrated editable Native geometry retains its separate contract. Fit compares
+the current X/Y, overlays and filters with the rendered request, prepares changed
+selections, and otherwise fits the existing public Plot widget. Pan/zoom/resize
+preserve navigation. Scientific Preview receipts retain actual painter bounds,
+canonical source/row identities and captured coordinate presentation. Curve
+Source's ordered extrema/row/gap policies remain authoritative; changing aspect
+does not convert scientific data. Isolated finite line runs remain visible as
+points without joining across missing-data gaps.
+
+When Fit also initializes a newly configured Plot, the Viewer obtains coordinate
+status from the completed public `widgetDraw` receipt. Reading `widgetReceipt`
+before the first scheduled draw can lack painted axes and coordinate presentation.
+This presentation step preserves the existing scientific source and revision guards.
 
 
 ## Persistent scientific coordinate presentation
@@ -284,3 +325,62 @@ numeric samples remain seconds, including repeated reprojection.
 Host-side `datasetViewerScientificIdentity dataset_id` returns the rendering dependency projection: canonical ID/content SHA, Variable Schema, public scientific metadata, stored coordinate context and source storage revision/stat identity. User Preview controls and visibility preferences are excluded. Preview Cache and explicitly retained Plot widgets use this same projection, so saving presentation choices preserves the current frame while scientific changes still invalidate it. This helper is host-side; scripts use the stronger canonical Dataset revision contract and normal bounded readers.
 
 When Preview is selected, Dataset activation defers rebuilding hidden Variables/Metadata/Notes editors. Selecting those pages refreshes them through their existing owner, preserving the current Dataset choice and draft-switch checks. Scientific preparation and status polling remain asynchronous; callbacks show the actual managed Job state and reject old Session/generation completions.
+
+## Source-bound PDF reader observation
+
+`datasetMediaViewerInspect owner` inspects the opaque lifecycle owner returned
+by `datasetMediaViewerOpen dataset_id pdf`. It validates the current Session and
+source stamp through the existing Dataset Viewer, then returns the trusted
+reader's actual `state`, `page`, `pages`, `zoom_percent`, `page_size_points`,
+rendered page SHA/pixel dimensions, canvas view fractions, visible geometry and
+status. States include starting, rendering, ready, unavailable and closed. A
+closed/released owner is invalid. Native XIDs, PIDs and control rectangles stay
+inside the trusted GUI owner; this read-only projection grants no process input.
+The existing Python PDF reader and shared Poppler/PdfCanvas remain authoritative.
+
+A declarative PDF document retains this owner only in transient runtime state.
+Rebinding, source/Session expiry or closing its parent releases that exact child
+reader. `viewerGuiDesignDocumentInspect window component` returns its bounded
+public observation; no reader handle or native identity is saved in a Workspace.
+Reader and lifecycle changes still require genuine installed/native acceptance.
+
+### Managed Document PDF sources (dev109 integration)
+
+Trusted host `datasetMediaViewerOpenResource reference ?title={Managed Document PDF}?` accepts an
+existing managed Document resource whose metadata format is `pdf`. It validates
+the actual resource bytes, owning Document generation and Session lifetime,
+then uses the same Python reader, Poppler/PdfCanvas, navigation, pipe receipts
+and close owner as canonical Dataset PDF consultation. It returns the existing
+opaque media owner; use `datasetMediaViewerInspect` and `datasetViewerClose`.
+The public inspection reports `source_kind managed_resource`, `document_id`
+and the exact managed `resource`; it does not label that source as a Dataset.
+No temporary scientific Dataset or implicit publication is created.
+
+The resource may be the previous good TeX PDF. Its source revision/manifest are
+retained in resource metadata; the composing TeX host must display current versus
+stale status and enforce the source match on export. A new article source does
+not rewrite the old PDF's identity. Session expiry, missing/corrupt resources or
+owner deletion/replacement invalidate its existing media lifecycle naturally,
+without requiring a later forced Inspect. The opaque owner is a lifecycle handle
+for the existing shared reader, not a canonical Dataset ID.
+
+`datasetMediaViewerInspect owner` adds `read_only=1`, the Session token,
+`source_kind=managed_resource`, owning `document_id` and exact managed `resource`;
+it removes `dataset_id` from this resource route. Common PDF receipt fields retain
+actual `state`, `source_sha256`, one-based displayed `page`, page count `pages`
+(zero before known), `zoom_percent`,
+`page_size_points`, render hash/pixel dimensions, geometry and status. Public
+inspection removes child PID/native window IDs and control pixel rectangles;
+controls expose only their mapped/enabled state. The trusted GUI-test owner
+retains native identities separately. Exact resource verification checks byte
+size/SHA, Session and owner generation; retained bytes do not revive a deleted
+or replaced owner identity.
+
+Independent dev109 native corrective CORE-fixture checks verified managed pages,
+natural owner deletion/reaping, retained-resource collection/generation refusal,
+and the original canonical PDF path with unchanged scientific identities. These
+are scoped shared-reader checks, not installed LaTeX GUI/build acceptance.
+Python/Octave registration for this family remains only canonical `describe`;
+there is no managed-resource reader-opening Bridge operation or generic C++ call.
+An admitted TeX form uses its specific GUI Host `preview` plan through this same
+reader. No new renderer or temporary scientific Dataset is introduced.

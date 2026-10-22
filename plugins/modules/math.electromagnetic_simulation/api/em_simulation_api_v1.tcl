@@ -10,7 +10,7 @@ proc ::GX::ElectromagneticSimulation::_native {operation args} {
     if {![llength [info commands ::GX::EMNative::core]]} {load [file join $root native bin emfem.so] Emfem}
     ::GX::EMNative::core $operation {*}$args
 }
-proc ::GX::ElectromagneticSimulation::apiInfo {} {dict create api_id ELECTROMAGNETIC_SIMULATION_API_v1 api_version 1 backend {Gmsh GetDP} implementation native_cpp problems {electrostatic_2d magnetostatic_2d} dimensional_formulations planar_2d features {validate models_save_load managed_run_async cancel result_preview publish exact_mesh_topology} limitations {linear_materials bounded_mesh no_spice no_axisymmetry no_device_inductance}}
+proc ::GX::ElectromagneticSimulation::apiInfo {} {dict create api_id ELECTROMAGNETIC_SIMULATION_API_v1 api_version 1 backend {Gmsh GetDP} implementation native_cpp problems {electrostatic_2d magnetostatic_2d} dimensional_formulations planar_2d operations {defaultModel validate saveModel listModels loadModel runAsync jobStatus jobLog cancel resultDescribe resultPreview publish fieldDescribe} features {validate models_save_load managed_run_async cancel result_preview publish exact_mesh_topology} limitations {linear_materials bounded_mesh no_spice no_axisymmetry no_device_inductance}}
 proc ::GX::ElectromagneticSimulation::defaultModel {kind} {_native default $kind}
 proc ::GX::ElectromagneticSimulation::validate {model} {set m [_native validate $model];dict create valid 1 problem [dict get $m kind] dimension planar_2d units SI model $m}
 proc ::GX::ElectromagneticSimulation::workspaceValidate {payload} {
@@ -18,8 +18,13 @@ proc ::GX::ElectromagneticSimulation::workspaceValidate {payload} {
     _native validate $model;return [dict create valid 1]
 }
 proc ::GX::ElectromagneticSimulation::workspaceOpen {documentId} {
-    ::GX::modulePublicApiActivate viewer.electromagnetics ELECTROMAGNETICS_STUDIO_API_v1
-    ::GX::ElectromagneticsStudio::open [dict create workspace_id $documentId]
+    # Presentation changes never replace the original em_models scientific owner.
+    loadModel $documentId
+    set module viewer.electromagnetics_studio;set provider electromagnetics_studio
+    if {[info exists ::GX::moduleCatalog($module,dict)] && $provider in [::GX::viewerProviderIds $module] && [::GX::viewerProviderEnabled $module $provider]} {
+        return [::GX::viewerOpen $module $provider [dict create em_document_id $documentId]]
+    }
+    return [::GX::viewerOpen viewer.electromagnetics electromagnetics [dict create workspace_id $documentId]]
 }
 proc ::GX::ElectromagneticSimulation::saveModel {model {documentId {}} {workspaceName {}}} {
     set model [_native validate $model]
@@ -57,6 +62,10 @@ proc ::GX::ElectromagneticSimulation::_notify {job callback token} {
     if {[catch {uplevel #0 [list {*}$callback $outcome]} reason]} {puts stderr "Electromagnetics completion notification: $reason"}
 }
 proc ::GX::ElectromagneticSimulation::jobStatus {id} {::GX::scientificExecutionStatus $id}
+proc ::GX::ElectromagneticSimulation::jobLog {id {offset 0} {count 65536}} {
+    if {[dict get [jobStatus $id] provider_id] ne {math.electromagnetic_simulation.fem2d}} {error {Select an actual electromagnetic FEM Job}}
+    tailcall ::GX::scientificExecutionLog $id $offset $count
+}
 proc ::GX::ElectromagneticSimulation::cancel {id} {::GX::scientificExecutionCancel $id}
 proc ::GX::ElectromagneticSimulation::_resultToken {job} {
     set status [jobStatus $job];if {[dict get $status state] ne {COMPLETED}} {error {A completed managed FEM Job is required}}

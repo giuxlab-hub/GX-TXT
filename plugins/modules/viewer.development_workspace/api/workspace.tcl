@@ -29,6 +29,7 @@ proc ::GX::ViewerDevelopmentWorkspace::save {} {
     set source [::GX::sourceSurfaceGet [text]]
     transfer save $source $s(file)
     set s(baseline) $source;set s(dirty) [expr {[::GX::sourceSurfaceGet [text]] ne $source}];set s(status) "Saved $s(file) · [string range [::GX::sha256File [file join $s(project) $s(file)]] 0 11]"
+    if {$s(file) eq {project.json}} {apiRefresh}
 }
 proc ::GX::ViewerDevelopmentWorkspace::transfer {operation source {filename handlers.cpp}} {
     variable s;variable transferSerial;variable transfers
@@ -82,7 +83,8 @@ proc ::GX::ViewerDevelopmentWorkspace::project {path} {
     ::GX::uiFieldInspectionColumnsSchedule $tree
     $tree selection set handlers.cpp;read handlers.cpp
     set s(status) "Project: $path"
-    request api
+    apiRefresh
+    controls
 }
 proc ::GX::ViewerDevelopmentWorkspace::new {} {
     variable s;if {![prepare]} return
@@ -157,20 +159,20 @@ proc ::GX::ViewerDevelopmentWorkspace::diagnostic {} {
     set s(status) "$file:$line:$column · $message"
 }
 proc ::GX::ViewerDevelopmentWorkspace::apiRefresh {} {
-    variable s;set tree .gxViewerDevelopment.body.right.apis.list.tree;$tree delete [$tree children {}]
-    dict for {api row} $s(catalog) {$tree insert {} end -id $api -text $api -values [list [dict get $row version] [expr {[dict get $row sdk_exposed]?{SDK subset}:{Not exposed}}]]}
-    ::GX::uiFieldInspectionColumnsSchedule $tree
-    if {[$tree exists VIEWER_GUI_HOST_API_v1]} {$tree selection set VIEWER_GUI_HOST_API_v1;$tree see VIEWER_GUI_HOST_API_v1;apiSelect}
+    variable s
+    set browser .gxViewerDevelopment.body.left.apiSplit.browser
+    ::GX::apiBrowserProjectSet $browser $s(project)
+    ::GX::apiBrowserRefresh $browser
 }
-proc ::GX::ViewerDevelopmentWorkspace::apiSelect {} {
-    variable s;set id [lindex [.gxViewerDevelopment.body.right.apis.list.tree selection] 0]
-    if {$id eq {}||![dict exists $s(catalog) $id]} return
-    set t .gxViewerDevelopment.body.right.apis.details.text;$t configure -state normal;$t delete 1.0 end
-    dict for {key value} [dict get $s(catalog) $id] {$t insert end "$key: $value\n\n"}
-    $t configure -state disabled
-}
-proc ::GX::ViewerDevelopmentWorkspace::apiGuide {} {set id [lindex [.gxViewerDevelopment.body.right.apis.list.tree selection] 0];if {$id ne {}} {::GX::documentationBrowserOpenApi $id}}
+proc ::GX::ViewerDevelopmentWorkspace::apiSelect {} {::GX::apiBrowserSelect .gxViewerDevelopment.body.left.apiSplit.browser}
+proc ::GX::ViewerDevelopmentWorkspace::apiGuide {} {::GX::apiBrowserManual .gxViewerDevelopment.body.left.apiSplit.browser}
 proc ::GX::ViewerDevelopmentWorkspace::manual {} {::GX::documentationBrowserOpenModuleWindow viewer.development_workspace .gxViewerDevelopment}
+proc ::GX::ViewerDevelopmentWorkspace::supportCatalog {} {
+    set w [::GX::documentationBrowserOpenModuleWindow viewer.development_workspace .gxViewerDevelopment]
+    ::GX::documentationBrowserManualShow $w [file join $::GX::scriptDir docs api CPP_SUPPORT_CATALOG.md]
+    wm title $w {C/C++ support catalog — Viewer Development Workspace}
+    return $w
+}
 proc ::GX::ViewerDevelopmentWorkspace::guiTesting {} {
     variable s
     if {$s(project) eq {} || $s(dirty) || $s(busy) ne {}} {error {Open a saved, idle project before enabling its installed native GUI tests}}
@@ -200,10 +202,11 @@ proc ::GX::ViewerDevelopmentWorkspace::open {{context {}}} {
     if {[winfo exists $w]} {raise $w;return $w}
     toplevel $w;wm title $w {Viewer Development Workspace · restricted C++};wm geometry $w 1320x860+40+60;wm minsize $w 980 650
     menu $w.menus -tearoff 0;$w configure -menu $w.menus
-    foreach {id label} {file File edit Edit develop Develop help Help} {menu $w.menus.$id -tearoff 0;$w.menus add cascade -label $label -underline 0 -menu $w.menus.$id}
+    foreach {id label} {file File edit Edit view View develop Develop help Help} {menu $w.menus.$id -tearoff 0;$w.menus add cascade -label $label -underline 0 -menu $w.menus.$id}
     foreach {label command} {{New project…} new {Open project…} openProject {Save source} save {Import C++ source…} importSource {Export candidate} {request export} Close close} {$w.menus.file add command -label $label -command [list ::GX::ViewerDevelopmentWorkspace::safe {*}$command]}
     foreach {label operation} {Undo undo Redo redo {Select all} select_all Copy copy Cut cut Paste paste} {$w.menus.edit add command -label $label -command [list ::GX::uiTextEdit $w $operation]}
     foreach {label command} {Validate {request validate} Build {request build} {Demo / Preview} demo Test {request test} {Cancel request} cancel} {$w.menus.develop add command -label $label -command [list ::GX::ViewerDevelopmentWorkspace::safe {*}$command]}
+    $w.menus.develop add command -label {C/C++ support catalog} -command [list ::GX::ViewerDevelopmentWorkspace::safe supportCatalog]
     $w.menus.develop add command -label {Enable installed native GUI testing} -command [list ::GX::ViewerDevelopmentWorkspace::safe guiTesting]
     $w.menus.develop add command -label {Review saved Workspace upgrade…} -command [list ::GX::ViewerDevelopmentWorkspace::safe workspaceUpgradeDialog]
     $w.menus.help add command -label {Developer manual} -command ::GX::ViewerDevelopmentWorkspace::manual
@@ -238,6 +241,8 @@ proc ::GX::ViewerDevelopmentWorkspace::open {{context {}}} {
     $w.body.left.files.tree configure -yscrollcommand [list $w.body.left.files.vertical set] -xscrollcommand [list $w.body.left.files.horizontal set]
     pack $w.body.left.files.horizontal -side bottom -fill x;pack $w.body.left.files.vertical -side right -fill y;pack $w.body.left.files.tree -fill both -expand 1
     bind $w.body.left.files.tree <<TreeviewSelect>> ::GX::ViewerDevelopmentWorkspace::selected
+    ::GX::apiBrowserMount $w.body.left Cpp
+    $w.menus.view add checkbutton -label {API Browser} -variable ::GX::ApiBrowser::state($w.body.left.apiSplit,visible) -command [list ::GX::apiBrowserToggle $w.body.left]
     set source [::GX::sourceSurfaceCreate $w.body.center.source {mode read_only language cpp}]
     set s(baseline) "// Open or create a restricted C++ Viewer project.\n// The trusted SDK is supplied automatically; no scientific Session is needed.\n"
     ::GX::sourceSurfaceSet $source $s(baseline)
@@ -250,39 +255,21 @@ proc ::GX::ViewerDevelopmentWorkspace::open {{context {}}} {
     ttk::button $w.body.center.find.next -text Next -width 0 -command {::GX::ViewerDevelopmentWorkspace::find forward}
     pack $w.body.center.find.label $w.body.center.find.entry $w.body.center.find.previous $w.body.center.find.next -side left -padx 3 -pady 3
     pack $w.body.center.find -side bottom -fill x -before $w.body.center.source
-    ttk::frame $w.body.right.apis;ttk::frame $w.body.right.sdk;ttk::frame $w.body.right.profile
-    $w.body.right add $w.body.right.apis -text APIs;$w.body.right add $w.body.right.sdk -text SDK;$w.body.right add $w.body.right.profile -text Profile
-    ttk::frame $w.body.right.apis.list;ttk::frame $w.body.right.apis.details
-    ttk::treeview $w.body.right.apis.list.tree -columns {version exposed} -show {tree headings} -height 10 -selectmode browse
-    $w.body.right.apis.list.tree heading #0 -text {Installed API};$w.body.right.apis.list.tree column #0 -width 185 -minwidth 100 -stretch 1
-    foreach {id title width} {version Version 55 exposed Profile 105} {$w.body.right.apis.list.tree heading $id -text $title;$w.body.right.apis.list.tree column $id -width $width -minwidth $width -stretch 0}
-    ::text $w.body.right.apis.details.text -wrap word -width 36 -height 12 -state disabled
-    ttk::button $w.body.right.apis.guide -text {Open public API guide} -command ::GX::ViewerDevelopmentWorkspace::apiGuide
-    pack $w.body.right.apis.guide -side bottom -fill x
-    foreach panel {list details} {pack $w.body.right.apis.$panel -fill both -expand 1}
-    ttk::scrollbar $w.body.right.apis.list.vertical -command [list $w.body.right.apis.list.tree yview]
-    ttk::scrollbar $w.body.right.apis.list.horizontal -orient horizontal -command [list $w.body.right.apis.list.tree xview]
-    $w.body.right.apis.list.tree configure -yscrollcommand [list $w.body.right.apis.list.vertical set] -xscrollcommand [list $w.body.right.apis.list.horizontal set]
-    pack $w.body.right.apis.list.horizontal -side bottom -fill x;pack $w.body.right.apis.list.vertical -side right -fill y;pack $w.body.right.apis.list.tree -fill both -expand 1
-    ttk::scrollbar $w.body.right.apis.details.vertical -command [list $w.body.right.apis.details.text yview]
-    $w.body.right.apis.details.text configure -yscrollcommand [list $w.body.right.apis.details.vertical set]
-    pack $w.body.right.apis.details.vertical -side right -fill y;pack $w.body.right.apis.details.text -fill both -expand 1
-    bind $w.body.right.apis.list.tree <<TreeviewSelect>> ::GX::ViewerDevelopmentWorkspace::apiSelect
+    ttk::frame $w.body.right.sdk;ttk::frame $w.body.right.profile
+    $w.body.right add $w.body.right.sdk -text SDK;$w.body.right add $w.body.right.profile -text Profile
     set sdk [::GX::sourceSurfaceCreate $w.body.right.sdk.source {mode read_only language cpp}]
     pack $w.body.right.sdk.source -fill both -expand 1
     set f [::open [file join $::GX::scriptDir core development sdk gxtxt_viewer_sdk_v1.hpp] rb];try {::GX::sourceSurfaceSet $sdk [encoding convertfrom utf-8 [::read $f]]} finally {::close $f}
     ::text $w.body.right.profile.text -wrap word -width 36 -height 12
-    $w.body.right.profile.text insert end {C++17 restricted SDK v1
+    $w.body.right.profile.text insert end {C++17 with the public SDK v1
 
-Permitted: scalar locals, if/switch/loops, scalar helper functions, fixed event/state and enumerated Host methods. State indices are literal 0..15.
+Ordinary functions, pointers/references, user types, templates, inheritance/RTTI, recursion, callbacks/lambdas, allocation/RAII, exceptions, reviewed containers and project-local threads/fork are admitted.
 
-No authored includes, preprocessors, imports, external declarations, pointers/casts, raw libraries, I/O, processes or generic Tcl. Actual Clang lexer/AST policy runs before object generation.
+Develop → C/C++ support catalog lists every currently admitted header, its review rationale, actual compiler/runtime budgets and all Host signatures. The same catalog is available through the public author CLI.
 
-The same GUI/CLI backend enforces the Linux project-write tool grant and separate bounded build/native worker. Candidate export never installs.
+Canonical Dataset/Schema/Publication, Session/Workspace, History/Recovery, scientific execution/Jobs and Plot remain owned by public CORE services. Request a precise existing-owner extension when the typed SDK cannot express a required data flow. Scientific graphs use Plot v4; new v3 use is denied.
 
-Python authoring is disabled. Public APIs outside the SDK remain unavailable; request an explicit CORE capability extension.
-
-This cooperative architecture/quality workflow does not promise absolute hostile-native-code or account-wide isolation.}
+The same GUI/CLI backend owns admission, builds, native event lifetime and managed GDB/MI. Candidate export uses the normal Plugin Manager integration flow.}
     $w.body.right.profile.text configure -state disabled
     ttk::scrollbar $w.body.right.profile.vertical -command [list $w.body.right.profile.text yview]
     $w.body.right.profile.text configure -yscrollcommand [list $w.body.right.profile.vertical set]
@@ -299,13 +286,14 @@ This cooperative architecture/quality workflow does not promise absolute hostile
     bind $w <F8> {::GX::ViewerDevelopmentWorkspace::safe request test;break}
     bind $w <F1> ::GX::ViewerDevelopmentWorkspace::manual
     debugMount $w
-    foreach tree [list $w.body.left.files.tree $w.body.right.apis.list.tree $w.bottom.diagnostics.tree $w.bottom.stack.tree $w.bottom.variables.tree] {
+    foreach tree [list $w.body.left.files.tree $w.bottom.diagnostics.tree $w.bottom.stack.tree $w.bottom.variables.tree] {
         ::GX::uiFieldInspectionColumnsFit $tree
         if {{#0} in [$tree cget -displaycolumns] || {tree} in [$tree cget -show]} {
             $tree column #0 -minwidth [expr {[font measure TkHeadingFont [$tree heading #0 -text]]+24}]
         }
     }
     bind $w <Configure> +[list ::GX::ViewerDevelopmentWorkspace::responsiveLayout $w %W %h]
+    bind $w.body <Configure> +[list ::GX::ViewerDevelopmentWorkspace::responsiveBody $w]
     wm protocol $w WM_DELETE_WINDOW {::GX::ViewerDevelopmentWorkspace::safe close}
     controls
     if {[dict exists $context project]} {project [dict get $context project]}
@@ -323,7 +311,30 @@ proc ::GX::ViewerDevelopmentWorkspace::responsiveLayout {w actual height} {
     # Keep source usable when fonts and wrapped command bars need more room.
     # All bottom panels retain their ordinary scrollbars and View toggles.
     set desired [expr {max(60,min(200,int($height*.18)))}]
+    set browser $w.body.left.apiSplit.browser
+    if {[winfo exists $browser] && [winfo ismapped $browser] && [winfo height $w.body]>100} {
+        # The same Browser owner specifies its real font/chrome budget. Give
+        # useful reference lines priority over surplus diagnostic rows while
+        # keeping two diagnostic rows and their ordinary scrollbars available.
+        set minimum [::GX::apiBrowserMinimumHeight $browser]
+        set tree $w.bottom.diagnostics.tree
+        set heading [font metrics TkHeadingFont -linespace]
+        set row [expr {max(12,int(double([winfo reqheight $tree]-$heading-4)/max(1,[$tree cget -height])))}]
+        set bottomMinimum [expr {2*$row+$heading+[winfo reqheight $w.bottom.diagnostics.horizontal]+4}]
+        set page [$w.bottom select]
+        set chrome [expr {max(0,[winfo height $w.bottom]-[winfo height $page])}]
+        set budget [expr {[winfo height $w.body]+[winfo height $w.bottom]-$chrome-[dict get $minimum browser]-[dict get $minimum explorer]}]
+        # At the supported minimum client height, wrapped bars and notebook
+        # tabs may leave room for one diagnostic row. Keep its real header and
+        # scrollbars rather than clipping the selected API reference. Larger
+        # windows retain the usual two or more rows.
+        if {$budget<$bottomMinimum} {set bottomMinimum [expr {$row+$heading+[winfo reqheight $w.bottom.diagnostics.horizontal]+4}]}
+        set desired [expr {max($bottomMinimum,min($desired,$budget))}]
+    }
     if {[$w.bottom cget -height]!=$desired} {$w.bottom configure -height $desired}
+}
+proc ::GX::ViewerDevelopmentWorkspace::responsiveBody {w} {
+    if {[winfo exists $w]} {responsiveLayout $w $w [winfo height $w]}
 }
 proc ::GX::ViewerDevelopmentWorkspace::dispatch {operation scene} {return [open [::GX::datasetPublicationV2DictDefault $scene open_context {}]]}
 ::GX::viewerBackendRegister viewer_development_workspace_tk ::GX::ViewerDevelopmentWorkspace::dispatch

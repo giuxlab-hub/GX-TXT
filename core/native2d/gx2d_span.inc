@@ -92,7 +92,7 @@ gx2d_status gx2d_spline_span_to_line(gx2d_scene *s,gx2d_id id,size_t index) {
     size_t map[65536],nc,part,spans;gx2d_sketch_definition *d=NULL;
     gx2d_status code=gx2d_spline_line_plan(s,id,index,&d,map,65536,&nc,&part,&spans);if(code!=GX2D_OK)return code;
     int composite=o->sketch->family==GX2D_SKETCH_COMPOSITE_PATH,reverse=composite?o->sketch->part_reversed[part]:0;
-    rule *rules=malloc((s->rule_count?s->rule_count:1)*sizeof(rule));if(!rules){sketch_free(d);return GX2D_NOMEM;}memcpy(rules,s->rules,s->rule_count*sizeof(rule));
+    rule *rules=malloc((s->rule_count?s->rule_count:1)*sizeof(rule));if(!rules){sketch_free(d);return GX2D_NOMEM;}if(s->rule_count)memcpy(rules,s->rules,s->rule_count*sizeof(rule));
     for(size_t i=0;i<s->rule_count;i++){
         rule *r=&rules[i];
         if((r->spec.a==id&&!span_remap_index(&r->spec.a_index,map,nc,part,spans,composite,reverse))||
@@ -101,11 +101,34 @@ gx2d_status gx2d_spline_span_to_line(gx2d_scene *s,gx2d_id id,size_t index) {
     }
     gx2d_id temporary;code=gx2d_sketch_create(s,d,257,&temporary);sketch_free(d);if(code!=GX2D_OK){free(rules);return code;}
     o=obj(s,id);object *candidate=obj(s,temporary),before=*o;rule *old_rules=s->rules;
+    /* Constituent identity is object-owned, just like the retained definition.
+     * Keep every untouched leaf's identity/presentation. The selected Line
+     * inherits its former constituent identity; newly separated neighbours get
+     * fresh monotonic identities. A standalone Spline has no former leaves.
+     * Prepare this on the disposable candidate before changing the live object.
+     */
+    if(composite&&before.part_state_count!=before.sketch->part_count){free(rules);gx2d_delete_object(s,temporary);return GX2D_INVALID;}
+    size_t selected_span=composite?(index-GX2D_SEGMENT_INDEX)%NETWORK_STRIDE:index-GX2D_SEGMENT_INDEX;
+    size_t selected_part=part+(reverse?spans-1-selected_span:selected_span);
+    size_t fresh_count=candidate->part_state_count-(composite?before.part_state_count:0);
+    if(fresh_count>=(uint64_t)INT64_MAX-before.next_part_id){free(rules);gx2d_delete_object(s,temporary);return GX2D_RANGE;}
+    uint64_t next_part=before.next_part_id;
+    for(size_t i=0;i<candidate->part_state_count;i++){
+        if(composite&&(i<part||i>=part+spans)){
+            size_t previous=i<part?i:i-spans+1;
+            candidate->part_states[i]=before.part_states[previous];
+        }else if(composite&&i==selected_part){
+            candidate->part_states[i]=before.part_states[part];
+        }else candidate->part_states[i].part_id=++next_part;
+    }
+    candidate->next_part_id=next_part;
     o->sketch=candidate->sketch;o->points=candidate->points;o->breaks=candidate->breaks;o->manual=candidate->manual;o->count=candidate->count;o->capacity=candidate->capacity;
+    o->part_states=candidate->part_states;o->part_state_count=candidate->part_state_count;o->next_part_id=candidate->next_part_id;
     candidate->sketch=before.sketch;candidate->points=before.points;candidate->breaks=before.breaks;candidate->manual=before.manual;candidate->count=before.count;candidate->capacity=before.capacity;
+    candidate->part_states=before.part_states;candidate->part_state_count=before.part_state_count;candidate->next_part_id=before.next_part_id;
     s->rules=rules;code=gx2d_check_constraints(s);s->rules=old_rules;
-    if(code==GX2D_OK){memcpy(s->rules,rules,s->rule_count*sizeof(rule));o->parameter_epoch++;o->topology_epoch++;}
-    else {object failed=*o;*o=before;candidate->sketch=failed.sketch;candidate->points=failed.points;candidate->breaks=failed.breaks;candidate->manual=failed.manual;candidate->count=failed.count;candidate->capacity=failed.capacity;}
+    if(code==GX2D_OK){if(s->rule_count)memcpy(s->rules,rules,s->rule_count*sizeof(rule));o->parameter_epoch++;o->topology_epoch++;}
+    else {object failed=*o;*o=before;candidate->sketch=failed.sketch;candidate->points=failed.points;candidate->breaks=failed.breaks;candidate->manual=failed.manual;candidate->count=failed.count;candidate->capacity=failed.capacity;candidate->part_states=failed.part_states;candidate->part_state_count=failed.part_state_count;candidate->next_part_id=failed.next_part_id;}
     free(rules);gx2d_delete_object(s,temporary);return code;
 }
 /* Source topological control identities for an exact extracted definition. */

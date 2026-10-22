@@ -1,0 +1,38 @@
+{
+  "schema": "gxtxt.molecular_practice.sources.v1",
+  "generator_id": "molecular_structure_practice",
+  "generator_version": "1.0.0",
+  "sources": [
+    {
+      "component_id": "HOH",
+      "name": "WATER",
+      "path": "raw/HOH_ideal.sdf",
+      "sha256": "df2920cc0a8f577693c9f48294ed44f0db9b8c3cef135465dcdf527d129bbbe9",
+      "source": "wwPDB Chemical Component Dictionary (CCD), ideal coordinates",
+      "source_url": "https://files.rcsb.org/ligands/download/HOH_ideal.sdf",
+      "license": "CC0-1.0",
+      "rights_url": "https://www.rcsb.org/pages/usage-policy",
+      "coordinate_unit": "angstrom",
+      "sdf_records": 1,
+      "atoms": 3,
+      "bonds": 2,
+      "scientific_scope": "Bundled wwPDB CCD ideal-coordinate example, unchanged. No new optimization, measured accuracy or conformer computation."
+    },
+    {
+      "component_id": "TYR",
+      "name": "TYROSINE",
+      "path": "raw/TYR_ideal.sdf",
+      "sha256": "b9d511ad72f509cb96cc6f483b9dc4b0153266d778ba8e128b596ca3dada07e9",
+      "source": "wwPDB Chemical Component Dictionary (CCD), ideal coordinates",
+      "source_url": "https://files.rcsb.org/ligands/download/TYR_ideal.sdf",
+      "license": "CC0-1.0",
+      "rights_url": "https://www.rcsb.org/pages/usage-policy",
+      "coordinate_unit": "angstrom",
+      "sdf_records": 1,
+      "atoms": 24,
+      "bonds": 24,
+      "scientific_scope": "Bundled wwPDB CCD ideal-coordinate example, unchanged. No new optimization, measured accuracy or conformer computation."
+    }
+  ],
+  "scope": "Two independent single-record molecules, not two conformers of one molecule. No canonical Dataset, native scene, computed result, importer or decoder is embedded. Host-generated metadata/session_generator.ini is the generation authority."
+}

@@ -2,7 +2,7 @@
 # Component lifetime over the existing isolated CORE VTK renderer, never Engine3D state.
 namespace eval ::GX::Native3DCanvas {variable instances {};variable retiring {};variable serial 0;variable events {ready view_changed selected error released source_changed}}
 proc ::GX::native3DGuiHostApiInfoV2 {} {
-    return [dict create api_id NATIVE_3D_GUI_HOST_API_v2 api_version 2 operations {create configure bind unbind update navigate camera command pick subscribe unsubscribe inspect release} commands {native3DViewportCreate native3DViewportConfigure native3DViewportBind native3DViewportUnbind native3DViewportUpdate native3DViewportNavigate native3DViewportCamera native3DViewportCommand native3DViewportPick native3DViewportSubscribe native3DViewportUnsubscribe native3DViewportInspect native3DViewportRelease native3DScenePrepare} instance_limit 4 retiring_workers [dict size $::GX::Native3DCanvas::retiring] worker_ownership per_instance renderer NATIVE_3D_ENGINE_API_v1 events $::GX::Native3DCanvas::events demo display_only_RAM scientific_source VIEWER_PROVIDER_API_v1 publication 0]
+    return [dict create api_id NATIVE_3D_GUI_HOST_API_v2 api_version 2 operations {create configure bind unbind update navigate camera command pick subscribe unsubscribe inspect release} commands {native3DViewportCreate native3DViewportConfigure native3DViewportBind native3DViewportUnbind native3DViewportUpdate native3DViewportNavigate native3DViewportCamera native3DViewportCommand native3DViewportPick native3DViewportSubscribe native3DViewportUnsubscribe native3DViewportInspect native3DViewportRelease native3DScenePrepare} source_kinds {demo scientific cell_field} instance_limit 4 retiring_workers [dict size $::GX::Native3DCanvas::retiring] worker_ownership per_instance renderer NATIVE_3D_ENGINE_API_v1 events $::GX::Native3DCanvas::events demo display_only_RAM scientific_source VIEWER_PROVIDER_API_v1 cell_field_source PLOT_DATASET_API_v4 publication 0]
 }
 proc ::GX::native3DViewportCreate {widget {options {}}} {
     variable ::GX::Native3DCanvas::instances
@@ -19,10 +19,15 @@ proc ::GX::native3DViewportCreate {widget {options {}}} {
     ttk::label $widget.tools.hint -text {Drag: orbit · Shift-drag: pan · Wheel: zoom}
     pack $widget.tools.hint -side left -padx 8 -fill x -expand 1
     bind $widget.tools <Configure> [list ::GX::_native3DViewportHint $handle %w]
-    ttk::label $widget.status -text {No source — bind a scientific scene or a display-only RAM demo} -anchor w -wraplength 480
+    # Keep source context independent of transient activity. Alternating a long
+    # wrapped source caption with "Rendering…" changes the canvas height and
+    # can start an endless Configure -> resize -> Ready -> Configure cycle.
+    ttk::label $widget.sourceCaption -text {No source — bind a scientific scene or a display-only RAM demo} -anchor w -wraplength 480
+    ttk::label $widget.status -text {} -anchor w -wraplength 480
     canvas $widget.canvas -background #1f242e -highlightthickness 1 -highlightbackground #777777 -takefocus 1 -width 560 -height 360
     pack $widget.tools -side top -fill x
     pack $widget.status -side bottom -fill x -padx 4 -pady 3
+    pack $widget.sourceCaption -side bottom -fill x -padx 4
     pack $widget.canvas -fill both -expand 1
     set dir [file join [configurationCacheDirectory] native3d_components [string map {: _} $handle]]
     file mkdir $dir
@@ -96,12 +101,20 @@ proc ::GX::native3DViewportBind {h source} {
         set context [interactiveDocumentSessionToken]
         set scientificSnapshot [viewerSceneResolve [dict get $source module] [dict get $source provider]]
         set scene [native3DScenePrepare $scientificSnapshot]
-    } else {error {Native3D source kind must be demo or scientific}}
+    } elseif {$mode eq {cell_field}} {
+        if {[lsort [dict keys $source]] ne {kind spec}} {error {Cell-field binding requires its complete public Plot v4 spec}}
+        modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+        set context [interactiveDocumentSessionToken]
+        set scene [::GX::PlotDatasetAPIv4::cellFieldNativeScene [dict get $source spec]]
+        set scientificSnapshot [dict get $scene source_identity]
+    } else {error {Native3D source kind must be demo, scientific or cell_field}}
     _native3DViewportStop $h
     set r [_native3DViewportRecord $h]
     dict incr r generation;dict set r scene $scene;dict set r source $source;dict set r context $context;dict set r camera {};dict set r result {};dict set r error {}
-    dict set r scientific_snapshot [expr {$mode eq {scientific} ? [_native3DViewportScientificIdentity $scientificSnapshot] : {}}]
+    dict set r scientific_snapshot [expr {$mode eq {scientific} ? [_native3DViewportScientificIdentity $scientificSnapshot] : ($mode eq {cell_field} ? $scientificSnapshot : {})}]
     dict set ::GX::Native3DCanvas::instances $h $r
+    [dict get $r widget].sourceCaption configure -text [_native3DViewportSourceLabel $r]
+    if {$mode eq {cell_field}} {_native3DViewportQueue $h capabilities [list capabilities]}
     native3DViewportUpdate $h
     _native3DViewportEmit $h source_changed [dict create kind $mode generation [dict get $r generation]]
     return [native3DViewportInspect $h]
@@ -111,7 +124,8 @@ proc ::GX::native3DViewportUnbind {h} {
     set r [_native3DViewportRecord $h];dict incr r generation
     foreach key {scene source context camera result error} {dict set r $key {}}
     dict set r status empty;set w [dict get $r widget];$w.canvas delete all
-    $w.status configure -text {No source — bind a scientific scene or a display-only RAM demo}
+    $w.sourceCaption configure -text {No source — bind a scientific scene or a display-only RAM demo}
+    $w.status configure -text {}
     foreach id {fit reset front top} {$w.tools.$id state disabled}
     dict set ::GX::Native3DCanvas::instances $h $r
 }
@@ -123,7 +137,12 @@ proc ::GX::_native3DViewportValid {h} {
         return 0
     }
     set source [dict get $r source]
-    if {[catch {set current [_native3DViewportScientificIdentity [viewerSceneResolve [dict get $source module] [dict get $source provider]]]}]||$current ne [dict get $r scientific_snapshot]} {
+    if {[dict get $source kind] eq {cell_field}} {
+        set failed [catch {set current [::GX::PlotDatasetAPIv4::cellFieldSourceIdentity [dict get $source spec]]}]
+    } else {
+        set failed [catch {set current [_native3DViewportScientificIdentity [viewerSceneResolve [dict get $source module] [dict get $source provider]]]}]
+    }
+    if {$failed||$current ne [dict get $r scientific_snapshot]} {
         _native3DViewportFail $h {Scientific source or scene changed; explicitly rebind the viewport.} stale_source
         return 0
     }
@@ -169,7 +188,7 @@ proc ::GX::native3DViewportPick {h x y} {
     foreach value [list $x $y] {if {![string is integer -strict $value]||$value<0||$value>4096} {error {Pick coordinates must be bounded viewport pixels}}}
     if {[dict get $r scene] eq {}||![_native3DViewportValid $h]} {return}
     if {$x>=[winfo width $w.canvas]||$y>=[winfo height $w.canvas]} {error {Pick lies outside the native viewport}}
-    _native3DViewportQueue $h pick [list pick $x $y]
+    _native3DViewportQueue $h pick [list pick $x $y [file join [dict get $r directory] frame.png]]
 }
 proc ::GX::_native3DViewportQueue {h kind request} {
     set r [_native3DViewportRecord $h]
@@ -235,30 +254,57 @@ proc ::GX::_native3DViewportReadable {h generation} {
     if {[string length $line]>4194304||[catch {llength $line} n]||$n!=2||[lindex $line 0] ne {ok}} {_native3DViewportFail $h "Native renderer: [string range [lindex $line 1] 0 1800]";return}
     if {![_native3DViewportValid $h]} return
     set result [lindex $line 1];set kind [dict get $r busy];set w [dict get $r widget]
+    if {$kind eq {capabilities}} {
+        if {{exact_planar_cell_field} ni $result} {_native3DViewportFail $h {The installed Native3D binary lacks exact planar cell-field support; install a compatible precompiled CORE.};return}
+        dict set r busy {};dict set ::GX::Native3DCanvas::instances $h $r
+        _native3DViewportNext $h;return
+    }
     if {$kind eq {pick}} {
+        if {[dict get $r source kind] eq {cell_field} && [dict get $result hit]} {
+            set layer [dict get $r scene layers canonical_cell_field]
+            foreach {native rows idkey datasetkey} {cell_index mesh_cells source_cell_id dataset_id point_index mesh_nodes source_node_id source_dataset_id} {
+                if {![dict exists $result $native] || [dict get $result $native]<0} continue
+                set index [dict get $result $native];set records [dict get $layer $rows]
+                if {$index>=[llength $records]} {_native3DViewportFail $h {Native pick exceeds the retained canonical mesh; rebind explicitly.};return}
+                dict set result $idkey [lindex [lindex $records $index] 0]
+                dict set result ${idkey}_dataset_id [dict get $layer $datasetkey]
+                dict set result ${idkey}_row_ordinal $index
+            }
+        }
+        if {[catch {set r [_native3DViewportPresentFrame $r]} message]} {_native3DViewportFail $h $message;return}
         dict set r selection $result;dict set r busy {};dict set r status ready
         dict set ::GX::Native3DCanvas::instances $h $r
-        set label [expr {[dict get $r source kind] eq {demo}?{RAM demo · display only · no Dataset}:{Scientific scene · public Viewer Provider binding}}]
-        $w.status configure -text "$label · [expr {[dict get $result hit]?{Geometry selected}:{No geometry at pointer}}]"
+        $w.status configure -text [expr {[dict get $result hit]?{Geometry selected}:{No geometry at pointer}}]
         _native3DViewportEmit $h selected [dict create native_pick $result generation $generation source [dict get $r source]]
         if {[dict exists $::GX::Native3DCanvas::instances $h]} {_native3DViewportNext $h}
         return
     }
-    set png [file join [dict get $r directory] frame.png]
-    if {![::GX::Engine3D::pngComplete $png]} {_native3DViewportFail $h {Renderer returned an incomplete frame};return}
-    if {[dict get $r photo] eq {}} {dict set r photo [image create photo]}
-    if {[catch {[dict get $r photo] configure -file $png} message]} {_native3DViewportFail $h $message;return}
-    $w.canvas delete native_frame
-    $w.canvas create image 0 0 -anchor nw -image [dict get $r photo] -tags native_frame
+    if {[catch {set r [_native3DViewportPresentFrame $r]} message]} {_native3DViewportFail $h $message;return}
     foreach key {camera_position camera_target camera_up projection vertical_fov_degrees near_clip far_clip} {if {[dict exists $result $key]} {dict set r camera $key [dict get $result $key]}}
     if {$kind eq {render}} {dict set r render_receipt $result}
     dict set r result $result;dict set r busy {};dict set r status ready
     dict set ::GX::Native3DCanvas::instances $h $r
-    set label [expr {[dict get $r source kind] eq {demo} ? {RAM demo · display only · no Dataset} : {Scientific scene · public Viewer Provider binding}}]
-    $w.status configure -text "$label · Ready"
+    $w.status configure -text {Ready}
     foreach id {fit reset front top} {$w.tools.$id state !disabled}
     _native3DViewportEmit $h [expr {$kind eq {render} ? {ready} : {view_changed}}] [dict create camera [dict get $r camera] generation $generation]
     if {[dict exists $::GX::Native3DCanvas::instances $h]} {_native3DViewportNext $h}
+}
+proc ::GX::_native3DViewportPresentFrame {r} {
+    set png [file join [dict get $r directory] frame.png]
+    if {![::GX::Engine3D::pngComplete $png]} {error {Renderer returned an incomplete frame}}
+    if {[dict get $r photo] eq {}} {dict set r photo [image create photo]}
+    [dict get $r photo] configure -file $png
+    set w [dict get $r widget]
+    $w.canvas delete native_frame
+    $w.canvas create image 0 0 -anchor nw -image [dict get $r photo] -tags native_frame
+    return $r
+}
+proc ::GX::_native3DViewportSourceLabel {record} {
+    switch -- [dict get $record source kind] {
+        demo {return {RAM demo · display only · no Dataset}}
+        cell_field {return [dict get $record scene caption]}
+        default {return {Scientific scene · public Viewer Provider binding}}
+    }
 }
 proc ::GX::_native3DViewportStop {h} {
     set r [_native3DViewportRecord $h]

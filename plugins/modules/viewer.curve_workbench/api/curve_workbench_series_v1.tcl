@@ -12,7 +12,7 @@ proc ::GX::CurveWorkbench::_seriesCommit {w token container sources name paramet
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen series parameters"}
     if {[string trim $name] eq {}} {error "Enter a series name"}
     if {$container eq {}&&[dict size $st($w,seriesContainers)]>=256} {error "Series container limit is 256"}
-    _cancelGesture $w;_pointSyncApply $w;_cadUnits $w $sources
+    _cancelGesture $w;_pointSyncApply $w;_coordinatePlaneAdmit $w $sources
     set frame {1 0 0 1 0 0};set old {}
     if {$container ne {}} {set frame [dict get $st($w,seriesContainers) $container frame];set old [dict get $st($w,seriesContainers) $container members]}
     set nativeIds {};set map {}
@@ -83,6 +83,11 @@ proc ::GX::CurveWorkbench::_seriesEditOpen {w} {
     variable st
     set id [_seriesContainerSelected $w];set record [dict get $st($w,seriesContainers) $id];set p [dict get $record parameters];lassign [dict get $p step_u] ux uy;lassign [dict get $p step_v] vx vy
     set fields {name {type string label {Series name}} rows {type integer min 1 max 10000 label {Count V / rows}} columns {type integer min 1 max 10000 label {Count U / columns}} ux {type number label {Step U: X}} uy {type number label {Step U: Y}} vx {type number label {Step V: X}} vy {type number label {Step V: Y}} include_origin {type boolean label {Generate a copy at index [0,0]}} preview {type boolean label {Preview only (temporary scene; no history change)}}}
+    set sources [dict get $record sources];_coordinatePlaneAdmit $w $sources
+    lassign [_coordinateUnits [_record $w [lindex $sources 0]]] xUnit yUnit
+    foreach field {ux vx} {dict set fields $field label "[dict get $fields $field label]: native X ($xUnit)"}
+    foreach field {uy vy} {dict set fields $field label "[dict get $fields $field label]: native Y ($yUnit)"}
+    set st($w,seriesEditKey) [list $id $record [_coordinateControlKey $w $sources]]
     set values [dict create name [dict get $record name] rows [dict get $p rows] columns [dict get $p columns] ux $ux uy $uy vx $vx vy $vy include_origin [dict get $p include_origin] preview 0]
     ::GX::uiFieldFormCreate $w.seriesEdit "Edit parametric series $id" $fields $values [list ::GX::CurveWorkbench::_seriesEditApply $w $st($w,token) $id] $w.seriesManager
 }
@@ -91,6 +96,8 @@ proc ::GX::CurveWorkbench::_seriesEditApply {w token id values} {
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen series parameters"}
     set p [dict create rows [dict get $values rows] columns [dict get $values columns] step_u [list [dict get $values ux] [dict get $values uy]] step_v [list [dict get $values vx] [dict get $values vy]] include_origin [dict get $values include_origin]]
     set record [dict get $st($w,seriesContainers) $id]
+    set sources [dict get $record sources];_coordinatePlaneAdmit $w $sources
+    if {![info exists st($w,seriesEditKey)]||$st($w,seriesEditKey) ne [list $id $record [_coordinateControlKey $w $sources]]} {error {Series or coordinate frame changed; reopen series parameters}}
     if {![dict get $values preview]} {return [_seriesCommit $w $token $id [dict get $record sources] [dict get $values name] $p]}
     set preview [::GX::Native2D::core scene]
     try {
@@ -101,7 +108,7 @@ proc ::GX::CurveWorkbench::_seriesEditApply {w token id values} {
         set d $w.seriesPreview;if {[winfo exists $d]} {destroy $d};toplevel $d;wm title $d "Series preview — no geometry committed"
         canvas $d.canvas -width 700 -height 500 -background white;pack $d.canvas -fill both -expand 1
         ::GX::Native2D::core view $preview {700 500 20 20 20 20 {0 0 1 1}};::GX::Native2D::core fit $preview
-        foreach member [dict get $receipt object_ids] {foreach path [::GX::Native2D::core render_paths $preview $member] {if {[llength $path]>=4} {$d.canvas create line [concat {*}$path] -fill #245ba0 -width 2}}}
+        foreach member [dict get $receipt object_ids] {foreach path [::GX::Native2D::core render_paths $preview $member] {if {[llength $path]>=2} {$d.canvas create line [concat {*}$path] -fill #245ba0 -width 2}}}
         ttk::button $d.close -text Close -command [list destroy $d];pack $d.close -side bottom
         bind $d <Escape> [list destroy $d]
     } finally {::GX::Native2D::core destroy $preview}
@@ -110,14 +117,22 @@ proc ::GX::CurveWorkbench::_seriesEditApply {w token id values} {
 proc ::GX::CurveWorkbench::_seriesTransformOpen {w} {
     variable st
     set id [_seriesContainerSelected $w]
-    ::GX::uiFieldFormCreate $w.seriesTransform "Transform whole series $id" {dx {type number label {Translate X}} dy {type number label {Translate Y}} angle {type number label {Rotation about origin (degrees)}}} {dx 0 dy 0 angle 0} [list ::GX::CurveWorkbench::_seriesTransformApply $w $st($w,token) $id] $w.seriesManager
+    set record [dict get $st($w,seriesContainers) $id];set ids [concat [dict get $record sources] [dict get $record members]]
+    _coordinatePlaneAdmit $w $ids
+    lassign [_coordinateUnits [_record $w [lindex $ids 0]]] xUnit yUnit
+    set fields [dict create dx [dict create type number label "Translate native X ($xUnit)"] dy [dict create type number label "Translate native Y ($yUnit)"] angle {type number label {Numeric plane rotation about origin (degrees)}}]
+    set st($w,seriesTransformKey) [list $id $record [_coordinateControlKey $w $ids]]
+    ::GX::uiFieldFormCreate $w.seriesTransform "Transform whole series $id" $fields {dx 0 dy 0 angle 0} [list ::GX::CurveWorkbench::_seriesTransformApply $w $st($w,token) $id] $w.seriesManager
 }
 proc ::GX::CurveWorkbench::_seriesTransformApply {w token id values} {
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen series transform"}
     _cancelGesture $w;_pointSyncApply $w
     set record [dict get $st($w,seriesContainers) $id];set ids [dict get $record members];set before [_snapshotIds $w $ids];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
-    set angle [expr {[dict get $values angle]*acos(-1)/180}];set c [expr {cos($angle)}];set s [expr {sin($angle)}];set matrix [list $c [expr {-$s}] $s $c [dict get $values dx] [dict get $values dy]]
+    set all [concat [dict get $record sources] $ids];_coordinatePlaneAdmit $w $all
+    if {![info exists st($w,seriesTransformKey)]||$st($w,seriesTransformKey) ne [list $id $record [_coordinateControlKey $w $all]]} {error {Series or coordinate frame changed; reopen series transform}}
+    set matrix [::GX::Native2D::core rotation_matrix_degrees $st($w,scene) {0 0} [dict get $values angle]]
+    lset matrix 4 [dict get $values dx];lset matrix 5 [dict get $values dy]
     set frame [::GX::native2DSeriesCompose $matrix [dict get $record frame]];set natives [lmap member $ids {dict get [_record $w $member] native}]
     if {$natives eq {}} {error "Empty series has no geometry to transform"}
     try {::GX::Native2D::core affine $st($w,scene) $natives $matrix 0;foreach member $ids {_syncSamples $w $member};dict set st($w,seriesContainers) $id frame $frame;_history $w $before $ids} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}

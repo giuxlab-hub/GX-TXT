@@ -1,0 +1,16 @@
+{
+  "schema": "gxtxt.viewer_icon_resources.v1",
+  "icons": {
+    "latex_article": {
+      "title": "LaTeX scientific article",
+      "category": "documents",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "83b63752f99319bf944ed18e23df00b2053b18654bd2a8a9b28e51aad1255d72",
+      "png_sha256": "0b22a8eef7ded12b5f814311848dfd63d7438c49631f93418617195f2630412b",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    }
+  }
+}

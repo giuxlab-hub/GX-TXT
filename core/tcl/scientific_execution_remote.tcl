@@ -32,19 +32,55 @@ proc ::GX::scientificExecutionDestination {{destination {}}} {
     }
     return [configurationGet execution.destination]
 }
-proc ::GX::scientificExecutionRemoteCall {node session operation args} {
-    variable ::GX::ScientificExecution::remoteMetrics
+proc ::GX::_scientificExecutionRemoteRequest {node session operation args} {
     set nodes [scientificExecutionNodes]
     if {![dict exists $nodes $node] || ![dict get $nodes $node enabled]} {error {Compute node is unknown or disabled}}
     set request [dict create node [dict get $nodes $node] session_id $session operation $operation arguments $args]
     if {$operation eq "scientific.submit"} {dict set request nonce [lindex $args 1];dict set request arguments [list [lindex $args 0]]}
     if {$operation eq "resource.append"} {dict set request payload_base64 [lindex $args 2];dict set request arguments [lrange $args 0 1]}
     if {$operation eq "dataset.preview"} {dict set request artifact_directory [lindex $args 3];dict set request arguments [lrange $args 0 2]}
-    set command [list [runtimeToolResolve python] -B [file join $::GX::scriptDir core python gxtxt_remote_transport.py]]
+    return $request
+}
+proc ::GX::_scientificExecutionRemoteCommand {} {
+    return [list [runtimeToolResolve python] -B [file join $::GX::scriptDir core python gxtxt_remote_transport.py]]
+}
+proc ::GX::scientificExecutionRemoteCall {node session operation args} {
+    variable ::GX::ScientificExecution::remoteMetrics
+    set request [_scientificExecutionRemoteRequest $node $session $operation {*}$args]
+    set command [_scientificExecutionRemoteCommand]
     if {[catch {exec {*}$command << $request} response] || [catch {dict get $response ok} ok]} {return -code error -errorcode {GX REMOTE UNAVAILABLE} {Compute node transport is unavailable}}
     if {!$ok} {return -code error -errorcode [dict get $response error_code] [dict get $response error]}
     set remoteMetrics [dict get $response metrics]
     return [dict get $response result]
+}
+# The same authenticated transport, managed by the existing auxiliary request
+# owner. Cancelling this client request never cancels the durable remote Job.
+proc ::GX::scientificExecutionRemoteCallAsync {node session operation arguments callback} {
+    set request [_scientificExecutionRemoteRequest $node $session $operation {*}$arguments]
+    return [scriptJobAsync [_scientificExecutionRemoteCommand] $request \
+        [list ::GX::_scientificExecutionRemoteAsyncReady $callback] \
+        {timeout_ms 20000 max_bytes 67108864 ui_lifetime 1 label {Compute node request}}]
+}
+proc ::GX::_scientificExecutionRemoteAsyncReady {callback response} {
+    if {[dict get $response ok] && [dict exists $response metrics]} {
+        set ::GX::ScientificExecution::remoteMetrics [dict get $response metrics]
+    }
+    if {$callback ne {}} {uplevel #0 [list {*}$callback $response]}
+}
+proc ::GX::_scientificExecutionRemoteHostContracts {} {
+    set parameters {}
+    foreach {name type description} {
+        node NodeID {Existing enabled Execution Configuration node ID; no implicit fallback.}
+        session RemoteSessionID {Exact logical remote Session identity from the original receipt.}
+        operation RemoteOperation {An operation already implemented by the authenticated compute-node protocol.}
+        arguments ArgumentList {One inert Tcl list of operation arguments, not executable source or variadic parameters.}
+        callback CommandPrefix {Prefix receiving the existing ok/result/metrics or ok/error response dictionary.}
+    } {dict set parameters $name [dict create type $type description $description]}
+    return [dict create scientificExecutionRemoteCallAsync [dict create \
+        command ::GX::scientificExecutionRemoteCallAsync \
+        arguments {node session operation arguments callback} parameters $parameters \
+        result [dict create type AuxiliaryRequestID description {Existing Script Job client token, bounded to 20 seconds and 64 MiB. Node validation or startup errors raise before a token exists. Cancelling the client does not cancel the durable Job.}] \
+        context {Trusted Tcl host only. Uses existing configured authenticated transport. No Script Bridge or C++ SDK grant is implied.}]]
 }
 proc ::GX::scientificExecutionNodeInspect {node} {
     set nodes [scientificExecutionNodes]

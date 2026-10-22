@@ -21,6 +21,16 @@ void Host::scientific_log(unsigned form) const {dispatch_(context_,17,form,0,0,n
 void Host::scientific_import(unsigned form,unsigned dataset_selector) const {dispatch_(context_,18,form,dataset_selector,0,nullptr);}
 void Host::plot_discover(unsigned form) const {dispatch_(context_,19,form,0,0,nullptr);}
 void Host::plot_bind(unsigned plot,unsigned form) const {dispatch_(context_,20,form,plot,0,nullptr);}
+void Host::document_bind(unsigned document,unsigned dataset_selector) const {dispatch_(context_,26,document,dataset_selector,0,nullptr);}
+void Host::raster_bind(unsigned viewport,unsigned dataset_selector) const {dispatch_(context_,33,viewport,dataset_selector,0,nullptr);}
+void Host::raster_tool(unsigned viewport,const char* tool) const {dispatch_(context_,34,viewport,0,0,tool);}
+void Host::raster_command(unsigned viewport,const char* command) const {dispatch_(context_,35,viewport,0,0,command);}
+void Host::tex_command(unsigned form,const char* operation) const {dispatch_(context_,30,form,0,0,operation);}
+void Host::em_command(unsigned form,const char* operation) const {dispatch_(context_,31,form,0,0,operation);}
+void Host::workbench_command(unsigned form,const char* operation) const {dispatch_(context_,32,form,0,0,operation);}
+void Host::catalog_refresh(unsigned form) const {dispatch_(context_,27,form,0,0,nullptr);}
+void Host::catalog_inspect(unsigned form) const {dispatch_(context_,28,form,0,0,nullptr);}
+void Host::catalog_action(unsigned form,const char* action) const {dispatch_(context_,29,form,0,0,action);}
 void Host::numeric_discover(unsigned form) const {dispatch_(context_,21,form,0,0,nullptr);}
 void Host::numeric_evaluate(unsigned form) const {dispatch_(context_,22,form,0,0,nullptr);}
 void Host::numeric_statistics(unsigned form) const {dispatch_(context_,23,form,0,0,nullptr);}

@@ -1,6 +1,64 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Dataset consultation shares the installed native engine; no script evaluation.
-namespace eval ::GX::DocumentSource {variable serial 0}
+namespace eval ::GX::DocumentSource {variable serial 0;variable zoom {}}
+proc ::GX::documentPresentationZoomAttach {widget} {
+    variable ::GX::DocumentSource::zoom
+    documentPresentationZoomDispose $widget $widget
+    set fonts {};set byRole {}
+    foreach {role base} {body TkDefaultFont heading TkHeadingFont bold TkDefaultFont italic TkDefaultFont code TkFixedFont} {
+        set options [font actual $base]
+        if {$role eq {bold}} {dict set options -weight bold}
+        if {$role eq {italic}} {dict set options -slant italic}
+        set name [font create {*}$options]
+        lappend fonts [list $name [dict get $options -size]];dict set byRole $role $name
+    }
+    $widget configure -font [dict get $byRole body]
+    foreach role {heading bold italic} {$widget tag configure $role -font [dict get $byRole $role]}
+    foreach role {code tag attribute string} {$widget tag configure $role -font [dict get $byRole code]}
+    dict set zoom $widget [dict create factor 1.0 fonts $fonts]
+    set tag GXDocumentZoom:$widget
+    if {$tag ni [bindtags $widget]} {bindtags $widget [linsert [bindtags $widget] 1 $tag]}
+    foreach {sequence action} {<Control-plus> in <Control-equal> in <Control-minus> out <Control-0> reset} {bind $tag $sequence "[list ::GX::documentPresentationZoom $widget $action];break"}
+    bind $tag <Destroy> [list ::GX::documentPresentationZoomDispose $widget %W]
+}
+proc ::GX::documentPresentationZoomDispose {widget actual} {
+    variable ::GX::DocumentSource::zoom
+    if {$widget ne $actual || ![dict exists $zoom $widget]} return
+    foreach font [dict get $zoom $widget fonts] {catch {font delete [lindex $font 0]}}
+    dict unset zoom $widget
+    set tag GXDocumentZoom:$widget
+    catch {foreach sequence [bind $tag] {bind $tag $sequence {}}}
+}
+proc ::GX::documentPresentationZoom {widget action} {
+    variable ::GX::DocumentSource::zoom
+    if {![dict exists $zoom $widget] || ![winfo exists $widget]} {return {}}
+    set factor [dict get $zoom $widget factor]
+    switch -- $action {in {set factor [expr {min(3.0,$factor+.25)}]} out {set factor [expr {max(.5,$factor-.25)}]} reset {set factor 1.0} default {error {Document zoom action must be in, out or reset}}}
+    set view [$widget yview]
+    foreach font [dict get $zoom $widget fonts] {
+        lassign $font name size
+        set scaled [expr {max(4,round(abs($size)*$factor))}]
+        font configure $name -size [expr {$size<0?-$scaled:$scaled}]
+    }
+    dict set zoom $widget factor $factor
+    if {[dict exists $zoom $widget label] && [winfo exists [dict get $zoom $widget label]]} {[dict get $zoom $widget label] configure -text "[expr {round(100*$factor)}]%"}
+    update idletasks
+    if {[llength $view] && [winfo exists $widget]} {$widget yview moveto [lindex $view 0]}
+    return [dict create zoom_percent [expr {round(100*$factor)}] source_mutation 0 scope widget]
+}
+proc ::GX::documentPresentationZoomControls {parent widget} {
+    variable ::GX::DocumentSource::zoom
+    if {![dict exists $zoom $widget]} {error {Rendered document must be ready before its zoom controls}}
+    ttk::frame $parent
+    ttk::label $parent.title -text {Text size:}
+    ttk::button $parent.smaller -text {Smaller} -command [list ::GX::documentPresentationZoom $widget out]
+    ttk::label $parent.level -text {100%} -width 5 -anchor center
+    ttk::button $parent.larger -text {Larger} -command [list ::GX::documentPresentationZoom $widget in]
+    ttk::button $parent.reset -text {Reset} -command [list ::GX::documentPresentationZoom $widget reset]
+    pack $parent.title $parent.smaller $parent.level $parent.larger $parent.reset -side left -padx 3 -pady 2
+    dict set zoom $widget label $parent.level
+    return $parent
+}
 proc ::GX::documentNativeEnsure {} {
     if {![llength [info commands ::GX::NativeDocument::xml]]} {
         set library [file join $::GX::scriptDir core nativegui document libgxtxt_document[info sharedlibextension]]
@@ -39,9 +97,11 @@ proc ::GX::documentRenderToWidget {widget language source} {
     $widget tag configure tag -foreground #084c9e
     $widget tag configure attribute -foreground #753b00
     $widget tag configure link -foreground #064ca8 -underline 1
+    documentPresentationZoomAttach $widget
     foreach run $model {lassign $run tag text;$widget insert end $text $tag}
     if {$language eq {html}} {$widget insert end "\n\nSafe minimal HTML: scripts, external assets, forms and CSS are inactive. Images are omitted.\n"}
     $widget configure -state disabled
+    uiTextEditingAttach [winfo toplevel $widget] [list $widget]
     return [dict create renderer native_c language $language runs [llength $model]]
 }
 proc ::GX::datasetDocumentKind {id} {

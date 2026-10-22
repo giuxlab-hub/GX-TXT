@@ -1,0 +1,16 @@
+{
+  "schema": "gxtxt.viewer_icon_resources.v1",
+  "icons": {
+    "pdf_document": {
+      "title": "PDF document reader",
+      "category": "Documents",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "4c1853ff75e1e2fde96f54b16a508816579cef5df330a56bde0db5521938c70f",
+      "png_sha256": "93d260ed6f37cd6791497b65ba110c10393234bdea371343a723b20d953f632a",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    }
+  }
+}

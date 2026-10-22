@@ -95,14 +95,23 @@ proc ::GX::scriptJobTextReplace {widget text {reset 0}} {
 }
 proc ::GX::scriptJobDetailsWindow {id {session {}}} {
     variable scriptJobDetail;variable scriptJobDetailSerial
+    foreach key [array names scriptJobDetail *,id] {
+        set existing [string range $key 0 end-3]
+        if {$scriptJobDetail($key) eq $id && $scriptJobDetail($existing,session) eq $session && [winfo exists $existing]} {raise $existing;focus $existing;return $existing}
+    }
     set w .scriptJobDetail[incr scriptJobDetailSerial]
     set scriptJobDetail($w,id) $id;set scriptJobDetail($w,session) $session
+    set scriptJobDetail($w,remote) [scientificExecutionRemoteId $id]
+    set scriptJobDetail($w,requests) {};set scriptJobDetail($w,requestSerial) 0
     set scriptJobDetail($w,generation) 0;set scriptJobDetail($w,pageGeneration) 0
     set scriptJobDetail($w,follow) 0;set scriptJobDetail($w,offset) 0;set scriptJobDetail($w,next) 0
     set scriptJobDetail($w,stream) legacy;set scriptJobDetail($w,streamLabel) {Legacy combined stream};set scriptJobDetail($w,record) {};set scriptJobDetail($w,status) {Loading exact execution…}
     toplevel $w;wm title $w "Execution details — $id";wm geometry $w 1100x780;wm minsize $w 680 480
     wm protocol $w WM_DELETE_WINDOW [list ::GX::scriptJobDetailClose $w]
     ttk::frame $w.actions;pack $w.actions -fill x
+    ttk::button $w.actions.reconnect -text Reconnect -command [list ::GX::scriptJobDetailReconnect $w]
+    ttk::button $w.actions.cancel -text {Cancel Job…} -command [list ::GX::scriptJobDetailCancel $w] -state disabled
+    pack $w.actions.reconnect $w.actions.cancel -side left -padx 3 -pady 3
     foreach {name label command} {script {Copy Script ID} scriptJobDetailCopyScript id {Copy Job ID} scriptJobDetailCopyId details {Copy details} scriptJobDetailCopyDetails copy {Copy selection} scriptJobDetailCopySelection all {Select visible page} scriptJobDetailSelectLog full {Copy entire source} scriptJobDetailCopyFull save {Save source to file…} scriptJobDetailSaveLog} {
         ttk::button $w.actions.$name -text $label -command [list ::GX::$command $w];pack $w.actions.$name -side left -padx 3 -pady 3
     }
@@ -111,6 +120,10 @@ proc ::GX::scriptJobDetailsWindow {id {session {}}} {
     bind $w.actions.source <<ComboboxSelected>> [list ::GX::scriptJobDetailSourceChanged $w]
     ttk::button $w.actions.publish -text {Publish source as Dataset…} -command [list ::GX::scriptJobDetailPublish $w]
     pack $w.actions.publish -side left -padx 3
+    if {$scriptJobDetail($w,remote)} {
+        $w.actions.source configure -values {{Legacy combined stream}} -state disabled
+        $w.actions.publish state disabled
+    }
     bind $w.actions <Configure> {::GX::uiFieldControlsLayout %W %w}
     ttk::panedwindow $w.split -orient vertical;pack $w.split -fill both -expand 1 -padx 5
     ttk::frame $w.split.info;ttk::frame $w.split.log
@@ -131,33 +144,98 @@ proc ::GX::scriptJobDetailsWindow {id {session {}}} {
 }
 proc ::GX::scriptJobDetailCommand {w operation args} {
     variable scriptJobDetail
+    if {$scriptJobDetail($w,remote)} {error {Remote Job requests use the configured Scientific Execution transport}}
+    if {$operation eq {cancel} && $scriptJobDetail($w,session) ne {}} {error {Archived run details cannot cancel a live Job}}
     if {$operation eq {log_read}} {set args [linsert $args 0 $scriptJobDetail($w,stream)];set operation stream_read}
     if {$scriptJobDetail($w,session) eq {}} {return [scriptJobCommand $operation $scriptJobDetail($w,id) {*}$args]}
     set op [expr {$operation eq "inspect" ? "inspect_run" : "run_stream_read"}]
     return [scriptJobCommand $op $scriptJobDetail($w,session) $scriptJobDetail($w,id) {*}$args]
 }
+proc ::GX::scriptJobDetailRequest {w operation arguments callback} {
+    variable scriptJobDetail
+    set serial [incr scriptJobDetail($w,requestSerial)]
+    set done [list ::GX::scriptJobDetailRequestDone $w $serial $callback]
+    if {[catch {
+        if {$scriptJobDetail($w,remote)} {
+            lassign [_scientificRemoteRoute $scriptJobDetail($w,id)] node session job
+            switch -- $operation {
+                inspect {set op job.inspect}
+                log_read {set op job.log_read}
+                cancel {set op scientific.cancel}
+                default {error {Unsupported remote Job detail operation}}
+            }
+            set token [scientificExecutionRemoteCallAsync $node $session $op [linsert $arguments 0 $job] $done]
+        } else {
+            set token [scriptJobAsync [scriptJobDetailCommand $w $operation {*}$arguments] {} $done]
+        }
+    } reason options]} {
+        set response [dict create ok 0 error $reason]
+        if {[dict exists $options -errorcode]} {dict set response error_code [dict get $options -errorcode]}
+        after idle [list {*}$done $response]
+        return {}
+    }
+    dict set scriptJobDetail($w,requests) $serial $token
+    return $token
+}
+proc ::GX::scriptJobDetailRequestDone {w serial callback response} {
+    variable scriptJobDetail
+    if {![info exists scriptJobDetail($w,id)]} return
+    if {[dict exists $scriptJobDetail($w,requests) $serial]} {dict unset scriptJobDetail($w,requests) $serial}
+    uplevel #0 [list {*}$callback $response]
+}
+proc ::GX::scriptJobDetailReconnect {w} {
+    scriptJobDetailRefresh $w
+    scriptJobDetailPage $w latest
+}
+proc ::GX::scriptJobDetailCancel {w} {
+    variable scriptJobDetail
+    if {$scriptJobDetail($w,session) ne {} || [scriptJobField $scriptJobDetail($w,record) state] ni {QUEUED PREPARING RUNNING FINALIZING}} return
+    set id $scriptJobDetail($w,id)
+    if {[tk_messageBox -parent $w -icon question -type yesno -default no -title {Cancel the existing Job?} -message "Request cancellation of $id through its existing execution owner? Closing this window alone never cancels the Job."] ne {yes}} return
+    $w.actions.cancel state disabled
+    scriptJobDetailRequest $w cancel {} [list ::GX::scriptJobDetailCancelReady $w $id]
+}
+proc ::GX::scriptJobDetailCancelReady {w id response} {
+    if {![info exists ::GX::scriptJobDetail($w,id)] || $::GX::scriptJobDetail($w,id) ne $id} return
+    if {![dict get $response ok]} {set ::GX::scriptJobDetail($w,status) "Cancellation unavailable: [dict get $response error]";return}
+    set ::GX::scriptJobDetail($w,status) {Cancellation requested; reconnecting to the authoritative state.}
+    scriptJobDetailRefresh $w
+}
 proc ::GX::scriptJobDetailRefresh {w} {
     variable scriptJobDetail
     if {![info exists scriptJobDetail($w,id)]} return
+    if {[info exists scriptJobDetail($w,timer)]} {after cancel $scriptJobDetail($w,timer);unset scriptJobDetail($w,timer)}
     set gen [incr scriptJobDetail($w,generation)]
-    scriptJobAsync [scriptJobDetailCommand $w inspect] {} [list ::GX::scriptJobDetailReady $w $scriptJobDetail($w,id) $gen]
+    scriptJobDetailRequest $w inspect {} [list ::GX::scriptJobDetailReady $w $scriptJobDetail($w,id) $gen]
 }
 proc ::GX::scriptJobDetailReady {w id gen response} {
     variable scriptJobDetail
     if {![info exists scriptJobDetail($w,id)] || $id ne $scriptJobDetail($w,id) || $gen!=$scriptJobDetail($w,generation)} return
     if {![dict get $response ok]} {
+        $w.actions.cancel state disabled
         set scriptJobDetail($w,status) "Execution unavailable: [dict get $response error]"
         scriptJobTextReplace $w.info "Job ID: $id\n$scriptJobDetail($w,status)"
         return
     }
     set job [dict get $response result];set scriptJobDetail($w,record) $job
+    if {$scriptJobDetail($w,remote)} {
+        lassign [_scientificRemoteRoute $id] node remoteSession localJob
+        dict set job node_local_job_id [scriptJobField $job id $localJob]
+        dict set job id $id;dict set job node_id $node;dict set job remote_session_id $remoteSession
+        set scriptJobDetail($w,record) $job
+    }
+    $w.actions.cancel state [expr {$scriptJobDetail($w,session) eq {} && [scriptJobField $job state] in {QUEUED PREPARING RUNNING FINALIZING} ? {!disabled} : {disabled}}]
     if {[dict exists $job origin] && [dict get $job origin] eq {core_service}} {set scriptJobDetail($w,status) {Private CORE service: engineering inspection only. Ordinary user stream actions are unavailable.};$w.actions.publish state disabled}
-    if {$scriptJobDetail($w,stream) eq {legacy} && [string match {Separate*} [dict get $job log_streams]]} {set scriptJobDetail($w,streamLabel) {Program output};scriptJobDetailSourceChanged $w}
+    if {!$scriptJobDetail($w,remote) && $scriptJobDetail($w,stream) eq {legacy} && [string match {Separate*} [scriptJobField $job log_streams {}]]} {set scriptJobDetail($w,streamLabel) {Program output};scriptJobDetailSourceChanged $w}
     wm title $w "[scriptJobField $job script_name] — [scriptJobField $job state] — $id"
     scriptJobTextReplace $w.info [scriptJobDetailsFormat $job]
+    if {$scriptJobDetail($w,remote)} {
+        scriptJobTextReplace $w.info "[$w.info get 1.0 end-1c]\nRemote node: $node\nLogical remote Session: $remoteSession\nNode-local Job ID: [dict get $job node_local_job_id]\nThis transport exposes the retained combined log only. Separate-stream selection and local Dataset publication are unavailable here; no remote output has been imported."
+    }
     if {[scriptJobField $job state] in {QUEUED PREPARING RUNNING FINALIZING}} {
         if {$scriptJobDetail($w,follow)} {scriptJobDetailPage $w latest}
         set scriptJobDetail($w,timer) [after 1000 [list ::GX::scriptJobDetailRefresh $w]]
+        $w.split.log.bar.follow state !disabled
     } else {set scriptJobDetail($w,follow) 0;$w.split.log.bar.follow state disabled}
 }
 proc ::GX::scriptJobDetailPage {w action} {
@@ -172,7 +250,7 @@ proc ::GX::scriptJobDetailPage {w action} {
     }
     if {!$tail} {scriptJobDetailSuspend $w}
     set gen [incr scriptJobDetail($w,pageGeneration)]
-    scriptJobAsync [scriptJobDetailCommand $w log_read $offset 65536 $tail] {} [list ::GX::scriptJobDetailLogReady $w $scriptJobDetail($w,id) $gen $action]
+    scriptJobDetailRequest $w log_read [list $offset 65536 $tail] [list ::GX::scriptJobDetailLogReady $w $scriptJobDetail($w,id) $gen $action]
 }
 proc ::GX::scriptJobDetailLogReady {w id gen action response} {
     variable scriptJobDetail
@@ -204,7 +282,7 @@ proc ::GX::scriptJobDetailCopySelection {w} {
 proc ::GX::scriptJobDetailSelectLog {w} {scriptJobTextSelectAll $w.log;scriptJobDetailSuspend $w}
 proc ::GX::scriptJobDetailCopyFull {w} {scriptJobDetailTransfer $w clipboard}
 proc ::GX::scriptJobDetailSaveLog {w} {
-    set path [tk_getSaveFile -parent $w -title "Save $::GX::scriptJobDetail($w,streamLabel)" -initialfile "$::GX::scriptJobDetail($w,id).log"]
+    set path [tk_getSaveFile -parent $w -title "Save $::GX::scriptJobDetail($w,streamLabel)" -initialfile "[string map {/ _} $::GX::scriptJobDetail($w,id)].log"]
     if {$path ne {}} {scriptJobDetailTransfer $w $path}
 }
 proc ::GX::scriptJobDetailTransfer {w destination} {
@@ -214,7 +292,7 @@ proc ::GX::scriptJobDetailTransfer {w destination} {
     unset -nocomplain scriptJobDetail($w,transferSize) scriptJobDetail($w,transferIdentity)
     if {$destination eq "clipboard"} {clipboard clear} else {
         set normalized [file normalize $destination]
-        set origin [scriptJobField $scriptJobDetail($w,record) session $scriptJobDetail($w,session)]
+        set origin [expr {$scriptJobDetail($w,remote) ? $::GX::currentSession : [scriptJobField $scriptJobDetail($w,record) session $scriptJobDetail($w,session)]}]
         if {$origin ne {} && [string first "[file normalize $origin]/" "$normalized/"]==0} {
             unset scriptJobDetail($w,transfer);set scriptJobDetail($w,status) {Choose a destination outside the origin scientific Session; execution files are preserved.};return
         }
@@ -227,7 +305,7 @@ proc ::GX::scriptJobDetailTransfer {w destination} {
         if {[catch {set ch [file tempfile temporary [file join [file dirname $destination] .gxtxt-stream-export-]];set scriptJobDetail($w,exportTemporary) $temporary} reason]} {unset scriptJobDetail($w,transfer);set scriptJobDetail($w,status) $reason;return}
         fconfigure $ch -encoding binary -translation binary;set scriptJobDetail($w,transferChannel) $ch
     }
-    scriptJobAsync [scriptJobDetailCommand $w log_read 0 65536 0] {} [list ::GX::scriptJobDetailTransferReady $w $scriptJobDetail($w,id)]
+    scriptJobDetailRequest $w log_read {0 65536 0} [list ::GX::scriptJobDetailTransferReady $w $scriptJobDetail($w,id)]
 }
 proc ::GX::scriptJobDetailTransferReady {w id response} {
     variable scriptJobDetail
@@ -265,17 +343,19 @@ proc ::GX::scriptJobDetailTransferReady {w id response} {
         }
         unset scriptJobDetail($w,transfer);append scriptJobDetail($w,status) { — complete};return
     }
-    scriptJobAsync [scriptJobDetailCommand $w log_read [dict get $page next_offset] 65536 0] {} [list ::GX::scriptJobDetailTransferReady $w $id]
+    scriptJobDetailRequest $w log_read [list [dict get $page next_offset] 65536 0] [list ::GX::scriptJobDetailTransferReady $w $id]
 }
 proc ::GX::scriptJobDetailClose {w} {
     variable scriptJobDetail
     if {[info exists scriptJobDetail($w,timer)]} {after cancel $scriptJobDetail($w,timer)}
+    if {[info exists scriptJobDetail($w,requests)]} {dict for {serial token} $scriptJobDetail($w,requests) {catch {scriptJobRequestCancel $token}}}
     if {[info exists scriptJobDetail($w,transferChannel)]} {close $scriptJobDetail($w,transferChannel);catch {file delete -- $scriptJobDetail($w,exportTemporary)}}
     catch {destroy $w};array unset scriptJobDetail $w,*
 }
 
 proc ::GX::scriptJobDetailSourceChanged {w} {
     variable scriptJobDetail
+    if {$scriptJobDetail($w,remote)} {set scriptJobDetail($w,streamLabel) {Legacy combined stream};return}
     if {[info exists scriptJobDetail($w,transfer)]} {set scriptJobDetail($w,streamLabel) [dict get {stdout {Program output} stderr {Program stderr} diagnostics {Diagnostic log} legacy {Legacy combined stream}} $scriptJobDetail($w,stream)];set scriptJobDetail($w,status) {Finish the current source transfer before switching streams};return}
     set mapping [dict create {Program output} stdout {Program stderr} stderr {Diagnostic log} diagnostics {Legacy combined stream} legacy]
     set scriptJobDetail($w,stream) [dict get $mapping $scriptJobDetail($w,streamLabel)]
@@ -283,6 +363,7 @@ proc ::GX::scriptJobDetailSourceChanged {w} {
     scriptJobDetailPage $w first
 }
 proc ::GX::scriptJobDetailPublish {w} {
+    if {$::GX::scriptJobDetail($w,remote)} {set ::GX::scriptJobDetail($w,status) {Remote combined logs are inspectable here; local Dataset publication requires an existing supported import workflow.};return}
     set d $w.publish
     uiFieldDialogCreate $d $w {Publish the selected execution source}
     set ::GX::scriptJobDetail($w,publishId) "[string map {- _} $::GX::scriptJobDetail($w,id)]_$::GX::scriptJobDetail($w,stream)"

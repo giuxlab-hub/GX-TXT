@@ -16,6 +16,17 @@ gx2d_status gx2d_path_validate(const gx2d_point *p,size_t n,int closed,double *l
     if(!isfinite((double)total)||!isfinite((double)sum)||(closed&&sum==0))return GX2D_INVALID;
     *length=(double)total;*area=closed?(double)(sum/2):0;return GX2D_OK;
 }
+static int image_roi_contains(const gx2d_point *p,size_t n,gx2d_point query){
+    int odd=0;size_t i;
+    for(i=0;i<n;++i){gx2d_point a=p[i],b=p[(i+1)%n];
+        if(image_roi_on(a,b,query))return 1;
+        if((a.y>query.y)!=(b.y>query.y)){
+            long double x=a.x+((long double)query.y-a.y)*((long double)b.x-a.x)/((long double)b.y-a.y);
+            if(x>query.x)odd=!odd;
+        }
+    }
+    return odd;
+}
 gx2d_status gx2d_image_roi_validate(const gx2d_scene *s,gx2d_id id,const gx2d_point *p,size_t n,gx2d_rect *clip,double *area,int *inside){
     gx2d_reference_image image;gx2d_status code;size_t i,j;long double sum=0;gx2d_rect bounds;
     if(!p||n<3||n>128||!clip||!area||!inside)return GX2D_INVALID;
@@ -34,8 +45,59 @@ gx2d_status gx2d_image_roi_validate(const gx2d_scene *s,gx2d_id id,const gx2d_po
     for(i=0;i<n;++i){gx2d_point a=p[i],b=p[(i+1)%n];if(a.x>=0&&a.x<=image.width&&a.y>=0&&a.y<=image.height)*inside=1;
         for(j=0;j<4;++j)if(image_roi_intersects(a,b,corners[j],corners[(j+1)%4]))*inside=1;
     }
-    for(j=0;j<4&&!*inside;++j){int odd=0;for(i=0;i<n;++i){gx2d_point a=p[i],b=p[(i+1)%n];if((a.y>corners[j].y)!=(b.y>corners[j].y)){long double x=a.x+((long double)corners[j].y-a.y)*((long double)b.x-a.x)/((long double)b.y-a.y);if(x>corners[j].x)odd=!odd;}}if(odd)*inside=1;}
+    for(j=0;j<4&&!*inside;++j)if(image_roi_contains(p,n,corners[j]))*inside=1;
     *clip=(gx2d_rect){fmax(0,fmin(image.width,bounds.x0)),fmax(0,fmin(image.height,bounds.y0)),fmax(0,fmin(image.width,bounds.x1)),fmax(0,fmin(image.height,bounds.y1))};return GX2D_OK;
+}
+/* Geometry, source mapping and hit precedence remain in this image owner. */
+gx2d_status gx2d_image_roi_project(const gx2d_scene *s,gx2d_id id,const gx2d_point *points,size_t n,gx2d_point *device){
+    size_t i;gx2d_reference_image image;gx2d_status code;
+    if(!s||!points||!device||n<1||n>128)return GX2D_INVALID;
+    code=gx2d_image_get(s,id,&image);if(code!=GX2D_OK)return code;
+    for(i=0;i<n;++i){gx2d_point world;if(!finite2(points[i]))return GX2D_INVALID;
+        code=gx2d_image_map(s,id,points[i],0,&world);if(code!=GX2D_OK)return code;
+        code=gx2d_world_to_device(s,world,&device[i]);if(code!=GX2D_OK)return code;
+    }
+    return GX2D_OK;
+}
+gx2d_status gx2d_image_roi_pick(const gx2d_scene *s,gx2d_id id,const gx2d_point *points,size_t n,gx2d_point query,double tolerance,gx2d_image_roi_hit *out){
+    gx2d_point device[128],world,pixel;gx2d_rect clip;double area;int inside;size_t i;gx2d_status code;const object *o;
+    if(!s||!out||!finite2(query)||!isfinite(tolerance)||tolerance<0)return GX2D_INVALID;
+    *out=(gx2d_image_roi_hit){GX2D_ROI_NONE,0,INFINITY,{0,0}};
+    code=gx2d_image_roi_validate(s,id,points,n,&clip,&area,&inside);if(code!=GX2D_OK)return code;
+    o=cobj(s,id);if(!o||!can_select(s,o))return GX2D_NOT_FOUND;
+    code=gx2d_image_roi_project(s,id,points,n,device);if(code!=GX2D_OK)return code;
+    for(i=0;i<n;++i){double d=dist(query,device[i]);if(d<=tolerance&&d<out->distance)*out=(gx2d_image_roi_hit){GX2D_ROI_VERTEX,i,d,device[i]};}
+    if(out->kind!=GX2D_ROI_NONE)return GX2D_OK;
+    for(i=0;i<n;++i){gx2d_point nearest=nearest_segment(query,device[i],device[(i+1)%n]);double d=dist(query,nearest);
+        if(d<=tolerance&&d<out->distance)*out=(gx2d_image_roi_hit){GX2D_ROI_BOUNDARY,i,d,nearest};}
+    if(out->kind!=GX2D_ROI_NONE)return GX2D_OK;
+    code=gx2d_device_to_world(s,query,&world);if(code!=GX2D_OK)return code;
+    code=gx2d_image_map(s,id,world,1,&pixel);if(code!=GX2D_OK)return code;
+    if(image_roi_contains(points,n,pixel)){*out=(gx2d_image_roi_hit){GX2D_ROI_INTERIOR,0,0,query};return GX2D_OK;}
+    return GX2D_NOT_FOUND;
+}
+gx2d_status gx2d_image_roi_edit(const gx2d_scene *s,gx2d_id id,const gx2d_point *points,size_t n,int rectangle,gx2d_image_roi_edit_mode mode,size_t vertex,gx2d_point start,gx2d_point end,gx2d_point *proposed,gx2d_status *admission){
+    gx2d_point world,a,b;gx2d_rect clip;double area;int inside;size_t i;gx2d_status code;const object *o;
+    if(!s||!points||!proposed||!admission||n<3||n>128||!finite2(start)||!finite2(end)||(rectangle&&n!=4)||(rectangle!=0&&rectangle!=1))return GX2D_INVALID;
+    code=gx2d_image_roi_validate(s,id,points,n,&clip,&area,&inside);if(code!=GX2D_OK)return code;
+    o=cobj(s,id);if(!o||!can_select(s,o))return GX2D_NOT_FOUND;if(!can_move(s,o))return GX2D_LOCKED;
+    code=gx2d_device_to_world(s,start,&world);if(code!=GX2D_OK)return code;
+    code=gx2d_image_map(s,id,world,1,&a);if(code!=GX2D_OK)return code;
+    code=gx2d_device_to_world(s,end,&world);if(code!=GX2D_OK)return code;
+    code=gx2d_image_map(s,id,world,1,&b);if(code!=GX2D_OK)return code;
+    for(i=0;i<n;++i)proposed[i]=points[i];
+    if(mode==GX2D_ROI_TRANSLATE){for(i=0;i<n;++i){proposed[i].x+=b.x-a.x;proposed[i].y+=b.y-a.y;}}
+    else if(mode==GX2D_ROI_MOVE_VERTEX){
+        if(vertex>=n)return GX2D_RANGE;
+        if(rectangle){gx2d_point opposite=points[(vertex+2)%4];
+            proposed[0]=(gx2d_point){fmin(b.x,opposite.x),fmin(b.y,opposite.y)};
+            proposed[1]=(gx2d_point){fmax(b.x,opposite.x),fmin(b.y,opposite.y)};
+            proposed[2]=(gx2d_point){fmax(b.x,opposite.x),fmax(b.y,opposite.y)};
+            proposed[3]=(gx2d_point){fmin(b.x,opposite.x),fmax(b.y,opposite.y)};
+        }else proposed[vertex]=b;
+    }else return GX2D_INVALID;
+    *admission=gx2d_image_roi_validate(s,id,proposed,n,&clip,&area,&inside);
+    return GX2D_OK;
 }
 /* Raster dimensions/calibration live on the existing object identity. Its
  * retained rectangle matrix and style are the sole transform/visibility state. */

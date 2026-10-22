@@ -189,3 +189,57 @@ through the same public library operations.
 Imported generator code is trusted installed code, not arbitrary code executed during import. Python execution occurs only after an explicit user generation request. Descriptors cannot configure arbitrary shell commands, absolute entry paths, traversal paths or URLs.
 
 Session Generator Library API v1 is generic and contains no CFD-, chemistry-, electronics- or teaching-specific CORE behavior.
+
+## New Session browsing and library management
+
+The existing **New Session → Generate Session...** dialog presents a resizable,
+side-by-side library/category/generator tree and read-only description. Select a
+library or category to inspect it; select a generator to enable **Generate
+Session**. Generation resolves the actual current tree selection at the time of
+activation. A library, category, empty selection or removed generator cannot run
+an earlier selection. Session name and Location retain the ordinary New Session
+meaning, including generation into a selected Project.
+
+**Manage Libraries...** opens management in the same dialog. Libraries and their
+generators remain on the left; **Details**, **Library metadata** and **Copy
+generator** tabs on the right keep inspection separate from editing/copying.
+Lists have horizontal and vertical scrollbars; descriptions scroll independently.
+**Hide Manager / Back to browsing**, or the upper **Generate Session...** button,
+returns to browsing. Browser selection, expanded categories, scroll position and
+the two modes' separate splitter proportions survive these transitions. The
+window retains the user's size and position. Closing starts a fresh dialog with
+no active generator; it does not remove installed libraries or generated Sessions.
+
+This remains a normal New Session dialog, with no Viewer provider, module,
+restricted author project or alternative registry. It composes the same public
+`UI_FIELD_API_v1` facilities used by ordinary Viewer GUI designs:
+
+- `uiFieldComponentCreate` supplies sections/panels, native splitters, tabs,
+  read-only logs, action controls, metadata entries and bounded comboboxes.
+- The public table factory supplies native Treeviews and both scrollbars. The
+  dialog configures their native tree presentation (`-show tree -columns {}`)
+  for the existing hierarchy; `uiFieldInspectionColumnsFit` measures real names
+  recursively, with a fill tree column and horizontal access to long names.
+- `uiFieldControlsLayout` wraps management actions using actual control widths.
+- `uiFieldWindowFit` performs shared screen fitting. Only the dialog's own mode
+  and native sash ratios are retained locally; no competing layout service is
+  introduced. Registry identities, generator implementations and the generation
+  transaction above remain the existing authority.
+
+The Location selector uses the shared combobox host with this dialog as its real
+owning toplevel. Native keyboard traversal, disclosure navigation and independent
+scrollbars remain available. These host-only presentation operations do not add
+Script Bridge or restricted C++ execution capabilities.
+
+For illustrated user steps and a short reproducible browsing/Manager check, use
+[Session Generator user guide — Help edition](../session_generator_dev109/USER_GUIDE.md).
+This Markdown link and its packaged PNGs use the existing Help renderer. The
+separate offline HTML edition is `docs/session_generator_dev109/index.html`;
+open it in a normal browser. Its original real images and provenance are retained.
+MAIN remains the sole acceptance and release authority.
+
+MAIN accepted the seven SESSION-GEN-BROWSER criteria on 2026-10-21 at unchanged
+CORE source33f301. See the family acceptance matrix and provenance.
+Receipt `MAIN_FAMILY_ACCEPTANCE87.json`, SHA256
+`69e24c09bb11406cb7f35028f563747192607981ba7876a3c056af6edad687e8`.
+Whole workstream6 and all15 release remain OPEN.

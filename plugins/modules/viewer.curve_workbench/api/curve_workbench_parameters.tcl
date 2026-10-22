@@ -20,16 +20,28 @@ proc ::GX::CurveWorkbench::_parameterRecalculate {w token} {
     }
     try {
         ::GX::parameterApplyDimensions $token $st($w,scene) $expressions
-        foreach id [dict keys $st($w,curves)] {if {[dict exists [_record $w $id] sketch_definition]} {_syncSamples $w $id}}
+        foreach id [dict keys $st($w,curves)] {
+            set record [_record $w $id]
+            if {![dict exists $record sketch_definition]} continue
+            _syncSamples $w $id
+            # Re-evaluating restored dimensions is not an edit when the retained
+            # geometry and every other record field are unchanged. Gesture/edit
+            # callers retain _syncSamples' normal edited=1 semantics.
+            if {[dict remove $record edited] eq [dict remove [_record $w $id] edited]} {
+                dict set st($w,curves) $id edited [dict get $record edited]
+            }
+        }
         _constraintCapture $w;_selectionScene $w
-        if {![info exists st($w,importTransaction)]&&![info exists st($w,historyRestoring)]} {
+        if {(![info exists st($w,importTransaction)] || !$st($w,importTransaction)) && ![info exists st($w,historyRestoring)]} {
             if {$st($w,scientificRecipe) ne {}} {
                 set previous [dict get $st($w,scientificRecipe) base]
                 foreach step [dict get $st($w,scientificRecipe) steps] {set previous [::GX::scientificRecipeApplyPatch $previous [dict get $step patch]]}
                 if {[dict exists $previous @cad parameter_definitions]} {dict set before @cad parameter_definitions [dict get $previous @cad parameter_definitions]}
             }
-            _history $w $before [dict keys $st($w,curves)]
-        } else {_changed $w}
+            if {$before ne [_snapshotIds $w [dict keys $st($w,curves)]]} {
+                _history $w $before [dict keys $st($w,curves)]
+            }
+        } elseif {$before ne [_snapshotIds $w [dict keys $st($w,curves)]]} {_changed $w}
     } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,previousParameters) [::GX::parameterDefinitions $token]
     return [list ::GX::CurveWorkbench::_restoreSnapshot $w $before]

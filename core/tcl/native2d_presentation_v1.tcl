@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Renderer-neutral CORE object/scene presentation adapters.
 source [file join [file dirname [info script]] native2d_axis_presentation_v1.tcl]
+namespace eval ::GX::Native2DText {variable photos;if {![info exists photos]} {set photos {}}}
 proc ::GX::native2DAxisPlan {lower upper pixels {font 14}} {
     foreach value [list $lower $upper $pixels] {if {![string is double -strict $value] || ![expr {abs($value)<Inf}]} {error {Axis limits and size must be finite}}}
     if {$upper<=$lower || $pixels<=0} {error {Axis planner needs an increasing range and positive size}}
@@ -31,6 +32,10 @@ proc ::GX::native2DAxisPlan {lower upper pixels {font 14}} {
             lappend ticks [dict create value $value label $label]
         }
         set needed [expr {($widest*.62*$font+12)*max(1,[llength $ticks]-1)}]
+        # Rounding the requested interval up to a nice value can leave only
+        # one interior graduation, even when two readable labels fit. Refine
+        # the same planner's target before accepting that sparse result.
+        if {[llength $ticks]<2 && $target>=2 && $target<30 && $attempt<7} {incr target;continue}
         if {$needed<=$pixels || $target<=1} break
         set target [expr {max(1,int($target*$pixels/$needed))}]
     }
@@ -56,6 +61,46 @@ proc ::GX::native2DAxisLabelMargin {scene {font 14}} {
         set width [expr {max($width,$size+20)}]
     }
     return [expr {ceil($width)}]
+}
+proc ::GX::native2DAxisTitleView {scene titles {font 14}} {
+    # Return a requested view for the caller to apply, never mutate a scene
+    # during snapshot/read operations. Bounds and calibrated aspect stay owned
+    # by the existing native view service.
+    set view [::GX::Native2D::core view_requested $scene]
+    lassign [::GX::Native2D::core view $scene] width height left top right bottom bounds
+    if {![llength [info commands font]]} {return $view}
+    set xTitle [datasetPublicationV2DictDefault $titles x_label {}]
+    set yTitle [datasetPublicationV2DictDefault $titles y_label {}]
+    set tkfont [list Sans [expr {-$font}]]
+    set lineHeight [font metrics $tkfont -linespace]
+    # Account for margins added by the authoritative calibrated view without
+    # changing its bounds or duplicating its aspect calculation. X and Y title
+    # bands can affect each other's available span, so grow them together.
+    set extraLeft [expr {$left-[lindex $view 2]}]
+    set extraBottom [expr {$bottom-[lindex $view 5]}]
+    set tickMargin [native2DAxisLabelMargin $scene $font]
+    for {set attempt 0} {$attempt<8} {incr attempt} {
+        set previous $view
+        if {$xTitle ne {}} {
+            set effectiveLeft [expr {[lindex $view 2]+$extraLeft}]
+            set span [expr {max(1,min($width-$effectiveLeft+$right,$width+$effectiveLeft-$right)-6)}]
+            set lines [llength [split [native2DCanvasTextWrap $xTitle $tkfont $span] \n]]
+            # Leave a complete graduation line below the plot.
+            set required [expr {($lines+1)*$lineHeight+14}]
+            lset view 5 [expr {max([lindex $view 5],min($required,$height-$top-20))}]
+        }
+        if {$yTitle ne {}} {
+            set effectiveBottom [expr {[lindex $view 5]+$extraBottom}]
+            set span [expr {max(1,$height-abs($top-$effectiveBottom)-6)}]
+            set lines [llength [split [native2DCanvasTextWrap $yTitle $tkfont $span] \n]]
+            # After rotation, the multiline height becomes the title's width.
+            # Keep the complete band separate from the existing tick labels.
+            set required [expr {$tickMargin+$lines*$lineHeight+8}]
+            lset view 2 [expr {max([lindex $view 2],min($required,$width-$right-20))}]
+        }
+        if {$view eq $previous} break
+    }
+    return $view
 }
 proc ::GX::native2DCanvasDrawGizmo {canvas scene background {tags {}}} {
     foreach primitive [::GX::Native2D::core render_gizmo $scene] {
@@ -143,19 +188,34 @@ proc ::GX::native2DCanvasDrawObject {canvas object background {tags {}}} {
         }
 }
 # SPDX-License-Identifier: GPL-3.0-or-later
+# The existing presentation owner validates per-annotation text styles. These
+# are UI values; geometry and source-to-world mapping remain Native2D-owned.
+proc ::GX::native2DAnnotationStyleNormalize {annotation} {
+    if {[dict exists $annotation font_family]} {
+        set family [string trim [dict get $annotation font_family]]
+        if {$family eq {} || [string bytelength $family]>128 || [regexp {[\x00\r\n]} $family]} {error {Annotation font family requires a nonempty bounded font name}}
+        dict set annotation font_family $family
+    }
+    if {[dict exists $annotation font_size]} {dict set annotation font_size [uiFieldNormalize {type number min 6 max 96 required 1} [dict get $annotation font_size]]}
+    if {[dict exists $annotation color]} {dict set annotation color [uiFieldColor [uiFieldColorComponents [dict get $annotation color]] 1]}
+    return $annotation
+}
 # Renderer-neutral presentation data. No Tk item inspection or geometry math.
 proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
-    foreach key [dict keys $options] {if {$key ni {point_budget x_label y_label x_tick_labels y_tick_labels title legend object_labels font_size include_construction_reference axis_presentation annotations axes_visible}} {error "Unknown Native2D snapshot option '$key'"}}
+    foreach key [dict keys $options] {if {$key ni {point_budget x_label y_label x_tick_labels y_tick_labels title legend object_labels font_size include_construction_reference axis_presentation axis_plans annotations axes_visible}} {error "Unknown Native2D snapshot option '$key'"}}
     set axesVisible [uiFieldNormalize {type boolean} [datasetPublicationV2DictDefault $options axes_visible 1]]
     set annotations [datasetPublicationV2DictDefault $options annotations {}]
     if {[llength $annotations]>512 || [string bytelength $annotations]>131072} {error {Native2D annotations exceed bounded presentation contract}}
+    set normalizedAnnotations {}
     foreach annotation $annotations {
-        foreach key [dict keys $annotation] {if {$key ni {point text anchor id}} {error {Unknown Native2D annotation field}}}
+        foreach key [dict keys $annotation] {if {$key ni {point text anchor id font_family font_size color}} {error {Unknown Native2D annotation field}}}
         if {[dict exists $annotation id] && ![regexp {^[A-Za-z][A-Za-z0-9_.-]{0,63}$} [dict get $annotation id]]} {error {Invalid stable Native2D annotation identifier}}
         if {[llength [dict get $annotation point]]!=2 || [string bytelength [dict get $annotation text]]>256 || [string first \x00 [dict get $annotation text]]>=0} {error {Invalid bounded Native2D annotation}}
         foreach coordinate [dict get $annotation point] {uiFieldNormalize {type number} $coordinate}
         if {[datasetPublicationV2DictDefault $annotation anchor sw] ni {n ne e se s sw w nw center}} {error {Invalid Native2D annotation anchor}}
+        lappend normalizedAnnotations [native2DAnnotationStyleNormalize $annotation]
     }
+    set annotations $normalizedAnnotations
     foreach axis {x y} {
         if {[dict exists $options ${axis}_tick_labels]} {
             set labels [dict get $options ${axis}_tick_labels]
@@ -192,6 +252,21 @@ proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
     if {$descriptor eq {__scene__}} {if {[catch {set descriptor [native2DAxisPresentation $scene]}]} {set descriptor {}};if {$descriptor eq {}} {set descriptor [native2DAxisPresentationDefault $scene]}}
     set descriptor [native2DAxisPresentationValidate $scene $descriptor]
     set texts {};set plans [native2DAxisPlans $scene $font $descriptor]
+    if {[dict exists $options axis_plans]} {
+        set supplied [dict get $options axis_plans]
+        if {[lsort [dict keys $supplied]] ne {x y}} {error {Axis plans require exactly X and Y}}
+        foreach axis {x y} lower [list $x0 $y0] upper [list $x1 $y1] {
+            set plan [dict get $supplied $axis]
+            if {[dict get $plan lower]!=$lower || [dict get $plan upper]!=$upper || [llength [dict get $plan ticks]]>64} {error {Axis plan is stale or exceeds64 ticks}}
+            set seen {}
+            foreach tick [dict get $plan ticks] {
+                set value [uiFieldNormalize {type number} [dict get $tick value]]
+                if {$value<$lower || $value>$upper || [dict exists $seen $value] || [string length [dict get $tick label]]>256} {error {Invalid bounded axis tick position or label}}
+                dict set seen $value 1
+            }
+            dict set plans $axis $plan
+        }
+    }
     # Construction references retain their authored grid. Scientific axes use
     # the same numeric positions for both labels and grid primitives.
     if {!$includeReference && ![dict exists $options x_tick_labels] && ![dict exists $options y_tick_labels]} {set gridLines {}}
@@ -233,7 +308,26 @@ proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
             set unit [dict get [native2DAxisCoordinatePlan $scene $axis $settings] unit]
             if {$unit ne {}} {if {$text ne {}} {append text " ($unit)"} else {set text $unit}}
         }
-        if {$text ne ""} {lappend texts [dict create position $position text $text anchor $anchor rotation $rotation font_size $font color $textColor]}
+        if {$text ne ""} {
+            set item [dict create position $position text $text anchor $anchor rotation $rotation font_size $font color $textColor]
+            # Wrap presentation titles using their actual available span. The
+            # canonical name/unit string and all scene coordinates stay intact.
+            lassign $position px py
+            if {$key eq {x_label}} {
+                set span [expr {2*min($px,$width-$px)-6}]
+                dict set item wrap_width [expr {max(1,int($span))}]
+            } elseif {$key eq {y_label}} {
+                set span [expr {max(1,int(2*min($py,$height-$py)-6))}]
+                dict set item wrap_width $span
+                if {[llength [info commands font]]} {
+                    set tkfont [list Sans [expr {-$font}]]
+                    set lines [llength [split [native2DCanvasTextWrap $text $tkfont $span] \n]]
+                    set band [expr {$lines*[font metrics $tkfont -linespace]+4}]
+                    dict set item position [list [expr {max(14,$band/2.0+3)}] $py]
+                }
+            }
+            lappend texts $item
+        }
     }
     set legend [datasetPublicationV2DictDefault $options legend {}];set legendLines {};set legendObjects {}
     foreach object $objects {
@@ -254,6 +348,8 @@ proc ::GX::native2DPresentationSnapshot {scene {options {}}} {
         lassign $position px py
         if {$px<$left || $px>$width-$right || $py<$top || $py>$height-$bottom} continue
         set text [dict create position $position text [dict get $annotation text] anchor [datasetPublicationV2DictDefault $annotation anchor sw] rotation 0 font_size $font color $textColor role annotation]
+        foreach key {font_family font_size} {if {[dict exists $annotation $key]} {dict set text $key [dict get $annotation $key]}}
+        if {[dict exists $annotation color]} {dict set text color [uiFieldColorToRGBA [dict get $annotation color]]}
         if {[dict exists $annotation id]} {dict set text annotation_id [dict get $annotation id]}
         lappend texts $text
     }
@@ -263,6 +359,7 @@ proc ::GX::native2DCanvasSnapshot {canvas snapshot} {
     set background [uiFieldColorComposite [uiFieldColorFromRGBA [dict get $snapshot presentation background]] #FFFFFF]
     $canvas configure -background [dict get $background rgb]
     $canvas delete all
+    native2DCanvasTextSweep $canvas
     foreach line [dict get $snapshot grid_primitives] {
         set color [uiFieldColorComposite [uiFieldColorFromRGBA [dict get $line color]] $background]
         set options [list -fill [dict get $color rgb] -width [dict get $line width] -tags construction_grid]
@@ -287,12 +384,71 @@ proc ::GX::native2DCanvasSnapshot {canvas snapshot} {
     lassign [dict get $snapshot view] width height left top right bottom bounds
     $canvas create rectangle $left $top [expr {$width-$right}] [expr {$height-$bottom}] -outline #8393A5 -tags plot_border
     foreach text [dict get $snapshot texts] {
-        set rgb [dict get [uiFieldColorComposite [uiFieldColorFromRGBA [dict get $text color]] $background] rgb]
-        set tags axis_label
-        if {[dict exists $text object_id]} {set tags [list legend_label native_legend legend_object_[dict get $text object_id]]}
-        if {[dict exists $text annotation_id]} {set tags [list native_annotation native_annotation_[dict get $text annotation_id]]}
-        $canvas create text {*}[dict get $text position] -text [dict get $text text] -anchor [dict get $text anchor] -angle [dict get $text rotation] -fill $rgb -font [list Sans [expr {-round([dict get $text font_size])}]] -tags $tags
+        native2DCanvasTextDraw $canvas $text $background
     }
+}
+proc ::GX::native2DCanvasTextDispose {canvas actual} {
+    if {$actual ne $canvas} return
+    variable ::GX::Native2DText::photos
+    if {![dict exists $photos $canvas]} return
+    dict for {photo item} [dict get $photos $canvas] {catch {image delete $photo}}
+    dict unset photos $canvas
+}
+proc ::GX::native2DCanvasTextSweep {canvas} {
+    variable ::GX::Native2DText::photos
+    if {![dict exists $photos $canvas]} return
+    dict for {photo item} [dict get $photos $canvas] {
+        if {![winfo exists $canvas] || [$canvas type $item] eq {}} {
+            catch {image delete $photo};dict unset photos $canvas $photo
+        }
+    }
+}
+proc ::GX::native2DCanvasTextDraw {canvas text background} {
+    native2DCanvasTextSweep $canvas
+    set rgb [dict get [uiFieldColorComposite [uiFieldColorFromRGBA [dict get $text color]] $background] rgb]
+    set tags axis_label
+    if {[dict exists $text object_id]} {set tags [list legend_label native_legend legend_object_[dict get $text object_id]]}
+    if {[dict exists $text annotation_id]} {set tags [list native_annotation native_annotation_[dict get $text annotation_id]]}
+    set font [list [datasetPublicationV2DictDefault $text font_family Sans] [expr {-round([dict get $text font_size])}]]
+    set wrap [datasetPublicationV2DictDefault $text wrap_width 0]
+    if {[lindex [dict get $text color] 3]<1} {
+        native2DEnsure
+        if {![llength [info commands ::gx::native2d::text_photo]]} {error {Native2D text alpha requires the matching precompiled device adapter}}
+        set photo [image create photo]
+        try {
+            set displayText [dict get $text text]
+            if {$wrap>0} {set displayText [native2DCanvasTextWrap $displayText $font $wrap]}
+            set receipt [::gx::native2d::text_photo $photo $font $displayText [dict get $text anchor] [dict get $text rotation] [dict get $text color]]
+            lassign [dict get $text position] x y;lassign [dict get $receipt offset] dx dy
+            set item [$canvas create image [expr {$x+$dx}] [expr {$y+$dy}] -anchor nw -image $photo -tags $tags]
+        } on error {message options} {image delete $photo;return -options $options $message}
+        variable ::GX::Native2DText::photos
+        if {![dict exists $photos $canvas]} {bind $canvas <Destroy> +[list ::GX::native2DCanvasTextDispose $canvas %W]}
+        dict set photos $canvas $photo $item
+        return $item
+    }
+    return [$canvas create text {*}[dict get $text position] -text [dict get $text text] -width $wrap -justify [expr {$wrap>0?{center}:{left}}] -anchor [dict get $text anchor] -angle [dict get $text rotation] -fill $rgb -font $font -tags $tags]
+}
+proc ::GX::native2DCanvasTextWrap {text font width} {
+    # The precompiled alpha-text adapter accepts explicit line breaks. Measure
+    # with the same Tk font, retaining every original character and paragraph.
+    set lines {}
+    foreach paragraph [split $text \n] {
+        while {[font measure $font $paragraph]>$width && [string length $paragraph]>1} {
+            set low 1;set high [string length $paragraph]
+            while {$low<$high} {
+                set mid [expr {($low+$high+1)/2}]
+                if {[font measure $font [string range $paragraph 0 [expr {$mid-1}]]]<=$width} {set low $mid} else {set high [expr {$mid-1}]}
+            }
+            set count $low
+            set space [string last { } [string range $paragraph 0 [expr {$count-1}]]]
+            if {$space>0} {set count [expr {$space+1}]}
+            lappend lines [string range $paragraph 0 [expr {$count-1}]]
+            set paragraph [string range $paragraph $count end]
+        }
+        lappend lines $paragraph
+    }
+    return [join $lines \n]
 }
 proc ::GX::native2DAnnotationHit {canvas x y} {
     # Identity and hit regions come from actual rendered text, including font
@@ -330,6 +486,11 @@ proc ::GX::native2DCanvasClipItems {canvas scene items} {
     set x1 [expr {$width-$right}];set y1 [expr {$height-$bottom}]
     foreach item $items {
         set type [$canvas type $item];set tags [$canvas gettags $item]
+        set textImage 0
+        if {$type eq {image} && [dict exists $::GX::Native2DText::photos $canvas]} {
+            set photo [$canvas itemcget $item -image]
+            set textImage [expr {[dict exists $::GX::Native2DText::photos $canvas $photo] && [dict get $::GX::Native2DText::photos $canvas $photo]==$item}]
+        }
         if {$type eq "line"} {
             set xy {};foreach {x y} [$canvas coords $item] {lappend xy [list $x $y]}
             set inset [expr {[$canvas itemcget $item -width]/2.0}]
@@ -341,7 +502,7 @@ proc ::GX::native2DCanvasClipItems {canvas scene items} {
                 $canvas delete $item
                 foreach path $paths {$canvas create line {*}[concat {*}$path] {*}$options -tags $tags}
             }
-        } elseif {$type in {oval polygon text}} {
+        } elseif {$type in {oval polygon text} || $textImage} {
             # A marker/label crossing the viewport is omitted; never translate
             # the geometry to make it appear on the viewport boundary.
             lassign [$canvas bbox $item] a b c d
@@ -354,6 +515,7 @@ proc ::GX::native2DCanvasClipItems {canvas scene items} {
             if {$a>$c||$b>$d} {$canvas delete $item} else {$canvas coords $item $a $b $c $d}
         }
     }
+    native2DCanvasTextSweep $canvas
 }
 proc ::GX::native2DCanvasViewportClip {canvas scene {textTags {axis_label}}} {
     # Actual clipping, using CORE segment semantics. No margin masks. Preserve
@@ -361,7 +523,7 @@ proc ::GX::native2DCanvasViewportClip {canvas scene {textTags {axis_label}}} {
     set items {}
     foreach item [$canvas find all] {
         set skip 0;set tags [$canvas gettags $item]
-        foreach tag [concat $textTags {plot_border viewport_margin}] {if {$tag in $tags} {set skip 1;break}}
+        foreach tag [concat $textTags {axis_graduation plot_border viewport_margin}] {if {$tag in $tags} {set skip 1;break}}
         if {!$skip} {lappend items $item}
     }
     native2DCanvasClipItems $canvas $scene $items

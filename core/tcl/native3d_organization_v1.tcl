@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Scoped organization belongs to CORE; opaque members are verified by Native3D.
-proc ::GX::native3DOrganizationOperations {} {return {selection_set_create selection_set_get selection_set_list selection_set_update selection_set_delete selection_set_activate layer_create layer_get layer_list layer_update layer_delete layer_assign saved_view_create saved_view_get saved_view_list saved_view_update saved_view_delete saved_view_restore}}
+proc ::GX::native3DOrganizationOperations {} {return {selection_set_create selection_set_get selection_set_list selection_set_update selection_set_delete selection_set_activate selection_set_apply layer_create layer_get layer_list layer_update layer_delete layer_assign saved_view_create saved_view_get saved_view_list saved_view_update saved_view_delete saved_view_restore}}
 proc ::GX::_native3DOrganizationMembers {token members} {
     if {[llength $members]>65536} {error "Native3D organization member limit is 65536"}
     set result {};foreach member $members {
@@ -15,9 +15,45 @@ proc ::GX::_native3DOrganizationMemberState {token member} {
     if {[dict get $info geometry_sha256] ne [dict get $member geometry_sha256]||[dict get $info world_transform] ne [dict get $member world_transform]} {return stale}
     return current
 }
+proc ::GX::_native3DOrganizationSelected {token organization members mode} {
+    if {$mode ni {replace add subtract}} {error {Selection mode must be replace, add or subtract}}
+    set chosen [datasetPublicationV2DictDefault $organization selected_members {}]
+    set checked $members
+    if {$mode ne {replace}} {lappend checked {*}$chosen}
+    foreach member $checked {
+        if {[_native3DOrganizationMemberState $token $member] ne {current}} {error {Selection has stale/missing members; explicitly replace or recapture its references}}
+    }
+    dict for {id layer} [datasetPublicationV2DictDefault $organization layer {}] {
+        if {[dict get $layer selectable]} continue
+        foreach member $members {
+            foreach assigned [dict get $layer members] {
+                if {[dict get $assigned object_token] eq [dict get $member object_token]} {error "Selection Set member is not selectable in Layer '[dict get $layer name]'"}
+            }
+        }
+    }
+    if {$mode eq {replace}} {return $members}
+    foreach member $members {
+        set index [lsearch -exact $chosen $member]
+        if {$mode eq {add} && $index<0} {lappend chosen $member
+        } elseif {$mode eq {subtract} && $index>=0} {set chosen [lreplace $chosen $index $index]}
+    }
+    return $chosen
+}
 proc ::GX::native3DOrganizationCall {token action request} {
     variable ::GX::Native3DGeometry::scenes;variable ::GX::Native3DGeometry::serial
     set scope [_native3DGeometryRequire $token];set organization [datasetPublicationV2DictDefault $scope organization {}]
+    set capturedOrganization $organization
+    if {$action eq {selection_set_apply}} {
+        foreach key [dict keys $request] {if {$key ni {members mode}} {error {Selection apply accepts only members and mode}}}
+        set mode [datasetPublicationV2DictDefault $request mode replace]
+        set members [_native3DOrganizationMembers $token [dict get $request members]]
+        set chosen [_native3DOrganizationSelected $token $organization $members $mode]
+        set current [_native3DGeometryRequire $token]
+        if {[datasetPublicationV2DictDefault $current organization {}] ne $organization} {error {Native3D selection changed while resolving its members; retry from the current selection}}
+        dict set organization selected_members $chosen
+        dict set scenes $token organization $organization
+        return [dict create selected_members $chosen mode $mode]
+    }
     set prefix [lindex [split $action _] 0];if {$prefix eq "selection"} {set prefix selection_set} elseif {$prefix eq "saved"} {set prefix saved_view}
     set operation [string range $action [expr {[string length $prefix]+1}] end]
     set collection [datasetPublicationV2DictDefault $organization $prefix {}]
@@ -57,10 +93,7 @@ proc ::GX::native3DOrganizationCall {token action request} {
             set statuses {};foreach member [dict get $value members] {lappend statuses [_native3DOrganizationMemberState $token $member]};dict set value member_states $statuses
             if {$operation eq "activate"} {
                 if {[lsearch -not -exact $statuses current]>=0} {error "Selection Set has stale/missing members; explicitly update its references"}
-                dict for {layerId layer} [datasetPublicationV2DictDefault $organization layer {}] {if {[dict get $layer selectable]} continue;foreach member [dict get $value members] {foreach assigned [dict get $layer members] {if {[dict get $assigned object_token] eq [dict get $member object_token]} {error "Selection Set member is not selectable in Layer '[dict get $layer name]'"}}}}
-                set mode [datasetPublicationV2DictDefault $request mode replace];if {$mode ni {replace add subtract}} {error "Selection mode must be replace, add or subtract"}
-                set chosen [datasetPublicationV2DictDefault $organization selected_members {}]
-                if {$mode eq "replace"} {set chosen [dict get $value members]} else {foreach member [dict get $value members] {set index [lsearch -exact $chosen $member];if {$mode eq "add"&&$index<0} {lappend chosen $member} elseif {$mode eq "subtract"&&$index>=0} {set chosen [lreplace $chosen $index $index]}}}
+                set chosen [_native3DOrganizationSelected $token $organization [dict get $value members] [datasetPublicationV2DictDefault $request mode replace]]
                 dict set organization selected_members $chosen;dict set value selected_members $chosen
             }
         }
@@ -68,6 +101,8 @@ proc ::GX::native3DOrganizationCall {token action request} {
         if {[dict get $request working_unit] ne [dict get $value working_unit]} {error "Saved view has a different working unit; recapture it explicitly"}
         dict for {object visible} [dict get $value visibility] {native3DGeometryCall $token describe [dict create object_token $object]}
     } else {error "Unknown Native3D organization operation $action"}
+    set current [_native3DGeometryRequire $token]
+    if {[datasetPublicationV2DictDefault $current organization {}] ne $capturedOrganization} {error {Native3D organization changed while resolving its members; retry from the current state}}
     dict set organization $prefix $collection;dict set scenes $token organization $organization
     return $value
 }

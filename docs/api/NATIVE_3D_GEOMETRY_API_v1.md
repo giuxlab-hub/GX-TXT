@@ -30,7 +30,7 @@ an owned object. Additive C `gx3de_object_geometry_role_get/set` preserves geome
 fingerprints and copied-object roles. Exported owned resource metadata and restore
 preserve role. Role is distinct from visibility, color or selection.
 
-CORE scoped state adds `selection_set_{create,get,list,update,delete,activate}`,
+CORE scoped state adds `selection_set_{create,get,list,update,delete,activate,apply}`,
 `layer_{create,get,list,update,delete,assign}` and
 `saved_view_{create,get,list,update,delete,restore}`. Each takes scene plus request;
 collection tokens are opaque, scene-owned and limited to256 per kind. Names are
@@ -46,6 +46,14 @@ shared camera/projection/background/clipping/plane state, object-token visibilit
 and explicit working unit; Restore rejects missing objects or unit mismatch and
 returns presentation data without modifying geometry. Python and Octave expose
 typed receipts through the same existing provider.
+
+`selection_set_apply {members LIST ?mode replace|add|subtract?}` applies current
+verified members without creating a named Set. It returns `selected_members`
+and `mode`; empty Replace clears selection. Add/Subtract retain the actual
+selected members, including anchors, and reject stale/missing existing members.
+Selection changes do not checkpoint geometry or append scientific History.
+The scene, Document revision and organization are checked again after native
+member resolution; a closed or concurrently changed owner is never recreated.
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -90,10 +98,26 @@ explicit through the normal File/Dataset Publication APIs.
 `native3DGeometryExportResource scene object format millimeters_per_unit
 ?local|world?` imports a complete CORE-owned STEP/STL/VTP artifact into the
 document. The default is world coordinates. `local` keeps immutable local
-geometry and records complete placement separately. `load_step`/`load_mesh`
-accept a `resource` reference; STEP millimetres are explicitly normalized into
+geometry and records complete placement separately. `load_step`, `restore_step`
+and `load_mesh` accept a `resource` reference; STEP millimetres are explicitly normalized into
 the declared working unit before restoring recorded placement. Reset then
 returns original local geometry rather than a transformed serialization.
+
+`restore_step` rehydrates one previously saved canonical B-Rep object, including
+disconnected solid islands. It collects all STEP part occurrences with their
+placements into one immutable native compound, without Boolean fusion or new
+Document object identities. Workbench History and normal reopening use this
+explicit restoration operation. `load_step` retains its single-occurrence
+admission for ordinary Dataset intake; external assemblies still require
+separate occurrence identities. Resource integrity, document/Session ownership,
+working-unit normalization, local placement, geometry roles and staged failure
+rollback use the existing owners for both paths.
+
+The additive C entrypoint `gx3de_step_compound_create(scene, document, out)`
+provides the same explicit collection in `NATIVE_3D_ENGINE_API_v1`. It requires
+matching engine ownership and retains all exact part geometry and occurrence
+placements after the STEP document closes. It does not alter
+`gx3de_step_instance_create`, scientific coordinates, or normal assembly import.
 
 Source-preserving Translate/Rotate/Scale, mesh Clean/Weld/Orient, B-Rep Heal,
 Clip/Clip-cap and complete self-intersection queries use public Native3D APIs.
@@ -169,6 +193,15 @@ scene from `native3DGeometryOpen documentId`; `native3DGeometryCall scene action
 request` validates Session lifetime, document generation/revision and worker lifetime.
 A stale scene must be closed/reopened. Object/profile tokens are process-local.
 Persist resource descriptors and scientific definitions, never tokens.
+
+Canonical STEP resource identity is its immutable byte SHA-256. A native
+`geometry_sha256` identifies the engine's OCCT BRep serialization and version/cache
+namespace; it is a separate receipt. Restoring the exact STEP bytes may produce a
+different native serialization fingerprint while preserving topology, physical
+measurements and placement. Compare the canonical resource bytes/SHA and declared
+physical properties for a STEP persistence check; do not claim the native BRep
+serialization stayed identical. This distinction does not relax source revision,
+resource integrity, Session lifetime or stale-presentation checks.
 
 | Action | Required request fields and result |
 |---|---|

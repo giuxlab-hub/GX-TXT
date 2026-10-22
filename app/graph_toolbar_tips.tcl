@@ -7,17 +7,12 @@ proc ::GX::plotsToolbarTipHide {} {
         set plotsToolbarTipAfter ""
     }
     catch {destroy .plotsToolbarTip}
+    native2DViewportTooltipHide
 }
 proc ::GX::plotsToolbarTipShow {widget message} {
     variable plotsToolbarTipAfter
     set plotsToolbarTipAfter ""
-    if {![winfo exists $widget]} return
-    catch {destroy .plotsToolbarTip}
-    toplevel .plotsToolbarTip -borderwidth 1 -relief solid
-    wm overrideredirect .plotsToolbarTip 1
-    ttk::label .plotsToolbarTip.text -text $message -padding {7 5} -wraplength 440
-    pack .plotsToolbarTip.text
-    wm geometry .plotsToolbarTip +[expr {[winfo pointerx $widget]+12}]+[expr {[winfo pointery $widget]+18}]
+    native2DViewportTooltipShow $widget $message
 }
 proc ::GX::plotsToolbarTipSchedule {widget message} {
     plotsToolbarTipHide

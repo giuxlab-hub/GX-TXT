@@ -11,6 +11,16 @@ function gxtxt_debug_capture(__gx_dbg_destination, __gx_dbg_token, __gx_dbg_sha,
     __gx_dbg_active = __gx_dbg_active - 1;
   endif
   __gx_dbg_info = evalin('caller','whos');
+  % A Step Over can land at the first catch statement before the runner has
+  % written its durable exception. Read only its native caught err structure.
+  if (!isempty(__gx_dbg_stack) && strcmp(__gx_dbg_stack(1).name,'analysis_octave_script_main') && any(strcmp({__gx_dbg_info.name},'err')) && any(strcmp({__gx_dbg_info.name},'snapshot_path')))
+    try
+      __gx_dbg_error=evalin('caller','err');
+      __gx_dbg_snapshot=evalin('caller','snapshot_path');
+      gxtxt_debug_exception(__gx_dbg_error,__gx_dbg_snapshot,__gx_dbg_sha);
+    catch
+    end_try_catch
+  endif
   __gx_dbg_locals=struct();__gx_dbg_globals=struct();
   for __gx_dbg_k=1:min(numel(__gx_dbg_info),128)
     __gx_dbg_name=__gx_dbg_info(__gx_dbg_k).name;

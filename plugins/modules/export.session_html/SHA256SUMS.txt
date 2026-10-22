@@ -3,7 +3,7 @@
 bfb3a192f564f2ce4eba27f6d2d73413ead57267e570fb47bdbc26e760d50fc3  ./README.md
 aaf9c0151debb647a6d666219b7b42965b99a79f8633053b52ce3af398f991ce  ./SESSION_HTML_EXPORT.md
 f3b2726fc69eedf979096ca03aa54aa2a3a712afdeb21082406d702aef88eba9  ./api/session_html_export_api_v1.tcl
-2a796fd5ae576e05430aef839a32f9240c333c5f40625d2dafc7b71244f9940b  ./module.ini
+2edfb54b3a26d805ce4665f35bab9218be7d1ac49eb38ed04a5a4eb908d0aa44  ./module.ini
 8fd8ba3bc1b8aed5877ecc01bb7e99dacb4ea82a254543df9bc321d6507d06f6  ./plugin-package.ini
 2752201c06e7af8bef029d1d9595c070edac21f33f992237657f3def79dda8c3  ./runtime/assets/app.css
 bed6319f3f8ce084a275eb4a8030f4427309c45d74c3feb5f81c7f0fa5bb8f9f  ./runtime/assets/csv-viewer.js

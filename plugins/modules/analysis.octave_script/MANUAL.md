@@ -527,3 +527,15 @@ every failure means a time limit. Stack, locals and current-line arrow clear
 after terminal completion/cancellation. Debugger control output and program
 stdout/stderr are different views. Close or source/Session changes require the
 owner's cancellation/stale checks before another run.
+
+### Native user errors after Step Over (next candidate)
+
+The managed debugger preserves the actual Octave caught-error message and native
+origin stack before the runner rethrows it. The user-source error line remains
+primary after Step Over/Continue and durable Job failure. Runner catch frames
+remain in Debug Output as technical detail. A user frame that has unwound is an
+origin trace, not a selectable live frame. Variables labelled **last paused** are
+the last genuinely observed user snapshot, never live post-error values. Unsaved
+editor changes still prevent a stale snapshot highlight; Session/source SHA guards
+remain enforced. GNU Octave's local help says caught-error stopping is not yet
+implemented, so this does not promise pre-unwind live exception locals.

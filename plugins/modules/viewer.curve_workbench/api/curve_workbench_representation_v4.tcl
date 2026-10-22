@@ -29,6 +29,8 @@ proc ::GX::CurveWorkbench::_primitivePublishApply {w token id values} {
     set record [_record $w $id];set unit [lindex [_coordinateUnits $record] 0]
     set definition [::GX::Native2D::core sketch_definition $st($w,scene) [dict get $record native]]
     set sampling [dict remove $values dataset_id]
+    dict set sampling coordinate_units [_coordinateUnits $record]
+    dict set sampling coordinate_relations [_coordinateSourceRelations $record]
     dict set sampling forward [dict get [::GX::Native2D::core direction_marker $st($w,scene) [dict get $record native]] forward]
     set sources {};foreach ancestor [concat [list $record] [dict get $record ancestors]] {if {[dict get $ancestor source] ne {}} {lappend sources [dict get $ancestor source]}}
     if {[dict exists $record conversion_provenance source_dataset_id]} {lappend sources [dict get $record conversion_provenance source_dataset_id]}
@@ -46,10 +48,18 @@ proc ::GX::CurveWorkbench::_promoteOpen {w} {
     _sourceSnapshotRequire $w $record
     set options {};foreach key {filters order_variable_id} {if {[dict exists $record source_request $key]} {dict set options $key [dict get $record source_request $key]}}
     set receipt [::GX::native2DDatasetPromote [_session] [dict get $record source] [dict get $record x] [dict get $record y] $options]
-    set st($w,promotionPreview) [dict create logical $id receipt $receipt]
+    set st($w,promotionPreview) [dict create logical $id receipt $receipt coordinate_key [_coordinateControlKey $w [list $id]]]
     _toolPreview $w [dict get $receipt definition];_draw $w
     set method [dict get $receipt method]
-    set detail [expr {$method eq "exact_provenance_reconstruction"?{Exact retained reconstruction verified against original Dataset values.}:"Spline interpolation through [dict get $receipt quality knot_count] authoritative Dataset knots; maximum knot error [dict get $receipt quality maximum_knot_error] [dict get $receipt working_unit]. Between knots the result is an explicit derived interpolation."}]
+    if {$method eq {exact_provenance_reconstruction}} {
+        set detail {Exact retained reconstruction verified against original Dataset values.}
+    } else {
+        set quality [dict get $receipt quality];lassign [dict get $receipt coordinate_units] xUnit yUnit
+        set errors [dict get $quality maximum_knot_error_by_axis]
+        set norm [dict get $receipt working_unit]
+        if {[dict get $quality scope] eq {numeric_plane_interpolation_at_authoritative_knots}} {set norm "numeric plane norm (native X $xUnit / Y $yUnit)"}
+        set detail "Spline interpolation through [dict get $quality knot_count] authoritative Dataset knots; maximum knot errors: X [dict get $errors x] $xUnit; Y [dict get $errors y] $yUnit. Combined maximum [dict get $quality maximum_knot_error] $norm. Between knots the result is an explicit derived interpolation."
+    }
     ::GX::uiFieldFormCreate $w.promote {Review Dataset → retained geometry; original Dataset preserved} {name {type string required 1 label {New retained geometry name}}} [dict create name "[dict get $record name] retained"] [list ::GX::CurveWorkbench::_promoteApply $w $st($w,token)] $w
     ttk::label $w.promote.review -text $detail -wraplength 570 -padding 8;pack $w.promote.review -fill x -before $w.promote.viewport
     bind $w.promote <Destroy> +[list ::GX::CurveWorkbench::_promotionDisposed $w %W]
@@ -65,6 +75,7 @@ proc ::GX::CurveWorkbench::_promoteApply {w token values} {
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error {Session changed; reopen conversion}}
     if {$st($w,promotionPreview) eq {}} {error {Preview no longer exists}}
     set context $st($w,promotionPreview);set source [_record $w [dict get $context logical]];_sourceSnapshotRequire $w $source
+    _coordinateControlCheck $w [list [dict get $context logical]] [dict get $context coordinate_key]
     set receipt [dict get $context receipt]
     set result [_commitDefinition $w [dict get $receipt definition] [dict get $receipt working_unit] [dict get $values name] $receipt [list [dict get $context logical]]]
     if {[dict exists $receipt direction]} {
@@ -116,19 +127,24 @@ proc ::GX::CurveWorkbench::_compositionOpen {w arrangement} {
         }
     }
     set name [expr {$arrangement eq "compound"?"Compound":"Path"}]
+    _coordinatePlaneAdmit $w $ids
+    lassign [_coordinateUnits [_record $w [lindex $ids 0]]] xUnit yUnit
     set fields {name {type string required 1 label {New logical object name}}}
     set values [dict create name $name tolerance 0]
     if {$arrangement ne "compound"} {
-        dict set fields tolerance {type number min 0 label {Endpoint coincidence tolerance (working units)}}
+        dict set fields tolerance [dict create type number min 0 label "Numeric plane endpoint tolerance (native X $xUnit / Y $yUnit)"]
         dict set values tolerance 1e-9
     }
     set subtitle [expr {$arrangement eq "compound" ? "$name — exact constituents; source objects preserved" : "$name — exact constituents; selected objects become one Path"}]
-    ::GX::uiFieldFormCreate $w.pathJoin $subtitle $fields $values [list ::GX::CurveWorkbench::_compositionApply $w $st($w,token) $ids $arrangement] $w
+    ::GX::uiFieldFormCreate $w.pathJoin $subtitle $fields $values [list ::GX::CurveWorkbench::_compositionReviewedApply $w $st($w,token) $ids $arrangement [_coordinateControlKey $w $ids]] $w
+}
+proc ::GX::CurveWorkbench::_compositionReviewedApply {w token ids arrangement key values} {
+    _coordinateControlCheck $w $ids $key
+    return [_compositionApply $w $token $ids $arrangement $values]
 }
 proc ::GX::CurveWorkbench::_adoptPath {w native name parents operation} {
     variable st
     set record [_newRecord $w $name [_sketchSamples $w $native] {} x y {} {} {} {} $parents [list $operation]]
-    dict set record working_unit [_cadUnits $w $parents]
     set ancestors {};foreach parent $parents {set r [_record $w $parent];lappend ancestors [dict remove $r native samples ancestors];lappend ancestors {*}[dict get $r ancestors]}
     # Snapshot conversion receipts before inputs can be independently deleted.
     # Logical ancestry identifies sources; retained metadata explains the science.
@@ -142,7 +158,7 @@ proc ::GX::CurveWorkbench::_adoptPath {w native name parents operation} {
 proc ::GX::CurveWorkbench::_compositionApply {w token ids arrangement values {recordHistory 1}} {
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error {Session changed; reopen composition}}
-    _cadUnits $w $ids
+    _coordinatePlaneAdmit $w $ids
     set natives [lmap id $ids {dict get [_record $w $id] native}]
     # Join replaces the selected top-level objects with one exact logical Path.
     # The composition owns deep leaf copies and the record keeps their ancestry;
@@ -182,6 +198,7 @@ proc ::GX::CurveWorkbench::_compositionSeparate {w} {
     if {[llength $ids]!=1} {error {Select one Path or Compound to separate its exact constituents.}}
     set parent [lindex $ids 0];set record [_record $w $parent]
     if {![dict exists $record sketch_definition]||[dict get $record sketch_definition family] ni {composite_path compound}} {error {Select a heterogeneous Path or Compound.}}
+    _coordinatePlaneAdmit $w $ids
     set before [_snapshotIds $w {}];set undo $st($w,undo);set redo $st($w,redo);set members {};set created {}
     set natives [::GX::Native2D::core composition_explode $st($w,scene) [dict get $record native]]
     try {
@@ -225,6 +242,7 @@ proc ::GX::CurveWorkbench::_pathSplitReviewed {w token parent values} {
 proc ::GX::CurveWorkbench::_pathSplitCommit {w token parent operation index} {
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error {Session changed; reopen Split}}
+    _coordinatePlaneAdmit $w [list $parent]
     set record [_record $w $parent]
     set before [_snapshotIds $w {}];set undo $st($w,undo);set redo $st($w,redo)
     set nativeIds [::GX::Native2D::core $operation $st($w,scene) [dict get $record native] $index]

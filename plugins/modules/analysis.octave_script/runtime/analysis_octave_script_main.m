@@ -191,6 +191,9 @@ function analysis_octave_script_main(args, framework_root)
       'message', 'User Octave script completed successfully.'));
 
   catch err
+    if (strcmp(gxtxt_ini_get(cfg, 'debug.enabled', '0'), '1'))
+      try gxtxt_debug_exception(err, snapshot_path, script_sha256); catch; end_try_catch
+    endif
     try cd(original_pwd); catch; end_try_catch
     try path(original_path); catch; end_try_catch
     if (bridge_started)

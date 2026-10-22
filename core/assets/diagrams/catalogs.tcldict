@@ -4,7 +4,17 @@ electrical.basic {
     resistor {title Resistor prefix R paths {{{-30 0} {-20 0} {-15 8} {-10 -8} {-5 8} {0 -8} {5 8} {10 -8} {15 8} {20 0} {30 0}}} pins {p {-30 0} n {30 0}} attributes {value {type number default 1000 min 1e-15 unit Ohm}}}
     capacitor {title Capacitor prefix C paths {{{-30 0} {-5 0}} {{-5 -16} {-5 16}} {{5 -16} {5 16}} {{5 0} {30 0}}} pins {p {-30 0} n {30 0}} attributes {value {type number default 1e-6 min 1e-18 unit F}}}
     inductor {title Inductor prefix L paths {{{-30 0} {-20 0} {-18 8} {-14 12} {-10 8} {-8 0} {-6 8} {-2 12} {2 8} {4 0} {6 8} {10 12} {14 8} {16 0} {30 0}}} pins {p {-30 0} n {30 0}} attributes {value {type number default 0.001 min 1e-15 unit H}}}
-    voltage {title {Voltage source} prefix V paths {{{-30 0} {-20 0}} {{20 0} {30 0}} {{-20 0} {-18 -10} {-10 -18} {0 -20} {10 -18} {18 -10} {20 0} {18 10} {10 18} {0 20} {-10 18} {-18 10} {-20 0}} {{-12 0} {-4 0}} {{-8 -4} {-8 4}} {{6 0} {14 0}}} pins {p {-30 0} n {30 0}} attributes {value {type number default 1 unit V} waveform {type choice default dc values {dc pulse sine}} ac {type number default 1 min 0 unit V} initial {type number default 0 unit V} delay {type number default 0 min 0 unit s} rise {type number default 1e-9 min 1e-15 unit s} width {type number default 0.01 min 1e-15 unit s} period {type number default 0.02 min 1e-15 unit s} frequency {type number default 1000 min 1e-15 unit Hz}}}
+    voltage {
+      title {Voltage source} prefix V
+      paths {{{-30 0} {-20 0}} {{20 0} {30 0}} {{-20 0} {-18 -10} {-10 -18} {0 -20} {10 -18} {18 -10} {20 0} {18 10} {10 18} {0 20} {-10 18} {-18 10} {-20 0}}}
+      variants {attribute waveform marks {
+        dc {{{-12 0} {-4 0}} {{-8 -4} {-8 4}} {{6 0} {14 0}}}
+        sine {{{-14 0} {-12 -5} {-9 -8} {-6 -8} {-3 -5} {0 0} {3 5} {6 8} {9 8} {12 5} {14 0}}}
+        pulse {{{-14 -7} {-7 -7} {-7 7} {5 7} {5 -7} {14 -7}}}
+      }}
+      pins {p {-30 0} n {30 0}}
+      attributes {value {type number default 1 unit V} waveform {type choice default dc values {dc pulse sine}} ac {type number default 1 min 0 unit V} initial {type number default 0 unit V} delay {type number default 0 min 0 unit s} rise {type number default 1e-9 min 1e-15 unit s} width {type number default 0.01 min 1e-15 unit s} period {type number default 0.02 min 1e-15 unit s} frequency {type number default 1000 min 1e-15 unit Hz}}
+    }
     current {title {Current source} prefix I paths {{{-30 0} {-20 0}} {{20 0} {30 0}} {{-20 0} {-18 -10} {-10 -18} {0 -20} {10 -18} {18 -10} {20 0} {18 10} {10 18} {0 20} {-10 18} {-18 10} {-20 0}} {{-12 0} {12 0} {5 6}} {{12 0} {5 -6}}} pins {p {-30 0} n {30 0}} attributes {value {type number default 0.001 unit A} ac {type number default 0 min 0 unit A}}}
     ground {title Ground prefix G paths {{{0 0} {0 -12}} {{-15 -12} {15 -12}} {{-10 -18} {10 -18}} {{-5 -24} {5 -24}}} pins {g {0 0}} attributes {}}
     diode {title Diode prefix D paths {{{-30 0} {-12 0}} {{-12 -14} {-12 14} {12 0} {-12 -14}} {{12 -14} {12 14}} {{12 0} {30 0}}} pins {a {-30 0} k {30 0}} attributes {model {type choice default generic values {generic silicon}}}}

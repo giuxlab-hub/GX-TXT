@@ -1,6 +1,68 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # A comparison is an explicit reference/target/method request, independent of
 # the primary property focus. Drawing another curve never retargets that request.
+# Read-only binding to the actual committed comparison owner. Neither capture
+# nor validation evaluates geometry, saves a Workspace or publishes a Dataset.
+proc ::GX::CurveWorkbench::_comparisonDisplayProvenance {w config} {
+    set result {}
+    foreach role {reference target} {
+        set id [dict get $config $role];set curve [_record $w $id]
+        set descriptor [::GX::datasetPublicationV2DictDefault $curve source_descriptor {}]
+        set source [dict get $curve source]
+        set provenance [dict create geometry_id $id source_kind [expr {$source eq {} ? {editable_geometry} : {cached_source_geometry}}] dataset_id $source captured_source_descriptor $descriptor]
+        if {$descriptor ne {}} {
+            if {[catch {set status [::GX::curveSourceValidateSnapshot [_session] $descriptor]} message]} {set status [dict create status unavailable reason $message]}
+            dict set provenance source_status_at_admission $status
+        }
+        dict set result $role $provenance
+    }
+    return $result
+}
+proc ::GX::CurveWorkbench::comparisonDisplaySource {w} {
+    variable st
+    if {![info exists st($w,token)] || ![winfo exists $w]} {error {Comparison window is closed}}
+    set config $st($w,comparisonConfig);set record $st($w,comparisonRecord)
+    set generation {}
+    if {$st($w,document) ne {}} {set generation [dict get [::GX::interactiveDocumentRead $st($w,document)] generation]}
+    set binding [dict create api_id CURVE_WORKBENCH_API_v1 api_version 1         window $w incarnation [winfo id $w] session_token $st($w,token)         document_id $st($w,document) owner_generation $generation definition $config         comparison_identity $record]
+    comparisonDisplayValidate $binding $record
+    dict set binding source_provenance [_comparisonDisplayProvenance $w $config]
+    return $binding
+}
+proc ::GX::CurveWorkbench::comparisonDisplayValidate {binding record} {
+    variable st
+    foreach field {api_id api_version window incarnation session_token document_id owner_generation definition comparison_identity} {
+        if {![dict exists $binding $field]} {error "Comparison display binding is missing $field"}
+    }
+    if {[dict get $binding api_id] ne {CURVE_WORKBENCH_API_v1} || [dict get $binding api_version]!=1} {error {Invalid comparison display binding}}
+    set w [dict get $binding window]
+    if {![_windowCurrent $w [dict get $binding incarnation] [dict get $binding session_token]]} {error {Comparison window or Session changed; reopen it}}
+    if {![info exists st($w,comparisonEnabled)] || !$st($w,comparisonEnabled) || $st($w,comparisonConfig) eq {}} {error {Comparison is inactive; select Compare to refresh}}
+    set config $st($w,comparisonConfig)
+    foreach field {reference target method} {if {![dict exists $config $field]} {error {Comparison has no explicit reference, target and method}}}
+    if {$config ne [dict get $binding definition] || $record eq {} || $record ne $st($w,comparisonRecord) ||
+        $record ne [dict get $binding comparison_identity]} {error {Comparison definition or result changed; select Compare to refresh}}
+    if {$st($w,residual) ne [dict get $record receipt]} {error {Displayed comparison receipt is no longer active}}
+    if {[_measurementState $w $record] ne {current}} {error {Comparison geometry changed; select Compare to refresh}}
+    if {![dict exists $record coordinate_presentation_signature] || [dict get $record coordinate_presentation_signature] ne [_coordinateComparisonSignature $w $config]} {error {Comparison coordinate presentation changed; select Compare to refresh}}
+    if {$st($w,document) ne [dict get $binding document_id]} {error {Comparison Document owner changed; select Compare to refresh}}
+    if {$st($w,document) ne {}} {
+        set owner [::GX::interactiveDocumentRead $st($w,document)]
+        set generation [dict get $owner generation]
+        if {$generation ne [dict get $binding owner_generation] ||
+            [info exists st($w,ownerGeneration)] && $generation ne $st($w,ownerGeneration)} {error {Comparison Document owner was replaced; reopen it}}
+    } elseif {[dict get $binding owner_generation] ne {}} {error {Unsaved comparison has no Document generation}}
+    foreach role {reference target} {
+        set curve [_record $w [dict get $config $role]]
+        foreach key {geometry_resource row_resource gap_resource} {
+            if {[dict exists $curve $key]} {::GX::interactiveDocumentResourceInfo [dict get $curve $key]}
+        }
+    }
+    set result [dict create valid 1]
+    if {[dict exists $binding source_provenance]} {dict set result source_provenance [dict get $binding source_provenance]}
+    return $result
+}
+
 proc ::GX::CurveWorkbench::_comparisonEvaluate {w config} {
     variable st
     set reference [dict get $config reference];set target [dict get $config target];set method [dict get $config method]

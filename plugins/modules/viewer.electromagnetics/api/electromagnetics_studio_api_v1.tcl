@@ -194,8 +194,7 @@ Limitations: this boundary-value problem is not a finite physical plate capacito
 }
 proc ::GX::ElectromagneticsStudio::_showHelp {} {variable window;::GX::documentationBrowserOpenModuleWindow viewer.electromagnetics $window}
 proc ::GX::ElectromagneticsStudio::_settings {} {
-    if {![winfo exists .top.nb.configuration]} {error {Open the main GX-TXT Configuration → Runtime page to configure Gmsh and GetDP.}}
-    .top.nb select .top.nb.configuration;.top.nb.configuration.sections select .top.nb.configuration.sections.runtime;raise .
+    return [::GX::configurationOpenPage runtime]
 }
 proc ::GX::ElectromagneticsStudio::_controls {} {
     variable state;variable window
@@ -233,10 +232,7 @@ proc ::GX::ElectromagneticsStudio::_pick {path x y} {
     if {[dict exists $hit object_kind]&&[dict get $hit object_kind] eq {cell}} {_setStatus "Cell [dict get $hit cell_id], source row [dict get $hit source_row_ordinal]: [dict get $hit value] [dict get $hit scalar_unit]."}
 }
 proc ::GX::ElectromagneticsStudio::_profileSpec {} {
-    variable state
-    set info [::GX::ElectromagneticSimulation::fieldDescribe $state(dataset)];set roles [dict get $info roles]
-    set s [dict create id samples dataset_id $state(dataset) x_variable_id [dict get $roles cell_x_variable_id] y_variable_id [dict get $roles scalar_variable_id] kind scatter axis left label {Actual cell-centroid samples, all Y}]
-    set spec [::GX::PlotDatasetAPIv4::newSpec -title {Field magnitude versus X at actual cell centroids}];dict set spec panels [list [dict create id main axes {} annotations {} series [list $s]]];return $spec
+    return [::GX::PlotDatasetAPIv4::cellFieldProfileSpec [_fieldSpec]]
 }
 proc ::GX::ElectromagneticsStudio::_showProfile {} {
     variable window

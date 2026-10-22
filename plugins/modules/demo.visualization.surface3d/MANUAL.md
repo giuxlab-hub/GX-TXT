@@ -260,9 +260,23 @@ The default grid is intentionally small. Rendering time is recorded only as an o
 
 ## Validation
 
-Generator and package-validation checks can run without Octave. Numerical
-grid checks and PNG rendering require a working GNU Octave installation; when
-it is unavailable, they must be reported as `SKIP` rather than `PASS`.
+### Interactive preview in dev109
+
+The existing surface, mesh and contour3 graph descriptors declare their real
+Plot Dataset geometry through the shared Graph Provider bridge. In Plots, select
+the thermal graph and use its interactive 3D action. The original
+`demo.visualization.surface3d` identity and base/Variant remain attached to the
+preview; the source is not renamed to a Plot Dataset graph. X/Y remain spatial
+millimetres and Z remains temperature in kelvin.
+
+Preview requires retained compatible scientific preparation, canonical Dataset
+and Variable identities, units and presentation. A static PNG alone is
+insufficient. Missing Plot Variant registration alone does not prevent using a
+verified existing preparation. Stale sources or settings produce a precise
+diagnostic rather than rebuilding scientific results implicitly. The dev109
+source correction is implemented; platform-specific functional verification is reported separately.
+
+`TEST_RESULTS.md` records the exact tests performed for this release. Generator and package/install tests execute without Octave. Real Octave grid-validation and PNG rendering tests are included and are executed when GNU Octave is available; otherwise they are explicitly `SKIP`.
 
 
 ## Stable variable identity

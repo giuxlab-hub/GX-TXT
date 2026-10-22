@@ -206,11 +206,34 @@ proc ::GX::native2DGridReset {window scene changed parent {presentation {}}} {
     if {$changed ne ""} {uplevel #0 $changed}
     native2DGridForm $window $scene $changed $parent $presentation
 }
-proc ::GX::native2DCanvasGrid {scene canvas {tag construction_grid}} {
+proc ::GX::native2DCanvasGrid {scene canvas {tag construction_grid} {minimumSpacing 0}} {
+    if {![string is double -strict $minimumSpacing] || $minimumSpacing<0 || $minimumSpacing>128} {error {Grid presentation spacing must be 0..128 pixels}}
     set grid [::GX::Native2D::core grid $scene]
     set background [uiFieldColorFromRGBA [::GX::Native2D::core background $scene]]
     set background [uiFieldColorComposite $background #FFFFFF]
-    foreach line [::GX::Native2D::core render_grid $scene] {
+    set lines [::GX::Native2D::core render_grid $scene]
+    # Select presentation detail from the native owner's actual lines. Snap
+    # spacing and all authored grid state stay unchanged.
+    set coordinates {};set suppressed {}
+    if {$minimumSpacing>0} {
+        foreach line $lines {
+            set classification [dict get $line classification]
+            if {$classification==2} continue
+            lassign [dict get $line a] ax ay;lassign [dict get $line b] bx by
+            set orientation [expr {abs($ax-$bx)<0.5?{x}:{y}}]
+            dict lappend coordinates [list $classification $orientation] [expr {$orientation eq {x}?$ax:$ay}]
+        }
+        dict for {key values} $coordinates {
+            set previous {};foreach value [lsort -real -unique $values] {
+                if {$previous ne {} && $value-$previous<$minimumSpacing} {dict set suppressed $key 1;break}
+                set previous $value
+            }
+        }
+    }
+    foreach line $lines {
+        lassign [dict get $line a] ax ay;lassign [dict get $line b] bx by
+        set orientation [expr {abs($ax-$bx)<0.5?{x}:{y}}]
+        if {[dict exists $suppressed [list [dict get $line classification] $orientation]]} continue
         set kind [lindex {minor major axes} [dict get $line classification]]
         set color [uiFieldColorComposite [uiFieldColorFromRGBA [dict get $grid ${kind}_color]] $background]
         set options [list -fill [dict get $color rgb] -width [dict get $grid ${kind}_width] -tags $tag]

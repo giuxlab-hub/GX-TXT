@@ -2,7 +2,7 @@
 # Scoped retained geometry on the shared Native3D isolated worker.
 namespace eval ::GX::Native3DGeometry {variable scenes {};variable serial 0}
 proc ::GX::native3DGeometryApiInfo {} {
-    return [dict create api_id NATIVE_3D_GEOMETRY_API_v1 api_version 1 operations {open scene_info convert_axes planar_api_info planar_create planar_list planar_show planar_edit_begin planar_edit_accept planar_edit_cancel call import_dataset profile_from_sources profile_resources profile_view_resource export_resource checkpoint close} geometry_operations {logical_id projection_profile plane_frame indexed_mesh polydata masked_surface sweep load_scientific project profile profile_delete profile_rescale section_profile extrude box cylinder boolean duplicate mesh describe anchor_describe measure delete transform translate rotate scale rescale_coordinates reset_transform align_three_points constraint_solve clean weld orient heal clip clip_cap self_intersections mesh_append mesh_merge mesh_stitch mesh_bridge mesh_heal_seam mesh_lod mesh_boundaries mesh_intersection_pairs group_copy group_duplicate group_delete export export_local load_step load_mesh} raw_pointers 0 implicit_dataset_publication 0 numerical_point_limit 1000000 numerical_cell_limit 1000000 numerical_request_bytes 67108864 logical_id_max 9007199254740991 projection_policy orthogonal_full_geometry editable_projection source_boundary reference_renderer modern_native3d]
+    return [dict create api_id NATIVE_3D_GEOMETRY_API_v1 api_version 1 operations {open scene_info convert_axes planar_api_info planar_create planar_list planar_show planar_edit_begin planar_edit_accept planar_edit_cancel call import_dataset profile_from_sources profile_resources profile_view_resource export_resource checkpoint close} geometry_operations {logical_id projection_profile plane_frame indexed_mesh polydata masked_surface sweep load_scientific project profile profile_delete profile_rescale section_profile extrude box cylinder boolean duplicate mesh describe anchor_describe measure delete transform translate rotate scale rescale_coordinates reset_transform align_three_points constraint_solve clean weld orient heal clip clip_cap self_intersections mesh_append mesh_merge mesh_stitch mesh_bridge mesh_heal_seam mesh_lod mesh_boundaries mesh_intersection_pairs group_copy group_duplicate group_delete export export_local load_step restore_step load_mesh} raw_pointers 0 implicit_dataset_publication 0 numerical_point_limit 1000000 numerical_cell_limit 1000000 numerical_request_bytes 67108864 logical_id_max 9007199254740991 projection_policy orthogonal_full_geometry editable_projection source_boundary reference_renderer modern_native3d]
 }
 proc ::GX::native3DGeometryImportDataset {token datasetId workingUnit {assumedInputUnit {}}} {
     set scope [_native3DGeometryRequire $token]
@@ -193,11 +193,11 @@ proc ::GX::native3DGeometryCall {token action request} {
             }
             dict set request contours $contours
         }
-        if {$action in {load_step load_mesh load_scientific}} {
+        if {$action in {load_step restore_step load_mesh load_scientific}} {
             if {![dict exists $request resource]} {error "Geometry restore requires an owned document resource"}
             set reference [dict get $request resource];interactiveDocumentResourceInfo $reference
             set format [dict get $reference metadata format]
-            if {$action eq "load_step"} {
+            if {$action in {load_step restore_step}} {
                 if {$format ne "native3d.step.v1"} {error "B-Rep restore requires an exact STEP resource"}
                 dict set request millimeters_per_working_unit [dict get $reference metadata millimeters_per_working_unit]
             } else {
@@ -219,7 +219,7 @@ proc ::GX::native3DGeometryCall {token action request} {
             }
         }
         set result [::GX::Engine3D::rpc [list cad $token $action $request]]
-        if {$action in {load_step load_mesh load_scientific}&&[dict exists $reference metadata geometry_role]} {
+        if {$action in {load_step restore_step load_mesh load_scientific}&&[dict exists $reference metadata geometry_role]} {
             set result [::GX::Engine3D::rpc [list cad $token geometry_role [dict create object_token [dict get $result object_token] role [dict get $reference metadata geometry_role]]]]
         }
         _native3DGeometryRequire $token

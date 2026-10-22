@@ -1,3 +1,10 @@
+## dev109 integration — not yet released
+
+Correct the dedicated native window's application lifetime: root shutdown uses
+the existing QUIT protocol and the native timer services command-pipe EOF.
+The preserved molecular GUI failure had a surviving orphan host after root
+exit; corrected real-GUI closure verification is tracked separately.
+
 ## 0.9.8
 
 Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.

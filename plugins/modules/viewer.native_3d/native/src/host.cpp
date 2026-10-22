@@ -1603,6 +1603,13 @@ public:
                 return;
             }
             if (event == vtkCommand::TimerEvent) {
+                // stdin is the owning application's command channel. Once
+                // it is closed, an interactive window must not outlive its
+                // owner. Do not write an acknowledgement to a closed pipe.
+                if (host->input_closed) {
+                    std::lock_guard<std::mutex> lock(host->mutex);
+                    if (host->commands.empty()) std::_Exit(0);
+                }
                 for (int i=0;i<16;++i) {
                     std::string next;
                     { std::lock_guard<std::mutex> lock(host->mutex);
@@ -1677,7 +1684,10 @@ int main(int argc, char** argv) {
         host.interactor->CreateRepeatingTimer(30);
         host.interactor->Start();
         std::cout << "{\"event\":\"closed\"}" << std::endl;
-        return 0;
+        // The detached input reader can still be blocked on the owner's pipe.
+        // Match QUIT/EOF process termination: do not unwind Host or global
+        // iostreams while that reader can access them after the window closes.
+        std::_Exit(0);
     } catch (const std::exception& error) {
         std::cerr << error.what() << std::endl;
         return 1;

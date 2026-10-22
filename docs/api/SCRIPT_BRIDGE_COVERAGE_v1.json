@@ -1,5 +1,5 @@
 {
-  "framework_version": "0.9.8.10-dev-101",
+  "framework_version": "0.9.8.10-dev-109",
   "bridge_api_id": "OCTAVE_SCRIPT_BRIDGE_API_v1",
   "callback_contract": {
     "api_id": "SCRIPT_CALLBACK_API_v1",
@@ -67,9 +67,12 @@
         "catalog_revision",
         "catalog_snapshot",
         "describe",
+        "import_local",
         "list",
         "read_hyperslab",
-        "read_range"
+        "read_range",
+        "remote_attach",
+        "remote_sessions"
       ],
       "script_languages": [
         "Octave",
@@ -92,6 +95,10 @@
           "Octave",
           "Python"
         ],
+        "import_local": [
+          "Octave",
+          "Python"
+        ],
         "list": [
           "Octave",
           "Python"
@@ -101,6 +108,14 @@
           "Python"
         ],
         "read_range": [
+          "Octave",
+          "Python"
+        ],
+        "remote_attach": [
+          "Octave",
+          "Python"
+        ],
+        "remote_sessions": [
           "Octave",
           "Python"
         ]
@@ -177,6 +192,18 @@
         "read_hyperslab": {
           "status": "script_callable",
           "script_operation": "read_hyperslab"
+        },
+        "import_local": {
+          "status": "script_callable",
+          "script_operation": "import_local"
+        },
+        "remote_attach": {
+          "status": "script_callable",
+          "script_operation": "remote_attach"
+        },
+        "remote_sessions": {
+          "status": "script_callable",
+          "script_operation": "remote_sessions"
         }
       },
       "documented_public_commands": [
@@ -264,6 +291,18 @@
         "read_hyperslab": {
           "status": "script_callable",
           "script_operation": "read_hyperslab"
+        },
+        "import_local": {
+          "status": "script_callable",
+          "script_operation": "import_local"
+        },
+        "remote_attach": {
+          "status": "script_callable",
+          "script_operation": "remote_attach"
+        },
+        "remote_sessions": {
+          "status": "script_callable",
+          "script_operation": "remote_sessions"
         }
       },
       "documentation_ref": "docs/api/CANONICAL_DATASET_API_v2.md",
@@ -274,7 +313,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/canonical_dataset.py",
-        "sha256": "a5fd5e52aa06f629d4c1b6bddda21faa4411f6f4734a49c8124c21c12d192da0"
+        "sha256": "62e341aa89654c86f742407af5cf05a0235182c2478f79c82e10dc353c128a57"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -1155,6 +1194,165 @@
         "run": {
           "status": "script_callable",
           "script_operation": "run"
+        },
+        "submit": {
+          "status": "script_callable",
+          "script_operation": "submit"
+        }
+      }
+    },
+    {
+      "api_id": "CURVE_REPLICATE_ANALYSIS_API_v1",
+      "api_version": 1,
+      "provider": "curve.replicate_analysis",
+      "provider_kind": "module",
+      "documentation_ref": "plugins/modules/curve.replicate_analysis/SCIENTIFIC_API.md",
+      "status": "already_script_callable",
+      "operations": [
+        "cancel",
+        "capabilities",
+        "describe_output",
+        "encode_result",
+        "preflight",
+        "preflight_encoded",
+        "publish",
+        "result",
+        "status",
+        "submit"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "cancel": [
+          "Octave",
+          "Python"
+        ],
+        "capabilities": [
+          "Octave",
+          "Python"
+        ],
+        "describe_output": [
+          "Octave",
+          "Python"
+        ],
+        "encode_result": [
+          "Octave",
+          "Python"
+        ],
+        "preflight": [
+          "Octave",
+          "Python"
+        ],
+        "preflight_encoded": [
+          "Octave",
+          "Python"
+        ],
+        "publish": [
+          "Octave",
+          "Python"
+        ],
+        "result": [
+          "Octave",
+          "Python"
+        ],
+        "status": [
+          "Octave",
+          "Python"
+        ],
+        "submit": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "registration_source": {
+        "path": "plugins/modules/curve.replicate_analysis/api/script_bridge_binding.py",
+        "sha256": "68061e8e45c13643dcf7e21833fa507368fd31bb7c1144e871d4f2a22c054b8a"
+      },
+      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+      },
+      "operation_coverage": {
+        "cancel": {
+          "status": "script_callable",
+          "script_operation": "cancel"
+        },
+        "capabilities": {
+          "status": "script_callable",
+          "script_operation": "capabilities"
+        },
+        "describe_output": {
+          "status": "script_callable",
+          "script_operation": "describe_output"
+        },
+        "encode_result": {
+          "status": "script_callable",
+          "script_operation": "encode_result"
+        },
+        "preflight": {
+          "status": "script_callable",
+          "script_operation": "preflight"
+        },
+        "preflight_encoded": {
+          "status": "script_callable",
+          "script_operation": "preflight_encoded"
+        },
+        "publish": {
+          "status": "script_callable",
+          "script_operation": "publish"
+        },
+        "result": {
+          "status": "script_callable",
+          "script_operation": "result"
+        },
+        "status": {
+          "status": "script_callable",
+          "script_operation": "status"
+        },
+        "submit": {
+          "status": "script_callable",
+          "script_operation": "submit"
+        }
+      },
+      "public_operations": {
+        "cancel": {
+          "status": "script_callable",
+          "script_operation": "cancel"
+        },
+        "capabilities": {
+          "status": "script_callable",
+          "script_operation": "capabilities"
+        },
+        "describe_output": {
+          "status": "script_callable",
+          "script_operation": "describe_output"
+        },
+        "encode_result": {
+          "status": "script_callable",
+          "script_operation": "encode_result"
+        },
+        "preflight": {
+          "status": "script_callable",
+          "script_operation": "preflight"
+        },
+        "preflight_encoded": {
+          "status": "script_callable",
+          "script_operation": "preflight_encoded"
+        },
+        "publish": {
+          "status": "script_callable",
+          "script_operation": "publish"
+        },
+        "result": {
+          "status": "script_callable",
+          "script_operation": "result"
+        },
+        "status": {
+          "status": "script_callable",
+          "script_operation": "status"
         },
         "submit": {
           "status": "script_callable",
@@ -2304,6 +2502,7 @@
       "provider": "dataset_metadata",
       "status": "already_script_callable",
       "operations": [
+        "contributors",
         "coordinate_inspect",
         "coordinate_read",
         "coordinate_reset",
@@ -2314,6 +2513,7 @@
         "coordinate_validate",
         "coordinate_values",
         "coordinate_view_range",
+        "groups",
         "parse_text",
         "private_owner",
         "private_read",
@@ -2328,6 +2528,10 @@
         "Python"
       ],
       "operation_languages": {
+        "contributors": [
+          "Octave",
+          "Python"
+        ],
         "coordinate_inspect": [
           "Octave",
           "Python"
@@ -2365,6 +2569,10 @@
           "Python"
         ],
         "coordinate_view_range": [
+          "Octave",
+          "Python"
+        ],
+        "groups": [
           "Octave",
           "Python"
         ],
@@ -2505,6 +2713,14 @@
         "coordinate_view_range": {
           "status": "script_callable",
           "script_operation": "coordinate_view_range"
+        },
+        "contributors": {
+          "status": "script_callable",
+          "script_operation": "contributors"
+        },
+        "groups": {
+          "status": "script_callable",
+          "script_operation": "groups"
         }
       },
       "documented_public_commands": [
@@ -2617,6 +2833,14 @@
         "coordinate_view_range": {
           "status": "script_callable",
           "script_operation": "coordinate_view_range"
+        },
+        "contributors": {
+          "status": "script_callable",
+          "script_operation": "contributors"
+        },
+        "groups": {
+          "status": "script_callable",
+          "script_operation": "groups"
         }
       },
       "documentation_ref": "docs/api/DATASET_METADATA_API_v1.md",
@@ -2627,7 +2851,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/dataset_metadata.py",
-        "sha256": "1d0be36c9446c88d116d6ae8a9fc614c3734f51b2ee02d141d64ee9c1913d534"
+        "sha256": "e6d6c941627c8357fa2fe705f87b363d1c60072feeabb45db7cb946de7d91193"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -2798,6 +3022,9 @@
       "provider": "dataset_preview",
       "status": "already_script_callable",
       "operations": [
+        "cache_clear",
+        "cache_generate",
+        "cache_inventory",
         "page"
       ],
       "script_languages": [
@@ -2805,6 +3032,18 @@
         "Python"
       ],
       "operation_languages": {
+        "cache_clear": [
+          "Octave",
+          "Python"
+        ],
+        "cache_generate": [
+          "Octave",
+          "Python"
+        ],
+        "cache_inventory": [
+          "Octave",
+          "Python"
+        ],
         "page": [
           "Octave",
           "Python"
@@ -2815,6 +3054,18 @@
         "page": {
           "status": "script_callable",
           "script_operation": "page"
+        },
+        "cache_clear": {
+          "status": "script_callable",
+          "script_operation": "cache_clear"
+        },
+        "cache_generate": {
+          "status": "script_callable",
+          "script_operation": "cache_generate"
+        },
+        "cache_inventory": {
+          "status": "script_callable",
+          "script_operation": "cache_inventory"
         }
       },
       "api_policy": {
@@ -2825,12 +3076,24 @@
         "page": {
           "status": "script_callable",
           "script_operation": "page"
+        },
+        "cache_clear": {
+          "status": "script_callable",
+          "script_operation": "cache_clear"
+        },
+        "cache_generate": {
+          "status": "script_callable",
+          "script_operation": "cache_generate"
+        },
+        "cache_inventory": {
+          "status": "script_callable",
+          "script_operation": "cache_inventory"
         }
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/dataset_preview.py",
-        "sha256": "0875afd1c4d13aa4ce166a871e3a585061c06b07bc78cff4a31ad411fface590"
+        "sha256": "e7eaf6e7ec0f09c239c68e48d7f60a9d209102fa94cc7074a1c1e0d7ef950f76"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -4098,6 +4361,21 @@
       }
     },
     {
+      "api_id": "GENERATED_VIEWER_API_v1",
+      "api_version": 1,
+      "provider": "viewer.dev107_native3d_embedded",
+      "status": "not_yet_bridged",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "operation_coverage": {},
+      "public_operations": {},
+      "api_policy": {
+        "status": "not_yet_bridged",
+        "reason": "No current Script registration; public host API inspection is required"
+      }
+    },
+    {
       "api_id": "GRAPH_METADATA_API_v1",
       "operation_coverage": {
         "info": {
@@ -4723,6 +5001,21 @@
         "sha256": "eefce4e08b64ff792840e69b8e6f58d9aa07a9c638d30c3250601d6a10d22c45"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
+    },
+    {
+      "api_id": "HTML_VIEWER_API_v1",
+      "api_version": 1,
+      "provider": "viewer.html",
+      "status": "not_yet_bridged",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "operation_coverage": {},
+      "public_operations": {},
+      "api_policy": {
+        "status": "not_yet_bridged",
+        "reason": "No current Script registration; public host API inspection is required"
+      }
     },
     {
       "api_id": "INSTALLATION_IDENTITY_API_v1",
@@ -6373,6 +6666,7 @@
         "path_join",
         "path_point",
         "path_split",
+        "path_validate",
         "path_vertices",
         "pivot",
         "pixel_tolerance",
@@ -6823,6 +7117,10 @@
           "Python"
         ],
         "path_split": [
+          "Octave",
+          "Python"
+        ],
+        "path_validate": [
           "Octave",
           "Python"
         ],
@@ -8035,6 +8333,10 @@
         "raster_submit": {
           "status": "script_callable",
           "script_operation": "raster_submit"
+        },
+        "path_validate": {
+          "status": "script_callable",
+          "script_operation": "path_validate"
         }
       },
       "documented_public_commands": [
@@ -8925,6 +9227,10 @@
         "raster_submit": {
           "status": "script_callable",
           "script_operation": "raster_submit"
+        },
+        "path_validate": {
+          "status": "script_callable",
+          "script_operation": "path_validate"
         }
       },
       "native_operation_policy": {
@@ -9662,7 +9968,7 @@
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/native2d_geometry.py",
-        "sha256": "2a6ce2ee2892b32d991cce7923ae5358f6460647ae78645438f3f12f940620b0"
+        "sha256": "f728c97135b2cdce7b1cc1ad77f5162c10337481317ca70a321b07693157689a"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -9741,6 +10047,7 @@
         "scene_info",
         "section_profile",
         "selection_set_activate",
+        "selection_set_apply",
         "selection_set_create",
         "selection_set_delete",
         "selection_set_get",
@@ -10030,6 +10337,10 @@
           "Python"
         ],
         "selection_set_activate": [
+          "Octave",
+          "Python"
+        ],
+        "selection_set_apply": [
           "Octave",
           "Python"
         ],
@@ -10527,6 +10838,10 @@
         "sweep": {
           "status": "script_callable",
           "script_operation": "sweep"
+        },
+        "selection_set_apply": {
+          "status": "script_callable",
+          "script_operation": "selection_set_apply"
         }
       },
       "documented_public_commands": [
@@ -11000,12 +11315,16 @@
         "sweep": {
           "status": "script_callable",
           "script_operation": "sweep"
+        },
+        "selection_set_apply": {
+          "status": "script_callable",
+          "script_operation": "selection_set_apply"
         }
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/native3d_geometry.py",
-        "sha256": "0615d9ea8b83dc7f05e70ca7151d503608e69fa43843f1d1c00658ac4117b64f"
+        "sha256": "f818ffbab24a3e47b0b3bfd51a038ce5339a4890ab546a85bb50cb7e7987c1e2"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -11232,6 +11551,7 @@
         "implicit_fit",
         "implicit_model_compose",
         "implicit_query",
+        "interpolate",
         "least_squares",
         "linear_matrix",
         "linear_regression",
@@ -11273,6 +11593,7 @@
         "reduce_accumulate",
         "reduce_summary",
         "replicate_summary",
+        "replicate_xy_summary",
         "resampling_summary",
         "residual_metrics",
         "residual_sequence",
@@ -11546,6 +11867,10 @@
           "Octave",
           "Python"
         ],
+        "interpolate": [
+          "Octave",
+          "Python"
+        ],
         "least_squares": [
           "Octave",
           "Python"
@@ -11707,6 +12032,10 @@
           "Python"
         ],
         "replicate_summary": [
+          "Octave",
+          "Python"
+        ],
+        "replicate_xy_summary": [
           "Octave",
           "Python"
         ],
@@ -12359,6 +12688,14 @@
         "expression_evaluate": {
           "status": "script_callable",
           "script_operation": "expression_evaluate"
+        },
+        "interpolate": {
+          "status": "script_callable",
+          "script_operation": "interpolate"
+        },
+        "replicate_xy_summary": {
+          "status": "script_callable",
+          "script_operation": "replicate_xy_summary"
         }
       },
       "public_operations": {
@@ -12885,6 +13222,14 @@
         "expression_evaluate": {
           "status": "script_callable",
           "script_operation": "expression_evaluate"
+        },
+        "interpolate": {
+          "status": "script_callable",
+          "script_operation": "interpolate"
+        },
+        "replicate_xy_summary": {
+          "status": "script_callable",
+          "script_operation": "replicate_xy_summary"
         }
       },
       "documentation_ref": "plugins/modules/math.numeric/NUMERIC_API_v1.md",
@@ -12895,7 +13240,7 @@
       "provider_kind": "module",
       "registration_source": {
         "path": "plugins/modules/math.numeric/api/script_bridge_binding.py",
-        "sha256": "9142edf7389d7bd5953faea8af37a61fa59867f388e3a0fb33be95cf3ef4c7b4"
+        "sha256": "2167ca5e2ba0395e42bb6592f7045f5cf34bf5b5aa975953d0848c4c5f32cab1"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -15496,6 +15841,47 @@
       }
     },
     {
+      "api_id": "REPLICATE_VIEWER_API_v1",
+      "api_version": 1,
+      "provider": "viewer.replicate_curve_analysis",
+      "status": "not_yet_bridged",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "operation_coverage": {},
+      "public_operations": {},
+      "api_policy": {
+        "status": "not_yet_bridged",
+        "reason": "No current Script registration; public host API inspection is required"
+      }
+    },
+    {
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "status": "not_yet_bridged",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "operation_coverage": {},
+      "public_operations": {},
+      "api_policy": {
+        "status": "not_yet_bridged",
+        "reason": "No current Script registration; public host API inspection is required"
+      },
+      "declaring_providers": [
+        "viewer.circuit_workbench",
+        "viewer.code_dataset",
+        "viewer.dataset_table_next",
+        "viewer.dev107_restricted_native3d",
+        "viewer.electromagnetics_studio",
+        "viewer.html",
+        "viewer.pdf_reader",
+        "viewer.scientific_3d_workbench",
+        "viewer.scientific_latex",
+        "viewer.scientific_library_workspace"
+      ]
+    },
+    {
       "api_id": "RF_NETWORK_API_v1",
       "api_version": 1,
       "provider": "math.rf_network",
@@ -15949,12 +16335,20 @@
       "status": "already_script_callable",
       "operations": [
         "cancel",
+        "circuit_inspect",
+        "circuit_prepare",
+        "circuit_sweep_prepare",
+        "circuit_sweep_submit",
+        "core_capabilities",
         "describe",
+        "destination",
         "discard",
         "discover",
         "freeze_resource",
         "import_results",
         "log",
+        "node_inspect",
+        "node_list",
         "outputs",
         "prepare",
         "read_output",
@@ -15972,7 +16366,31 @@
           "Octave",
           "Python"
         ],
+        "circuit_inspect": [
+          "Octave",
+          "Python"
+        ],
+        "circuit_prepare": [
+          "Octave",
+          "Python"
+        ],
+        "circuit_sweep_prepare": [
+          "Octave",
+          "Python"
+        ],
+        "circuit_sweep_submit": [
+          "Octave",
+          "Python"
+        ],
+        "core_capabilities": [
+          "Octave",
+          "Python"
+        ],
         "describe": [
+          "Octave",
+          "Python"
+        ],
+        "destination": [
           "Octave",
           "Python"
         ],
@@ -15993,6 +16411,14 @@
           "Python"
         ],
         "log": [
+          "Octave",
+          "Python"
+        ],
+        "node_inspect": [
+          "Octave",
+          "Python"
+        ],
+        "node_list": [
           "Octave",
           "Python"
         ],
@@ -16027,7 +16453,7 @@
       },
       "registration_source": {
         "path": "core/script_bindings/scientific_execution.py",
-        "sha256": "733f7efbedf3c3a617fcd53ea81ef3176181b38e003f3fb0a4ab683de28f5335"
+        "sha256": "d49f23a5097477c0406ae9a351ede68c3d4899e5701b08e8f366b63280f5700f"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
       "api_policy": {
@@ -16090,6 +16516,38 @@
         "submit": {
           "status": "script_callable",
           "script_operation": "submit"
+        },
+        "circuit_inspect": {
+          "status": "script_callable",
+          "script_operation": "circuit_inspect"
+        },
+        "circuit_prepare": {
+          "status": "script_callable",
+          "script_operation": "circuit_prepare"
+        },
+        "circuit_sweep_prepare": {
+          "status": "script_callable",
+          "script_operation": "circuit_sweep_prepare"
+        },
+        "circuit_sweep_submit": {
+          "status": "script_callable",
+          "script_operation": "circuit_sweep_submit"
+        },
+        "core_capabilities": {
+          "status": "script_callable",
+          "script_operation": "core_capabilities"
+        },
+        "destination": {
+          "status": "script_callable",
+          "script_operation": "destination"
+        },
+        "node_inspect": {
+          "status": "script_callable",
+          "script_operation": "node_inspect"
+        },
+        "node_list": {
+          "status": "script_callable",
+          "script_operation": "node_list"
         }
       },
       "public_operations": {
@@ -16148,6 +16606,38 @@
         "submit": {
           "status": "script_callable",
           "script_operation": "submit"
+        },
+        "circuit_inspect": {
+          "status": "script_callable",
+          "script_operation": "circuit_inspect"
+        },
+        "circuit_prepare": {
+          "status": "script_callable",
+          "script_operation": "circuit_prepare"
+        },
+        "circuit_sweep_prepare": {
+          "status": "script_callable",
+          "script_operation": "circuit_sweep_prepare"
+        },
+        "circuit_sweep_submit": {
+          "status": "script_callable",
+          "script_operation": "circuit_sweep_submit"
+        },
+        "core_capabilities": {
+          "status": "script_callable",
+          "script_operation": "core_capabilities"
+        },
+        "destination": {
+          "status": "script_callable",
+          "script_operation": "destination"
+        },
+        "node_inspect": {
+          "status": "script_callable",
+          "script_operation": "node_inspect"
+        },
+        "node_list": {
+          "status": "script_callable",
+          "script_operation": "node_list"
         }
       }
     },
@@ -16770,16 +17260,25 @@
         "create_sheet",
         "define_range",
         "delete_sheet",
+        "fill_range",
+        "filter_view_apply",
+        "filter_view_save",
+        "format_range",
         "identity",
         "inspect_cell",
         "load",
+        "merge_range",
         "new",
         "publish",
         "rename_sheet",
         "save",
+        "script_context",
+        "script_selection",
+        "script_snapshot",
         "select_sheet",
         "set_cell",
         "set_column",
+        "set_sizes",
         "set_typed_cell"
       ],
       "script_languages": [
@@ -16819,6 +17318,22 @@
           "Octave",
           "Python"
         ],
+        "fill_range": [
+          "Octave",
+          "Python"
+        ],
+        "filter_view_apply": [
+          "Octave",
+          "Python"
+        ],
+        "filter_view_save": [
+          "Octave",
+          "Python"
+        ],
+        "format_range": [
+          "Octave",
+          "Python"
+        ],
         "identity": [
           "Octave",
           "Python"
@@ -16828,6 +17343,10 @@
           "Python"
         ],
         "load": [
+          "Octave",
+          "Python"
+        ],
+        "merge_range": [
           "Octave",
           "Python"
         ],
@@ -16847,6 +17366,18 @@
           "Octave",
           "Python"
         ],
+        "script_context": [
+          "Octave",
+          "Python"
+        ],
+        "script_selection": [
+          "Octave",
+          "Python"
+        ],
+        "script_snapshot": [
+          "Octave",
+          "Python"
+        ],
         "select_sheet": [
           "Octave",
           "Python"
@@ -16856,6 +17387,10 @@
           "Python"
         ],
         "set_column": [
+          "Octave",
+          "Python"
+        ],
+        "set_sizes": [
           "Octave",
           "Python"
         ],
@@ -16940,6 +17475,42 @@
         "set_typed_cell": {
           "status": "script_callable",
           "script_operation": "set_typed_cell"
+        },
+        "fill_range": {
+          "status": "script_callable",
+          "script_operation": "fill_range"
+        },
+        "filter_view_apply": {
+          "status": "script_callable",
+          "script_operation": "filter_view_apply"
+        },
+        "filter_view_save": {
+          "status": "script_callable",
+          "script_operation": "filter_view_save"
+        },
+        "format_range": {
+          "status": "script_callable",
+          "script_operation": "format_range"
+        },
+        "merge_range": {
+          "status": "script_callable",
+          "script_operation": "merge_range"
+        },
+        "script_context": {
+          "status": "script_callable",
+          "script_operation": "script_context"
+        },
+        "script_selection": {
+          "status": "script_callable",
+          "script_operation": "script_selection"
+        },
+        "script_snapshot": {
+          "status": "script_callable",
+          "script_operation": "script_snapshot"
+        },
+        "set_sizes": {
+          "status": "script_callable",
+          "script_operation": "set_sizes"
         }
       },
       "public_operations": {
@@ -17018,6 +17589,42 @@
         "set_typed_cell": {
           "status": "script_callable",
           "script_operation": "set_typed_cell"
+        },
+        "fill_range": {
+          "status": "script_callable",
+          "script_operation": "fill_range"
+        },
+        "filter_view_apply": {
+          "status": "script_callable",
+          "script_operation": "filter_view_apply"
+        },
+        "filter_view_save": {
+          "status": "script_callable",
+          "script_operation": "filter_view_save"
+        },
+        "format_range": {
+          "status": "script_callable",
+          "script_operation": "format_range"
+        },
+        "merge_range": {
+          "status": "script_callable",
+          "script_operation": "merge_range"
+        },
+        "script_context": {
+          "status": "script_callable",
+          "script_operation": "script_context"
+        },
+        "script_selection": {
+          "status": "script_callable",
+          "script_operation": "script_selection"
+        },
+        "script_snapshot": {
+          "status": "script_callable",
+          "script_operation": "script_snapshot"
+        },
+        "set_sizes": {
+          "status": "script_callable",
+          "script_operation": "set_sizes"
         }
       },
       "api_policy": {
@@ -17028,7 +17635,7 @@
       "documentation_ref": "plugins/modules/viewer.scientific_worksheet/docs/MODEL_API.md",
       "registration_source": {
         "path": "plugins/modules/viewer.scientific_worksheet/api/script_bridge_binding.py",
-        "sha256": "2fb265ca12e65b34a450b3076f41976f16081b5bc6fcdf6b5a88c6f72053b8e5"
+        "sha256": "dfced18c6b59412fe70dc24335e71387754d298637267b6e8fa89f4b2cab39e6"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
     },
@@ -17629,6 +18236,7 @@
       "provider": "session_workspace",
       "status": "already_script_callable",
       "operations": [
+        "available_name",
         "create",
         "delete",
         "export",
@@ -17648,6 +18256,10 @@
         "Python"
       ],
       "operation_languages": {
+        "available_name": [
+          "Octave",
+          "Python"
+        ],
         "create": [
           "Octave",
           "Python"
@@ -17782,6 +18394,10 @@
         "resource_copy_tree": {
           "status": "script_callable",
           "script_operation": "resource_copy_tree"
+        },
+        "available_name": {
+          "status": "script_callable",
+          "script_operation": "available_name"
         }
       },
       "public_operations": {
@@ -17860,14 +18476,33 @@
         "resource_copy_tree": {
           "status": "script_callable",
           "script_operation": "resource_copy_tree"
+        },
+        "available_name": {
+          "status": "script_callable",
+          "script_operation": "available_name"
         }
       },
       "provider_kind": "core",
       "registration_source": {
         "path": "core/script_bindings/session_workspace.py",
-        "sha256": "ffe13f519d60e433185d5c79732de42ce132c27d69ca7382e4649d3a4c4e8aa9"
+        "sha256": "be089e6c4e54fd820a963a455a4de856fd636c431d30fa7f13139e939d31d19d"
       },
       "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate"
+    },
+    {
+      "api_id": "SIGNAL_ANALYSIS_VIEWER_API_v1",
+      "api_version": 1,
+      "provider": "viewer.signal_analysis",
+      "status": "not_yet_bridged",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "operation_coverage": {},
+      "public_operations": {},
+      "api_policy": {
+        "status": "not_yet_bridged",
+        "reason": "No current Script registration; public host API inspection is required"
+      }
     },
     {
       "api_id": "SIGNAL_API_v1",
@@ -19098,9 +19733,92 @@
       }
     },
     {
+      "api_id": "SOURCE_SURFACE_API_v1",
+      "api_version": 1,
+      "provider": "source_surface",
+      "provider_kind": "core",
+      "documentation_ref": "docs/api/SOURCE_SURFACE_API_v1.md",
+      "status": "already_script_callable",
+      "operations": [
+        "info",
+        "palette",
+        "scan"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "info": [
+          "Octave",
+          "Python"
+        ],
+        "palette": [
+          "Octave",
+          "Python"
+        ],
+        "scan": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "registration_source": {
+        "path": "core/script_bindings/source_surface.py",
+        "sha256": "2d7c18e6587b5ce8a2874a4ed8df2bb0d21568d2a4f8aba071b5a82001d4aabf"
+      },
+      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+      },
+      "operation_coverage": {
+        "info": {
+          "status": "script_callable",
+          "script_operation": "info"
+        },
+        "palette": {
+          "status": "script_callable",
+          "script_operation": "palette"
+        },
+        "scan": {
+          "status": "script_callable",
+          "script_operation": "scan"
+        }
+      },
+      "public_operations": {
+        "info": {
+          "status": "script_callable",
+          "script_operation": "info"
+        },
+        "palette": {
+          "status": "script_callable",
+          "script_operation": "palette"
+        },
+        "scan": {
+          "status": "script_callable",
+          "script_operation": "scan"
+        }
+      }
+    },
+    {
       "api_id": "SPECTRAL_LIBRARY_VIEWER_API_v1",
       "api_version": 1,
       "provider": "viewer.spectral_library",
+      "status": "not_yet_bridged",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "operation_coverage": {},
+      "public_operations": {},
+      "api_policy": {
+        "status": "not_yet_bridged",
+        "reason": "No current Script registration; public host API inspection is required"
+      }
+    },
+    {
+      "api_id": "STATISTICAL_ANALYSIS_VIEWER_API_v1",
+      "api_version": 1,
+      "provider": "viewer.statistical_analysis",
       "status": "not_yet_bridged",
       "operations": [],
       "script_languages": [],
@@ -20774,6 +21492,36 @@
       "public_operations": {}
     },
     {
+      "api_id": "VIEWER_DEVELOPMENT_WORKSPACE_API_v1",
+      "api_version": 1,
+      "provider": "viewer.development_workspace",
+      "status": "not_yet_bridged",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "operation_coverage": {},
+      "public_operations": {},
+      "api_policy": {
+        "status": "not_yet_bridged",
+        "reason": "No current Script registration; public host API inspection is required"
+      }
+    },
+    {
+      "api_id": "VIEWER_INTERFACE_BUILDER_API_v1",
+      "api_version": 1,
+      "provider": "viewer.interface_builder",
+      "status": "not_yet_bridged",
+      "operations": [],
+      "script_languages": [],
+      "operation_languages": {},
+      "operation_coverage": {},
+      "public_operations": {},
+      "api_policy": {
+        "status": "not_yet_bridged",
+        "reason": "No current Script registration; public host API inspection is required"
+      }
+    },
+    {
       "api_id": "VIEWER_PROVIDER_API_v1",
       "api_version": 1,
       "provider": "viewer_provider",
@@ -21208,6 +21956,243 @@
         "status": "not_yet_bridged",
         "reason": "No current Script registration; public host API inspection is required"
       }
+    },
+    {
+      "api_id": "XML_DOCUMENT_API_v1",
+      "api_version": 1,
+      "provider": "xml_document",
+      "provider_kind": "core",
+      "documentation_ref": "docs/api/XML_DOCUMENT_API_v1.md",
+      "status": "already_script_callable",
+      "operations": [
+        "add_text",
+        "append",
+        "attribute",
+        "create",
+        "describe",
+        "insert",
+        "move",
+        "parse",
+        "parse_file",
+        "query",
+        "release",
+        "remove",
+        "root",
+        "serialize",
+        "text",
+        "write"
+      ],
+      "script_languages": [
+        "Octave",
+        "Python"
+      ],
+      "operation_languages": {
+        "add_text": [
+          "Octave",
+          "Python"
+        ],
+        "append": [
+          "Octave",
+          "Python"
+        ],
+        "attribute": [
+          "Octave",
+          "Python"
+        ],
+        "create": [
+          "Octave",
+          "Python"
+        ],
+        "describe": [
+          "Octave",
+          "Python"
+        ],
+        "insert": [
+          "Octave",
+          "Python"
+        ],
+        "move": [
+          "Octave",
+          "Python"
+        ],
+        "parse": [
+          "Octave",
+          "Python"
+        ],
+        "parse_file": [
+          "Octave",
+          "Python"
+        ],
+        "query": [
+          "Octave",
+          "Python"
+        ],
+        "release": [
+          "Octave",
+          "Python"
+        ],
+        "remove": [
+          "Octave",
+          "Python"
+        ],
+        "root": [
+          "Octave",
+          "Python"
+        ],
+        "serialize": [
+          "Octave",
+          "Python"
+        ],
+        "text": [
+          "Octave",
+          "Python"
+        ],
+        "write": [
+          "Octave",
+          "Python"
+        ]
+      },
+      "registration_source": {
+        "path": "core/script_bindings/xml_document.py",
+        "sha256": "affc157c5d361b07e03fe6a00a2224d73cf8db9ae4475799c62d9f9dcdfdd8de"
+      },
+      "verification": "Actual Host registration/descriptor and module-manifest validation; invocation evidence is separate",
+      "api_policy": {
+        "status": "script_callable",
+        "reason": "Only the exact operations registered by the current trusted provider are callable; host-owned policies remain explicit."
+      },
+      "operation_coverage": {
+        "add_text": {
+          "status": "script_callable",
+          "script_operation": "add_text"
+        },
+        "append": {
+          "status": "script_callable",
+          "script_operation": "append"
+        },
+        "attribute": {
+          "status": "script_callable",
+          "script_operation": "attribute"
+        },
+        "create": {
+          "status": "script_callable",
+          "script_operation": "create"
+        },
+        "describe": {
+          "status": "script_callable",
+          "script_operation": "describe"
+        },
+        "insert": {
+          "status": "script_callable",
+          "script_operation": "insert"
+        },
+        "move": {
+          "status": "script_callable",
+          "script_operation": "move"
+        },
+        "parse": {
+          "status": "script_callable",
+          "script_operation": "parse"
+        },
+        "parse_file": {
+          "status": "script_callable",
+          "script_operation": "parse_file"
+        },
+        "query": {
+          "status": "script_callable",
+          "script_operation": "query"
+        },
+        "release": {
+          "status": "script_callable",
+          "script_operation": "release"
+        },
+        "remove": {
+          "status": "script_callable",
+          "script_operation": "remove"
+        },
+        "root": {
+          "status": "script_callable",
+          "script_operation": "root"
+        },
+        "serialize": {
+          "status": "script_callable",
+          "script_operation": "serialize"
+        },
+        "text": {
+          "status": "script_callable",
+          "script_operation": "text"
+        },
+        "write": {
+          "status": "script_callable",
+          "script_operation": "write"
+        }
+      },
+      "public_operations": {
+        "add_text": {
+          "status": "script_callable",
+          "script_operation": "add_text"
+        },
+        "append": {
+          "status": "script_callable",
+          "script_operation": "append"
+        },
+        "attribute": {
+          "status": "script_callable",
+          "script_operation": "attribute"
+        },
+        "create": {
+          "status": "script_callable",
+          "script_operation": "create"
+        },
+        "describe": {
+          "status": "script_callable",
+          "script_operation": "describe"
+        },
+        "insert": {
+          "status": "script_callable",
+          "script_operation": "insert"
+        },
+        "move": {
+          "status": "script_callable",
+          "script_operation": "move"
+        },
+        "parse": {
+          "status": "script_callable",
+          "script_operation": "parse"
+        },
+        "parse_file": {
+          "status": "script_callable",
+          "script_operation": "parse_file"
+        },
+        "query": {
+          "status": "script_callable",
+          "script_operation": "query"
+        },
+        "release": {
+          "status": "script_callable",
+          "script_operation": "release"
+        },
+        "remove": {
+          "status": "script_callable",
+          "script_operation": "remove"
+        },
+        "root": {
+          "status": "script_callable",
+          "script_operation": "root"
+        },
+        "serialize": {
+          "status": "script_callable",
+          "script_operation": "serialize"
+        },
+        "text": {
+          "status": "script_callable",
+          "script_operation": "text"
+        },
+        "write": {
+          "status": "script_callable",
+          "script_operation": "write"
+        }
+      }
     }
   ],
   "supported_script_languages": [
@@ -21231,21 +22216,21 @@
     "validation": "dev097 actual Python/Octave Jobs verify default/query/grid, host-only override rejection and equal-aspect round trip; native/module auto-aspect verified by actual Preview consumer evidence183/186."
   },
   "verification_scope": "Registration and source/manifest inventory; this is not a claim that every operation was invoked",
-  "api_registration_count": 68,
-  "registered_operation_count": 1083,
+  "api_registration_count": 71,
+  "registered_operation_count": 1142,
   "provider_manifests": [
     {
       "module_id": "analysis.octave_script",
       "api_id": "OCTAVE_SCRIPT_EDITOR_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/analysis.octave_script/module.ini",
-      "manifest_sha256": "3e85272a33fbb1793d68f58f29b4905d683c622cb288928359ba2cf4ffd164bb",
+      "manifest_sha256": "377c6294866879b3b952c797d7debb81d5939bcf109d447f822a829a86fb3281",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
       "reason": "No current Script registration; public host API inspection is required",
       "entrypoint": "plugins/modules/analysis.octave_script/api/octave_script_editor_api_v1.tcl",
-      "entrypoint_sha256": "67c49b91e60c0f8032f84e321e5c26a54663efb3cfe6e1e9f5d43c81e345c9e9",
+      "entrypoint_sha256": "0b83b70b1e90680afe90c6a3e01bdec4955aae3b73d4554b95b0cf9a7174500c",
       "capabilities": [
         "viewer_backend",
         "interactive_documents",
@@ -21260,13 +22245,13 @@
       "api_id": "PYTHON_SCRIPT_EDITOR_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/analysis.python_script/module.ini",
-      "manifest_sha256": "72075d8ef5328f1f5092f7a5c39375477369fe21acfe42f9c9924f4f64890e6e",
+      "manifest_sha256": "ee759f8470a988c6bfdad4d08b6297034bec4e2e5888a06309b8ac29612dd0c6",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
       "reason": "No current Script registration; public host API inspection is required",
       "entrypoint": "plugins/modules/analysis.python_script/api/python_script_editor_api_v1.tcl",
-      "entrypoint_sha256": "cc98f259317cd47767fd2c76618ada641f2d240d6a7a1953ced1cb893102f14e",
+      "entrypoint_sha256": "216a040eadb695bcdf44fab328676c00660941434ad2bc21ffbbbf831c37647a",
       "capabilities": [
         "viewer_backend",
         "script_workspace",
@@ -21280,7 +22265,7 @@
       "api_id": "CURVE_REPLICATE_GRAPHICS_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/curve.replicate_analysis/module.ini",
-      "manifest_sha256": "5b30fc4db6d7b105273b86ab28990a14c5d9b267ceb920e592206b8d77a8a9b6",
+      "manifest_sha256": "7a5fea8cfe75c4fade3ffdcd975438e91abbbbc474337befd9e9597b64ad93df",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -21292,6 +22277,26 @@
       ],
       "namespace": "",
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "curve.replicate_analysis",
+      "api_id": "CURVE_REPLICATE_ANALYSIS_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/curve.replicate_analysis/module.ini",
+      "manifest_sha256": "7a5fea8cfe75c4fade3ffdcd975438e91abbbbc474337befd9e9597b64ad93df",
+      "script_registered": true,
+      "operations": [
+        "cancel",
+        "capabilities",
+        "describe_output",
+        "encode_result",
+        "preflight",
+        "preflight_encoded",
+        "publish",
+        "result",
+        "status",
+        "submit"
+      ]
     },
     {
       "module_id": "curvefit.family_global",
@@ -21318,7 +22323,7 @@
       "api_id": "CURVE_DATASET_EXPORT_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/export.curve_dataset/module.ini",
-      "manifest_sha256": "5364a6ef265c1e593dbc2d46758291e31d8bb9a6fd97fea38f7ff5e2220c3f36",
+      "manifest_sha256": "10c2a4eb82a107d1c889f1b959175bcc532f4ca3d8dedd0a5efb87955e92f628",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -21339,7 +22344,7 @@
       "api_id": "NATIVE2D_EXPORT_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/export.native2d_presentation/module.ini",
-      "manifest_sha256": "808d0d1b1496f3f46e9245f7a9ade76a6e197913268bbe0e7b4b5c135c4f3a37",
+      "manifest_sha256": "287313d30d7448d064dc491645136d4aec39dcec2a2e8e3a805145b3cb25d620",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -21359,7 +22364,7 @@
       "api_id": "NATIVE3D_GEOMETRY_EXPORT_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/export.native3d_geometry/module.ini",
-      "manifest_sha256": "f0f28347868cbb41255f277dc7f65100d29899f1226f1bb8fce7ca6532dda00d",
+      "manifest_sha256": "ae11cf29eeed21c0ec3e7708a3fa85b75bbee195fa32fee4ea36bc02853617cd",
       "script_registered": false,
       "operations": [],
       "coverage_status": "intentionally_host_only",
@@ -21384,7 +22389,7 @@
       "api_id": "SESSION_HTML_EXPORT_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/export.session_html/module.ini",
-      "manifest_sha256": "2a796fd5ae576e05430aef839a32f9240c333c5f40625d2dafc7b71244f9940b",
+      "manifest_sha256": "2edfb54b3a26d805ce4665f35bab9218be7d1ac49eb38ed04a5a4eb908d0aa44",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -21403,7 +22408,7 @@
       "api_id": "IR_LIBRARY_TYPE_PROVIDER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/library.spectroscopy.ir.reference/module.ini",
-      "manifest_sha256": "6d77b793c02bb136ecf1ad4984b62b2336ca504b1ca8cbfcb71e1d7a13fd964c",
+      "manifest_sha256": "7295500234f66ea73af31130dd15a4fa6ef6ff267c0ed77716d6d12f8b8fabe7",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -21513,7 +22518,7 @@
       "api_id": "NUMERIC_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/math.numeric/module.ini",
-      "manifest_sha256": "4ba2fef0db3dca469a89183e1cfdb6d447588691d0fc0c640852f2f0adf51ae6",
+      "manifest_sha256": "2448ba610ae32f215408fc53ed983c2b43238504b308cacd00f3c72f2714b592",
       "script_registered": true,
       "operations": [
         "array_binary",
@@ -21575,6 +22580,7 @@
         "implicit_fit",
         "implicit_model_compose",
         "implicit_query",
+        "interpolate",
         "least_squares",
         "linear_matrix",
         "linear_regression",
@@ -21616,6 +22622,7 @@
         "reduce_accumulate",
         "reduce_summary",
         "replicate_summary",
+        "replicate_xy_summary",
         "resampling_summary",
         "residual_metrics",
         "residual_sequence",
@@ -21696,7 +22703,7 @@
       "api_id": "SIGNAL_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/math.signal/module.ini",
-      "manifest_sha256": "172861f552b5aad031d0358a315f490bf4149ea008ffbc18b69fce9c61d265fd",
+      "manifest_sha256": "f90393cf070112f259db3d25c6e6a17f3dc39e470753e73c8b0933bdced748de",
       "script_registered": true,
       "operations": [
         "analytic.envelope",
@@ -21793,7 +22800,7 @@
       "api_id": "PLOT_DATASET_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "3c56895fbdfe322f69474dfecd41c49e3dbd7011fe36263165502b5c8e7bad5c",
+      "manifest_sha256": "e01375131b1ff50c8f57af6355331d2de45919f9cdd501d91ef2e2cdeac6bd85",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -21823,7 +22830,7 @@
       "api_id": "PLOT_DATASET_API_v2",
       "api_version": 2,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "3c56895fbdfe322f69474dfecd41c49e3dbd7011fe36263165502b5c8e7bad5c",
+      "manifest_sha256": "e01375131b1ff50c8f57af6355331d2de45919f9cdd501d91ef2e2cdeac6bd85",
       "script_registered": true,
       "operations": [
         "api_info",
@@ -21839,7 +22846,7 @@
       "api_id": "PLOT_DATASET_API_v3",
       "api_version": 3,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "3c56895fbdfe322f69474dfecd41c49e3dbd7011fe36263165502b5c8e7bad5c",
+      "manifest_sha256": "e01375131b1ff50c8f57af6355331d2de45919f9cdd501d91ef2e2cdeac6bd85",
       "script_registered": true,
       "operations": [
         "add_panel",
@@ -21883,13 +22890,13 @@
       "api_id": "PLOT_DATASET_3D_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "3c56895fbdfe322f69474dfecd41c49e3dbd7011fe36263165502b5c8e7bad5c",
+      "manifest_sha256": "e01375131b1ff50c8f57af6355331d2de45919f9cdd501d91ef2e2cdeac6bd85",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
       "reason": "No current Script registration; public host API inspection is required",
       "entrypoint": "plugins/modules/plot.dataset/api/plot_dataset_3d_api_v1.tcl",
-      "entrypoint_sha256": "7a1c239d54de9631f2c92a38a37b69c2c7fd1357704743b5f73ab773ac6738b6",
+      "entrypoint_sha256": "31d264274ae5a42e0df61fd68e885d4e631b3d26ea702fa3b7a0eaa20adf695c",
       "capabilities": [
         "build_scene",
         "open_interactive",
@@ -21910,7 +22917,7 @@
       "api_id": "PLOT_DATASET_API_v4",
       "api_version": 4,
       "manifest": "plugins/modules/plot.dataset/module.ini",
-      "manifest_sha256": "3c56895fbdfe322f69474dfecd41c49e3dbd7011fe36263165502b5c8e7bad5c",
+      "manifest_sha256": "e01375131b1ff50c8f57af6355331d2de45919f9cdd501d91ef2e2cdeac6bd85",
       "script_registered": true,
       "operations": [
         "add_panel",
@@ -21955,13 +22962,13 @@
       "api_id": "WORKBENCH_3D_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.3d_workbench/module.ini",
-      "manifest_sha256": "b5eeea98e5ee5955783b97c5a7d59ae9b2ec31b3d003f6bc82663e1c885bfe6c",
+      "manifest_sha256": "5a99427e2f519bd2f0ebe0884727d7f85bb160d1abafe29da7bd62c317bbb0f2",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
       "reason": "No current Script registration; public host API inspection is required",
       "entrypoint": "plugins/modules/viewer.3d_workbench/api/workbench_3d_api_v1.tcl",
-      "entrypoint_sha256": "bd3f8cba0c237610dd8aaad219f1f1169be49e974d358bea01c25298d495d7a9",
+      "entrypoint_sha256": "3bcb95be65a09c542ccdbb15547db1cfa6b1a8f1d4575bf524d446d6b3d7da1f",
       "capabilities": [
         "viewer_backend",
         "native3d",
@@ -21972,11 +22979,49 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "viewer.circuit_workbench",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.circuit_workbench/module.ini",
+      "manifest_sha256": "23ff9ef9b9f3aeb07a0346da975274a3d747a4174dbefa21a4148d84aa32521a",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.circuit_workbench/api/viewer.tcl",
+      "entrypoint_sha256": "0ffd833b8a6be2cc2093f05c21a064a3ebfa7bf7c590f9aeb7187830ba3150d2",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_circuit_workbench",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "viewer.code_dataset",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.code_dataset/module.ini",
+      "manifest_sha256": "68429b2f8af3d730f7fcae8e86fd856295edace23060eea158caf815ee8a4ca0",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.code_dataset/api/viewer.tcl",
+      "entrypoint_sha256": "5900bc8646477d28f759c8c634aa9e771575044ab2eaf052e74a93a1e05e38eb",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_code_dataset",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
       "module_id": "viewer.curve_digitizer",
       "api_id": "CURVE_DIGITIZER_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "75171004d64de68793b23ab5bc07950ef52ed2384d442e4e82b6896bb66b378e",
+      "manifest_sha256": "e97f0dfa9496e5501a091efca98f96e29e0a9b8e506975ed92de8f8be612e22d",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -22001,7 +23046,7 @@
       "api_id": "CURVE_DIGITIZER_COMPANION_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "75171004d64de68793b23ab5bc07950ef52ed2384d442e4e82b6896bb66b378e",
+      "manifest_sha256": "e97f0dfa9496e5501a091efca98f96e29e0a9b8e506975ed92de8f8be612e22d",
       "script_registered": false,
       "operations": [],
       "coverage_status": "unavailable_historical_registration",
@@ -22023,7 +23068,7 @@
       "api_id": "CURVE_DIGITIZER_CALIBRATION_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "75171004d64de68793b23ab5bc07950ef52ed2384d442e4e82b6896bb66b378e",
+      "manifest_sha256": "e97f0dfa9496e5501a091efca98f96e29e0a9b8e506975ed92de8f8be612e22d",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -22052,7 +23097,7 @@
       "api_id": "CURVE_DIGITIZER_DATASET_SCHEMA_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "75171004d64de68793b23ab5bc07950ef52ed2384d442e4e82b6896bb66b378e",
+      "manifest_sha256": "e97f0dfa9496e5501a091efca98f96e29e0a9b8e506975ed92de8f8be612e22d",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -22076,7 +23121,7 @@
       "api_id": "CURVE_DIGITIZER_IMAGE_PROCESSING_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "75171004d64de68793b23ab5bc07950ef52ed2384d442e4e82b6896bb66b378e",
+      "manifest_sha256": "e97f0dfa9496e5501a091efca98f96e29e0a9b8e506975ed92de8f8be612e22d",
       "script_registered": true,
       "operations": [
         "has_manifest",
@@ -22090,7 +23135,7 @@
       "api_id": "CURVE_DIGITIZER_QUALITY_API_v2",
       "api_version": 2,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "75171004d64de68793b23ab5bc07950ef52ed2384d442e4e82b6896bb66b378e",
+      "manifest_sha256": "e97f0dfa9496e5501a091efca98f96e29e0a9b8e506975ed92de8f8be612e22d",
       "script_registered": true,
       "operations": [
         "diagnostics",
@@ -22103,7 +23148,7 @@
       "api_id": "CURVE_DIGITIZER_UNCERTAINTY_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_digitizer/module.ini",
-      "manifest_sha256": "75171004d64de68793b23ab5bc07950ef52ed2384d442e4e82b6896bb66b378e",
+      "manifest_sha256": "e97f0dfa9496e5501a091efca98f96e29e0a9b8e506975ed92de8f8be612e22d",
       "script_registered": true,
       "operations": [
         "uncertainty_available",
@@ -22120,7 +23165,7 @@
       "api_id": "CURVE_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_viewer/module.ini",
-      "manifest_sha256": "90a0af07922702ad39f6d143fc18d825a38e6e32332f58f5bffef17718399e0d",
+      "manifest_sha256": "f1231a8a7173c499482a26113c163e47985ba4acb6ee0337073d47d0e04558bc",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -22141,13 +23186,13 @@
       "api_id": "CURVE_WORKBENCH_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.curve_workbench/module.ini",
-      "manifest_sha256": "04874ee63bc14a61a7b2bc5e35bce471e25f5777239fb470ca3a32c7df5f443e",
+      "manifest_sha256": "f9437565cc3237b20aab1121309ac721cb33d8edfd0cf01d671c0868a9cd0510",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
       "reason": "No current Script registration; public host API inspection is required",
       "entrypoint": "plugins/modules/viewer.curve_workbench/api/curve_workbench_api_v1.tcl",
-      "entrypoint_sha256": "8bce2c12339cc01d5ea404d4d3fefb62950aab4bd51f8250b0ecb1db95314cbe",
+      "entrypoint_sha256": "3993008d8cc6c144d4d7a535340521dcec4f4cdc58b59f319aac8b4078b6c59e",
       "capabilities": [
         "explicit_scientific_axis_declaration",
         "viewer_backend",
@@ -22166,7 +23211,7 @@
       "api_id": "DATASET_CURVE_FIT_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.dataset_curve_fit/module.ini",
-      "manifest_sha256": "058cdf5332aa35c8555b8d88769b128d04b14df0a2ae4b771231a68945f63701",
+      "manifest_sha256": "4c9b7640cdae7aaf3ca121547daad491bb8845382cf05bdaf01064066419fa9f",
       "script_registered": true,
       "operations": [
         "dataset_suggestions",
@@ -22232,11 +23277,110 @@
       ]
     },
     {
+      "module_id": "viewer.dataset_table_next",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.dataset_table_next/module.ini",
+      "manifest_sha256": "8f3f01650361d5a89873fbe851421f531a6e36b7cece17c2f6a3cd227c42181f",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.dataset_table_next/api/viewer.tcl",
+      "entrypoint_sha256": "af49815fa2385ab06bd8c4c3a2008a0b5df0f980215d92f4bfe7ea4551fd2b46",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_dataset_table_next",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "viewer.dev107_native3d_embedded",
+      "api_id": "GENERATED_VIEWER_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.dev107_native3d_embedded/module.ini",
+      "manifest_sha256": "453c99d1a7224f703a59bd1927cc9e6537540e8631cc6f2d25268d90d8145bf1",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.dev107_native3d_embedded/api/viewer.tcl",
+      "entrypoint_sha256": "725a47d29d14b937cf7554c82eb54eb92095587764ed2fc8524b4da4e12aa5f4",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Generated_viewer_dev107_native3d_embedded",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "viewer.dev107_restricted_native3d",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.dev107_restricted_native3d/module.ini",
+      "manifest_sha256": "b560e292381c12fae2dd07eb63849c68ea1cc0efa67303b12bcce830367d5093",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.dev107_restricted_native3d/api/viewer.tcl",
+      "entrypoint_sha256": "bbfc04e402bbd17223294688850560130f5fb38237b9b562dbfe6a673c4b34ae",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_dev107_restricted_native3d",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "viewer.dev107_scientific_xy",
+      "api_id": "GENERATED_VIEWER_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.dev107_scientific_xy/module.ini",
+      "manifest_sha256": "4c5ce493323bf88a61eedfdfb32125c84b7946ca56bc235d65813744aee4f130",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.dev107_scientific_xy/api/viewer.tcl",
+      "entrypoint_sha256": "01a952ded023be614d13265d58bceace018904044a2a61a12936401f50ce844c",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Generated_viewer_dev107_scientific_xy",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "viewer.development_workspace",
+      "api_id": "VIEWER_DEVELOPMENT_WORKSPACE_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.development_workspace/module.ini",
+      "manifest_sha256": "934849ca93dbd41ce26ee2d9d1e6111f5d9b2b671e0346fec9fa3209bb4b3db3",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.development_workspace/api/workspace.tcl",
+      "entrypoint_sha256": "4d9885f8b44b4749a75ce611eb5b62bbef850dae6e40ffcf6984598b19510037",
+      "capabilities": [
+        "viewer_backend",
+        "restricted_cpp_authoring",
+        "structured_debugger",
+        "structured_debugger",
+        "structured_debugger",
+        "structured_debugger"
+      ],
+      "namespace": "::GX::ViewerDevelopmentWorkspace",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
       "module_id": "viewer.document_extractors",
       "api_id": "DOCUMENT_EXTRACTORS_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.document_extractors/module.ini",
-      "manifest_sha256": "21311fa42205173c2a1ec874e912b7f0b10d1fd4f05038329ba3a627d3446eed",
+      "manifest_sha256": "f0640717bb0c277288f627b206bb8e5c41d501bbba9e8c59bc1ba05a971a1adf",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -22258,13 +23402,13 @@
       "api_id": "ELECTROMAGNETICS_STUDIO_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.electromagnetics/module.ini",
-      "manifest_sha256": "9b1474d39867797fe09c4c5efe1f2f6a436b130c1fd27a49e2cacf51c7d0d2ea",
+      "manifest_sha256": "05d2cd7f54774fd5f59c91b021139d32393fdb51436b5ac06dd9425cd0a8809b",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
       "reason": "No current Script registration; public host API inspection is required",
       "entrypoint": "plugins/modules/viewer.electromagnetics/api/electromagnetics_studio_api_v1.tcl",
-      "entrypoint_sha256": "7794636defaf5d3cf65a2d7029cc7d75521ae2a413d49987d55ab079810b436a",
+      "entrypoint_sha256": "6f3c86e60a0f51ef577c1130f0aed50ebf59d1601eaa0aa560f15af91b2ea4b6",
       "capabilities": [
         "viewer_backend",
         "electromagnetic_core_client",
@@ -22275,11 +23419,69 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "viewer.electromagnetics_studio",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.electromagnetics_studio/module.ini",
+      "manifest_sha256": "d062b2fdf9aa5a8f8ef69a8f343229ab9a5d02ab9b250a3ddd62f6b964736927",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.electromagnetics_studio/api/viewer.tcl",
+      "entrypoint_sha256": "300fbe30f4d8038c7f22f7effc917e677de0a312f68101602e2c37a8baf5364c",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_electromagnetics_studio",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "viewer.html",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.html/module.ini",
+      "manifest_sha256": "1664661ccdbf0c9e3b26b7bb9b0faf49981680b2dcb4997e3d72464f6f047a80",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.html/api/viewer.tcl",
+      "entrypoint_sha256": "db223ca972c84bde0deb69d2e7f7e34e1e55b7e5bd579deea7f2724d91d8344f",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_html",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "viewer.html",
+      "api_id": "HTML_VIEWER_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.html/module.ini",
+      "manifest_sha256": "1664661ccdbf0c9e3b26b7bb9b0faf49981680b2dcb4997e3d72464f6f047a80",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.html/api/html.tcl",
+      "entrypoint_sha256": "6798535a28944be55b0aa1c13836f7107b8d1d70b7c325b58dd52d9b0d7c60a4",
+      "capabilities": [
+        "render",
+        "headless_model",
+        "viewer_backend"
+      ],
+      "namespace": "::GX::HTMLViewer",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
       "module_id": "viewer.interactive_curve_builder",
       "api_id": "INTERACTIVE_CURVE_BUILDER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.interactive_curve_builder/module.ini",
-      "manifest_sha256": "9e87ce8130052c7a6b40c33097e86e15ec18fe56bbd5fa44383ae57a35e39830",
+      "manifest_sha256": "df5c73de5e7d6345f32639cae0fecefcfe85847ddd6f12fab2a93ff109cbe2c2",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -22296,11 +23498,35 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "viewer.interface_builder",
+      "api_id": "VIEWER_INTERFACE_BUILDER_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.interface_builder/module.ini",
+      "manifest_sha256": "973d0694335ef30c606f560f4be02e04c6ad5a4e46dd238b951ef6018433f760",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.interface_builder/api/builder.tcl",
+      "entrypoint_sha256": "9e7c7591e81aa9f012d8e64afbe7c2a885be86efea71878053e5d10c1c5b51f7",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest",
+        "design_projects",
+        "typed_icon_library",
+        "typed_icon_library",
+        "typed_icon_library",
+        "typed_icon_library"
+      ],
+      "namespace": "::GX::InterfaceBuilder",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
       "module_id": "viewer.mathematics_explorer",
       "api_id": "MATHEMATICS_EXPLORER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.mathematics_explorer/module.ini",
-      "manifest_sha256": "9ddcee3ae9dba341388f79f1557b5e3c0d56c365f5e2d16bf07fa7e6c56e247c",
+      "manifest_sha256": "bec1f86483de799f31734b3562f17ae2b928c98fc41651c7aea537dadc6eaeb5",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -22323,7 +23549,7 @@
       "api_id": "NATIVE_3D_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.native_3d/module.ini",
-      "manifest_sha256": "d71c88067f3bb6bdd25b6b2751dacaec8f22949fdd3db4c91cc0ba1625f8b737",
+      "manifest_sha256": "0ed81bd171134897155fc26501c06268d4ec46dfd3d1bec9c816f79e7b4fb12a",
       "script_registered": true,
       "operations": [
         "source_identity"
@@ -22334,7 +23560,7 @@
       "api_id": "NMR_SPECTRUM_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.nmr_spectrum/module.ini",
-      "manifest_sha256": "cb8ffbe56e6e1498c3eb102484601939acd0bdb372dfc8e9561657264ab2a8ac",
+      "manifest_sha256": "d80c646edcec94ff1533bcc373eb9eaba1199edaca121bc6a5feede3e5404115",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -22358,7 +23584,7 @@
       "api_id": "PDF_OCR_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.pdf_ocr/module.ini",
-      "manifest_sha256": "6249aada51d3dd30788a287e8182078f984dd7962c9919cdb8aa1b18fd10d8ab",
+      "manifest_sha256": "746e757d3d0c8a62068931b887016d1c58b9dd9529502215291004f3309e0dba",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -22376,11 +23602,70 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "viewer.pdf_reader",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.pdf_reader/module.ini",
+      "manifest_sha256": "eac970d7dc8ff93b940b0794ae160950b270120fcbc843b58a203ea6a26024f8",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.pdf_reader/api/viewer.tcl",
+      "entrypoint_sha256": "6407437ddb28d1c3b9e37e71173eb5fc80c2162c240cbaf0b984509d0bb85af3",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_pdf_reader",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "viewer.replicate_curve_analysis",
+      "api_id": "REPLICATE_VIEWER_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.replicate_curve_analysis/module.ini",
+      "manifest_sha256": "7f5b86ee251350103940ff0c8b7fe870fe5d1e6ab6f0713a5af6599ae6bf9e6a",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.replicate_curve_analysis/api/replicate_viewer.tcl",
+      "entrypoint_sha256": "0166e7a91dce71a5c2926a29729b5c3874b2db0790bd76fd24823127a521f860",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest",
+        "workspace",
+        "plot_v4"
+      ],
+      "namespace": "::GX::ReplicateViewer",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "viewer.scientific_3d_workbench",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.scientific_3d_workbench/module.ini",
+      "manifest_sha256": "66f63b2456e18337c3467e800d01b8718ae209ef4d6e95c42cf250d31e4cdc36",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.scientific_3d_workbench/api/viewer.tcl",
+      "entrypoint_sha256": "8536194559aba0aba6539c81a2ce076d6f71cb7a7b6d1b22fd5f443182c4fbe5",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_scientific_3d_workbench",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
       "module_id": "viewer.scientific_image_inspector",
       "api_id": "SCIENTIFIC_IMAGE_INSPECTOR_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.scientific_image_inspector/module.ini",
-      "manifest_sha256": "cb223df54d2d55505e399e93d8614e875387ccdabec1526cd4740e5d496c89ae",
+      "manifest_sha256": "0efbe16cc3ba35f5b6fd319d7afde75133b28d7df0c193c450704282a2606411",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -22400,11 +23685,49 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "viewer.scientific_latex",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.scientific_latex/module.ini",
+      "manifest_sha256": "b6e21314f93cf624688728649bea3f602e6729b45164ef12ec5212cdf5e8ba4c",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.scientific_latex/api/viewer.tcl",
+      "entrypoint_sha256": "38f780d11fa1e9755484ae716d0baabddbd3d7ab739f9f49a98eb2fafb33ebf9",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_scientific_latex",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
+      "module_id": "viewer.scientific_library_workspace",
+      "api_id": "RESTRICTED_VIEWER_CLIENT_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.scientific_library_workspace/module.ini",
+      "manifest_sha256": "4642574c47c70b024b6bac622a1222e3969c7d6cc8ed2fd153ea6767115a40c1",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.scientific_library_workspace/api/viewer.tcl",
+      "entrypoint_sha256": "61c5afd2413723725d6d6d89917d2fd0dd45684acc39dcf7f1f20b043b3144b3",
+      "capabilities": [
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::Restricted_viewer_scientific_library_workspace",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
       "module_id": "viewer.scientific_worksheet",
       "api_id": "SCIENTIFIC_WORKSHEET_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.scientific_worksheet/module.ini",
-      "manifest_sha256": "924f3f339ab0c54a17af4438827b130ed3992350aa60616013930be2f229de20",
+      "manifest_sha256": "18e9d262690d9a05184dff8dfc7ee3caad6443fa0a27e3aa57fb7950c9f15f5e",
       "script_registered": true,
       "operations": [
         "bind_dataset",
@@ -22415,16 +23738,25 @@
         "create_sheet",
         "define_range",
         "delete_sheet",
+        "fill_range",
+        "filter_view_apply",
+        "filter_view_save",
+        "format_range",
         "identity",
         "inspect_cell",
         "load",
+        "merge_range",
         "new",
         "publish",
         "rename_sheet",
         "save",
+        "script_context",
+        "script_selection",
+        "script_snapshot",
         "select_sheet",
         "set_cell",
         "set_column",
+        "set_sizes",
         "set_typed_cell"
       ]
     },
@@ -22433,13 +23765,13 @@
       "api_id": "SECTION_PROFILE_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.section_profile/module.ini",
-      "manifest_sha256": "b54e981119f8e979d20c2a5b5059e53bc7ba810bf0ab54a51c2fff719eb32aa7",
+      "manifest_sha256": "196e231dbd344b078f9522170102b6ba62bf539e8b8087f567336c5367558d4b",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
       "reason": "No current Script registration; public host API inspection is required",
       "entrypoint": "plugins/modules/viewer.section_profile/api/section_profile_viewer_api_v1.tcl",
-      "entrypoint_sha256": "bc0821d21a037a87dc88e03f984bf9ac5222dae20db46549c5e3ef58cfc9bdfd",
+      "entrypoint_sha256": "2552c3e485e057b5bc058d6ffe152e037eebf0dc551ac58673dd93ce09a3cc84",
       "capabilities": [
         "viewer_backend",
         "numeric_geometry",
@@ -22451,11 +23783,31 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "viewer.signal_analysis",
+      "api_id": "SIGNAL_ANALYSIS_VIEWER_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.signal_analysis/module.ini",
+      "manifest_sha256": "d8dfd6320da6bcfd7c9eb4de601697fd7c5b1faf16434369c13451a81cfcc5d0",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.signal_analysis/api/viewer.tcl",
+      "entrypoint_sha256": "ab83a28393e24b796ac8dfd24cf00e8e03e78ce8695aa7b0eafba77b97c3a278",
+      "capabilities": [
+        "headless_service",
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::SignalAnalysisViewer",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
       "module_id": "viewer.spectral_library",
       "api_id": "SPECTRAL_LIBRARY_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.spectral_library/module.ini",
-      "manifest_sha256": "e43882113d5b12678349d6a2f5373669e270a5969be4f2b735c7704ac1fa855b",
+      "manifest_sha256": "7b9b4033683b6bf921c44a8171daa556fd103282e84197b8192861489d1a246f",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -22476,11 +23828,31 @@
       "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
     },
     {
+      "module_id": "viewer.statistical_analysis",
+      "api_id": "STATISTICAL_ANALYSIS_VIEWER_API_v1",
+      "api_version": 1,
+      "manifest": "plugins/modules/viewer.statistical_analysis/module.ini",
+      "manifest_sha256": "8a6d23337ea1f3e12aa1085f9bab4a12c8c47969344752c693bcb36925eb2716",
+      "script_registered": false,
+      "operations": [],
+      "coverage_status": "not_yet_bridged",
+      "reason": "No current Script registration; public host API inspection is required",
+      "entrypoint": "plugins/modules/viewer.statistical_analysis/api/viewer.tcl",
+      "entrypoint_sha256": "6cd00aad4711f3e87bf357496cb415d90f165238e3b5fc13b4248b8600d311a8",
+      "capabilities": [
+        "headless_service",
+        "viewer_backend",
+        "viewer_gui_manifest"
+      ],
+      "namespace": "::GX::StatisticalAnalysisViewer",
+      "verification": "Absence of direct registration is verified; this does not establish absence of an equivalent public CORE or higher-version Script service."
+    },
+    {
       "module_id": "viewer.table_extractor",
       "api_id": "TABLE_EXTRACTOR_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.table_extractor/module.ini",
-      "manifest_sha256": "a430cd89abd80ca4bcab21da7c2f76c72345d3999827d554bcf24bbab4e0a241",
+      "manifest_sha256": "f5a72e72e43208d43dacc0cae6a171c92292ffd6d60ef9dd3e12c6757e6192b6",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",
@@ -22501,7 +23873,7 @@
       "api_id": "XAS_SPECTRA_VIEWER_API_v1",
       "api_version": 1,
       "manifest": "plugins/modules/viewer.xas_spectra/module.ini",
-      "manifest_sha256": "f548f4fcb5322f77f0adfb3ddab1957829a60883d7df61703d92c3273fb1337f",
+      "manifest_sha256": "4e0407e4043cd3e04f869b7fd40244898bb9ddfa261117a866c464d106d254db",
       "script_registered": false,
       "operations": [],
       "coverage_status": "not_yet_bridged",

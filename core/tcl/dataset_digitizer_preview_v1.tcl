@@ -3,7 +3,13 @@
 namespace eval ::GX::DigitizerPreview {variable state {};variable serial 0}
 proc ::GX::datasetDigitizerPreviewClear {} {
     variable ::GX::DigitizerPreview::state
-    dict for {key record} $state {
+    foreach key [dict keys $state] {datasetDigitizerPreviewRelease $key}
+    array unset ::GX::DigitizerPreview::visible *
+}
+proc ::GX::datasetDigitizerPreviewRelease {key} {
+    variable ::GX::DigitizerPreview::state
+    if {[dict exists $state $key]} {
+        set record [dict get $state $key]
         if {[dict exists $record visibility_after]} {after cancel [dict get $record visibility_after];datasetDigitizerPreviewVisibilitySave $key}
         if {[dict exists $record text_widget] && [winfo exists [dict get $record text_widget]]} {
             set w [dict get $record text_widget]
@@ -11,14 +17,14 @@ proc ::GX::datasetDigitizerPreviewClear {} {
         }
         foreach photo [dict get $record photos] {catch {image delete $photo}}
         foreach widget [dict get $record widgets] {catch {destroy $widget}}
+        dict unset state $key
     }
-    set state {}
-    array unset ::GX::DigitizerPreview::visible *
+    array unset ::GX::DigitizerPreview::visible $key,*
 }
-proc ::GX::datasetDigitizerPreviewLink {w id title} {
+proc ::GX::datasetDigitizerPreviewLink {w id title {titleTag {}}} {
     variable ::GX::DigitizerPreview::serial
     set tag digitizer_dataset_[incr serial]
-    $w insert end "$title: "
+    $w insert end "$title: " $titleTag
     $w insert end $id $tag;$w insert end "\n"
     $w tag configure $tag -foreground #145fa0 -underline 1
     $w tag bind $tag <Button-1> [list ::GX::datasetDigitizerPreviewActivate $id [interactiveDocumentSessionToken] [curveSourceDatasetIdentity $::GX::currentSession $id]]
@@ -77,12 +83,15 @@ proc ::GX::datasetDigitizerPreviewImage {w id title token {overlay 0}} {
     lassign [dict get $imageInfo size] width height
     set photo [image create photo -file [dict get $imageInfo path]]
     set record [dict get $state $token];dict lappend record photos $photo
+    dict set state $token $record
     set canvas $w.digitizerImage[llength [dict get $record photos]]
     canvas $canvas -width [image width $photo] -height [image height $photo] -highlightthickness 0 -background white
     $canvas create image 0 0 -anchor nw -image $photo
     dict lappend record widgets $canvas
     dict set state $token $record
-    datasetDigitizerPreviewLink $w $id $title
+    set labelTag digitizer_dataset_label_[incr ::GX::DigitizerPreview::serial]
+    datasetDigitizerPreviewLink $w $id $title $labelTag
+    set record [dict get $state $token];dict lappend record image_label_tags $labelTag;dict set state $token $record
     $w window create end -window $canvas;$w insert end "\n"
     if {$overlay} {
         set expected [dict get $record metadata]
@@ -221,6 +230,7 @@ proc ::GX::datasetDigitizerPreviewPrepare {id selections dimensions directory {p
         }
         if {$processedSelection ne {}} {
             set candidate [dict get $processedSelection dataset_id]
+            if {[catch {
             if {$candidate ni [dict get $result processed_candidates] || [dict get $processedSelection identity] ne [curveSourceDatasetIdentity $::GX::currentSession $candidate]} {error {Processed image selection changed or no longer preserves source geometry}}
             set payload [sessionInspectionDatasetPayload $candidate $::GX::currentSession]
             set artifact [datasetPreviewImageArtifact [dict get $payload path] $directory 1]
@@ -228,6 +238,13 @@ proc ::GX::datasetDigitizerPreviewPrepare {id selections dimensions directory {p
             file copy -force [dict get $artifact path] $target
             dict set result images $candidate [dict create path $target size [_native2DRasterHelper info [dict get $payload path]] sha256 [dict get $payload sha256]]
             dict set result main_image $candidate
+            } message]} {
+                # Retain the verified original and public chooser for explicit
+                # recovery. Do not silently substitute it for a selected image.
+                dict unset result main_image
+                dict set result unavailable_selection $candidate
+                dict set result image_message "$message. Select Original source image to render the verified original."
+            }
         }
     }
     set ids [lsort -unique [dict values $columns]]
@@ -271,10 +288,10 @@ proc ::GX::datasetDigitizerPreviewPrepare {id selections dimensions directory {p
     modulePublicApiActivate viewer.curve_digitizer CURVE_DIGITIZER_QUALITY_API_v2
     if {[::GX::CurveDigitizerQuality::hasReport $id]} {
         set quality [::GX::CurveDigitizerQuality::read $id];dict set result quality $quality
-        if {![catch {exec [runtimeToolRequired python] -B [file join $::GX::scriptDir core python dataset_digitizer_quality_summary_v1.py] << [dict get $quality report_json]} lines]} {
-            set text {};foreach line [split $lines \n] {if {$line ne {}} {lappend text [encoding convertfrom utf-8 [binary decode base64 -strict $line]]}}
-            dict set result quality_summary [join $text \n]
-        }
+        if {![catch {exec [runtimeToolRequired python] -B [file join $::GX::scriptDir core python dataset_digitizer_quality_summary_v1.py] --table << [dict get $quality report_json]} presentation]} {
+            dict set result quality_rows [dict get $presentation rows]
+            dict set result quality_summary [dict get $presentation summary]
+        } else {dict set result quality_presentation_message $presentation}
     }
     return $result
 }
@@ -284,21 +301,26 @@ proc ::GX::datasetDigitizerPreviewRender {w id {prepared {}}} {
     set token digitizer-preview-[incr serial]
     set record [dict merge $prepared [dict create dataset_id $id session_token [interactiveDocumentSessionToken] photos {} widgets {} text_widget $w visibility_identity [list [datasetPreviewCacheSource $id] $::GX::ui(previewMap,filters)]]]
     dict set state $token $record
+    try {
     $w insert end "Curve Digitalizer publication — canonical source identities\n"
     if {![dict get $record raster_available]} {$w insert end "Original raster point coordinates are unavailable in this historical publication. No aligned markers are inferred.\n"}
-    if {[llength [datasetPublicationV2DictDefault $record processed_candidates {}]]} {
+    if {[dict exists $record original_image]} {
         set selector $w.processed$serial
-        ttk::combobox $selector -state readonly -values [linsert [dict get $record processed_candidates] 0 {Original source image}]
-        $selector set [expr {[dict get $record main_image] eq [dict get $record original_image]?"Original source image":[dict get $record main_image]}]
-        uiFieldSelectorWithinViewer $selector .top
-        bind $selector <<ComboboxSelected>> [list ::GX::datasetDigitizerPreviewProcessedSelect $token $selector]
+        set choices [linsert [dict get $record processed_candidates] 0 {Original source image}]
+        if {[dict exists $record unavailable_selection]} {lappend choices "Unavailable: [dict get $record unavailable_selection]"}
+        ttk::combobox $selector -state readonly -values $choices
         set selectedRecord [dict get $state $token];dict lappend selectedRecord widgets $selector;dict set state $token $selectedRecord
+        if {[dict exists $record unavailable_selection]} {$selector set "Unavailable: [dict get $record unavailable_selection]"
+        } else {$selector set [expr {[dict get $record main_image] eq [dict get $record original_image]?"Original source image":[dict get $record main_image]}]}
+        uiFieldSelectorWithinViewer $selector [winfo toplevel $selector]
+        bind $selector <<ComboboxSelected>> [list ::GX::datasetDigitizerPreviewProcessedSelect $token $selector]
         $w insert end "Geometry-preserving source image: ";$w window create end -window $selector;$w insert end "\n"
     }
     if {[dict exists $record main_image]} {datasetDigitizerPreviewImage $w [dict get $record main_image] {Verified source image} $token [dict get $record raster_available]}
     if {[dict exists $record image_message]} {$w insert end "Source image: [dict get $record image_message]\n"}
     set table $w.digitizerCurves$serial;ttk::labelframe $table -text {Retained curve visibility}
     set record [dict get $state $token];dict lappend record widgets $table
+    dict set state $token $record
     set hidden [datasetPublicationV2DictDefault $::GX::ui(previewMap,filters) @hidden_filters {}]
     set palette {#0876bd #c84427 #238b45 #8849a3 #a67513 #008b8b #ba3377};set i 0
     dict for {curve data} [dict get $record curves] {
@@ -314,13 +336,28 @@ proc ::GX::datasetDigitizerPreviewRender {w id {prepared {}}} {
     }
     dict set state $token $record
     $w window create end -window $table;$w insert end "\nVisibility changes retain XY geometry and the source overlay; they do not rerun a reader or Job.\n"
-    if {[dict exists $record quality]} {
-        $w insert end "Published Quality — physical accuracy and uncertainty are not inferred\n[datasetPublicationV2DictDefault $record quality_summary {}]\n"
-        ttk::button $table.report -text {Inspect full Quality report…} -command [list ::GX::datasetDigitizerQualityInspect [dict get $record quality report_json]]
-        grid $table.report -columnspan 3 -sticky w -padx 8 -pady 5
-    } else {$w insert end "Quality report is unavailable in this historical Dataset. Missing uncertainty does not imply zero.\n"}
     datasetDigitizerPreviewFinish $w $id
     return 1
+    } on error {message options} {
+        datasetDigitizerPreviewRelease $token
+        return -options $options $message
+    }
+}
+proc ::GX::datasetDigitizerPreviewQualifyPrevious {id} {
+    variable ::GX::DigitizerPreview::state
+    dict for {token record} $state {
+        if {[dict get $record dataset_id] ne $id || [dict get $record session_token] ne [interactiveDocumentSessionToken]} continue
+        set w [dict get $record text_widget]
+        if {![winfo exists $w]} continue
+        set previousState [$w cget -state];$w configure -state normal
+        foreach tag [datasetPublicationV2DictDefault $record image_label_tags {}] {
+            set range [$w tag ranges $tag]
+            if {[llength $range]!=2} continue
+            set start [lindex $range 0];$w delete {*}$range
+            $w insert $start {Previous-render image (source changed; Render to refresh): } $tag
+        }
+        $w configure -state $previousState
+    }
 }
 proc ::GX::datasetDigitizerQualityInspect {json} {
     set w .gxDigitizerQuality;catch {destroy $w};toplevel $w;wm title $w {Published Quality v2 report — read-only}

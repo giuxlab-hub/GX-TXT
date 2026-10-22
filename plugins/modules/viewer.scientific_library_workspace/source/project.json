@@ -1,0 +1,88 @@
+{
+  "schema": "gxtxt.viewer_development_project.v1",
+  "language": "cpp",
+  "module_id": "viewer.scientific_library_workspace",
+  "version": "1.0.2",
+  "profile": "document_view_v1",
+  "source": "handlers.cpp",
+  "design": "design.gxtxt-viewer",
+  "capabilities": [
+    {
+      "api_id": "SCIENTIFIC_LIBRARY_MANAGER_API_v1",
+      "version": 1,
+      "operations": [
+        "libraryCatalogPage",
+        "getProviderCapabilities",
+        "getLibraryCapabilities",
+        "listLibraryEntries",
+        "openLibraryViewer",
+        "verifyLibrary",
+        "installLibrary",
+        "updateLibrary",
+        "removeLibrary",
+        "registerLibrary",
+        "unregisterLibrary",
+        "invokeLibraryAction"
+      ]
+    },
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "version": 1,
+      "operations": [
+        "value_set"
+      ]
+    }
+  ],
+  "provenance": {
+    "template": "restricted_cpp_viewer_v1",
+    "scientific_source": null,
+    "purpose": "Step2 scientific library registry consultation; original CORE and provider ownership",
+    "development_scope": "No normalized scientific search/read/mutation/credentials or Steps3-7 implementation"
+  },
+  "tests": {
+    "events": [
+      {
+        "kind": 0,
+        "component": 0,
+        "value": 0
+      },
+      {
+        "kind": 2,
+        "component": 2,
+        "value": 0
+      },
+      {
+        "kind": 2,
+        "component": 5,
+        "value": 0
+      },
+      {
+        "kind": 1,
+        "component": 18,
+        "value": 0
+      },
+      {
+        "kind": 1,
+        "component": 20,
+        "value": 0
+      },
+      {
+        "kind": 2,
+        "component": 31,
+        "value": 2
+      },
+      {
+        "kind": 1,
+        "component": 33,
+        "value": 0
+      },
+      {
+        "kind": 1,
+        "component": 27,
+        "value": 0
+      }
+    ],
+    "expected_counter": 8,
+    "expected_values": {}
+  }
+}

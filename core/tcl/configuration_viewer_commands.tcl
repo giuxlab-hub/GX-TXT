@@ -198,12 +198,16 @@ proc ::GX::viewerCommandToolbarCreate {window frame {commandIds {}}} {
     viewerCommandToolbarRefresh $window
     return $frame
 }
-proc ::GX::viewerCommandWidgetsAttach {window mapping} {
+proc ::GX::viewerCommandWidgetsValidate {window mapping} {
     if {![dict exists $::GX::ViewerCommands::windows $window]} {error {Attach the Viewer command host first.}}
     dict for {id widgets} $mapping {
         if {![dict exists $::GX::ViewerCommands::windows $window handlers $id]} {error "Unknown Viewer action '$id'."}
         foreach widget $widgets {if {![winfo exists $widget] || ($widget ne $window && [string first "$window." $widget]!=0)} {error {Command widgets must belong to their Viewer.}}}
     }
+    return $mapping
+}
+proc ::GX::viewerCommandWidgetsAttach {window mapping} {
+    viewerCommandWidgetsValidate $window $mapping
     dict set ::GX::ViewerCommands::windows $window command_widgets $mapping
     viewerCommandWidgetsRefresh $window
 }
@@ -211,8 +215,18 @@ proc ::GX::viewerCommandWidgetsRefresh {window} {
     if {![dict exists $::GX::ViewerCommands::windows $window command_widgets]} return
     dict for {id widgets} [dict get $::GX::ViewerCommands::windows $window command_widgets] {
         set active [expr {[viewerCommandApplicable $window $id] && [viewerCommandEnabled $window $id]}]
-        foreach widget $widgets {if {[winfo exists $widget]} {$widget state [expr {$active ? {!disabled} : {disabled}}]}}
+        foreach widget $widgets {
+            if {![winfo exists $widget]} continue
+            $widget state [expr {$active ? {!disabled} : {disabled}}]
+            _viewerCommandWidgetChecked $window $id $widget
+        }
     }
+}
+proc ::GX::_viewerCommandWidgetChecked {window id widget} {
+    if {![dict exists $::GX::ViewerCommands::windows $window handlers $id checked]} return
+    set checked 0
+    catch {set checked [uplevel #0 [dict get $::GX::ViewerCommands::windows $window handlers $id checked]]}
+    native2DViewportToolState $widget [expr {[string is boolean -strict $checked] && $checked}]
 }
 proc ::GX::viewerCommandToolbarStatesRefresh {window} {
     if {![dict exists $::GX::ViewerCommands::windows $window toolbar]} return
@@ -220,6 +234,7 @@ proc ::GX::viewerCommandToolbarStatesRefresh {window} {
         if {[winfo exists $widget]} {
             set active [expr {[viewerCommandApplicable $window $id] && [viewerCommandEnabled $window $id]}]
             $widget state [expr {$active ? {!disabled} : {disabled}}]
+            _viewerCommandWidgetChecked $window $id $widget
         }
     }
 }

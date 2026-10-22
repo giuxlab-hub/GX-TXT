@@ -729,6 +729,64 @@ void logicalFocus(Tcl_Interp* ip,State& state,Tcl_Obj* reference) {
     }
     throw std::runtime_error("Logical focus refers to an absent scientific identity");
 }
+gx3de_object *cellFieldObject(Tcl_Interp *ip,gx3de_scene *scene,Tcl_Obj *layer) {
+    // Exact canonical triangle topology and cell values, supplied by the public
+    // Plot v4 cell-field owner. This is a planar embedding, not a CAD solid or
+    // an interpolation of cell centroids into invented nodal values.
+    Tcl_Obj *nodes=get(ip,layer,"mesh_nodes"),*elements=get(ip,layer,"mesh_cells");
+    int nn=0,nc=0;Tcl_Obj **nodeRows=nullptr,**cellRows=nullptr;
+    if(!nodes||!elements||Tcl_ListObjGetElements(ip,nodes,&nn,&nodeRows)!=TCL_OK||
+       Tcl_ListObjGetElements(ip,elements,&nc,&cellRows)!=TCL_OK||nn<3||nn>60000||nc<1||nc>30000)
+        throw std::runtime_error("Cell field requires 3..60000 nodes and 1..30000 actual triangles");
+    std::vector<gx3de_vec3> points;points.reserve(nn);
+    std::map<std::string,uint64_t> nodeIndex;
+    auto identity=[](Tcl_Obj *value) {
+        const std::string text=str(value);
+        size_t start=(!text.empty()&&(text[0]=='-'||text[0]=='+'))?1:0;
+        if(start==text.size()||!std::all_of(text.begin()+start,text.end(),[](unsigned char c){return std::isdigit(c)!=0;}))
+            throw std::runtime_error("Source mesh identities require exact canonical integers");
+        return text;
+    };
+    for(int i=0;i<nn;++i) {
+        int count=0;Tcl_Obj **row=nullptr;
+        if(Tcl_ListObjGetElements(ip,nodeRows[i],&count,&row)!=TCL_OK||count!=3)
+            throw std::runtime_error("Cell-field node requires exact identity and XY coordinates");
+        std::string id=identity(row[0]);
+        if(!nodeIndex.emplace(id,points.size()).second)throw std::runtime_error("Duplicate source node identity");
+        points.push_back({number(str(row[1]),"node X"),number(str(row[2]),"node Y"),0});
+    }
+    std::vector<std::array<uint64_t,3>> connectivity;connectivity.reserve(nc);
+    std::vector<double> values;values.reserve(nc);std::map<std::string,bool> cellIds;
+    for(int i=0;i<nc;++i) {
+        int count=0;Tcl_Obj **row=nullptr;
+        if(Tcl_ListObjGetElements(ip,cellRows[i],&count,&row)!=TCL_OK||count!=6)
+            throw std::runtime_error("Cell-field element requires identity, three source nodes, scalar and row ordinal");
+        std::string id=identity(row[0]);
+        if(!cellIds.emplace(id,true).second)throw std::runtime_error("Duplicate source cell identity");
+        if(integer(str(row[5]),"source cell row")!=static_cast<uint64_t>(i))
+            throw std::runtime_error("Cell-field source rows must retain canonical order");
+        std::array<uint64_t,3> triangle{};
+        for(int j=0;j<3;++j) {
+            auto found=nodeIndex.find(identity(row[j+1]));
+            if(found==nodeIndex.end())throw std::runtime_error("Cell references an absent canonical node");
+            triangle[j]=found->second;
+        }
+        if(triangle[0]==triangle[1]||triangle[1]==triangle[2]||triangle[2]==triangle[0])
+            throw std::runtime_error("Cell-field triangle repeats a node");
+        connectivity.push_back(triangle);values.push_back(number(str(row[4]),"cell scalar"));
+    }
+    std::vector<gx3de_scientific_cell_input> cells;cells.reserve(nc);
+    for(const auto &triangle:connectivity) {
+        gx3de_scientific_cell_input cell{};cell.struct_size=sizeof cell;
+        cell.type=GX3DE_SCI_CELL_TRIANGLE;cell.point_ids=triangle.data();cell.point_count=3;cells.push_back(cell);
+    }
+    gx3de_scientific_array_input array{};array.struct_size=sizeof array;array.association=GX3DE_SCI_ASSOC_CELL;
+    array.components=1;array.name_utf8="cell_value";array.values=values.data();array.tuple_count=values.size();
+    gx3de_scientific_polydata_spec spec{};spec.struct_size=sizeof spec;spec.points=points.data();spec.point_count=points.size();
+    spec.cells=cells.data();spec.cell_count=cells.size();spec.arrays=&array;spec.array_count=1;
+    gx3de_object *object=nullptr;check(gx3de_scientific_create_polydata(scene,&spec,&object),"create exact planar cell field");
+    applyScientificRoles(ip,object,layer);return object;
+}
 void fillScene(Tcl_Interp *ip,State &state,Tcl_Obj *scene,bool preview) {
     Tcl_Obj *layers=get(ip,scene,"layers"),*view=get(ip,scene,"view");
     if(!layers||!view) throw std::runtime_error("Viewer scene is incomplete");
@@ -742,7 +800,10 @@ void fillScene(Tcl_Interp *ip,State &state,Tcl_Obj *scene,bool preview) {
         bool visible=yes(field(ip,layer.value,"visible"));double opacity=number(field(ip,layer.value,"opacity"),"opacity");
         try {
             if(field(ip,layer.value,"source_mode")=="dataset") {gx3de_object *object=datasetObject(ip,state.scene,layer.value);state.add(ip,object,layer.id,layer.value,visible,opacity);}
-            else if(field(ip,layer.value,"source_mode")=="memory_geometry") {
+            else if(field(ip,layer.value,"source_mode")=="cell_field") {
+                gx3de_object *object=cellFieldObject(ip,state.scene,layer.value);
+                state.add(ip,object,layer.id,layer.value,visible,opacity);
+            } else if(field(ip,layer.value,"source_mode")=="memory_geometry") {
                 // Display-only geometry enters the same public native mesh ABI.
                 // It has no Dataset identity, path, publication or CAD authority.
                 Tcl_Obj *vertices=get(ip,layer.value,"vertices"),*triangles=get(ip,layer.value,"triangles");
@@ -797,6 +858,8 @@ void fillScene(Tcl_Interp *ip,State &state,Tcl_Obj *scene,bool preview) {
     if(!field(ip,view,"near_clip").empty()&&number(field(ip,view,"near_clip"),"near clip")>0)camera.near_clip=number(field(ip,view,"near_clip"),"near clip");
     if(!field(ip,view,"far_clip").empty()&&number(field(ip,view,"far_clip"),"far clip")>0)camera.far_clip=number(field(ip,view,"far_clip"),"far clip");
     check(gx3de_view_set_camera(state.view,&camera),"set camera");
+    if(yes(field(ip,view,"initial_fit_scene")))
+        check(gx3de_view_camera_preset(state.view,GX3DE_CAMERA_FIT_SCENE,nullptr),"fit prepared scientific scene");
     if(!field(ip,view,"orthographic_height").empty()&&number(field(ip,view,"orthographic_height"),"orthographic height")>0)check(gx3de_view_orthographic_height_set(state.view,number(field(ip,view,"orthographic_height"),"orthographic height")),"physical orthographic height");
     gx3de_view_axes axes{};axes.struct_size=sizeof axes;
     axes.show_world=yes(field(ip,view,"axes_world"));
@@ -1014,7 +1077,7 @@ int render(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
 }
 int capabilities(ClientData,Tcl_Interp*ip,int argc,Tcl_Obj*const args[]){
     if(argc!=1){Tcl_WrongNumArgs(ip,1,args,"");return TCL_ERROR;}
-    Tcl_SetObjResult(ip,Tcl_NewStringObj("managed_planar_texture",-1));return TCL_OK;
+    Tcl_SetObjResult(ip,Tcl_NewStringObj("managed_planar_texture exact_planar_cell_field pick_frame",-1));return TCL_OK;
 }
 int graphicsProbe(ClientData,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]) {
     if(argc!=2){Tcl_WrongNumArgs(ip,1,args,"graphics policy");return TCL_ERROR;}
@@ -1087,7 +1150,7 @@ int textureAnchor(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[])
     }catch(const std::exception &e){if(assignment)gx3de_planar_texture_destroy(assignment);if(texture)gx3de_texture_destroy(texture);error(ip,e);return TCL_ERROR;}
 }
 int pick(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
-    if(argc!=3){Tcl_WrongNumArgs(ip,1,args,"x y");return TCL_ERROR;}
+    if(argc!=3&&argc!=4){Tcl_WrongNumArgs(ip,1,args,"x y ?png?");return TCL_ERROR;}
     auto &state=*static_cast<State*>(data);
     try {
         if(!state.viewport)throw std::runtime_error("Render a scene before picking");
@@ -1095,7 +1158,16 @@ int pick(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
         gx3de_pick_hit hit{};hit.struct_size=sizeof hit;
         gx3de_result result=gx3de_viewport_pick(state.viewport,static_cast<uint32_t>(x),static_cast<uint32_t>(y),&hit);
         Tcl_Obj *reply=Tcl_NewDictObj();
-        if(result==GX3DE_NOT_FOUND) {put(ip,reply,"hit",Tcl_NewIntObj(0));Tcl_SetObjResult(ip,reply);return TCL_OK;}
+        auto present=[&]() {
+            if(argc==4) {
+                checkRender(state.target,gx3de_target_render(state.target),"render picked selection");
+                check(gx3de_target_write_png(state.target,str(args[3]).c_str()),"write picked selection PNG");
+            }
+        };
+        if(result==GX3DE_NOT_FOUND) {
+            if(argc==4)check(gx3de_view_set_selection(state.view,nullptr),"clear missed selection");
+            present();put(ip,reply,"hit",Tcl_NewIntObj(0));Tcl_SetObjResult(ip,reply);return TCL_OK;
+        }
         check(result,"pick viewport");
         put(ip,reply,"hit",Tcl_NewIntObj(1));
         auto found=std::find_if(state.objects.begin(),state.objects.end(),[&](const auto &item){return item.first==hit.object;});
@@ -1114,6 +1186,7 @@ int pick(ClientData data,Tcl_Interp *ip,int argc,Tcl_Obj *const args[]) {
         check(gx3de_view_set_selection(state.view,anchor),"set view selection");
         // The scene owns anchors. The view holds this pointer until the next
         // render resets the scene; destroying it here would clear selection.
+        present();
         Tcl_SetObjResult(ip,reply);return TCL_OK;
     } catch(const std::exception &e) {error(ip,e);return TCL_ERROR;}
 }

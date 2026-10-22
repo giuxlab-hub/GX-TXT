@@ -2,7 +2,7 @@
 # Content-addressed bulk resources owned by a real Interactive Document.
 namespace eval ::GX::DocumentResource {variable writers {};variable readers {};variable serial 0}
 proc ::GX::interactiveDocumentResourceApiInfo {} {
-    return [dict create api_id INTERACTIVE_DOCUMENT_RESOURCE_API_v1 api_version 1 operations {open_writer append finalize abort info read_chunk read_ranges open_reader next close_reader references remap_references collect import_numeric native2d_store native2d_restore native2d_restore_with_gaps} chunk_bytes_max 1048576 implicit_dataset_publication 0]
+    return [dict create api_id INTERACTIVE_DOCUMENT_RESOURCE_API_v1 api_version 1 operations {open_writer append finalize abort info read_chunk read_ranges open_reader reader_info next close_reader references remap_references collect import_numeric native2d_store native2d_restore native2d_restore_with_gaps} chunk_bytes_max 1048576 implicit_dataset_publication 0]
 }
 proc ::GX::_documentResourceRoot {document {allowRetired 0}} {
     if {![interactiveDocumentIdValid $document]} {error "Invalid Document resource owner"}
@@ -157,19 +157,37 @@ proc ::GX::interactiveDocumentResourceReadRanges {reference ranges} {
 }
 proc ::GX::interactiveDocumentResourceOpenReader {reference} {
     variable ::GX::DocumentResource::readers;variable ::GX::DocumentResource::serial
+    set path [_documentResourceIdentity $reference]
+    set version [_documentResourceFileVersion $path]
     interactiveDocumentResourceInfo $reference
-    set path [file join [_documentResourceRoot [dict get $reference document_id] 1] [dict get $reference sha256].blob]
+    if {[_documentResourceFileVersion $path] ne $version} {error {Document resource changed during reader admission}}
+    set channel [open $path rb]
+    if {[_documentResourceFileVersion $path] ne $version} {close $channel;error {Document resource changed while opening its reader}}
     set token "document-resource-reader#[pid]-[incr serial]"
-    dict set readers $token [dict create channel [open $path rb] session [_interactiveDocumentRequireSession] session_token [interactiveDocumentSessionToken] reference $reference position 0]
+    dict set readers $token [dict create channel $channel session [_interactiveDocumentRequireSession] session_token [interactiveDocumentSessionToken] reference $reference file_version $version position 0]
     return $token
 }
-proc ::GX::interactiveDocumentResourceNext {token {count 1048576}} {
+proc ::GX::_documentResourceFileVersion {path} {
+    file lstat $path status
+    if {$status(type) ne {file}} {error {Document resource must remain a regular managed file}}
+    return [list $status(dev) $status(ino) $status(size) $status(mtime) $status(ctime)]
+}
+proc ::GX::_documentResourceReader {token} {
     variable ::GX::DocumentResource::readers
     if {![dict exists $readers $token]} {error "Unknown or closed Document resource reader"}
     set reader [dict get $readers $token]
     if {[dict get $reader session_token] ne [interactiveDocumentSessionToken]} {error "Document resource reader belongs to another Session lifetime"}
-    _documentResourceRoot [dict get $reader reference document_id] 1
-    if {[dict exists $reader reference owner_generation]&&[dict get $reader reference owner_generation] ne [_documentResourceOwnerGeneration [dict get $reader reference document_id]]} {error "Document resource reader owner was replaced"}
+    set path [_documentResourceIdentity [dict get $reader reference]]
+    if {[_documentResourceFileVersion $path] ne [dict get $reader file_version]} {error {Document resource file changed; reopen and verify it explicitly}}
+    return $reader
+}
+proc ::GX::interactiveDocumentResourceReaderInfo {token} {
+    set reader [_documentResourceReader $token]
+    return [dict create reference [dict get $reader reference] offset [dict get $reader position]]
+}
+proc ::GX::interactiveDocumentResourceNext {token {count 1048576}} {
+    variable ::GX::DocumentResource::readers
+    set reader [_documentResourceReader $token]
     if {![string is entier -strict $count]||$count<1||$count>1048576} {error "Document resource read must be 1..1048576 bytes"}
     set reference [dict get $reader reference]
     set n [expr {min($count,[dict get $reference size_bytes]-[dict get $reader position])}]

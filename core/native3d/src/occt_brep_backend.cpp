@@ -201,6 +201,23 @@ bool adopt_step_shape(const TopoDS_Shape& native,
     return false;
 }
 
+bool compound_shapes(const std::vector<std::shared_ptr<BrepShape>>& shapes,
+                     std::shared_ptr<BrepShape>& out, std::string& error) {
+    out.reset();error.clear();
+    if (shapes.empty()) {error="STEP compound has no part occurrences";return false;}
+    for (const auto& shape:shapes) if (!shape || !valid_shape(*shape)) {
+        error="STEP compound contains an invalid part";return false;
+    }
+    try {
+        if (shapes.size()==1) {out=shapes.front();return true;}
+        BRep_Builder builder;TopoDS_Compound compound;builder.MakeCompound(compound);
+        for (const auto& shape:shapes) builder.Add(compound,shape->shape);
+        out=std::make_shared<BrepShape>(compound);return true;
+    } catch (const Standard_Failure& e) {failure(error,e);}
+      catch (const std::exception& e) {error=e.what();}
+    return false;
+}
+
 bool bounds(const BrepShape& shape, gx3de_bounds& out) {
     if (!valid_shape(shape)) return false;
     try {

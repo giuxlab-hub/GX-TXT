@@ -53,6 +53,14 @@ def compose(data,root):
     items=[]
     for value in tcl.splitlist(raw['items']):
         item=dictionary(value)
+        if 'frame' in item:
+            item['frame']=dictionary(item['frame'])
+            for key in ('x_mm','y_mm','width_mm','height_mm'):item['frame'][key]=float(item['frame'][key])
+            item['frame']['page']=int(item['frame']['page'])
+        if 'style' in item:
+            item['style']=dictionary(item['style'])
+            for key in ('font_size','padding_mm','border_pt'):
+                if key in item['style']:item['style'][key]=float(item['style'][key])
         if item['kind']=='table':
             item['columns']=[dictionary(column) for column in tcl.splitlist(item['columns'])]
             item['rows']=[list(tcl.splitlist(row)) for row in tcl.splitlist(item['rows'])]
@@ -73,6 +81,18 @@ def compose(data,root):
     if not qpdf:raise RuntimeError('qpdf is required to validate the assembled PDF')
     run([qpdf,'--check',pdf],timeout=30)
     result=dict(pdf=str(pdf),pdf_sha256=digest(pdf),source_manifest=str(source_manifest),page_count=receipt['page_count'],pages=receipt['pages'],notices=receipt['notices'])
+    if receipt.get('objects'):
+        objects=[];pixel_count=0
+        from PIL import Image
+        for item in receipt['objects']:
+            prefix=Path(item['asset_pdf']).with_suffix('')
+            run(['pdftoppm','-f',1,'-l',1,'-singlefile','-scale-to',1200,'-png',item['asset_pdf'],prefix],timeout=30)
+            png=prefix.with_suffix('.png')
+            with Image.open(png) as image:
+                dimensions=list(image.size);pixel_count+=image.width*image.height
+            if pixel_count>64000000:raise ValueError('Poster editor object images exceed their bounded 64-megapixel total; reduce objects or split the composition')
+            objects.append(dict(item,preview_png=str(png),preview_sha256=digest(png),preview_dimensions=dimensions))
+        result['objects']=objects
     verify(result)
     (root/'receipt.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
     return result
@@ -102,7 +122,28 @@ def main():
                 if image.width*image.height>32000000:raise ValueError('Graph source exceeds 32 megapixels')
                 image.thumbnail((400,240));image.convert('RGB').save(root/'source.png')
         return dict(path=str(root/'source.png'))
-    pdf=verify(data,sources=operation not in ('page','thumbnails'))
+    pdf=verify(data,sources=operation not in ('page','object_preview','thumbnails'))
+    if operation=='object_preview':
+        # Reproject already prepared, hash-checked PDF object pixels for a layout
+        # draft. No canonical materialization, scientific plot or TeX execution.
+        from PIL import Image
+        receipt=json.loads((pdf.parent/'receipt.json').read_text())
+        if receipt.get('pdf_sha256')!=data['pdf_sha256']:raise ValueError('Object assets belong to another PDF revision')
+        requested=tcl.splitlist(data['objects'])
+        if not 1<=len(requested)<=200:raise ValueError('Object Preview requires 1 to 200 objects')
+        available={item['id']:item for item in receipt.get('objects',[])}
+        result=[];seen=set();total_pixels=0
+        for raw in requested:
+            item=dictionary(raw);identifier=item['id'];w=int(item['width']);h=int(item['height'])
+            if identifier not in available or identifier in seen or not 1<=w<=6000 or not 1<=h<=6000:raise ValueError('Invalid object Preview identity or dimensions')
+            seen.add(identifier);total_pixels+=w*h
+            if total_pixels>64000000:raise ValueError('Object Preview exceeds 64 megapixels')
+            asset=available[identifier];source=Path(asset['preview_png'])
+            if not source.resolve().is_relative_to(pdf.parent/'objects') or digest(source)!=asset['preview_sha256']:raise ValueError('Prepared object pixels changed')
+            destination=root/(identifier+'.png')
+            with Image.open(source) as image:image.resize((w,h),Image.Resampling.LANCZOS).save(destination)
+            result.append(dict(id=identifier,path=str(destination),width=w,height=h,sha256=digest(destination),asset_key=asset['asset_key']))
+        return dict(objects=result,pdf_sha256=data['pdf_sha256'],projection='prepared_object_layout_draft')
     if operation=='verify':return dict(status='verified',pdf_sha256=data['pdf_sha256'])
     if operation=='thumbnails':
         count=int(data['page_count'])
@@ -120,7 +161,26 @@ def main():
         with Image.open(str(prefix)+'.png') as image:
             if image.width*image.height>16000000:raise ValueError('Page Preview exceeds 16 megapixels')
             dimensions=[image.width,image.height]
-        return dict(path=str(prefix)+'.png',page=page,width=dimensions[0],height=dimensions[1],pdf_sha256=data['pdf_sha256'])
+        result=dict(path=str(prefix)+'.png',page=page,width=dimensions[0],height=dimensions[1],pdf_sha256=data['pdf_sha256'])
+        receipt_path=pdf.parent/'receipt.json'
+        if receipt_path.is_file():
+            receipt=json.loads(receipt_path.read_text())
+            if receipt.get('pdf_sha256')!=data['pdf_sha256']:raise ValueError('Object asset receipt belongs to another PDF revision')
+            objects=[];total_pixels=0
+            from pypdf import PdfReader
+            paper_mm=float(PdfReader(pdf).pages[page-1].mediabox.width)*25.4/72
+            for item in receipt.get('objects',[]):
+                if int(item['frame']['page'])!=page:continue
+                source=Path(item['preview_png'])
+                if not source.resolve().is_relative_to(pdf.parent/'objects') or digest(source)!=item['preview_sha256']:raise ValueError('Owned poster object image changed')
+                w=max(1,round(item['frame']['width_mm']*dimensions[0]/paper_mm));h=max(1,round(item['frame']['height_mm']*dimensions[0]/paper_mm))
+                total_pixels+=w*h
+                if total_pixels>64000000:raise ValueError('Visible poster object images exceed 64 megapixels')
+                destination=root/(item['id']+'.png')
+                with Image.open(source) as image:image.resize((w,h),Image.Resampling.LANCZOS).save(destination)
+                objects.append(dict(id=item['id'],path=str(destination),asset_key=item['asset_key'],frame=item['frame'],width=w,height=h))
+            result['objects']=objects
+        return result
     if operation=='export':
         target=Path(data['destination'])
         if not target.is_absolute() or target.is_symlink() or target.suffix.lower()!='.pdf':raise ValueError('Choose a regular absolute PDF destination')

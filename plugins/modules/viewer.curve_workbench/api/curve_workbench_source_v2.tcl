@@ -83,7 +83,9 @@ proc ::GX::CurveWorkbench::_sourceAdd {w} {
         set members $st($w,source.familyValues);set choices [$w.source.familyPanel.list curselection]
         if {$choices ne {}} {set members [lmap i $choices {lindex $members $i}]}
     }
-    set created {};set before {};set source ""
+    set created {};set before [_snapshotIds $w {}];set source ""
+    set priorConfiguration $st($w,coordinateConfiguration);set priorSketchUnit $st($w,sketchUnit)
+    set adopt [_coordinateWorkspaceEmpty $w]
     try {
         foreach member $members {
             set request [_sourceRequest $dataset $x $y $filter $value $family $member $order]
@@ -93,6 +95,11 @@ proc ::GX::CurveWorkbench::_sourceAdd {w} {
             set record [_newRecord $w $name {} $dataset $x $y $filter $value $member $order {} [list "import:$dataset"]]
             dict set record source_request $request;dict set record source_descriptor $descriptor
             set targetFrame [_coordinateSourceFrame $w $record]
+            if {$adopt && $created eq {}} {
+                dict set st($w,coordinateConfiguration) x_unit [lindex $targetFrame 0]
+                dict set st($w,coordinateConfiguration) y_unit [lindex $targetFrame 1]
+                set st($w,sketchUnit) [lindex $targetFrame 0]
+            }
             if {[dict get $descriptor row_count]>65536} {
                 _save $w
                 dict set record source_token $source
@@ -110,6 +117,7 @@ proc ::GX::CurveWorkbench::_sourceAdd {w} {
         if {$created eq {}} {error "No curves match the source selection"}
     } on error {message options} {
         foreach id $created {_removeRecord $w $id}
+        set st($w,coordinateConfiguration) $priorConfiguration;set st($w,sketchUnit) $priorSketchUnit
         return -options $options $message
     } finally {if {$source ne ""} {::GX::curveSourceClose $source}}
     set st($w,active) [lindex $created 0];_selectionScene $w
@@ -389,8 +397,8 @@ proc ::GX::CurveWorkbench::_installSourceControls {w} {
         ttk::label $w.publish.arrangementLabel -text Arrangement
         ttk::combobox $w.publish.arrangement -textvariable ::GX::CurveWorkbench::st($w,publicationArrangement) -state readonly -values {table long wide} -width 8
     }
-    bind $w.publish <Configure> [list ::GX::native2DToolbarLayout $w.publish %w]
-    after idle [list ::GX::native2DToolbarLayout $w.publish [winfo width $w.publish]]
+    bind $w.publish <Configure> [list ::GX::CurveWorkbench::_publicationLayout $w %w]
+    after idle [list ::GX::CurveWorkbench::_publicationLayout $w [winfo width $w.publish]]
 
 }
 proc ::GX::CurveWorkbench::_publicationNativeSource {w id} {

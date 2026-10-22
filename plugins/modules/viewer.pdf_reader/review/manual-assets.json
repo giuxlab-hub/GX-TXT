@@ -1,0 +1,47 @@
+{
+  "assets": {
+    "reader-narrow": {
+      "bytes": 17577,
+      "capture_id": "229b6d2ab3864b48a4bfe9a511188fb9",
+      "geometry": "680x520+865+375",
+      "height": 554,
+      "session": "[PRIVATE_SOURCE_PATH_REDACTED_41a5e5bb613b]",
+      "sha256": "85e5268a35f8fc681a941c206dd766a403a84e08e9db012ea736546875d3c13a",
+      "source_snapshot": {
+        "design_sha256": "37c86028f09f8799bd3466a407a206291ac1ec451183658b5d1ca2c62359bf41",
+        "project_sha256": "4672d2c0dcfa87c9b87a994cee7ae81121752406c4fd85068387d6e94ad9ccc2",
+        "source_sha256": "d74f8532d2c79fdfa220ad06da7530322414d09f5855da89fa582340482f31cd"
+      },
+      "width": 690
+    },
+    "reader-normal": {
+      "bytes": 25002,
+      "capture_id": "48e38cccdeba4d22adfe7a307e6cf6ad",
+      "geometry": "1050x820+865+375",
+      "height": 854,
+      "session": "[PRIVATE_SOURCE_PATH_REDACTED_41a5e5bb613b]",
+      "sha256": "022db00038b47dc91058d32637777b32367bdbdf4ebb6b54602fa452c53cf37e",
+      "source_snapshot": {
+        "design_sha256": "37c86028f09f8799bd3466a407a206291ac1ec451183658b5d1ca2c62359bf41",
+        "project_sha256": "4672d2c0dcfa87c9b87a994cee7ae81121752406c4fd85068387d6e94ad9ccc2",
+        "source_sha256": "d74f8532d2c79fdfa220ad06da7530322414d09f5855da89fa582340482f31cd"
+      },
+      "width": 1060
+    },
+    "reader-table-page2": {
+      "bytes": 116799,
+      "capture_id": "1964c7cc7875492298e55ec0211574b0",
+      "geometry": "1050x820+865+375",
+      "height": 854,
+      "session": "[PRIVATE_SOURCE_PATH_REDACTED_41a5e5bb613b]",
+      "sha256": "ed8aa6334d0cc5950a65fd7038223c31fe06240b60d20ad46656cca19b9e1fc2",
+      "source_snapshot": {
+        "design_sha256": "37c86028f09f8799bd3466a407a206291ac1ec451183658b5d1ca2c62359bf41",
+        "project_sha256": "4672d2c0dcfa87c9b87a994cee7ae81121752406c4fd85068387d6e94ad9ccc2",
+        "source_sha256": "d74f8532d2c79fdfa220ad06da7530322414d09f5855da89fa582340482f31cd"
+      },
+      "width": 1060
+    }
+  },
+  "schema": "gxtxt.viewer_manual_assets.v1"
+}

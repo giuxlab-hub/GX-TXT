@@ -2,7 +2,8 @@
 
 Auxiliary GUI requests use the existing nonblocking
 `scriptJobAsync command payload callback ?options?` transport. Options are
-timeout_ms, max_bytes, process_group, ui_lifetime and label; old callers keep
+timeout_ms, max_bytes, process_group, ui_lifetime, label and optional duplex;
+duplex defaults to0, and old callers keep
 their existing defaults. `scriptJobRequestCancel request ?reason?` cancels only
 the transport-owned child/group, escalates TERM to KILL after 500 ms and delivers
 one terminal response. Workers opting into process_group must establish their
@@ -14,6 +15,26 @@ Cancellation retains the owned group identity through escalation even if its
 leader closes stdout early, preventing detached descendants from surviving.
 Responses distinguish timeout, cancelled, closed and output_limit. This
 transport does not add a scientific scheduler or make a GUI request a durable Job.
+
+With `duplex=1`, the existing pipe retains its write side for a managed compiled
+Viewer lifetime. The owner buffers newline-delimited reply messages; at most16
+pending messages are retained, and `max_bytes` bounds each complete line and the
+unfinished line. The compiled Viewer caller uses base64-encoded Tcl envelopes;
+this encoding is its protocol, not a new general Script API.
+
+Host-only `::GX::scriptJobRequestExchange request payload ?timeout_ms=12000?`
+requires an active duplex request and a timeout from1 through120000ms. A nonempty
+payload is written with a newline; an empty payload only receives, as used for
+the initial worker-ready response. It returns one buffered line or errors on
+cancelled/ended/timed-out transport. It polls only that managed pipe and does not
+enter a Tk event loop; the existing caller applies its short local UI plan before
+returning to queued native input. Durable scientific Job waits keep their
+independent event-responsive supervisor behavior described below.
+
+Normal duplex EOF also requests existing TERM/KILL group cancellation and retains
+the request identity through escalation, so a fork descendant that redirected
+stdout remains owned after its native leader exits. Viewer close cancels its
+duplex request; application shutdown uses the same UI-lifetime group owner.
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -284,3 +305,21 @@ legacy worker identities remain preserved and hidden from ordinary selection and
 Results; changed/unverified legacy identities are explicit conflicts, never
 silently treated as safe user scripts. Ordinary Jobs and user publications remain
 visible. Scientific provider Jobs have their own legitimate Results category.
+
+## Managed compiled Viewer exchange (dev109)
+
+Existing auxiliary `scriptJobAsync command payload callback ?options?` accepts
+boolean `duplex` (default0). With duplex1 its supervised pipe retains the write
+side for a compiled Viewer's persistent worker; timeout, byte bounds, process
+group and UI lifetime remain under the same existing owner. It creates no
+scientific Job or alternate scheduler.
+
+Trusted CORE may call `scriptJobRequestExchange request payload ?timeout_ms?`
+on that live duplex request. It writes one line when payload is nonempty and
+returns one bounded queued response. The default is12000ms; allowed1..120000ms.
+It reads the existing owner directly without entering a nested Tk event loop,
+so a local tool result is applied before the next queued Canvas event. Timeout
+cancels the existing managed request. Scientific calculations retain their
+asynchronous Job lifecycle. This host helper is not arbitrary C++ dispatch;
+installed Viewer startup/events execute the distributed compiled binary and
+never run a development compiler or linker.

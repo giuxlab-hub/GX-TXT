@@ -62,6 +62,18 @@ proc ::GX::Workbench3D::organizationRefresh {} {
     }
     foreach row $chosen {if {[$d.tree exists $row]} {$d.tree selection add $row}}
     ::GX::uiFieldInspectionColumnsFit $d.tree
+    organizationActivationState
+}
+proc ::GX::Workbench3D::organizationActivationState {} {
+    variable organizationNative
+    set d $::GX::Engine3D::window.organization
+    if {![winfo exists $d.tree]} return
+    set enabled 0;set rows [$d.tree selection]
+    if {[llength $rows]==1} {
+        lassign [split [lindex $rows 0] :] kind id
+        set enabled [expr {$kind eq {selection_set} && [dict exists $organizationNative [list selection_set $id]]}]
+    }
+    foreach name {add subtract} {if {[winfo exists $d.actions.$name]} {$d.actions.$name state [expr {$enabled ? {!disabled} : {disabled}}]}}
 }
 proc ::GX::Workbench3D::organizationPanel {} {
     set d $::GX::Engine3D::window.organization
@@ -75,21 +87,33 @@ proc ::GX::Workbench3D::organizationPanel {} {
     ttk::scrollbar $d.x -orient horizontal -command [list $d.tree xview];$d.tree configure -xscrollcommand [list $d.x set];pack $d.x -side bottom -fill x;pack $d.tree -fill both -expand 1
     ttk::frame $d.actions;pack $d.actions -side bottom -fill x -padx 8 -pady 6 -before $d.tree
     foreach {key label action} {set {New Selection Set…} selection_set layer {New Layer…} layer view {Capture Saved View…} saved_view edit {Edit / recapture…} edit apply {Activate / restore} apply remove Remove remove} {ttk::button $d.actions.$key -text $label -command [list ::GX::Workbench3D::safe [list ::GX::Workbench3D::organizationAction $action]];pack $d.actions.$key -side left}
+    foreach {mode label} {add {Add Selection Set} subtract {Subtract Selection Set}} {
+        ttk::button $d.actions.$mode -text $label -command [list ::GX::Workbench3D::safe [list ::GX::Workbench3D::organizationAction apply $mode]]
+        pack $d.actions.$mode -side left
+    }
+    bind $d.tree <<TreeviewSelect>> [list ::GX::Workbench3D::organizationActivationState]
     bind $d.actions <Configure> [list ::GX::uiFieldControlsLayout $d.actions %w]
     bind $d.tree <Configure> [list ::GX::uiFieldInspectionColumnsSchedule $d.tree]
     wm geometry $d 940x440;wm minsize $d 620 300;bind $d <Escape> [list destroy $d];organizationRefresh
 }
-proc ::GX::Workbench3D::organizationAction {action} {
+proc ::GX::Workbench3D::organizationAction {action {mode replace}} {
     variable model;variable selection;variable module;variable provider;variable organizationNative;variable panel
     set d $::GX::Engine3D::window.organization;set id {};set kind $action
     if {$action in {edit apply remove}} {set rows [$d.tree selection];if {[llength $rows]!=1} {error "Select one organization record"};lassign [split [lindex $rows 0] :] kind id}
     set collection [organizationCollection $kind]
     if {$action eq "remove"} {set before $model;dict unset model $collection $id;commit $before delete_$kind [dict create id $id] {} {};organizationRefresh;return}
     if {$action eq "apply"} {
+        if {$mode ni {replace add subtract}} {error {Selection mode must be replace, add or subtract}}
+        if {$kind ne {selection_set} && $mode ne {replace}} {error {Add/Subtract applies to Selection Sets; choose a Selection Set record}}
         if {$kind eq "layer"} {error "Layer presentation applies immediately; use Edit to change it"}
         if {![dict exists $organizationNative [list $kind $id]]} {error "Record has stale/missing references; recapture it explicitly"}
         set native [dict get $organizationNative [list $kind $id]]
-        if {$kind eq "selection_set"} {call selection_set_activate [dict create id $native mode replace];set selection [lmap member [dict get $model $collection $id members] {dict get $member object_id}];$panel.objects selection set $selection;return}
+        if {$kind eq "selection_set"} {
+            set receipt [call selection_set_activate [dict create id $native mode $mode]]
+            set selection [selectionMemberObjects [dict get $receipt selected_members]]
+            projectSelection
+            return $receipt
+        }
         set receipt [call saved_view_restore [dict create id $native working_unit [dict get $model working_unit]]];set before $model
         foreach object [dict keys [::GX::datasetPublicationV2DictDefault [dict get $model $collection $id] object_styles {}]] {if {![dict exists $model objects $object]} {error "Saved view has missing object $object"}}
         foreach layer [dict keys [::GX::datasetPublicationV2DictDefault [dict get $model $collection $id] layer_presentation {}]] {if {![dict exists $model layers $layer]} {error "Saved view has missing Layer $layer"}}

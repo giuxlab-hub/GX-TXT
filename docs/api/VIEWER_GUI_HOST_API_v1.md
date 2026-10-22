@@ -1,5 +1,37 @@
 # Viewer GUI Integration Manifest v1
 
+Programmatic `viewerGuiDesignValueSet` on an integer field accepts an exact
+integral finite numeric value, including a C++ `Host.number` transport value
+such as `1.0`, and normalizes it to an integer before the existing min/max
+validation. Fractional and nonfinite values are rejected before field mutation.
+Interactive UI Field integer text validation retains its existing contract.
+
+## Scientific Library catalog section (dev109 additive)
+
+`viewerGuiDesignCatalogRefresh window form`, `viewerGuiDesignCatalogInspect
+window form`, `viewerGuiDesignCatalogAction window form action` and
+`viewerGuiDesignCatalogDescribe window form` present the existing Scientific
+Library Manager through a declared `section` with
+`catalog_owner scientific_libraries`. Existing lists, read-only tables,
+UI Field forms, manager, provider dispatch and ScriptJob request lifetime retain
+their owners. Describe returns presentation state with owner identity, not
+canonical registry authority. Actual actions require current capability,
+availability and authentication checks. Raw facts use registry.* prefixes;
+known operational state uses status.* and unknown remains explicit.
+
+Exact section references, shapes, limits, provider hooks, action grants and
+three reviewed typed C++ methods are documented in the
+[Scientific Library Manager API](SCIENTIFIC_LIBRARY_MANAGER_API_v1.md#step2-catalog-capability-declarations-and-provider-delegation-dev109).
+Declare manager API version1. Validation checks control types/table columns,
+finite actions and declared command handlers. Host selection binds logical IDs;
+the author does not read registry paths or mutate private Tk state. Page/filter
+actions use100-record public pages; managed entry consultation shows at most1000
+IDs with explicit shown/total count. Administration uses ordinary shared dialogs.
+Concurrent reads coalesce; a mutation in progress blocks interfering actions;
+disposal cancels owned requests; old Session/generation replies cannot update a
+new window. Declarations/build success do not establish installed GUI acceptance
+or later Library progression steps.
+
 This public **host-only** Tcl API composes
 existing GUI authorities. It has no Script Bridge widget API, second registry,
 scientific state, renderer, command model, execution scheduler or Workspace format.
@@ -306,6 +338,17 @@ no private endpoint access or new C++ include is needed. A native Probe click
 on a real terminal/junction invokes the existing Host's
 `viewerGuiDesignScientificProbe window scientific_form endpoint`.
 
+The compatible optional fourth argument `hitContext` accepts the shared
+viewport's actual segment event detail (`hit_kind wire`, `wire_id`, `point`).
+The Host verifies the canonical wire and native segment location, then uses
+its endpoint's genuine provider net mapping. Voltage clicks along the same
+connected wire resolve to the same available V observable and completed
+Job/Dataset provenance, without creating a junction. Current at an arbitrary
+ideal-wire position is explicitly unavailable; select a supported device
+terminal for a genuine branch measurement. Three-argument terminal callers
+retain their existing behavior. Normal Builder probing passes this context
+through shared CORE; a Viewer needs no private hit-testing or circuit graph.
+
 The bridge resolves the currently selected completed Job/sweep case and its
 published Dataset. It verifies the diagram's generation/revision/SHA, exact
 Dataset/Job/provider/parameter provenance and the registered provider's current
@@ -318,6 +361,16 @@ missing variables, foreign publication and stale source are explicit errors;
 the previous waveform selection and frame remain intact. AC split-complex data
 require an explicit public Numeric projection; this bridge does not invent an
 automatic magnitude or phase calculation.
+
+Resolved non-AC probes also select the independent Variable declared by the
+registered provider's inspection (`independent_variable`: stable id, dtype,
+unit). Both Variables must have aligned canonical one-dimensional rows. Prior
+manual Plot **Discover** is unnecessary: explicit Plot binding validates X/Y
+against the current Dataset's numeric Variable Schema, then updates the choices
+and selection after the native Plot accepts the binding, in one History entry.
+No cached dropdown contents establish scientific identity. Ordinary manual
+Discover/Bind remains available. This dev109 correction requires the installed
+first-click regression evidence before functional acceptance.
 
 Restricted Development validation requires the already scoped grants
 `SCIENTIFIC_EXECUTION_API_v1.circuit_prepare`,
@@ -560,3 +613,448 @@ the existing History owner; Save/Open persists the PlotSpec and editor controls.
 Exact source-hit probes and persistent reference-line cursors continue to use the
 existing Plot owner. No calculation, new simulation, Script Job, remote contact,
 raw vectors, author Tcl or arbitrary editor script is admitted by these controls.
+
+## Read-only canonical document components (integrated next candidate)
+
+Builder component `document` accepts `kind` (`html`, `pdf`, `code`, `table`) and
+optional `title`. It starts empty. A `dataset_selector` may declare `content_kind`
+with the same value; its normal catalog-backed selection then offers only
+compatible current-Session identities. Existing selectors without this property
+retain their behavior. HTML uses the existing safe native Document presenter;
+code uses read-only Source Surface; table uses the existing bounded Preview table
+pager (100 rows/page, Source row, scrollbars and Go to row); PDF uses the existing
+separate CORE PDF reader's official open route, with no OCR or second decoder.
+
+An optional `dataset_selector` may declare `allow_empty true` (default false).
+It then offers an empty canonical choice and **Clear selection**, with the same
+normal `changed` event. Bind that event to the existing `document_bind` action
+to clear former content/binding and show the Session-aware selection prompt.
+It grants no arbitrary text/value setter or new source access.
+
+`viewerGuiDocumentCompatible dataset_id kind -> boolean` checks the current
+canonical schema/contract. Unknown kinds fail. Images and PDFs are not tables;
+all selected table variables must be rank one in a supported table container.
+`viewerGuiDesignDocumentBind window document_component_id selector_component_id`
+requires a live owned Viewer, matching declared kinds and compatible selected
+canonical identity. It returns status, kind, Dataset ID, canonical source SHA and
+read-only owner. The shared owner checks Session/source revision and clears stale
+content; it never publishes, executes source or enables Save. Unknown/missing
+source fails through the existing Dataset/Resource owners.
+
+Restricted C++ declares `VIEWER_GUI_HOST_API_v1@1` operation `document_bind`, then
+calls `host.document_bind(document_index, dataset_selector_index)` (one-based
+original component ordinals). No source bytes, paths or arbitrary public API
+invocation are given to C++. A successful CLI run produces only the typed plan;
+actual reading/rendering happens in the installed Viewer through GUI Host.
+Builder and Workspace use this same contract. Real scientific GUI/Session
+acceptance remains a separate requirement; component admission is not acceptance.
+
+Document `kind=code` enables the existing Source Surface's optional shared Find
+bar (`sourceSurfaceCreate ... {find_bar 1}`), Previous/Next, Enter, Ctrl+F and F3 /
+Shift+F3. Read-only text retains normal selection/copy/navigation. No execution or
+Save is enabled. The sanctioned native author `gui_test` accepts
+`{"operation":"document_find","component":"SOURCE_COMPONENT","value":"text","direction":"forward"}`
+(or `backward`): it types into the owned Find entry and clicks its actual button.
+`key` on this bound code component permits only navigation/find/select/copy keys;
+it cannot edit or execute. Existing diagram/Plot input keeps its distinct limits.
+
+## Declared TeX article form (dev109)
+
+An editable TeX article composes existing owners through one `section` with all
+ten component references: `tex_source`, `tex_pdf`, `tex_projects`, `tex_assets`,
+`tex_diagnostics`, `tex_log`, `tex_status`, `tex_info`, `tex_source_status` and
+`tex_pdf_status`. Source is a `document` with `kind tex mode editable`; PDF is a
+`document` with `kind pdf`. Projects is a choice/combobox, assets and diagnostics
+are read-only tables, and the remaining references are the corresponding log or
+label/status components. Each TeX source belongs to exactly one complete form.
+Other document kinds remain read-only.
+
+Declare `VIEWER_GUI_HOST_API_v1@1` operation `tex_command`, then use
+`host.tex_command(form_ordinal, operation)` or the public host operation
+`viewerGuiDesignTeXCommand window form_id operation`. The finite operations are
+`new`, `open`, `save`, `build`, `rebuild`, `cancel`, `preview`, `diagnostic_open`,
+`import_assets`, `remove_asset`, `export_tex`, `export_pdf`, `export_assets`,
+`refresh` and `import_source`. There is no source-text transport through C++.
+
+The Tcl signature is `::GX::viewerGuiDesignTeXCommand window form operation`,
+with three required arguments and no defaults. `form` is the declared section's
+component **ID**; the C++ `unsigned form` is its one-based declaration ordinal.
+Both identify the same complete form. Commands read its actual selected article,
+asset or diagnostic through the existing GUI Host; they do not take a caller's
+source path, resource reference or article ID. The C++ method returns `void` and
+emits the typed host plan; the Tcl host returns the operation receipt below.
+
+| Operation | Required current form context and actual immediate return |
+| --- | --- |
+| `refresh` | Refresh current article/list/status projections; `{status refreshed}`. For an initialized valid form opened without a Session, retain its disabled source and Session prompt and return `{status unavailable reason no_session}`. It does not typeset or permit editing. |
+| `new` | Opens the shared article-name form; `{status awaiting_name}`. Article creation occurs only after its normal accepted callback. |
+| `open` | Uses the selected `tex_projects` Document ID belonging to this form's provider. Dirty-source Cancel returns `{status cancelled}`; success returns `{status opened document_id ID source_revision N}`. |
+| `save` | Requires a current, unchanged-generation article. Saves the actual UTF-8 Source Surface draft plus existing linked assets; `{status saved document_id ID source_revision N}`. |
+| `build`, `rebuild` | Require an idle current article build, save the draft first, then call the same managed native TeX Build. Return its `{status running request REQUEST source_revision N inputs MANIFEST}` receipt. Neither command is a C++ Viewer rebuild. |
+| `cancel` | No selected article returns `{status idle}`. Otherwise passes this form's retained Document generation to TeX Cancel; returns `idle`, or `cancelling`/`awaiting_completion` with the original request. A cancellation request is not terminal cancellation proof. |
+| `preview` | Requires a retained prior successful PDF. Opens its actual managed-resource reader and returns `{status opened document_id ID source_revision COMPILED_N}`. A stale prior success may be viewed and remains labelled by its compiled revision. |
+| `diagnostic_open` | Requires one selected current-source native diagnostic with an actual source link/positive line. Returns `{status located file FILE line LINE}`; `main.tex` navigates the editor, a linked asset opens read-only. |
+| `import_assets` | Opens an ordinary file chooser then normalized-relative asset-name form; chooser Cancel returns `{status cancelled}`, otherwise `{status awaiting_asset_name}`. Import/replace occurs through the accepted form callback and normal confirmation. |
+| `remove_asset` | Requires one selected currently linked asset and unchanged article stamp. No returns `{status cancelled}`; Yes saves the reduced association and returns `{status removed filename NAME}`. It does not delete an external source file. |
+| `export_tex`, `export_assets` | Require a saved exact draft; both currently export a `.tex` source **and linked-assets bundle** through the existing File Publication owner. `export_assets` is not an asset-only exporter. Cancel returns `{status cancelled}`; success returns the File Publication bundle receipt. |
+| `export_pdf` | Same bundle/export guards, with `.pdf` and a successful PDF matching current source/assets. Cancel returns `{status cancelled}`; success returns the File Publication bundle receipt. |
+| `import_source` | Dirty-source review precedes a normal `.tex` chooser. Cancel returns `{status cancelled}`; an ordinary exact UTF-8 file at most16MiB creates a new article through the canonical owner and returns the `opened` receipt above. |
+
+Names/IDs, file locations, counts and source-revision integers have no scientific
+units. Diagnostic lines are one-based source locations. The default selected
+native engine is `pdflatex`; a configured `xelatex` or `lualatex` selects that
+engine. Source bytes/assets/build limits and the complete Build/Status/Cancel/
+Export receipts are defined by the existing
+[Interactive Document TeX profile](INTERACTIVE_DOCUMENT_API_v1.md#tex-project-profile-dev109-integration)
+and [File Publication](FILE_PUBLICATION_API_v1.md). Wrong Session/generation,
+uninitialized/incomplete form, foreign provider, stale source/assets, missing
+selection, unsupported operation or stale diagnostic rejects before the relevant
+mutation. A file dialog or pending asynchronous build is not a successful commit.
+
+For example, when a complete TeX section is declaration ordinal1 and its public
+grant includes `VIEWER_GUI_HOST_API_v1@1/tex_command`, ordinary C++ calls
+`host.tex_command(1, "save");`. A trusted host with that existing form ID may call
+`::GX::viewerGuiDesignTeXCommand $window $formId save`. These are qualified
+context-dependent examples; neither creates a form or grants source/path access.
+This dispatcher is trusted Tcl plus the specific admitted C++ method, with no
+registered Python/Octave Bridge `tex_command` or generic API-name invocation.
+
+The Source Surface owns the editable buffer, Find/Replace and native text Undo.
+Save writes the exact UTF-8 draft through the existing managed Resource and
+canonical TeX Workspace owners. Build/Rebuild first saves that draft and starts
+the configured native TeX runtime; opening or refreshing does not build. Cancel
+targets the original Document generation. Article selection and outstanding
+build callbacks remain associated with their actual Document/generation.
+Changing articles offers Save/Discard/Cancel for a dirty draft. Closing without
+an optional presentation Workspace also protects dirty drafts.
+
+The article's canonical Workspace is distinct from an optional saved interface
+Workspace. Saved interface state contains article association and content
+identities, never an additional editable source or a historical replacement for
+the current canonical article. Restore validates Document generation before any
+interface change; a different association cannot discard a dirty source buffer.
+The article source uses native Source Surface Undo; interface History does not
+replace canonical article bytes with an old interface snapshot.
+Opening a different article now records one association change in shared
+interface History. Restoring that association uses the current canonical
+article; it does not restore an old source revision. Text edits retain Source
+Surface Undo/Redo. Installed association-History verification is pending.
+
+Assets use explicit normalized relative project names, including nested names.
+Replacing/removing a linked asset requires a normal shared confirmation. Export
+uses File Publication and explicitly confirms existing files in the complete
+source/PDF-and-assets bundle; it preserves the managed originals. PDF preview
+uses the existing native read-only managed-resource reader and reports the
+compiled source revision, including a retained stale prior success. A PDF resource
+must belong to the selected article and remain valid before Preview releases
+an already-open reader; a foreign resource is refused with an ownership error.
+Compiler diagnostic navigation requires an actual current source location; asset source
+opens read-only through Source Surface.
+
+An installed article's normal Workspace opener may pass `tex_document_id` through
+the existing restricted Viewer context. CORE validates the canonical TeX ID,
+current Session and exact installed module/Viewer provider before creating its
+window. This reopens the existing article; it does not create another source or
+compile the C++ Viewer. The pure no-Session refresh allowance does not bypass
+invalid-form, changed-Session or editing guards. These two lifecycle corrections
+still need focused installed verification.
+
+These contracts are implemented in shared CORE. Installed LaTeX Viewer GUI,
+build/export/lifecycle and scientific acceptance must still be recorded against
+the actual installed package; source admission alone is not acceptance.
+
+## dev109 typed electromagnetic model form (implementation under validation)
+
+`Host::em_command(form_ordinal, operation)` is additive SDK v1 operation31. It
+requires `VIEWER_GUI_HOST_API_v1/em_command` and explicit operation grants from
+the existing `ELECTROMAGNETIC_SIMULATION_API_v1`. The complete declared section
+maps `em_parameters` keys `kind model_id half_width_m height_m mesh_size_m
+radius_m current_density_A_m2 mu_r voltage_V eps_r` to ordinary value controls.
+It references `em_models` (model choice), `em_status` (read-only text), `em_log`
+(log), `em_output_id` (field), and `em_dataset` (canonical Dataset selector).
+Optional `em_jobs` selects retained real Jobs; `em_field_plot` is a Plot v4 slot.
+Optional `em_report` names existing read-only Results text; otherwise result
+inspection uses `em_log`. This allows Results to remain visible in its own tab
+while the Solve tab retains the actual bounded native solver log.
+Physics is a declared choice; the original EM native service supplies
+`formulation=planar_2d`, normalization, geometry and material validation.
+Nonvisual File Publication requirements negotiate their version through the
+existing `filePublicationApiInfo` owner, consistently with the SDK catalog.
+
+Optional `em_actions` maps finite EM operation names to distinct declared
+handler IDs. The common command owner then applies the same availability to
+buttons, menus and toolbars: Cancel requires an active owned Job; results and
+publication require a completed Job with the current canonical source identity;
+field/profile/3D actions require a qualified selected field; export additionally
+requires that field to be shown in the declared Plot. Open and Reconnect require
+real selections. Existing explicit `available=false` remains authoritative.
+This is presentation state; each operation still revalidates its scientific
+contract when executed.
+
+The common EM host disables irrelevant electric/magnetic parameter entries and
+guards model editing during an active Job without changing their values.
+Availability uses a bounded 250 ms projection of the existing Job status service,
+with a window-owned refresh timer only while a Job is active. Disposal cancels
+that timer and stale Session tokens reject callbacks. No second Job registry,
+scientific execution path or scientific History entry is created by polling.
+Vertical native tabs (`tab_position=west`) and shortest-roundtrip numeric text
+belong to the shared UI Field presentation owner.
+The compiled event completion controller refreshes common command availability
+after applying the admitted native service actions. A newly submitted or
+reconnected Job therefore updates the controls without another user action.
+
+The common compiled dispatcher returns an existing native `host_error`/`error`
+as the action result's `message` when execution fails. The GUI command controller
+retains that reason in its footer and result trace, instead of replacing it with
+only a generic failed status. Scientific source and revision guards remain
+unchanged. For example, an external TeX warning with no verified source location
+reports why Go is unavailable and preserves the previous valid caret position.
+
+Finite operations are `refresh`, `new_electric`, `new_magnetic`, `validate`,
+`open`, `save`, `duplicate`, `workspaces`, `rename`, `run`, `jobs`, `reconnect`,
+`status`, `cancel`, `log`, `results`, `publish`, and `field`. All forms require
+EM grants `defaultModel validate loadModel saveModel listModels`. Additional
+actions require their matching native operations: `runAsync/jobStatus`,
+`jobStatus/cancel`, `jobStatus/jobLog`, `jobStatus/resultDescribe/resultPreview`,
+`jobStatus/publish`, or `fieldDescribe` as appropriate. Field display additionally
+requires `PLOT_DATASET_API_v4/widgetCreate`. Duplication uses existing
+`SESSION_WORKSPACE_API_v1/export/import`; the model Workspace manager also needs
+`create/get/update/list`, and Rename needs `update`. Neither C++ model payloads
+nor arbitrary API names, process commands or paths cross this dispatcher.
+
+The original `em_models` provider owns canonical models and nested resources.
+Declared fields are drafts until native validation and Save. The shared
+Workspace manager supplies names, Save/Discard/Cancel, resource-preserving
+duplication and import/export. A separate saved interface Workspace preserves
+association and controls. Shared History captures that state; generation and
+held source stamps reject foreign changes before restoration. Run starts the
+existing managed Gmsh/GetDP provider. Closing the Viewer leaves that supervisor
+in control. Jobs lists actual retained Jobs of the selected model; Reconnect
+requires a real selected identity when several exist. Publication stays explicit
+and source-guarded. Field display binds actual node/connectivity/cell roles via
+Plot v4, without a private graph or centroid-as-node substitution.
+
+The implementation remains **source-only** until official Builder author
+integration, installed GUI, scientific and lifecycle acceptance are recorded.
+This form does not itself close the required planar Native3D presentation gap.
+
+### Optional planar Native3D field target
+
+A complete EM form may additionally declare `em_field_native3d`, naming an
+existing `native3d` component. `Host::em_command(form, "field_3d")` requires the
+existing EM `fieldDescribe`, Plot v4 `widgetCreate` and additive Native3D v2
+`cell_field_bind` grants. The broker passes no scientific arrays, renderer paths
+or native pointers to C++. The shared form obtains the actual linked field
+contract and binds it through the public Native3D cell-field source.
+
+The original `field` command still binds the exact 2D Plot. `field_3d` presents
+those same planar elements at Z=0 and states this scientific limit visibly.
+The component is a derived presentation: after reopening an interface Workspace,
+use the action again against its preserved canonical Dataset selection. This
+operation does not promise an automatically restored native camera or CAD state.
+The SDK ABI is unchanged; this adds one finite value to existing operation31.
+Installed GUI, lifecycle and scientific acceptance remain independent of compiled
+command-plan admission and the narrow native bridge contract.
+
+Additional finite EM actions (source-integrated, installed QA pending):
+`runtime` opens the existing Configuration Runtime page; `profile` binds actual
+cell-centroid samples to optional declared Plot component `em_profile_plot`;
+`publish_charts` explicitly retains the exact field and actual sample scatter as
+two independent source-bound Plots, using the installed Viewer's stable producer
+identity; `export_field` requires the selected Dataset's already displayed field
+and uses the normal Save dialog, native Plot PNG/SVG/PDF writer and File
+Publication. Missing/stale bindings fail before publication. Cancel creates no
+export. The C++ source supplies no arrays, paths, writer callbacks or new process.
+
+Explicit additional grants are Configuration `open_page`; Plot v4
+`cellFieldProfileSpec` plus `widgetCreate` for profile, `upsertPlotFromSpec` and
+`render` for chart publication, `widgetExport` for export; File Publication
+`publish_bundle` for export. EM `fieldDescribe` remains required for scientific
+presentations. These reuse the original owners; compiled plan/admission success
+alone does not establish installed behavior or full feature parity.
+
+Native TeX diagnostic navigation uses the existing revision/generation guards.
+For warnings with an input line, the worker's native input-file context must name
+an exact staged source/asset before `source_link` is true. Distribution package
+warnings and ambiguous/no-file contexts remain explicitly unavailable. A native
+line number by itself never selects main.tex. Stored older build diagnostics are
+not retroactively rewritten; build the current source explicitly to obtain new
+location receipts.
+
+
+Dev109 editable geometry composition adds the `editable3d` component and the
+complete `workbench_*` section described in WORKBENCH_3D_API_v1. It embeds the
+existing editable Native3D v1 controller, preserving its single-host restriction
+and original Document/Geometry/History/Recovery owners. Restricted C++ uses only
+`Host::workbench_command(form, finite_operation)` (SDK operation32) with explicit
+service grants; readonly `native3d` v2 components retain their current semantics.
+The initial bridge exposes original primitive/lifecycle/selection/Undo/Redo
+commands; the remaining CAD parity forms and installed acceptance are pending.
+
+Dev109 `Host::workbench_command` additionally admits the finite purpose-form
+commands advertised by existing WORKBENCH_3D_API_v1 `apiInfo/guiFormCommands`.
+They require the same complete declared geometry section and explicit
+guiCommand/guiInspect grants. Trusted callbacks remain in the original Workbench
+owner; no whole buildPanel, arbitrary Tcl dispatcher or author geometry payload
+is exposed. Canonical commits and native selection refresh the declared
+Document/object/status projection via the common host widget event, guarded by
+current Session and window ownership. See WORKBENCH_3D_API_v1 for acceptance scope.
+
+The editable geometry form may additionally declare the paired
+`workbench_selection` extended/multiple list and `workbench_selection_mode`
+Replace/Add/Subtract choice. They use the existing Select command and original
+Workbench selection owner; no native token or alternative selection graph is
+exposed to C++. Dynamic rows and selected indices survive interface Capture and
+Restore. The legacy single-object form continues to work unchanged.
+
+Restoration resolves pending list indices through the saved row identities before
+mounting the canonical Document, then projects those IDs into its current rows.
+The shortcut and pending multiple candidates remain separate from the scientific
+owner's actual selection; restoring controls does not invoke Select or change
+geometry/History. Invalid saved indices and missing canonical candidate IDs
+reject explicitly. A refresh of the same Document generation with unchanged
+native selection preserves pending candidates by canonical ID, including the
+ordinary refresh requested by a compiled Viewer's Open handler. Missing pending
+IDs are removed when rows change. A different Document generation or actual
+native selection change projects the real native selection; a single-object
+form retains its existing projection behavior. The first installed retest proved
+that restoring candidates after Mount alone was insufficient because the later
+Open refresh cleared them again. Both transitions require installed acceptance.
+
+## Canonical raster binding and shared tools (dev109)
+
+A `native2d` component may declare `source_kind raster`; its source selector is
+a `dataset_selector` with `content_kind raster`. The public host operation
+`viewerGuiDesignRasterBind window viewport_id selector_id` admits an actual
+current-Session `image.raster` Dataset through the existing Dataset, Variable
+Schema, Document Resource and Native2D owners. Empty selection reports
+`awaiting_selection`. A numerical XYZ table is not a raster source. The receipt
+retains Dataset identity, source SHA, native pixel dimensions and `px` coordinates;
+physical calibration remains an explicit existing Native2D operation. No Dataset
+is implicitly published and no author path or pixel array enters restricted C++.
+
+`viewerGuiDesignRasterTool window viewport_id tool` admits `select`, `rectangle`,
+`polygon`, `move`, `rotate`, `pivot`, `pan`. An action can declare
+`raster_tool {viewport_id tool}` to select its local controller immediately and
+derive its checked state from that controller, without a compiled-worker event.
+The shared native kernel owns image/ROI mapping, hits, vertices, projections and
+transform mathematics. Rectangle drag and polygon clicks are proposals until
+acceptance. Return or the local Finish polygon action accepts a valid polygon;
+Escape cancels it. A late release after cancellation cannot commit an edit.
+
+`viewerGuiDesignRasterCommand window viewport_id command` admits `fit`, `cancel`,
+`finish`, `delete_roi`. Restricted SDK `raster_command` admits `fit`, `cancel`,
+`delete_roi`; the polygon completion gesture is a local host action. The source
+ROI collection remains the existing native `gx.image.rois` attribute. Accepted
+edits checkpoint the same Document and use existing Scientific History. Capture
+retains accepted resource references and the current view/tool/ROI/pivot; pointer
+frames do not repeatedly export resources or mint new origins.
+
+The retained canonical raster snapshot and the interface's current presentation
+view have separate receipts. Capture retains the accepted snapshot unchanged
+and stores the current view in `presentation_view_state`; disposable viewport
+pixel extents do not dirty an otherwise unchanged Workspace. Restoring only a
+view, including a compatible legacy inline view, does not revise the scientific
+Document. Actual image, layer or ROI changes still use the normal checkpoint and
+History owners. Existing Dataset, Document generation and revision guards remain
+mandatory: an externally changed Document requires an explicit current-state
+open and cannot be silently reconciled by presentation restoration.
+
+Binding prepares History before mutation and validates a candidate's source,
+geometry, interaction and widgets before replacing the old host. Invalid saved
+tool/ROI/pivot admission retains that host. Resize/Fit cancels a device draft;
+external view changes reject an outstanding draft rather than reinterpret its
+source pixels. Expired-source cleanup rolls back the retained native gesture
+without admitting another scientific request. If a current frame cannot be
+drawn, its transient preview is hidden and an inline source diagnostic appears.
+Hidden images/layers do not leave visible ROI handles or outlines.
+
+The basic local Fit/Delete/Finish context menu alone is not the complete declarative
+semantic-context facility requested in GUI03. Existing Tcl PanelTarget mapping
+alone does not complete GUI04 Builder/SDK editor exposure. The complete declarations below provide those facilities; independent installed
+generic-Viewer evidence is recorded in
+the acceptance report.
+
+### Declared semantic raster menus
+
+A Builder `context_menu` may additionally declare both `semantic_viewport`
+(the ID of its canonical raster `native2d` component) and `semantic_rules`.
+The existing `actions` list still determines command order and the existing
+`command_icons` catalog supplies normal/disabled native menu icons. For example:
+
+```tcl
+semantic_viewport image_canvas
+semantic_rules {
+    properties {visible {entity {object roi}} enabled {selection_present 1}}
+    delete_roi {visible {entity roi} enabled {editable 1 roi_present 1}}
+    fit_image {visible {} enabled {}}
+}
+```
+
+Every rule names an existing command from this menu. `visible` and `enabled`
+are dictionaries of typed field/admitted-values conditions; all fields combine
+with AND and a field accepts any of its listed values. Empty conditions are
+true. There are no expressions, scripts, callback names or general predicates.
+Unknown fields, values and commands fail normal Builder validation.
+
+Current raster invocation grounds `entity` as `background`, `object`, `roi` or
+`annotation` using Native2D's retained image/ROI picker and rendered text hit.
+Boolean fields are
+`selection_present`, `roi_present`, `annotation_present`, `layer_visible`,
+`layer_locked`, `editable`, with exact values `0` or `1`. An annotation hit resolves
+the actual current image annotation ID and generation; label text is not identity.
+This controller capability does not by itself complete the anchored field editor.
+Other Native2D domain controllers retain their existing semantic dispatch.
+
+CORE filters and enables the declared commands together with Viewer Commands
+availability. On invocation it revalidates the scoped viewport, actual Document
+receipt, image/layer state, ROI revision, selection and view. Changed, removed,
+locked or expired targets cannot silently redirect an old command to a new ROI.
+Raster host commands and edit preparation recheck the captured context, including
+after a History decision. Rejection reports inline and preserves the valid
+scientific state. Context coordinates/tokens remain transient host state and are
+not stored as Workspace identities. Designs without these optional properties
+retain their existing context menu behavior.
+
+The declaration uses existing Builder properties, Viewer Commands and admitted
+raster SDK methods; it introduces no invoke-any-API callback or runtime compiler.
+The native adapter adds read-only `image_hit` to `raster_roi_pick`, computed by
+the same native ROI picker over the retained source bounds. The existing C ABI
+and all 1857 exports are retained. Typed contracts cover real background/image/
+ROI hits, locked availability, stale dispatch and one canonical Delete/History
+commit. Independent installed acceptance of these semantic menus and the anchored
+editors below is recorded in the same scoped report.
+
+The local raster tool vocabulary additionally includes `annotation`. A first
+click on the visible image creates one source-pixel annotation through the existing
+native annotation collection and one accepted Document/History change. The native
+renderer draws its retained content/style. Select uses the actual rendered text
+bounds; the selected ID and generation survive a normal Workspace reopen.
+`Host::raster_command(viewport,"delete_annotation")` removes that selected identity
+through the same shared controller. Unchanged definitions are no-ops; invalid
+styles, locked targets, stale collection revisions and replaced generations are
+rejected. Edit preparation rechecks identity after a potentially yielding History
+decision. These additions use existing SDK methods and require no SDK ABI change.
+Declared text/font/color/size composition uses the existing UI Field owner in a
+Native2D anchored section; see [the design contract](VIEWER_GUI_DESIGN_v1.md#raster-controls-anchored-to-scientific-targets).
+`Host::raster_command` also admits `panel_open:SECTION`, `panel_close:SECTION`,
+`editor_apply:SECTION` and `editor_cancel:SECTION`, only for that viewport's
+declared section. No adapter/header ABI change or compiler is needed at runtime.
+Actual installed GUI03/04 acceptance, including selection-following, text/color
+edits, cancellation, pan/zoom/resize and Session cleanup, is recorded in the
+scoped report. See also the [Builder example](../examples/GENERIC_RASTER_BUILDER.md).
+
+### Restored view and live electromagnetic inventories
+
+Designed Workspace capture retains Plot axes as `panel_id`, `axis`, `limits`,
+`scale` and `direction`, including before the first mapped frame. Device tick
+positions and plot rectangles are disposable layout, so mapping the restored
+widget does not itself create an unsaved scientific edit.
+
+For a declared electromagnetic form, the `em_models` and optional `em_jobs`
+choice lists are live inventories of their existing model/Job owners. They
+are refreshed rather than saved as authoritative interface content. The selected
+IDs remain ordinary captured values; model and Job bindings, other choices,
+scientific view limits, domain drafts and durable History remain compared. An
+additional available model therefore does not mark an untouched interface dirty.
+Existing saved payloads and History are read without rewriting their source.

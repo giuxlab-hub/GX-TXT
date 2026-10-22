@@ -1,0 +1,45 @@
+{
+  "schema": "gxtxt.viewer_development_project.v1",
+  "module_id": "viewer.html",
+  "version": "1.2.2",
+  "language": "cpp",
+  "profile": "synthetic_view_v1",
+  "source": "handlers.cpp",
+  "design": "design.gxtxt-viewer",
+  "capabilities": [
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "version": 1,
+      "operations": [
+        "text_set",
+        "value_set",
+        "document_bind"
+      ]
+    }
+  ],
+  "provenance": {
+    "template": "restricted_cpp_viewer_v1",
+    "scientific_source": null
+  },
+  "tests": {
+    "events": [
+      {
+        "kind": 0,
+        "component": 0,
+        "value": 0
+      },
+      {
+        "kind": 1,
+        "component": 6,
+        "value": 0
+      },
+      {
+        "kind": 2,
+        "component": 3,
+        "value": 0
+      }
+    ],
+    "expected_counter": 0,
+    "expected_values": {}
+  }
+}

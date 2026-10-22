@@ -95,3 +95,20 @@ proc ::GX::_experimentDuplicationRegistrationReceipt {item} {
     dict set item duplication_policy $policy
     return $item
 }
+
+# A staging import changes its declared schema in the normal Document owner.
+# Reclassify only an exact automatically derived prior registration receipt;
+# explicit owner policy must never be silently carried into another schema.
+proc ::GX::_experimentDuplicationDocumentTransition {prior item} {
+    if {[dict exists $prior duplication_policy]} {
+        set derived [_experimentDuplicationRegistrationReceipt [dict remove $prior duplication_policy]]
+        if {![dict exists $derived duplication_policy]} {error {Explicit duplication policy requires an owner-reviewed format transition}}
+        set expected [dict get $derived duplication_policy]
+        set actual [dict get $prior duplication_policy]
+        if {[lsort [dict keys $actual]] ne [lsort [dict keys $expected]]} {error {Explicit duplication policy requires an owner-reviewed format transition}}
+        dict for {key value} $expected {
+            if {[dict get $actual $key] ne $value} {error {Explicit duplication policy requires an owner-reviewed format transition}}
+        }
+    }
+    return [_experimentDuplicationRegistrationReceipt [dict remove $item duplication_policy]]
+}

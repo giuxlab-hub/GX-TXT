@@ -9,12 +9,17 @@ proc ::GX::_viewerGuiPlotForm {window form} {
     foreach key {plot_dataset plot_x plot_y} {if {![dict exists $p $key]} {error "Plot form requires $key"}}
     return $p
 }
-proc ::GX::viewerGuiDesignPlotDiscover {window form} {
-    set p [_viewerGuiPlotForm $window $form]
-    set values [viewerGuiDesignValues $window];set dataset [dict get $values [dict get $p plot_dataset]]
+proc ::GX::_viewerGuiPlotVariables {dataset} {
     set variables [datasetVariableSchemaV3 $dataset];set choices {}
     foreach variable $variables {if {[dict get $variable dtype] in {float64 float32 int64 int32 uint64 uint32 int16 uint16 int8 uint8}} {lappend choices [dict get $variable variable_id]}}
     if {$choices eq {} || [llength $choices]>4096} {error {Dataset has no bounded numeric variable choices}}
+    return [dict create variables $variables choices $choices]
+}
+proc ::GX::viewerGuiDesignPlotDiscover {window form} {
+    set p [_viewerGuiPlotForm $window $form]
+    set values [viewerGuiDesignValues $window];set dataset [dict get $values [dict get $p plot_dataset]]
+    set schema [_viewerGuiPlotVariables $dataset]
+    set variables [dict get $schema variables];set choices [dict get $schema choices]
     foreach key {plot_x plot_y} {
         set component [dict get $p $key]
         viewerGuiDesignChoicesSet $window $component $choices
@@ -25,16 +30,19 @@ proc ::GX::viewerGuiDesignPlotDiscover {window form} {
 proc ::GX::viewerGuiDesignPlotBind {window component form {selection {}}} {
     try {
     set p [_viewerGuiPlotForm $window $form];set values [viewerGuiDesignValues $window]
-    foreach key [dict keys $selection] {if {$key ni {y_variable_id}} {error {Plot selection supports only an explicit canonical Y variable}}}
-    if {[dict exists $selection y_variable_id]} {
-        set target [dict get $p plot_y];set wanted [dict get $selection y_variable_id]
-        set choices [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] choice_options {}]
-        set declared [viewerGuiDesignComponent $window $target]
-        set allowed [datasetPublicationV2DictDefault $choices $target [datasetPublicationV2DictDefault [dict get $declared properties] choices {}]]
-        if {$wanted ni $allowed} {error {Discover the actual Dataset variables before selecting this waveform}}
-        dict set values $target $wanted
-    }
     set dataset [dict get $values [dict get $p plot_dataset]]
+    foreach key [dict keys $selection] {if {$key ni {x_variable_id y_variable_id}} {error {Plot selection supports explicit canonical X and Y variables}}}
+    if {[dict size $selection]} {
+        # A resolved scientific selection is validated against the actual
+        # Dataset, never against an optional prior UI discovery operation.
+        set schema [_viewerGuiPlotVariables $dataset];set allowed [dict get $schema choices]
+        foreach {key field} {x_variable_id plot_x y_variable_id plot_y} {
+            if {![dict exists $selection $key]} continue
+            set wanted [dict get $selection $key]
+            if {$wanted ni $allowed} {error "Selected $key is not a numeric Variable in the current Dataset"}
+            dict set values [dict get $p $field] $wanted
+        }
+    }
     set x [dict get $values [dict get $p plot_x]];set y [dict get $values [dict get $p plot_y]]
     datasetVariableV3ById $dataset $x;set yVariable [datasetVariableV3ById $dataset $y]
     modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
@@ -53,15 +61,19 @@ proc ::GX::viewerGuiDesignPlotBind {window component form {selection {}}} {
         }
     }
     dict set spec panels [list $panel]
+    if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window] && ![scientificHistoryViewerPrepareEdit $window]} {return -code error -errorcode {GX HISTORY EDIT_CANCELLED} {Plot binding cancelled before changing the waveform}}
     # Record History only after both the accepted native binding and its typed
     # selection agree. The original shared restoring guard suppresses the
     # intermediate History snapshot; it never changes Dataset authority.
-    if {[dict exists $selection y_variable_id]} {
+    if {[dict size $selection]} {
         set restoring [dict get $::GX::ViewerGui::instances $window restoring]
         dict set ::GX::ViewerGui::instances $window restoring 1
         try {
             set result [viewerGuiDesignPlotSet $window $component $spec]
-            viewerGuiDesignValueSet $window [dict get $p plot_y] $y
+            foreach {field value} [list plot_x $x plot_y $y] {
+                viewerGuiDesignChoicesSet $window [dict get $p $field] $allowed
+                viewerGuiDesignValueSet $window [dict get $p $field] $value
+            }
         } finally {dict set ::GX::ViewerGui::instances $window restoring $restoring}
         if {!$restoring && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Select canonical waveform $y"}
     } else {set result [viewerGuiDesignPlotSet $window $component $spec]}

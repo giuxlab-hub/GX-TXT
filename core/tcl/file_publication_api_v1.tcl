@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Complete-file publication authority for explicit exports and their sidecars.
 proc ::GX::filePublicationApiInfo {} {
-    return [dict create api_id FILE_PUBLICATION_API_v1 api_version 1 operations {publish_bundle text_document} partial_files_visible 0 policies {create_only replace}]
+    return [dict create api_id FILE_PUBLICATION_API_v1 api_version 1 operations {publish_bundle text_document} partial_files_visible 0 policies {create_only replace} artifacts_max 4096 bundle_options {create_parents}]
 }
 proc ::GX::filePublicationTextDocument {destination text format {options {}}} {
     if {$format ni {text pdf}} {error {Document export format must be text or pdf}}
@@ -25,15 +25,26 @@ proc ::GX::_filePublicationIdentity {path} {
     if {$status(type) ne "file"} {error "File publication requires a regular destination: $path"}
     return [list $status(dev) $status(ino) $status(size) [sha256File $path]]
 }
-proc ::GX::filePublicationPublishBundle {artifacts {policy create_only}} {
+proc ::GX::filePublicationPublishBundle {artifacts {policy create_only} {options {}}} {
     if {$policy ni {create_only replace}} {error "Unknown File Publication policy"}
-    if {[llength $artifacts]<1||[llength $artifacts]>64} {error "File Publication requires 1–64 artifacts"}
+    set createParents 0
+    dict for {key value} $options {
+        if {$key ne {create_parents} || ![string is boolean -strict $value]} {error {File Publication options allow only boolean create_parents}}
+        set createParents $value
+    }
+    if {[llength $artifacts]<1||[llength $artifacts]>4096} {error "File Publication requires 1–4096 artifacts"}
+    set missingParents {}
     set ids {};set paths {};set prepared {};set receipts {};set channel ""
     foreach artifact $artifacts {
         foreach key {id destination writer} {if {![dict exists $artifact $key]} {error "File artifact requires $key"}}
         set id [dict get $artifact id];set path [file normalize [dict get $artifact destination]]
         if {$id eq ""||$id in $ids||$path in $paths||![llength [dict get $artifact writer]]} {error "File artifacts need distinct IDs/destinations and writer callbacks"}
-        if {![file isdirectory [file dirname $path]]} {error "File publication destination directory does not exist"}
+        if {![file isdirectory [file dirname $path]]} {
+            if {!$createParents} {error "File publication destination directory does not exist"}
+            set parent [file dirname $path]
+            while {![file exists $parent]} {lappend missingParents $parent;set parent [file dirname $parent]}
+            if {![file isdirectory $parent]} {error {File publication destination parent is not a directory}}
+        }
         set identity [_filePublicationIdentity $path]
         if {$policy eq "create_only"&&$identity ne {}} {error "Export destination already exists: $path"}
         lappend ids $id;lappend paths $path
@@ -41,7 +52,11 @@ proc ::GX::filePublicationPublishBundle {artifacts {policy create_only}} {
         dict set artifact temporary "";dict set artifact backup "";dict set artifact committed 0
         lappend prepared $artifact
     }
+    set createdParents {}
     try {
+        foreach parent [lsort -unique $missingParents] {
+            if {![file exists $parent]} {file mkdir $parent;lappend createdParents $parent}
+        }
         for {set i 0} {$i<[llength $prepared]} {incr i} {
             set artifact [lindex $prepared $i];set path [dict get $artifact destination]
             set channel [file tempfile temporary [file join [file dirname $path] .gxtxt-publication-]]
@@ -87,6 +102,14 @@ proc ::GX::filePublicationPublishBundle {artifacts {policy create_only}} {
     } finally {
         foreach artifact $prepared {
             if {[dict get $artifact temporary] ne ""} {file delete -- [dict get $artifact temporary]}
+        }
+        # Remove only newly created empty directories. Published files or any
+        # concurrent contents retain their parent; original directories stay.
+        foreach parent [lsort -decreasing $createdParents] {
+            if {![file isdirectory $parent]} continue
+            set occupied 0
+            foreach entry [glob -nocomplain -directory $parent * .*] {if {[file tail $entry] ni {. ..}} {set occupied 1;break}}
+            if {!$occupied} {catch {file delete -- $parent}}
         }
     }
     foreach artifact $prepared {if {[dict get $artifact backup] ne ""} {file delete -- [dict get $artifact backup]}}

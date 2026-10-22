@@ -46,9 +46,14 @@ proc ::GX::CurveWorkbench::_notice {w message} {
 rename ::GX::CurveWorkbench::_safe ::GX::CurveWorkbench::_safe_sketch054_base
 proc ::GX::CurveWorkbench::_safe {w command {interactive 0}} {
     variable st
+    if {![winfo exists $w] || ![info exists st($w,token)]} return
+    set incarnation [winfo id $w];set token $st($w,token)
     if {$st($w,publishBusy)} {tailcall _safe_sketch054_base $w $command}
     set geometric [expr {$interactive||$st($w,cadTool) ne "none"||[regexp {::_(constraint|dimension|sketchTool|create|cad|relationshipAction|command|operation|duplicate|transform)} [lindex $command 0]]}]
     if {[catch {uplevel #0 $command} message options]} {
+        # Native work can dispatch an ordinary WM close while this callback is
+        # waiting. Never address the closed (or same-path replacement) window.
+        if {![_windowCurrent $w $incarnation $token]} return
         if {[dict exists $options -errorcode]&&[dict get $options -errorcode] in {{GX DATASET_TRANSFORM CANCELLED} {GX CURVE_SOURCE CANCELLED}}} {set st($w,status) $message;return}
         if {!$geometric} {
             set st($w,status) $message
@@ -266,15 +271,16 @@ proc ::GX::CurveWorkbench::_inlineOpen {w spec annotation {id {}}} {
     set st($w,inlineValue) [format %.9g [_dimensionDisplayedValue $w $spec [dict get $spec value]]]
     set st($w,inlineCoordinateIds) [dict keys $st($w,curves)];set st($w,inlineCoordinateKey) [_coordinateControlKey $w $st($w,inlineCoordinateIds)]
     if {$id ne {}&&[dict exists $st($w,constraints) $id expression]&&![string is double -strict [dict get $st($w,constraints) $id expression]]} {set st($w,inlineValue) [dict get $st($w,constraints) $id expression]}
-    ttk::label $w.inline.title -text "[_constraintTitle [dict get $spec kind]] · [dict get [_dimensionCoordinateInfo $w $spec] display_unit]"
+    ttk::label $w.inline.title -text "[_constraintTitle [dict get $spec kind]] · [dict get [_dimensionCoordinateInfo $w $spec] display_unit]" -wraplength 270
     ttk::entry $w.inline.value -width 18 -textvariable ::GX::CurveWorkbench::st($w,inlineValue)
     ttk::button $w.inline.commit -text {✓ Enter} -command [list ::GX::CurveWorkbench::_inlineCommit $w]
     ttk::button $w.inline.reference -text {Create as reference} -command [list ::GX::CurveWorkbench::_inlineCommit $w 1]
     ttk::label $w.inline.message -text "Numbers use the displayed unit. An explicit unit is accepted. Parameter formulas retain native [dict get [_dimensionCoordinateInfo $w $spec] native_unit] coordinates." -wraplength 270
     pack $w.inline.title -fill x;pack $w.inline.value $w.inline.commit -side top -fill x
     pack $w.inline.message -fill x
+    update idletasks
     lassign [::GX::Native2D::core device $st($w,scene) $annotation] x y
-    set x [expr {max(10,min($x,[winfo width $w.right.viewport.canvas]-295))}];set y [expr {max(10,min($y+18,[winfo height $w.right.viewport.canvas]-170))}]
+    set x [expr {max(10,min($x,[winfo width $w.right.viewport.canvas]-295))}];set y [expr {max(10,min($y+18,[winfo height $w.right.viewport.canvas]-[winfo reqheight $w.inline]-10))}]
     place $w.inline -in $w.right.viewport.canvas -x $x -y $y -width 280;raise $w.inline
     set imageMeasurement 0
     foreach field {a b} {if {[dict exists $spec $field]&&[dict get $spec $field]!=0&&[::GX::Native2D::core image_get $st($w,scene) [dict get $spec $field]] ne {}} {set imageMeasurement 1}}

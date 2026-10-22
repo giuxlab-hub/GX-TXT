@@ -6,10 +6,12 @@ namespace eval ::GX {
     variable viewerLayer
     variable viewerAttribute
     variable viewerBackend
+    variable viewerPresentationScope
     array set viewerScene {}
     array set viewerLayer {}
     array set viewerAttribute {}
     array set viewerBackend {}
+    array set viewerPresentationScope {}
 }
 
 proc ::GX::viewerIdValid {id} {
@@ -43,13 +45,16 @@ proc ::GX::viewerProviderDefinition {moduleId viewerId {includeDisabled 0}} {
     if {!$includeDisabled && ![viewerProviderEnabled $moduleId $viewerId]} {return {}}
     set d $moduleCatalog($moduleId,dict)
     set out [dict create module_id $moduleId viewer_id $viewerId]
-    foreach f {name backend activation_api backend_script supported_primitives artifact_formats capabilities short_title semantic_group group_title icon gui_design gui_design_command gui_handler_command} {
+    foreach f {name backend activation_api backend_script supported_primitives artifact_formats capabilities short_title semantic_group group_title icon gui_design gui_design_command gui_handler_command catalog_replacement} {
         dict set out $f [descriptorValue $d "viewer.$viewerId" $f ""]
     }
     foreach {field fallback} [list short_title [dict get $out name] semantic_group other group_title {Other Viewers}] {if {[dict get $out $field] eq {}} {dict set out $field $fallback}}
     dict set out enabled [viewerProviderEnabled $moduleId $viewerId]
+    dict set out deprecated [uiFieldNormalize {type boolean} [descriptorValue $d "viewer.$viewerId" deprecated [descriptorValue $d meta deprecated 0]]]
+    dict set out replacement [descriptorValue $d "viewer.$viewerId" replacement [descriptorValue $d meta replacement {}]]
     dict set out icon_path [viewerProviderIconPath $moduleId [dict get $out icon]]
     dict set out availability_reason [expr {[dict get $out enabled]?"Available":"Presentation disabled"}]
+    if {[dict get $out deprecated]} {dict append out availability_reason { · deprecated; retained for existing Workspaces}}
     return $out
 }
 proc ::GX::viewerProviderList {} {
@@ -364,7 +369,7 @@ proc ::GX::viewerLayerPrepare {moduleId viewerId layerId fields {resourceContext
     variable viewerLayer
     viewerRequireProvider $moduleId $viewerId
     if {![viewerIdValid $layerId]} {error "Invalid viewer layer ID"}
-    set defaults [dict create kind "" source_mode "" dataset_id "" resource_path "" sha256 "" format "" format_version "" source_path_hint "" x_variable_id "" y_variable_id "" z_variable_id "" visible 1 opacity 1 colormap "" scalar_range "" color_array "" scalar_array "" vector_array "" radius_array "" opacity_array "" tube_radius 0 isovalues "" volume_transfer "" volume_sample_distance 0.05 layer_order 0 source_dataset_id "" source_dataset_sha256 "" source_update_policy strict representation surface base_color {0.78;0.82;0.9} line_width 1 point_size 4 backface_culling 0 scalar_coloring 0 local_transform "" texture {}]
+    set defaults [dict create kind "" source_mode "" dataset_id "" resource_path "" sha256 "" format "" format_version "" source_path_hint "" x_variable_id "" y_variable_id "" z_variable_id "" visible 1 opacity 1 colormap "" scalar_range "" color_array "" scalar_array "" vector_array "" radius_array "" opacity_array "" tube_radius 0 isovalues "" volume_transfer "" volume_sample_distance 0.05 layer_order 0 source_dataset_id "" source_dataset_sha256 "" source_update_policy strict representation surface base_color {0.78;0.82;0.9} line_width 1 point_size 4 sphere_glyphs {} backface_culling 0 scalar_coloring 0 local_transform "" texture {}]
     set d [dict merge $defaults $fields]
     foreach k [dict keys $d] {if {![dict exists $defaults $k]} {error "Unknown viewer layer field $k"}}
     if {[dict get $d texture] ne {}} {native3DLayerTextureValidate [dict get $d texture] $d}
@@ -412,6 +417,10 @@ proc ::GX::viewerLayerPrepare {moduleId viewerId layerId fields {resourceContext
         set value [dict get $d $field]
         if {![string is double -strict $value] || [catch {expr {abs(double($value)) < Inf && $value > 0 && $value <= 64}} valid] || !$valid} {error "$field must be in (0,64]"}
     }
+    # Empty retains legacy kind-derived presentation. Native points are pixel
+    # markers; sphere glyphs are geometric and can be distorted by unequal axes.
+    if {[dict get $d sphere_glyphs] ni {{} 0 1}} {error "sphere_glyphs must be empty (legacy), 0 (native points), or 1 (sphere glyphs)"}
+    if {[dict get $d sphere_glyphs] eq {1} && $kind ne {points} && [dict get $d representation] ne {points}} {error "Sphere glyphs require a point layer or point representation"}
     foreach field {backface_culling scalar_coloring} {if {[dict get $d $field] ni {0 1}} {error "$field must be 0 or 1"}}
     if {[dict get $d local_transform] ne ""} {
         set matrix [split [dict get $d local_transform] {;}]
@@ -558,12 +567,27 @@ proc ::GX::viewerAttributeIds {moduleId viewerId layerId} {
     foreach key [array names viewerAttribute "$moduleId,$viewerId,$layerId,*"] {lappend out [string range $key [string length "$moduleId,$viewerId,$layerId,"] end]}
     return [lsort $out]
 }
-proc ::GX::viewerSceneResolve {moduleId viewerId} {
+proc ::GX::viewerSceneResolve {moduleId viewerId {context {}}} {
     variable viewerAttribute
     set provider [viewerProviderDefinition $moduleId $viewerId]
     if {$provider eq ""} {error "Viewer Provider module is disabled"}
+    if {[catch {dict size $context}]} {error "Viewer presentation context must be a dictionary"}
+    set layerIds [viewerLayerIds $moduleId $viewerId]
+    if {[dict exists $context presentation_layer_ids]} {
+        set selected [dict get $context presentation_layer_ids]
+        if {[catch {llength $selected}]} {error "presentation_layer_ids must be a list of registered layer IDs"}
+        set seen {}
+        foreach id $selected {
+            if {![viewerIdValid $id] || $id ni $layerIds} {error "Unknown presentation layer '$id'"}
+            if {$id in $seen} {error "Duplicate presentation layer '$id'"}
+            lappend seen $id
+        }
+        # A dedicated scientific presentation need not resolve unrelated stored
+        # sources. The registry and its source guards remain authoritative.
+        set layerIds $selected
+    }
     set layers {}
-    foreach layerId [viewerLayerIds $moduleId $viewerId] {
+    foreach layerId $layerIds {
         set layer [viewerLayerSet $moduleId $viewerId $layerId [viewerLayerGet $moduleId $viewerId $layerId]]
         if {[dict get $layer source_mode] eq "artifact"} {
             dict set layer absolute_path [viewerArtifactResolve [dict get $layer resource_path] [dict get $layer sha256]]
@@ -652,20 +676,33 @@ proc ::GX::viewerBackendEnsure {moduleId viewerId} {
     return $viewerBackend($backend)
 }
 proc ::GX::viewerOpen {moduleId viewerId {context {}}} {
+    variable viewerPresentationScope
     if {![viewerProviderEnabled $moduleId $viewerId]} {error {This Viewer is disabled in Configuration → Modules → Viewers. Existing Workspaces and scientific services are preserved.}}
     if {[catch {dict size $context}]} { error "Viewer open context must be a dictionary" }
     set command [viewerBackendEnsure $moduleId $viewerId]
-    set scene [viewerSceneResolve $moduleId $viewerId]
+    set scene [viewerSceneResolve $moduleId $viewerId $context]
     dict set scene open_context $context
     dict set scene dataset_private_context [_datasetPrivateModuleContext $moduleId]
     set result [_datasetPrivateWithModule $moduleId $command open $scene]
+    # Only successful dispatch changes the active presentation. This transient
+    # subset is not scientific storage and is cleared on Session load/defaults.
+    unset -nocomplain viewerPresentationScope($moduleId,$viewerId)
+    if {[dict exists $context presentation_layer_ids]} {
+        set viewerPresentationScope($moduleId,$viewerId) $context
+    }
     if {[llength [info commands documentationBrowserAttachViewerHelp]]} {documentationBrowserAttachViewerHelp $moduleId $viewerId $result}
     return $result
 }
 proc ::GX::viewerRerender {moduleId viewerId} {
+    variable viewerPresentationScope
     if {![viewerProviderEnabled $moduleId $viewerId]} {error {Viewer presentation is disabled}}
     set command [viewerBackendEnsure $moduleId $viewerId]
-    set scene [viewerSceneResolve $moduleId $viewerId]
+    set context {}
+    if {[info exists viewerPresentationScope($moduleId,$viewerId)]} {
+        set context $viewerPresentationScope($moduleId,$viewerId)
+    }
+    set scene [viewerSceneResolve $moduleId $viewerId $context]
+    dict set scene open_context $context
     return [{*}$command rerender $scene]
 }
 
@@ -710,6 +747,8 @@ proc ::GX::viewerReadIndexed {ini section fields} {
 }
 proc ::GX::loadManifestV2_before_plot_variant {path} {
     variable viewerScene; variable viewerLayer; variable viewerAttribute
+    variable viewerPresentationScope
+    array unset viewerPresentationScope *
     array unset viewerScene *;array unset viewerLayer *;array unset viewerAttribute *
     ::GX::loadManifestV2_before_viewer_provider $path
     set ini [parseIni $path]
@@ -719,7 +758,7 @@ proc ::GX::loadManifestV2_before_plot_variant {path} {
         foreach k {module_id viewer_id} {dict unset d $k}
         set viewerScene($module,$viewer) $d
     }
-    foreach d [viewerReadIndexed $ini viewer_layers {module_id viewer_id layer_id kind source_mode dataset_id resource_path sha256 format format_version source_path_hint x_variable_id y_variable_id z_variable_id visible opacity colormap scalar_range color_array scalar_array vector_array radius_array opacity_array tube_radius isovalues volume_transfer volume_sample_distance layer_order source_dataset_id source_dataset_sha256 source_update_policy representation base_color line_width point_size backface_culling scalar_coloring local_transform texture}] {
+    foreach d [viewerReadIndexed $ini viewer_layers {module_id viewer_id layer_id kind source_mode dataset_id resource_path sha256 format format_version source_path_hint x_variable_id y_variable_id z_variable_id visible opacity colormap scalar_range color_array scalar_array vector_array radius_array opacity_array tube_radius isovalues volume_transfer volume_sample_distance layer_order source_dataset_id source_dataset_sha256 source_update_policy representation base_color line_width point_size sphere_glyphs backface_culling scalar_coloring local_transform texture}] {
         foreach k {module_id viewer_id layer_id} {if {![dict exists $d $k]} {error "Incomplete viewer layer"}}
         set module [dict get $d module_id];set viewer [dict get $d viewer_id];set layer [dict get $d layer_id]
         foreach k {module_id viewer_id layer_id} {dict unset d $k}
@@ -763,6 +802,7 @@ proc ::GX::defaults_before_plot_variant {} {
     array unset ::GX::viewerScene *
     array unset ::GX::viewerLayer *
     array unset ::GX::viewerAttribute *
+    array unset ::GX::viewerPresentationScope *
 }
 
 # Generic Viewer tab. Providers own their renderer and optional richer UI.

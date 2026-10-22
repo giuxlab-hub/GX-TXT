@@ -5,11 +5,23 @@ proc ::GX::viewerCatalogIcon {provider} {
     set path [dict get $provider icon_path]
     if {$path eq {}} {set path [file join $::GX::scriptDir app icons viewer_fallback.png]}
     set desired [expr {max(64,min(192,int([tk scaling]*48)))}]
-    set factor [expr {max(1,int(192/$desired))}];set key [list $path $factor]
+    set key [list $path $desired [file size $path] [file mtime $path]]
     if {![dict exists $images $key]} {
-        set master [image create photo -file $path];set photo [image create photo]
-        $photo copy $master -subsample $factor $factor;image delete $master
-        dict set images $key $photo
+        set master [image create photo -file $path]
+        try {
+            set sourceSize [expr {max([image width $master],[image height $master])}]
+            if {$sourceSize%$desired==0} {
+                set photo [image create photo];set factor [expr {$sourceSize/$desired}]
+                $photo copy $master -subsample $factor $factor
+            } elseif {$desired%$sourceSize==0} {
+                set photo [image create photo];set factor [expr {$desired/$sourceSize}]
+                $photo copy $master -zoom $factor $factor
+            } else {
+                # Fractional DPI resizing uses the existing shared icon service.
+                set photo [_viewerGuiIconPathPhoto $path $desired]
+            }
+            dict set images $key $photo
+        } finally {image delete $master}
     }
     return [dict get $images $key]
 }
@@ -31,10 +43,10 @@ proc ::GX::viewerGuiBuild {notebook} {
     $frame.viewport create window 0 0 -anchor nw -window $frame.viewport.content -tags content
     pack $frame.scroll -side right -fill y;pack $frame.viewport -fill both -expand 1
     bind $frame.viewport <Configure> [list ::GX::viewerCatalogLayout $frame %w]
-    bind $frame.viewport.content <Configure> [list $frame.viewport configure -scrollregion [list 0 0 %w %h]]
-    foreach {sequence delta} {<Button-4> -3 <Button-5> 3} {bind $frame.viewport $sequence [list $frame.viewport yview scroll $delta units]}
+    bind $frame.viewport.content <Configure> [list ::GX::viewerCatalogScrollRegion $frame]
     bind $frame.tools.search <KeyRelease> ::GX::viewerGuiRefresh
     bind $notebook <<NotebookTabChanged>> +::GX::viewerGuiRefresh
+    ::GX::uiFieldScrollAreaAttach $frame.viewport $frame.viewport.content
     set ::GX::ViewerCatalog::signature {}
     viewerGuiRefresh
 }
@@ -51,6 +63,19 @@ proc ::GX::viewerCatalogLayout {frame width} {
             incr index
         }
     }
+}
+proc ::GX::viewerCatalogScrollRegion {frame} {
+    set viewport $frame.viewport
+    if {![winfo exists $viewport.content]} return
+    # A short filtered list must retain a top-left canvas origin. Tk can retain
+    # a negative confined view when its scrollregion shrinks below the viewport.
+    $viewport configure -scrollregion [list 0 0 [winfo width $viewport] [expr {max([winfo height $viewport],[winfo reqheight $viewport.content])}]]
+}
+proc ::GX::viewerCatalogQueryReveal {frame signature} {
+    if {![winfo exists $frame.viewport] || $signature ne $::GX::ViewerCatalog::signature} return
+    viewerCatalogScrollRegion $frame
+    $frame.viewport yview moveto 0
+    $frame.viewport xview moveto 0
 }
 proc ::GX::viewerGuiRefresh {} {
     variable ui;variable ::GX::ViewerCatalog::signature;variable ::GX::ViewerCatalog::refreshing
@@ -76,14 +101,17 @@ proc ::GX::viewerGuiRefresh {} {
             }
             set tile [dict get $groups $group].tile[incr ordinal]
             set module [dict get $provider module_id];set viewer [dict get $provider viewer_id]
-            ttk::button $tile -text [dict get $provider short_title] -image [viewerCatalogIcon $provider] -compound top -padding {10 10} -width 18 -command [list ::GX::viewerGuiDispatch open $module $viewer]
+            set title [dict get $provider short_title]
+            if {[dict get $provider deprecated]} {append title { (legacy)}}
+            ttk::button $tile -text $title -image [viewerCatalogIcon $provider] -compound top -padding {10 10} -width -18 -command [list ::GX::viewerGuiDispatch open $module $viewer]
             bind $tile <Return> [list ::GX::viewerGuiDispatch open $module $viewer]
             bind $tile <FocusIn> [list ::GX::uiFieldScrollSee $f.viewport $f.viewport.content $tile]
-            bind $tile <Enter> [list ::GX::native2DViewportTooltipShow $tile "[dict get $provider name]\n[dict get $provider group_title]\n$module / $viewer"]
-            bind $tile <Leave> {catch {destroy .gxViewportTip}}
-            foreach {sequence delta} {<Button-4> -3 <Button-5> 3} {bind $tile $sequence [list $f.viewport yview scroll $delta units]}
+            set description "[dict get $provider name]\n[dict get $provider group_title]\n$module / $viewer"
+            if {[dict get $provider deprecated]} {append description "\nDeprecated; existing Workspaces remain supported.\nSuccessor: [dict get $provider replacement]"}
+            native2DViewportTooltip $tile $description
         }
         viewerCatalogLayout $f [winfo width $f.viewport]
+        after idle [list ::GX::viewerCatalogQueryReveal $f $signature]
     } finally {set refreshing 0}
 }
 proc ::GX::viewerGuiDispatch {action {module {}} {viewer {}}} {

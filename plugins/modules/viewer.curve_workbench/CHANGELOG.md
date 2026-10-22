@@ -1,3 +1,40 @@
+## 2.21.4 — dev109
+
+Offer informed, default-No axis review before ordinary canonical Sketch Open
+replaces a Workspace. Resolve effective physical dimensions through the existing
+frame and Unit Registry owners. Explicit Yes enables heterogeneous axes only for
+the new draft; explicit caller policy and homogeneous intake keep their existing
+behavior. Recheck the reviewed Session, source and parent around modal decisions
+and before the original import owner runs.
+
+Refresh the existing object list and defining-handle/point table after a
+successful canonical Sketch import. Opening a draft now projects its imported
+objects into these controls, including when the utility area is revealed later.
+Geometry, source identities and the existing semantic selection remain owned by
+their original services.
+
+Scoped native object-name selection and scientific-axis declaration, Sketch
+export and ordinary reopen are separately MAIN-accepted. This does not establish
+a whole-GUI or release PASS. At the recorded AFTER12 cutoff, the custom
+construction and effective-dimension Add curve facets remain pending. Fresh
+packaging must use the corrected source; earlier immutable packages and their
+scoped admission receipts are preserved.
+
+## 2.21.3 — dev109
+
+Reserve the existing comparison residual panel before the expanding main viewport
+so its plot and axis labels remain visible when comparison controls open. Keep
+the same public Plot v4 widget, source identities and statistical owners.
+
+Focused native verification and MAIN acceptance remain separately receipted.
+The immutable 2.21.2 candidate is preserved; this patch requires a fresh package.
+
+## 2.21.2 — dev109
+
+Numerical comparison display uses public Plot v4 while retaining original geometry/statistical/publication owners; lifecycle and authorized Save presentation binding. Requires dev109 shared comparison support.
+
+Focused acceptance receipts remain separate from this version declaration; final integrated release acceptance/deposition is pending.
+
 ## 2.21.1
 
 Use shared CORE dialog lifecycle for source selection and declare native-resolution scientific catalog artwork.

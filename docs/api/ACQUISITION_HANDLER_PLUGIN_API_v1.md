@@ -34,6 +34,14 @@ The acquisition plug-in owns only format-specific behavior:
 
 No acquisition plug-in may update `metadata/datasets.ini` directly.
 
+If inspection rejects a source group, CORE retains the handler's existing
+`preview_metadata Diagnostic` and nonduplicate `warnings` in the admission
+error, together with guidance to inspect Preview or correct the source. The
+recognition guard remains mandatory; rejected sources are not registered.
+The plug-in acquisition queue keeps failed rows and offers **Failed: details...**
+to read that reason. Preview remains available on the retained row. Opening
+details does not retry acquisition or modify the Session.
+
 ## Descriptor contract
 
 A plug-in acquisition module remains a Standard Module API v1 module:

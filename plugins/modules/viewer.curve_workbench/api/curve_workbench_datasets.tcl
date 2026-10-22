@@ -14,6 +14,7 @@ proc ::GX::CurveWorkbench::_splineLine {w} {
     set refs $st($w,sketchSelection)
     if {[llength $refs]!=1||[dict get [lindex $refs 0] entity] ne "segment"} {error {Select exactly one local Spline span.}}
     set ref [lindex $refs 0];set id [dict get $ref logical];set record [_record $w $id]
+    _coordinatePlaneAdmit $w [list $id]
     # Named fragment ranges cannot be reinterpreted after changing the primitive
     # layout. Refuse instead of silently moving their geometric meaning.
     dict for {fragment entry} $st($w,sketchFragments) {
@@ -61,7 +62,15 @@ proc ::GX::CurveWorkbench::_sketchContent {w {all 0}} {
             set key [expr {$kind eq "object"&&[llength $defs]==1?$id:"${id}_${kind}_${index}_[incr part]"}]
             dict set objects $key [dict create name [dict get $record name] definition $definition units [_coordinateUnits $record] provenance [dict create source_dataset [dict get $record source] source_object $id selection $member operations [dict get $record operations]]]
             dict set objects $key metadata [dict merge [::GX::datasetPublicationV2DictDefault $record sketch_metadata {}] [::GX::datasetPublicationV2DictDefault $record sketch_attributes {}]]
+            # These fields project the current record, never inherited import
+            # metadata. A later declaration may have retired the old snapshot.
+            foreach field {gx.coordinate_relations gx.coordinate_conversions gx.coordinate_assumptions gx.coordinate_snapshot gx.coordinate_variables} {dict unset objects $key metadata $field}
+            dict set objects $key metadata gx.coordinate_relations [_coordinateSourceRelations $record]
+            foreach {field stored} {coordinate_conversions gx.coordinate_conversions source_assumed_units gx.coordinate_assumptions} {if {[dict exists $record $field]} {dict set objects $key metadata $stored [dict get $record $field]}}
+            set snapshot [dict get [_coordinateContext $w $id] context]
+            if {$snapshot ne {}} {dict set objects $key metadata gx.coordinate_snapshot $snapshot;dict set objects $key metadata gx.coordinate_variables [list [_coordinateSnapshotVariable $record x] [_coordinateSnapshotVariable $record y]]}
             if {[dict exists $record sketch_provenance]} {dict set objects $key provenance origin [dict get $record sketch_provenance]}
+            if {[dict exists $record coordinate_frame_origins]} {dict set objects $key provenance coordinate_frame_origins [dict get $record coordinate_frame_origins]}
             lappend included $key
             if {[dict exists $record sketch_definition]} {lappend extracted [dict create source $id native $native kind $kind index $index key $key]}
         }
@@ -125,7 +134,47 @@ proc ::GX::CurveWorkbench::_datasetCommit {w} {
 proc ::GX::CurveWorkbench::_datasetImportApply {w id} {
     variable st
     set sketch [::GX::sketchDatasetRead [_session] $id]
-    if {[dict size $st($w,curves)]} {error {Sketch import requires a new Workspace}}
+    if {![_coordinateWorkspaceEmpty $w]} {error {Sketch import requires a genuinely empty Workspace}}
+    set firstUnits {}
+    set frames {}
+    dict for {key object} [dict get $sketch objects] {
+        set units [dict get $object units]
+        set metadata [::GX::datasetPublicationV2DictDefault $object metadata {}]
+        set frame [::GX::_native2DCoordinateFrame $units [::GX::datasetPublicationV2DictDefault $metadata gx.coordinate_relations {}]]
+        _coordinateAxesAdmit $w $units [dict get $frame coordinate_relations]
+        dict set frame x x;dict set frame y y
+        if {[dict exists $metadata gx.coordinate_conversions]} {dict set frame coordinate_conversions [dict get $metadata gx.coordinate_conversions]}
+        if {[dict exists $metadata gx.coordinate_snapshot]} {
+            set snapshot [dict get $metadata gx.coordinate_snapshot];set mapping [dict get $metadata gx.coordinate_variables]
+            if {[llength $mapping]!=2} {error {Sketch coordinate snapshot requires two source Variable mappings}}
+            set variables {};set assumptions {}
+            foreach axis {x y} original $mapping {
+                dict set frame coordinate_snapshot_variables $axis $original
+                dict set variables $original [dict get $snapshot variables $original]
+                if {[dict exists $metadata gx.coordinate_assumptions $original]} {dict set assumptions $original [dict get $metadata gx.coordinate_assumptions $original]}
+            }
+            dict set snapshot variables $variables
+            dict set frame coordinate_snapshot $snapshot
+            if {$assumptions ne {}} {dict set frame source_assumed_units $assumptions}
+        }
+        _coordinateSnapshotValidate $frame
+        dict set frames $key $frame
+        if {$firstUnits eq {}} {set firstUnits $units}
+    }
+    dict for {key constraint} [dict get $sketch constraints] {
+        set expected {}
+        foreach field {a b axis} {
+            if {![dict exists $constraint definition $field]||[dict get $constraint definition $field] eq {}} continue
+            set target [dict get $constraint definition $field];set actual [_coordinateFrameKey [dict get $frames $target]]
+            if {$expected ne {}&&$actual ne $expected} {error {Sketch relationship references different complete coordinate frames}}
+            set expected $actual
+        }
+    }
+    if {$firstUnits ne {}} {
+        dict set st($w,coordinateConfiguration) x_unit [lindex $firstUnits 0]
+        dict set st($w,coordinateConfiguration) y_unit [lindex $firstUnits 1]
+        set st($w,sketchUnit) [lindex $firstUnits 0]
+    }
     set mapping {}
     foreach key [dict keys [dict get $sketch objects]] {
         if {[regexp {^curve([0-9]+)$} $key -> ordinal] && $ordinal>$st($w,next)} {set st($w,next) $ordinal}
@@ -138,6 +187,7 @@ proc ::GX::CurveWorkbench::_datasetImportApply {w id} {
         dict set record sketch_provenance [::GX::datasetPublicationV2DictDefault $object provenance {}]
         dict set record sketch_provenance source_dataset_ids [::GX::datasetFilePublicationSourceIds [::GX::datasetField $id source_dataset_ids {}]]
         dict set record sketch_units [dict get $object units]
+        set record [dict merge $record [dict get $frames $key]]
         if {[llength [lsort -unique [dict get $object units]]]==1&&[lindex [dict get $object units] 0] ne {}} {dict set record working_unit [lindex [dict get $object units] 0]}
         set logical [dict get $record id];dict set mapping $key $logical
         _addRecord $w $record $native
@@ -145,7 +195,7 @@ proc ::GX::CurveWorkbench::_datasetImportApply {w id} {
     set st($w,active) [lindex [dict values $mapping] 0]
     dict for {key record} [dict get $sketch constraints] {
         set spec [dict get $record definition]
-        foreach field {a b axis} {if {[dict exists $spec $field]} {dict set spec $field [dict get $mapping [dict get $spec $field]]}}
+        foreach field {a b axis} {if {[dict exists $spec $field]} {if {[dict get $spec $field] eq {}} {dict unset spec $field} else {dict set spec $field [dict get $mapping [dict get $spec $field]]}}}
         dict set record definition $spec
         set receipt [::GX::Native2D::core constraint_create $st($w,scene) [_constraintNativeSpec $w $spec]]
         dict set record native [dict get $receipt id]
@@ -165,7 +215,7 @@ proc ::GX::CurveWorkbench::_datasetImportApply {w id} {
 
 proc ::GX::CurveWorkbench::_datasetImport {w id} {
     variable st
-    if {[dict size $st($w,curves)]} {error {Sketch import requires a new empty Workspace.}}
+    if {![_coordinateWorkspaceEmpty $w]} {error {Sketch import requires a genuinely empty Workspace.}}
     ::GX::sketchDatasetRead [_session] $id
     set before [_recipeState $w];set prior $st($w,document);set original {}
     if {$prior ne {}} {set original [dict get [::GX::interactiveDocumentRead $prior] payload]}

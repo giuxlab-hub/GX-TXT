@@ -1,10 +1,23 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Trusted host for the common restricted author backend; no authored Tcl is evaluated.
 namespace eval ::GX::ViewerDevelopment {variable windows {};variable serial 0}
+source [file join [file dirname [info script]] viewer_development_api_browser_v1.tcl]
 source [file join [file dirname [info script]] viewer_development_gui_test_v1.tcl]
 source [file join [file dirname [info script]] viewer_development_workspace_upgrade_v1.tcl]
 proc ::GX::viewerDevelopmentApiInfo {} {
     return [dict create api_id VIEWER_DEVELOPMENT_API_v1 api_version 1 language cpp python_authoring 0 profiles {synthetic_view_v1 numeric_view_v1 document_view_v1 scientific_view_v1} operations {request inspect save check_source facility_request builder manual_asset debug debug_status debug_control preview invoke close installed_open installed_bindings workspace_upgrade_review workspace_review workspace_upgrade gui_test_attach gui_test_detach gui_test} backend core/python/gxtxt_viewer_development.py source_surface SOURCE_SURFACE_API_v1 gui_owner VIEWER_GUI_HOST_API_v1 renderer_owners {NATIVE2D_VIEWPORT_HOST_v1 NATIVE2D_TEMPORARY_DISPLAY_API_v1 NATIVE_PLOT_DISPLAY_API_v1 NATIVE_3D_GUI_HOST_API_v2} publication 0 install {candidate export; normal Plugin Manager promotion}]
+}
+# Encode bounded control text without evaluating it or invoking a language host.
+proc ::GX::viewerDevelopmentJsonString {text} {
+    set result {"}
+    foreach character [split $text {}] {
+        scan $character %c code
+        if {$code==34 || $code==92} {append result [format %c 92] $character
+        } elseif {$code<32} {append result [format {\u%04x} $code]
+        } else {append result $character}
+    }
+    append result {"}
+    return $result
 }
 proc ::GX::viewerDevelopmentEventJson {event} {
     if {[lsort [dict keys $event]] ne {component kind value}} {error {Native event requires kind/component/value}}
@@ -20,7 +33,7 @@ proc ::GX::viewerDevelopmentStateJson {state} {
     return [format {{"values":[%s],"counter":%s}} [join $values ,] $counter]
 }
 proc ::GX::viewerDevelopmentRequest {operation project callback {options {}}} {
-    if {$operation ni {init validate build run test export api inspect manual_asset save check_source facility_request builder debug debug_control debug_status gui_test workspace_upgrade_review}} {error {Unknown restricted development operation}}
+    if {$operation ni {init validate build prepare run test export api inspect manual_asset save check_source facility_request builder debug debug_control debug_status gui_test workspace_upgrade_review}} {error {Unknown restricted development operation}}
     foreach key [dict keys $options] {if {$key ni {module_id event state file source request_json breakpoints target document debug_token}} {error {Unknown restricted development option}}}
     set project [file normalize $project]
     set command [list /usr/bin/python3 -I -B [file join $::GX::scriptDir core python gxtxt_viewer_development.py] $operation $project --tcl]
@@ -32,7 +45,9 @@ proc ::GX::viewerDevelopmentRequest {operation project callback {options {}}} {
         lappend command --target [dict get $options target]
     }
     if {[dict exists $options document]} {
-        if {$operation ne {api} || ![regexp {^[A-Z][A-Z0-9_]*_v[0-9]+(?:\.md)?$} [dict get $options document]]} {error {Choose a catalogued public API identity without a path}}
+        set document [dict get $options document]
+        set companion [expr {$document in {CPP_SUPPORT_CATALOG CPP_SUPPORT_CATALOG.md NUMERIC_EXPRESSION_OPERATIONS NUMERIC_EXPRESSION_OPERATIONS.md}}]
+        if {$operation ne {api} || (!$companion && ![regexp {^[A-Z][A-Z0-9_]*_v[0-9]+(?:\.md)?$} $document])} {error {Choose a catalogued public API identity without a path}}
         lappend command --document [dict get $options document]
     }
     if {[dict exists $options debug_token]} {
@@ -72,17 +87,50 @@ proc ::GX::_viewerDevelopmentSnapshot {project} {
     return $result
 }
 proc ::GX::viewerDevelopmentPreview {project {module viewer.development_workspace} {provider development_workspace} {context {}}} {
+    return [_viewerDevelopmentOpenWindow $project $module $provider $context]
+}
+proc ::GX::_viewerDevelopmentOpenWindow {project module provider context {runtimeRoot {}}} {
     if {[dict size $::GX::ViewerDevelopment::windows]>=8} {error {Close an existing development Preview before opening another}}
-    foreach key [dict keys $context] {if {$key ne {workspace_id}} {error {Unsupported restricted Viewer open context}}}
+    foreach key [dict keys $context] {if {$key ni {workspace_id workspace_name dataset_id tex_document_id em_document_id}} {error {Unsupported restricted Viewer open context}}}
+    if {[dict exists $context workspace_name]} {
+        if {[datasetPublicationV2DictDefault $context workspace_id {}] ne {new}} {error {A Workspace name belongs only to a new Workspace}}
+        dict set context workspace_name [_workspaceName [dict get $context workspace_name]]
+    }
+    if {[dict exists $context dataset_id]} {sessionInspectionDataset [dict get $context dataset_id]}
+    if {[dict exists $context em_document_id]} {
+        _viewerGuiEMStamp [dict get $context em_document_id]
+        set forms {}
+        foreach c [dict get [viewerGuiDesignRead [file join $project design.gxtxt-viewer]] components] {
+            if {[dict get $c type] eq {section} && [dict exists $c properties em_parameters]} {lappend forms [dict get $c id]}
+        }
+        if {[llength $forms]!=1} {error {Opening an EM model requires exactly one complete declared electromagnetic form}}
+    }
+    if {[dict exists $context tex_document_id]} {
+        set articleId [dict get $context tex_document_id]
+        if {![interactiveDocumentIdValid $articleId]} {error {Use a canonical current-Session TeX article identity}}
+        set article [interactiveDocumentTeXRead $articleId]
+        set articleProvider [_workspaceProvider [dict get $article provider_id]]
+        if {[dict get $article module_id] ne $module || [datasetPublicationV2DictDefault $articleProvider viewer_provider {}] ne $provider} {
+            error {TeX article belongs to another installed Viewer provider}
+        }
+    }
     set project [file normalize $project]
     set w .gxViewerDevPreview[incr ::GX::ViewerDevelopment::serial]
-    toplevel $w;wm title $w {C++ Demo · validating project};wm geometry $w 760x460
-    ttk::label $w.loading -text {Validating C++ policy and Builder design before constructing the interface…} -wraplength 650 -padding 16
+    toplevel $w;wm title $w {Opening Viewer…};wm geometry $w 760x460
+    ttk::label $w.loading -text {Preparing the Viewer and checking its compiled interface…} -wraplength 650 -padding 16
     ttk::button $w.close -text Close -command [list destroy $w]
     pack $w.close -side bottom -pady 8;pack $w.loading -fill both -expand 1
     dict set ::GX::ViewerDevelopment::windows $w [dict create project $project module $module provider $provider open_context $context state [dict create values [lrepeat 16 0.0] counter 0] busy {} generation 0 status VALIDATING]
     bind $w <Destroy> +[list ::GX::_viewerDevelopmentDisposed $w %W]
-    set request [viewerDevelopmentRequest validate $project [list ::GX::_viewerDevelopmentPreviewValidated $w]]
+    if {$runtimeRoot eq {}} {
+        # The Build owner persists and reuses the source/dependency-bound artifact.
+        set request [viewerDevelopmentRequest prepare $project [list ::GX::_viewerDevelopmentPreviewValidated $w]]
+    } else {
+        set allocation [resourceManagementAllocate compiled_viewer_runtime [dict create category temporary lifetime viewer retention_seconds 0]]
+        dict set ::GX::ViewerDevelopment::windows $w runtime_module_root $runtimeRoot
+        dict set ::GX::ViewerDevelopment::windows $w runtime_allocation $allocation
+        set request [_viewerDevelopmentCompiledRequest $w runtime_inspect [list ::GX::_viewerDevelopmentPreviewValidated $w]]
+    }
     dict set ::GX::ViewerDevelopment::windows $w busy $request
     return $w
 }
@@ -91,7 +139,7 @@ proc ::GX::_viewerDevelopmentPreviewValidated {w response} {
     dict set ::GX::ViewerDevelopment::windows $w busy {}
     set r [dict get $::GX::ViewerDevelopment::windows $w]
     set project [dict get $r project];set module [dict get $r module];set provider [dict get $r provider]
-    if {![dict get $response ok]||[dict get $response result status] ne {PASS}} {
+    if {![dict get $response ok]||[dict get $response result status] ni {PASS BUILT}} {
         dict set ::GX::ViewerDevelopment::windows $w status REJECTED
         dict set ::GX::ViewerDevelopment::windows $w last_result $response
         set summary [datasetPublicationV2DictDefault $response error {Source policy rejected this project}]
@@ -99,10 +147,11 @@ proc ::GX::_viewerDevelopmentPreviewValidated {w response} {
             set diagnostic [lindex [dict get $response result diagnostics] 0]
             set summary "[dict get $diagnostic file]:[dict get $diagnostic line]:[dict get $diagnostic column] — [dict get $diagnostic message]"
         }
-        $w.loading configure -text "Preview refused before interface construction.\n\n[string range $summary 0 1400]\n\nUse Validate in the Development Workspace for the complete diagnostic report. No author code was generated or executed."
+        $w.loading configure -text "Viewer could not open.\n\n[string range $summary 0 1400]\n\nFor a development project, inspect the Build/Validate report. For an installed Viewer, install a compatible precompiled package."
         return
     }
     set report [dict get $response result]
+    if {[dict get $report status] eq {BUILT}} {set report [dict get $report validation]}
     foreach {name key} {handlers.cpp source_sha256 design.gxtxt-viewer design_sha256 project.json project_sha256} {
         if {[sha256File [file join $project $name]] ne [dict get $report $key]} {$w.loading configure -text {Project changed after validation; close and reopen the Demo.};dict set ::GX::ViewerDevelopment::windows $w status SOURCE_CHANGED;return}
     }
@@ -174,13 +223,41 @@ proc ::GX::viewerDevelopmentInvoke {window action} {
     }
     set value $actionValue
     set values [viewerGuiDesignValues $window]
-    if {$changed ne {}} {set value [uiFieldNormalize {type number} [dict get $values $changed]]} elseif {[dict exists $values temperature]} {set value [uiFieldNormalize {type number} [dict get $values temperature]]}
+    if {$changed ne {}} {
+        # Event.value is a scalar, not a canonical ID/string transport. Typed
+        # Host operations inspect their declared selection through its owner.
+        set selected [dict get $values $changed]
+        if {[string is double -strict $selected]} {set value [uiFieldNormalize {type number} $selected]} else {set value 0.0}
+    } elseif {[dict exists $values temperature]} {set value [uiFieldNormalize {type number} [dict get $values temperature]]}
     dict incr r generation;set generation [dict get $r generation]
-    set request [viewerDevelopmentRequest run [dict get $r project] [list ::GX::_viewerDevelopmentRan $window $generation] [dict create event [dict create kind $kind component $component value $value] state [dict get $r state]]]
-    dict set r busy $request;dict set r status RUNNING
     dict set ::GX::ViewerDevelopment::windows $window $r
-    [dict get $::GX::ViewerGui::instances $window slots status] configure -text {C++ Demo · native event running in its bounded worker…}
-    return [dict create status submitted request $request]
+    set started [clock microseconds]
+    if {[catch {
+        set service [_viewerDevelopmentCompiledService $window]
+        set payload [format {{"event":%s,"state":%s}} [viewerDevelopmentEventJson [dict create kind $kind component $component value $value]] [viewerDevelopmentStateJson [dict get $r state]]]
+        set response [encoding convertfrom utf-8 [binary decode base64 [scriptJobRequestExchange $service $payload]]]
+        if {[catch {dict get $response ok}]} {error {Compiled Viewer returned an invalid typed response}}
+        # Apply the real compiled event before dispatching the next native input.
+        # Long-running scientific work remains an operation of its existing owner.
+        dict set ::GX::ViewerDevelopment::windows $window status RUNNING
+        _viewerDevelopmentRan $window $generation $response
+    } problem]} {
+        if {[dict exists $::GX::ViewerDevelopment::windows $window]} {
+            if {[dict exists $::GX::ViewerDevelopment::windows $window compiled_service]} {scriptJobRequestCancel [dict get $::GX::ViewerDevelopment::windows $window compiled_service] closed}
+            dict set ::GX::ViewerDevelopment::windows $window status FAILED
+            dict set ::GX::ViewerDevelopment::windows $window last_result [dict create ok 0 error $problem]
+            [dict get $::GX::ViewerGui::instances $window slots status] configure -text $problem
+        }
+        return [dict create status failed message $problem]
+    }
+    set reply [dict create status [expr {[dict exists $::GX::ViewerDevelopment::windows $window] && [dict get $::GX::ViewerDevelopment::windows $window status] eq {COMPLETED} ? {completed} : {failed}}] elapsed_us [expr {[clock microseconds]-$started}]]
+    if {[dict get $reply status] eq {failed} && [dict exists $::GX::ViewerDevelopment::windows $window last_result]} {
+        set last [dict get $::GX::ViewerDevelopment::windows $window last_result]
+        foreach key {host_error error} {
+            if {[dict exists $last $key] && [dict get $last $key] ne {}} {dict set reply message [dict get $last $key];break}
+        }
+    }
+    return $reply
 }
 proc ::GX::_viewerDevelopmentRan {window generation response} {
     if {![dict exists $::GX::ViewerDevelopment::windows $window]||![winfo exists $window]||[dict get $::GX::ViewerDevelopment::windows $window generation]!=$generation} return
@@ -212,6 +289,16 @@ proc ::GX::_viewerDevelopmentRan {window generation response} {
                             scientific_import {viewerGuiDesignScientificImport $window $component $value}
                             plot_discover {viewerGuiDesignPlotDiscover $window $component}
                             plot_bind {viewerGuiDesignPlotBind $window $value $component}
+                            document_bind {viewerGuiDesignDocumentBind $window $component $value}
+                            raster_bind {viewerGuiDesignRasterBind $window $component $value}
+                            raster_tool {viewerGuiDesignRasterTool $window $component $value}
+                            raster_command {viewerGuiDesignRasterCommand $window $component $value}
+                            tex_command {viewerGuiDesignTeXCommand $window $component $value}
+                            em_command {viewerGuiDesignEMCommand $window $component $value}
+                            workbench_command {viewerGuiDesignWorkbenchCommand $window $component $value}
+                            catalog_refresh {viewerGuiDesignCatalogRefresh $window $component}
+                            catalog_inspect {viewerGuiDesignCatalogInspect $window $component}
+                            catalog_action {viewerGuiDesignCatalogAction $window $component $value}
                             numeric_discover {viewerGuiDesignNumericDiscover $window $component}
                             numeric_evaluate {viewerGuiDesignNumericEvaluate $window $component}
                             numeric_statistics {viewerGuiDesignNumericStatistics $window $component}
@@ -230,8 +317,14 @@ proc ::GX::_viewerDevelopmentRan {window generation response} {
     }
     dict set ::GX::ViewerDevelopment::windows $window status $status
     dict set ::GX::ViewerDevelopment::windows $window last_result $response
-    [dict get $::GX::ViewerGui::instances $window slots status] configure -text "Restricted Viewer · $status"
+    set message [expr {$status eq {COMPLETED} ? {Ready} : $status}]
+    if {[dict exists $response host_error]} {append message ": [dict get $response host_error]"}
+    [dict get $::GX::ViewerGui::instances $window slots status] configure -text $message
     viewerGuiTraceEmit $window window cpp_event [dict create status $status author restricted_cpp]
+    # Native service actions finish after the initiating command returned.
+    # Refresh shared command state from their actual resulting associations,
+    # including a newly submitted/reconnected scientific Job.
+    viewerGuiActionsRefresh $window
 }
 proc ::GX::_viewerDevelopmentStateEnvelope {window state} {
     set record [dict get $::GX::ViewerDevelopment::windows $window]
@@ -244,7 +337,13 @@ proc ::GX::_viewerDevelopmentDisposed {window actual} {
     set request [dict get $::GX::ViewerDevelopment::windows $window busy]
     if {$request ne {}} {scriptJobRequestCancel $request closed}
     set record [dict get $::GX::ViewerDevelopment::windows $window]
+    if {[dict exists $record compiled_service]} {scriptJobRequestCancel [dict get $record compiled_service] closed}
     dict unset ::GX::ViewerDevelopment::windows $window
+    if {[dict exists $record runtime_allocation]} {
+        # Existing Resource owner retains diagnostics while the ordinary request
+        # cancellation drains; no installed source or binary is ever removed.
+        resourceManagementRelease [dict get $record runtime_allocation id] retained_diagnostic 3600
+    }
     if {[dict exists $record runtime_project]} {after 100 [list ::GX::_viewerDevelopmentRuntimeCleanup [dict get $record project] $request 0]}
 }
 proc ::GX::_viewerDevelopmentRuntimeCleanup {project request attempt} {
@@ -271,18 +370,59 @@ proc ::GX::viewerDevelopmentProjectWorkspaceOpen {project module provider contex
 proc ::GX::viewerDevelopmentInstalledOpen {module provider root {context {}}} {
     if {$context ne {} && ![catch {sessionWorkspaceGet $context} item]} {set context [dict create workspace_id [dict get $item workspace_id]]}
     if {[file normalize [file dirname [moduleField $module descriptor]]] ne [file normalize $root]} {error {Restricted Viewer package must be registered through the normal Plugin Manager}}
-    set parent [file join [configurationCacheDirectory] restricted_viewer_runtime]
-    file mkdir $parent
-    set project [file join $parent [string map {. _} $module]_[clock microseconds]]
-    file mkdir $project
-    foreach name {project.json handlers.cpp design.gxtxt-viewer} {
-        set path [file join $root source $name]
-        if {![file isfile $path]||[file type $path] eq {link}||[file size $path]>4194304} {error {Installed restricted source is unavailable or unbounded}}
-        set f [open $path rb];try {set bytes [read $f 4194305]} finally {close $f}
-        resourceLifecycleWriteBytes [file join $project $name] $bytes
-    }
-    set window [viewerDevelopmentPreview $project $module $provider $context]
-    dict set ::GX::ViewerDevelopment::windows $window runtime_project 1
-    dict set ::GX::ViewerDevelopment::windows $window runtime_module_root $root
-    return $window
+    if {![file isfile [file join $root native viewer.so]]} {error {Installed C++ Viewer has no native/viewer.so. Install a compatible precompiled package; runtime never compiles it.}}
+    return [_viewerDevelopmentOpenWindow [file join $root source] $module $provider $context $root]
 }
+proc ::GX::_viewerDevelopmentCompiledRequest {window operation callback {options {}}} {
+    if {$operation ni {runtime_inspect runtime_run}} {error {Unknown compiled Viewer runtime operation}}
+    set record [dict get $::GX::ViewerDevelopment::windows $window]
+    set command [list /usr/bin/python3 -I -B [file join $::GX::scriptDir core python gxtxt_viewer_development.py] $operation [dict get $record runtime_module_root] --runtime-work [dict get $record runtime_allocation path] --tcl]
+    if {[dict exists $options event]} {lappend command --event [viewerDevelopmentEventJson [dict get $options event]]}
+    if {[dict exists $options state]} {lappend command --state [viewerDevelopmentStateJson [dict get $options state]]}
+    return [scriptJobAsync $command {} $callback [dict create timeout_ms 120000 max_bytes 4194304 process_group 1 ui_lifetime 1 label {Compiled C++ Viewer}]]
+}
+proc ::GX::_viewerDevelopmentCompiledService {window} {
+    set record [dict get $::GX::ViewerDevelopment::windows $window]
+    if {[dict exists $record compiled_service]} {
+        set request [dict get $record compiled_service]
+        if {![dict exists $::GX::scriptJobRequests $request] || [dict get $::GX::scriptJobRequests $request cancelled] ne {}} {error {Compiled Viewer worker ended; reopen this Viewer}}
+        return $request
+    }
+    if {[dict exists $record runtime_module_root]} {
+        set root [dict get $record runtime_module_root];set work [dict get $record runtime_allocation path]
+    } else {set root [dict get $record project];set work $root}
+    set command [list /usr/bin/python3 -I -B [file join $::GX::scriptDir core python gxtxt_viewer_development.py] runtime_serve $root --runtime-work $work]
+    set request [scriptJobAsync $command {} [list ::GX::_viewerDevelopmentCompiledEnded $window] [dict create duplex 1 max_bytes 4194304 process_group 1 ui_lifetime 1 label {Compiled Viewer lifetime}]]
+    dict set ::GX::ViewerDevelopment::windows $window compiled_service $request
+    set ready [encoding convertfrom utf-8 [binary decode base64 [scriptJobRequestExchange $request {} 5000]]]
+    if {![dict get $ready ok] || [dict get $ready result status] ne {READY}} {scriptJobRequestCancel $request closed;error {Compiled Viewer worker could not load its precompiled binary}}
+    dict set ::GX::ViewerDevelopment::windows $window compiled_service_receipt [dict get $ready result]
+    return $request
+}
+proc ::GX::_viewerDevelopmentCompiledEnded {window response} {
+    if {![dict exists $::GX::ViewerDevelopment::windows $window] || ![winfo exists $window]} return
+    dict set ::GX::ViewerDevelopment::windows $window status FAILED
+    dict set ::GX::ViewerDevelopment::windows $window last_result $response
+    if {[dict exists $::GX::ViewerGui::instances $window slots status]} {[dict get $::GX::ViewerGui::instances $window slots status] configure -text {Compiled Viewer worker ended; reopen this Viewer.}}
+}
+proc ::GX::viewerDevelopmentPackageVerify {root} {
+    set allocation [resourceManagementAllocate compiled_viewer_admission [dict create category temporary lifetime operation retention_seconds 0]]
+    set token admission_[incr ::GX::ViewerDevelopment::serial]
+    set variable ::GX::ViewerDevelopment::packageAdmission($token)
+    set request {}
+    try {
+        set command [list /usr/bin/python3 -I -B [file join $::GX::scriptDir core python gxtxt_viewer_development.py] runtime_inspect [file normalize $root] --runtime-work [dict get $allocation path] --tcl]
+        set request [scriptJobAsync $command {} [list ::GX::_viewerDevelopmentPackageVerified $variable] [dict create timeout_ms 30000 max_bytes 4194304 process_group 1 ui_lifetime 1 label {Precompiled Viewer admission}]]
+        vwait $variable
+        set response [set $variable]
+        if {[catch {dict get $response ok} ok]} {error "Precompiled Viewer admission failed: $response"}
+        if {!$ok} {error [dict get $response error]}
+        if {[dict get $response result status] ne {PASS}} {error {Precompiled Viewer admission did not complete}}
+        return [dict get $response result]
+    } finally {
+        if {$request ne {} && [dict exists $::GX::scriptJobRequests $request]} {scriptJobRequestCancel $request closed}
+        catch {unset $variable}
+        resourceManagementRelease [dict get $allocation id] retained_diagnostic 600
+    }
+}
+proc ::GX::_viewerDevelopmentPackageVerified {variable response} {set $variable $response}

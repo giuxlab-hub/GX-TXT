@@ -10,6 +10,7 @@ proc ::GX::CurveWorkbench::_cadState {w} {
     dict set state coordinate_presentation $coordinatePresentation
     dict set state coordinate_view $st($w,coordinateView)
     dict set state coordinate_frame_views $st($w,coordinateFrameViews)
+    dict set state coordinate_configuration $st($w,coordinateConfiguration)
     dict set state coordinate_metric $st($w,metric)
     if {[info exists st($w,planarContext)]} {dict set state planar_context $st($w,planarContext)}
     dict set state bridge_tolerance $st($w,bridgeTolerance)
@@ -69,6 +70,15 @@ proc ::GX::CurveWorkbench::_cadRestoreState {w state} {
     set st($w,coordinatePresentation) [::GX::datasetPublicationV2DictDefault $state coordinate_presentation {}]
     set st($w,coordinateView) [::GX::datasetPublicationV2DictDefault $state coordinate_view {}]
     set st($w,coordinateFrameViews) [::GX::datasetPublicationV2DictDefault $state coordinate_frame_views {}]
+    set st($w,coordinateConfiguration) [::GX::datasetPublicationV2DictDefault $state coordinate_configuration [_coordinateConfigurationDefault]]
+    if {![dict exists $state coordinate_configuration] && $st($w,active) ne {} && [dict exists $st($w,curves) $st($w,active)]} {
+        # Preserve the actual legacy frame. Incompatible dimensions do not
+        # silently acquire consent for new heterogeneous geometry/imports.
+        lassign [_coordinateUnits [_record $w $st($w,active)]] xUnit yUnit
+        dict set st($w,coordinateConfiguration) x_unit $xUnit
+        dict set st($w,coordinateConfiguration) y_unit $yUnit
+    }
+    set st($w,sketchUnit) [dict get $st($w,coordinateConfiguration) x_unit]
     unset -nocomplain st($w,coordinateFrameKey)
     set st($w,coordinateCache) {}
     set st($w,metric) [::GX::datasetPublicationV2DictDefault $state coordinate_metric length]

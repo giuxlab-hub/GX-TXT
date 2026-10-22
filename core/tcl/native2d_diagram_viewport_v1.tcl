@@ -9,7 +9,7 @@ proc ::GX::native2DGeometryDiagramViewportCreate {widget document {callback {}}}
     ttk::label $widget.status -anchor w -wraplength 800
     pack $widget.status -side bottom -fill x
     pack $widget.canvas -fill both -expand 1
-    dict set ::GX::Native2DDiagram::viewports $widget [dict create document $document session_token [interactiveDocumentSessionToken] callback $callback projection {} tool select selected {} start {} route {} cursor {} drag {} pending {}]
+    dict set ::GX::Native2DDiagram::viewports $widget [dict create document $document session_token [interactiveDocumentSessionToken] callback $callback projection {} tool select selected {} start {} route {} cursor {} hover_terminal {} drag {} pending {} last_notice {}]
     bind $widget <Destroy> [list ::GX::_native2DDiagramViewportDispose $widget %W]
     bind $widget.canvas <Configure> [list ::GX::_native2DDiagramViewportSchedule $widget]
     bind $widget.canvas <ButtonPress-1> [list ::GX::_native2DDiagramViewportPress $widget %x %y]
@@ -34,6 +34,22 @@ proc ::GX::_native2DDiagramViewportRecord {w} {
     set r [dict get $::GX::Native2DDiagram::viewports $w]
     if {[dict get $r session_token] ne [interactiveDocumentSessionToken]} {error {Diagram belongs to a previous Session lifetime}}
     return $r
+}
+proc ::GX::native2DGeometryDiagramViewportDescribe {w {includeSource 1}} {
+    set r [_native2DDiagramViewportRecord $w]
+    set result [dict create document_id [dict get $r document] tool [dict get $r tool] selected [dict get $r selected] routing_active [expr {[dict get $r start] ne {}}] last_notice [dict get $r last_notice]]
+    # Local chrome needs the current authoritative interaction state, not a
+    # scientific payload receipt for every individual toolbar control. The
+    # default full description and all edit/tool commands keep source checks.
+    if {$includeSource} {dict set result source [dict remove [native2DGeometryDiagramRead [dict get $r document]] payload]}
+    return $result
+}
+proc ::GX::_native2DDiagramViewportNotice {w message} {
+    # Interaction errors remain readable through release, hover and repaint.
+    # Only the next deliberate press or command clears this presentation state.
+    dict set ::GX::Native2DDiagram::viewports $w last_notice $message
+    $w.status configure -text $message
+    _native2DDiagramViewportSchedule $w
 }
 proc ::GX::_native2DDiagramViewportDoublePress {w x y} {
     # Tk selects the double-click binding instead of the second ordinary press.
@@ -80,19 +96,59 @@ proc ::GX::_native2DDiagramViewportDraw {w} {
         set view [::GX::Native2D::core view_requested $native]
         lset view 0 [winfo width $w.canvas];lset view 1 [winfo height $w.canvas];set view [lreplace $view 2 5 16 16 16 16]
         ::GX::Native2D::core view $native $view
-        set options [dict create point_budget 4096 legend 0 axes_visible 0 include_construction_reference 1 font_size 13 annotations [dict get $projection annotations]]
-        set ghost {}
+        set ghost {};set transient {}
         try {
+            set payload [dict get [native2DGeometryDiagramRead [dict get $r document]] payload]
+            set drag [dict get $r drag]
+            if {$drag ne {} && [dict exists $drag request]} {
+                set operation [expr {[dict get $drag kind] eq {move}?{transform}:{label}}]
+                set candidate [native2DGeometryDiagramEdit [dict get $r document] [dict get $projection document] $operation [dict get $drag request] preview]
+                set transient [native2DGeometryDiagramProject [dict get $r document] $candidate]
+                set projection $transient
+                set payload [dict get $candidate proposed_payload]
+                set scene [_native2DGeometryRequire [dict get $projection scene_token]]
+                set native [dict get $scene native]
+                ::GX::Native2D::core view $native $view
+                ::GX::Native2D::core grid $native {enabled 1 visible 1 snap_enabled 1 spacing_x 10 spacing_y 10 axes_visible 0}
+            }
+            set options [dict create point_budget 4096 legend 0 axes_visible 0 include_construction_reference 1 font_size 13 annotations [dict get $projection annotations]]
             if {[dict get $r start] ne {} && [dict get $r cursor] ne {}} {
                 set owner [native2DGeometryDiagramRead [dict get $r document]]
-                set start [native2DGeometryDiagramEndpoint [dict get $owner payload] [dict get $r start]]
+                set start [_native2DDiagramTargetPoint [dict get $owner payload] [dict get $r start]]
                 set points [list $start {*}[dict get $r route] [dict get $r cursor]]
                 set ghost [dict get [native2DGeometryCall [dict get $projection scene_token] curve [dict create points $points]] object_token]
                 native2DGeometryCall [dict get $projection scene_token] style [dict create object_token $ghost properties {color {0.85 0.4 0.05 1} line_width 2 marker 0}]
             }
-            native2DCanvasSnapshot $w.canvas [native2DPresentationSnapshot $native $options]
-        } finally {if {$ghost ne {}} {native2DGeometryCall [dict get $projection scene_token] delete [dict create object_token $ghost]}}
-        set hint [expr {[dict get $r start] ne {} ? {Click grid for bends; finish on pin/junction; Backspace removes bend; Esc cancels} : {Esc select · W wire · R rotate · Del delete · Double-click properties}}]
+            set snapshot [native2DPresentationSnapshot $native $options]
+            set selectedIds {}
+            foreach object [datasetPublicationV2DictDefault [dict get $projection object_tokens] [dict get $r selected] {}] {lappend selectedIds [_native2DGeometryObject $scene $object]}
+            set objects {}
+            foreach object [dict get $snapshot objects] {
+                if {[dict get $object id] in $selectedIds} {dict set object style color {0.72 0.12 0.12 1};dict set object style line_width 3}
+                lappend objects $object
+            }
+            dict set snapshot objects $objects
+            native2DCanvasSnapshot $w.canvas $snapshot
+            set bounds {}
+            foreach id $selectedIds {
+                set box [$w.canvas bbox object_$id]
+                if {$box eq {}} continue
+                if {$bounds eq {}} {set bounds $box} else {
+                    lassign $bounds a b c d;lassign $box x y z t
+                    set bounds [list [expr {min($a,$x)}] [expr {min($b,$y)}] [expr {max($c,$z)}] [expr {max($d,$t)}]]
+                }
+            }
+            if {$bounds ne {}} {
+                lassign $bounds a b c d
+                $w.canvas create rectangle [expr {$a-5}] [expr {$b-5}] [expr {$c+5}] [expr {$d+5}] -outline #a72828 -dash {4 3} -width 1 -tags diagram_selection
+            }
+            if {[dict get $r tool] in {wire junction label probe}} {_native2DDiagramViewportPins $w $native $payload [datasetPublicationV2DictDefault $r hover_terminal {}]}
+        } finally {
+            if {$ghost ne {}} {catch {native2DGeometryCall [dict get $projection scene_token] delete [dict create object_token $ghost]}}
+            if {$transient ne {}} {native2DGeometryClose [dict get $transient scene_token]}
+        }
+        set hint [expr {[dict get $r start] ne {} ? {Click grid for bends; finish on pin, junction or wire; Backspace removes bend; Esc cancels} : {Esc select · W wire · R rotate · Del delete · Double-click properties}}]
+        if {[dict get $r last_notice] ne {}} {set hint [dict get $r last_notice]}
         $w.status configure -wraplength [expr {max(200,[winfo width $w.canvas])}] -text "[dict get $r document] · Tool: [dict get $r tool] · Selected: [dict get $r selected] · $hint"
     } reason]} {$w.status configure -text "Diagram unavailable: $reason"}
 }
@@ -105,7 +161,13 @@ proc ::GX::native2DGeometryDiagramViewportEdit {w operation request} {
     # to discard a redo tail. The ordinary commit below repeats source and
     # candidate validation after any native confirmation/Session transition.
     set r [_native2DDiagramViewportRecord $w]
-    native2DGeometryDiagramEdit [dict get $r document] [dict get $r projection document] $operation $request preview
+    set candidate [native2DGeometryDiagramEdit [dict get $r document] [dict get $r projection document] $operation $request preview]
+    set owner [native2DGeometryDiagramRead [dict get $r document]]
+    if {[dict get $candidate proposed_payload] eq [dict get $owner payload]} {
+        # An unchanged action must not prepare a History branch, discard its
+        # redo tail or publish an edit notification. Keep the normal receipt.
+        return [dict create document [dict remove $owner payload] object_id [dict get $candidate object_id] operation $operation payload [dict get $owner payload]]
+    }
     # The owning Viewer can prepare its existing History transaction before
     # any canonical mutation. A cancelled branch must leave source untouched.
     _native2DDiagramViewportEmit $w before_edit [dict create operation $operation]
@@ -118,6 +180,7 @@ proc ::GX::native2DGeometryDiagramViewportEdit {w operation request} {
 }
 proc ::GX::native2DGeometryDiagramViewportCommand {w operation args} {
     set r [_native2DDiagramViewportRecord $w]
+    dict set ::GX::Native2DDiagram::viewports $w last_notice {}
     set token [dict get $r projection scene_token]
     try {
     switch $operation {
@@ -130,7 +193,9 @@ proc ::GX::native2DGeometryDiagramViewportCommand {w operation args} {
             dict set ::GX::Native2DDiagram::viewports $w start {}
             dict set ::GX::Native2DDiagram::viewports $w route {}
             dict set ::GX::Native2DDiagram::viewports $w cursor {}
+            dict set ::GX::Native2DDiagram::viewports $w hover_terminal {}
             dict set ::GX::Native2DDiagram::viewports $w drag {}
+            _native2DDiagramViewportEmit $w tool_changed [dict create tool $tool]
         }
         fit {if {[dict size [dict get $r projection object_tokens]]} {_native2DDiagramFit $w}}
         zoom {lassign $args factor x y;uiFieldNormalize {type number min 0.1 max 10} $factor;native2DGeometryCall $token zoom [dict create factor $factor point [list $x $y]]}
@@ -157,7 +222,7 @@ proc ::GX::_native2DDiagramViewportPoint {w x y} {
     set native [dict get [_native2DGeometryRequire [dict get $r projection scene_token]] native]
     return [::GX::Native2D::core grid_snap $native [::GX::Native2D::core world $native [list $x $y]] 3]
 }
-proc ::GX::_native2DDiagramViewportTerminal {w x y} {
+proc ::GX::native2DGeometryDiagramViewportHitTest {w x y} {
     set r [_native2DDiagramViewportRecord $w]
     set owner [native2DGeometryDiagramRead [dict get $r document]];set payload [dict get $owner payload]
     set token [dict get $r projection scene_token];set best {};set distance 101
@@ -169,15 +234,78 @@ proc ::GX::_native2DDiagramViewportTerminal {w x y} {
         set d [expr {($x-$px)*($x-$px)+($y-$py)*($y-$py)}]
         if {$d<$distance} {set distance $d;set best $endpoint}
     }
-    return $best
+    if {$best ne {}} {return [dict create kind terminal endpoint $best point [native2DGeometryDiagramEndpoint $payload $best]]}
+    set scene [_native2DGeometryRequire $token];set native [dict get $scene native]
+    set query [::GX::Native2D::core world $native [list $x $y]]
+    set scope {};set owners {}
+    dict for {id wire} [dict get $payload wires] {
+        foreach object [dict get $r projection object_tokens $id] {lappend scope $object;dict set owners $object $id}
+    }
+    if {![llength $scope]} {return {}}
+    set picked [native2DGeometryCall $token selection_pick [dict create object_tokens $scope device [list $x $y] tolerance 10 target object]]
+    if {![dict get $picked hit]} {return {}}
+    set object [dict get $picked member object_token]
+    set hit [::GX::Native2D::core nearest_segment $native [_native2DGeometryObject $scene $object] $query]
+    # Snap along the selected wire using the same native grid and projection.
+    # Never connect another coincident/crossing wire merely by its coordinates.
+    set snapped [::GX::Native2D::core grid_snap $native $query 3]
+    set candidate [::GX::Native2D::core nearest_segment $native [_native2DGeometryObject $scene $object] $snapped]
+    lassign [::GX::Native2D::core device $native [dict get $candidate point]] px py
+    if {($x-$px)*($x-$px)+($y-$py)*($y-$py)<=101} {set hit $candidate}
+    return [dict create kind wire wire_id [dict get $owners $object] point [dict get $hit point]]
+}
+proc ::GX::_native2DDiagramViewportTerminal {w x y} {
+    set hit [native2DGeometryDiagramViewportHitTest $w $x $y]
+    if {$hit eq {}} {return {}}
+    if {[dict get $hit kind] eq {terminal}} {return [dict get $hit endpoint]}
+    return $hit
+}
+proc ::GX::_native2DDiagramViewportJunctionTargets {w x y} {
+    set hit [native2DGeometryDiagramViewportHitTest $w $x $y]
+    if {$hit eq {}} {return {}}
+    set r [_native2DDiagramViewportRecord $w];set scene [_native2DGeometryRequire [dict get $r projection scene_token]]
+    set native [dict get $scene native];set point [dict get $hit point];set targets {}
+    if {[dict get $hit kind] eq {terminal}} {lappend targets [dict get $hit endpoint]}
+    set payload [dict get [native2DGeometryDiagramRead [dict get $r document]] payload]
+    dict for {id wire} [dict get $payload wires] {
+        set object [lindex [dict get $r projection object_tokens $id] 0]
+        set nearest [::GX::Native2D::core nearest_segment $native [_native2DGeometryObject $scene $object] $point]
+        if {[dict get $nearest distance]<=1e-7} {lappend targets [dict create kind wire wire_id $id point $point]}
+    }
+    return $targets
+}
+proc ::GX::_native2DDiagramViewportPins {w native payload hover} {
+    set endpoints {}
+    set catalog [native2DGeometryDiagramCatalog [dict get $payload catalog]]
+    dict for {id item} [dict get $payload components] {foreach pin [dict keys [dict get $catalog symbols [dict get $item kind] pins]] {lappend endpoints [list $id $pin]}}
+    lappend endpoints {*}[dict keys [dict get $payload junctions]]
+    lassign [::GX::Native2D::core view $native] width height left top right bottom
+    foreach endpoint $endpoints {
+        lassign [::GX::Native2D::core device $native [native2DGeometryDiagramEndpoint $payload $endpoint]] x y
+        if {$x<$left || $x>$width-$right || $y<$top || $y>$height-$bottom} continue
+        set active [expr {$endpoint eq $hover}];set radius [expr {$active?6:3}]
+        $w.canvas create oval [expr {$x-$radius}] [expr {$y-$radius}] [expr {$x+$radius}] [expr {$y+$radius}] -outline [expr {$active?{#a65b00}:{#195c45}}] -fill [expr {$active?{#ffe39b}:{#ffffff}}] -width [expr {$active?2:1}] -tags diagram_terminal
+        if {$active} {$w.canvas create line [expr {$x-9}] $y [expr {$x+9}] $y -fill #a65b00 -tags diagram_terminal;$w.canvas create line $x [expr {$y-9}] $x [expr {$y+9}] -fill #a65b00 -tags diagram_terminal}
+    }
+    if {[_native2DDiagramIsWireTarget $hover]} {
+        lassign [::GX::Native2D::core device $native [dict get $hover point]] x y
+        $w.canvas create oval [expr {$x-6}] [expr {$y-6}] [expr {$x+6}] [expr {$y+6}] -outline #a65b00 -fill #ffe39b -width 2 -tags diagram_terminal
+        $w.canvas create line [expr {$x-10}] $y [expr {$x+10}] $y -fill #a65b00 -tags diagram_terminal
+        $w.canvas create line $x [expr {$y-10}] $x [expr {$y+10}] -fill #a65b00 -tags diagram_terminal
+    }
 }
 proc ::GX::_native2DDiagramViewportPress {w x y} {
     focus $w.canvas
+    dict set ::GX::Native2DDiagram::viewports $w last_notice {}
     if {[catch {
         set r [_native2DDiagramViewportRecord $w];set tool [dict get $r tool];set point [_native2DDiagramViewportPoint $w $x $y]
         set owner [native2DGeometryDiagramRead [dict get $r document]]
         if {$tool eq {pan}} {dict set ::GX::Native2DDiagram::viewports $w drag [dict create kind pan device [list $x $y]]
-        } elseif {$tool eq {junction}} {native2DGeometryDiagramViewportEdit $w junction [dict create position $point]
+        } elseif {$tool eq {junction}} {
+            set targets [_native2DDiagramViewportJunctionTargets $w $x $y]
+            if {[llength $targets]>1 || ([llength $targets]==1 && [_native2DDiagramIsWireTarget [lindex $targets 0]])} {native2DGeometryDiagramViewportEdit $w junction [dict create targets $targets]
+            } elseif {$targets eq {}} {native2DGeometryDiagramViewportEdit $w junction [dict create position $point]
+            } else {dict set ::GX::Native2DDiagram::viewports $w selected [lindex [lindex $targets 0] 0]}
         } elseif {$tool in {wire label probe}} {
             set endpoint [_native2DDiagramViewportTerminal $w $x $y]
             if {$endpoint eq {}} {
@@ -189,12 +317,18 @@ proc ::GX::_native2DDiagramViewportPress {w x y} {
                     _native2DDiagramViewportSchedule $w
                     return
                 }
-                error {Select an existing pin or explicit junction; geometric crossings do not connect}
+                error {Select a component pin, explicit junction or wire segment; geometric crossings alone do not connect}
             }
             if {$tool eq {wire}} {
                 if {[dict get $r start] eq {}} {dict set ::GX::Native2DDiagram::viewports $w start $endpoint
                 } else {native2DGeometryDiagramViewportEdit $w wire [dict create start [dict get $r start] end $endpoint route [dict get $r route]];dict set ::GX::Native2DDiagram::viewports $w start {};dict set ::GX::Native2DDiagram::viewports $w route {};dict set ::GX::Native2DDiagram::viewports $w cursor {}}
-            } elseif {$tool eq {probe}} {_native2DDiagramViewportEmit $w probe [dict create endpoint $endpoint]
+            } elseif {$tool eq {probe}} {
+                set detail [dict create endpoint $endpoint hit_kind terminal]
+                if {[_native2DDiagramIsWireTarget $endpoint]} {
+                    set wireId [dict get $endpoint wire_id]
+                    set detail [dict create endpoint [dict get $owner payload wires $wireId start] hit_kind wire wire_id $wireId point [dict get $endpoint point]]
+                }
+                _native2DDiagramViewportEmit $w probe $detail
             } else {_native2DDiagramViewportLabel $w $endpoint}
         } elseif {$tool ne {select}} {native2DGeometryDiagramViewportEdit $w place [dict create kind $tool position $point]
         } else {
@@ -222,14 +356,20 @@ proc ::GX::_native2DDiagramViewportPress {w x y} {
             if {[dict exists $owner payload labels $selected]} {dict set ::GX::Native2DDiagram::viewports $w drag [dict create kind label selected $selected start $point offset [datasetPublicationV2DictDefault [dict get $owner payload labels $selected] offset {0 0}]]}
             _native2DDiagramViewportEmit $w selection [dict create object_id $selected]
         }
-    } reason]==1} {$w.status configure -text $reason;return}
+    } reason]==1} {_native2DDiagramViewportNotice $w $reason;return}
     _native2DDiagramViewportSchedule $w
 }
 proc ::GX::_native2DDiagramViewportCursor {w x y} {
     if {[catch {
         set r [_native2DDiagramViewportRecord $w]
-        if {[dict get $r tool] eq {wire} && [dict get $r start] ne {}} {
-            dict set ::GX::Native2DDiagram::viewports $w cursor [_native2DDiagramViewportPoint $w $x $y]
+        if {[dict get $r tool] in {wire junction label probe}} {
+            set endpoint [_native2DDiagramViewportTerminal $w $x $y]
+            dict set ::GX::Native2DDiagram::viewports $w hover_terminal $endpoint
+            if {[dict get $r tool] eq {wire} && [dict get $r start] ne {}} {
+                set point [_native2DDiagramViewportPoint $w $x $y]
+                if {$endpoint ne {}} {set point [_native2DDiagramTargetPoint [dict get [native2DGeometryDiagramRead [dict get $r document]] payload] $endpoint]}
+                dict set ::GX::Native2DDiagram::viewports $w cursor $point
+            }
             _native2DDiagramViewportSchedule $w
         }
     }]} return
@@ -243,8 +383,16 @@ proc ::GX::_native2DDiagramViewportMotion {w x y} {
             native2DGeometryCall [dict get $r projection scene_token] pan [dict create delta [list [expr {$x-$px}] [expr {$y-$py}]]]
             dict set ::GX::Native2DDiagram::viewports $w drag device [list $x $y]
             _native2DDiagramViewportSchedule $w
+        } elseif {[dict get $drag kind] in {move label}} {
+            lassign [dict get $drag start] sx sy;lassign [_native2DDiagramViewportPoint $w $x $y] ex ey
+            if {[dict get $drag kind] eq {move}} {set field position} else {set field offset}
+            lassign [dict get $drag $field] px py
+            dict set drag request [dict create id [dict get $drag selected] $field [list [expr {$px+$ex-$sx}] [expr {$py+$ey-$sy}]]]
+            dict set ::GX::Native2DDiagram::viewports $w drag $drag
+            _native2DDiagramViewportSchedule $w
         }
-    } reason]==1} {$w.status configure -text $reason}
+    } reason]==1} {_native2DDiagramViewportNotice $w $reason}
+    _native2DDiagramViewportSchedule $w
 }
 proc ::GX::_native2DDiagramViewportRelease {w x y} {
     if {[catch {
@@ -260,13 +408,15 @@ proc ::GX::_native2DDiagramViewportRelease {w x y} {
             set offset [list [expr {$dx+$ex-$sx}] [expr {$dy+$ey-$sy}]]
             if {$ex!=$sx || $ey!=$sy} {native2DGeometryDiagramViewportEdit $w label [dict create id [dict get $drag selected] offset $offset]}
         } else {_native2DDiagramViewportEmit $w view_changed [native2DGeometryCall [dict get $r projection scene_token] view_state {}]}
-    } reason]==1} {$w.status configure -text $reason}
+    } reason]==1} {_native2DDiagramViewportNotice $w $reason}
+    _native2DDiagramViewportSchedule $w
 }
 proc ::GX::_native2DDiagramViewportProperties {w id} {
     set r [_native2DDiagramViewportRecord $w];set owner [native2DGeometryDiagramRead [dict get $r document]]
     if {[winfo exists $w.properties]} {raise $w.properties;return}
     if {[dict exists $owner payload wires $id]} {return [_native2DDiagramWireProperties $w $id $owner]}
     set ::GX::Native2DDiagram::field($w,properties_kind) symbol_or_label
+    set ::GX::Native2DDiagram::field($w,properties_source) [dict remove $owner payload]
     set ::GX::Native2DDiagram::field($w,properties_fields) $w.properties.fields
     if {[dict exists $owner payload labels $id]} {
         set item [dict get $owner payload labels $id]
@@ -288,6 +438,14 @@ proc ::GX::_native2DDiagramViewportProperties {w id} {
     set row 0
     dict for {key field} $fields {
         set ::GX::Native2DDiagram::field($w,$key) [dict get $values $key]
+        if {[datasetPublicationV2DictDefault $field notation {}] eq {electrical_engineering}} {
+            set ::GX::Native2DDiagram::field($w,$key) [_native2DDiagramElectricalDisplay [dict get $values $key]]
+            # Electrical suffix parsing belongs to the catalog attribute owner,
+            # not generic Numeric fields or a Viewer-specific parser.
+            dict set field type string
+            dict set field default [_native2DDiagramElectricalDisplay [dict get $field default]]
+            foreach bound {min max notation} {if {[dict exists $field $bound]} {dict unset field $bound}}
+        }
         set label [datasetPublicationV2DictDefault $field label $key]
         if {[dict exists $field unit]} {append label " ([dict get $field unit])"}
         ttk::label $d.fields.l$key -text $label
@@ -299,22 +457,39 @@ proc ::GX::_native2DDiagramViewportProperties {w id} {
     }
     grid columnconfigure $d.fields 1 -weight 1
     ttk::label $d.error -wraplength 440;pack $d.error -fill x -padx 12
+    bind $d.error <Configure> +[list ::GX::_uiFieldComponentTextWrap $d.error 440 %W %w]
+    bind $d.error <Configure> +[list ::GX::_native2DDiagramPropertiesMinimum $d]
     ttk::frame $d.buttons;pack $d.buttons -fill x -padx 12 -pady 8
     ttk::button $d.buttons.apply -text Apply -command [list ::GX::_native2DDiagramViewportPropertiesApply $w $id $fields]
     ttk::button $d.buttons.close -text Close -command [list destroy $d]
     pack $d.buttons.apply $d.buttons.close -side left -padx 4
 }
+proc ::GX::_native2DDiagramPropertiesMinimum {d} {
+    if {![winfo exists $d.buttons]} return
+    # Wrapped diagnostics can increase the form's natural height after opening.
+    # Keep every field and normal action visible instead of clipping the last
+    # packed row inside the previously allocated window.
+    wm minsize $d [winfo reqwidth $d.fields] [winfo reqheight $d]
+}
 proc ::GX::_native2DDiagramViewportPropertiesApply {w id fields} {
     if {[catch {
         set r [_native2DDiagramViewportRecord $w];set owner [native2DGeometryDiagramRead [dict get $r document]]
+        # The nonmodal form is a draft of the revision shown when opened.
+        # Reject stale drafts before validation or History branch preparation.
+        foreach key {id generation revision sha256} {
+            if {[dict get $owner $key] ne [dict get $::GX::Native2DDiagram::field($w,properties_source) $key]} {
+                return -code error -errorcode {GX NATIVE2D STALE_SOURCE} {Diagram changed while Properties was open; close and reopen the editor}
+            }
+        }
         if {[dict exists $owner payload labels $id]} {
             set offset {};foreach key {offset_x offset_y} {lappend offset [uiFieldNormalize [dict get $fields $key] $::GX::Native2DDiagram::field($w,$key)]}
             native2DGeometryDiagramViewportEdit $w label [dict create id $id text $::GX::Native2DDiagram::field($w,name) offset $offset]
         } else {
             set attributes {}
-            dict for {key field} $fields {if {$key ne {name}} {dict set attributes $key [uiFieldNormalize $field $::GX::Native2DDiagram::field($w,$key)]}}
+            dict for {key field} $fields {if {$key ne {name}} {dict set attributes $key [_native2DDiagramAttributeNormalize $field $::GX::Native2DDiagram::field($w,$key)]}}
             native2DGeometryDiagramViewportEdit $w properties [dict create id $id name $::GX::Native2DDiagram::field($w,name) attributes $attributes]
         }
+        set ::GX::Native2DDiagram::field($w,properties_source) [dict remove [native2DGeometryDiagramRead [dict get $r document]] payload]
     } reason]} {if {[winfo exists $w.properties.error]} {$w.properties.error configure -text $reason};return}
     if {[winfo exists $w.properties.error]} {$w.properties.error configure -text {Properties committed to the canonical document.}}
 }

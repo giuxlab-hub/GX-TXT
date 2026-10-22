@@ -96,11 +96,14 @@ proc ::GX::documentationBrowserManualImagesClear {w} {
         foreach pair $state($w,images) {foreach photo $pair {catch {image delete $photo}}}
     }
     set state($w,images) {}
+    set state($w,image_paths) {}
+    catch {destroy $w.screenshot}
 }
 proc ::GX::documentationBrowserManualImagesFit {w} {
     variable ::GX::DocumentationManual::state
-    if {![info exists state($w,images)] || ![winfo exists $w.body.text]} return
-    set available [expr {max(160,[winfo width $w.body.text]-35)}]
+    set text [expr {[info exists state($w,text)] ? $state($w,text) : "$w.body.text"}]
+    if {![info exists state($w,images)] || ![winfo exists $text]} return
+    set available [expr {max(160,[winfo width $text]-35)}]
     foreach pair $state($w,images) {
         lassign $pair displayed original
         set factor [expr {max(1,int(ceil([image width $original]/double($available))))}]
@@ -109,9 +112,9 @@ proc ::GX::documentationBrowserManualImagesFit {w} {
 }
 proc ::GX::documentationBrowserManualImage {w text relative caption} {
     variable ::GX::DocumentationManual::state
-    # Only bounded packaged PNG assets beneath this module's documentation
-    # directory are rendered. A Markdown document never supplies executable code.
-    set root [file normalize [file dirname [moduleField $state($w,module) descriptor]]]
+    # The owning indexed document supplies the asset root, never Markdown.
+    # Module manuals retain their module root; canonical API guides use docs/.
+    set root [expr {[info exists state($w,asset_root)] ? $state($w,asset_root) : [file normalize [file dirname [moduleField $state($w,module) descriptor]]]}]
     set path [file normalize [file join [file dirname $state($w,path)] $relative]]
     if {[file pathtype $relative] ne {relative} || [string first "$root/" $path]!=0 || ![file isfile $path] || [file type $path] eq {link} || [file extension $path] ne {.png} || [file size $path]>8388608} {
         $text insert end "Image unavailable: $caption\n";return
@@ -125,6 +128,7 @@ proc ::GX::documentationBrowserManualImage {w text relative caption} {
     if {[catch {set original [image create photo -file $path]} message]} {$text insert end "Image unavailable: $caption ($message)\n";return}
     set displayed [image create photo]
     lappend state($w,images) [list $displayed $original]
+    lappend state($w,image_paths) $path
     documentationBrowserManualImagesFit $w
     $text image create end -image $displayed
     $text insert end "\n$caption\n\n"

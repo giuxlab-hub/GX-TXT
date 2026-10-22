@@ -867,8 +867,20 @@ static uint32_t navcube_synced(const gx3de_view* view);
 #include "native_3d_planar_texture_impl.inc"
 #include "native_3d_curved_texture_impl.inc"
 #include "native_3d_shadow_impl.inc"
-static void figure_rect(const gx3de_view*,double&,double&,double&,double&);
+static void figure_rect(const gx3de_view*,double&,double&,double&,double&,uint32_t);
 static double scientific_style(const gx3de_view*,const char*,double);
+// VTK 9.3 measures a picker's fractional tolerance at the near/far ray
+// midpoint. Express the radius in focal-plane viewport pixels instead, so a
+// distant clipping plane cannot turn an isolated handle into another axis.
+static double viewport_pick_tolerance(const gx3de_viewport* vp,double pixels) {
+    const auto& camera=vp->view->camera;
+    double tolerance=pixels/std::hypot(double(vp->width),double(vp->height));
+    if(!camera.orthographic){
+        const double midpoint=camera.near_clip*.5+camera.far_clip*.5;
+        tolerance*=length(sub(camera.position,camera.target))/midpoint;
+    }
+    return tolerance;
+}
 #include "native_3d_renderer_impl.inc"
 #include "native_3d_backend_impl.inc"
 #include "native_3d_gizmo_impl.inc"
@@ -1551,6 +1563,37 @@ gx3de_result gx3de_step_instance_create(gx3de_scene* scene,gx3de_step_document* 
             if(!gx3de_backend::step_prototype_shape(*doc->native,node.prototype_index,native)||!gx3de_backend::adopt_step_shape(native,shape,error))return GX3DE_DEGENERATE;}
         auto o=new gx3de_object{scene,nullptr,node.world_transform};o->brep=shape;o->source_sha256=doc->source_sha256;
         return retain(scene->objects,o,out);
+    }catch(const std::bad_alloc&){return GX3DE_OUT_OF_MEMORY;}
+#else
+    return GX3DE_UNSUPPORTED;
+#endif
+}
+gx3de_result gx3de_step_compound_create(gx3de_scene* scene,gx3de_step_document* doc,gx3de_object** out) {
+    if(!scene||!doc||!out)return GX3DE_INVALID_ARGUMENT;
+    *out=nullptr;
+    if(scene->engine!=doc->engine)return GX3DE_WRONG_OWNER;
+#ifdef GX3DE_WITH_OCCT
+    try {
+        std::vector<std::shared_ptr<gx3de_backend::BrepShape>> parts;
+        std::string error;
+        for(const auto& node:gx3de_backend::step_nodes(*doc->native)) {
+            if(node.kind!=gx3de_backend::StepNodeKind::part)continue;
+            if(node.prototype_index>=doc->prototype_shapes.size())return GX3DE_DEGENERATE;
+            auto& shape=doc->prototype_shapes[size_t(node.prototype_index)];
+            if(!shape) {
+                TopoDS_Shape native;
+                if(!gx3de_backend::step_prototype_shape(*doc->native,node.prototype_index,native)||
+                   !gx3de_backend::adopt_step_shape(native,shape,error))return GX3DE_DEGENERATE;
+            }
+            std::shared_ptr<gx3de_backend::BrepShape> placed;
+            if(!gx3de_backend::transformed(*shape,node.world_transform,placed,error))return GX3DE_DEGENERATE;
+            parts.push_back(std::move(placed));
+        }
+        std::shared_ptr<gx3de_backend::BrepShape> compound;
+        if(!gx3de_backend::compound_shapes(parts,compound,error))return GX3DE_DEGENERATE;
+        auto* object=new gx3de_object{scene,nullptr,identity()};
+        object->brep=std::move(compound);object->source_sha256=doc->source_sha256;
+        return retain(scene->objects,object,out);
     }catch(const std::bad_alloc&){return GX3DE_OUT_OF_MEMORY;}
 #else
     return GX3DE_UNSUPPORTED;
@@ -3403,9 +3446,22 @@ gx3de_result gx3de_view_scientific_figure_get(gx3de_view* v,gx3de_scientific_fig
     if(!v||!f||f->struct_size<sizeof(*f))return GX3DE_INVALID_ARGUMENT;
     *f=v->figure;f->struct_size=sizeof(*f);return GX3DE_OK;
 }
-static void figure_rect(const gx3de_view* v,double& x,double& y,double& w,double& h) {
+static void figure_rect(const gx3de_view* v,double& x,double& y,double& w,double& h,uint32_t pixelsHigh) {
     x=0;y=0;w=1;h=1;
-    if(v->figure.enabled){x=scientific_style(v,"margin_left",.09);y=scientific_style(v,"margin_bottom",.13);w=1-x-scientific_style(v,"margin_right",v->figure.colorbar_visible?.23:.11);h=1-y-scientific_style(v,"margin_top",.14);}
+    if(v->figure.enabled){
+        const double scale=std::max(.8,std::min(1.0,double(pixelsHigh)/640));
+        const double axisFont=scientific_style(v,"axis_label_font_size",14*scale);
+        const double titleFont=scientific_style(v,"title_font_size",18*scale);
+        const double legendFont=v->figure.legend_utf8[0]?scientific_style(v,"legend_font_size",12*scale):0;
+        // Reserve real text space in automatic layout. Explicit scientific
+        // margins remain authoritative; pan and both projection directions use
+        // this exact same rectangle as the native rendering viewport.
+        const double top=std::max(.14,std::min(.30,(5*axisFont+titleFont+legendFont+16)/std::max(1u,pixelsHigh)));
+        const double bottom=std::max(.13,std::min(.25,(3*axisFont+16)/std::max(1u,pixelsHigh)));
+        x=scientific_style(v,"margin_left",.09);y=scientific_style(v,"margin_bottom",bottom);
+        w=1-x-scientific_style(v,"margin_right",v->figure.colorbar_visible?.23:.11);
+        h=1-y-scientific_style(v,"margin_top",top);
+    }
 }
 static double camera_ortho_height(const gx3de_view* v) {
     return v->orthographic_height>0?v->orthographic_height:
@@ -3444,7 +3500,7 @@ gx3de_result gx3de_view_camera_pan(gx3de_viewport* vp,double dx,double dy) {
     const double height=c.orthographic?camera_ortho_height(vp->view):
         2*length(sub(c.position,c.target))*
         std::tan(c.vertical_fov_degrees*3.141592653589793/360.0);
-    double sx,sy,sw,sh;figure_rect(vp->view,sx,sy,sw,sh);
+    double sx,sy,sw,sh;figure_rect(vp->view,sx,sy,sw,sh,vp->height);
     const auto move=add(mul(right,-dx*height/(vp->height*sh)),mul(up,dy*height/(vp->height*sh)));
     c.position=add(c.position,move);c.target=add(c.target,move);
     return gx3de_view_set_camera(vp->view,&c);
@@ -3473,7 +3529,7 @@ gx3de_result gx3de_viewport_world_to_screen(gx3de_viewport* vp,gx3de_vec3 world,
     const double z=dot(delta,forward);if(z<=0)return GX3DE_RANGE;
     const double half_height=c.orthographic?camera_ortho_height(vp->view)*0.5:
         z*std::tan(c.vertical_fov_degrees*3.141592653589793/360.0);
-    double sx,sy,sw,sh;figure_rect(vp->view,sx,sy,sw,sh);
+    double sx,sy,sw,sh;figure_rect(vp->view,sx,sy,sw,sh,vp->height);
     const double width=vp->width*sw,height=vp->height*sh;
     const double half_width=half_height*width/height;
     *x=sx*vp->width+(dot(delta,right)/half_width+1.0)*width*0.5-0.5;
@@ -3490,7 +3546,7 @@ gx3de_result gx3de_viewport_screen_to_world(gx3de_viewport* vp,double x,double y
     const auto up=cross(right,forward);
     const double half_height=c.orthographic?camera_ortho_height(vp->view)*0.5:
         depth*std::tan(c.vertical_fov_degrees*3.141592653589793/360.0);
-    double sx,sy,sw,sh;figure_rect(vp->view,sx,sy,sw,sh);
+    double sx,sy,sw,sh;figure_rect(vp->view,sx,sy,sw,sh,vp->height);
     const double width=vp->width*sw,height=vp->height*sh;
     const double nx=(2*(x-sx*vp->width+0.5)/width-1)*half_height*width/height;
     const double ny=(1-2*(y-(1-sy-sh)*vp->height+0.5)/height)*half_height;
@@ -3793,7 +3849,14 @@ gx3de_result gx3de_viewport_pick(gx3de_viewport* vp,uint32_t x,uint32_t y,gx3de_
     auto it=std::find_if(vp->target->rendered.begin(),vp->target->rendered.end(),
                          [vp](const gx3de_render_viewport& rv){return rv.viewport==vp;});
     if(it==vp->target->rendered.end())return GX3DE_NOT_FOUND;
-    vtkNew<vtkCellPicker> picker;picker->SetTolerance(0.001);
+    vtkNew<vtkCellPicker> picker;
+    // VTK 9.3 measures this fraction at the midpoint of the near/far ray,
+    // rather than at the scientific focal plane. A fixed .001 therefore
+    // grows to several model units with a distant far clip and can accept a
+    // triangle-plane extension outside the actual object. Keep the admission
+    // radius at .75 viewport pixels at the focal plane, independent of clip
+    // depth. This changes picking only, not geometry, camera or rendering.
+    picker->SetTolerance(viewport_pick_tolerance(vp,.75));
     picker->PickFromListOn();for(const auto& prop:it->props)picker->AddPickList(prop.actor);
     const int px=int(vp->x+x),py=int(vp->target->height-1-(vp->y+y));
     if(!picker->Pick(px,py,0,it->renderer))return pick_volume_data(vp,*it,x,y,out);

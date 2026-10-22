@@ -179,6 +179,9 @@ proc ::GX::datasetBrowserContext {x y X Y} {
     if {[string match dataset:* $node]} {
         $menu add command -label {Activate Dataset} -command [list ::GX::datasetBrowserActivate $value]
         $menu add command -label Preview -command [list ::GX::datasetInspectionPreviewFromVariables $value]
+        if {[datasetField $value contract [datasetField $value kind {}]] eq {molecular.structure}} {
+            $menu add command -label {Open in Molecule Viewer} -state [expr {[_datasetViewerMoleculeAvailable $value]?{normal}:{disabled}}] -command [list ::GX::datasetPageAction datasetViewerOpenMolecule $value]
+        }
         $menu add command -label {Metadata…} -command [list ::GX::datasetMetadataEditorOpen $value]
         $menu add command -label {Notes…} -command [list ::GX::datasetNotesOpen $value]
         $menu add separator

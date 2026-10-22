@@ -20,14 +20,14 @@ proc ::GX::native2DGeometryPolarBulk {frame encoded} {
     } finally {::GX::Native2D::core destroy $scene}
 }
 proc ::GX::native2DGeometryApiInfo {} {
-    return [dict create api_id NATIVE_2D_GEOMETRY_API_v1 api_version 1 operations {path_validate open raster_snapshot raster_save raster_restore raster_roi_set raster_roi_get raster_roi_remove raster_layer_get raster_layer_update raster_prepare raster_submit raster_freeze axis_presentation composition_parts composition_traversal part_direction part_direction_batch part_render part_marker_geometry part_marker_hit part_marker_place part_pick image_calibration_reset selection_definition spline_line_plan spline_span_to_line composition_create composition_part composition_split composition_explode path_vertices path_split path_join primitive_publish dataset_promote image_attach image_get image_update image_calibrate image_map symmetry_preview symmetry_construct canvas_preview spline_tangent_get spline_tangent_edit fit_all fit_selected fit_bounds zoom pan scene_bounds world_to_device device_to_world pixel_tolerance construct_attached placement_points placement_preview reference_connected sketch_status sketch_component dimension_infer dimension_preview dimension_apply dimension_geometry relationship_state relationship_hit construct construct_preview from_fit controls reference reference_resolve reference_point_index control_definition control_edit constraint_options constraint_apply constraint_location polar_bulk compare_geometry geometry_role series_create series_get series_list series_members series_update series_transform series_bounds series_delete series_explode saved_view_create saved_view_get saved_view_list saved_view_update saved_view_restore saved_view_delete view_state view_state_rescale layer_create layer_get layer_list layer_update layer_delete layer_assign selection_pick selection_region selection_set_apply selection_set_restore selection_set_bounds selection_set_create selection_set_get selection_set_list selection_set_update selection_set_add_member selection_set_remove_member selection_set_delete selection_set_activate identity fragment_create fragment_get fragment_list fragment_update fragment_delete fragment_sample fragment_length fragment_bounds fragment_materialize sketch sketch_update sketch_evaluate sketch_sample sketch_materialize sketch_explode curve from_source describe metrics measure path_point replace_points points_page nearest_vertex rescale_coordinates affine series group group_members group_add group_remove ungroup delete endpoint_frame bridge spline compare selection pivot grid polar view style direction export_resource restore_resource constraint_create constraint_join constraint_get constraint_list constraint_update constraint_enable constraint_delete checkpoint close} host_operations {native2DGeometryViewportAttach native2DGeometryViewportDraw} raw_pointers 0 implicit_dataset_publication 0 point_page_limit 65536]
+    return [dict create api_id NATIVE_2D_GEOMETRY_API_v1 api_version 1 operations {path_validate open raster_dataset_bind raster_snapshot raster_save raster_restore raster_roi_set raster_roi_get raster_roi_remove raster_roi_geometry raster_roi_pick raster_roi_propose raster_layer_get raster_layer_update raster_prepare raster_submit raster_freeze axis_presentation composition_parts composition_traversal part_direction part_direction_batch part_render part_marker_geometry part_marker_hit part_marker_place part_pick image_calibration_reset selection_definition spline_line_plan spline_span_to_line composition_create composition_part composition_split composition_explode path_vertices path_split path_join primitive_publish dataset_promote image_attach image_get image_update image_calibrate image_map symmetry_preview symmetry_construct canvas_preview spline_tangent_get spline_tangent_edit fit_all fit_selected fit_bounds zoom pan scene_bounds world_to_device device_to_world pixel_tolerance construct_attached placement_points placement_preview reference_connected sketch_status sketch_component dimension_infer dimension_preview dimension_apply dimension_geometry relationship_state relationship_hit construct construct_preview from_fit controls reference reference_resolve reference_point_index control_definition control_edit constraint_options constraint_apply constraint_location polar_bulk compare_geometry geometry_role series_create series_get series_list series_members series_update series_transform series_bounds series_delete series_explode saved_view_create saved_view_get saved_view_list saved_view_update saved_view_restore saved_view_delete view_state view_state_rescale layer_create layer_get layer_list layer_update layer_delete layer_assign selection_pick selection_region selection_set_apply selection_set_restore selection_set_bounds selection_set_create selection_set_get selection_set_list selection_set_update selection_set_add_member selection_set_remove_member selection_set_delete selection_set_activate identity fragment_create fragment_get fragment_list fragment_update fragment_delete fragment_sample fragment_length fragment_bounds fragment_materialize sketch sketch_update sketch_evaluate sketch_sample sketch_materialize sketch_explode curve from_source describe metrics measure path_point replace_points points_page nearest_vertex rescale_coordinates affine series group group_members group_add group_remove ungroup delete endpoint_frame bridge spline compare selection pivot grid polar view style direction export_resource restore_resource constraint_create constraint_join constraint_get constraint_list constraint_update constraint_enable constraint_delete checkpoint close} host_operations {native2DGeometryViewportAttach native2DGeometryViewportDraw} raw_pointers 0 implicit_dataset_publication 0 point_page_limit 65536]
 }
 proc ::GX::native2DGeometryOpen {document} {
     variable ::GX::Native2DGeometry::scenes;variable ::GX::Native2DGeometry::serial
     set owner [interactiveDocumentRead $document]
     native2DEnsure
     set token "native2d-scene#[pid]-[incr serial]-[clock clicks]"
-    dict set scenes $token [dict create document_id $document generation [dict get $owner generation] revision [dict get $owner revision] session_token [interactiveDocumentSessionToken] native [::GX::Native2D::core scene] objects {} constraints {}]
+    dict set scenes $token [dict create scene_token $token document_id $document generation [dict get $owner generation] revision [dict get $owner revision] session_token [interactiveDocumentSessionToken] native [::GX::Native2D::core scene] objects {} constraints {}]
     return $token
 }
 proc ::GX::_native2DGeometryRequire {token} {
@@ -101,6 +101,9 @@ proc ::GX::native2DGeometryClose {token} {
     if {![dict exists $scenes $token]} {error "Unknown or closed Native2D scene token"}
     # Closing is valid after owner/Session expiry, so script cleanup can always
     # release this authority's scene without writing to the current Session.
+    dict for {object reader} [datasetPublicationV2DictDefault [dict get $scenes $token] raster_resource_readers {}] {
+        catch {interactiveDocumentResourceCloseReader $reader}
+    }
     native2DRasterSceneDispose [dict get $scenes $token native]
     ::GX::Native2D::core destroy [dict get $scenes $token native]
     dict unset scenes $token
@@ -116,11 +119,13 @@ proc ::GX::_native2DGeometryConstraintAdopt {token receipt} {
 proc ::GX::_native2DGeometryConstraintSpec {scene definition} {
     foreach key [dict keys $definition] {if {$key ni {kind a_token b_token axis_token a_index b_index axis_index value tolerance angular_tolerance disabled anchor solved driven placed annotation branch curvature_tolerance}} {error "Unknown Native2D constraint parameter: $key"}}
     set native [dict remove $definition a_token b_token axis_token]
+    set objects {}
     foreach field {a b axis} {
         set key ${field}_token
-        if {[dict exists $definition $key]} {dict set native $field [_native2DGeometryObject $scene [dict get $definition $key]]}
+        if {[dict exists $definition $key]} {lappend objects [dict get $definition $key];dict set native $field [_native2DGeometryObject $scene [dict get $definition $key]]}
     }
     if {![dict exists $native a]} {error "Constraint requires a_token"}
+    _native2DGeometryCommonFrame $scene $objects
     return $native
 }
 proc ::GX::_native2DGeometryConstraintReceipt {scene token receipt} {
@@ -137,6 +142,7 @@ proc ::GX::_native2DGeometryConstraintReceipt {scene token receipt} {
 }
 proc ::GX::_native2DGeometryCoordinateUnits {scene object} {
     set metadata [dict get $scene objects $object metadata]
+    if {[dict exists $metadata coordinate_units]} {return [dict get $metadata coordinate_units]}
     if {[dict exists $metadata working_unit]} {return [lrepeat 2 [dict get $metadata working_unit]]}
     set units [list {} {}]
     if {[dict exists $metadata source_descriptor variables]} {
@@ -146,6 +152,61 @@ proc ::GX::_native2DGeometryCoordinateUnits {scene object} {
         }
     }
     return $units
+}
+proc ::GX::_native2DCoordinateFrame {units {relations {}}} {
+    # Resolve immutable numeric-plane meaning, never a physical metric. The
+    # Unit Registry remains the owner of relation syntax and conversions.
+    if {[llength $units]!=2} {error {Coordinate frame requires ordered X/Y units}}
+    foreach axis [dict keys $relations] {if {$axis ni {x y}} {error "Unknown coordinate relation axis '$axis'"}}
+    set normalized {}
+    foreach axis {x y} unit $units {
+        if {[string length $unit]>256||[regexp {[\r\n]} $unit]} {error {Invalid coordinate unit}}
+        set definition [unitRegistryDefinition $unit];set nominal {}
+        foreach field {canonical_unit to_canonical from_canonical} {dict set nominal $field [dict get $definition $field]}
+        set relation [datasetPublicationV2DictDefault $relations $axis {}]
+        foreach field [dict keys $relation] {if {$field ni {canonical_unit to_canonical from_canonical}} {error "Unknown coordinate relation field '$field'"}}
+        set resolved [dict merge $nominal $relation]
+        if {[dict get $resolved canonical_unit] eq {}} {
+            if {[dict get $resolved to_canonical] ne {}||[dict get $resolved from_canonical] ne {}} {error {Coordinate formulas require a canonical unit}}
+        } else {unitRegistryConversionPlan $unit [dict get $resolved canonical_unit] $resolved}
+        if {$resolved ne $nominal} {dict set normalized $axis $resolved}
+    }
+    set common {};if {[lindex $units 0] eq [lindex $units 1]} {set common [lindex $units 0]}
+    return [dict create coordinate_units $units coordinate_relations $normalized working_unit $common]
+}
+proc ::GX::_native2DGeometryCoordinateFrame {scene object} {
+    set metadata [dict get $scene objects $object metadata]
+    set relations [datasetPublicationV2DictDefault $metadata coordinate_relations {}]
+    if {![dict exists $metadata coordinate_relations]&&![dict exists $metadata coordinate_conversions]&&[dict exists $metadata source_descriptor variables]} {
+        set descriptor [dict get $metadata source_descriptor];set request [dict get $descriptor request]
+        set relations [native2DSourceCoordinateRelations $descriptor [dict get $request x_variable_id] [dict get $request y_variable_id]]
+    }
+    return [_native2DCoordinateFrame [_native2DGeometryCoordinateUnits $scene $object] $relations]
+}
+proc ::GX::_native2DCoordinateVariableSchema {variable} {
+    set unit [dict get $variable unit];set definition [unitRegistryDefinition $unit]
+    set result [dict create unit $unit]
+    foreach field {canonical_unit to_canonical from_canonical} {dict set result $field [dict get $definition $field]}
+    if {[datasetPublicationV2DictDefault $variable canonical_unit {}] ne {}} {
+        foreach field {canonical_unit to_canonical from_canonical} {dict set result $field [dict get $variable $field]}
+    } elseif {[datasetPublicationV2DictDefault $variable to_canonical {}] ne {}||[datasetPublicationV2DictDefault $variable from_canonical {}] ne {}} {error {Coordinate formulas require a canonical unit}}
+    return $result
+}
+proc ::GX::_native2DGeometryCommonFrame {scene objects} {
+    if {$objects eq {}} {error {Select at least one geometry object}}
+    set frame [_native2DGeometryCoordinateFrame $scene [lindex $objects 0]]
+    foreach object [lrange $objects 1 end] {if {[_native2DGeometryCoordinateFrame $scene $object] ne $frame} {error {Geometry requires the same complete X/Y coordinate frame and frozen relations}}}
+    return $frame
+}
+proc ::GX::_native2DMeasurementCoordinateUnit {kind frame} {
+    if {[dict get $frame coordinate_relations] ne {}} {error {Normalize variable-specific coordinate relations through Dataset Transform before physical measurement}}
+    set units [dict get $frame coordinate_units]
+    if {$kind in {horizontal_distance bounding_width}} {return [lindex $units 0]}
+    if {$kind in {vertical_distance bounding_height}} {return [lindex $units 1]}
+    if {[lindex $units 0] ne [lindex $units 1]} {error {Physical plane measurements require explicitly normalized common X/Y working coordinates; use axis-specific measurements or Dataset Transform}}
+    unitRegistryHomogeneousCoordinatePlan [lindex $units 0] [lindex $units 0]
+    native2DComparisonFrame path $units $units
+    return [lindex $units 0]
 }
 proc ::GX::_native2DGeometryWorkingUnit {scene object} {
     set units [_native2DGeometryCoordinateUnits $scene $object]
@@ -167,11 +228,7 @@ proc ::GX::native2DSourceCoordinateRelations {descriptor xVariable yVariable} {
     return $relations
 }
 proc ::GX::_native2DGeometryComparableUnits {scene object} {
-    set metadata [dict get $scene objects $object metadata]
-    if {[dict exists $metadata source_descriptor variables]} {
-        set descriptor [dict get $metadata source_descriptor];set request [dict get $descriptor request]
-        if {[native2DSourceCoordinateRelations $descriptor [dict get $request x_variable_id] [dict get $request y_variable_id]] ne {}} {error {Variable-specific coordinate relations require explicit Dataset Transform normalization before physical comparison or metrics}}
-    }
+    if {[dict get [_native2DGeometryCoordinateFrame $scene $object] coordinate_relations] ne {}} {error {Variable-specific coordinate relations require explicit Dataset Transform normalization before physical comparison or metrics}}
     return [_native2DGeometryCoordinateUnits $scene $object]
 }
 proc ::GX::native2DComparisonFrame {method referenceUnits targetUnits {options {}}} {
@@ -181,10 +238,15 @@ proc ::GX::native2DComparisonFrame {method referenceUnits targetUnits {options {
     set output [datasetPublicationV2DictDefault $options output_units [expr {$method eq "x"?$referenceUnits:[lrepeat 2 [lindex $referenceUnits 0]]}]]
     if {[llength $output]!=2} {error {Comparison output_units requires ordered X/Y units}}
     if {$method ne "x"&&[lindex $output 0] ne [lindex $output 1]} {error {Euclidean comparison requires one common physical output unit}}
+    # Equal labels alone do not establish a proportional physical plane. Keep
+    # the existing wholly unlabelled numeric inspection route; its statistical
+    # physical quantities remain unavailable. X-wise matching has separate axes.
+    set homogeneous [expr {$method ne "x"&&[lsearch -not -exact [concat $referenceUnits $targetUnits $output] {}]>=0}]
     set frame [dict create schema_version 1 method $method reference_units $referenceUnits target_units $targetUnits output_units $output]
     foreach role {reference target} units [list $referenceUnits $targetUnits] {
         set scales {};set offsets {}
         foreach source $units destination $output {
+            if {$homogeneous} {unitRegistryHomogeneousCoordinatePlan $source $destination}
             set plan [unitRegistryAffinePlan $source $destination]
             if {![dict get $plan affine]||[dict get $plan scale]<=0} {error {Comparison requires a positive affine coordinate conversion; explicitly normalize nonlinear source coordinates through Dataset Transform}}
             lappend scales [dict get $plan scale];lappend offsets [dict get $plan offset]
@@ -256,14 +318,14 @@ proc ::GX::native2DGeometryCall {token operation request} {
             return [::GX::Native2D::core $operation $native $object [dict get $request index]]
         }
         composition_create {
-            set ids {};set sources [dict get $request object_tokens];set units {}
-            foreach source $sources {lappend ids [_native2DGeometryObject $scene $source];lappend units [_native2DGeometryWorkingUnit $scene $source]}
-            if {[llength [lsort -unique $units]]!=1} {error {Composition requires one common working unit}}
+            set ids {};set sources [dict get $request object_tokens]
+            set frame [_native2DGeometryCommonFrame $scene $sources]
+            foreach source $sources {lappend ids [_native2DGeometryObject $scene $source]}
             set arrangement [datasetPublicationV2DictDefault $request arrangement compound]
             if {$arrangement ni {compound ordered_path auto_path}} {error {Composition arrangement must be compound, ordered_path or auto_path}}
             set mode [lsearch -exact {compound ordered_path auto_path} $arrangement]
             set id [::GX::Native2D::core composition_create $native $ids [datasetPublicationV2DictDefault $request reversals {}] $mode [datasetPublicationV2DictDefault $request tolerance 0]]
-            return [_native2DGeometryAdopt $token $id [dict create working_unit [lindex $units 0] parent_geometry_tokens $sources geometry_operation $arrangement {*}[_native2DPathProvenance $scene $sources]]]
+            return [_native2DGeometryAdopt $token $id [dict create {*}$frame parent_geometry_tokens $sources geometry_operation $arrangement {*}[_native2DPathProvenance $scene $sources]]]
         }
         composition_part {
             return [::GX::Native2D::core composition_part $native [_native2DGeometryObject $scene [dict get $request object_token]] [dict get $request part_index]]
@@ -285,12 +347,10 @@ proc ::GX::native2DGeometryCall {token operation request} {
             foreach key [dict keys $request] {if {$key ni {kind a_token b_token a_index b_index pair_budget}} {error "Unknown Native2D measurement field: $key"}}
             set spec [dict remove $request a_token b_token]
             foreach field {a b} {if {[dict exists $request ${field}_token]} {dict set spec $field [_native2DGeometryObject $scene [dict get $request ${field}_token]]}}
-            set unit [_native2DGeometryWorkingUnit $scene [dict get $request a_token]]
-            if {[dict exists $request b_token]} {
-                set other [_native2DGeometryWorkingUnit $scene [dict get $request b_token]]
-                if {$unit ne {}&&$other ne {}&&$unit ne $other} {error "Measurements require common coordinate units; normalize geometry before comparing $unit and $other"}
-                if {$other eq {}} {set unit {}}
-            }
+            set objects [list [dict get $request a_token]]
+            if {[dict exists $request b_token]} {lappend objects [dict get $request b_token]}
+            set frame [_native2DGeometryCommonFrame $scene $objects]
+            set unit [_native2DMeasurementCoordinateUnit [dict get $request kind] $frame]
             set result [::GX::Native2D::core measure $native $spec]
             dict set result unit_declared [expr {$unit ne {}}]
             dict set result working_unit $unit
@@ -304,6 +364,7 @@ proc ::GX::native2DGeometryCall {token operation request} {
             return [_native2DGeometryConstraintAdopt $token $receipt]
         }
         constraint_join {
+            _native2DGeometryCommonFrame $scene [list [dict get $request a_token] [dict get $request b_token]]
             set a [_native2DGeometryObject $scene [dict get $request a_token]];set b [_native2DGeometryObject $scene [dict get $request b_token]]
             set receipt [::GX::Native2D::core constraint_join $native $a [dict get $request a_index] $b [dict get $request b_index] [datasetPublicationV2DictDefault $request merge 1] [datasetPublicationV2DictDefault $request tolerance 1e-8]]
             return [_native2DGeometryConstraintAdopt $token $receipt]
@@ -338,26 +399,17 @@ proc ::GX::native2DGeometryCall {token operation request} {
             dict for {object entry} [dict get $scene objects] {
                 set metadata [dict get $entry metadata]
                 if {[::GX::Native2D::core kind $native [dict get $entry native]] ne "group"} {
-                    set units {}
-                    if {[dict exists $metadata working_unit]} {set units [list [dict get $metadata working_unit]]} elseif {[dict exists $metadata source_descriptor variables]} {
-                        set request [dict get $metadata source_descriptor request]
-                        foreach variable [dict get $metadata source_descriptor variables] {
-                            if {[dict get $variable variable_id] in [list [dict get $request x_variable_id] [dict get $request y_variable_id]]} {
-                                lappend units [dict get $variable unit]
-                                set nominal [unitRegistryDefinition [dict get $variable unit]]
-                                foreach field {canonical_unit to_canonical from_canonical} {
-                                    if {[dict exists $variable $field]&&[dict get $variable $field] ne ""&&[dict get $variable $field] ne [dict get $nominal $field]} {error "Geometry $object has variable-specific coordinate calibration; normalize the source through Dataset Transform before proportional frame conversion"}
-                                }
-                            }
-                        }
-                    }
-                    if {$units eq {}} {set units [list {}]}
+                    set frame [_native2DGeometryCoordinateFrame $scene $object]
+                    if {[dict get $frame coordinate_relations] ne {}} {error "Geometry $object has variable-specific coordinate calibration; normalize the source through Dataset Transform before proportional frame conversion"}
+                    set units [dict get $frame coordinate_units]
                     foreach unit $units {
                         if {$unit eq {}&&!$assume} {error "Geometry $object has undeclared coordinate units; explicitly choose assume_undeclared or annotate its working unit"}
                         if {$unit ne {}&&$unit ne $from} {error "Geometry $object uses $unit, not $from; normalize mixed coordinate units before scene conversion"}
                     }
                 }
                 dict set metadata working_unit $to
+                dict set metadata coordinate_units [lrepeat 2 $to]
+                dict set metadata coordinate_relations {}
                 dict lappend metadata coordinate_conversions [dict create source_unit $from target_unit $to factor $factor assumed_undeclared $assume physical_scale 0]
                 if {[dict exists $metadata affine_matrix]} {
                     set matrix [dict get $metadata affine_matrix]
@@ -397,6 +449,7 @@ proc ::GX::native2DGeometryCall {token operation request} {
             set metadata [dict create geometry_authority retained_sketch]
             set unit [datasetPublicationV2DictDefault $request working_unit [datasetPublicationV2DictDefault $scene working_unit {}]]
             if {$unit ne {}} {unitRegistryConversionPlan $unit $unit;dict set metadata working_unit $unit}
+            if {[dict exists $request coordinate_units]} {set metadata [dict merge $metadata [_native2DCoordinateFrame [dict get $request coordinate_units] [datasetPublicationV2DictDefault $request coordinate_relations {}]]]}
             set samples [datasetPublicationV2DictDefault $request display_samples 257]
             return [_native2DGeometryAdopt $token [::GX::Native2D::core sketch_create $native [dict get $request definition] $samples] $metadata]
         }
@@ -408,6 +461,7 @@ proc ::GX::native2DGeometryCall {token operation request} {
             set command [dict get {curve add pointset pointset point point} $kind]
             set metadata {};set unit [datasetPublicationV2DictDefault $request working_unit [datasetPublicationV2DictDefault $scene working_unit {}]]
             if {$unit ne {}} {unitRegistryConversionPlan $unit $unit;dict set metadata working_unit $unit}
+            if {[dict exists $request coordinate_units]} {set metadata [dict merge $metadata [_native2DCoordinateFrame [dict get $request coordinate_units] [datasetPublicationV2DictDefault $request coordinate_relations {}]]]}
             return [_native2DGeometryAdopt $token [::GX::Native2D::core $command $native $points] $metadata]
         }
         from_source {
@@ -495,11 +549,12 @@ proc ::GX::native2DGeometryCall {token operation request} {
                 sketch_materialize {
                     set first [dict get $request first];set last [dict get $request last];set total [dict get $request total]
                     set metadata [dict create geometry_operation explicit_sketch_materialization source_geometry_token $objectToken sampling [dict create method uniform_parameter first $first last $last total $total]]
-                    if {[dict exists $scene objects $objectToken metadata working_unit]} {dict set metadata working_unit [dict get $scene objects $objectToken metadata working_unit]}
+                    set metadata [dict merge $metadata [_native2DPathProvenance $scene [list $objectToken]]]
                     return [_native2DGeometryAdopt $token [::GX::Native2D::core sketch_materialize $native $object $first $last $total] $metadata]
                 }
                 sketch_explode {
-                    return [_native2DGeometryAdopt $token [::GX::Native2D::core sketch_explode $native $object [dict get $request samples]] [dict create geometry_operation explicit_sketch_explosion source_geometry_token $objectToken]]
+                    set metadata [dict create {*}[_native2DPathProvenance $scene [list $objectToken]] geometry_operation explicit_sketch_explosion source_geometry_token $objectToken]
+                    return [_native2DGeometryAdopt $token [::GX::Native2D::core sketch_explode $native $object [dict get $request samples]] $metadata]
                 }
                 replace_points {
                     set points [dict get $request points]
@@ -519,7 +574,16 @@ proc ::GX::native2DGeometryCall {token operation request} {
                     return [dict create object_tokens $tokens]
                 }
                 group_add - group_remove {::GX::Native2D::core $operation $native $object [_native2DGeometryObject $scene [dict get $request member]];return 1}
-                delete - ungroup {::GX::Native2D::core $operation $native $object;dict unset scenes $token objects $objectToken;return 1}
+                delete - ungroup {
+                    ::GX::Native2D::core $operation $native $object
+                    if {[dict exists $scenes $token raster_resource_readers $objectToken]} {
+                        catch {interactiveDocumentResourceCloseReader [dict get $scenes $token raster_resource_readers $objectToken]}
+                        dict unset scenes $token raster_resource_readers $objectToken
+                    }
+                    catch {dict unset scenes $token raster_dataset_stamps $objectToken}
+                    dict unset scenes $token objects $objectToken
+                    return 1
+                }
                 endpoint_frame {return [::GX::Native2D::core endpoint_frame $native $object [dict get $request end] [dict get $request reverse] [dict get $request interpolation]]}
                 spline {return [_native2DGeometryAdopt $token [::GX::Native2D::core spline_object $native $object [dict get $request subdivisions]]]}
                 selection {::GX::Native2D::core selection_replace $native $object [dict get $request indices];return [::GX::Native2D::core selection_summary $native $object]}
@@ -595,10 +659,9 @@ proc ::GX::native2DGeometryCall {token operation request} {
             return [dict create points [::GX::Native2D::core fragment_sample $native $id $total $start $count] start $start count $count total $total]
         }
         fragment_materialize {
+            set frame [_native2DGeometryCoordinateFrame $scene [dict get $scene fragments $fragment parent_token]]
             set created [::GX::Native2D::core fragment_materialize $native $id [dict get $request total]]
-            set metadata [dict create source_kind native_fragment fragment_descriptor [_native2DGeometryFragmentReceipt $token $fragment] materialization_sampling [dict create method uniform_fragment total [dict get $request total]]]
-            set unit [_native2DGeometryWorkingUnit $scene [dict get $scene fragments $fragment parent_token]]
-            if {$unit ne {}} {dict set metadata working_unit $unit}
+            set metadata [dict create {*}$frame source_kind native_fragment fragment_descriptor [_native2DGeometryFragmentReceipt $token $fragment] materialization_sampling [dict create method uniform_fragment total [dict get $request total]]]
             return [_native2DGeometryAdopt $token $created $metadata]
         }
         fragment_length {return [dict create length [::GX::Native2D::core fragment_length $native $id]]}
@@ -935,8 +998,24 @@ proc ::GX::native2DPrimitivePublish {session requested definition unit sampling 
     # Trusted dispatch supplies the actual producer. Preserve the historical
     # CORE default for headless callers without a module activation context.
     if {$::GX::DatasetPrivate::activeContext ne {}} {set moduleId [dict get $::GX::DatasetPrivate::activeContext module_id]}
-    unitRegistryConversionPlan $unit $unit
-    if {![::GX::unitTclCompatible $unit m]} {error {Retained geometric conversion requires declared compatible length units}}
+    set paired [dict exists $sampling coordinate_units]
+    if {$paired} {
+        set frame [_native2DCoordinateFrame [dict get $sampling coordinate_units] [datasetPublicationV2DictDefault $sampling coordinate_relations {}]]
+        set unit [dict get $frame working_unit]
+    } else {
+        if {[dict exists $sampling coordinate_relations]} {error {Coordinate relations require an explicit X/Y unit pair}}
+        unitRegistryConversionPlan $unit $unit
+        if {![::GX::unitTclCompatible $unit m]} {error {Retained geometric conversion requires declared compatible length units}}
+        set frame [_native2DCoordinateFrame [lrepeat 2 $unit]]
+    }
+    set variables {};set sourceSchema {}
+    foreach axis {x y} axisUnit [dict get $frame coordinate_units] {
+        set variable [dict create variable_id $axis name [string toupper $axis] unit $axisUnit]
+        set relation [datasetPublicationV2DictDefault [dict get $frame coordinate_relations] $axis {}]
+        set variable [dict merge $variable $relation]
+        dict set variables $axis $variable
+        dict set sourceSchema $axis [_native2DCoordinateVariableSchema $variable]
+    }
     native2DEnsure;set scene [::GX::Native2D::core scene]
     try {
         set object [::GX::Native2D::core sketch_create $scene $definition 257]
@@ -975,9 +1054,14 @@ proc ::GX::native2DPrimitivePublish {session requested definition unit sampling 
             set approximation {Finite uniform-parameter values; retained definition remains exact and unchanged}
         }
         set provenance [dict create api_id NATIVE2D_PRIMITIVE_PUBLICATION_v1 api_version 1 operation retained_primitive_to_dataset framework_version $::GX::version definition $definition working_unit $unit sampling $policy source_logical_identity $logicalId x_variable_id x y_variable_id y producer core.native2d source_dataset_ids $sourceDatasets conversion_provenance [datasetPublicationV2DictDefault $sampling conversion_provenance {}]]
+        if {$paired} {
+            dict set provenance coordinate_units [dict get $frame coordinate_units]
+            dict set provenance coordinate_relations [dict get $frame coordinate_relations]
+            dict set provenance original_source_variable_schema $sourceSchema
+        }
         dict set provenance publishing_module $moduleId
         set metadata [dict create native2d.primitive_publication $provenance native2d.geometry_authority retained_sketch native2d.approximation_policy $approximation]
-        return [datasetPublicationV2PublishSeries $session $moduleId [dict create dataset_id $requested display_name $name producer_version 1.0.0 contract table.generic storage auto x_values [lmap p $points {lindex $p 0}] y_values [lmap p $points {lindex $p 1}] x_variable [dict create variable_id x name X unit $unit] y_variable [dict create variable_id y name Y unit $unit] extra_variables $extras source_dataset_ids $sourceDatasets structured_metadata $metadata provenance $provenance]]
+        return [datasetPublicationV2PublishSeries $session $moduleId [dict create dataset_id $requested display_name $name producer_version 1.0.0 contract table.generic storage auto x_values [lmap p $points {lindex $p 0}] y_values [lmap p $points {lindex $p 1}] x_variable [dict get $variables x] y_variable [dict get $variables y] extra_variables $extras source_dataset_ids $sourceDatasets structured_metadata $metadata provenance $provenance]]
     } finally {::GX::Native2D::core destroy $scene}
 }
 
@@ -989,9 +1073,29 @@ proc ::GX::native2DPrimitiveReconstruct {session datasetId xId yId} {
     if {[dict get $provenance api_id] ne "NATIVE2D_PRIMITIVE_PUBLICATION_v1"||[dict get $provenance api_version]!=1||[dict get $provenance producer] ne "core.native2d"||[dict get $provenance operation] ne "retained_primitive_to_dataset"} {error "Unsupported primitive provenance contract"}
     if {$xId ne [dict get $provenance x_variable_id]||$yId ne [dict get $provenance y_variable_id]} {error "Select the original Cartesian publication X/Y variables"}
     set unit [dict get $provenance working_unit]
-    foreach variable [list $xId $yId] {if {[dict get [datasetVariableById $datasetId $variable] unit] ne $unit} {error "Published coordinate units changed; exact reconstruction rejected"}}
-    unitRegistryConversionPlan $unit $unit
-    if {![::GX::unitTclCompatible $unit m]} {error "Retained geometric conversion requires declared compatible length units"}
+    if {[dict exists $provenance coordinate_units]} {
+        set frame [_native2DCoordinateFrame [dict get $provenance coordinate_units] [dict get $provenance coordinate_relations]]
+        if {$unit ne [dict get $frame working_unit]} {error {Published coordinate frame contradicts its common-unit receipt}}
+        foreach axis {x y} variable [list $xId $yId] axisUnit [dict get $frame coordinate_units] {
+            set actual [_native2DCoordinateVariableSchema [datasetVariableById $datasetId $variable]]
+            set captured [dict get $provenance original_source_variable_schema $axis]
+            if {[dict get $captured unit] ne $axisUnit} {error {Captured publication schema contradicts its coordinate frame}}
+            foreach field {unit canonical_unit to_canonical from_canonical} {
+                if {[dict get $actual $field] ne [dict get $captured $field]} {error "Published coordinate schema changed ($axis/$field); exact reconstruction rejected"}
+            }
+            set expected [_native2DCoordinateVariableSchema [dict merge [dict create unit $axisUnit] [datasetPublicationV2DictDefault [dict get $frame coordinate_relations] $axis {}]]]
+            if {$captured ne $expected} {error {Captured publication relation contradicts its coordinate frame}}
+        }
+    } else {
+        foreach variable [list $xId $yId] {
+            set actual [datasetVariableById $datasetId $variable]
+            if {[dict get $actual unit] ne $unit} {error "Published coordinate units changed; exact reconstruction rejected"}
+            if {[_native2DCoordinateVariableSchema $actual] ne [_native2DCoordinateVariableSchema [dict create unit $unit]]} {error {Published coordinate relation changed; exact legacy reconstruction rejected}}
+        }
+        unitRegistryConversionPlan $unit $unit
+        if {![::GX::unitTclCompatible $unit m]} {error "Retained geometric conversion requires declared compatible length units"}
+        set frame [_native2DCoordinateFrame [lrepeat 2 $unit]]
+    }
     set sampling [dict get $provenance sampling]
     if {[dict get $sampling method] ni {uniform_parameter authoritative_path_vertices ordered_constituents}||[dict get $sampling total]>65536} {error "Unsupported primitive materialization policy"}
     native2DEnsure;set scene [::GX::Native2D::core scene];set stream {}
@@ -1030,7 +1134,7 @@ proc ::GX::native2DPrimitiveReconstruct {session datasetId xId yId} {
             if {[dict get $chunk eof]} break
         }
         if {$rows!=[llength $expected]} {error "Dataset row count differs from primitive provenance"}
-        return [dict create definition [::GX::Native2D::core sketch_definition $scene $native] working_unit $unit method exact_provenance_reconstruction source_dataset_id $datasetId provenance $provenance direction [dict create forward [datasetPublicationV2DictDefault $sampling forward 1]] materialization_verified 1 original_dataset_modified 0]
+        return [dict create definition [::GX::Native2D::core sketch_definition $scene $native] {*}$frame method exact_provenance_reconstruction source_dataset_id $datasetId provenance $provenance direction [dict create forward [datasetPublicationV2DictDefault $sampling forward 1]] materialization_verified 1 original_dataset_modified 0]
     } finally {if {$stream ne {}} {tableStreamClose $stream};::GX::Native2D::core destroy $scene}
 }
 proc ::GX::_native2DInteractionNativeReference {scene reference} {
@@ -1152,14 +1256,16 @@ proc ::GX::native2DGeometryCall {token operation request} {
 }
 
 # Additive construction semantics use the same execution-owned geometry/rules.
-proc ::GX::_native2DConstructionPlacements {scene placements unit} {
+proc ::GX::_native2DConstructionReference {scene reference frame} {
+    if {[_native2DGeometryCoordinateFrame $scene [dict get $reference object_token]] ne $frame} {error {Attached construction requires the same complete coordinate frame}}
+    return [_native2DInteractionNativeReference $scene $reference]
+}
+proc ::GX::_native2DConstructionPlacements {scene placements frame} {
     set result {}
     foreach placement $placements {
         foreach key [dict keys $placement] {if {$key ni {point reference earlier}} {error "Unknown construction placement field '$key'"}}
         if {[dict exists $placement reference]} {
-            set reference [dict get $placement reference]
-            if {[_native2DGeometryWorkingUnit $scene [dict get $reference object_token]] ne $unit} {error {Attached construction requires a common declared working unit}}
-            dict set placement reference [_native2DInteractionNativeReference $scene $reference]
+            dict set placement reference [_native2DConstructionReference $scene [dict get $placement reference] $frame]
         }
         lappend result $placement
     }
@@ -1175,16 +1281,17 @@ proc ::GX::native2DGeometryCall {token operation request} {
     }
     set unit [datasetPublicationV2DictDefault $request working_unit {}]
     if {$unit ne {}} {unitRegistryConversionPlan $unit $unit}
-    set placements [_native2DConstructionPlacements $scene [dict get $request placements] $unit]
+    set frame [_native2DCoordinateFrame [datasetPublicationV2DictDefault $request coordinate_units [lrepeat 2 $unit]] [datasetPublicationV2DictDefault $request coordinate_relations {}]]
+    set placements [_native2DConstructionPlacements $scene [dict get $request placements] $frame]
     switch -- $operation {
         placement_points {return [dict create points [::GX::Native2D::core construction_points $native $placements]]}
         placement_preview {return [dict create definition [::GX::Native2D::core construction_preview $native [dict get $request family] $placements]]}
         construct_attached {
-            set closure {};foreach ref [datasetPublicationV2DictDefault $request closure_references {}] {lappend closure [_native2DInteractionNativeReference $scene $ref]}
+            set closure {};foreach ref [datasetPublicationV2DictDefault $request closure_references {}] {lappend closure [_native2DConstructionReference $scene $ref $frame]}
             set receipt [::GX::Native2D::core construction_create $native [dict get $request family] $placements [datasetPublicationV2DictDefault $request display_samples 257] $closure]
             set before $scene
             try {
-                set object [_native2DGeometryAdopt $token [dict get $receipt id] [dict create working_unit $unit geometry_operation attached_construction]]
+                set object [_native2DGeometryAdopt $token [dict get $receipt id] [dict create {*}$frame geometry_operation attached_construction]]
                 set rules {};foreach relationship [dict get $receipt relationships] {lappend rules [_native2DGeometryConstraintAdopt $token $relationship]}
                 set owned [_native2DGeometryRequire $token]
                 return [dict merge $object [dict create definition [dict get $receipt definition] tail_reference [_native2DInteractionPublicReference $owned [dict get $receipt tail_reference]] constraints $rules closed [dict get $receipt closed] periodic 0]]
@@ -1235,7 +1342,8 @@ proc ::GX::native2DGeometryCall {token operation request} {
         set resource [dict get $request resource];interactiveDocumentResourceInfo $resource
         set path [file join [_documentResourceRoot [dict get $resource document_id] 1] [dict get $resource sha256].blob]
         lassign [_native2DRasterHelper info $path] width height
-        set unit [dict get $request working_unit];unitRegistryConversionPlan $unit m
+        set unit [dict get $request working_unit]
+        if {$unit eq {px}} {unitRegistryConversionPlan px px} else {unitRegistryConversionPlan $unit m}
         set state [dict merge [dict create width $width height $height length_unit $unit resource_id [dict get $resource sha256] scale 1 translation {0 0} rotation 0 opacity 1 visible 1 locked 0] [datasetPublicationV2DictDefault $request state {}]]
         # Raster identity/dimensions come from the managed resource, never caller
         # claims. Script requests cannot smuggle a host filename into Native.
@@ -1246,13 +1354,15 @@ proc ::GX::native2DGeometryCall {token operation request} {
     if {$operation in {symmetry_preview symmetry_construct}} {
         set axis [_native2DInteractionNativeReference $scene [dict get $request axis]]
         if {$operation eq "symmetry_preview"} {return [::GX::Native2D::core symmetry_preview $native $axis [dict get $request definition]]}
-        set unit [dict get $request working_unit];unitRegistryConversionPlan $unit m
-        if {[_native2DGeometryWorkingUnit $scene [dict get [dict get $request axis] object_token]] ne $unit} {error {Symmetric construction requires the axis working unit}}
+        if {[dict exists $request coordinate_units]} {
+            set frame [_native2DCoordinateFrame [dict get $request coordinate_units] [datasetPublicationV2DictDefault $request coordinate_relations {}]]
+        } else {set unit [dict get $request working_unit];unitRegistryConversionPlan $unit m;set frame [_native2DCoordinateFrame [lrepeat 2 $unit]]}
+        if {[_native2DGeometryCoordinateFrame $scene [dict get [dict get $request axis] object_token]] ne $frame} {error {Symmetric construction requires the axis complete coordinate frame}}
         set created [::GX::Native2D::core symmetry_construct $native $axis [dict get $request definition] [datasetPublicationV2DictDefault $request display_samples 257]]
         set before $scene
         try {
-            set source [_native2DGeometryAdopt $token [dict get $created source] [dict create working_unit $unit]]
-            set mirror [_native2DGeometryAdopt $token [dict get $created mirror] [dict create working_unit $unit]]
+            set source [_native2DGeometryAdopt $token [dict get $created source] $frame]
+            set mirror [_native2DGeometryAdopt $token [dict get $created mirror] $frame]
             set receipt [::GX::Native2D::core constraint_get $native [dict get $created relationship]]
             set relationship [_native2DGeometryConstraintAdopt $token $receipt]
             return [dict create objects [list $source $mirror] constraints [list $relationship]]
@@ -1263,6 +1373,7 @@ proc ::GX::native2DGeometryCall {token operation request} {
         }
     }
     set object [_native2DGeometryObject $scene [dict get $request object_token]]
+    _native2DRasterDatasetCheck $scene [dict get $request object_token]
     set state [::GX::Native2D::core image_get $native $object]
     if {$state eq {}} {error {Object is not a reference image}}
     switch $operation {
@@ -1325,29 +1436,34 @@ proc ::GX::native2DDatasetPromote {session dataset x y {options {}}} {
     set request [dict create dataset_id $dataset x_variable_id $x y_variable_id $y display_budget 65536]
     foreach key {order_variable_id filters} {if {[dict exists $options $key]} {dict set request $key [dict get $options $key]}}
     if {[dict exists $metadata native2d.primitive_publication]&&![dict exists $request filters]&&![dict exists $request order_variable_id]} {return [native2DPrimitiveReconstruct $session $dataset $x $y]}
-    set unit [dict get [datasetVariableById $dataset $x] unit]
-    if {$unit ne [dict get [datasetVariableById $dataset $y] unit]||![unitTclCompatible $unit m]} {error {Spline promotion requires X and Y in a common declared length unit}}
     set source [curveSourceOpen $session $request]
     try {
         set descriptor [curveSourceDescribe $source];set display [curveSourceDisplay $source]
+        set units [list [dict get [datasetVariableById $dataset $x] unit] [dict get [datasetVariableById $dataset $y] unit]]
+        set frame [_native2DCoordinateFrame $units [native2DSourceCoordinateRelations $descriptor $x $y]]
+        set unit [dict get $frame working_unit]
         if {[dict get $display reduced]} {error {Retained spline promotion supports at most 65536 authoritative knots; choose an explicit source subset}}
         if {[dict get $display breaks] ne {}} {error {Promote disconnected Dataset spans separately; interpolation cannot bridge missing geometry implicitly}}
         set points [dict get $display points];native2DEnsure;set scene [::GX::Native2D::core scene]
         try {
             set definition [::GX::Native2D::core interaction_construct $scene spline $points]
             set object [::GX::Native2D::core sketch_create $scene $definition 257]
-            set maximum 0;set i 0;set n [llength $points]
+            set maximum 0;set axisMaximum {x 0 y 0};set i 0;set n [llength $points]
             foreach p $points {
                 set q [dict get [::GX::Native2D::core sketch_evaluate $scene $object [expr {$i/double($n-1)}]] point]
+                foreach axis {x y} actual $p interpolated $q {dict set axisMaximum $axis [expr {max([dict get $axisMaximum $axis],abs($actual-$interpolated))}]}
                 set maximum [expr {max($maximum,hypot([lindex $p 0]-[lindex $q 0],[lindex $p 1]-[lindex $q 1]))}];incr i
             }
-            return [dict create definition $definition working_unit $unit method spline_interpolation source_dataset_id $dataset source_descriptor $descriptor source_request $request source_rows [dict get $display source_rows] parameters {kernel native_interpolating_catmull_rom parameterization uniform_source_order} quality [dict create knot_count $n maximum_knot_error $maximum unit $unit scope interpolation_at_authoritative_knots] original_dataset_modified 0]
+            set metricScope numeric_plane_interpolation_at_authoritative_knots
+            if {$unit ne {}&&[dict get $frame coordinate_relations] eq {}} {set metricScope interpolation_at_authoritative_knots}
+            return [dict create definition $definition {*}$frame method spline_interpolation source_dataset_id $dataset source_descriptor $descriptor source_request $request source_rows [dict get $display source_rows] parameters {kernel native_interpolating_catmull_rom parameterization uniform_source_order} quality [dict create knot_count $n maximum_knot_error $maximum maximum_knot_error_by_axis $axisMaximum coordinate_units $units unit $unit scope $metricScope] original_dataset_modified 0]
         } finally {::GX::Native2D::core destroy $scene}
     } finally {curveSourceClose $source}
 }
 # Snapshot source provenance when adopting a new path; later disposal of its
 # input actors cannot erase Dataset identity or a reviewed conversion method.
 proc ::GX::_native2DPathProvenance {scene objects} {
+    set frame [_native2DGeometryCommonFrame $scene $objects]
     set sources {};set conversions {}
     foreach object $objects {
         set metadata [dict get $scene objects $object metadata]
@@ -1359,7 +1475,7 @@ proc ::GX::_native2DPathProvenance {scene objects} {
         }
         if {[dict exists $metadata source_descriptor request dataset_id]} {lappend sources [dict get $metadata source_descriptor request dataset_id]}
     }
-    return [dict create source_dataset_ids [lsort -unique $sources] conversion_provenance [dict create inputs $conversions]]
+    return [dict create {*}$frame source_dataset_ids [lsort -unique $sources] conversion_provenance [dict create inputs $conversions]]
 }
 rename ::GX::native2DGeometryCall ::GX::native2DGeometryCall_path057_base
 proc ::GX::native2DGeometryCall {token operation request} {
@@ -1371,15 +1487,16 @@ proc ::GX::native2DGeometryCall {token operation request} {
         path_vertices {return [dict create points [::GX::Native2D::core path_vertices $native [_native2DGeometryObject $scene [dict get $request object_token]] [datasetPublicationV2DictDefault $request repeat_endpoint 0]] method authoritative_path_vertices]}
         path_split {
             set source [dict get $request object_token]
+            set metadata [_native2DPathProvenance $scene [list $source]]
             set ids [::GX::Native2D::core path_split $native [_native2DGeometryObject $scene $source] [dict get $request vertex]]
-            set objects {};foreach id $ids {lappend objects [_native2DGeometryAdopt $token $id [dict create working_unit [_native2DGeometryWorkingUnit $scene $source] parent_geometry_token $source geometry_operation retained_path_split {*}[_native2DPathProvenance $scene [list $source]]]]}
+            set objects {};foreach id $ids {lappend objects [_native2DGeometryAdopt $token $id [dict create {*}$metadata parent_geometry_token $source geometry_operation retained_path_split]]}
             return [dict create objects $objects source_modified 0]
         }
         path_join {
-            set a [dict get $request a];set b [dict get $request b];set unit [_native2DGeometryWorkingUnit $scene $a]
-            if {$unit ne [_native2DGeometryWorkingUnit $scene $b]} {error {Join requires a common declared working unit}}
+            set a [dict get $request a];set b [dict get $request b]
+            set metadata [_native2DPathProvenance $scene [list $a $b]]
             set id [::GX::Native2D::core path_join $native [_native2DGeometryObject $scene $a] [_native2DGeometryObject $scene $b] [datasetPublicationV2DictDefault $request reverse_a 0] [datasetPublicationV2DictDefault $request reverse_b 0] [datasetPublicationV2DictDefault $request tolerance 0]]
-            return [_native2DGeometryAdopt $token $id [dict create working_unit $unit parent_geometry_tokens [list $a $b] geometry_operation retained_path_join {*}[_native2DPathProvenance $scene [list $a $b]]]]
+            return [_native2DGeometryAdopt $token $id [dict create {*}$metadata parent_geometry_tokens [list $a $b] geometry_operation retained_path_join]]
         }
         primitive_publish {
             set object [dict get $request object_token];set id [_native2DGeometryObject $scene $object]
@@ -1392,7 +1509,8 @@ proc ::GX::native2DGeometryCall {token operation request} {
             # Explicit adoption is the caller's requested editable conversion.
             set id [::GX::Native2D::core sketch_create $native [dict get $receipt definition] 257]
             if {[dict exists $receipt direction]} {::GX::Native2D::core direction_marker $native $id [dict get $receipt direction]}
-            return [dict merge [_native2DGeometryAdopt $token $id [dict create working_unit [dict get $receipt working_unit] conversion_provenance $receipt]] [dict create conversion $receipt original_dataset_modified 0]]
+            set frame [_native2DCoordinateFrame [dict get $receipt coordinate_units] [dict get $receipt coordinate_relations]]
+            return [dict merge [_native2DGeometryAdopt $token $id [dict create {*}$frame conversion_provenance $receipt]] [dict create conversion $receipt original_dataset_modified 0]]
         }
     }
 }
@@ -1429,5 +1547,15 @@ proc ::GX::native2DGeometryApiInfo {} {
     dict set info diagram_edit_preview_semantics {same_source_and_candidate_validation_without_document_or_id_allocation}
     dict set info diagram_route_fields {id route start end}
     dict set info diagram_route_semantics {same_stable_wire_id_typed_bends_or_existing_terminal_reconnection}
+    dict set info diagram_wire_target {kind wire wire_id STABLE_WIRE_ID point {world_x world_y}}
+    dict set info diagram_wire_target_semantics {validated_native_segment_projection_atomic_split_explicit_canonical_junction_existing_endpoint_reuse}
+    foreach operation {raster_annotation_get raster_annotation_set raster_annotation_remove raster_annotation_project} {dict lappend info operations $operation}
+    dict set info raster_annotation_authority {existing Native2D image identity attribute gx.image.annotations; ordinary Resource/Document checkpoint persistence}
+    dict set info raster_annotation_coordinates {retained source pixels; Native2D image_map and world_to_device only}
+    dict set info raster_annotation_limits {maximum_annotations 512 maximum_attribute_bytes 16384 font_size_min 6 font_size_max 96 font_size_unit device_px}
+    dict set info diagram_junction_fields {position target targets}
+    dict set info diagram_crossing_semantics {geometric_crossings_disconnected_unless_intentional_junction_targets}
+    dict set info diagram_electrical_notation {catalog electrical.basic canonical SI m milli meg mega editable_exact_roundtrip 1}
+    dict set info diagram_symbol_variants {attribute declared_choice marks choice_to_paths}
     return $info
 }

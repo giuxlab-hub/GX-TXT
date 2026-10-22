@@ -58,13 +58,18 @@ def digest(data):
 
 
 def load_registry(root):
+    return registry_snapshot(root)[0]
+
+
+def registry_snapshot(root):
     path = root / "registry.json"
     if not path.is_file():
-        return {"schema": 1, "libraries": {}}
-    value = json.loads(path.read_text(encoding="utf-8"))
+        return {"schema": 1, "libraries": {}}, digest(b'')
+    raw=path.read_bytes()
+    value = json.loads(raw.decode('utf-8'))
     if value.get("schema") != 1 or not isinstance(value.get("libraries"), dict):
         fail("scientific library registry schema is invalid")
-    return value
+    return value, digest(raw)
 
 
 def save_registry(root, value):
@@ -235,6 +240,192 @@ def require_managed(record, operation):
     if record.get("mode", "managed") != "managed":
         fail(f"{operation} is available only for managed libraries")
     return record
+
+
+CAPABILITY_NAMES = (
+    'list_entries', 'entry_info', 'search_entries', 'read_entry', 'add_entry',
+    'remove_entry', 'export_entry', 'verify', 'mutable', 'read_only', 'remote',
+    'external', 'offline_available', 'authentication_required', 'library_viewer',
+    'entry_viewer',
+)
+
+
+def provider_capabilities(provider, record=None):
+    """Additive Step-2 declaration, preserving legacy managed-provider hooks.
+
+    Status hooks describe known state; discovery does not probe a remote server
+    or infer protocol, authentication, scientific meaning or permission.
+    """
+    module = provider['module']
+    declared = getattr(module, 'LIBRARY_CAPABILITIES', {})
+    if not isinstance(declared, dict):
+        fail('provider LIBRARY_CAPABILITIES must be a dictionary')
+    modes = declared.get('modes', ('managed',))
+    if not isinstance(modes, (list, tuple)) or not modes or set(modes)-{'managed', 'external', 'remote'}:
+        fail('provider capability modes must be managed/external/remote')
+    extras = declared.get('extra_actions', {})
+    if not isinstance(extras, dict) or len(extras)>32:
+        fail('provider extra_actions must be a dictionary with at most 32 actions')
+    unknown = set(declared)-set(CAPABILITY_NAMES)-{'modes', 'extra_actions'}
+    if unknown:
+        fail('unknown provider capability: '+', '.join(sorted(unknown)))
+    out = dict(capability_schema='gxtxt.library_capabilities.v1',
+               library_type=provider['library_type'], provider_id=provider['provider_id'],
+               provider_version=provider['provider_version'], supported_modes=' '.join(modes),
+               script_exposure='host_module_only; Script Bridge belongs to progression Step4')
+    out['declaration_source']='provider_declaration' if declared else 'legacy_managed_contract'
+    defaults = dict(list_entries=True, verify=callable(getattr(module, 'validate', None)),
+                    read_only=True, offline_available=True,
+                    library_viewer=bool(provider['library_viewer_module']),
+                    entry_viewer=bool(provider['entry_viewer_module']),
+                    external='external' in modes, remote='remote' in modes)
+    for name in CAPABILITY_NAMES:
+        value=declared.get(name, defaults.get(name, False))
+        if type(value) is not bool:
+            fail('provider capability '+name+' must be boolean')
+        out['capability.'+name]=int(value)
+    for action, spec in extras.items():
+        safe_id(action)
+        if action in {'open', 'entry_open', 'verify', 'install', 'update', 'remove', 'unregister', 'inspect', 'refresh'}:
+            fail('provider extra action shadows a CORE library action')
+        if not isinstance(spec, dict) or set(spec)-{'label', 'modes', 'requires_available', 'requires_authentication'}:
+            fail('invalid provider extra action declaration')
+        action_modes=spec.get('modes', modes)
+        if not isinstance(action_modes, (list, tuple)) or not action_modes or set(action_modes)-set(modes):
+            fail('extra action modes must be a subset of provider modes')
+        label=spec.get('label', action)
+        if not isinstance(label, str) or not 1<=len(label)<=160 or '\n' in label:
+            fail('extra action label must be a bounded single line')
+        out['extra.'+action+'.label']=label
+        out['extra.'+action+'.modes']=' '.join(action_modes)
+        for field in ('requires_available', 'requires_authentication'):
+            value=spec.get(field, True)
+            if type(value) is not bool:fail('extra action conditions must be boolean')
+            out['extra.'+action+'.'+field]=int(value)
+    out['extra_actions']=' '.join(extras)
+    schema=provider['registration_schema']
+    if not isinstance(schema,dict):fail('Provider registration schema must be a dictionary')
+    for mode in ('external','remote'):
+        specification=schema.get(mode,{})
+        if not isinstance(specification,dict):fail('Provider registration mode schema must be a dictionary')
+        for kind in ('required','optional'):
+            fields=specification.get(kind,())
+            if not isinstance(fields,(list,tuple)) or len(fields)>32 or any(not isinstance(name,str) or not SAFE.fullmatch(name) for name in fields):fail('Provider registration field schema is invalid')
+            out[f'registration.{mode}.{kind}']=' '.join(fields)
+    if record is None:
+        return out
+    info=public_info(record)
+    status={key:info[key] for key in ('availability', 'read_only', 'authentication_required', 'authentication_status', 'entry_count') if key in info}
+    if declared.get('authentication_required',False):
+        status.update(authentication_required='1', authentication_status='unknown')
+    # Step1 external/remote entry_count/auth defaults are registration metadata,
+    # not a live provider observation. Report the distinction explicitly.
+    out['status_source']='registration_metadata_not_probed'
+    if record.get('mode', 'managed')!='managed':
+        status['entry_count']='unknown'
+        status.update(authentication_required=str(int(declared['authentication_required'])) if 'authentication_required' in declared else 'unknown', authentication_status='unknown')
+    status_hook=getattr(module, 'library_status', None)
+    if status_hook is not None:
+        if not callable(status_hook):fail('library_status must be callable')
+        observed=status_hook(dict(record), FRAMEWORK)
+        if not isinstance(observed, dict) or set(observed)-{'availability', 'read_only', 'authentication_required', 'authentication_status', 'entry_count', 'reason'}:
+            fail('library_status returned an invalid normalized status')
+        status.update(observed);out['status_source']='provider_status'
+    if status['availability'] not in {'available', 'unavailable', 'unknown', 'temporarily_unavailable'}:
+        fail('invalid normalized library availability')
+    for key in ('read_only', 'authentication_required'):
+        if type(status[key]) is bool:status[key]=int(status[key])
+        if str(status[key]) not in {'0','1','unknown'}:fail('invalid normalized '+key)
+    if str(record.get('read_only','1'))=='1':status['read_only']='1'
+    if status.get('entry_count','unknown')!='unknown' and (not str(status['entry_count']).isdigit()):
+        fail('invalid normalized entry count')
+    for key, value in status.items():out['status.'+key]=str(value)
+    mode=info['mode'];supported=mode in modes
+    out['mode']=mode;out['registry_state']=record.get('state','unknown')
+    available=supported and status['availability']=='available'
+    auth_ready=str(status['authentication_required'])=='0' or status['authentication_status'] in {'not_required', 'unlocked', 'authenticated'}
+    active=record.get('state')=='installed'
+    ready=active and available and auth_ready
+    can_library=bool(out['capability.library_viewer']) and bool(provider['library_viewer_module'])
+    can_entry=bool(out['capability.entry_viewer']) and bool(provider['entry_viewer_module'])
+    actions=dict(inspect=active, refresh=True, update=active and mode=='managed',
+                 remove=active and mode=='managed', unregister=active and mode in {'external','remote'},
+                 verify=ready and mode=='managed' and bool(out['capability.verify']),
+                 list_entries=ready and mode=='managed' and bool(out['capability.list_entries']),
+                 open=ready and (can_library or (can_entry and mode=='managed' and int(record.get('entry_count',0))>0)),
+                 entry_open=ready and (can_entry or can_library) and mode=='managed')
+    reason=('Library was removed' if not active else 'Provider does not support this storage mode' if not supported else
+            'Library availability is '+str(status['availability']) if not available else
+            'Authentication state is '+str(status['authentication_status']) if not auth_ready else '')
+    for action, enabled in actions.items():
+        out['action.'+action]=int(enabled)
+        out['reason.'+action]='' if enabled else reason or 'Capability or owned hook is unavailable'
+    for action, spec in extras.items():
+        enabled=active and supported and mode in spec.get('modes', modes) and callable(getattr(module, 'library_action', None))
+        if spec.get('requires_available', True):enabled=enabled and available
+        if spec.get('requires_authentication', True):enabled=enabled and auth_ready
+        out['action.'+action]=int(enabled)
+        out['reason.'+action]='' if enabled else reason or 'Provider action is not available in this mode'
+    return out
+
+
+def library_capabilities(library_id):
+    registry, fingerprint=registry_snapshot(managed_root())
+    record=registry['libraries'].get(safe_id(library_id))
+    if not record:fail('unknown scientific library '+library_id)
+    try:
+        provider=select_provider(record['library_type'], record['provider_id'])
+    except ValueError as exc:
+        # Inspection of an actual registered resource remains possible when its
+        # provider was uninstalled. A retained tombstone is still inactive:
+        # provider absence must not revive its inspection/unregistration actions.
+        mode=record.get('mode', 'managed')
+        active=record.get('state')=='installed'
+        unregister=active and mode in {'external','remote'}
+        return dict(library_id=library_id, registry_sha256=fingerprint, capability_schema='gxtxt.library_capabilities.v1',
+                    provider_id=record['provider_id'], mode=mode, registry_state=record.get('state','unknown'),
+                    **{'status.availability':'unavailable', 'status.reason':str(exc),
+                    'status_source':'provider_unavailable', 'action.inspect':int(active), 'action.refresh':1,
+                    'action.unregister':int(unregister), 'reason.inspect':'' if active else 'Library was removed',
+                    'reason.refresh':'', 'reason.unregister':'' if unregister else
+                    ('Library was removed' if not active else 'Unregister is available only for external or remote libraries'),
+                    'extra_actions':''})
+    return dict(provider_capabilities(provider, record), library_id=library_id, registry_sha256=fingerprint)
+
+
+def library_extra_action(library_id, action, parameters):
+    record=require_installed(load_registry(managed_root()), library_id)
+    provider=select_provider(record['library_type'], record['provider_id'])
+    caps=provider_capabilities(provider, record)
+    if action not in caps['extra_actions'].split() or not caps.get('action.'+action):
+        fail(caps.get('reason.'+action, 'Unsupported library action'))
+    if len(parameters)>32 or any(not SAFE.fullmatch(key) or len(value)>4096 for key,value in parameters.items()):
+        fail('Provider action parameters exceed the normalized bounds')
+    result=provider['module'].library_action(dict(record), action, parameters, FRAMEWORK)
+    if not isinstance(result, dict) or len(result)>128 or any(not isinstance(key,str) or not isinstance(value,(str,int,float,bool)) for key,value in result.items()):
+        fail('Provider action must return a bounded scalar information record')
+    if len(json.dumps(result))>131072:fail('Provider action information exceeds 128 KiB')
+    return dict(result, library_id=library_id, action=action, provider_id=provider['provider_id'])
+
+
+def library_catalog_page(mode, query, offset, limit):
+    if mode not in {'all','managed','external','remote'} or not 0<=offset or not 1<=limit<=200 or len(query)>1024:
+        fail('Library catalog requires mode, bounded filter and offset/limit (1-200)')
+    registry, fingerprint=registry_snapshot(managed_root())
+    rows=[];needle=query.casefold().strip()
+    for identifier, record in sorted(registry['libraries'].items()):
+        if record.get('state')!='installed' or (mode!='all' and record.get('mode','managed')!=mode):continue
+        searchable=' '.join(str(record.get(key,'')) for key in ('library_id','display_name','library_type','origin','provider_id'))
+        if needle and needle not in searchable.casefold():continue
+        rows.append(record)
+    out=dict(schema='gxtxt.library_catalog_page.v1',registry_sha256=fingerprint,
+             total=len(rows),offset=offset,limit=limit,mode=mode,query=query)
+    selected=rows[offset:offset+limit];out['count']=len(selected)
+    for index, record in enumerate(selected):
+        info=public_info(record)
+        if len(json.dumps(info))>131072:fail('Library public record exceeds the 128 KiB catalog inspection bound')
+        for key,value in info.items():out[f'row.{index}.{key}']=value
+    return out
 
 
 def register(fields):
@@ -465,6 +656,14 @@ def main(argv):
     elif action == "provider" and len(args) == 1:
         p = select_provider(args[0])
         emit_info({key: value for key, value in p.items() if key not in ("module", "registration_schema")})
+    elif action == 'provider_capabilities' and len(args)==1:
+        emit_info(provider_capabilities(select_provider(args[0])))
+    elif action == 'library_capabilities' and len(args)==1:
+        emit_info(library_capabilities(args[0]))
+    elif action == 'library_action' and len(args)>=2 and len(args)%2==0:
+        emit_info(library_extra_action(args[0],args[1],dict(zip(args[2::2],args[3::2]))))
+    elif action == 'catalog_page' and len(args)==4:
+        emit_info(library_catalog_page(args[0],args[1],int(args[2]),int(args[3])))
     elif action == "list" and not args:
         emit_list(sorted(library_id for library_id, record in load_registry(root)["libraries"].items()
                          if record["state"] == "installed" and record.get("mode", "managed") == "managed"))
@@ -519,7 +718,28 @@ def main(argv):
 
 if __name__ == "__main__":
     try:
-        main(sys.argv[1:])
+        if sys.argv[1:]==['--request']:
+            # Same public manager, same F/L wire; the common Script Job owner
+            # supplies asynchronous lifetime/cancellation for GUI consumers.
+            import tkinter
+            from gxtxt_job_supervisor import tcl_result, request_process_group
+            request_process_group()
+            interpreter=tkinter.Tcl();parts=interpreter.splitlist(sys.stdin.read(1048576))
+            if len(parts)!=6:fail('Library request requires operation, arguments and current provider descriptors')
+            request=dict(zip(parts[::2],parts[1::2]))
+            if set(request)!={'operation','arguments','provider_descriptors'}:fail('Invalid Library request fields')
+            os.environ['GXTXT_LIBRARY_PROVIDER_DESCRIPTORS']=os.pathsep.join(interpreter.splitlist(request['provider_descriptors']))
+            allowed={'catalog_page','library_capabilities','provider_capabilities','library_action','info','entries','verify','install','update','remove','register','unregister','provider','types','open'}
+            if request['operation'] not in allowed:fail('Unsupported asynchronous Library operation')
+            try:
+                captured=io.StringIO()
+                with contextlib.redirect_stdout(captured):main([request['operation'],*interpreter.splitlist(request['arguments'])])
+                print(tcl_result(dict(ok=1,result=dict(wire=captured.getvalue()))))
+            except Exception as exc:
+                print(tcl_result(dict(ok=0,error=str(exc),category='scientific_library_manager')))
+                raise SystemExit(1)
+        else:
+            main(sys.argv[1:])
     except (ValueError, OSError, KeyError, zipfile.BadZipFile) as exc:
         print(f"GX-TXT Scientific Library Manager: {exc}", file=sys.stderr)
         raise SystemExit(1)

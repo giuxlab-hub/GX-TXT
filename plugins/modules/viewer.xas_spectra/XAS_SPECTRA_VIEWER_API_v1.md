@@ -43,15 +43,18 @@ rerender and export.
 
 `captureDetachedSnapshot artifact destination_dir`
 
-Delegates to `PLOT_DATASET_API_v3::captureForArtifact`.
+Delegates to `PLOT_DATASET_API_v3::captureForArtifact`, returning a dictionary
+with `graph_id`, `source_variant` and `snapshot`.
 
 `writePointIndex artifact destination`
 
-Delegates to `PLOT_DATASET_API_v3::writePointIndex`.
+Delegates to `PLOT_DATASET_API_v3::writePointIndex`, returning the newly written
+destination path. An existing destination, unowned artifact or 3D source rejects.
 
 `renderDetachedSnapshot clone_dir graph_id`
 
-Delegates to `PLOT_DATASET_API_v3::renderSnapshot`.
+Delegates to `PLOT_DATASET_API_v3::renderSnapshot`, returning the
+`clone_dir/graph.png` path after verifying the rendered output.
 
 These operations do not redefine live graph configuration. Current GX-TXT v3
 is explicitly additive to v2 and normal module publishing remains PlotSpec v2.

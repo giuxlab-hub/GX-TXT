@@ -23,18 +23,30 @@ proc ::GX::datasetPreviewCacheKey {id {options {}}} {
         set renderer gxtxt.preview.retained.v1
         foreach relative {
             core/tcl/dataset_preview_cache.tcl core/tcl/scientific_dataset_filters_v1.tcl
-            core/tcl/dataset_digitizer_preview_v1.tcl core/tcl/dataset_preview_api_v1.tcl core/tcl/scientific_dataset_preview_v1.tcl
+            core/tcl/dataset_digitizer_preview_v1.tcl core/python/dataset_digitizer_quality_summary_v1.py
+            core/tcl/dataset_preview_api_v1.tcl core/tcl/scientific_dataset_preview_v1.tcl
             core/tcl/scientific_dataset_filter_configuration_v1.tcl core/tcl/dataset_viewer_api_v1.tcl
             core/tcl/curve_source_api_v1.tcl core/tcl/dataset_coordinate_context_v1.tcl
             core/tcl/mesh_dataset_viewer_v1.tcl core/native2d/bin/gx2dtcl.so
+            core/tcl/native2d_presentation_v1.tcl core/tcl/native2d_axis_presentation_v1.tcl
             core/native3d/renderer_worker.tcl core/native3d/bin/libgx3de_viewer_tcl.so
             plugins/modules/plot.dataset/api/plot_dataset_api_v4.tcl
+            plugins/modules/viewer.curve_digitizer/api/curve_digitizer_quality_api_v2.tcl
+            plugins/modules/viewer.curve_digitizer/api/curve_digitizer_image_processing_api_v1.tcl
         } {lappend renderer $relative [sha256File [file join $::GX::scriptDir $relative]]}
     }
     set settings {}
     foreach name [dict keys [previewSettingsDefaults]] {if {![string match *open* $name]} {lappend settings $name [previewSetting $name]}}
     if {[string tolower [datasetField $id format]] in {stl obj step stp vtp vtu vti}} {lappend settings native3d [native3dGraphicsPolicy]}
-    return [datasetStorageSha256Text $::GX::currentSession [list [sessionOriginRead $::GX::currentSession] [datasetPreviewCacheSource $id] $options $renderer $settings]]
+    set linked {}
+    if {[dict exists $options processed_image dataset_id]} {
+        set linked [datasetViewerLinkedSourceIdentity $::GX::currentSession [dict get $options processed_image dataset_id]]
+    }
+    # Options are a map: insertion order must not trigger another preparation.
+    # Keep values intact, including scientifically meaningful grouping lists.
+    set orderedOptions {}
+    foreach name [lsort [dict keys $options]] {dict set orderedOptions $name [dict get $options $name]}
+    return [datasetStorageSha256Text $::GX::currentSession [list [sessionOriginRead $::GX::currentSession] [datasetPreviewCacheSource $id] $orderedOptions $linked $renderer $settings]]
 }
 proc ::GX::datasetPreviewCachePath {session key} {
     if {![regexp {^[0-9a-f]{64}$} $key]} {error {Invalid Preview cache key}}
@@ -52,15 +64,43 @@ proc ::GX::datasetPreviewCacheRead {id key {allowStale 0}} {
     set f [open $digest r];try {set expected [string trim [read $f 128]]} finally {close $f}
     if {[sha256File $path] ne $expected} {return {}}
     set f [open $path r];fconfigure $f -encoding utf-8;try {set result [read $f 16777217]} finally {close $f}
-    if {[catch {dict get $result dataset_id} dataset] || $dataset ne $id || [dict get $result key] ne $key} {return {}}
+    # A matching digest verifies bytes, not the representation's structure.
+    # Disposable cache damage/unsupported records must be a cache miss, never a
+    # missing-dictionary-key error that prevents normal Preview preparation.
+    if {[catch {dict size $result}]} {return {}}
+    foreach field {schema dataset_id key source options} {
+        if {![dict exists $result $field]} {return {}}
+    }
+    if {[dict get $result schema] ne {gxtxt.session_preview.v1} ||
+        [dict get $result dataset_id] ne $id || [dict get $result key] ne $key ||
+        [catch {dict size [dict get $result options]}]} {return {}}
+    # The native consumer needs both the prepared model envelope and its row
+    # counts. Admit neither a partial native record nor invalid count text as a
+    # hit: preparation must get a chance to replace the disposable record.
+    set native [dict exists $result native_model]
+    if {[dict exists $result kind] && [dict get $result kind] eq {native2d}} {set native 1}
+    if {$native} {
+        foreach field {native_model row_count displayed_points} {
+            if {![dict exists $result $field]} {return {}}
+        }
+        set model [dict get $result native_model]
+        if {[catch {dict size $model}] || ![dict exists $model panels] ||
+            [catch {llength [dict get $model panels]}]} {return {}}
+        foreach field {row_count displayed_points} {
+            set value [dict get $result $field]
+            if {![string is entier -strict $value] || $value<0} {return {}}
+        }
+    }
     if {[dict exists $result artifacts]} {
+        if {[catch {dict size [dict get $result artifacts]}]} {return {}}
         dict for {name expected} [dict get $result artifacts] {
             if {[file tail $name] ne $name} {return {}}
             set artifact [file join $dir $name]
             if {![file isfile $artifact] || [file type $artifact] eq "link" || [sha256File $artifact] ne $expected} {return {}}
         }
     }
-    set current [expr {[dict get $result source] eq [datasetPreviewCacheSource $id]}]
+    set currentKey [datasetPreviewCacheKey $id [dict get $result options]]
+    set current [expr {[dict get $result source] eq [datasetPreviewCacheSource $id] && $key eq $currentKey}]
     if {!$current && !$allowStale} {return {}}
     if {[datasetField $id storage_provider {}] eq "remote"} {
         if {![llength [info commands ::winfo]]} {datasetRemoteVerify $id} elseif {![dict exists $::GX::PreviewCache::remoteVerified $key] || [dict get $::GX::PreviewCache::remoteVerified $key] ne [interactiveDocumentSessionToken]} {
@@ -68,6 +108,7 @@ proc ::GX::datasetPreviewCacheRead {id key {allowStale 0}} {
         }
     }
     dict set result current $current
+    if {$key ne $currentKey} {dict set result invalidation_reason {Scientific source, render options, renderer implementation or configured preparation settings changed}}
     incr hits
     return $result
 }
@@ -130,7 +171,7 @@ proc ::GX::datasetPreviewCacheGenerate {id options {expectedKey {}}} {
                 if {![catch {set page [datasetPreviewPage $::GX::currentSession $id {count 12}]}]} {dict set result table_page $page}
             }
         }
-        if {[datasetPreviewCacheSource $id] ne $source} {error {Preview source changed during preparation}}
+        if {[datasetPreviewCacheSource $id] ne $source || [datasetPreviewCacheKey $id $options] ne $key} {error {Preview source or linked image changed during preparation}}
         set artifacts {}
         foreach path [glob -nocomplain -type f -directory $dir *] {
             if {[file tail $path] in {representation.tcldict SHA256}} continue
@@ -161,7 +202,21 @@ proc ::GX::datasetPreviewCacheRequest {id {options {}} {callback {}}} {
         } elseif {$callback ne {}} {after idle [list {*}$callback [dict create status ready key $key cache_hit 1]]}
         return $key
     }
-    if {[dict exists $tasks $key]} {if {!$::GX::PreviewCache::watchCalling} {dict set tasks $key legacy_joined 1};if {$callback ne {}} {set callbacks [dict get $tasks $key callbacks];lappend callbacks $callback;dict set tasks $key callbacks $callbacks};return $key}
+    if {[dict exists $tasks $key]} {
+        if {[dict exists $tasks $key cancelled]} {
+            # A new Render is not a subscriber to the cancelled generation.
+            # Drain that Job first, then request the same source/options again.
+            if {![dict exists $tasks $key retry]} {
+                dict set tasks $key retry [dict create id $id options $options session_token [interactiveDocumentSessionToken] callbacks {} legacy_joined 0]
+            }
+            if {!$::GX::PreviewCache::watchCalling} {dict set tasks $key retry legacy_joined 1}
+            if {$callback ne {}} {set callbacks [dict get $tasks $key retry callbacks];lappend callbacks $callback;dict set tasks $key retry callbacks $callbacks}
+        } else {
+            if {!$::GX::PreviewCache::watchCalling} {dict set tasks $key legacy_joined 1}
+            if {$callback ne {}} {set callbacks [dict get $tasks $key callbacks];lappend callbacks $callback;dict set tasks $key callbacks $callbacks}
+        }
+        return $key
+    }
     incr misses
     dict unset ::GX::PreviewCache::outcomes $key
     dict set tasks $key [dict create session $session id $id options $options callbacks [expr {$callback eq {}?{}:[list $callback]}] job_id {} creator [expr {$::GX::PreviewCache::watchCalling ? {watch} : {legacy}}] legacy_joined [expr {!$::GX::PreviewCache::watchCalling}]]
@@ -169,8 +224,11 @@ proc ::GX::datasetPreviewCacheRequest {id {options {}} {callback {}}} {
     return $key
 }
 proc ::GX::_datasetPreviewCacheRemoteVerified {id key token callback response} {
-    if {$token ne [interactiveDocumentSessionToken]} return
-    if {[dict get $response ok]} {
+    if {[catch {interactiveDocumentSessionToken} current] || $token ne $current} {
+        # A terminal notification still owns subscription cleanup even when its
+        # Session has gone. Do not grant verification to the old lifetime.
+        set result [dict create status error key $key message {Preview verification cancelled: Session lifetime changed}]
+    } elseif {[dict get $response ok]} {
         dict set ::GX::PreviewCache::remoteVerified $key $token
         set result [dict create status ready key $key cache_hit 1]
     } else {set result [dict create status error key $key message [dict get $response error]]}
@@ -208,15 +266,41 @@ proc ::GX::_datasetPreviewCacheFinish {key response} {
     variable ::GX::PreviewCache::tasks
     if {![dict exists $tasks $key]} return
     set entry [dict get $tasks $key];dict unset tasks $key
-    if {[dict get $response status] eq "ready" && [dict get $entry session] eq $::GX::currentSession && [datasetField [dict get $entry id] storage_provider {}] eq "remote"} {dict set ::GX::PreviewCache::remoteVerified $key [interactiveDocumentSessionToken]}
+    if {[dict get $response status] eq "ready" && [dict get $entry session] eq $::GX::currentSession && [datasetField [dict get $entry id] storage_provider {}] eq "remote" && ![catch {interactiveDocumentSessionToken} token]} {dict set ::GX::PreviewCache::remoteVerified $key $token}
     if {[dict get $response status] eq "error"} {
-        set dir [datasetPreviewCachePath [dict get $entry session] $key]
-        file mkdir $dir
-        resourceLifecycleWriteBytes [file join $dir PREPARE_ERROR.tcldict] [encoding convertto utf-8 [dict merge $response [dict create dataset_id [dict get $entry id] generated_at [clock format [clock seconds] -gmt 1 -format %Y-%m-%dT%H:%M:%SZ]]]]
+        # This diagnostic is disposable. Failure to write it must not lose the
+        # terminal outcome or prevent existing subscribers from draining.
+        if {[catch {
+            set dir [datasetPreviewCachePath [dict get $entry session] $key]
+            file mkdir $dir
+            resourceLifecycleWriteBytes [file join $dir PREPARE_ERROR.tcldict] [encoding convertto utf-8 [dict merge $response [dict create dataset_id [dict get $entry id] generated_at [clock format [clock seconds] -gmt 1 -format %Y-%m-%dT%H:%M:%SZ]]]]
+        } reason]} {dict set response cache_record_error $reason}
     }
     dict set ::GX::PreviewCache::outcomes $key $response
     while {[dict size $::GX::PreviewCache::outcomes]>128} {dict unset ::GX::PreviewCache::outcomes [lindex [dict keys $::GX::PreviewCache::outcomes] 0]}
     foreach callback [dict get $entry callbacks] {uplevel #0 [list {*}$callback $response]}
+    if {[dict exists $entry retry]} {
+        set retry [dict get $entry retry]
+        set callbacks [dict get $retry callbacks]
+        set reason {}
+        if {[dict get $entry session] ne $::GX::currentSession || [catch {interactiveDocumentSessionToken} token] || [dict get $retry session_token] ne $token} {
+            set reason {Preview retry cancelled: Session lifetime changed}
+        } elseif {[catch {datasetPreviewCacheKey [dict get $retry id] [dict get $retry options]} currentKey] || $currentKey ne $key} {
+            set reason {Preview retry cancelled: scientific source or preparation settings changed; select Render again}
+        }
+        if {$reason ne {}} {
+            # Complete subscription bookkeeping without starting work for a
+            # closed/reopened Session. Its consumer retains its own token guard.
+            foreach callback $callbacks {uplevel #0 [list {*}$callback [dict create status error key $key message $reason]]}
+            return
+        }
+        if {![llength $callbacks]} {set callbacks [list {}]}
+        set prior $::GX::PreviewCache::watchCalling
+        set ::GX::PreviewCache::watchCalling [expr {![dict get $retry legacy_joined]}]
+        try {
+            foreach callback $callbacks {datasetPreviewCacheRequest [dict get $retry id] [dict get $retry options] $callback}
+        } finally {set ::GX::PreviewCache::watchCalling $prior}
+    }
 }
 proc ::GX::datasetPreviewCacheStatus {key} {
     if {[dict exists $::GX::PreviewCache::tasks $key]} {return [dict create status preparing key $key job_id [dict get $::GX::PreviewCache::tasks $key job_id]]}
@@ -225,7 +309,7 @@ proc ::GX::datasetPreviewCacheStatus {key} {
 }
 proc ::GX::datasetPreviewCacheCancel {key} {
     variable ::GX::PreviewCache::tasks
-    if {[dict exists $tasks $key]} {set job [dict get $tasks $key job_id];if {$job ne {}} {_datasetPreviewCacheCancelJob $job};dict set tasks $key cancelled 1;dict set tasks $key callbacks {}}
+    if {[dict exists $tasks $key]} {set job [dict get $tasks $key job_id];if {$job ne {}} {_datasetPreviewCacheCancelJob $job};dict set tasks $key cancelled 1;dict set tasks $key callbacks {};dict unset tasks $key retry}
 }
 proc ::GX::_datasetPreviewCacheCancelJob {job} {
     if {[llength [info commands winfo]]} {scriptJobAsync [scriptJobCommand cancel $job] {} {} {timeout_ms 5000 max_bytes 1048576 label {Dataset Preview cancellation}}} else {scriptJobCancel $job}
@@ -269,11 +353,43 @@ proc ::GX::datasetPreviewCacheInventory {session} {
         if {[file type $dir] eq "link" || ![regexp {^[a-f0-9]{64}$} [file tail $dir]]} continue
         set bytes 0;foreach file [glob -nocomplain -type f -directory $dir *] {incr bytes [file size $file]}
         set path [file join $dir representation.tcldict];set item [dict create key [file tail $dir] size_bytes $bytes status preparing dataset_id {} generated_at {} kind descriptive error {} source_revision {}]
-        if {[file isfile $path] && [file size $path]<=16777216} {set f [open $path r];try {set record [read $f]} finally {close $f};if {![catch {dict get $record dataset_id} id]} {dict set item dataset_id $id;dict set item generated_at [dict get $record generated_at];dict set item kind [dict get $record kind];dict set item source_revision [lindex [dict get $record source] 1];if {[catch {set prepared [datasetPreviewCacheRead $id [file tail $dir]]} message]} {dict set item status unavailable;dict set item error $message} else {dict set item status [expr {$prepared eq {} || ![dict get $prepared current]?"stale":"ready"}]}}}
+        if {[file isfile $path] && [file type $path] ne "link" && [file size $path]<=16777216} {
+            # Inventory is also used by eviction and Clear all. A damaged
+            # disposable record must remain removable, not abort management
+            # of every other entry before the normal reader can reject it.
+            if {[catch {
+                set f [open $path r];fconfigure $f -encoding utf-8
+                try {set record [read $f]} finally {close $f}
+                dict size $record
+                set id [dict get $record dataset_id]
+                set generated [dict get $record generated_at]
+                set kind [dict get $record kind]
+                set revision [lindex [dict get $record source] 1]
+            } message]} {
+                dict set item status unavailable
+                dict set item error "Invalid cached representation metadata: $message"
+            } else {
+                dict set item dataset_id $id;dict set item generated_at $generated
+                dict set item kind $kind;dict set item source_revision $revision
+                if {[catch {set prepared [datasetPreviewCacheRead $id [file tail $dir]]} message]} {
+                    dict set item status unavailable;dict set item error $message
+                } else {dict set item status [expr {$prepared eq {} || ![dict get $prepared current]?"stale":"ready"}]}
+            }
+        }
         set errorPath [file join $dir PREPARE_ERROR.tcldict]
         if {[file isfile $errorPath] && [file type $errorPath] ne "link" && [file size $errorPath]<65536} {
-            set f [open $errorPath r];try {set failure [read $f]} finally {close $f}
-            if {![catch {dict get $failure message} error]} {dict set item status error;dict set item error $error;dict set item dataset_id [dict get $failure dataset_id];dict set item generated_at [dict get $failure generated_at]}
+            if {[catch {
+                set f [open $errorPath r];try {set failure [read $f]} finally {close $f}
+                set error [dict get $failure message]
+            } message]} {
+                dict set item status unavailable
+                dict set item error "Invalid cached preparation failure: $message"
+            } else {
+                dict set item status error;dict set item error $error
+                foreach field {dataset_id generated_at} {
+                    if {[dict exists $failure $field]} {dict set item $field [dict get $failure $field]}
+                }
+            }
         }
         if {[dict exists $::GX::PreviewCache::outcomes [file tail $dir]]} {
             set outcome [dict get $::GX::PreviewCache::outcomes [file tail $dir]]
@@ -291,7 +407,14 @@ proc ::GX::datasetPreviewCacheClear {session {keys {}}} {
 proc ::GX::datasetPreviewCacheEvict {session keep} {
     datasetPreviewCacheInit;set total 0;set entries [datasetPreviewCacheInventory $session]
     foreach item $entries {incr total [dict get $item size_bytes]}
-    foreach item [lsort -index 0 $entries] {
+    set ordered {}
+    foreach item $entries {
+        set path [file join [datasetPreviewCachePath $session [dict get $item key]] representation.tcldict]
+        set modified 0;if {[file isfile $path]} {set modified [file mtime $path]}
+        lappend ordered [list $modified [dict get $item key] $item]
+    }
+    foreach entry [lsort -integer -index 0 $ordered] {
+        set item [lindex $entry 2]
         if {$total<=[configurationGet preview.cache_mib]*1048576} break
         set key [dict get $item key]
         if {$key eq $keep} continue

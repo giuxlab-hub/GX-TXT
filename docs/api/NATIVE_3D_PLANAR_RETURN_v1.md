@@ -21,8 +21,18 @@ rechecks these authorities. The current concrete destination adapter belongs to
 `viewer.3d_workbench/workbench_3d`; a different Workspace schema requires its own
 registered owner contract. CORE never writes an unknown provider's payload.
 `native3DPlanarCreate path unit plane tolerance {origin_workspace RECEIPT}` binds
-that receipt and normalized frame to the existing PlanarDocument. The existing
-EditBegin/EditAccept contracts still guard the PlanarDocument and Session lifetime.
+that receipt and normalized frame to the existing PlanarDocument. The optional
+`mode` is `both` (the compatible default), `section` or `projection`. The Workbench
+passes its explicitly selected operation. A projection-only request does not
+compute an unrelated section: a coplanar section may be degenerate while the
+source boundary has a valid orthogonal projection. A section-only request does
+not require projection tessellation. Unrequested collections record
+`status=not_requested` and have no fabricated contours or display resources;
+Show/EditBegin refuse that unprepared operation explicitly. New single-operation
+receipts identify the actual preparation in `prepared_mode` and provenance.
+Legacy both-operation behavior and genuine section-error guards remain intact.
+The existing EditBegin/EditAccept contracts still guard the PlanarDocument and
+Session lifetime.
 
 Edit actual retained contours in Curve Workbench. **Accept →3D** first commits an
 independent accepted Planar result. Paths retain exact piecewise-linear vertices;

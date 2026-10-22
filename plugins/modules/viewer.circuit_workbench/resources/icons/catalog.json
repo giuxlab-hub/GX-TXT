@@ -275,6 +275,17 @@
       "width": "128",
       "height": "128",
       "alpha": "1"
+    },
+    "catalog_circuit": {
+      "title": "Circuit Workbench",
+      "category": "Simulation & Modeling",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "c67dfc3b16bc607cba4d4856486dda73a973f5728369e0f3174bebc653bada2d",
+      "png_sha256": "47393f50572f10829eeb737eb47f48c5abe20d29ed3bdd78d4e314e1635df837",
+      "width": "192",
+      "height": "192",
+      "alpha": "1"
     }
   }
 }

@@ -37,11 +37,11 @@ proc ::GX::CurveDigitizerQuality::read {datasetId} {
         if {[catch {set src [::GX::sessionInspectionDataset $source $session]}]} {
             set sourceStatus missing
         } else {
-            foreach k {sha256 canonical_sha256} {
-                if {[dict exists $src $k] && [dict get $src $k] ne {}} {
-                    set currentSha [dict get $src $k];break
-                }
-            }
+            # A registry digest is not verification of current canonical bytes.
+            # Reuse the same public resource authority as Uncertainty/source
+            # inspection, without substituting a different integrity engine.
+            set sourceStatus unverified
+            if {[dict exists $src path] && ![catch {set actual [::GX::sessionInspectionResolveResource [dict get $src path] $session]}]} {set currentSha [dict get $actual sha256]}
             if {$expected ne {} && $currentSha ne {}} {
                 set sourceStatus [expr {[string equal -nocase $expected $currentSha] ? {verified} : {changed}}]
             }

@@ -59,23 +59,30 @@ proc ::GX::CurveWorkbench::_extensionApply {transaction result} {
             }
             affine {
                 if {$native eq {}} {error "Affine operation requires logical targets"}
-                _cadUnits $w $targets
+                _coordinatePlaneAdmit $w $targets
                 ::GX::Native2D::core affine $st($w,scene) $native [dict get $operation matrix] 0
                 foreach target $targets {_syncSamples $w $target;_extensionTrack $transaction modified $target}
             }
             replace_points {
                 if {[llength $targets]!=1||[llength [dict get $operation points]]>65536} {error "Replace points requires one target and at most 65536 exact points"}
+                _coordinatePlaneAdmit $w $targets
                 set target [lindex $targets 0];::GX::Native2D::core replace $st($w,scene) [lindex $native 0] [dict get $operation points]
                 _syncSamples $w $target;_extensionTrack $transaction modified $target
             }
             create_sketch - create_points {
                 set name [string trim [dict get $operation name]];if {$name eq {}} {error "Extension geometry requires a name"}
-                set unit [::GX::datasetPublicationV2DictDefault $operation working_unit {}];if {$unit ne {}} {::GX::unitRegistryConversionPlan $unit $unit}
+                set context [_sketchCoordinateContext $w {}];set units [dict get $context units]
+                if {[dict exists $operation working_unit]&&[lrepeat 2 [dict get $operation working_unit]] ne $units} {error {An extension scalar working unit cannot replace the current X/Y coordinate frame; use Workspace Configuration before creating geometry}}
                 if {$action eq "create_sketch"} {set object [::GX::Native2D::core sketch_create $st($w,scene) [dict get $operation definition] [::GX::datasetPublicationV2DictDefault $operation display_samples 257]]} else {
                     if {[llength [dict get $operation points]]>65536} {error "Extension point input limit is 65536"}
                     set object [::GX::Native2D::core add $st($w,scene) [dict get $operation points]]
                 }
-                try {set record [_newRecord $w $name [_sketchSamples $w $object] {} x y {} {} {} {} {} [list [dict create operation extension_create geometry_operation $action]]];dict set record working_unit $unit;set id [dict get $record id];_addRecord $w $record $object} on error {message options} {::GX::Native2D::core delete $st($w,scene) $object;return -options $options $message}
+                try {
+                    set record [_newRecord $w $name [_sketchSamples $w $object] {} x y {} {} {} {} {} [list [dict create operation extension_create geometry_operation $action]]]
+                    dict set record coordinate_units $units
+                    set record [_coordinateRetainFrame $w $record [dict get $context parents]]
+                    set id [dict get $record id];_addRecord $w $record $object
+                } on error {message options} {::GX::Native2D::core delete $st($w,scene) $object;return -options $options $message}
                 _extensionTrack $transaction created $id
             }
             delete {foreach target $targets {_removeRecord $w $target;_extensionTrack $transaction deleted $target}}

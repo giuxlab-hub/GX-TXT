@@ -13,7 +13,7 @@ proc ::GX::CurveWorkbench::_buildViewport {w} {
     pack $w.right.viewport -fill both -expand 1 -before $w.right.residualLabel
     pack $w.right.viewport.canvas -in $w.right.viewport -fill both -expand 1
     ::GX::native2DViewportHostCreate $w.right.viewport $w.right.viewport.canvas $st($w,scene) [list ::GX::CurveWorkbench::_viewportChanged $w]
-    set actions [dict create fit_selected [list ::GX::CurveWorkbench::_fit $w 1] pan [list ::GX::CurveWorkbench::_scienceTool $w pan] object_snap [list ::GX::CurveWorkbench::_objectSnapToggle $w] zoom_box [list ::GX::CurveWorkbench::_zoomBoxStart $w]]
+    set actions [dict create fit_all [list ::GX::CurveWorkbench::_fit $w 0] reset [list ::GX::CurveWorkbench::_fit $w 0] fit_selected [list ::GX::CurveWorkbench::_fit $w 1] pan [list ::GX::CurveWorkbench::_scienceTool $w pan] object_snap [list ::GX::CurveWorkbench::_objectSnapToggle $w] zoom_box [list ::GX::CurveWorkbench::_zoomBoxStart $w]]
     set st($w,viewportControls) [::GX::native2DViewportControls $w.right.viewport.canvas {select transform fit_all fit_selected zoom_in zoom_out zoom_box pan reset grid grid_snap object_snap} $actions]
     set body [::GX::native2DViewportPanelCreate $w.right.viewport.canvas compare {Compare / residuals} bottom-right {max_width 200 max_height 45 priority 5}]
     pack forget $body
@@ -213,15 +213,19 @@ proc ::GX::CurveWorkbench::_buildWorkspace {w} {
     ttk::menubutton $w.toolbar.workspace -text Workspace -menu $w.toolbar.workspace.menu
     set menu $w.toolbar.workspace.menu;menu $menu -tearoff 0
     foreach {label command} [list {New named workspace…} [list ::GX::CurveWorkbench::_newWorkspace $w] {Rename workspace…} [list ::GX::CurveWorkbench::_renameWorkspace $w] {Session Workspaces…} [list ::GX::sessionWorkspaceDialog $w] {View notes} [list ::GX::CurveWorkbench::_workspaceNotes $w view] {Edit notes} [list ::GX::CurveWorkbench::_workspaceNotes $w edit]] {$menu add command -label $label -command $command}
+    $menu add command -label {Workspace Configuration…} -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_coordinateConfigurationOpen $w]]
     _commandLayout $w [winfo width $w.toolbar]
 }
 proc ::GX::CurveWorkbench::_newWorkspace {w} {
-    ::GX::uiFieldFormCreate $w.newWorkspace {New Session workspace} {name {type string required 1 label Name}} {name {New curve workspace}} [list ::GX::CurveWorkbench::_newWorkspaceApply $w] $w
+    set fields [dict merge {name {type string required 1 label Name}} [_coordinateConfigurationFields]]
+    set values [dict merge {name {New curve workspace}} [dict remove [_coordinateConfigurationDefault] schema]]
+    ::GX::uiFieldFormCreate $w.newWorkspace {New workspace — physical Configuration} $fields $values [list ::GX::CurveWorkbench::_newWorkspaceApply $w] $w
 }
 proc ::GX::CurveWorkbench::_newWorkspaceApply {w values} {
     set name [::GX::_workspaceName [dict get $values name]]
+    set configuration [_coordinateConfigurationNormalize [dict remove $values name]]
     _close $w
-    set next [open [dict create workspace_id new workspace_name $name]]
+    set next [open [dict create workspace_id new workspace_name $name coordinate_configuration $configuration]]
     _save $next
 }
 proc ::GX::CurveWorkbench::_renameWorkspace {w} {

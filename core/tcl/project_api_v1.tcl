@@ -603,6 +603,17 @@ proc ::GX::manifestStringV2_before_instrument_library_v1 {} {
             experiment_project_legacy { appendKV out legacy_project $value }
         }
     }
+    # Import/reassociation provenance belongs to this Session's persisted
+    # Manifest, not the reusable configuration or a newly selected Project.
+    if {$::GX::currentSession ne ""} {
+        set manifest [file join $::GX::currentSession metadata manifest.ini]
+        if {[file isfile $manifest]} {
+            set stored [parseIni $manifest]
+            foreach field {imported_experiment_id imported_project_id previous_project_id} {
+                if {[dict exists $stored project_link.$field]} {appendKV out $field [dict get $stored project_link.$field]}
+            }
+        }
+    }
     return $out
 }
 

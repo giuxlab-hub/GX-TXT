@@ -20,6 +20,17 @@ editing or imply 3D Workbench acceptance.
 
 Native3D gesture cancellation is coalesced until the worker is idle, ends the native gizmo/plane transaction before preview rebuild, and checks worker/session/gesture generations. Generic Dataset intake recognizes `geometry.mesh`/`model.cad` complete payloads before point/trajectory bindings, disables irrelevant table fields and retains real Dataset ID/SHA/units. Read-only `gizmo_pick` reuses the existing public native controller query; it does not mutate selection or geometry.
 
+Embedded hosts route Escape through the actual toplevel, scoped to descendants
+of the current Native3D host. Tk does not include ancestor frames in child
+keyboard bindtags. Mount/suspend/close removes only this owner's handler and
+preserves other toplevel bindings; newly created descendants need no copied
+bindings. Repeated Escape retains the first pending rollback transaction.
+Final update/end RPC replies are checked against the captured gesture, worker
+and Session before any scientific edit. Cancellation during native end
+refreshes retained authority without ending that completed native transaction
+twice. Closed-owner error cleanup cannot reopen rendering. An unchanged
+manipulator matrix does not create a geometry edit or History entry.
+
 ## Read-only embedded preview
 
 `native3DPreviewAcquire parent datasetId sourceKey checkCommand prepareCommand
@@ -133,3 +144,39 @@ manifest. `native3DLayerTextureAnchor`, `native3DLayerTextureBind` and
 source-face mapping through the installed native texture engine. See the
 [complete current contract](NATIVE3D_MANAGED_TEXTURE_v1.md) for units, source
 geometry guards, transparent pixels, native picking, ownership and limitations.
+
+### Responsive embedded view controls (dev109)
+
+The existing Native3D host provides a normal **Show/Hide view controls** button.
+An embedded host automatically hides its secondary controls below 760 logical
+pixels of available host width, leaving the scientific canvas visible. Wider
+embedded hosts allocate 200–360 pixels to that sidebar; the full controls
+remain accessible through its existing scrolled container with horizontal
+scrolling. A manual toggle overrides automatic visibility until a fresh mount.
+Standalone controls retain their original 460-pixel width. Mount, suspend and
+close retain their existing scientific ownership and cancel pending layout
+callbacks. No camera, geometry, worker or graphics-quality setting changes.
+
+The sidebar's scrollable content also respects the controls' natural requested
+width. Increasing the GUI font can therefore enlarge the content without
+widening the bounded viewport or clipping a button within its own frame. The
+existing horizontal scrollbar reaches that complete content. Content/font and
+viewport size changes update the same scroll region; commands, fonts and
+scientific state are unchanged.
+
+The typed mapped-host contract verifies 950×650 and 1380×900 outer clients,
+manual show/hide, suspend/resume, automatic narrow resize and cleanup against
+an unchanged copied scientific Session. Actual installed pointer/keyboard
+acceptance and narrow screenshots are additional required evidence.
+
+A successful native pick now invalidates the existing host's retained display
+frame after installing the actual source anchor. The same viewport painter
+refreshes it before returning to ordinary interaction, even if canvas size is
+unchanged. A busy renderer defers through the existing resize drain; close
+clears the pending display state. Source geometry, worker generation and
+scientific History are unchanged. This reuses the current cache PNG filename:
+content/frame state, rather than filename uniqueness, demonstrates the refresh.
+The typed original-box/cylinder contract verifies two different immediate
+frames at unchanged 404×712 dimensions using one worker generation; actual
+installed cold retesting remains required. Failed test01/02 filename oracles
+are preserved with their actual changed-frame observations.

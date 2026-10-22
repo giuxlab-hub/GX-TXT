@@ -1,13 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # One source view/edit adapter. Tk owns Unicode input and Undo; C++ owns lexing.
 namespace eval ::GX::SourceSurface {variable state;variable serial 0;variable pending {};variable configurationSubscription {};variable categories {comment string escape keyword definition builtin number constant bridge decorator tag attribute identifier}}
-proc ::GX::sourceSurfaceApiInfo {} {return [dict create api_id SOURCE_SURFACE_API_v1 api_version 1 modes {read_only editable} native_lexer gxtxt.native_source.v1 gui_adapter TkText operations {create set get ready scan configure themes palette fold breakpoints location function_at replace refresh} language_families {javascript c python octave fortran xml html perl tcl tk markdown} source_mutation styling_never]}
+proc ::GX::sourceSurfaceApiInfo {} {return [dict create api_id SOURCE_SURFACE_API_v1 api_version 1 modes {read_only editable} native_lexer gxtxt.native_source.v1 gui_adapter TkText operations {create set get ready scan configure themes palette fold breakpoints location function_at replace refresh find find_inspect find_replace} optional_controls {find_bar} language_families {javascript c python octave fortran xml html perl tcl tk markdown tex} source_mutation styling_never]}
 proc ::GX::sourceSurfaceConfigurationRegister {} {
     configurationRegister source.theme [dict create group Appearance label {Source color theme} type choice values {Automatic {Readable Light} {Rich Dark} {High Contrast Light} {High Contrast Dark} Custom} default {Readable Light} scope user]
     configurationRegister source.schemes [dict create group Appearance label {Saved source color schemes} type string default {} scope user]
-    foreach language {javascript c python octave fortran xml html perl tcl tk markdown} {configurationRegister source.highlight.$language [dict create group Appearance label "[string totitle $language] source highlighting" type boolean default 1 scope user]}
+    foreach language {javascript c python octave fortran xml html perl tcl tk markdown tex} {configurationRegister source.highlight.$language [dict create group Appearance label "[string totitle $language] source highlighting" type boolean default 1 scope user]}
     foreach category {background foreground selection caret gutter breakpoint current_line search comment string escape keyword definition builtin number constant bridge decorator tag attribute identifier} {configurationRegister source.color.$category [dict create group Appearance label "Source $category color (blank = preset)" type string default {} scope user validator ::GX::sourceSurfaceColorValidate]}
-    foreach language {python octave} {configurationRegister scripts.editor_layout.$language [dict create group Appearance label "[string totitle $language] editor panel layout" type string default {left 1 right 1 properties 1 fractions {.19 .78} source_fraction .40} scope user]}
+    foreach language {python octave cpp} {configurationRegister scripts.editor_layout.$language [dict create group Appearance label "[string totitle $language] editor panel layout" type string default {left 1 right 1 properties 1 fractions {.19 .78} source_fraction .40} scope user]}
     configurationRegister editor.breakpoints [dict create group Appearance label {Source breakpoint presentation by exact revision} type string default {} scope user]
     if {$::GX::SourceSurface::configurationSubscription eq {}} {set ::GX::SourceSurface::configurationSubscription [configurationSubscribe ::GX::_sourceSurfaceConfigurationChanged]}
 }
@@ -31,7 +31,7 @@ proc ::GX::sourceSurfacePalette {{theme {}}} {
 proc ::GX::sourceSurfaceScan {language source} {documentNativeEnsure;return [::GX::NativeDocument::scan $language $source]}
 proc ::GX::sourceSurfaceCreate {parent {options {}}} {
     variable ::GX::SourceSurface::state
-    set o [dict merge {mode read_only language python change_command {} theme {} notice {}} $options]
+    set o [dict merge {mode read_only language python change_command {} theme {} notice {} find_bar 0} $options]
     if {[dict get $o mode] ni {read_only editable}} {error {Source mode must be read_only or editable}}
     ttk::frame $parent
     text $parent.text -undo [expr {[dict get $o mode] eq {editable}}] -autoseparators 1 -maxundo 1000 -wrap none -font TkFixedFont -tabs {32} -padx 6 -pady 4 -exportselection 0
@@ -46,6 +46,27 @@ proc ::GX::sourceSurfaceCreate {parent {options {}}} {
     grid $parent.status -row 2 -column 0 -columnspan 3 -sticky ew
     grid rowconfigure $parent 0 -weight 1;grid columnconfigure $parent 1 -weight 1
     set state($parent,options) $o;set state($parent,revision) 0;set state($parent,timer) {};set state($parent,request) {};set state($parent,model) {tokens {} folds {}};set state($parent,modelReady) 0;set state($parent,modelSource) {};set state($parent,folded) {};set state($parent,breakpoints) {};set state($parent,disabled) {};set state($parent,hoverTimer) {};set state($parent,line) 0
+    _sourceSurfaceFindResult $parent {} forward idle
+    if {[dict get $o find_bar]} {
+        set state($parent,find) {}
+        ttk::frame $parent.find
+        ttk::label $parent.find.label -text Find
+        ttk::entry $parent.find.query -textvariable ::GX::SourceSurface::state($parent,find) -width 24
+        ttk::button $parent.find.previous -text Previous -command [list ::GX::sourceSurfaceFindCurrent $parent backward]
+        ttk::button $parent.find.next -text Next -command [list ::GX::sourceSurfaceFindCurrent $parent forward]
+        pack $parent.find.label $parent.find.query $parent.find.previous $parent.find.next -side left -padx 3 -pady 3
+        ttk::label $parent.find.result -textvariable ::GX::SourceSurface::state($parent,find_status) -wraplength 180
+        pack $parent.find.result -side left -fill x -expand 1 -padx 5
+        grid configure $parent.lines $parent.text $parent.v -row 1
+        grid configure $parent.h -row 2
+        grid configure $parent.status -row 3
+        grid $parent.find -row 0 -column 0 -columnspan 3 -sticky ew
+        grid rowconfigure $parent 0 -weight 0;grid rowconfigure $parent 1 -weight 1
+        bind $parent.find.query <Return> [list ::GX::sourceSurfaceFindCurrent $parent forward]
+        bind $parent.text <Control-f> "[list focus $parent.find.query]; break"
+        bind $parent.text <F3> [list ::GX::sourceSurfaceFindCurrent $parent forward]
+        bind $parent.text <Shift-F3> [list ::GX::sourceSurfaceFindCurrent $parent backward]
+    }
     bind $parent.text <<Modified>> [list ::GX::_sourceSurfaceModified $parent]
     bind $parent.text <Configure> [list ::GX::_sourceSurfaceGutter $parent]
     bind $parent.lines <Motion> [list ::GX::_sourceSurfaceHoverSchedule $parent %x %y]
@@ -57,7 +78,29 @@ proc ::GX::sourceSurfaceCreate {parent {options {}}} {
     bind $parent <Destroy> [list ::GX::_sourceSurfaceDestroy $parent %W]
     sourceSurfaceConfigure $parent $o
     if {[dict get $o mode] eq {read_only}} {$parent.text configure -state disabled}
+    uiTextEditingAttach [winfo toplevel $parent.text] [list $parent.text]
     return $parent.text
+}
+proc ::GX::sourceSurfaceFindCurrent {widget {direction forward}} {
+    set parent [sourceSurfaceParent $widget]
+    if {![info exists ::GX::SourceSurface::state($parent,find)]} {error {This source surface has no declared Find bar}}
+    return [sourceSurfaceFind $parent.text $::GX::SourceSurface::state($parent,find) $direction]
+}
+proc ::GX::_sourceSurfaceReplaceControls {p} {
+    variable ::GX::SourceSurface::state
+    if {![winfo exists $p.find] || [winfo exists $p.find.replace]} return
+    set state($p,replacement) {}
+    ttk::frame $p.find.replace
+    ttk::label $p.find.replace.label -text {Replace with}
+    ttk::entry $p.find.replace.value -textvariable ::GX::SourceSurface::state($p,replacement) -width 24
+    foreach {operation title} {current Replace all {Replace all}} {
+        ttk::button $p.find.replace.$operation -text $title -command [list ::GX::_sourceSurfaceReplaceCurrent $p $operation]
+    }
+    pack $p.find.replace.label $p.find.replace.value $p.find.replace.current $p.find.replace.all -side left -padx 3 -pady 3
+    # Keep controls on their own row, including surfaces made editable later.
+    pack $p.find.replace -side bottom -fill x -before $p.find.label
+    # Focus transfer alone does not stop Tk Text's Control-h backspace binding.
+    bind $p.text <Control-h> "[list focus $p.find.replace.value]; break"
 }
 proc ::GX::_sourceSurfaceDestroy {p actual} {
     if {$p ne $actual} return
@@ -90,7 +133,12 @@ proc ::GX::sourceSurfaceConfigure {widget options} {
     variable ::GX::SourceSurface::state
     if {[dict exists $options mode]&&[dict get $options mode] ni {read_only editable}} {error {Source mode must be read_only or editable}}
     set p [sourceSurfaceParent $widget];set state($p,options) [dict merge $state($p,options) $options]
-    if {[dict exists $options mode]} {$p.text configure -state [expr {[dict get $options mode] eq {editable}?{normal}:{disabled}}] -undo [expr {[dict get $options mode] eq {editable}}]}
+    if {[dict exists $options mode]} {
+        set mode [dict get $options mode]
+        $p.text configure -state [expr {$mode eq {editable}?{normal}:{disabled}}] -undo [expr {$mode eq {editable}}]
+        if {$mode eq {editable}} {_sourceSurfaceReplaceControls $p}
+        foreach child {value current all} {if {[winfo exists $p.find.replace.$child]} {$p.find.replace.$child configure -state [expr {$mode eq {editable}?{normal}:{disabled}}]}}
+    }
     set palette [sourceSurfacePalette [dict get $state($p,options) theme]]
     $p.text configure -background [dict get $palette background] -foreground [dict get $palette foreground] -insertbackground [dict get $palette caret] -selectbackground [dict get $palette selection] -selectforeground [dict get $palette foreground]
     $p.lines configure -background [dict get $palette background]
@@ -124,6 +172,8 @@ proc ::GX::_sourceSurfaceModified {p} {
     variable ::GX::SourceSurface::state
     $p.text edit modified 0
     incr state($p,revision)
+    _sourceSurfaceFindResult $p {} forward idle
+    $p.text tag remove search_hit 1.0 end
     _sourceSurfaceInvalidateModel $p
     set state($p,line) 0;$p.text tag remove source_current 1.0 end
     if {$state($p,breakpoints) ne {} || $state($p,disabled) ne {}} {set state($p,breakpoints) {};set state($p,disabled) {};set state($p,status) {Source edited; breakpoint positions were cleared. Set them again before Debug.};event generate $p.text <<SourceBreakpointsInvalidated>>}
@@ -154,12 +204,16 @@ proc ::GX::_sourceSurfacePrepared {p revision response} {
     variable ::GX::SourceSurface::state
     if {![winfo exists $p] || $state($p,revision)!=$revision} return
     set state($p,request) {}
-    if {![dict get $response ok]} {set state($p,error) [dict get $response error];set state($p,status) $state($p,error);return}
+    if {![dict get $response ok]} {set state($p,error) [dict get $response error];set state($p,status) [string trim "[dict get $state($p,options) notice] $state($p,error)"];return}
     if {![info exists state($p,pendingSource)] || $state($p,pendingSource) ne [sourceSurfaceGet $p]} return
     set state($p,model) [dict get $response result]
     set state($p,modelSource) $state($p,pendingSource);set state($p,modelReady) 1
-    set state($p,status) [expr {[dict get $state($p,model) truncated] ? {Highlighting reached its bounded token limit; source remains unchanged.} : [dict get $state($p,options) notice]}]
-    if {[info exists state($p,breakpointWait)]} {unset state($p,breakpointWait);set state($p,status) {Source structure is ready. Set the breakpoint on the intended executable line.}}
+    # The caller's source-read limit and the lexical token limit describe
+    # different bounds. Keep both visible, with source completeness first.
+    set messages [list [dict get $state($p,options) notice]]
+    if {[dict get $state($p,model) truncated]} {lappend messages {Highlighting reached its bounded token limit; source remains unchanged.}}
+    if {[info exists state($p,breakpointWait)]} {unset state($p,breakpointWait);lappend messages {Source structure is ready. Set the breakpoint on the intended executable line.}}
+    set state($p,status) [string trim [join $messages { }]]
     foreach category $::GX::SourceSurface::categories {$p.text tag remove source_$category 1.0 end}
     set language [dict get $state($p,options) language]
     if {$language in {matlab matlab-octave}} {set language octave}
@@ -359,7 +413,7 @@ proc ::GX::sourceSurfaceAppearanceBuild {parent} {
     ttk::labelframe $p -text {Source colors and syntax — independent of the GUI theme} -padding 8
     pack $p -fill x -padx 8 -pady 5
     set row 0
-    foreach id {source.theme source.highlight.python source.highlight.octave source.highlight.javascript source.highlight.c source.highlight.fortran source.highlight.xml source.highlight.html source.highlight.perl source.highlight.tcl source.highlight.tk} {
+    foreach id {source.theme source.highlight.python source.highlight.octave source.highlight.javascript source.highlight.c source.highlight.fortran source.highlight.xml source.highlight.html source.highlight.perl source.highlight.tcl source.highlight.tk source.highlight.tex} {
         set field [dict get [configurationFields] $id]
         set ::GX::configurationUi($id) [configurationGet $id]
         set name [string map {. _} $id]
@@ -446,8 +500,52 @@ proc ::GX::sourceSurfaceScheme {operation} {
     set ::GX::configurationUi(sourcePreviewStatus) "Source scheme $operation completed: $name"
 }
 
+proc ::GX::_sourceSurfaceFindResult {p pattern direction status {index {}} {end {}}} {
+    variable ::GX::SourceSurface::state
+    set message [dict get {idle {} empty {Enter search text} not_found {No matches} found {Match found}} $status]
+    if {$status eq {found}} {set message "Match at $index"}
+    set state($p,find_status) $message
+    set state($p,find_result) [dict create status $status query [string range $pattern 0 1023] query_characters [string length $pattern] query_truncated [expr {[string length $pattern]>1024}] direction $direction index $index end $end message $message source_revision $state($p,revision)]
+}
+proc ::GX::sourceSurfaceFindInspect {widget} {
+    set p [sourceSurfaceParent $widget]
+    return $::GX::SourceSurface::state($p,find_result)
+}
+proc ::GX::_sourceSurfaceReplaceCurrent {parent scope} {
+    if {[catch {sourceSurfaceFindReplace $parent $::GX::SourceSurface::state($parent,find) $::GX::SourceSurface::state($parent,replacement) $scope} message]} {
+        set ::GX::SourceSurface::state($parent,status) $message
+    }
+}
+proc ::GX::sourceSurfaceFindReplace {widget pattern replacement {scope current}} {
+    set p [sourceSurfaceParent $widget];set t $p.text
+    if {[dict get $::GX::SourceSurface::state($p,options) mode] ne {editable} || [$t cget -state] ne {normal}} {error {Source is read-only; replacement is unavailable}}
+    if {$pattern eq {} || $scope ni {current all}} {error {Choose a nonempty literal search and replacement scope current or all}}
+    set matches {}
+    if {$scope eq {current}} {
+        set range [$t tag ranges search_hit]
+        if {[llength $range]!=2 || ![string equal -nocase [$t get {*}$range] $pattern]} {error {Use Find to select the current matching text before Replace}}
+        lappend matches $range
+    } else {
+        set start 1.0
+        while {[set found [$t search -nocase -exact -- $pattern $start end-1c]] ne {}} {
+            set stop [$t index "$found + [string length $pattern] chars"]
+            lappend matches [list $found $stop]
+            if {[llength $matches]>100000} {error {Replacement exceeds 100000 matches; narrow the search}}
+            set start $stop
+        }
+    }
+    if {[llength $matches]} {
+        set separators [$t cget -autoseparators]
+        $t edit separator
+        $t configure -autoseparators 0
+        try {foreach range [lreverse $matches] {$t replace {*}$range $replacement}} finally {$t edit separator;$t configure -autoseparators $separators}
+        $t tag remove search_hit 1.0 end
+        _sourceSurfaceModified $p
+    }
+    set ::GX::SourceSurface::state($p,status) "Replaced [llength $matches] literal matches. Undo restores this replacement."
+    return [dict create replaced [llength $matches] scope $scope]
+}
 proc ::GX::sourceSurfaceFind {widget pattern {direction forward}} {
-    if {$pattern eq {}} {return {}}
     set p [sourceSurfaceParent $widget];set t $p.text
     set previous [$t tag ranges search_hit]
     set backwardStart {insert - 1c}
@@ -455,17 +553,21 @@ proc ::GX::sourceSurfaceFind {widget pattern {direction forward}} {
         set backwardStart "[lindex $previous 0] - 1c"
     }
     $t tag remove search_hit 1.0 end
+    if {$pattern eq {}} {_sourceSurfaceFindResult $p $pattern $direction empty;return {}}
     if {$direction eq {backward}} {set found [$t search -backwards -nocase -- $pattern $backwardStart 1.0];if {$found eq {}} {set found [$t search -backwards -nocase -- $pattern end 1.0]}
     } else {set found [$t search -nocase -- $pattern {insert + 1c} end];if {$found eq {}} {set found [$t search -nocase -- $pattern 1.0 end]}}
-    if {$found eq {}} {return {}}
+    if {$found eq {}} {_sourceSurfaceFindResult $p $pattern $direction not_found;return {}}
     set stop "$found + [string length $pattern] chars"
     $t tag configure search_hit -background [dict get [sourceSurfacePalette [dict get $::GX::SourceSurface::state($p,options) theme]] search]
     $t tag add search_hit $found $stop;$t mark set insert $stop;$t see $found;focus $t
+    _sourceSurfaceFindResult $p $pattern $direction found $found [$t index $stop]
     return $found
 }
 
 proc ::GX::sourceSurfaceResetPresentation {widget} {
     variable ::GX::SourceSurface::state;set p [sourceSurfaceParent $widget]
+    _sourceSurfaceFindResult $p {} forward idle
+    $p.text tag remove search_hit 1.0 end
     foreach tag [$p.text tag names] {if {[string match source_fold_* $tag]} {$p.text tag delete $tag}}
     set state($p,folded) {};set state($p,breakpoints) {};set state($p,disabled) {};set state($p,line) 0
     $p.text tag remove source_current 1.0 end

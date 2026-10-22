@@ -166,7 +166,7 @@ proc ::GX::CurveWorkbench::_cadGestureBegin {w x y state} {
         return
     }
     set ids {}
-    if {$handle ni {pivot mirror_a mirror_b}} {set ids [_cadTargets $w];_cadUnits $w $ids}
+    if {$handle ni {pivot mirror_a mirror_b}} {set ids [_cadTargets $w];_coordinatePlaneAdmit $w $ids}
     if {$handle ni {pivot mirror_a mirror_b}} {
         foreach id $ids {set r [_record $w $id];if {[_bulkRecord $r]||[dict get $r locked]} {error "Unlock the targets or Convert to Native before a CAD drag"}}
     }
@@ -211,7 +211,7 @@ proc ::GX::CurveWorkbench::_cadGestureMove {w x y} {
                 set candidate [dict get $snapped target];set target {}
                 dict for {id record} $st($w,curves) {if {[dict get $record native]==[dict get $candidate object]} {set target $id;break}}
                 if {$target eq {}} {error "Object snap reference has no logical curve identity"}
-                _cadUnits $w [concat [dict get $st($w,cadDrag) ids] [list $target]]
+                _coordinatePlaneAdmit $w [concat [dict get $st($w,cadDrag) ids] [list $target]]
                 set translation [dict get $snapped translation];dict set delta snap_target [dict merge [dict remove $candidate object] [dict create curve_id $target]]
                 set st($w,status) "Object snap: [dict get [_record $w $target] name], original Native point [dict get $candidate index]"
             }
@@ -306,8 +306,8 @@ proc ::GX::CurveWorkbench::_cadTransformOpen {w kind} {
     set pivot [dict get [::GX::Native2D::core pivot $st($w,scene)] point]
     switch -- $kind {
         translate {set fields [dict create dx [dict create type number label "X displacement ($xUnit)"] dy [dict create type number label "Y displacement ($yUnit)"]];foreach axis {x y} {_coordinateControlPlan $w $basis $axis inverse};set initial {dx 1 dy 0}}
-        rotate {set fields [dict create degrees [dict create type number label {Rotation angle (degrees)}]];set initial {degrees 90}}
-        scale {set fields [dict create sx [dict create type number label {Physical scale X (dimensionless)} min 1e-12] sy [dict create type number label {Physical scale Y (dimensionless)} min 1e-12]];set initial {sx 1 sy 1}}
+        rotate {set fields [dict create degrees [dict create type number label {Numeric plane rotation (degrees)}]];set initial {degrees 90}}
+        scale {set fields [dict create sx [dict create type number label {Coordinate scale X (dimensionless)} min 1e-12] sy [dict create type number label {Coordinate scale Y (dimensionless)} min 1e-12]];set initial {sx 1 sy 1}}
         mirror {
             set fields [dict create ax [dict create type number label "Axis point A: X ($xUnit)"] ay [dict create type number label "Axis point A: Y ($yUnit)"] bx [dict create type number label "Axis point B: X ($xUnit)"] by [dict create type number label "Axis point B: Y ($yUnit)"]]
             set gizmo [::GX::Native2D::core gizmo $st($w,scene)]

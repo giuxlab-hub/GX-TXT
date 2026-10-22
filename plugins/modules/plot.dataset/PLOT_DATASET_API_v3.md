@@ -1,8 +1,14 @@
-# Plot Dataset API v3 — current public facade
+# Plot Dataset API v3 — DEPRECATED
 
-GX-TXT 0.9.8.10-dev hosts this API in `plot.dataset` 3.18.0. Activate only
-`::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3` for a new
-consumer. The namespace is `::GX::PlotDatasetAPIv3`. It loads its stable v1/v2
+**Historical compatibility only. Every new or rebuilt Viewer scientific 2D or
+3D plot must use [Plot Dataset API v4](docs/api/PLOT_DATASET_API_v4.md).**
+Restricted C++ projects must not declare or invoke v3. Existing historical
+consumers and persisted scientific documents retain their original behavior.
+
+GX-TXT retains this API in `plot.dataset` for historical compatibility. Existing
+consumers may activate
+`::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3`.
+The namespace is `::GX::PlotDatasetAPIv3`. It loads its stable v1/v2
 dependencies as needed; callers do not activate v2 separately.
 
 API version and persisted data schema are separate. Normal declarative plots

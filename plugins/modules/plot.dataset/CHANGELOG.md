@@ -1,3 +1,9 @@
+## 4.2.3 — dev109
+
+Shared source-bound consultation, native equal numeric aspect and isolated finite-run visibility; derived comparison model/public owner guards. The native engine additions require dev109.
+
+Focused acceptance receipts remain separate from this version declaration; final integrated release acceptance/deposition is pending.
+
 ## 4.2.2 — dev108
 
 Preserve valid Plot frames on failed updates, truthful single-point and axis-unit presentation, shared multi-panel X bounds and native source cursor/provenance behavior through existing Plot contracts.

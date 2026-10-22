@@ -31,17 +31,37 @@ proc ::GX::CurveWorkbench::_sketchOpen {w {edit 0}} {
         lassign [_coordinateUnits $record] xUnit yUnit
         dict set fields controls label "Local native controls: X ($xUnit), Y ($yUnit); before the retained world transform"
     }
-    ::GX::uiFieldFormCreate $w.sketch "Retained Native2D primitive — parameters define the geometry" $fields $initial [list ::GX::CurveWorkbench::_sketchApply $w $st($w,token) $id] $w
-    ttk::label $w.sketch.hint -text {Controls: point/center 1 pair; line or opposite rectangle corners 2; quadratic Bezier 3; cubic Bezier 4; Line/path or spline 2 or more. Radii and controls use the selected working unit.} -wraplength 600 -padding 8
+    dict unset fields working_unit
+    dict unset initial working_unit
+    set frame [_sketchCoordinateContext $w $id]
+    lassign [dict get $frame units] xUnit yUnit
+    dict set fields controls label "Local native controls: X ($xUnit), Y ($yUnit); before the retained world transform"
+    dict set fields radius_x label "Circle/arc numeric plane radius; ellipse native X radius ($xUnit)"
+    dict set fields radius_y label "Ellipse native Y radius ($yUnit)"
+    dict set fields rotation label {Numeric plane rotation (degrees)}
+    ::GX::uiFieldFormCreate $w.sketch "Retained Native2D primitive — X $xUnit / Y $yUnit" $fields $initial [list ::GX::CurveWorkbench::_sketchReviewedApply $w $st($w,token) $id $frame] $w
+    ttk::label $w.sketch.hint -text {Controls: point/center 1 pair; line or opposite rectangle corners 2; quadratic Bezier 3; cubic Bezier 4; Line/path or spline 2 or more. X and Y use the Workspace coordinate frame. A circle radius or rotation in an unlike-axis plane is a numeric plane parameter, not a physical distance or angle. Configure axes in Workspace Configuration.} -wraplength 600 -padding 8
     pack $w.sketch.hint -side top -fill x -before $w.sketch.viewport
     bind $w.sketch.hint <Configure> [list ::GX::CurveWorkbench::_sketchHintLayout $w.sketch.hint %w]
 }
 proc ::GX::CurveWorkbench::_sketchHintLayout {label width} {
     if {[winfo exists $label]} {$label configure -wraplength [expr {max(100,$width-20)}]}
 }
+proc ::GX::CurveWorkbench::_sketchCoordinateContext {w id} {
+    variable st
+    set parents {}
+    if {$id ne {}} {set parents [list $id]} elseif {$st($w,active) ne {}&&[dict exists $st($w,curves) $st($w,active)]} {set parents [list $st($w,active)]}
+    if {$parents ne {}} {_coordinatePlaneAdmit $w $parents;set units [_coordinateUnits [_record $w [lindex $parents 0]]]} else {set units [list [dict get $st($w,coordinateConfiguration) x_unit] [dict get $st($w,coordinateConfiguration) y_unit]];_coordinateAxesAdmit $w $units}
+    return [dict create units $units parents $parents key [_coordinateControlKey $w $parents] configuration $st($w,coordinateConfiguration)]
+}
+proc ::GX::CurveWorkbench::_sketchReviewedApply {w token id frame values} {
+    if {$frame ne [_sketchCoordinateContext $w $id]} {error {Coordinate frame changed; reopen primitive parameters}}
+    return [_sketchApply $w $token $id $values]
+}
 proc ::GX::CurveWorkbench::_sketchApply {w token id values} {
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen primitive parameters"}
+    set frame [_sketchCoordinateContext $w $id]
     _cancelGesture $w;_pointSyncApply $w
     set definition [dict create family [dict get $values family] controls [dict get $values controls]]
     foreach key {radius_x radius_y rotation angle_start angle_sweep} {
@@ -59,8 +79,8 @@ proc ::GX::CurveWorkbench::_sketchApply {w token id values} {
         set native [::GX::Native2D::core sketch_create $st($w,scene) $definition $samples]
         try {
             set record [_newRecord $w $name [_sketchSamples $w $native] {} x y {} {} {} {} {} [list [dict create operation create_primitive family [dict get $definition family]]]]
-            dict set record working_unit [dict get $values working_unit]
-            ::GX::unitRegistryHomogeneousCoordinatePlan [dict get $values working_unit] [dict get $values working_unit]
+            dict set record coordinate_units [dict get $frame units]
+            set record [_coordinateRetainFrame $w $record [dict get $frame parents]]
             set id [dict get $record id];set before [_snapshotIds $w [list $id]]
             _addRecord $w $record $native
         } on error {message options} {::GX::Native2D::core delete $st($w,scene) $native;return -options $options $message}
@@ -126,17 +146,22 @@ proc ::GX::CurveWorkbench::_metrics {w} {
 }
 proc ::GX::CurveWorkbench::_seriesOpen {w} {
     variable st
-    set ids [_cadTargets $w];set unit [_cadUnits $w $ids]
+    set ids [_cadTargets $w];_coordinatePlaneAdmit $w $ids
+    lassign [_coordinateUnits [_record $w [lindex $ids 0]]] xUnit yUnit
     foreach id $ids {if {[_bulkRecord [_record $w $id]]} {error "Convert an explicit exact range to Native before creating an editable Workbench series"}}
-    set fields [dict create column_y [dict create type number label "Column step Y ($unit; optional basis)"] row_x [dict create type number label "Row step X ($unit; optional basis)"] name {type string label {Series name}} circular {type boolean label {Circular series (otherwise rectangular)}} rows {type integer min 1 max 10000 label {Rectangular rows}} columns {type integer min 1 max 10000 label {Rectangular columns}} spacing_x [dict create type number label "Column spacing X ($unit)"] spacing_y [dict create type number label "Row spacing Y ($unit)"] positions {type integer min 2 max 10000 label {Circular positions, including position zero}} angle_step {type number label {Circular angular step (degrees)}} pivot_x [dict create type number label "Circular pivot X ($unit)"] pivot_y [dict create type number label "Circular pivot Y ($unit)"] rotate_geometry {type boolean label {Rotate geometry around circular pivot}} include_origin {type boolean label {Also create a copy at source position zero}}]
-    ::GX::uiFieldFormCreate $w.series "Native2D series — originals preserved; one undo action" $fields [dict create column_y 0 row_x 0 name series circular 0 rows 2 columns 2 spacing_x 5 spacing_y 5 positions 4 angle_step 90 pivot_x 0 pivot_y 0 rotate_geometry 1 include_origin 0] [list ::GX::CurveWorkbench::_seriesApply $w $st($w,token) $ids] $w
+    set fields [dict create column_y [dict create type number label "Column step: native Y ($yUnit; optional basis)"] row_x [dict create type number label "Row step: native X ($xUnit; optional basis)"] name {type string label {Series name}} circular {type boolean label {Circular series (otherwise rectangular)}} rows {type integer min 1 max 10000 label {Rectangular rows}} columns {type integer min 1 max 10000 label {Rectangular columns}} spacing_x [dict create type number label "Column spacing: native X ($xUnit)"] spacing_y [dict create type number label "Row spacing: native Y ($yUnit)"] positions {type integer min 2 max 10000 label {Circular positions, including position zero}} angle_step {type number label {Numeric plane angular step (degrees)}} pivot_x [dict create type number label "Circular pivot: native X ($xUnit)"] pivot_y [dict create type number label "Circular pivot: native Y ($yUnit)"] rotate_geometry {type boolean label {Rotate geometry around circular pivot}} include_origin {type boolean label {Also create a copy at source position zero}}]
+    ::GX::uiFieldFormCreate $w.series "Native2D series — originals preserved; one undo action" $fields [dict create column_y 0 row_x 0 name series circular 0 rows 2 columns 2 spacing_x 5 spacing_y 5 positions 4 angle_step 90 pivot_x 0 pivot_y 0 rotate_geometry 1 include_origin 0] [list ::GX::CurveWorkbench::_seriesReviewedApply $w $st($w,token) $ids [_coordinateControlKey $w $ids]] $w
+}
+proc ::GX::CurveWorkbench::_seriesReviewedApply {w token ids key values} {
+    _coordinateControlCheck $w $ids $key
+    return [_seriesApply $w $token $ids $values]
 }
 proc ::GX::CurveWorkbench::_seriesApply {w token ids values} {
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen the series form"}
     if {$ids ne [_cadTargets $w]} {error "Series targets changed; reopen the form"}
     foreach id $ids {if {[_bulkRecord [_record $w $id]]} {error "Convert an explicit range to Native before editable series creation"}}
-    _cancelGesture $w;_pointSyncApply $w;_cadUnits $w $ids
+    _cancelGesture $w;_pointSyncApply $w;_coordinatePlaneAdmit $w $ids
     set parameters [dict remove $values name pivot_x pivot_y]
     dict set parameters angle_step [expr {[dict get $values angle_step]*acos(-1)/180}]
     dict set parameters pivot [list [dict get $values pivot_x] [dict get $values pivot_y]]
@@ -174,6 +199,7 @@ proc ::GX::CurveWorkbench::_sketchSampleOpen {w} {
 proc ::GX::CurveWorkbench::_sketchSampleApply {w token source values} {
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen sampling parameters"}
+    _coordinatePlaneAdmit $w [list $source]
     set original [_record $w $source];set first [dict get $values first];set last [dict get $values last];set total [dict get $values total]
     set native [::GX::Native2D::core sketch_materialize $st($w,scene) [dict get $original native] $first $last $total]
     set sampling [dict create method uniform_parameter first $first last $last total $total]

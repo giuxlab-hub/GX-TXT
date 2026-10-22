@@ -8,6 +8,11 @@ proc ::GX::_viewerDevelopmentWorkspaceStamp {workspace} {
 proc ::GX::_viewerDevelopmentWorkspaceSources {payload {current 1}} {
     set sources {}
     set declared {};foreach component [dict get $payload design components] {dict set declared [dict get $component id] $component}
+    dict for {form association} [datasetPublicationV2DictDefault [datasetPublicationV2DictDefault $payload domain_state {}] workbench_documents {}] {
+        if {![dict exists $declared $form]} {error {Saved geometry form is undeclared}}
+        set actual [_viewerGuiWorkbenchAssociationCheck [dict get $declared $form] $association]
+        dict set sources [dict get $actual id] [_viewerDevelopmentWorkspaceStamp $actual]
+    }
     if {[dict exists $payload bindings]} {
         dict for {component binding} [dict get $payload bindings] {
             if {[dict get $binding kind] ne {diagram}} continue
@@ -17,6 +22,34 @@ proc ::GX::_viewerDevelopmentWorkspaceSources {payload {current 1}} {
             if {[dict get $saved id] ne $id || [dict get $actual module_id] ne [dict get $payload design module_id] || [dict get $actual provider_id] ne [dict get $payload design provider_id] || ![dict exists $declared $component] || [dict get $declared $component type] ne {native2d} || [dict get $actual payload catalog] ne [dict get $declared $component properties diagram_catalog] || [dict get $binding payload] ne [dict get $actual payload]} {error {Workspace diagram identity, catalog, owner or payload differs from its canonical source}}
             foreach key {generation revision sha256} {if {[dict get $saved $key] ne [dict get $actual $key]} {error {Workspace scientific source is stale; review its matching source before upgrading}}}
             dict set sources $id [_viewerDevelopmentWorkspaceStamp $actual]
+        }
+    }
+    if {[dict exists $payload domain_state em_models]} {
+        dict for {form association} [dict get $payload domain_state em_models] {
+            if {![dict exists $declared $form]} {error {Saved electromagnetic form is undeclared}}
+            set checked [_viewerGuiEMAssociationCheck [dict get $declared $form] $association $current]
+            if {[dict exists $checked document_id]} {dict set sources [dict get $checked document_id] [_viewerDevelopmentWorkspaceStamp [interactiveDocumentRead [dict get $checked document_id]]]}
+            if {[dict exists $checked job_id]} {dict set sources job:[dict get $checked job_id] [dict get $checked job_source]}
+        }
+    }
+    if {[dict exists $payload bindings]} {
+        dict for {component binding} [dict get $payload bindings] {
+            set kind [dict get $binding kind]
+            if {$kind eq {document}} {
+                if {![dict exists $declared $component]} {error {Saved document component is undeclared}}
+                _viewerGuiDocumentBindingCheck [dict get $declared $component] $binding
+                set id [dict get $binding dataset_id]
+                dict set sources dataset:$id [datasetViewerScientificIdentity $id]
+            } elseif {$kind eq {plot}} {
+                modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+                set spec [dict get $binding spec]
+                ::GX::PlotDatasetAPIv4::validateSpec $spec
+                foreach panel [dict get $spec panels] {foreach series [dict get $panel series] {
+                    set ids [list [dict get $series dataset_id]]
+                    if {[dict exists $series cell_field]} {lappend ids [dict get [::GX::PlotDatasetAPIv4::_cellFieldValidate $series] nodes_dataset_id]}
+                    foreach id $ids {dict set sources dataset:$id [datasetViewerScientificIdentity $id]}
+                }}
+            }
         }
     }
     foreach field {scientific_jobs scientific_campaigns} {
@@ -68,7 +101,8 @@ proc ::GX::_viewerDevelopmentWorkspaceStateUpgrade {state prior report design} {
                     if {[dict get $declared $id type] ne {plot}} {error {Retained Plot binding does not match its declared component}}
                     modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4;::GX::PlotDatasetAPIv4::validateSpec [dict get $binding spec]
                 }
-                default {error {Retained state uses a binding outside this reviewed electrical/Plot upgrade}}
+                document {_viewerGuiDocumentBindingCheck [dict get $declared $id] $binding}
+                default {error {Retained state uses a binding outside this reviewed Diagram/Plot/document upgrade}}
             }
         }
     }
@@ -83,6 +117,19 @@ proc ::GX::_viewerDevelopmentWorkspaceStateUpgrade {state prior report design} {
     dict for {id value} [dict get $report new_defaults] {
         if {[dict exists $state values $id]} {error {A new control collides with retained state}}
         dict set state values $id $value
+    }
+    # Project each retained state's original local candidate, never today's
+    # geometry selection. This transforms controls only, without replaying a
+    # geometry operation or changing the source Document/History.
+    dict for {form refs} [datasetPublicationV2DictDefault $report new_workbench_selection_forms {}] {
+        set single [dict get $refs single];set multiple [dict get $refs selection]
+        set rows [datasetPublicationV2DictDefault [datasetPublicationV2DictDefault $state choices {}] $single {}]
+        set candidate [datasetPublicationV2DictDefault [dict get $state values] $single {}]
+        set index [lsearch -exact $rows $candidate]
+        if {$candidate ne {} && $index<0} {error {Retained geometry candidate is absent from its saved canonical ID choices}}
+        if {[llength $rows]!=[llength [lsort -unique $rows]]} {error {Retained geometry choices contain duplicate identities}}
+        dict set state choices $multiple $rows
+        dict set state values $multiple [expr {$index<0 ? {} : [list $index]}]
     }
     dict for {id value} [datasetPublicationV2DictDefault $report new_visibility_defaults {}] {
         if {![dict exists $state visibility $id]} {dict set state visibility $id $value}

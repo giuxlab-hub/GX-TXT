@@ -137,8 +137,8 @@ proc ::GX::_datasetMetadataPortableWriteFile {path metadata} {
     return $path
 }
 
-proc ::GX::_datasetMetadataPath {session datasetId} {
-    set rel [datasetField $datasetId structured_metadata_file ""]
+proc ::GX::_datasetMetadataPath {session datasetId {record {}}} {
+    set rel [expr {$record eq {} ? [datasetField $datasetId structured_metadata_file ""] : [datasetPublicationV2DictDefault $record structured_metadata_file {}]}]
     if {$rel eq ""} { set rel [_datasetMetadataRelativePath $datasetId] }
     if {[file pathtype $rel] eq "absolute"} { error "Dataset metadata path must be session-relative." }
     set path [file normalize [file join $session $rel]]
@@ -149,16 +149,29 @@ proc ::GX::_datasetMetadataPath {session datasetId} {
 }
 
 proc ::GX::_datasetMetadataReadAll {session datasetId} {
-    lassign [_datasetMetadataRequireDataset $session $datasetId] session datasetId
-    return [_datasetMetadataReadRegistered $session $datasetId]
+    if {$session eq {} || ![file isdirectory $session]} {error {Dataset metadata requires an existing session.}}
+    set session [file normalize $session];set datasetId [string trim $datasetId]
+    if {$datasetId eq {}} {error {Dataset metadata requires a Dataset ID.}}
+    # An explicit foreign Session read must not replace the live catalog or
+    # registry, even transiently while callbacks observe the current Session.
+    # Session Inspection already owns canonical registry decoding; the same
+    # metadata parser below owns local and remote values for both read paths.
+    set record [sessionInspectionDataset $datasetId $session]
+    return [_datasetMetadataReadRecord $session $datasetId $record]
 }
 # Internal batch reader: caller has already loaded and validated the Session's
 # registry. This reads the same resource without reloading the full registry for
 # every catalog row; it is not a cache or a second metadata authority.
 proc ::GX::_datasetMetadataReadRegistered {session datasetId} {
     if {[datasetField $datasetId id {}] ne $datasetId} {error "Unknown Dataset '$datasetId'"}
-    if {[datasetField $datasetId storage_provider {}] eq "remote"} {return [datasetField $datasetId remote_metadata_values {}]}
-    lassign [_datasetMetadataPath $session $datasetId] rel path
+    set record [dict create id $datasetId]
+    foreach field {storage_provider remote_metadata_values structured_metadata_file} {dict set record $field [datasetField $datasetId $field {}]}
+    return [_datasetMetadataReadRecord $session $datasetId $record]
+}
+proc ::GX::_datasetMetadataReadRecord {session datasetId record} {
+    if {[dict get $record id] ne $datasetId} {error {Metadata Dataset record identity differs.}}
+    if {[datasetPublicationV2DictDefault $record storage_provider {}] eq {remote}} {return [datasetPublicationV2DictDefault $record remote_metadata_values {}]}
+    lassign [_datasetMetadataPath $session $datasetId $record] rel path
     if {![file isfile $path]} { return [dict create] }
     set parsed [parseIni $path]
     if {![dict exists $parsed dataset_metadata.dataset_id] ||

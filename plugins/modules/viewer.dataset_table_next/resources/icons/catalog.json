@@ -1,0 +1,16 @@
+{
+  "schema": "gxtxt.viewer_icon_resources.v1",
+  "icons": {
+    "dataset_table": {
+      "title": "Canonical Dataset table",
+      "category": "Documents",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "35769b53ad807c26857b41dc09752c299752a2f9a5ba92ba40f8c2100feff646",
+      "png_sha256": "467a17b094949d386857ddc865961d630da689c8a7740d86d874cd2145ef84dc",
+      "width": "64",
+      "height": "64",
+      "alpha": "1"
+    }
+  }
+}

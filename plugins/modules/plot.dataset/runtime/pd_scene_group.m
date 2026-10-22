@@ -9,13 +9,29 @@ function [xyz, scalar, verts, lines, polys, primitive] = pd_scene_group(P, G, po
     xyz=[X(:),Y(:),Z(:)];
     if (!isempty(G.c)), scalar=G.c(:); else scalar=z(:); endif
     ny=numel(y); nx=numel(x);
-    for j=1:nx-1
-      for i=1:ny-1
-        a=(j-1)*ny+i-1; b=j*ny+i-1; c=a+1; d=b+1;
-        polys(end+1,:)=[a,b,d]; polys(end+1,:)=[a,d,c];
+    if (strcmp(kind,'mesh'))
+      % A rectangular mesh has only its actual row/column edges. Surface
+      % triangulation would add scientific-looking diagonal connections.
+      for j=1:nx
+        for i=1:ny-1
+          a=(j-1)*ny+i-1;lines{end+1}=[a,a+1];
+        endfor
       endfor
-    endfor
-    primitive='surface';
+      for i=1:ny
+        for j=1:nx-1
+          a=(j-1)*ny+i-1;lines{end+1}=[a,a+ny];
+        endfor
+      endfor
+      primitive='trajectory';
+    else
+      for j=1:nx-1
+        for i=1:ny-1
+          a=(j-1)*ny+i-1; b=j*ny+i-1; c=a+1; d=b+1;
+          polys(end+1,:)=[a,b,d]; polys(end+1,:)=[a,d,c];
+        endfor
+      endfor
+      primitive='surface';
+    endif
   elseif (strcmp(kind,'contour3'))
     x=G.x(:); y=G.y(:); z=G.z;
     if (!isequal(size(z), [numel(y),numel(x)])), error('plot.dataset interactive: contour grid shape mismatch'); endif

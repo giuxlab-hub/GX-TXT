@@ -56,6 +56,13 @@ and external dependencies are returned in `diagnostics`, never substituted. A fa
 import leaves no final destination or half membership; interrupted staging is hidden
 and recoverable. Session → Tools uses the same authority and associates Default.
 
+Ordinary Manifest persistence, including parameter edits, retains the existing
+Session's `project_link.imported_experiment_id`, `imported_project_id` and
+`previous_project_id` fields exactly when present. These historical references
+come from that Session's authoritative Manifest; fresh Sessions do not inherit
+them from configuration or another Session. Current local membership IDs remain
+managed by the existing Project owner.
+
 Read-only `projectExperimentInspect eid` returns summary, origin, Dataset counts by
 contract/type/format, configured/enabled/Run modules, modules inferred from Dataset
 source_module records, registered Session scripts, Markdown documents and diagnostics.

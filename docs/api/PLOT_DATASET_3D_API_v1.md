@@ -3,10 +3,37 @@
 SPDX-License-Identifier: GPL-3.0-or-later
 
 Introduced by `plot.dataset` 3.9.0 and extended by 3.10.0 in GX-TXT
-0.9.8.10-dev. This dedicated API remains supported. New consumers may use
-the complete `PLOT_DATASET_API_v3` facade for the same interactive operations.
+0.9.8.10-dev. This dedicated API remains supported for legacy preparations.
+New scientific Plot consumers use `PLOT_DATASET_API_v4`.
 
 ## Workflow
+
+### dev109 producer graph preview
+
+`previewGraphExportCommand graphResourceReference callerOwnedTemporaryDirectory`
+exports a producer graph's retained preparation through the same scientific
+renderer and Native3D converter as `previewExportCommand`. Intake is a canonical
+Graph Resource reference, not caller-selected preparation paths. Graph Workflow
+resolves its declared bridge, canonical Dataset SHA-256, stable X/Y/Z Variable
+IDs, units, geometry kind and retained presentation. The selected source retains
+its original module, graph and base/Variant identity.
+
+A missing registered Plot Variant does not by itself mean geometry is missing.
+A compatible cache/runtime may supply an immutable representation. The worker
+verifies actual MAT provenance, geometry kind, Dataset/Variable identities, units
+and coordinate topology. Historical absolute paths are provenance; the current
+Session owns the canonical source. Only transient caller-owned preview files are
+created. This does not publish a Dataset, create a Variant or rerun analysis.
+Stale or incompatible preparations produce a diagnostic. Implementation is
+present; focused installed GUI and negative-source acceptance remains open.
+
+The dev109 mesh projection exports the actual rectangular grid's horizontal and
+vertical edges, with no triangulation diagonals. Colors follow the scientific
+mesh handle's **edge** color (interpolated, flat, or fixed), independently of its
+face/background color. VTP retains the original points and scientific scalar
+values. Surface/trisurf triangulation remains unchanged. The historical thermal
+fixture exposed white face colors incorrectly reused for wire edges; its failed
+frame is preserved and corrected installed rendering remains to be verified.
 
 ```
 canonical Dataset → persistent plot.dataset.xyz Variant and bindings

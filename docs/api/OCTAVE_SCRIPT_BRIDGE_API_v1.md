@@ -65,8 +65,8 @@ forms:
 
 ```text
 CANONICAL_DATASET_API_v2
-PLOT_DATASET_API_v3@3
-PLOT_DATASET_API_v3@3:plot.dataset+plotspec|render
+PLOT_DATASET_API_v4@4
+PLOT_DATASET_API_v4@4:plot.dataset+plotspec|render
 ```
 
 The suffixes require exact API version, provider ID, and one or more
@@ -80,13 +80,14 @@ in the standard script runner.
 
 The Bridge currently binds Canonical Dataset, Variable Schema, Metadata,
 Selection, Temporal Set lifecycle, Table Stream, Dataset and completed-file
-Publication, Unit Registry, NUMERIC_API, Plot Dataset v2/v3, Graph Series
+Publication, Unit Registry, NUMERIC_API, Plot Dataset v2/v3/v4, Graph Series
 lifecycle, Graph Workflow state, Level Scale presentation, Contract Registry
 reads, Plot Variant discovery, Viewer Provider scene/layer services, Native 3D
 source identity, Interactive Document reads, Session inspection/commit, Project
 inspection, progress, parallel resource policy, Scientific Reference Library reads/ranking, public
-documentation, semantics and module API discovery. `PLOT_DATASET_API_v3` is
-the current plot facade; `upsert_plot` scopes the provider key to the running
+documentation, semantics and module API discovery. `PLOT_DATASET_API_v4` is
+required for new or rebuilt Viewer scientific 2D/3D plots; v3 is deprecated
+for historical compatibility. `upsert_plot` scopes the provider key to the running
 script module and returns a persistent Plot reference. The public Viewer
 Provider creates scientific scenes and layers without native protocol calls.
 
@@ -102,7 +103,7 @@ framework still manages the script process cancellation lifecycle.
 The bridge transports UTF-8 strings, logical and numeric scalars, numeric
 vectors and matrices with shape, empty numeric arrays, cells, scalar
 structs, lists of structs, nested combinations of these values, and opaque
-UTF-8 tokens. Float64 arrays above 10,000 elements and other supported numeric
+UTF-8 tokens. Real double arrays above 64 elements and other supported numeric
 array dtypes use a private typed binary block. Dtype, shape, large integers and
 complex components are preserved by descriptor v2; see
 [CORE scientific binary descriptor v2](SCIENTIFIC_BINARY_TRANSPORT_v2.md).

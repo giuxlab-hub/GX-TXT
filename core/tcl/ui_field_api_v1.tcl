@@ -10,9 +10,10 @@ namespace eval ::GX::UiField {
     variable formValues
     variable formStatus
     variable controlsTrailing {}
+    variable controlsStacked {}
 }
 proc ::GX::uiFieldApiInfo {} {
-    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldChoicesSet uiFieldDialogCreate uiFieldDialogPresent uiFieldDialogClose uiFieldFocusWhenMapped uiFieldViewerSection uiFieldFormCreate uiFieldFormSectionEnabled uiFieldViewerShellCreate uiFieldSelectorWithinViewer uiFieldSelectorPost uiFieldSelectorClose uiMenuPopup uiMenuWorkarea uiMenuRowAttach uiMenuRowAppend uiFieldControlsAppend uiFieldInspectionColumnsFit uiFieldInspectionColumnsSchedule uiFieldIconApply uiFieldMenuIconApply uiFieldComponentCapabilities uiFieldComponentCreate uiFieldComponentRead uiFieldComponentLayout uiFieldScrollableCreate uiFieldViewerRegionsSet uiFieldDatasetChoices}]
+    return [dict create api_id UI_FIELD_API_v1 api_version 1 types {string integer double number boolean choice color path file command} color_format #RRGGBB alpha_format {rgb #RRGGBB alpha 0..1} host_operations {uiFieldComponentEnabled uiFieldChoicesSet uiFieldDialogCreate uiFieldDialogPresent uiFieldDialogClose uiFieldFocusWhenMapped uiFieldViewerSection uiFieldFormCreate uiFieldFormSectionEnabled uiFieldViewerShellCreate uiFieldSelectorWithinViewer uiFieldSelectorPost uiFieldSelectorClose uiMenuPopup uiMenuWorkarea uiMenuRowAttach uiMenuRowAppend uiFieldControlsAppend uiFieldInspectionColumnsFit uiFieldInspectionColumnsSchedule uiFieldIconApply uiFieldMenuIconApply uiFieldComponentCapabilities uiFieldComponentCreate uiFieldComponentRead uiFieldComponentTableWidget uiFieldComponentTableRead uiFieldComponentTableCopy uiFieldComponentItemsSet uiFieldComponentLayout uiFieldScrollableCreate uiFieldScrollAreaAttach uiFieldViewerRegionsSet uiFieldDatasetChoices}]
 }
 
 # Viewer-bounded choice projection. The combobox remains the value/variable
@@ -157,7 +158,10 @@ proc ::GX::uiFieldNormalize {descriptor value} {
         }
         double - number {
             if {![string is double -strict $value] || [catch {expr {double($value)}} number] || $number!=$number || abs($number)==Inf} {error "Enter a finite number"}
-            set value [format %.17g $number]
+            # Tcl's double string is the shortest round-tripping decimal.
+            # Keep all binary-double precision without exposing formatting
+            # tails such as 0.040000000000000001 in editable numeric fields.
+            set value [expr {double($number)}]
         }
         boolean {
             if {![string is boolean -strict $value]} {error "Enter a boolean value"}
@@ -257,8 +261,40 @@ proc ::GX::uiFieldCreate {widget descriptor variableName {changed ""}} {
     grid $widget.error -row 2 -column 0 -columnspan 4 -sticky w
     if {[datasetPublicationV2DictDefault $descriptor compact 0]} {grid remove $widget.error}
     bind $widget <Destroy> [list ::GX::uiFieldDestroy $widget %W]
-    if {$type eq "color"} {bind $widget <Configure> [list ::GX::uiFieldColorLayout $widget %w]}
+    if {$type eq "color"} {bind $widget <Configure> [list ::GX::uiFieldColorLayout $widget %w]
+    } elseif {[datasetPublicationV2DictDefault $descriptor compact 0]} {
+        bind $widget <Configure> [list ::GX::_uiFieldCompactLayout $widget %W %w]
+    }
     return $widget
+}
+proc ::GX::_uiFieldCompactLayout {widget actual width} {
+    variable ::GX::UiField::widgets
+    if {$actual ne $widget || $width<2 || ![dict exists $widgets $widget]} return
+    set row [expr {[winfo exists $widget.caption] ? 1 : 0}]
+    set buttons {};set required [winfo reqwidth $widget.entry]
+    foreach name {reset inherit} {
+        if {[winfo exists $widget.$name]} {lappend buttons $widget.$name;incr required [expr {[winfo reqwidth $widget.$name]+10}]}
+    }
+    set stacked [expr {[llength $buttons]>0 && $required>$width}]
+    set layout [list $row $stacked]
+    if {[dict exists $widgets $widget compactLayout] && [dict get $widgets $widget compactLayout] eq $layout} return
+    dict set widgets $widget compactLayout $layout
+    grid configure $widget.entry -row $row -column 0 -columnspan [expr {$stacked ? 4 : 1}] -sticky ew
+    set buttonRow [expr {$row+1}];set col 2
+    foreach button $buttons {
+        if {$stacked} {
+            grid configure $button -row $buttonRow -column 0 -columnspan 4 -sticky w -padx 0 -pady 2
+            incr buttonRow
+        } else {
+            grid configure $button -row $row -column $col -columnspan 1 -sticky {} -padx 5 -pady 0
+            incr col
+        }
+    }
+    # Keep a removed validation message removed; reflow must not expose or
+    # dismiss validation, invoke a callback, or replace a value widget.
+    set visible [expr {[winfo manager $widget.error] ne {}}]
+    grid configure $widget.error -row [expr {$stacked ? $buttonRow : $row+1}]
+    if {!$visible} {grid remove $widget.error}
 }
 proc ::GX::uiFieldColorLayout {widget width} {
     variable ::GX::UiField::widgets
@@ -314,6 +350,15 @@ proc ::GX::uiFieldCommit {widget} {
     dict set widgets $widget committed $canonical
     if {$canonical ne [dict get $state committed] && [dict get $state changed] ne ""} {uplevel #0 [list {*}[dict get $state changed] $value]}
     return 1
+}
+proc ::GX::uiFieldComponentEnabled {widget type enabled} {
+    set enabled [uiFieldNormalize {type boolean} $enabled]
+    if {![winfo exists $widget] || $type ni {field entry choice combobox toggle checkbutton dataset_selector}} {error {Choose an existing value component}}
+    if {$type in {field choice toggle dataset_selector}} {
+        set controls [list $widget.entry $widget.reset $widget.inherit $widget.clear]
+    } else {set controls [list $widget]}
+    foreach control $controls {if {[winfo exists $control]} {$control state [expr {$enabled?{!disabled}:{disabled}}]}}
+    return $enabled
 }
 proc ::GX::uiFieldChoicesSet {widget choices} {
     variable ::GX::UiField::widgets
@@ -493,7 +538,16 @@ proc ::GX::uiFieldFormApply {window} {
             dict set values $key [uiFieldNormalize $descriptor $formValues($window,$key)]
         }
         uplevel #0 [list {*}[dict get $form apply] $values]
-    } message]} {if {[dict exists $forms $window]&&[winfo exists $window]} {set formStatus($window) $message};return 0}
+    } message]} {
+        if {[dict exists $forms $window]&&[winfo exists $window]} {
+            set formStatus($window) $message
+        } elseif {![catch {winfo exists .} rootExists] && $rootExists} {
+            # A normal callback may close its parent before a later operation
+            # fails. Keep that error visible when its original form is gone.
+            tk_messageBox -parent . -title {Action failed} -icon error -message $message
+        }
+        return 0
+    }
     if {[dict exists $forms $window]&&[winfo exists $window]} {set formStatus($window) "Applied."}
     return 1
 }
@@ -678,6 +732,12 @@ proc ::GX::uiFieldControlsLayout {frame width {children {}}} {
             lappend children $child
         }
     }
+    # Restore only the grid weight temporarily owned by the narrow fallback.
+    # The normal layout retains the caller's original column policy.
+    if {[dict exists $::GX::UiField::controlsStacked $frame]} {
+        grid columnconfigure $frame 0 -weight [dict get $::GX::UiField::controlsStacked $frame]
+        dict unset ::GX::UiField::controlsStacked $frame
+    }
     foreach child $children {pack forget $child}
     # Keep each label next to its input when wrapping. Treating them as
     # unrelated cells split labels from fields at larger fonts/narrow widths.
@@ -709,6 +769,25 @@ proc ::GX::uiFieldControlsLayout {frame width {children {}}} {
         set total 0;foreach size $sizes {incr total $size}
         if {$total<=$width || $columns==1} break
     }
+    if {$columns==1 && $total>$width} {
+        # A pair wider than its container cannot remain side by side. Give
+        # each part a full row and let the existing entry shrink/scroll its
+        # own text instead of placing it beyond the visible container edge.
+        dict set ::GX::UiField::controlsStacked $frame [grid columnconfigure $frame 0 -weight]
+        set cleanup [list ::GX::_uiFieldControlsDestroyed $frame %W]
+        if {$cleanup ni [split [bind $frame <Destroy>] \n]} {bind $frame <Destroy> +$cleanup}
+        grid columnconfigure $frame 0 -weight 1
+        set height 0;set row 0
+        foreach group $groups {
+            foreach child $group {
+                set label [expr {[winfo class $child] in {TLabel Label}}]
+                if {$label} {$child configure -wraplength [expr {max(1,$width-6)}]}
+                grid $child -row $row -column 0 -columnspan 1 -sticky [expr {$label ? {w} : {ew}}] -padx 3 -pady 2
+                incr height [expr {[winfo reqheight $child]+4}];incr row
+            }
+        }
+        return [dict create columns 1 rows $row height $height]
+    }
     set heights {};set i 0
     foreach group $groups {
         set row [expr {$i/$columns}];set col [expr {2*($i%$columns)}];incr i
@@ -737,15 +816,31 @@ proc ::GX::uiFieldControlsAppend {frame widget} {
     uiFieldControlsLayout $frame [winfo width $frame] $visible
 }
 proc ::GX::_uiFieldControlsDestroyed {frame actual} {
-    if {$frame eq $actual && [dict exists $::GX::UiField::controlsTrailing $frame]} {dict unset ::GX::UiField::controlsTrailing $frame}
+    if {$frame ne $actual} return
+    foreach state {controlsTrailing controlsStacked} {
+        if {[dict exists [set ::GX::UiField::$state] $frame]} {dict unset ::GX::UiField::$state $frame}
+    }
 }
 namespace eval ::GX::UiField {variable tableLayoutAfter {}}
-proc ::GX::uiFieldInspectionColumnsFit {tree} {
+proc ::GX::uiFieldInspectionColumnsFit {tree {options {}}} {
     ttk::style configure GXInspection.Treeview -font TkDefaultFont -rowheight [expr {[font metrics TkDefaultFont -linespace]+8}]
     if {[$tree cget -style] ne "GXInspection.Treeview"} {$tree configure -style GXInspection.Treeview}
     set columns [$tree cget -columns]
     if {{tree} in [$tree cget -show]} {set columns [linsert $columns 0 #0]}
-    set rows [$tree children {}]
+    set recursive [datasetPublicationV2DictDefault $options recursive 0]
+    set fill [datasetPublicationV2DictDefault $options fill {}]
+    foreach column $fill {if {$column ni $columns} {error {Inspection fill column is not declared}}}
+    set rows [$tree children {}];set depths {}
+    foreach id $rows {dict set depths $id 0}
+    if {$recursive} {
+        for {set index 0} {$index<[llength $rows] && $index<512} {incr index} {
+            set id [lindex $rows $index]
+            foreach child [$tree children $id] {
+                if {[llength $rows]>=512} break
+                lappend rows $child;dict set depths $child [expr {[dict get $depths $id]+1}]
+            }
+        }
+    }
     foreach column $columns {
         # A not-yet-populated tree may have an intentionally blank #0 heading.
         # Preserve its declared initial width until real identity text exists.
@@ -753,22 +848,24 @@ proc ::GX::uiFieldInspectionColumnsFit {tree} {
         set width [expr {[font measure TkHeadingFont [$tree heading $column -text]]+22}]
         foreach id $rows {
             if {$column eq {#0}} {set text [$tree item $id -text]} else {set text [$tree set $id $column]}
-            set width [expr {max($width,[font measure TkDefaultFont $text]+22)}]
+            set indent [expr {$column eq {#0} && $recursive?20*([dict get $depths $id]+1):0}]
+            set width [expr {max($width,[font measure TkDefaultFont $text]+22+$indent)}]
         }
         set width [expr {min(32767,$width)}]
-        if {[$tree column $column -width]!=$width||[$tree column $column -stretch]} {$tree column $column -width $width -stretch 0}
+        set stretch [expr {$column in $fill}]
+        if {[$tree column $column -width]!=$width||[$tree column $column -stretch]!=$stretch} {$tree column $column -width $width -stretch $stretch}
         $tree column $column -minwidth [expr {[font measure TkHeadingFont [$tree heading $column -text]]+22}]
     }
 }
-proc ::GX::uiFieldInspectionColumnsSchedule {tree} {
+proc ::GX::uiFieldInspectionColumnsSchedule {tree {options {}}} {
     variable ::GX::UiField::tableLayoutAfter
     if {[dict exists $tableLayoutAfter $tree]} {return}
-    dict set tableLayoutAfter $tree [after idle [list ::GX::_uiFieldInspectionColumnsApply $tree]]
+    dict set tableLayoutAfter $tree [after idle [list ::GX::_uiFieldInspectionColumnsApply $tree $options]]
 }
-proc ::GX::_uiFieldInspectionColumnsApply {tree} {
+proc ::GX::_uiFieldInspectionColumnsApply {tree {options {}}} {
     variable ::GX::UiField::tableLayoutAfter
     dict unset tableLayoutAfter $tree
-    if {[winfo exists $tree]} {uiFieldInspectionColumnsFit $tree}
+    if {[winfo exists $tree]} {uiFieldInspectionColumnsFit $tree $options}
 }
 
 source [file join [file dirname [info script]] ui_menu_api_v1.tcl]

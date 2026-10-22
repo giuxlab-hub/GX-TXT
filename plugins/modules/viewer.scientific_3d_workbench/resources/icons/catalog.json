@@ -1,0 +1,71 @@
+{
+  "schema": "gxtxt.viewer_icon_resources.v1",
+  "icons": {
+    "cad_workbench": {
+      "title": "3D CAD Workbench: exact solid, working plane and extrusion",
+      "category": "Geometry",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "831efd9582b8b98502d3d1988363cf5b2d866effda2d0bceffacb93ccb165db1",
+      "png_sha256": "fe56cc984298e2c2945abe70c91fc4267d2474849d685ff02b898311dbb67036",
+      "width": "64",
+      "height": "64",
+      "alpha": "1"
+    },
+    "save": {
+      "title": "Save",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "bf314c2b7983b489ede43dc29096a516321ba968a75d65238387343eac755614",
+      "png_sha256": "10e8f37f165368c661eaee65fb66c3b83b8bc9d6355c69a3c4685eaa0b474659",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "undo": {
+      "title": "Undo",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "ffc26fee1275c078af2f5e729818b7a82b3b7d5923a39b449be11b7b28ced2b6",
+      "png_sha256": "92e776fa3adad7d05a059548e6bcfd1c0be27ac6e62cdf625745616c1456f5a6",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "redo": {
+      "title": "Redo",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "d7c94c2d2e8a6965f12ebea8a2d608301f532601856d20a7542d79e3a123bca8",
+      "png_sha256": "a733370cfacdb916ddac136532d41eb552082fa721737b893e0107392fd2d0e0",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "select": {
+      "title": "Select",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "f9577f6e2cb8bbfb6a66d6580191a31c9601b07e170519823b54f7e07e838c28",
+      "png_sha256": "38ac5773b875bddc8967c102d72017c2d6ab905a81ff7e6834a29b8bca362a03",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "rotate": {
+      "title": "Rotate",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "ce41af2a9eed92c6263ff2a66b46b789bb5d342f9543c71da68e96d2906a1fd6",
+      "png_sha256": "625cba1a9973c3b3450cba5a2e6c279ec42663920574af213402b244aa29d9c1",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    }
+  }
+}

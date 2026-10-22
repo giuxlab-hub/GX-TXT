@@ -1,0 +1,15 @@
+{
+  "author_tcl": false,
+  "binary_sha256": "354c14c9ea2afd772007eaade3d224569bd109fb59bd482da8f8564789280616",
+  "design_sha256": "32f251173670802ec3a3891a1d84428f2818294db2b6e1506c082236d4c0febf",
+  "manual_assets": {},
+  "manual_sha256": "9c3b13c574c5f36ba203ffff5468b302c8c439e65cc25b6676739eab37fb7559",
+  "module_id": "viewer.scientific_latex",
+  "policy_sha256": "b0b8115c624297c86e5eb390d46e5380f2c1494b225c5b8d24a1202dd2f49ca2",
+  "promotion": "official Plugin Manager only",
+  "runtime": "VIEWER_DEVELOPMENT_API_v1 separate process",
+  "schema": "gxtxt.restricted_viewer_candidate.v1",
+  "sdk_sha256": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
+  "source_sha256": "4cdf528e70688b835e096c834244763f9d75b4bc19097790597cc1dd805257c3",
+  "version": "0.2.5"
+}

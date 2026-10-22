@@ -19,6 +19,7 @@ report = json.loads(raw, object_pairs_hook=unique, parse_constant=lambda _: (_ f
 if str(report.get('schema_version')) != '2' or report.get('producer') != 'viewer.curve_digitizer':
     raise ValueError('Unsupported published Quality schema or producer')
 lines = []
+rows = []
 def text(value):
     if value is None:
         return 'Not supplied'
@@ -27,7 +28,8 @@ def text(value):
     if isinstance(value, (dict, list)):
         return json.dumps(value, ensure_ascii=False, separators=(', ', ': '))
     return str(value)
-def emit(label, value, explanation):
+def emit(label, value, explanation, unit=''):
+    rows.append(dict(label=label,value=text(value),unit=unit,meaning=explanation))
     lines.append(f'{label}: {text(value)}. {explanation}')
 
 emit('Point origins', report.get('point_origins'), 'Recorded manual/assisted origins describe acquisition, not accuracy.')
@@ -40,7 +42,8 @@ if evidence.get('available'):
 for curve in report.get('curves', [])[:64]:
     identity = f"{curve.get('curve_label', 'Unnamed')} [{curve.get('curve_id', 'identity unavailable')}]"
     spacing = curve.get('spacing_px', {})
-    emit(f'Curve {identity} spacing', f"min {spacing.get('minimum')}, median {spacing.get('median')}, max {spacing.get('maximum')} px", 'Source-raster distances between recorded points; not physical uncertainty.')
+    for statistic in ('minimum', 'median', 'maximum'):
+        emit(f'Curve {identity} {statistic} point spacing', spacing.get(statistic), 'Published source-raster distance between recorded points; not physical uncertainty.', 'px')
     emit(f'Curve {identity} observations', f"outside-image points {curve.get('point_outside_image_count', 'unknown')}; monotonicity {text(curve.get('monotonicity_violations'))}; flags {text(curve.get('flag_counts'))}", 'Warnings depend on declared ordering and image evidence; they are not measured errors.')
     emit(f'Curve {identity} local visible fraction', curve.get('raster_evidence_visible_fraction'), 'Reported local contrast evidence; crossings, labels and grid lines can resemble the intended curve.')
 for calibration in report.get('calibrations', [])[:64]:
@@ -59,5 +62,9 @@ for segment in flagged[:32]:
     emit(f"Segment {segment.get('curve_id', 'unknown')} / {segment.get('segment_index', 'unknown')}", f"flags {text(segment.get('flags'))}; {text(segment.get('raster_start'))} to {text(segment.get('raster_end'))} px; evidence {text(segment.get('raster_evidence'))}", 'Published segment observation, not recomputed by Preview.')
 if len(flagged) > 32:
     emit('Additional flagged segments', len(flagged) - 32, 'See the full published report for remaining records.')
-for line in lines:
-    print(base64.b64encode(line.encode('utf-8')).decode('ascii'))
+if '--table' in sys.argv[1:]:
+    from gxtxt_job_supervisor import tcl_result
+    print(tcl_result(dict(schema='gxtxt.published_quality_presentation.v1',rows=rows,summary='\n'.join(lines))))
+else:
+    for line in lines:
+        print(base64.b64encode(line.encode('utf-8')).decode('ascii'))

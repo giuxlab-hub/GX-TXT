@@ -28,6 +28,7 @@ proc ::GX::CurveWorkbench::_newRecord {w name samples source x y filter value fa
         foreach parent $parents {if {[_coordinateUnits [_record $w $parent]] ne $units} {error "Derived geometry requires common coordinate units across its parents"}}
         dict set record coordinate_units $units
         if {[lindex $units 0] ne ""&&[lindex $units 0] eq [lindex $units 1]} {dict set record working_unit [lindex $units 0]}
+        set record [_coordinateRetainFrame $w $record $parents]
     }
     return $record
 }
@@ -82,9 +83,10 @@ proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
     set from [dict get $values source_unit];set to [dict get $values target_unit]
     set assume [::GX::uiFieldNormalize {type boolean} [dict get $values assume_undeclared]]
     set factor [dict get [::GX::unitRegistryHomogeneousCoordinatePlan $from $to] scale]
-    set unknown {}
+    set unknown {};set assumptionUpdates {}
     foreach id $ids {
         set record [_record $w $id];set undeclared 0
+        if {[_coordinateSourceRelations $record] ne {}} {error {Normalize variable-specific coordinate relations through Dataset Transform before a proportional whole-frame conversion}}
         foreach unit [_coordinateUnits $record] {
             if {$unit eq ""} {
                 if {!$assume} {error "[dict get $record name] has undeclared units; choose an explicit current-unit assumption"}
@@ -92,6 +94,16 @@ proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
             } elseif {$unit ne $from} {error "[dict get $record name] uses '$unit', not '$from'; normalize mixed source units explicitly before whole-workspace conversion"}
         }
         dict set unknown $id $undeclared
+        if {$undeclared&&([dict get $record source] ne {}||[dict exists $record coordinate_snapshot])} {
+            set assumptions [::GX::datasetPublicationV2DictDefault $record source_assumed_units {}]
+            foreach axis {x y} unit [_coordinateUnits $record] {
+                if {$unit ne {}} continue
+                set variable [_coordinateSnapshotVariable $record $axis]
+                if {[dict exists $assumptions $variable]&&[dict get $assumptions $variable] ne $from} {error {A prior explicit source-unit assumption must be preserved; normalize that frame explicitly}}
+                dict set assumptions $variable $from
+            }
+            dict set assumptionUpdates $id $assumptions
+        }
         if {[dict exists $record source_descriptor]} {
             foreach variable [dict get $record source_descriptor variables] {
                 if {[dict get $variable variable_id] ni [list [dict get $record x] [dict get $record y]]} continue
@@ -124,13 +136,8 @@ proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
             }
             dict set record working_unit $to
             dict unset record coordinate_units
-            if {[dict get $unknown $id]&&[dict get $record source] ne ""} {
-                set assumptions {}
-                foreach axis {x y} unit [_coordinateUnits [_record $w $id]] {
-                    if {$unit eq ""} {dict set assumptions [dict get $record $axis] $from}
-                }
-                dict set record source_assumed_units $assumptions
-            }
+            dict set record coordinate_relations {}
+            if {[dict exists $assumptionUpdates $id]} {dict set record source_assumed_units [dict get $assumptionUpdates $id]}
             if {[dict exists $record bridge_descriptors]} {
                 set bridges {}
                 foreach bridge [dict get $record bridge_descriptors] {
@@ -150,6 +157,9 @@ proc ::GX::CurveWorkbench::_unitsApply {w token ids values} {
         foreach region [dict get $descriptor regions] {dict set region bounds [::GX::unitRegistryConvertValues $from $to [dict get $region bounds]];lappend regions $region}
         dict set descriptor regions $regions
         _coordinateRescaleView $w $factor
+        dict set st($w,coordinateConfiguration) x_unit $to
+        dict set st($w,coordinateConfiguration) y_unit $to
+        set st($w,sketchUnit) $to
         set st($w,coordinateFrameKey) [_coordinateFrameKey [_record $w $st($w,active)]]
         _selectionScene $w;_restorePointSelectionDescriptor $w $descriptor
         _history $w $before $ids

@@ -38,6 +38,15 @@ Canvas, scientific grid and export consume the same positions. Explicit legacy
 `x_tick_labels`/`y_tick_labels` (six strings) and `x_label`/`y_label` options retain
 their established precedence. Construction grids retain their authored geometry.
 
+The host snapshot optionally accepts `axis_plans {x PLAN y PLAN}` from an existing
+coordinate presentation adapter. Each plan must match the current world bounds
+and contain at most64 finite, distinct in-bounds tick `value`/`label` pairs. These
+are the actual mapped world anchors produced with the shared numerical planner
+and public coordinate conversions; label strings do not select positions. The
+snapshot validates the bounds and anchors before drawing/export. This supports
+Curve Workbench's per-axis engineering presentation without changing its geometry,
+stored units, source Dataset or authored construction grid.
+
 ## Coordinate contexts and units
 
 The absent context is `{kind world}` and permits no unverified unit label.

@@ -98,6 +98,6 @@ proc ::GX::Workbench3D::acceptMultiExtrusion {} {
         foreach id $targets {if {[catch {call delete [dict create object_token [dict get $priorTokens $id]]} cleanup]} {append cleanupNotice "previous target $id cleanup failed: $cleanup; "}}
     }
     foreach id [::GX::viewerLayerIds viewer.3d_workbench workbench_3d] {if {[string match operation_preview_* $id]} {::GX::viewerLayerRemove viewer.3d_workbench workbench_3d $id}}
-    $panel.objects selection set $ids;$panel.objects see [lindex $ids 0]
+    projectSelection
     ::GX::Engine3D::rerender
 }

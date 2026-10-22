@@ -192,20 +192,8 @@ proc ::GX::CurveWorkbench::_compositionBuild {w} {
     set pieces {};set samples {};set parents {};set operations {};set bridges {};set created {};set previous {};set output ""
     set mode $st($w,bridgeKind)
     if {$mode ni {none straight quadratic cubic smooth}} {error "Choose a supported explicit bridge kind"}
-    if {$mode ne "none"&&[llength $st($w,fragments)]>1} {
-        set expected "__unset__"
-        foreach fragment $st($w,fragments) {
-            set r [_record $w [lindex $fragment 0]]
-            if {[dict exists $r working_unit]} {set xu [dict get $r working_unit];set yu $xu} elseif {[dict get $r source] ne ""} {
-                set xu [dict get [::GX::datasetVariableById [dict get $r source] [dict get $r x]] unit]
-                set yu [dict get [::GX::datasetVariableById [dict get $r source] [dict get $r y]] unit]
-            } else {set xu "";set yu ""}
-            if {$xu ne $yu||($expected ne "__unset__"&&$xu ne $expected)} {
-                error "Geometric bridging requires identical X/Y working units across fragments. Normalize explicitly with Dataset Transform / Unit Registry before bridging; source units are never assumed or silently converted."
-            }
-            set expected $xu
-        }
-    }
+    set fragmentParents [lsort -unique [lmap fragment $st($w,fragments) {lindex $fragment 0}]]
+    _coordinatePlaneAdmit $w $fragmentParents
     try {
         foreach fragment $st($w,fragments) {
             lassign $fragment id first last reversed
@@ -269,11 +257,18 @@ proc ::GX::CurveWorkbench::_bridgeLegacyToggle {w} {
 }
 proc ::GX::CurveWorkbench::_bridgeSettings {w} {
     variable st
-    set fields [dict create subdivisions [dict create type integer label {Bridge subdivisions (explicit sampling)} min 3 max 4096] tolerance [dict create type number label {Endpoint derivative tolerance (working units)} min 1e-15 max 1]]
-    ::GX::uiFieldFormCreate $w.bridgeSettings "Native2D bridge sampling and continuity" $fields [dict create subdivisions $st($w,bridgeSubdivisions) tolerance $st($w,bridgeTolerance)] [list ::GX::CurveWorkbench::_bridgeSettingsApply $w] $w
+    set ids {};foreach fragment $st($w,fragments) {set id [lindex $fragment 0];if {$id ni $ids} {lappend ids $id}}
+    if {$ids eq {} && $st($w,active) ne {}} {set ids [list $st($w,active)]}
+    set units [list [dict get $st($w,coordinateConfiguration) x_unit] [dict get $st($w,coordinateConfiguration) y_unit]]
+    if {$ids ne {}} {set units [_coordinateUnits [_record $w [lindex $ids 0]]]}
+    set label [_coordinatePlaneParameterLabel $units {Endpoint derivative tolerance (numeric plane)}]
+    set fields [dict create subdivisions [dict create type integer label {Bridge subdivisions (explicit sampling)} min 3 max 4096] tolerance [dict create type number label $label min 1e-15 max 1]]
+    ::GX::uiFieldFormCreate $w.bridgeSettings "Native2D bridge sampling and continuity" $fields [dict create subdivisions $st($w,bridgeSubdivisions) tolerance $st($w,bridgeTolerance)] [list ::GX::CurveWorkbench::_bridgeSettingsApply $w $st($w,token) $ids [_coordinateControlKey $w $ids] $st($w,coordinateConfiguration) $st($w,fragments)] $w
 }
-proc ::GX::CurveWorkbench::_bridgeSettingsApply {w fields} {
+proc ::GX::CurveWorkbench::_bridgeSettingsApply {w token ids key configuration fragments fields} {
     variable st
+    if {$token ne $st($w,token) || $configuration ne $st($w,coordinateConfiguration) || $fragments ne $st($w,fragments)} {error {Composition or coordinate frame changed; reopen bridge settings}}
+    _coordinateControlCheck $w $ids $key
     set old [list $st($w,bridgeSubdivisions) $st($w,bridgeTolerance)]
     set st($w,bridgeSubdivisions) [dict get $fields subdivisions];set st($w,bridgeTolerance) [dict get $fields tolerance]
     try {_bridgeChanged $w} on error {message options} {

@@ -4,6 +4,15 @@
 
 ## Provider and client contracts
 
+Result import runs in the registered provider's `module_id` context, scoped by
+the existing module-context service. A calling Viewer or Script Bridge retains
+its own context after both successful and failed import. This prevents a Viewer
+context from replacing the scientific producer identity in Publication v2.
+Completed-Job, source revision/SHA, coherent-output, reviewed-owner and atomic
+batch rollback checks remain authoritative. A failed publication can be retried
+from the same completed Job after correcting its cause; it does not require
+another solver execution.
+
 Trusted installed CORE/provider code registers an ID with `scientificExecutionRegister id descriptor`. Required descriptor fields are `module_id`, semantic `version`, framework-relative Python `worker`, configured `tools`, and typed `parameters`. Each parameter has `type` (`integer`, `number`, `boolean`, `string`, `choice`) with applicable default/required/min/max/values. Registration is host-only: scripts cannot submit source paths, executable names, commands, working directories or a provider implementation. Registration is trusted code, not an authorization ceremony for arbitrary uploaded code. `import_command` is an optional trusted domain parser callback. Optional `runtime_files` lists trusted framework-relative native/runtime dependencies; their exact SHA values and the CORE adapter SHA are captured, rechecked at submission and verified by the worker before execution. Changing a dependency refuses that prepared Job rather than changing its science.
 
 `scientificExecutionDiscover` lists registered IDs. `Describe provider` returns actual types, tools and version without private worker paths or callback names. Providers supplied by optional modules become discoverable when those modules activate their public service. `scientificExecutionRegisterBuiltins` registers the small `core.ngspice.rc_transient` provider. The safe CPU/live verification provider exists only when the isolated host sets `GXTXT_SCIENTIFIC_TEST_PROVIDERS=1`.
@@ -13,6 +22,30 @@ Trusted installed CORE/provider code registers an ID with `scientificExecutionRe
 `Submit prepared_token` rechecks sources and Document revision and submits the trusted CORE driver through the existing registered Python Script Job path. It returns `job_id`, `state` and `provider_id`. Exact prepared parameters and snapshots participate in the existing admission signature. Identical active work may deduplicate. The preparation token is consumed. At most16 preparations are retained per host Session; `Discard prepared_token` releases an unused preparation without creating a Job. Stale Session preparations are pruned. The reserved Session driver is verified and never silently overwritten.
 
 `Status job`, `Reconnect job`, `Cancel job`, and `Log job offset count previous_receipt?` remain attached to the original Session origin. Status uses genuine QUEUED/PREPARING/RUNNING/FINALIZING/COMPLETED/FAILED/CANCELLED/INTERRUPTED states. Accounting PIDs/start identities describe process ownership, never scientific identity. Log reads use the existing bounded UTF-8 reader. Passing the previous returned `receipt` detects append, replacement/rotation, truncation or same-size rewrite; `cursor_reset` explicitly restarts at zero where needed and `generation` is the actual source identity/change token. Missing/unsafe logs remain unavailable. Closing a Viewer detaches its client; it neither owns the process nor changes result ownership. A recovered interrupted Job is not automatically replayed. CPU admission honors effective affinity and mounted cgroup quotas; memory, temporary storage, process count and threads remain supervisor policies, not provider-owned pools.
+
+## Nonblocking trusted-host remote requests
+
+`::GX::scientificExecutionRemoteCallAsync node session operation arguments callback`
+uses the same configured-node request construction and authenticated transport as
+`scientificExecutionRemoteCall`. `node` is an enabled Configuration node ID;
+`session` is its logical remote Session ID; `operation` is an existing remote
+protocol operation; `arguments` is one inert Tcl argument list, not variadic source.
+`callback` is a Tcl command prefix receiving the ordinary `{ok 1 result … metrics
+…}` or `{ok 0 error … error_code …}` response. Failures from the request owner may
+instead carry its timeout/cancellation category. Unknown/disabled nodes or worker
+startup failures raise before a request token is returned.
+
+It returns the existing `scriptJobAsync` auxiliary token. The owned client is
+bounded to 20 seconds and 64 MiB of response text, attached to the GUI lifetime;
+`scriptJobRequestCancel token` cancels that client only. Durable remote Job
+cancellation still requires the explicit existing `scientific.cancel` operation.
+This facade introduces no Job registry, scheduler, endpoint or Dataset store;
+requested operations retain their existing authoritative owners.
+Successful responses update the existing transport metrics. This trusted Tcl
+host command does not add any restricted C++ or script-language execution grant.
+`scientificExecutionApiInfo.host_operation_contracts` exposes the exact host
+signature, parameter types and result/lifetime contract to the API Browser;
+the primary scientific operation list is unchanged.
 
 ## Trusted worker boundary
 
@@ -30,7 +63,7 @@ A trusted worker implements `run(context)`. `parameters` contains typed values; 
 
 Observations use descriptor identity, size, nanosecond modification/change times and a hash of the declared format/schema/units/live policy without rescanning or hashing the full output. A monotonic counter records changes; a metadata-only contract change reports `schema_changed`, truncation/replacement is explicit, and append versus in-place rewrite is conservatively reported `append_or_rewrite`. The current local codec covers coherent single CSV files, not arbitrary multi-file CFD time steps. Incomplete final records remain provisional and are excluded from complete-record reads. Live reads do not attach an immutable full-file SHA. Clients should refresh manually or use bounded polling/backoff and visibly distinguish provisional values from archived measurements.
 
-`ImportResults job token request` requires COMPLETED, original Session ownership, complete coherent bytes and a registered scientific importer. Its internal bounded capture is at most 16 MiB, with descriptor checks before/after and full SHA. Larger outputs need an approved streaming importer. `FreezeResource job token document_id` optionally captures a terminal coherent output as an immutable content-addressed Document resource, retaining generation/SHA/Job lineage. The caller must retain its receipt in the existing Document payload. Neither operation mutates earlier results. Scientific publication validity is separate from Job COMPLETED.
+`ImportResults job token request` requires COMPLETED, original Session ownership, complete coherent bytes and a registered scientific importer. Captured Workspace generation/revision/SHA and Dataset revision tokens must still match their current owners, both before output capture and immediately before importer invocation; stale or missing sources raise `GX SCIENTIFIC STALE_SOURCE` before adoption. Historical status, output reads and result descriptions remain available without asserting current-source validity. Its internal bounded capture is at most 16 MiB, with descriptor checks before/after and full SHA. Larger outputs need an approved streaming importer; the table importer applies the same source guard before opening a writer, on each page and before final publication. `FreezeResource job token document_id` optionally captures a terminal coherent output as an immutable content-addressed Document resource, retaining generation/SHA/Job lineage. The caller must retain its receipt in the existing Document payload. Neither operation mutates earlier results. Scientific publication validity is separate from Job COMPLETED.
 
 ## Security and limitations
 
@@ -72,6 +105,13 @@ Parameters (all types/bounds/defaults are discoverable with Describe):
 | `tran` | `step_seconds` (default1e-5), `stop_seconds` (default.005) | time in seconds, V and A |
 | `ac` | `ac_grid` dec/lin/oct, `points` default30, `start_hz` default1, `stop_hz` default100000 | frequency Hz, real/imaginary V and A |
 | `dc` | exact independent `source` name, `dc_start` default0, `dc_stop` default5, nonzero progressing `dc_step` default.1 | source value V or A, node V and branch A |
+
+Circuit inspection additively returns `independent_variable` with `id`, `dtype`
+and `unit`, from the same provider declaration used by raw output publication:
+`index` (unitless) for OP, `time` (s) for transient, `frequency` (Hz) for AC and
+`source_value` (V or A according to the actual swept source) for DC. Consumers
+must verify this stable Variable identity and aligned canonical rows; they must
+not infer the independent coordinate from dropdown state or column order.
 
 Voltage waveform `dc` uses value; `pulse` uses initial/value/delay/rise/rise/width/
 period; `sine` uses initial offset/value amplitude/frequency/delay. `ac` is the

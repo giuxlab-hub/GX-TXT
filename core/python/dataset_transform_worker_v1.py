@@ -258,7 +258,13 @@ class Transform:
                 if identifier in aliases: variable["name"] = variable["canonical"] = aliases[identifier]
                 self.host.call("::GX::datasetPublicationV2ValidateId", "variable", variable["variable_id"])
                 if identifier in labels: variable["display_label"] = labels[identifier]
-                variable.update(rank=1, dimension_ids="row", axis_kind="explicit", shape="", maxshape="*", coordinate_variable_ids="")
+                coordinate_ids = ""
+                if self.op in ("project_variables", "rename_reorder"):
+                    # Projection keeps only requested Variables, including their
+                    # relationships when the referenced source is also selected.
+                    related_ids = (item.strip() for item in str(variable.get("coordinate_variable_ids", "")).replace(",", ";").split(";"))
+                    coordinate_ids = ";".join(aliases.get(related, related) for related in related_ids if related in selected)
+                variable.update(rank=1, dimension_ids="row", axis_kind="explicit", shape="", maxshape="*", coordinate_variable_ids=coordinate_ids)
                 schema.append(variable)
             names = [v["variable_id"] for v in schema]
             require(len(names) == len(set(names)), "Renamed variable IDs collide")
@@ -830,7 +836,12 @@ class Transform:
             contract = self.output.get("contract", "auto")
             if contract == "auto":
                 contract = "table.generic" if self.op in ("extract_family_member", "split_family") else "curve_family.table" if self.effective_op in ("curve_bundle", "build_family") and self.option("representation", "long") != "wide" else self.sources[0]["contract"] if len(self.sources) == 1 else "table.generic"
-            allowed = {"variable_id", "name", "canonical", "display_label", "dtype", "rank", "dimension_ids", "coordinate_variable_ids", "coordinate_role", "axis_kind", "unit", "semantic_role", "value_kind", "semantic_source", "value_format", "decimal_separator", "canonical_unit", "to_canonical", "from_canonical", "time_origin", "time_reference", "instrument_id", "instrument_channel"}
+            allowed = {"variable_id", "name", "canonical", "display_label", "dtype", "rank", "dimension_ids", "coordinate_variable_ids", "coordinate_role", "axis_kind", "unit", "semantic_role", "value_kind", "semantic_source", "semantic_reason", "value_format", "decimal_separator", "canonical_unit", "to_canonical", "from_canonical", "time_origin", "time_reference", "instrument_id", "instrument_channel"}
+            if self.op in ("project_variables", "rename_reorder"):
+                for variable in self.schema:
+                    if variable.get("coordinate_variable_ids"):
+                        variable["coordinate_variable_ids"] = ";".join(related for related in variable["coordinate_variable_ids"].split(";") if related in names)
+                self.options["coordinate_reference_policy"] = "Preserve selected coordinate references under explicit ID maps; omit references to excluded output Variables without adding columns."
             self.schema = [{k:v for k,v in variable.items() if k in allowed} for variable in self.schema]
             for variable in self.schema: variable.update(shape=str(count), maxshape="*", axis_count=str(count))
             mapping = []

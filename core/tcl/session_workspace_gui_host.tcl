@@ -91,11 +91,21 @@ proc ::GX::sessionWorkspaceViewerMenuRefresh {menu} {
     set id {};catch {set id [_workspaceHostCurrent $context]}
     set states [sessionWorkspaceHostState $context $id];set i 0
     $menu entryconfigure 13 -state [expr {[dict get $states actions] ? {normal} : {disabled}}]
-    foreach action [dict get $config actions] {$menu entryconfigure $i -state [expr {[dict get $states $action] ? {normal} : {disabled}}];incr i}
+    foreach action [dict get $config actions] {
+        # Viewer Open browses the existing Manager; it does not open a row.
+        # Keep HostState.open as the selected-row guard used by the Manager.
+        set admission [expr {$action eq {open} ? {manager} : $action}]
+        $menu entryconfigure $i -state [expr {[dict get $states $admission] ? {normal} : {disabled}}]
+        incr i
+    }
 }
 proc ::GX::sessionWorkspaceViewerAction {provider callbacks parent action {errorMode dialog}} {
     if {$errorMode ni {dialog propagate}} {error {Workspace error mode must be dialog or propagate.}}
-    if {[dict exists $::GX::SessionWorkspace::adapters $parent]} {set context [dict get $::GX::SessionWorkspace::adapters $parent]} else {set context [_workspaceHostContext $provider $callbacks $parent]}
+    set context [_workspaceHostContext $provider $callbacks $parent]
+    if {[dict exists $::GX::SessionWorkspace::adapters $parent]} {
+        set candidate [dict get $::GX::SessionWorkspace::adapters $parent]
+        if {[dict get $candidate provider] eq $provider && [dict get $candidate callbacks] eq $callbacks} {set context $candidate}
+    }
     set id {};catch {set id [_workspaceHostCurrent $context]}
     if {$action eq {close} && [dict get $context token] ne [_workspaceHostToken] && [dict exists $callbacks discard]} {
         # Closing a stale Viewer releases only its live handles. Its old Session
@@ -241,7 +251,7 @@ proc ::GX::sessionWorkspaceHostDispatch {context action {id {}} {receipt {}}} {
         new - rename - duplicate {
             set name [expr {$action eq {new} ? {New Workspace} : [dict get [sessionWorkspaceGet $id] name]}]
             if {$action eq {duplicate}} {append name { copy}}
-            set w [dict get $context parent].workspaceName
+            set w [string trimright [dict get $context parent] .].workspaceName
             uiFieldFormCreate $w "[string totitle $action] Workspace" {name {type string required 1 label Name}} [dict create name $name] [list ::GX::sessionWorkspaceHostNamed $adapter $action $id $receipt $w] [dict get $context parent]
         }
         save {uplevel #0 [dict get $cb save];sessionWorkspaceViewsChanged}
@@ -275,7 +285,7 @@ proc ::GX::sessionWorkspaceHostDispatch {context action {id {}} {receipt {}}} {
             set path [workspaceOpenFile session_open_dir -title {Import workspace package} -filetypes {{{GX-TXT workspace ZIP} {.zip}}}]
             if {$path eq {}} return
             _workspaceHostCheck $context
-            set w [dict get $context parent].workspaceName
+            set w [string trimright [dict get $context parent] .].workspaceName
             uiFieldFormCreate $w {Import Workspace} {name {type string required 1 label {Unique Workspace name}}} {name {Imported Workspace}} [list ::GX::sessionWorkspaceHostImport $context $path $w] [dict get $context parent]
         }
     }
@@ -286,7 +296,13 @@ proc ::GX::sessionWorkspaceHostNamed {context action id receipt form values} {
     set name [_workspaceName [dict get $values name] [expr {$action eq {rename} ? $id : {}}]]
     set cb [dict get $context callbacks]
     switch -- $action {
-        rename {sessionWorkspaceRename $id $name}
+        rename {
+            # Only the originating adapter may advance its own source receipt.
+            # Other selected rows and older adapters retain the common owner.
+            if {[dict exists $cb rename] && [_workspaceHostCurrent $context] eq $id} {
+                uplevel #0 [list {*}[dict get $cb rename] $id $name]
+            } else {sessionWorkspaceRename $id $name}
+        }
         new {
             if {![sessionWorkspaceHostPrepare $context {creating a new Workspace}]} return
             _workspaceHostClose $context

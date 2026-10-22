@@ -228,7 +228,7 @@ explicit bounds. int64/uint64 values above 2^53 remain integers; signed/unsigned
 64-bit endpoints are accepted, and overflow, negative unsigned values and
 fractional notation are rejected before writer mutation.
 
-Variable descriptors support `name`, `display_label`, `unit`, `semantic_role`, `semantic_source`, `value_kind`, `value_format`, `decimal_separator`, `time_origin`, `time_reference`, `canonical_unit`, `to_canonical`, `from_canonical`, instrument associations and existing V3 typed/dimensional fields. Source-format defaults are decimal dot and elapsed reference. Numeric/string dtype must agree with value kind; HMS elapsed-time data requires the declared HMS/unit semantics. Custom canonical relations require both restricted formulas and a canonical unit. Defining a relation does not silently invent conversions for opaque units such as ppm or pH. The registry and typed payload retain the declared representation. Consumers use public Unit/Canonical Dataset APIs for requested interpretation/conversion.
+Variable descriptors support `name`, `display_label`, `unit`, `semantic_role`, `semantic_source`, `semantic_reason`, `value_kind`, `value_format`, `decimal_separator`, `time_origin`, `time_reference`, `canonical_unit`, `to_canonical`, `from_canonical`, instrument associations and existing V3 typed/dimensional fields. Source-format defaults are decimal dot and elapsed reference. Numeric/string dtype must agree with value kind; HMS elapsed-time data requires the declared HMS/unit semantics. Custom canonical relations require both restricted formulas and a canonical unit. Defining a relation does not silently invent conversions for opaque units such as ppm or pH. The registry and typed payload retain the declared representation. Consumers use public Unit/Canonical Dataset APIs for requested interpretation/conversion.
 
 ```tcl
 ::GX::datasetPublicationV2PublishSeries $session my.service [dict create \
@@ -345,3 +345,13 @@ No implicit migration or Dataset deletion is performed. New-Dataset auto policy
 is unchanged. Exact IDs, authority rollback and source provenance remain enforced.
 Owned descendants of `module/<producer>/` are valid scientific namespaces;
 shared input namespaces still require explicit grants and CREATE-only publication.
+
+### Generator-declared semantic provenance (dev109)
+
+`semantic_source` accepts `user`, `importer`, `plugin`, `generator`, `inferred`
+and `default`. `generator` preserves semantic declarations from registered
+Session Generators during ordinary public publication and Dataset transforms.
+The optional existing `semantic_reason` is retained verbatim as single-line
+metadata; omitted reasons remain empty. Neither field converts numeric values,
+changes Variable identities or grants producer authority. Unknown source tags
+still reject before writer mutation. The source Dataset remains unchanged.

@@ -89,6 +89,20 @@ proc ::GX::runPageStart {} {
     startAnalysis
 }
 
+proc ::GX::runPageScriptRunner {} {
+    if {$::GX::currentSession eq {} || ![file isdirectory $::GX::currentSession]} {
+        tk_messageBox -parent . -icon info -title {Script Runner requires a Session} -message {Open or create the intended scientific Session first, then choose Script Runner again. Opening the Runner only prepares a review; Run explicitly submits the Job. Job Manager remains available without a Session.}
+        return
+    }
+    if {[info exists ::GX::scriptWorkspaceChoice] && $::GX::scriptWorkspaceChoice ne {} && ![catch {scriptRegistryDescribe $::GX::scriptWorkspaceChoice}]} {
+        scriptWorkspaceRunDialog
+    } else {
+        # The Library already owns registered-source selection and its Run
+        # action. Do not introduce a second script picker or execution path.
+        scriptLibraryDialog
+    }
+}
+
 proc ::GX::buildRunPage {} {
     variable ui
     set f .top.nb.run
@@ -103,7 +117,15 @@ proc ::GX::buildRunPage {} {
     ttk::button $f.buttons.start -text "Legacy import" -command ::GX::startAsync
     ttk::button $f.buttons.all -text "Legacy combined run" -command ::GX::startAll
     pack $f.buttons.analysis $f.buttons.stop $f.buttons.refresh $f.buttons.copy -side left -padx 4
-    grid $f.buttons -row 0 -column 0 -sticky w -padx 5 -pady 7
+    ttk::menubutton $f.buttons.executions -text {Scripts & Jobs…} -menu $f.buttons.executions.menu
+    menu $f.buttons.executions.menu -tearoff 0
+    $f.buttons.executions.menu add command -label {Script Runner…} -command ::GX::runPageScriptRunner
+    $f.buttons.executions.menu add command -label {Job Manager (local / remote)…} -command ::GX::scriptJobsDialog
+    $f.buttons.executions.menu add separator
+    $f.buttons.executions.menu add command -label {Execution help} -command {::GX::documentationBrowserOpenApi SCRIPT_WORKSPACE_GUI_HOST}
+    pack $f.buttons.executions -side right -padx 4
+    native2DViewportTooltip $f.buttons.executions {Script Runner prepares a registered script in the current Session. Job Manager inspects local executions or reconnects an exact remote Job ID; opening either does not submit a Job.}
+    grid $f.buttons -row 0 -column 0 -sticky ew -padx 5 -pady 7
     set ui(startButton) $f.buttons.start
     set ui(analysisStart) $f.buttons.analysis
     set ui(runAllButton) $f.buttons.all

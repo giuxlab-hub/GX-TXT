@@ -506,6 +506,150 @@ proc ::GX::datasetPreviewRenderMetadata {w session datasetId} {
     if {[llength $keys] > $shown} { $w insert end "... [expr {[llength $keys]-$shown}] additional metadata field(s) not shown.\n" }
 }
 
+# Raster Preview consumes the existing canonical metadata and persistent media
+# representation. Detailed schema/provenance remain in their inspection tabs.
+proc ::GX::datasetPreviewImageProperties {datasetId} {
+    set metadata {}
+    if {$datasetId ne {} && $::GX::currentSession ne {}} {set metadata [datasetMetadataRead $::GX::currentSession $datasetId]}
+    set rows {}
+    foreach {key label} {
+        image.width_px {Source width (px)} image.height_px {Source height (px)}
+        image.decoder_format {Decoded format} image.mode {Decoder pixel mode}
+        image.bands {Decoder bands} image.bit_depth {Published bit depth}
+        image.color_space {Published color space}
+    } {
+        set value [datasetPublicationV2DictDefault $metadata $key {Not available}]
+        if {$value eq {}} {set value {Not available}}
+        if {$key eq {image.decoder_format} && $value eq {Not available}} {set value [datasetPublicationV2DictDefault $metadata image.format {Not available}]}
+        lappend rows [list $label $value]
+    }
+    return $rows
+}
+proc ::GX::datasetPreviewImagePresent {w datasetId {artifact {}} {directory {}} {notice {}}} {
+    datasetPreviewImageRelease $w
+    previewDescriptorClearWidgetArtifact $w
+    if {[winfo exists $w.imageProperties]} {destroy $w.imageProperties}
+    $w configure -state normal -wrap word
+    $w delete 1.0 end
+    if {$artifact ne {}} {
+        set descriptor [previewDescriptorNormalize [dict create preview_kind artifact preview_artifact $artifact] $directory]
+        previewDescriptorRenderTextWidget $w $descriptor
+        # Keep the existing descriptor image ownership/decoder, while making
+        # the actual image the first object instead of its technical heading.
+        set embedded [$w dump -image 1.0 end]
+        if {[llength $embedded]} {
+            $w delete 1.0 [lindex $embedded 2]
+            set name [lindex $embedded 1];set base [$w image cget $name -image]
+            variable datasetPreviewImageViews
+            set datasetPreviewImageViews($w) [dict create base $base name $name owned {} numerator 1 denominator 1 token [interactiveDocumentSessionToken]]
+            set tools [winfo parent $w].imageTools
+            if {[winfo exists $tools]} {grid $tools -row 0 -column 0 -sticky ew; $tools.scale configure -text {Preview 100%}}
+        }
+    } else {$w insert end "Image Preview\n"}
+    $w insert end "\nImage properties — recorded source metadata\n"
+    uiFieldComponentCreate $w.imageProperties table {columns {Property Value} scrollbars both} {} {}
+    set table $w.imageProperties.table
+    $table configure -height 7 -selectmode browse
+    $table column Property -width 190 -minwidth 140 -stretch 0
+    $table column Value -width 300 -minwidth 120 -stretch 1
+    foreach row [datasetPreviewImageProperties $datasetId] {$table insert {} end -values $row}
+    $w window create end -window $w.imageProperties
+    $w insert end "\nPixel mode/bands do not establish a calibrated color space or source encoding depth.\nFull metadata, processing and provenance remain in Metadata and Technical Details / Provenance.\n"
+    if {$notice ne {}} {$w insert end "$notice\n"}
+    $w configure -state disabled
+    datasetPreviewImagePropertiesFit $w [winfo width $w]
+}
+proc ::GX::datasetPreviewImagePropertiesFit {w width} {
+    if {![winfo exists $w.imageProperties.table]} return
+    $w.imageProperties.table column Value -width [expr {max(120,min(500,$width-230))}]
+    variable datasetPreviewImageViews
+    if {[info exists datasetPreviewImageViews($w)]} {
+        set name [dict get $datasetPreviewImageViews($w) name]
+        if {![catch {$w image cget $name -image} image] && [lsearch -exact [image names] $image]>=0} {
+            $w configure -wrap [expr {[image width $image]>max(1,$width-16)?{none}:{word}}]
+        }
+    }
+}
+# View-only copies of the existing descriptor-owned photo. The descriptor keeps
+# owning the decoded base; this consumer owns only its temporary scaled photo.
+# No source image, cache artifact or Dataset metadata is rewritten by zoom.
+proc ::GX::datasetPreviewImageRelease {w} {
+    variable datasetPreviewImageViews
+    if {[info exists datasetPreviewImageViews($w)]} {
+        set owned [dict get $datasetPreviewImageViews($w) owned]
+        if {$owned ne {}} {catch {image delete $owned}}
+        unset datasetPreviewImageViews($w)
+    }
+    set tools [string range $w 0 [expr {[string last . $w]-1}]].imageTools
+    if {[winfo exists $tools]} {grid remove $tools}
+}
+proc ::GX::datasetPreviewImageDestroyed {expected actual} {
+    if {$expected ne $actual} return
+    datasetPreviewImageRelease $expected
+    previewDescriptorClearWidgetArtifact $expected
+}
+proc ::GX::datasetPreviewImageView {w operation} {
+    variable datasetPreviewImageViews
+    if {![info exists datasetPreviewImageViews($w)] || ![winfo exists $w]} {return 0}
+    set state $datasetPreviewImageViews($w);set base [dict get $state base]
+    if {[dict get $state token] ne [interactiveDocumentSessionToken] || [lsearch -exact [image names] $base]<0} {
+        datasetPreviewImageRelease $w;return 0
+    }
+    set numerator [dict get $state numerator];set denominator [dict get $state denominator]
+    switch $operation {
+        in {set numerator [expr {$numerator*2}]}
+        out {set denominator [expr {$denominator*2}]}
+        actual {set numerator 1;set denominator 1}
+        fit {
+            set numerator 1
+            set denominator [expr {max(1,int(ceil(max(double([image width $base])/max(1,[winfo width $w]-16),double([image height $base])/max(1,[winfo height $w]-24)))))}]
+        }
+        default {error {Unknown image Preview view operation}}
+    }
+    while {$numerator>1 && $denominator%2==0} {set numerator [expr {$numerator/2}];set denominator [expr {$denominator/2}]}
+    set width [expr {(([image width $base]+$denominator-1)/$denominator)*$numerator}]
+    set height [expr {(([image height $base]+$denominator-1)/$denominator)*$numerator}]
+    # Bound a disposable Tk display allocation; this is not a source reduction
+    # or a graphics quality policy. Fit/100% remain explicit ordinary controls.
+    if {$width*$height>16777216 || ($operation eq {out} && [image width [$w image cget [dict get $state name] -image]]<=1 && [image height [$w image cget [dict get $state name] -image]]<=1)} {
+        setStatus {Image Preview zoom limit reached. Use Fit image or 100%.} 0;return 1
+    }
+    set scaled {}
+    if {[catch {
+        set scaled [image create photo]
+        $scaled copy $base -zoom $numerator -subsample $denominator
+        $w image configure [dict get $state name] -image $scaled
+    } reason]} {
+        if {$scaled ne {}} {catch {image delete $scaled}}
+        setStatus "Image Preview zoom unavailable: $reason" 0;return 1
+    }
+    if {[dict get $state owned] ne {}} {image delete [dict get $state owned]}
+    dict set state owned $scaled;dict set state numerator $numerator;dict set state denominator $denominator
+    set datasetPreviewImageViews($w) $state
+    $w configure -wrap [expr {$width>max(1,[winfo width $w]-16)?{none}:{word}}]
+    set tools [winfo parent $w].imageTools
+    if {[winfo exists $tools]} {$tools.scale configure -text [format {Preview %.3g%%} [expr {100.0*$numerator/$denominator}]]}
+    if {$operation eq {fit}} {$w xview moveto 0;$w yview moveto 0}
+    return 1
+}
+proc ::GX::datasetPreviewRenderImage {w datasetId path} {
+    datasetPreviewSetCurrentFile $path [datasetField $datasetId media_type {}] [datasetField $datasetId kind {}] [datasetField $datasetId format {}]
+    set key [datasetPreviewCacheKey $datasetId]
+    set cached [datasetPreviewCacheRead $datasetId $key]
+    if {$cached ne {}} {
+        if {[dict exists $cached media_artifact]} {
+            set directory [datasetPreviewCachePath $::GX::currentSession $key]
+            set artifact [dict get $cached media_artifact]
+            # Cache files are disposable and Session-local. Never follow the
+            # old absolute derivative path retained by a copied Session.
+            dict set artifact path [file join $directory [file tail [dict get $artifact path]]]
+            datasetPreviewImagePresent $w $datasetId $artifact $directory {Session cache hit — verified image representation.}
+        } else {datasetPreviewImagePresent $w $datasetId {} {} {Inline image unavailable with the current Preview renderer/settings. The canonical source remains available through Open Dataset.}}
+    } else {
+        datasetPreviewImagePresent $w $datasetId {} {} {Preparing a persistent image Preview asynchronously…}
+        datasetPreviewCacheRequest $datasetId {} ::GX::_datasetPreviewMediaReady
+    }
+}
 proc ::GX::datasetPreviewRenderImported {w datasetId} {
     variable currentSession
     if {$currentSession eq "" || ![file isdirectory $currentSession]} { error "No Session is open." }
@@ -518,6 +662,8 @@ proc ::GX::datasetPreviewRenderImported {w datasetId} {
     set mediaType [datasetField $datasetId media_type ""]
     set provider [datasetField $datasetId storage_provider ""]
     set mediaClass [datasetPreviewMediaClass $mediaType $format $contract $path]
+    if {$mediaClass eq {image}} {return [datasetPreviewRenderImage $w $datasetId $path]}
+    $w configure -wrap none
     datasetPreviewSetCurrentFile $path $mediaType $contract $format
     previewDescriptorClearWidgetArtifact $w
     $w configure -state normal
@@ -878,6 +1024,8 @@ proc ::GX::datasetPreviewSafeBinary {path {datasetId ""}} {
         set format [datasetField $datasetId format ""]
     }
     set class [datasetPreviewMediaClass $media $format "" $path]
+    if {$class eq {image} && $datasetId ne {}} {return [datasetPreviewRenderImage $w $datasetId $path]}
+    $w configure -wrap none
     datasetPreviewSetCurrentFile $path $media [expr {$datasetId ne "" ? [datasetField $datasetId kind ""] : ""}] $format
     $w insert end "BINARY DATASET PREVIEW\n======================\n"
     if {$datasetId ne ""} { $w insert end "Dataset:    $datasetId\n" }

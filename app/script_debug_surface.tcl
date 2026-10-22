@@ -1,11 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # One managed Debug client for both established Script Workspace shells.
-namespace eval ::GX::ScriptDebug {variable state}
+namespace eval ::GX::ScriptDebug {variable state;variable serial 0}
 proc ::GX::scriptDebugOpen {editor language} {
     variable ::GX::ScriptDebug::state
     set p $editor.p.debug
     if {[winfo exists $p]} {scriptWorkspaceAssistMount $editor $p;return $p}
     ttk::frame $p -padding 5
+    set state($p,incarnation) [incr ::GX::ScriptDebug::serial]
+    set state($p,submission) 0
     set state($p,editor) $editor;set state($p,language) $language
     if {[catch {scriptJobDebugCapabilities $language} capabilities]} {set capabilities [dict create controls {} pause_supported 0 pause_reason $capabilities]}
     set state($p,capabilities) $capabilities
@@ -113,12 +115,47 @@ proc ::GX::scriptDebugReady {p} {
     if {![string match session:* $ui(currentId)]} {return {Save or assign a Session script before starting Debug.}}
     if {[catch {set m [scriptRegistryDescribe $ui(currentId)]} reason]} {return $reason}
     if {[dict get $m sha256] ne $ui(currentSha)} {return {Registered source changed. Reload it before Debug.}}
+    if {$::GX::ScriptDebug::state($p,phase) in {STARTING RUNNING PAUSED CONTINUING EXCEPTION} && ![_scriptDebugSourceMatches $p]} {return {Editor shows a different source from the owned Debug snapshot. Return to that source or stop its Job before stepping.}}
     return {}
+}
+proc ::GX::_scriptDebugSourceMatches {p} {
+    variable ::GX::ScriptDebug::state
+    foreach key {source sourceWidget reference sha token} {if {![info exists state($p,$key)]} {return 0}}
+    if {[info exists state($p,observation)] && (![dict exists $state($p,observation) source_sha256] || [dict get $state($p,observation) source_sha256] ne $state($p,sha))} {return 0}
+    if {$state($p,token) ne [scriptWorkspaceSessionToken] || ![winfo exists $state($p,source)] || [winfo id $state($p,source)] ne $state($p,sourceWidget)} {return 0}
+    set ns [scriptDebugEditor $p];upvar #0 ${ns}::ui ui
+    return [expr {!$ui(modified) && $ui(text) eq $state($p,source) && $ui(currentId) eq $state($p,reference) && $ui(currentSha) eq $state($p,sha)}]
+}
+proc ::GX::_scriptDebugEpoch {p} {
+    variable ::GX::ScriptDebug::state
+    if {![info exists state($p,incarnation)]} {return {}}
+    return [list $state($p,incarnation) $state($p,submission) $state($p,job)]
+}
+proc ::GX::_scriptDebugCallback {p epoch operation response} {
+    if {![winfo exists $p] || $epoch ne [_scriptDebugEpoch $p]} {
+        if {$operation eq {submitted} && [dict get $response ok]} {
+            set id [dict get $response result id];set claimed 0
+            # Reuse the existing client state; a duplicate late admission must
+            # never cancel a Job already adopted by another current Debug pane.
+            foreach key [array names ::GX::ScriptDebug::state *,job] {
+                if {$::GX::ScriptDebug::state($key) eq $id} {set claimed 1;break}
+            }
+            if {!$claimed} {catch {scriptJobCancel $id}}
+        }
+        return
+    }
+    switch $operation {
+        submitted {scriptDebugSubmitted $p $response}
+        controlled {scriptDebugControlled $p $response}
+        polled {scriptDebugPolled $p $response}
+        default {error {Unknown Debug client callback}}
+    }
 }
 proc ::GX::scriptDebugUiUpdate {p} {
     variable ::GX::ScriptDebug::state
     if {![winfo exists $p]} return
     set reason [scriptDebugReady $p];set phase $state($p,phase)
+    if {[info exists state($p,source)] && [winfo exists $state($p,source)] && ![_scriptDebugSourceMatches $p]} {sourceSurfaceLocation $state($p,source) 0}
     set active [expr {$phase in {STARTING RUNNING PAUSED CONTINUING EXCEPTION}}]
     set ns [scriptDebugEditor $p];upvar #0 ${ns}::ui ui
     sourceSurfaceBreakpoints $ui(text) [expr {$active ? {lock} : {unlock}}]
@@ -172,17 +209,24 @@ proc ::GX::scriptDebugAction {p operation} {
         if {$state($p,token) ne [scriptWorkspaceSessionToken]} {error {Session changed; close the debugger to cancel its owned Job}}
         ${ns}::_recomputeDirty
         if {$ui(modified) || ![string match session:* $ui(currentId)]} {error {Save a clean registered Session script before Debug or stepping; the running snapshot cannot change}}
+        if {$operation in {continue into over out} && ![_scriptDebugSourceMatches $p]} {error {Editor shows a different source from the owned Debug snapshot. Return to that source or stop its Job before stepping.}}
         if {$operation eq {start}} {
             if {$state($p,job) ne {}} {set old [scriptJobDescribe $state($p,job)];if {[dict get $old state] in {QUEUED PREPARING RUNNING FINALIZING}} {error {Stop the existing Debug Job first}}}
             set metadata [scriptRegistryDescribe $ui(currentId)]
             if {[dict get $metadata sha256] ne $ui(currentSha)} {error {Registered source changed; reload the editor}}
+            incr state($p,submission)
+            set state($p,job) {}
             set state($p,sha) $ui(currentSha);set state($p,source) $ui(text)
+            set state($p,reference) $ui(currentId);set state($p,sourceWidget) [winfo id $ui(text)]
+            unset -nocomplain state($p,observation) state($p,exceptionShown)
+            foreach tree [list $state($p,stack) $state($p,variables)] {$tree delete [$tree children {}]}
+            sourceSurfaceLocation $ui(text) 0
             set options [dict create session $::GX::currentSession debug_breakpoints [sourceSurfaceBreakpoints $ui(text)]]
-            scriptJobDebugSubmit $ui(currentId) {} $options [list ::GX::scriptDebugSubmitted $p]
+            scriptJobDebugSubmit $ui(currentId) {} $options [list ::GX::_scriptDebugCallback $p [_scriptDebugEpoch $p] submitted]
             set state($p,status) STARTING;set state($p,phase) STARTING;scriptDebugUiUpdate $p;scriptDebugLog $p {Submitting native managed Debug Job}
         } else {
             if {$state($p,job) eq {}} {error {Start a Debug Job first}}
-            scriptJobAsync [scriptJobCommand debug_control $state($p,job) $operation $state($p,sha)] {} [list ::GX::scriptDebugControlled $p]
+            scriptJobAsync [scriptJobCommand debug_control $state($p,job) $operation $state($p,sha)] {} [list ::GX::_scriptDebugCallback $p [_scriptDebugEpoch $p] controlled]
         }
     } reason]} {set state($p,status) $reason;scriptDebugLog $p $reason}
 }
@@ -204,7 +248,7 @@ proc ::GX::scriptDebugPoll {p} {
     }
     # Read the owned Job through its original identity until cancellation is
     # genuinely terminal, even after the GUI's current Session closes/changes.
-    scriptJobAsync [scriptJobCommand debug_read $::GX::ScriptDebug::state($p,job)] {} [list ::GX::scriptDebugPolled $p] {timeout_ms 10000 max_bytes 2097152 ui_lifetime 1 label {Native debugger observation}}
+    scriptJobAsync [scriptJobCommand debug_read $::GX::ScriptDebug::state($p,job)] {} [list ::GX::_scriptDebugCallback $p [_scriptDebugEpoch $p] polled] {timeout_ms 10000 max_bytes 2097152 ui_lifetime 1 label {Native debugger observation}}
 }
 proc ::GX::scriptDebugPolled {p response} {
     variable ::GX::ScriptDebug::state
@@ -213,17 +257,30 @@ proc ::GX::scriptDebugPolled {p response} {
     } else {
         set debug [dict get $response result];set state($p,observation) $debug
         set status [dict get $debug state];set state($p,status) "$status — $state($p,job)"
+        set hasException [expr {[dict exists $debug exception message] && $status in {PAUSED FAILED}}]
+        if {$hasException} {
+            append state($p,status) " — EXCEPTION: [dict get $debug exception message]"
+            if {![info exists state($p,exceptionShown)] || $state($p,exceptionShown) ne [dict get $debug exception]} {
+                set state($p,exceptionShown) [dict get $debug exception]
+                scriptDebugLog $p "Native user exception: [dict get $debug exception message]"
+                scriptDebugLog $p {User variables below are the LAST KNOWN PAUSED SNAPSHOT, not live values after unwind.}
+                foreach frame [datasetPublicationV2DictDefault $debug technical_stack {}] {
+                    scriptDebugLog $p "Technical caught frame: [datasetPublicationV2DictDefault $frame name {}] — [dict get $frame file]:[dict get $frame line]"
+                }
+            }
+        }
         if {$status ne $state($p,phase)} {scriptDebugLog $p "$status — $state($p,job)"}
         set state($p,phase) $status
         set stack $state($p,stack);set variables $state($p,variables)
-        if {$status eq {PAUSED} && !$state($p,contextChanged)} {
+        if {($status eq {PAUSED} || $hasException) && !$state($p,contextChanged)} {
             set selected [datasetPublicationV2DictDefault $debug selected_frame 0]
             set frame [lindex [dict get $debug stack] $selected]
             set file [datasetPublicationV2DictDefault $frame file {}]
             set snapshot [datasetPublicationV2DictDefault $debug source {}]
+            if {$hasException} {append state($p,status) " — origin: $file:[dict get $frame line] — locals: last paused snapshot"}
             set ns [scriptDebugEditor $p];upvar #0 ${ns}::ui ui
             ${ns}::_recomputeDirty
-            if {$ui(modified)} {sourceSurfaceLocation $state($p,source) 0;append state($p,status) { — editor differs from this immutable paused snapshot}
+            if {![_scriptDebugSourceMatches $p]} {sourceSurfaceLocation $state($p,source) 0;append state($p,status) { — editor shows a different or modified source; observation belongs to the original immutable Job snapshot}
             } elseif {$file ne {} && $snapshot ne {} && [file normalize $file] ne [file normalize $snapshot]} {
                 sourceSurfaceLocation $state($p,source) 0
                 append state($p,status) " — external frame: $file:[dict get $frame line]"
@@ -238,7 +295,7 @@ proc ::GX::scriptDebugPolled {p response} {
             $variables delete [$variables children {}]
             foreach scope {locals globals} {
                 if {![dict exists $debug $scope]} continue
-                dict for {name value} [dict get $debug $scope] {$variables insert {} end -text "$scope.$name" -values [list [dict get $value type] [dict get $value shape] [string range [dict get $value value] 0 1023]]}
+                dict for {name value} [dict get $debug $scope] {$variables insert {} end -text "[expr {$hasException ? {last paused · } : {}}]$scope.$name" -values [list [dict get $value type] [dict get $value shape] [string range [dict get $value value] 0 1023]]}
             }
         } else {sourceSurfaceLocation $state($p,source) 0;$stack delete [$stack children {}];$variables delete [$variables children {}]}
         scriptDebugUiUpdate $p
@@ -247,12 +304,16 @@ proc ::GX::scriptDebugPolled {p response} {
     set state($p,timer) [after 350 [list ::GX::scriptDebugPoll $p]]
 }
 proc ::GX::scriptDebugFrame {p} {
+    # err.stack is a genuine origin trace, whose user frames have unwound. Its
+    # row numbers cannot be sent as indices into the paused runner's live stack.
+    if {[info exists ::GX::ScriptDebug::state($p,observation)] && [dict exists $::GX::ScriptDebug::state($p,observation) exception]} {return}
+    if {![_scriptDebugSourceMatches $p]} {set ::GX::ScriptDebug::state($p,status) {Editor shows a different source from this Debug snapshot; frame selection was not sent.};return}
     set stack $::GX::ScriptDebug::state($p,stack)
     set row [lindex [$stack selection] 0]
     if {![regexp {^frame([0-9]+)$} $row -> index]} return
     if {[info exists ::GX::ScriptDebug::state($p,observation)] && [dict exists $::GX::ScriptDebug::state($p,observation) selected_frame] && [dict get $::GX::ScriptDebug::state($p,observation) selected_frame]==$index} return
     set ns [scriptDebugEditor $p]
-    scriptJobAsync [scriptJobCommand debug_control $::GX::ScriptDebug::state($p,job) frame $::GX::ScriptDebug::state($p,sha) $index] {} [list ::GX::scriptDebugControlled $p]
+    scriptJobAsync [scriptJobCommand debug_control $::GX::ScriptDebug::state($p,job) frame $::GX::ScriptDebug::state($p,sha) $index] {} [list ::GX::_scriptDebugCallback $p [_scriptDebugEpoch $p] controlled]
 }
 proc ::GX::scriptDebugDestroyed {p actual} {
     if {$actual ne $p} return

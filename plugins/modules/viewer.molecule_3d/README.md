@@ -28,3 +28,8 @@ The [official wwPDB/RCSB usage policy](https://www.rcsb.org/pages/usage-policy)
 states that PDB archive data files are CC0-1.0. `library/manifest.tsv` records
 the exact source URL and SHA-256 of every original SDF. Citation: wwPDB Chemical
 Component Dictionary; see also the [CCD download page](https://www.rcsb.org/downloads/ligands).
+
+Dedicated molecular 3D presentations select only the source-bound molecule_main
+layer through the public Viewer Provider presentation scope. Other saved Native3D
+layers (for example a crystal structure) remain preserved and available in their
+own presentations; Native3D Refresh retains the current molecular scope.

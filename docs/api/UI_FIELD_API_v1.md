@@ -13,6 +13,11 @@ Captions of typed field/toggle/choice and Dataset-selector controls also wrap
 within their allocated native width (maximum400px). Long descriptive labels
 remain readable in narrow inspectors without changing the author's label,
 component identity or bound value; ordinary focus scrolling reveals later rows.
+Non-color compact typed-field captions span the whole field, including its
+Reset/Inherit area. When the entry and those buttons cannot fit side by side at
+their actual font sizes, the existing buttons move below the full-width entry.
+Widening restores their original inline layout. This does not replace widgets,
+change values, validation, disabled/readonly state, callbacks or focus order.
 
 Host presentation helpers `uiFieldColorToRGBA`, `uiFieldColorFromRGBA` and
 `uiFieldColorComposite` convert canonical RGB/alpha descriptors and composite
@@ -22,6 +27,10 @@ Apply/Close, keyboard focus scrolling and visible validation status.
 `uiFieldFormApply` validates all fields before invoking its one apply callback;
 invalid input never invokes the callback. The host remains responsible for
 making that callback's domain changes atomic.
+Callback errors remain inline while their form exists. If a normal callback
+closes its form or parent before failing, the shared owner instead shows the
+error in an **Action failed** dialog attached to the surviving application
+root. Closing a form does not make a later callback failure disappear.
 `uiFieldFormSectionEnabled window section boolean` enables or disables an existing
 named notebook section without removing its fields or changing their values.
 The domain callback must still reject unsupported combinations on Apply; disabling
@@ -33,11 +42,65 @@ Script provider `ui_field`. Types: string, integer, double/number, boolean,
 choice, color, path, file and command. Special Dataset/Selection/scientific
 controls keep their existing authority and dispatch.
 
+Declarative `dataset_selector` accepts boolean `allow_empty` (default false).
+When true, its finite canonical choices include one empty choice and a native
+**Clear selection** button. Clearing commits the same `changed` notification as
+choosing a Dataset; it does not select another Dataset, accept arbitrary text,
+or modify canonical data. The optional empty choice remains available with no
+Session or no compatible Dataset. `uiFieldComponentEnabled` disables both the
+selector and Clear. `uiFieldDatasetChoices ?content_kind? ?allow_empty=0?`
+returns these same finite identities; invalid boolean values are rejected.
+Existing nonoptional selectors retain their choices and behavior.
+
+Declarative read-only `table` components accept `columns` and optional
+`scrollbars=none|vertical|horizontal|both` (default `none`). The default retains
+the existing Treeview widget identity. Scrollable tables return their containing
+frame; `uiFieldComponentTableWidget component` resolves either representation to
+the same native Treeview. Horizontal scrolling fits column widths to actual
+headings and page values after `viewerGuiDesignTableSet`, using the existing
+inspection-column owner. Vertical scrolling reaches the remaining rows.
+`uiFieldComponentTableRead component ?selectedOnly=0?` (also
+`uiFieldComponentRead component table`) returns `columns`, `rows`, `selection`
+and `read_only=1`, bounded to 1000 rows / 4 MiB. Native Ctrl+C or the host operation
+`uiFieldComponentTableCopy component` copies selected rows as tab-separated
+text. Embedded tab/newline characters become spaces in the clipboard projection;
+the stored values remain exact. No selection copies nothing. These controls
+never edit cells or change scientific data; they are distinct from Worksheet.
+
 `uiFieldNormalize descriptor value` validates without Tk. Descriptors carry
 `type`, optional `label`, `required`, `default`, numeric `min/max`, choice
 `values` (ordered list), color `alpha`, and `allow_inherit`. Empty values mean
 inherit only where declared. Errors are explicit; numeric values must be finite.
 Paths/commands are single-line values and normalization never executes them.
+
+Declarative `field` components with `datatype color` may expose the same
+descriptor option as `alpha 1`. Canonical `{rgb #RRGGBB alpha VALUE}` values
+retain opacity through public programmatic ValueSet, the visible RGB entry,
+normal validation and `uiFieldComponentRead widget field`. Programmatic updates
+synchronize the existing RGB mirror before committing; reading the entry alone
+would lose opacity. Fields without the option retain their existing RGB-only
+contract. Other field datatypes cannot declare alpha.
+
+Finite `number`/`double` fields use Tcl's shortest round-tripping decimal text.
+For example, `0.04` remains readable rather than acquiring an expanded formatting
+tail. Binary-double precision, finite-value validation and declared bounds are
+preserved. This does not change scientific Numeric APIs or rewrite Datasets.
+
+Declarative `tabs` accepts `tab_position=north|west` (default `north`). `west`
+uses the native notebook's vertical tab layout for narrow sidebars. Page IDs,
+selection, native hit testing and page contents retain the same owner.
+North-facing headers that cannot fit use a native readonly page selector with
+the original tab font and full page titles. It selects the same notebook pages;
+disabled pages remain unavailable and hidden pages are omitted. Widening restores
+the original native headers, style and padding. No scientific action is submitted
+for local page selection. The shared Builder shell also wraps overflowing
+single-row action bars, including declared nested panels, through
+`uiFieldControlsLayout`, retaining each original
+widget, command, enabled state and declared layout when it fits again.
+`uiFieldComponentEnabled widget type boolean` changes an existing value
+component's enabled state, including its entry/reset controls, preserving the
+value, validators and a combobox's readonly policy. Disabled presentation does
+not replace domain validation.
 
 Colors use uppercase `#RRGGBB`; short hex and common basic color names normalize
 to this form. Alpha-enabled values serialize as a Tcl dictionary
@@ -63,7 +126,11 @@ or invoke a chooser.
 
 `uiFieldControlsLayout frame width` is the shared adaptive GUI control-row
 layout. It wraps as many groups as fit according to actual font/widget sizes, keeps
-each label beside its input, and changes grid placement only when needed.
+each label beside its input when the pair fits, and changes grid placement only
+when needed. A single pair wider than its container flows onto full-width rows;
+the existing entry can shrink and retain its ordinary native text scrolling.
+The fallback temporarily weights its grid column and restores the caller's
+original weight when the normal arrangement fits again.
 Native2D's existing `native2DToolbarLayout` delegates to this service. Dataset
 Preview uses it for paging/goto controls so narrow windows keep the Go button
 and input reachable. This is a Tcl GUI factory service; Script Bridge exposes
@@ -88,7 +155,43 @@ API-catalog or diagnostic text. Existing script tables retain this same owner.
 
 ## Inspector scrolling
 
-`uiFieldScrollSee viewport content widget` scrolls any shared canvas sidebar/form to reveal a focused nested widget, using root-coordinate differences that also work with geometry-managed children. `uiFieldFormSee` delegates to it. Curve Workbench uses a true canvas-child content frame with a persistent vertical scrollbar and focus scrolling for point tables, numeric editors and composition. `uiFieldControlsLayout` uses actual required widths to maximize groups per row and keeps each label/input pair together; it has no arbitrary six-group limit.
+`uiFieldScrollSee viewport content widget` scrolls any shared canvas sidebar/form to reveal a focused nested widget, using root-coordinate differences that also work with geometry-managed children. `uiFieldFormSee` delegates to it. Curve Workbench uses a true canvas-child content frame with a persistent vertical scrollbar and focus scrolling for point tables, numeric editors and composition. `uiFieldControlsLayout` uses actual required widths to maximize groups per row and keeps each label/input pair adjacent, flowing vertically if necessary; it has no arbitrary six-group limit.
+
+`uiFieldViewerShellCreate` interprets its declared inspector width as the existing
+font10 nominal width. At initial mapping a larger actual TkDefaultFont preserves
+its approximate character capacity using the same font family's measured digits
+at size10. Expansion is bounded by the mapped body: the nominal width remains
+available and additional space uses at most two thirds of the body. Narrowing
+clamps an oversized split to that bound, while growing does not reset the user's
+split. Native sash movement, vertical scrolling and page/field identity remain
+owned by the same native widgets. There is no module-specific inspector size or
+change to drawing/scientific coordinates.
+
+The pane stays bounded by that same policy when a native action caption needs
+more room. The inspector content keeps its natural width and the requested width
+of mapped native actions, including actions inside nested scrolling pages. A
+native horizontal scrollbar appears only when this content exceeds the viewport;
+it makes both caption ends reachable without widening the pane, reducing fonts
+or changing child grid policies. The bar disappears and horizontal position
+resets when the content fits again. Existing vertical scrolling remains available.
+
+Deferred inspector layout reveals a fully offscreen focused control horizontally.
+A partly visible focus target stays still between its native press and release;
+the horizontal scrollbar provides access to its remaining caption. Closing the
+inspector cancels its pending layout. The existing InspectorFocus/Wheel procedures
+and `uiFieldScrollSee` vertical behavior are unchanged. Labels, command bindings,
+enablement, values and scientific/Workspace data keep their original owners.
+
+The focused dev109 caption356 evidence is **component-only**: the same no-Session
+Tk fixture gives baseline29PASS/1FAIL and candidate30PASS, with six additional
+focus/scroll-command/close controls passing. Five complete font10 observation
+dictionaries match the baseline; wide and normal font restoration also pass.
+Inert counter actions and the captured pane allocation are constructed component
+inputs. They do not establish installed human-input or scientific acceptance.
+At this documentation cut, originalQA335's cold missing-caption/access-to-existing-
+commands retest remains pending after MAIN integration. See the
+focused delivery and qualifications.
+
 ## Window placement
 
 `uiFieldWindowFit window ?width height?` is a host/UI-only helper. Explicit sizes
@@ -175,6 +278,30 @@ resizable scientific canvas beside a scrollable inspector with a native sash,
 adaptive toolbar and bottom status/History region. `uiFieldViewerSection parent
 id title` creates a consistently padded inspector section.
 
+The shell returns the same dictionary paths:
+
+| Key | Returned path |
+| --- | --- |
+| `window` | `$window` |
+| `toolbar` | `$window.toolbar` |
+| `inspector` | `$window.body.inspector.scroll.content` |
+| `canvas` | `$window.body.canvas` |
+| `footer` | `$window.footer` |
+| `status` | `$window.footer.status` |
+
+The conditional inspector scrollbar is private presentation, not a new returned
+region or public operation. Existing consumers keep these component paths,
+commands and data bindings; the shell creates no scientific state store.
+
+An overflowing single-row action bar wraps through the existing shared controls
+layout. A multirow action bar with full-width status headers uses a native
+**Actions…** menu at narrow widths, preserving room for its scientific viewport.
+The menu reads the original buttons' current captions, icons and enabled states
+when opened and invokes those same buttons. It owns no scientific state or Job.
+Status headers use their available row width in this compact mode; widening
+restores the declared buttons, grid policies and text wrapping. Mixed input
+forms are excluded from this toolbar fallback.
+
 `uiFieldDialogCreate dialog parent title ?geometry?` creates a withdrawn transient
 dialog; populate domain controls, then call `uiFieldDialogPresent dialog ?focus?
 ?modal?`. `uiFieldFocusWhenMapped container target ?modal?` defers focus and grab
@@ -243,3 +370,15 @@ layout owner. Inspector/scroll-frame FocusIn handlers reveal only the actual
 focused control, ignoring ancestor FocusIn notifications that could move a
 visible checkbox between its pointer press and release. These are presentation
 corrections; field values, source identity, callbacks and History are unchanged.
+
+Declarative `tab` pages with both weighted content rows and fixed descriptive
+rows retain their ordinary grid while it fits. If their natural content height
+exceeds the allocated page, the shared native vertical scroll area preserves
+the content's requested height and makes the explanation and controls reachable.
+This prevents a tall wrapped label from taking the whole weighted viewport.
+Resizing or restoring the font removes the scroll area when the original grid
+fits again. Child widget paths, bindings, values and row/column policies survive
+this transition. Tab selection and disabled controls stay native; focus reveals
+the actual control, nested editors/plots retain their wheel behavior, and a
+scrolling tab owns its wheel rather than also scrolling the outer inspector.
+No Viewer-specific dimensions, scientific state or font reduction are involved.

@@ -7,6 +7,19 @@ For current interface contracts consult the API references under [docs/api](docs
 
 ## 0.9.8.10 - development revisions
 
+### 0.9.8.10-dev-109
+
+- Decouple restricted C++ Viewer source builds from normal installed startup and native events. Reuse stable compiled development artifacts and launch installed Viewers without recompilation; preserve source/policy guards in the final public CORE implementation.
+- Complete shared Native2D diagram selection, wire junctions, electrical properties, terminal inspection, engineering numeric formatting and state feedback with canonical scientific source ownership.
+- Stabilize Dataset Preview generation and durable Session-local preview caches; improve Curve Workbench coordinate frames, dimensional policy, axis calibration, long native scientific captions and exact source identity.
+- Improve Scientific Dataset Viewer forms, axis titles, units, schema/provenance inspection and original RAW Dataset access; introduce additional typed native scientific graph, raster and panel controls.
+- Enhance Print/PDF Studio with scientific poster composition; improve graphical Modules settings, tooling and shared editor/API Browser operations.
+- Integrate native document Viewer family, actual LaTeX source/PDF production and reusable scientific document/asset APIs, retaining safe input and publication ownership.
+- Rebuild CAD 3D and Electromagnetics Studio Viewers using public restricted Builder/Development Workspace facilities and original geometry/FEM scientific services.
+- Introduce and refine Scientific Library Workspace, molecular/thermal 3D presentation and independently packaged modules/viewers.
+- Deliver new official dev-109 plugin packages and public API documentation while preserving immutable scientific release history and the separate dev-108-only maintenance hotfix line.
+- Platform limitation: the official Debian scientific acceptance is separate from Windows static GitHub source validation. User-derived Sessions and private QA evidence are intentionally not distributed.
+
 ### 0.9.8.10-dev-108
 
 - Expand shared Viewer Interface Builder with a typed, project-owned icon library, native icon bindings, component profiles, visibility and reproducible GUI source/event inspection using public CORE services.

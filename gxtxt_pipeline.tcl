@@ -109,7 +109,7 @@
 # Full release history: CHANGELOG.md
 
 namespace eval ::GX {
-    variable version "0.9.8.10-dev-108"
+    variable version "0.9.8.10-dev-109"
     variable scriptDir [file dirname [file normalize [info script]]]
     variable cfg
     variable ch
@@ -268,6 +268,7 @@ source [file join $::GX::scriptDir core tcl native2d_presentation_v1.tcl]
 source [file join $::GX::scriptDir core tcl interactive_document_resource_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl session_workspace_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl file_publication_api_v1.tcl]
+source [file join $::GX::scriptDir core tcl interactive_document_tex_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_gui_host_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_gui_host_v2.tcl]
 source [file join $::GX::scriptDir core tcl statistical_result_semantics_api_v1.tcl]

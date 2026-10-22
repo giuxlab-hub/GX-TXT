@@ -11,9 +11,9 @@ proc ::GX::buildPrintPage {} {
     viewerCommandsAttach $f framework.print_studio $handlers ::GX::printStudioScopeActive {} {session_scoped 0}
     foreach {name label actions} {
         file File {new open save - export open_pdf - print setup}
-        edit Edit {add legacy - remove duplicate up down - undo redo}
-        view View {previous next - fit_page fit_width zoom_in zoom_out - browser log}
-        layout Layout {setup}
+        edit Edit {add legacy - heading body annotation block separator - properties remove duplicate up down - undo redo}
+        view View {edit_layout review_pdf - previous next - fit_page fit_width zoom_in zoom_out - browser log}
+        layout Layout {setup properties}
         help Help {help}
     } {
         ttk::menubutton $f.menurow.$name -text $label -menu $f.menurow.$name.menu
@@ -21,7 +21,7 @@ proc ::GX::buildPrintPage {} {
         pack $f.menurow.$name -side left
     }
     ttk::frame $f.tools;pack $f.tools -fill x
-    viewerCommandToolbarCreate $f $f.tools {add preview cancel_document export print fit_page fit_width previous next zoom_in zoom_out log}
+    viewerCommandToolbarCreate $f $f.tools {add properties undo redo preview cancel_document edit_layout review_pdf export print fit_page zoom_in zoom_out}
     ttk::frame $f.status;pack $f.status -side bottom -fill x
     ttk::label $f.status.document -textvariable ::GX::ui(printStatus) -anchor w -wraplength 850
     ttk::label $f.status.cups -textvariable ::GX::ui(cupsStatus) -anchor w -wraplength 850
@@ -63,14 +63,28 @@ proc ::GX::buildPrintPage {} {
     grid rowconfigure $main.preview.viewport 0 -weight 1;grid columnconfigure $main.preview.viewport 0 -weight 1
     set ui(printPageCanvas) $main.preview.viewport.canvas
     $ui(printPageCanvas) create text 30 30 -anchor nw -width 550 -fill white -font TkHeadingFont -text {No assembled document. Add content, then Update Preview.}
-    bind $ui(printPageCanvas) <ButtonPress-1> {%W scan mark %x %y;focus %W}
-    bind $ui(printPageCanvas) <B1-Motion> {%W scan dragto %x %y 1}
+    bind $ui(printPageCanvas) <ButtonPress-1> {::GX::printStudioPosterPress %x %y}
+    bind $ui(printPageCanvas) <B1-Motion> {::GX::printStudioPosterMotion %x %y}
+    bind $ui(printPageCanvas) <ButtonRelease-1> ::GX::printStudioPosterRelease
+    bind $ui(printPageCanvas) <Escape> ::GX::printStudioPosterEscape
+    bind $ui(printPageCanvas) <Double-Button-1> {::GX::printStudioInvoke properties}
+    bind $ui(printPageCanvas) <ButtonPress-2> {%W scan mark %x %y}
+    bind $ui(printPageCanvas) <B2-Motion> {%W scan dragto %x %y 1}
     bind $ui(printPageCanvas) <Button-4> {%W yview scroll -3 units}
     bind $ui(printPageCanvas) <Button-5> {%W yview scroll 3 units}
+    bind $ui(printPageCanvas) <Control-Button-4> {::GX::printStudioView zoom_in;break}
+    bind $ui(printPageCanvas) <Control-Button-5> {::GX::printStudioView zoom_out;break}
     bind $ui(printPageCanvas) <Configure> ::GX::printStudioPageResize
     foreach {id title} {content Content document Document setup {Page setup} printer {Printer / Export}} {ttk::frame $main.dock.$id -padding 6;$main.dock add $main.dock.$id -text $title}
     set ui(printDocumentTab) $main.dock.document;set ui(printSetupTab) $main.dock.setup
     set c [uiFieldScrollableCreate $main.dock.content.form 330];pack $main.dock.content.form -fill both -expand 1
+    ttk::labelframe $c.authored -text {Insert poster content};pack $c.authored -fill x -pady 3
+    foreach {id label} {heading Heading body {Body text} annotation Annotation block {Color block} separator Separator} {
+        ttk::button $c.authored.$id -text $label -command [list ::GX::viewerCommandInvoke $f $id]
+        pack $c.authored.$id -fill x -padx 3 -pady 1
+    }
+    ttk::label $c.gestures -text {Select and drag an object; drag a corner to resize. Escape cancels. Middle-drag pans; wheel scrolls; Ctrl+wheel zooms. Update Preview prepares exact assets; Review PDF shows the actual export.} -wraplength 310
+    pack $c.gestures -fill x -pady 4
     ttk::frame $c.search;pack $c.search -fill x
     ttk::entry $c.search.query -textvariable ::GX::PrintStudio::state(query)
     ttk::button $c.search.refresh -text Refresh -command {::GX::printStudioCatalogRefresh 1}
@@ -108,9 +122,16 @@ proc ::GX::buildPrintPage {} {
     bind $d.queue <<TreeviewSelect>> {::GX::printStudioItemSelected;::GX::viewerGuiActionsRefresh .top.nb.print}
     ttk::frame $d.actions;pack $d.actions -fill x
     foreach {id title} {remove Remove up Up down Down duplicate Duplicate} {ttk::button $d.actions.$id -text $title -command [list ::GX::viewerCommandInvoke $f $id];pack $d.actions.$id -side left}
+    ttk::button $d.properties -text {Selected object: layout, text, colors…} -command [list ::GX::viewerCommandInvoke $f properties];pack $d.properties -fill x -pady 4
     foreach {key title} {item_columns {Table Variable IDs (comma-separated)} item_start {First source row (zero-based)} item_count {Explicit row count (maximum 10000)}} {ttk::label $d.l$key -text $title -anchor w;ttk::entry $d.$key -textvariable ::GX::PrintStudio::state($key);pack $d.l$key $d.$key -fill x -pady 2}
     ttk::button $d.apply -text {Apply item columns / range} -command ::GX::printStudioItemApply;pack $d.apply -fill x -pady 4
     set s [uiFieldScrollableCreate $main.dock.setup.form 330];pack $main.dock.setup.form -fill both -expand 1
+    ttk::label $s.layoutLabel -text {Layout mode};pack $s.layoutLabel -anchor w
+    uiFieldCreate $s.layout [dict create type choice values {poster grid} label {Layout mode} default poster] ::GX::PrintStudio::state(layout_mode)
+    pack $s.layout -fill x -pady 3
+    ttk::label $s.backgroundLabel -text {Page background};pack $s.backgroundLabel -anchor w
+    uiFieldCreate $s.background [dict create type color label {Page background} default #ffffff] ::GX::PrintStudio::state(page_background)
+    pack $s.background -fill x -pady 3
     foreach {key label type values} {
         print_page {Paper size} choice {A4 A3 LETTER}
         print_orientation Orientation choice {portrait landscape}
@@ -129,7 +150,7 @@ proc ::GX::buildPrintPage {} {
         pack $s.$key -fill x -pady 3
     }
     set ui(printPaper) $s.print_page.entry
-    ttk::label $s.note -text {Tables and text paginate with repeated headers. Artwork uses the selected N-up grid. Changes require an updated document Preview.} -wraplength 320 -justify left;pack $s.note -fill x -pady 6
+    ttk::label $s.note -text {Poster: freely place physical object frames; columns are guides. Text or tables that exceed a frame report overflow: enlarge the frame or edit its content/range. Grid: tables and text paginate; artwork uses N-up cells. Update Preview, then Review PDF before export.} -wraplength 320 -justify left;pack $s.note -fill x -pady 6
     set p [uiFieldScrollableCreate $main.dock.printer.form 330];pack $main.dock.printer.form -fill both -expand 1
     ttk::label $p.printerLabel -text {CUPS destination};pack $p.printerLabel -anchor w
     ttk::combobox $p.printer -textvariable ::GX::cfg(print_printer) -state readonly;uiFieldSelectorWithinViewer $p.printer .;pack $p.printer -fill x

@@ -11,12 +11,23 @@ Interactive Document snapshot and a recent operation receipt.
 unclean or corrupt status. It cannot write the Session.
 `workbenchRecoveryResolve document_id recover|saved` explicitly restores the
 chosen snapshot through the normal Interactive Document Update API.
-`workbenchRecoveryMarkSaved` / `workbenchRecoveryClose` compact a valid journal
-and mark the current committed state clean. `workbenchRecoveryForget` explicitly
-removes only the recovery journal.
+`workbenchRecoveryMarkSaved document_id` / `workbenchRecoveryClose document_id`
+compact a valid journal and mark the current committed state clean. Explicit
+Save can create an absent journal from the current valid Document. A corrupt
+existing journal returns `status corrupt` with its reason and remains unchanged;
+callers must inspect that status as well as exceptions.
+`workbenchRecoveryForget document_id` explicitly removes only the recovery journal.
 
-The versioned inert UTF-8 journal has a SHA-256 envelope, same-directory atomic
-replacement, a 16 MiB size limit and at most 128 recent semantic receipts. It
+The inert journal retains complete UTF-8 semantic snapshots. The existing raw
+`GXTXT_RECOVERY_V1` encoding remains readable. If the full envelope would exceed
+the stored-byte budget, CORE writes a lossless `GXTXT_RECOVERY_ZLIB_V1` body;
+it does not omit saved/latest snapshots or shorten their History. The envelope
+SHA-256 checks the stored body before decoding. Each saved/latest snapshot's
+SHA-256 separately checks its exact uncompressed UTF-8 payload. The same
+Document/provider generation guards and same-directory atomic replacement
+apply to both encodings. The journal has a 16 MiB stored-file budget and at most
+128 recent semantic receipts. If the compressed envelope still exceeds the
+budget, the write fails visibly and preserves the previous checkpoint. It
 retains the last saved snapshot separately from the latest consistent checkpoint,
 including provider/Document generation, revision, format, payload fingerprint,
 source identities, geometry references and operation provenance. Native geometry

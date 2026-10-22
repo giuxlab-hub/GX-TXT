@@ -343,6 +343,7 @@ proc ::GX::CurveWorkbench::_fit {w {selected 0}} {
     # The Native authority includes real controls/segments without sample masks.
     set bounds [::GX::Native2D::core selection_set_bounds $st($w,scene) $st($w,semanticSet)]
     ::GX::Native2D::core fit_bounds $st($w,scene) $bounds
+    _coordinateMagnify $w 1
     _draw $w;_save $w
 }
 

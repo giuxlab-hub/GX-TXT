@@ -244,7 +244,7 @@ proc ::GX::_portableResourceImportDataset {staging {newId ""} {prefix dataset}} 
             foreach formula [list $forward $inverse] {if {$formula ne ""} {unitFormulaValidate $formula}}
             if {[dict get $variable value_kind] ni {number text elapsed_time}} {error "Invalid Variable value kind"}
             if {[dict get $variable decimal_separator] ni {. ,} || [dict get $variable time_reference] ni {elapsed absolute}} {error "Invalid Variable source-format semantics"}
-            if {[dict get $variable semantic_source] ni {user importer plugin inferred default}} {error "Invalid Variable semantic source"}
+            if {[dict get $variable semantic_source] ni {user importer plugin generator inferred default}} {error "Invalid Variable semantic source"}
             if {[dict get $variable semantic_role] ne "" && ![regexp {^[A-Za-z_][A-Za-z0-9_.-]*$} [dict get $variable semantic_role]]} {error "Invalid Variable semantic role"}
             if {[dict get $variable value_kind] eq "elapsed_time" && ([dict get $variable value_format] ne "hms" || [dict get $variable unit] ni {s min h})} {error "Invalid elapsed-time format/unit"}
             if {[dict get $variable value_kind] ne "elapsed_time" && [dict get $variable value_format] ne ""} {error "Value format requires elapsed_time"}
@@ -561,8 +561,14 @@ proc ::GX::portableResourceGuiImport {{expectedType ""}} {
         foreach id $dependencies {if {[datasetField $id id ""] ne ""} {lappend collisions $id}}
         set installed [expr {$module ne "" && [moduleField $module descriptor ""] ne ""}]
         set ui(portableResourceScientificPossible) [expr {[dict get $info capture_mode] eq "scientific" && $module eq "plot.dataset" && $installed && ![llength $collisions]}]
-        set graphDetails "Graph: $module / [dict get $info graph_id] / [dict get $info variant_id]\nCapture: [dict get $info capture_mode]\nEmbedded Dataset dependencies: [dict get $info dependency_count] ([join $dependencies {, }])\nColliding IDs: [expr {[llength $collisions] ? [join $collisions {, }] : "none"}]\nSource plugin available: [expr {$installed ? "yes" : "no"}]\nImport target: new Detached Clone"
-        ttk::label $w.graph -text $graphDetails -justify left
+        set graphDetails "Graph: $module / [dict get $info graph_id] / [dict get $info variant_id]\nCapture: [dict get $info capture_mode]\nDataset imports into Session: [dict get $info dependency_count] ([join $dependencies {, }])\nColliding import IDs: [expr {[llength $collisions] ? [join $collisions {, }] : "none"}]"
+        if {[dict exists $info native_snapshot_dataset_count] && [dict get $info native_snapshot_dataset_count]>0} {
+            append graphDetails "\nFrozen native snapshot Datasets: [dict get $info native_snapshot_dataset_count]"
+            foreach id [split [dict get $info native_snapshot_dataset_ids] {;}] {append graphDetails "\n  $id"}
+            append graphDetails "\nThese Datasets remain inside the Clone; their IDs are not registered in the destination Session."
+        }
+        append graphDetails "\nSource plugin available: [expr {$installed ? "yes" : "no"}]\nImport target: new Detached Clone"
+        ttk::label $w.graph -text $graphDetails -justify left -wraplength 640
         pack $w.graph -anchor w -padx 10 -pady 4
     }
     ttk::frame $w.buttons

@@ -35,13 +35,16 @@ proc ::GX::datasetPreviewConfigurationRead {id} {
     return $saved
 }
 proc ::GX::scientificDatasetFilterPersist {arrayName prefix} {
-    if {$prefix eq "previewMap" && [llength [info commands ::GX::datasetPreviewLiveSettingsChanged]]} {datasetPreviewLiveSettingsChanged}
     upvar #0 $arrayName state
     set filters [dict remove $state($prefix,filters) @hidden_filters]
     dict set filters @predicates [datasetPublicationV2DictDefault $filters @predicates {}]
     set config [dict merge [datasetPreviewConfigurationRead $state($prefix,dataset)] [dict create version 1 selections $filters ordering $state($prefix,ordering) types $state($prefix,filterTypes) schema_identity [_datasetScientificProfileIdentity $state($prefix,dataset)]]]
     foreach axis {x y z} {if {[info exists state($prefix,$axis)]} {dict set config $axis $state($prefix,$axis)}}
     _datasetFrameworkMetadataUpdate $::GX::currentSession $state($prefix,dataset) [dict create dataset_preview $config]
+    if {$prefix eq "previewMap"} {
+        set state($prefix,status) [scientificDatasetFilterMode $state($prefix,dimensions) $state($prefix,filters) $state($prefix,separate)]
+        if {[llength [info commands ::GX::datasetPreviewLiveSettingsChanged]]} {datasetPreviewLiveSettingsChanged}
+    }
 }
 proc ::GX::scientificDatasetFilterControls {parent id arrayName prefix {reset 0} {manualFamily {}} {semanticOnly 0} {preparedDimensions @discover}} {
     upvar #0 $arrayName state
@@ -51,7 +54,7 @@ proc ::GX::scientificDatasetFilterControls {parent id arrayName prefix {reset 0}
     set priorTypes [expr {[info exists state($prefix,filterTypes)]?$state($prefix,filterTypes):{}}]
     if {![info exists state($prefix,filters)] || $reset} {
         set saved [datasetPreviewConfigurationRead $id]
-        if {$saved ne {}} {
+        if {[dict exists $saved selections] && [dict exists $saved ordering]} {
             set state($prefix,filters) [dict get $saved selections]
             set state($prefix,ordering) [dict get $saved ordering]
             set priorTypes [datasetPublicationV2DictDefault $saved types {}]
@@ -138,7 +141,7 @@ proc ::GX::scientificDatasetFilterConfigure {parent arrayName prefix} {
     set state($prefix,draftIdentity) [list [interactiveDocumentSessionToken] $state($prefix,dataset) [_datasetScientificProfileIdentity $state($prefix,dataset)]]
     set state($prefix,draftPredicates) [datasetPublicationV2DictDefault $state($prefix,filters) @predicates {}]
     set state($prefix,draftSingle) [datasetPublicationV2DictDefault $state($prefix,filters) @single_series 0]
-    ttk::label $w.help -text {All predicates combine with AND. Membership uses a Tcl list of exact values. Grouping is independent of filters.} -wraplength 680
+    ttk::label $w.help -text {Predicates choose which source rows are included; all predicates must match (AND). Grouping then splits those rows into independent 2D curves. Grouping and row order do not change 3D XYZ, which currently requires no row predicates.} -wraplength 680
     pack $w.help -fill x -padx 8 -pady 8
     ttk::frame $w.add;pack $w.add -fill x
     set labels [lmap d $state($prefix,dimensions) {format {%s — %s [%s]} [dict get $d label] [dict get $d variable_id] [dict get $d dtype]}]
@@ -149,13 +152,16 @@ proc ::GX::scientificDatasetFilterConfigure {parent arrayName prefix} {
     ttk::button $w.add.go -text {Add predicate} -command [list ::GX::scientificDatasetFilterAdd $w $arrayName $prefix]
     foreach widget {variable predicate value upper go} {pack $w.add.$widget -side left -padx 3}
     bind $w.add.variable <<ComboboxSelected>> [list ::GX::scientificDatasetFilterPredicates $w $arrayName $prefix]
-    ttk::label $w.syntax -text {Value / membership list; the last field is the upper bound for between_inclusive.}
-    pack $w.syntax -anchor w -padx 8
+    bind $w.add.predicate <<ComboboxSelected>> [list ::GX::scientificDatasetFilterInputHelp $w $arrayName $prefix]
+    ttk::label $w.syntax -text {} -wraplength 680 -justify left
+    pack $w.syntax -fill x -padx 8
     listbox $w.predicates -height 5 -width 95 -exportselection 0
     pack $w.predicates -fill both -expand 1 -padx 8 -pady 6
     foreach filter $state($prefix,draftPredicates) {$w.predicates insert end $filter}
     ttk::button $w.remove -text {Remove selected predicate} -command [list ::GX::scientificDatasetFilterRemove $w $arrayName $prefix]
     pack $w.remove -anchor w -padx 8
+    ttk::button $w.clear -text {Clear predicates in this draft} -command [list ::GX::scientificDatasetFilterClearDraft $w $arrayName $prefix]
+    pack $w.clear -anchor w -padx 8 -pady 3
     ttk::label $w.groupLabel -text {Separate series by (Ctrl/Shift selects several variables):}
     pack $w.groupLabel -anchor w -padx 8 -pady 6
     listbox $w.groups -selectmode extended -exportselection 0 -height 6 -width 75
@@ -168,19 +174,26 @@ proc ::GX::scientificDatasetFilterConfigure {parent arrayName prefix} {
     }
     ttk::checkbutton $w.single -text {I confirm that ungrouped rows represent one continuous scientific series} -variable ${arrayName}($prefix,draftSingle)
     pack $w.single -anchor w -padx 8 -pady 6
+    ttk::label $w.groupHelp -text {Select grouping variables to keep different traces or experiments separate. With none selected, numeric-only rows form one curve; ambiguous text identities require your explicit single-series confirmation. Never confirm this merely to join independent experiments.} -wraplength 680 -justify left
+    pack $w.groupHelp -fill x -padx 8
     ttk::frame $w.order;pack $w.order -fill x -padx 8
     ttk::label $w.order.label -text {Within-series order:}
     ttk::combobox $w.order.variable -values [linsert $labels 0 {Source row order}] -state readonly -width 48
     set idx [lsearch -exact [lmap d $state($prefix,dimensions) {dict get $d variable_id}] $state($prefix,ordering)]
     $w.order.variable current [expr {$idx+1}]
     pack $w.order.label $w.order.variable -side left -padx 3
+    ttk::label $w.orderHelp -text {Source row order keeps acquisition order. Selecting a variable sorts points within each 2D series; this can change which points are joined, not the source values. Apply saves this configuration; closing the dialog cancels its draft.} -wraplength 680 -justify left
+    pack $w.orderHelp -fill x -padx 8 -pady 4
     ttk::label $w.error -text {} -foreground #a02020 -wraplength 680;pack $w.error -fill x -padx 8
     ttk::button $w.apply -text {Apply configuration} -command [list ::GX::scientificDatasetFilterConfigureApply $w $arrayName $prefix]
     pack $w.apply -anchor e -padx 8 -pady 8
+    ttk::button $w.manual -text {Help: filters, grouping and order} -command [list ::GX::documentationBrowserOpenApi GRAPH_SERIES_API_v1]
+    pack $w.manual -anchor w -padx 8 -pady 4
+    bind $w <F1> {::GX::documentationBrowserOpenApi GRAPH_SERIES_API_v1;break}
     # Existing Preview controls are ancestors of this toplevel. Keep its nested
     # form frames above their background after the shared appearance pass.
     raise $w.add;raise $w.order
-    if {[llength $labels]} {$w.add.variable current 0;scientificDatasetFilterPredicates $w $arrayName $prefix}
+    if {[llength $labels]} {$w.add.variable current 0;scientificDatasetFilterPredicates $w $arrayName $prefix} else {$w.add.go state disabled;$w.syntax configure -text {No enabled source Variable is available for a predicate.}}
 }
 proc ::GX::scientificDatasetFilterPredicates {w arrayName prefix} {
     upvar #0 $arrayName state
@@ -188,13 +201,46 @@ proc ::GX::scientificDatasetFilterPredicates {w arrayName prefix} {
     set predicates {exact_equal not_equal in_set}
     if {[dict get $d dtype] ne "string"} {lappend predicates less_than less_equal greater_than greater_equal between_inclusive is_finite is_nonfinite}
     $w.add.predicate configure -values $predicates;$w.add.predicate current 0
+    scientificDatasetFilterInputHelp $w $arrayName $prefix
+}
+proc ::GX::scientificDatasetFilterInputHelp {w arrayName prefix} {
+    upvar #0 $arrayName state
+    set d [lindex $state($prefix,dimensions) [$w.add.variable current]]
+    if {$d eq {}} {$w.syntax configure -text {No enabled source Variable is available.};return}
+    set predicate [$w.add.predicate get];set unit [dict get $d unit]
+    set context "[dict get $d variable_id], [dict get $d dtype][expr {$unit eq {}?{}:", source unit $unit"}]"
+    switch $predicate {
+        between_inclusive {set help {First field: lower bound. Last field: upper bound. Both are included; enter finite source-unit numbers with lower <= upper.}}
+        in_set {set help {First field: one or more exact source values as a Tcl list, separated by spaces; brace text containing spaces. Last field is unused.}}
+        is_finite - is_nonfinite {set help {No value or bound is needed for this predicate.}}
+        default {set help {First field: one exact source value (not its rounded display label). Numeric values must be finite; use a decimal or scientific notation for float64 and exact decimal integers for integer identities. Last field is unused.}}
+    }
+    $w.syntax configure -text "$context\n$help"
+    $w.add.value configure -state [expr {$predicate in {is_finite is_nonfinite}?{disabled}:{normal}}]
+    $w.add.upper configure -state [expr {$predicate eq {between_inclusive}?{normal}:{disabled}}]
+}
+proc ::GX::scientificDatasetFilterClearDraft {w arrayName prefix} {
+    upvar #0 $arrayName state
+    if {[catch {scientificDatasetFilterDraftRequire $arrayName $prefix} reason]} {$w.error configure -text $reason;return}
+    set state($prefix,draftPredicates) {}; $w.predicates delete 0 end
+    $w.error configure -text {}
+    $w.syntax configure -text {Draft predicates cleared. Apply to save; close to cancel. Existing family value selections are separate: use Select values / All rows in the parent controls to clear them.}
 }
 proc ::GX::scientificDatasetFilterAdd {w arrayName prefix} {
     upvar #0 $arrayName state
     if {[catch {
         scientificDatasetFilterDraftRequire $arrayName $prefix
         set d [lindex $state($prefix,dimensions) [$w.add.variable current]]
+        if {$d eq {}} {error {Select an enabled source Variable before adding a predicate.}}
         set predicate [$w.add.predicate get]
+        if {$predicate eq {between_inclusive}} {
+            if {[string trim [$w.add.value get]] eq {}} {error {Enter the inclusive lower bound in the first value field, using the Variable's source unit.}}
+            if {[string trim [$w.add.upper get]] eq {}} {error {Enter the inclusive upper bound in the last field, using the Variable's source unit.}}
+        } elseif {$predicate eq {in_set} && [string trim [$w.add.value get]] eq {}} {
+            error {Enter at least one exact source value in the first field; separate membership values with spaces.}
+        } elseif {$predicate ni {is_finite is_nonfinite in_set} && [dict get $d dtype] ne {string} && [string trim [$w.add.value get]] eq {}} {
+            error "Enter a finite [dict get $d dtype] source value for $predicate in the first value field. The last field is only for an inclusive upper bound."
+        }
         set filter [dict create filter_variable_id [dict get $d variable_id] predicate $predicate]
         switch $predicate {
             in_set {dict set filter values [$w.add.value get]}
@@ -229,13 +275,19 @@ proc ::GX::scientificDatasetFilterDraftRequire {arrayName prefix} {
     set now [list [interactiveDocumentSessionToken] $state($prefix,dataset) [_datasetScientificProfileIdentity $state($prefix,dataset)]]
     if {$now ne $state($prefix,draftIdentity)} {error {Dataset, schema or Session changed. Reopen filter configuration before applying.}}
 }
-proc ::GX::scientificDatasetFilterRequests {dimensions selections separate} {
+proc ::GX::scientificDatasetFilterSelectionPredicates {dimensions selections} {
+    # Row selection is independent of the 2D curve partition/order contract.
+    # Keep explicit, hidden and legacy membership predicates in one owner.
     set filters [concat [datasetPublicationV2DictDefault $selections @predicates {}] [datasetPublicationV2DictDefault $selections @hidden_filters {}]]
-    set id [expr {[llength $dimensions]?[dict get [lindex $dimensions 0] dataset_id]:{}}]
     foreach d $dimensions {
         set vid [dict get $d variable_id];set values [datasetPublicationV2DictDefault $selections $vid {}]
         if {[llength $values]} {lappend filters [dict create filter_variable_id $vid predicate in_set values $values]}
     }
+    return $filters
+}
+proc ::GX::scientificDatasetFilterRequests {dimensions selections separate} {
+    set filters [scientificDatasetFilterSelectionPredicates $dimensions $selections]
+    set id [expr {[llength $dimensions]?[dict get [lindex $dimensions 0] dataset_id]:{}}]
     set groups [datasetPublicationV2DictDefault $selections @grouping {}]
     if {$id ne {} && ![catch {set manifest [datasetPreviewCurveManifest $id]}] && $manifest ne {}} {
         foreach role [dict get $manifest grouping_roles] {

@@ -93,7 +93,10 @@ real native picking at bounded viewport pixel coordinates. A short pointer click
 uses it; a longer drag remains orbit/pan. Subscribe to `selected` for its actual
 `native_pick` result: hit, layer_id, world/local point, normal and native cell/
 point index where returned by the backend. A miss is hit0, never fabricated
-selection. Inspect exposes the last selection without repainting a fake highlight.
+selection. The same native pick request renders its genuine selection marker into
+the existing transfer frame before the host emits `selected`. A miss clears that
+marker. No orbit, camera change, scene rebuild or extra scientific Job is needed.
+Inspect exposes the last selection; the host adds no synthetic highlight.
 Selection has no scientific edit/publish effect. `released` is an ownership event,
 not a successful render. Queue/cancellation/generation rules apply equally to picks.
 
@@ -114,3 +117,41 @@ waits asynchronously for the previous worker of that same instance to be reaped,
 preventing old/new frame writers racing. Release defers cache removal until all
 its retiring writers are gone. This avoids a zombie remaining after an otherwise
 successful native window close; Tk stays responsive while cleanup completes.
+
+## Exact planar cell fields (dev109 integration)
+
+The additive source `{kind cell_field spec PLOT_V4_SPEC}` uses the existing
+Plot v4 `GXTXT_CELL_FIELD_BINDING_v1` contract. One complete, unfiltered triangular
+field binds canonical node IDs, connectivity, cell IDs and scalar values.
+`cellFieldNativeScene` prepares the same source topology used by the 2D field
+owner; it does not triangulate centroids or interpolate cell values onto nodes.
+Compatible physical X/Y lengths use the X coordinate unit. The display embeds
+that plane at Z=0; it is neither a 3D FEM solution nor a CAD volume.
+
+The existing native polydata API receives one cell-associated scalar per triangle.
+A compatible precompiled adapter must advertise `exact_planar_cell_field`; an
+older binary produces an explicit error, with no compilation fallback. Initial
+framing uses the existing native Fit Scene service and its physical depth range.
+Session lifetime, both Dataset scientific identities and their coordinate contexts
+are checked before interaction. A real source change requires explicit rebinding.
+2D-only grouping does not enter this complete topology contract.
+
+Native pick indices remain renderer ordinals. Cell-field pick receipts additionally
+map these to exact `source_cell_id` / `source_node_id`, their canonical Dataset IDs
+and zero-based source-row ordinals; IDs never pass through floating-point arrays.
+The source binding, scalar units and planar embedding appear in the visible status.
+This extension preserves the readonly component and existing renderer/worker limits.
+It does not provide editable CAD operations.
+
+The isolated CORE adapter contract has actual retained 303-node/544-triangle FEM
+data and malformed-connectivity negatives. That is not installed Viewer acceptance.
+The initial tiny-frame failure is preserved; corrected framing and installed GUI
+interaction remain separately verified gates.
+
+
+The native host keeps the bound source caption in a separate stable label from
+transient activity (Loading, Rendering, Ready, selected). A wrapped scientific
+caption must not repeatedly change the canvas height as activity changes: such
+layout feedback would otherwise enqueue resize renders during genuine idle.
+Source/Session validation, source captions, camera and process ownership retain
+their existing authorities. Error text remains visible with the previous frame.

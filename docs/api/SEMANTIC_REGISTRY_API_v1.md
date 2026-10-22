@@ -55,7 +55,7 @@ valid in dataset metadata.
 ## Inference and explicit choices
 
 Each variable stores `semantic_role`, `semantic_source` and
-`semantic_reason`. Sources are `user`, `importer`, `plugin`,
+`semantic_reason`. Sources are `user`, `importer`, `plugin`, `generator`,
 `inferred`, or `default`. A legacy nonempty role migrates as
 `importer`; it is preserved. A blank role or GUI `Auto` uses temporal
 kind/reference first, then registered name aliases, then an unambiguous unit
@@ -71,7 +71,9 @@ have any user-specified semantic role.
 ```
 
 Importers/plugins may set `semantic_source=importer|plugin` in the same public
-schema update call. A user-selected role is not overwritten by Auto inference
+schema update call. Registered Session Generators may declare `generator`;
+public publication, transforms and portable Dataset transport preserve this
+origin and its existing semantic reason. A user-selected role is not overwritten by Auto inference
 when unit, name or kind later changes. The runtime variable metadata also
 carries the source/reason for Octave consumers.
 

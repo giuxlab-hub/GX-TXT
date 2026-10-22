@@ -1,0 +1,143 @@
+{
+  "schema": "gxtxt.viewer_development_project.v1",
+  "module_id": "viewer.electromagnetics_studio",
+  "version": "0.3.3",
+  "language": "cpp",
+  "source": "handlers.cpp",
+  "design": "design.gxtxt-viewer",
+  "profile": "document_view_v1",
+  "capabilities": [
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "version": 1,
+      "operations": [
+        "value_set",
+        "text_set",
+        "document_bind",
+        "em_command"
+      ]
+    },
+    {
+      "api_id": "PLOT_DATASET_API_v4",
+      "version": 4,
+      "operations": [
+        "widgetCreate",
+        "cellFieldProfileSpec",
+        "upsertPlotFromSpec",
+        "render",
+        "widgetExport"
+      ]
+    },
+    {
+      "api_id": "SESSION_WORKSPACE_API_v1",
+      "version": 1,
+      "operations": [
+        "create",
+        "get",
+        "update",
+        "list",
+        "export",
+        "import"
+      ]
+    },
+    {
+      "api_id": "SCIENTIFIC_RECIPE_API_v1",
+      "version": 1,
+      "operations": [
+        "scientificHistoryViewerRecord",
+        "scientificHistoryViewerNavigate"
+      ]
+    },
+    {
+      "api_id": "ELECTROMAGNETIC_SIMULATION_API_v1",
+      "version": 1,
+      "operations": [
+        "defaultModel",
+        "validate",
+        "saveModel",
+        "listModels",
+        "loadModel",
+        "runAsync",
+        "jobStatus",
+        "jobLog",
+        "cancel",
+        "resultDescribe",
+        "resultPreview",
+        "publish",
+        "fieldDescribe"
+      ]
+    },
+    {
+      "api_id": "NATIVE_3D_GUI_HOST_API_v2",
+      "version": 2,
+      "operations": [
+        "cell_field_bind"
+      ]
+    },
+    {
+      "api_id": "CONFIGURATION_API_v1",
+      "version": 1,
+      "operations": [
+        "open_page"
+      ]
+    },
+    {
+      "api_id": "FILE_PUBLICATION_API_v1",
+      "version": 1,
+      "operations": [
+        "publish_bundle"
+      ]
+    }
+  ],
+  "provenance": {
+    "scientific_source": null,
+    "template": "restricted_cpp_viewer_v1",
+    "scope": "Original EM owners; finite model/Job/exact2D/planar3D/profile/Plots/native export/runtime actions with shared context availability; installed acceptance pending"
+  },
+  "tests": {
+    "events": [
+      {
+        "kind": 0,
+        "component": 0,
+        "value": 0
+      },
+      {
+        "kind": 1,
+        "component": 82,
+        "value": 0
+      },
+      {
+        "kind": 1,
+        "component": 83,
+        "value": 0
+      },
+      {
+        "kind": 1,
+        "component": 84,
+        "value": 0
+      },
+      {
+        "kind": 1,
+        "component": 85,
+        "value": 0
+      },
+      {
+        "kind": 1,
+        "component": 72,
+        "value": 0
+      },
+      {
+        "kind": 1,
+        "component": 78,
+        "value": 0
+      },
+      {
+        "kind": 1,
+        "component": 68,
+        "value": 0
+      }
+    ],
+    "expected_counter": 0,
+    "expected_values": {}
+  }
+}

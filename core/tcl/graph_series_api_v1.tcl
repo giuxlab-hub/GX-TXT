@@ -329,7 +329,9 @@ proc ::GX::graphSeriesDistinctValues {datasetId variableId {chunkRows 4096} {ref
     set cacheKey [list $::GX::currentSession $datasetId $variableId]
     if {!$refresh && [info exists graphSeriesDistinctCache($cacheKey)] &&
         [lindex $graphSeriesDistinctCache($cacheKey) 0] eq $signature} {
-        return [lindex $graphSeriesDistinctCache($cacheKey) 1]
+        set values [lindex $graphSeriesDistinctCache($cacheKey) 1]
+        if {[llength $values]>$maxValues} {error "Too many distinct values for a list ($maxValues maximum); use a typed filter"}
+        return $values
     }
     set stream [tableStreamOpenDataset $::GX::currentSession $datasetId [list $variableId] $chunkRows]
     set seen [dict create]; set out {}
@@ -435,7 +437,11 @@ proc ::GX::graphSeriesExpandGroups {moduleId graphId datasetId xVariableId yVari
     if {$categoryId ne ""} {
         foreach requested [dict get $defaults category_values] {lappend selectedCategories [graphSeriesCanonicalMember [dict get $categoryVariable dtype] $requested]}
     }
-    set stream [tableStreamOpenDataset $::GX::currentSession $datasetId $ids $chunkRows]
+    # A column can serve grouping, predicates, labels and categories at once.
+    # Read it once while retaining every logical role/filter and encounter order.
+    set projection {}
+    foreach id $ids {if {$id ni $projection} {lappend projection $id}}
+    set stream [tableStreamOpenDataset $::GX::currentSession $datasetId $projection $chunkRows]
     set encountered {};set labels [dict create]
     try {
         while {1} {

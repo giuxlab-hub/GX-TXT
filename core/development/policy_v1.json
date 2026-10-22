@@ -2,7 +2,62 @@
   "schema": "gxtxt.viewer_development_policy.v1",
   "profile": "cpp_view_v1",
   "sdk_version": 1,
-  "language": "C++17 restricted",
+  "language": "C++17, ordinary language with reviewed public CORE integration",
+  "language_support": {
+    "standard": "C++17 including C facilities",
+    "features": ["functions", "pointers/references", "classes/structs/enums/unions", "inheritance/virtual dispatch/RTTI", "overloads/templates", "recursion", "callbacks/lambdas", "malloc/free/new/delete/RAII", "containers/algorithms", "preprocessing/macros/assert", "exceptions", "threads/synchronization", "fork/wait"],
+    "runtime": "Debian system libc/libstdc++/libm/pthread; extra libraries and compiler options require purpose-specific review",
+    "ownership": "Local project logic/data/concurrency are allowed. Canonical Dataset/Schema/Publication/Session/Workspace/History/Job/scientific Plot remain public CORE responsibilities. Language admission does not approve an architectural bypass.",
+    "debugger": "Existing managed GDB/MI; detailed threading/fork/aggregate usability requires the next acceptance matrix, not assumed from compilation"
+  },
+  "admitted_headers": {
+    "vector": "Reviewed local application containers; canonical Dataset access stays in public CORE",
+    "array": "Reviewed local fixed-size application containers",
+    "list": "Reviewed local application sequences",
+    "deque": "Reviewed local application queues",
+    "map": "Reviewed local application key/value state, not a canonical store",
+    "unordered_map": "Reviewed local application indexes, not a canonical store",
+    "set": "Reviewed local application sets",
+    "unordered_set": "Reviewed local application sets",
+    "queue": "Reviewed local application traversal/queues, not a CORE Job scheduler",
+    "stack": "Reviewed local algorithm/application stacks",
+    "memory": "Reviewed RAII and smart pointers for project memory",
+    "utility": "Reviewed move/forward/pair facilities",
+    "algorithm": "Reviewed local application algorithms; no replacement scientific service",
+    "functional": "Reviewed callable wrappers/callbacks",
+    "string": "Reviewed project strings; SDK transport remains bounded",
+    "string_view": "Reviewed non-owning strings; respect lifetime and SDK transport",
+    "tuple": "Reviewed local typed values",
+    "type_traits": "Reviewed templates/type introspection",
+    "typeinfo": "Reviewed ordinary RTTI/polymorphism",
+    "exception": "Reviewed C++ exception lifecycle",
+    "stdexcept": "Reviewed project error handling",
+    "new": "Reviewed allocation/placement/lifetime",
+    "limits": "Reviewed type bounds",
+    "thread": "Reviewed local application threads; managed CORE Jobs remain authoritative",
+    "mutex": "Reviewed local synchronization",
+    "condition_variable": "Reviewed local synchronization",
+    "atomic": "Reviewed local synchronization",
+    "chrono": "Reviewed local time/duration measurement",
+    "cassert": "Reviewed genuine native assertions",
+    "assert.h": "Reviewed genuine native assertions",
+    "cstddef": "Reviewed size/pointer types",
+    "stddef.h": "Reviewed size/pointer types",
+    "cstdint": "Reviewed exact-width local types",
+    "stdint.h": "Reviewed exact-width local types",
+    "cstdlib": "Reviewed allocation/conversion; inspect actual process/file use for CORE ownership",
+    "stdlib.h": "Reviewed allocation/conversion; inspect actual process/file use for CORE ownership",
+    "cstring": "Reviewed bounded project memory/string handling",
+    "string.h": "Reviewed bounded project memory/string handling",
+    "cstdio": "Reviewed project-scoped I/O; never private canonical Dataset/Workspace access",
+    "stdio.h": "Reviewed project-scoped I/O; never private canonical Dataset/Workspace access",
+    "cerrno": "Reviewed native operation diagnostics",
+    "errno.h": "Reviewed native operation diagnostics",
+    "unistd.h": "Reviewed fork/_exit local process workflow; not a replacement CORE execution service or canonical file bypass",
+    "sys/types.h": "Reviewed native pid/type declarations",
+    "sys/wait.h": "Reviewed wait/waitpid for own forked child lifecycle",
+    "pthread.h": "Reviewed ordinary local thread/synchronization facilities"
+  },
   "python_authoring": false,
   "source_limit_bytes": 65536,
   "manual_limit_bytes": 262144,
@@ -27,6 +82,16 @@
     "scientific_import",
     "plot_discover",
     "plot_bind",
+    "document_bind",
+    "raster_bind",
+    "raster_tool",
+    "raster_command",
+    "tex_command",
+    "em_command",
+    "workbench_command",
+    "catalog_refresh",
+    "catalog_inspect",
+    "catalog_action",
     "numeric_discover",
     "numeric_evaluate",
     "numeric_statistics",
@@ -47,11 +112,38 @@
   "process_timeout_seconds": 12,
   "compile_timeout_seconds": 30,
   "capabilities": {
+    "WORKBENCH_3D_API_v1": {
+      "version": 1,
+      "operations": ["activateDocument", "guiMount", "guiInspect", "selectionSet", "guiCommand"]
+    },
+    "CONFIGURATION_API_v1": {
+      "version": 1,
+      "operations": ["open_page"]
+    },
+    "FILE_PUBLICATION_API_v1": {
+      "version": 1,
+      "operations": ["publish_bundle"]
+    },
+    "ELECTROMAGNETIC_SIMULATION_API_v1": {
+      "version": 1,
+      "operations": ["defaultModel", "validate", "saveModel", "listModels", "loadModel", "runAsync", "jobStatus", "jobLog", "cancel", "resultDescribe", "resultPreview", "publish", "fieldDescribe"]
+    },
+    "SCIENTIFIC_LIBRARY_MANAGER_API_v1": {
+      "version": 1,
+      "operations": ["libraryCatalogPage", "getProviderCapabilities", "getLibraryCapabilities", "listLibraryEntries", "openLibraryViewer", "verifyLibrary", "installLibrary", "updateLibrary", "removeLibrary", "registerLibrary", "unregisterLibrary", "invokeLibraryAction"]
+    },
     "VIEWER_GUI_HOST_API_v1": {
       "version": 1,
       "operations": [
         "value_set",
-        "text_set"
+        "text_set",
+        "document_bind",
+        "raster_bind",
+        "raster_tool",
+        "raster_command",
+        "tex_command",
+        "em_command",
+        "workbench_command"
       ]
     },
     "VIEWER_COMPONENT_DEMO_API_v1": {
@@ -63,7 +155,8 @@
     "NATIVE_3D_GUI_HOST_API_v2": {
       "version": 2,
       "operations": [
-        "demo_bind"
+        "demo_bind",
+        "cell_field_bind"
       ]
     },
     "NUMERIC_API_v1": {
@@ -98,7 +191,9 @@
         "create",
         "get",
         "update",
-        "list"
+        "list",
+        "export",
+        "import"
       ]
     },
     "SCIENTIFIC_RECIPE_API_v1": {
@@ -130,7 +225,7 @@
     "PLOT_DATASET_API_v4": {
       "version": 4,
       "operations": [
-        "widgetCreate"
+        "widgetCreate", "cellFieldProfileSpec", "upsertPlotFromSpec", "render", "widgetExport"
       ]
     },
     "DATASET_PUBLICATION_API_v2": {
@@ -156,6 +251,11 @@
       "DATASET_PUBLICATION_API_v2"
     ],
     "document_view_v1": [
+      "WORKBENCH_3D_API_v1",
+      "CONFIGURATION_API_v1",
+      "FILE_PUBLICATION_API_v1",
+      "ELECTROMAGNETIC_SIMULATION_API_v1",
+      "SCIENTIFIC_LIBRARY_MANAGER_API_v1",
       "VIEWER_GUI_HOST_API_v1",
       "VIEWER_COMPONENT_DEMO_API_v1",
       "NATIVE_3D_GUI_HOST_API_v2",
@@ -167,6 +267,11 @@
       "DATASET_PUBLICATION_API_v2"
     ],
     "scientific_view_v1": [
+      "WORKBENCH_3D_API_v1",
+      "CONFIGURATION_API_v1",
+      "FILE_PUBLICATION_API_v1",
+      "ELECTROMAGNETIC_SIMULATION_API_v1",
+      "SCIENTIFIC_LIBRARY_MANAGER_API_v1",
       "VIEWER_GUI_HOST_API_v1",
       "VIEWER_COMPONENT_DEMO_API_v1",
       "NATIVE_3D_GUI_HOST_API_v2",

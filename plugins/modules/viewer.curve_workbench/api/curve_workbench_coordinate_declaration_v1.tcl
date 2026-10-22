@@ -16,8 +16,11 @@ proc ::GX::CurveWorkbench::_coordinateDeclarationSession {w} {
 }
 proc ::GX::CurveWorkbench::declareCoordinates {w ids units rationale} {
     variable st;_coordinateDeclarationSession $w
+    _coordinateAxesAdmit $w $units
     set declaration [_coordinateDeclaration $units $rationale]
     if {$ids eq {}||[llength [lsort -unique $ids]]!=[llength $ids]} {error {Select distinct logical curves for the declaration}}
+    set configured [list [dict get $st($w,coordinateConfiguration) x_unit] [dict get $st($w,coordinateConfiguration) y_unit]]
+    if {$units ne $configured && ([lsort $ids] ne [lsort [dict keys $st($w,curves)]] || ([info exists st($w,images)] && [dict size $st($w,images)]))} {error {A coordinate declaration must preserve the populated workspace frame; declare the whole eligible frame explicitly or use a separate workspace}}
     _cancelGesture $w;_pointSyncApply $w
     set replacements {}
     foreach id $ids {
@@ -29,7 +32,7 @@ proc ::GX::CurveWorkbench::declareCoordinates {w ids units rationale} {
         dict for {key constraint} $st($w,constraints) {
             foreach field {a b axis} {if {[dict exists $constraint definition $field]&&[dict get $constraint definition $field] eq $id} {error {Coordinate declarations cannot reinterpret an existing geometric constraint; preserve it and create an independent scientific curve}}}
         }
-        if {[dict exists $record sketch_definition]&&[dict get $record sketch_definition family] ni {point path polyline line construction_line quadratic_bezier cubic_bezier spline}} {error {A metric CAD primitive retains its working units; use independent point geometry for scientific axes}}
+        if {[dict exists $record sketch_attributes gx.source_feature]} {error {Physical 3D planar geometry retains its source frame; create an independent numeric-plane object before declaring another meaning}}
         set previous [_coordinateUnits $record]
         if {[dict get $record source] ne {}} {
             if {[dict get $record x] eq [dict get $record y]&&[lindex $units 0] ne [lindex $units 1]} {error {One canonical Variable cannot acquire two different unit declarations}}
@@ -46,6 +49,14 @@ proc ::GX::CurveWorkbench::declareCoordinates {w ids units rationale} {
                 }
             }
         }
+        if {[dict get $record source] eq {}} {
+            dict lappend record coordinate_frame_origins [dict create units $previous relations [_coordinateSourceRelations $record] snapshot [::GX::datasetPublicationV2DictDefault $record coordinate_snapshot {}] variables [::GX::datasetPublicationV2DictDefault $record coordinate_snapshot_variables {}] assumptions [::GX::datasetPublicationV2DictDefault $record source_assumed_units {}] conversions [::GX::datasetPublicationV2DictDefault $record coordinate_conversions {}]]
+            dict unset record coordinate_snapshot
+            dict unset record coordinate_snapshot_variables
+            dict unset record source_assumed_units
+            dict unset record coordinate_conversions
+            dict set record coordinate_relations {}
+        }
         dict set record coordinate_units $units;dict unset record working_unit
         dict lappend record coordinate_declarations [dict merge $declaration [dict create previous_units $previous]]
         dict lappend record operations [dict merge $declaration [dict create previous_units $previous]]
@@ -54,6 +65,8 @@ proc ::GX::CurveWorkbench::declareCoordinates {w ids units rationale} {
     set before [_snapshotIds $w $ids];set undo $st($w,undo);set redo $st($w,redo)
     try {
         dict for {id record} $replacements {dict set st($w,curves) $id $record;dict unset st($w,coordinatePresentation) $id}
+        dict set st($w,coordinateConfiguration) x_unit [lindex $units 0]
+        dict set st($w,coordinateConfiguration) y_unit [lindex $units 1]
         set st($w,coordinateCache) {};set st($w,pointTableSignature) {}
         _coordinateFrameSync $w;_selectionScene $w;_history $w $before $ids
         _curveList $w;_pointList $w;_comparisonRefresh $w;_draw $w;_save $w
@@ -63,14 +76,24 @@ proc ::GX::CurveWorkbench::declareCoordinates {w ids units rationale} {
 }
 proc ::GX::CurveWorkbench::createCoordinateCurve {w name points units rationale} {
     variable st;_coordinateDeclarationSession $w
+    _coordinateAxesAdmit $w $units
     set declaration [_coordinateDeclaration $units $rationale];set name [string trim $name]
     if {$name eq {}||[string length $name]>160||[regexp {[\x00-\x1f]} $name]||[llength $points]<2||[llength $points]>65536} {error {Enter a curve name and 2–65536 explicit physical XY points}}
-    # Native2D validates the exact coordinates; no invented example observations.
-    set native [::GX::Native2D::core add $st($w,scene) $points]
+    set target [_coordinateSourceFrame $w [dict create coordinate_units $units]]
     set before [_snapshotIds $w {}];set undo $st($w,undo);set redo $st($w,redo);set id {}
+    # Native2D validates and, when needed, converts only the new geometry into
+    # the established frame. Existing coordinates are never reinterpreted.
+    set native [::GX::Native2D::core add $st($w,scene) $points]
     try {
+        set conversion {}
+        if {$target ne $units} {
+            set conversion [::GX::native2DComparisonFrame x $units $units [dict create output_units $target]]
+            ::GX::Native2D::core affine $st($w,scene) [list $native] [dict get $conversion reference_matrix] 0
+        }
+        if {[_coordinateWorkspaceEmpty $w]} {dict set st($w,coordinateConfiguration) x_unit [lindex $target 0];dict set st($w,coordinateConfiguration) y_unit [lindex $target 1]}
         set record [_newRecord $w $name [_sketchSamples $w $native] {} x y {} {} {} {} {} [list $declaration]]
-        dict set record coordinate_units $units;dict set record coordinate_declarations [list $declaration]
+        dict set record coordinate_units $target;dict set record coordinate_declarations [list $declaration]
+        if {$conversion ne {}} {dict set record coordinate_conversions [list [dict create operation normalize_new_scientific_curve source_units $units target_units $target matrix [dict get $conversion reference_matrix] existing_geometry_modified 0]]}
         set id [dict get $record id];dict set before $id {};_addRecord $w $record $native
         set st($w,active) $id;set st($w,objectSelection) [list $id];_selectionScene $w
         ::GX::Native2D::core fit $st($w,scene);_coordinateMagnify $w 1

@@ -147,6 +147,45 @@ historical rounded scientific notation for integer filters requires explicit
 review; it is never guessed or used to rewrite scientific data or stable IDs.
 Float members retain finite binary64 equality; text remains exact text.
 
+The shared Dataset Preview dialog separates row predicates from independent
+2D-series grouping. Select a Variable and predicate first. `exact_equal` needs
+one actual source value in the first field, in its source unit; a rounded table
+label may not equal the stored float64 value. `between_inclusive` needs a finite
+lower bound in the first field and upper bound in the last field, with lower
+not greater than upper. For example, a temperature in kelvin is filtered using
+kelvin bounds, irrespective of a separate display-unit preference. Both bounds
+are included. `is_finite` and `is_nonfinite` need no value. Multiple predicates
+combine with AND. The dialog disables unused fields and explains missing values
+without committing its draft.
+
+Add appends a normalized predicate; Remove affects its selected draft row.
+Clear predicates clears only explicit draft predicates. Apply commits the draft;
+closing the dialog cancels it. Legacy per-Variable family selections remain
+separate: use their parent Select values / All rows control to clear them.
+Grouping variables partition matching rows into separate 2D curves. Without
+grouping, numeric-only rows form one series; ambiguous text identities require
+explicit confirmation that these rows really belong to one continuous series.
+Source row order preserves acquisition order; choosing an order Variable sorts
+points within each series and can change which points a 2D line joins. These
+controls never change source values. F1 or the dialog's Help button opens this
+existing manual through the shared Documentation service.
+After Apply successfully saves the configuration, the Preview summary is refreshed
+from those actual predicates and grouping identities. Its previous rendered frame
+remains marked as a previous render until an explicit Render applies the settings.
+
+The current 3D XYZ Dataset preview uses unfiltered source rows. It ignores 2D
+grouping and row order, but refuses actual row predicates with a precise message;
+it does not silently discard them. Host helper
+`scientificDatasetFilterSelectionPredicates dimensions selections` returns only
+the existing explicit `@predicates`, hidden `@hidden_filters`, and nonempty legacy
+per-Variable membership predicates. It performs no Dataset access, grouping,
+normalization, mutation or scientific execution. The existing
+`scientificDatasetFilterRequests dimensions selections separate` uses that same
+list before its unchanged canonical normalization/grouping policy. Neither
+helper is a new Script Bridge operation. These dev109 source corrections still
+require focused installed GUI verification; the original reported thermal
+Session's 16-case acceptance remains open until that exact Session is available.
+
 ```tcl
 set member [dict create filter_variable_id v0003 predicate exact_equal value 7]
 set quality [dict create filter_variable_id v0004 \

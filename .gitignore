@@ -1,47 +1,65 @@
-# GX-TXT source checkout
-
-# Local state, private work records and generated output
-/_LOCAL_RELEASE_ARCHIVE/
-/NVIDIA Corporation/
-/validation/
-/demo_sessions/
-/docs/evidence/
-/docs/reports/
-/docs/developer/
-/docs/architecture/
-/plugin_packages/task008_release/
-/GX-TXT_REMAINING_WORK_TODO.md
-/SCRIPT_CATALOG.md
-/DEV*_TECHNICAL_HANDOFF.md
-**/*HANDOFF*.md
-**/*handoff*.md
-**/*AGENT_REPORT*.md
-**/*agent_report*.md
-/PUBLICATION_REVIEW_NOTES.txt
-
-# Local, non-distributed publication audit and verification evidence
-/_PUBLICATION_REVIEW/
-
-# Private-only test PDFs and their dependent generator
-/session_generator_libraries/gxtxt.accepted_generators/generators/document_extraction_teacher/
-
-# Files created during development or validation
-**/__pycache__/
+# Python caches, local virtual environments and tool caches.
+__pycache__/
 *.pyc
 *.pyo
-*.swp
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+
+# Generated native build intermediates. Keep distributed native libraries,
+# scientific OBJ geometry, packaged Viewers and SDK artifacts versioned.
+*.o
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+/build/
+/dist/
+node_modules/
+
+# Temporary/editor files and local runtime outputs.
 *.tmp
-*.bak
-*.orig
+*.temp
+*.swp
+*.swo
+*~
 .DS_Store
 Thumbs.db
+/tmp/
+/temp/
+/cache/
+/logs/
 *.log
 
-# User-local credentials and configuration
+# Scientific evidence, manuals and examples may require authentic log files.
+!docs/**/*.log
+!release_evidence/**/*.log
+!validation/**/*.log
+!examples/**/*.log
+!plugins/**/examples/**/*.log
+
+# Plugin Manager's generated staging and managed local rollback copies.
+# These remain on disk; released packages and archives are not excluded.
+/plugins/.staging/
+/plugins/modules/.gx-rollback-*/
+
+# Local secrets. Keep documented configuration templates available.
 .env
 .env.*
-*.pem
-*.p12
-*.pfx
-id_rsa
-id_ed25519
+!.env.example
+!.env.template
+!.env.sample
+.secrets/
+credentials.local.*
+
+# Standalone CAD/EM tutorial sources are preserved on docs/guides118 and in
+# separately staged example packages. The historical local copy stays on disk,
+# outside the principal framework source/distribution.
+/docs/dev109_tutorials69/

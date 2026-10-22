@@ -17,7 +17,7 @@ while {[gets stdin line] >= 0} {
             render {if {[llength $args] != 5} {error "render expects scene, PNG, width, height, stage"};set result [::GX3DEViewer::render {*}$args]}
             graphics_probe {if {[llength $args] != 1} {error "graphics_probe expects policy"};set result [::GX3DEViewer::graphics_probe {*}$args]}
             focus_logical {if {[llength $args]!=2} {error "focus_logical expects reference PNG"};set result [::GX3DEViewer::focus_logical {*}$args]}
-            pick {if {[llength $args] != 2} {error "pick expects x,y"};set result [::GX3DEViewer::pick {*}$args]}
+            pick {if {[llength $args] ni {2 3}} {error "pick expects x,y and optional PNG"};set result [::GX3DEViewer::pick {*}$args]}
             texture_anchor {if {[llength $args]!=5} {error "texture_anchor expects x,y,verified PNG,width,height"};set result [::GX3DEViewer::texture_anchor {*}$args]}
             preset {if {[llength $args] != 5} {error "preset expects preset, layer, PNG, width, height"};set result [::GX3DEViewer::preset {*}$args]}
             presentation {if {[llength $args]!=3} {error "presentation expects layer fields PNG"};set result [::GX3DEViewer::presentation {*}$args]}

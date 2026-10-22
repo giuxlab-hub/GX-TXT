@@ -1,0 +1,49 @@
+{
+  "schema": "gxtxt.viewer_icon_resources.v1",
+  "icons": {
+    "em_save_icon": {
+      "title": "Save",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "bf314c2b7983b489ede43dc29096a516321ba968a75d65238387343eac755614",
+      "png_sha256": "10e8f37f165368c661eaee65fb66c3b83b8bc9d6355c69a3c4685eaa0b474659",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "em_play_icon": {
+      "title": "Run FEM",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "942c860508991ab981c221d2e3390e91ee179acb0733a5cd6c6493b334dc2ab9",
+      "png_sha256": "597dbd5c1de8c6210f2d4049cdb5949ee42079c76582df066fffb0795b967288",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "em_stop_icon": {
+      "title": "Cancel",
+      "category": "Controls",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "89c2a7eeec10bf1690b4bdb2239738a823eda930a8008853ced9622be43ae074",
+      "png_sha256": "eff56dfc1ad7c9cb690cd23e06a3448831d43d1005be261433fcc66a457dc881",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "electromagnetics": {
+      "title": "Electromagnetics Studio",
+      "category": "Simulation & Modeling",
+      "license": "GPL-3.0-or-later",
+      "source_format": "png",
+      "sha256": "a8c0e967a0b4a77160f1956472953d39aa67e3ff3cc512e4557a8c82232d09ea",
+      "png_sha256": "6bb5f0c9f53e3f2c60163a3cd840386771c31f038d7c793cda52a3e186a93d99",
+      "width": "192",
+      "height": "192",
+      "alpha": "1"
+    }
+  }
+}

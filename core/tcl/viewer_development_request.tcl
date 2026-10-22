@@ -6,6 +6,18 @@ set argv0 __gxtxt_viewer_development_core_request__
 source [file join [file normalize $framework] gxtxt_pipeline.tcl]
 ::GX::defaults
 ::GX::loadModuleCatalog
+proc ::GX::_viewerDevelopmentCatalogAdd {target api row} {
+    upvar 1 $target result
+    set prior [::GX::datasetPublicationV2DictDefault $result $api {}]
+    set providers [::GX::datasetPublicationV2DictDefault $prior providers {}]
+    set merged 0;set index 0
+    foreach provider $providers {
+        if {[dict get $provider provider] eq [dict get $row provider] && [dict get $provider version] eq [dict get $row version]} {lset providers $index [dict merge $provider $row];set merged 1;break}
+        incr index
+    }
+    if {!$merged} {lappend providers $row}
+    dict set result $api [dict merge $prior $row [dict create providers $providers]]
+}
 proc ::GX::_viewerDevelopmentRequestApiCatalog {} {
     set result {}
     foreach module $::GX::moduleOrder {
@@ -14,21 +26,46 @@ proc ::GX::_viewerDevelopmentRequestApiCatalog {} {
         set d [::GX::parseIni $path]
         foreach api [::GX::splitList [::GX::descriptorValue $d public_apis ids {}]] {
             set section public_api.$api
-            dict set result $api [dict create api_id $api version [::GX::descriptorValue $d $section api_version {}] provider $module enabled [::GX::moduleIsEnabled $module] capabilities [::GX::descriptorValue $d $section capabilities {}] documentation [::GX::descriptorValue $d $section documentation {}]]
+            set documentation [::GX::descriptorValue $d $section documentation docs/api/$api.md]
+            set manual [::GX::documentationResolveApiRef $api]
+            if {[file isfile $manual] && [string first "$::GX::scriptDir/" "$manual/"]==0} {set documentation [string range $manual [expr {[string length $::GX::scriptDir]+1}] end]}
+            set row [dict create api_id $api version [::GX::descriptorValue $d $section api_version {}] provider $module provider_version [::GX::moduleField $module version] enabled [::GX::moduleIsEnabled $module] name [::GX::descriptorValue $d $section name {}] capabilities [::GX::descriptorValue $d $section capabilities {}] documentation $documentation declaration_ref plugins/modules/$module/module.ini declaration_sha256 [::GX::sha256File $path] deprecated [::GX::descriptorValue $d $section deprecated 0] superseded_by [::GX::descriptorValue $d $section superseded_by {}] new_viewer_admission [::GX::descriptorValue $d $section new_viewer_admission reviewed_sdk_only]]
+            if {[catch {set contract [::GX::modulePublicApiDocumentation $module $api]} reason]} {
+                dict set row metadata_error $reason
+            } elseif {$contract ne {}} {
+                dict set row summary [dict get $contract purpose]
+                dict set row host_operation_contracts [dict get $contract operations]
+                dict set row operations [dict keys [dict get $contract operations]]
+                dict set row host_context [::GX::datasetPublicationV2DictDefault $contract context {}]
+            }
+            ::GX::_viewerDevelopmentCatalogAdd result $api $row
         }
     }
     dict for {api command} [::GX::workbenchExtensionCoreApis] {
         regexp {_v([0-9]+)$} $api -> version
-        dict set result $api [dict create api_id $api version $version provider CORE enabled [expr {[llength [info commands $command]]>0}] operations {} documentation docs/api/$api.md]
+        set row [dict create api_id $api version $version provider CORE enabled [expr {[llength [info commands $command]]>0}] operations {} documentation docs/api/$api.md host_entrypoint $command]
+        if {[llength [info procs $command]]} {
+            set signature {}
+            foreach argument [info args $command] {set optional [info default $command $argument default];lappend signature [dict create name $argument required [expr {!$optional && $argument ne {args}}] default [expr {$optional?$default:{}}]]}
+            dict set row host_arguments $signature
+        }
+        if {[string match -nocase *apiinfo* $command] && [llength [info commands $command]]} {
+            if {![catch {$command} metadata]} {set row [dict merge $row $metadata]} else {dict set row metadata_error $metadata}
+        }
+        ::GX::_viewerDevelopmentCatalogAdd result $api $row
     }
     foreach {api command} {STATISTICAL_RESULT_SEMANTICS_API_v1 ::GX::StatisticsV1::apiInfo VIEWER_DEVELOPMENT_API_v1 ::GX::viewerDevelopmentApiInfo NATIVE2D_VIEWPORT_HOST_v1 ::GX::native2DViewportHostApiInfo SCIENTIFIC_EXECUTION_API_v1 ::GX::scientificExecutionApiInfo SCRIPT_JOB_API_v1 ::GX::scriptJobApiInfo PARALLEL_EXECUTION_API_v1 ::GX::parallelExecutionApiInfo VIEWER_GUI_HOST_API_v1 ::GX::viewerGuiHostApiInfo VIEWER_COMPONENT_DEMO_API_v1 ::GX::viewerGuiComponentDemoApiInfo NATIVE_3D_GUI_HOST_API_v1 ::GX::native3DGuiHostApiInfo NATIVE_3D_GUI_HOST_API_v2 ::GX::native3DGuiHostApiInfoV2 NATIVE2D_TEMPORARY_DISPLAY_API_v1 ::GX::native2DTemporaryDisplayApiInfo NATIVE_PLOT_DISPLAY_API_v1 ::GX::nativePlotDisplayApiInfo SOURCE_SURFACE_API_v1 ::GX::sourceSurfaceApiInfo UI_FIELD_API_v1 ::GX::uiFieldApiInfo} {
-        set meta [$command];dict set result $api [dict merge $meta [dict create api_id $api version [dict get $meta api_version] provider CORE enabled 1]]
+        set meta [$command];::GX::_viewerDevelopmentCatalogAdd result $api [dict merge $meta [dict create api_id $api version [dict get $meta api_version] provider CORE enabled 1 documentation docs/api/$api.md]]
     }
     # Analysis run selection does not disable the bundled Plot service.
     # Verify its real public activation; never set an analysis/config flag.
     if {[dict exists $result PLOT_DATASET_API_v4] && [file normalize [::GX::moduleField plot.dataset descriptor]] eq [file normalize [file join $::GX::scriptDir plugins modules plot.dataset module.ini]]} {
         dict set result PLOT_DATASET_API_v4 available [expr {![catch {::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4}]}]
         dict set result PLOT_DATASET_API_v4 availability_scope public_service_activation
+    }
+    if {[dict exists $result ELECTROMAGNETIC_SIMULATION_API_v1] && [file normalize [::GX::moduleField math.electromagnetic_simulation descriptor]] eq [file normalize [file join $::GX::scriptDir plugins modules math.electromagnetic_simulation module.ini]]} {
+        dict set result ELECTROMAGNETIC_SIMULATION_API_v1 available [expr {![catch {::GX::modulePublicApiActivate math.electromagnetic_simulation ELECTROMAGNETIC_SIMULATION_API_v1}]}]
+        dict set result ELECTROMAGNETIC_SIMULATION_API_v1 availability_scope public_service_activation
     }
     return $result
 }
@@ -81,7 +118,10 @@ try {
             } elseif {$op eq {icon_import}} {
                 if {[llength $args]!=5} {error {Icon import requires five typed arguments}}
                 lassign $args image id title category license
-                set asset [::GX::viewerGuiIconImport $image $title $category $license]
+                if {![catch {dict size $image}] && [dict exists $image source_format]} {
+                    if {[lsort [dict keys $image]] ne {source source_format} || [dict get $image source_format] ne {svg}} {error {Inline icon source requires SVG text}}
+                    set asset [::GX::viewerGuiIconImportSvg [dict get $image source] $title $category $license]
+                } else {set asset [::GX::viewerGuiIconImport $image $title $category $license]}
                 set model [::GX::viewerGuiDesignModelEdit $model icon put $id $asset]
             } elseif {$op ne {inspect}} {
                 if {$op ni {add property properties layout constraints bind remove duplicate reparent reorder metadata icon}} {error {Unsupported public Builder edit}}
@@ -128,9 +168,21 @@ try {
             dict set d handlers advance {arguments {window action} effect presentation label {Run C++ handler}}
             set result [::GX::viewerGuiDesignValidate $d]
         }
+        runtime_design {
+            if {[llength $arguments]!=1} {error {Compiled runtime admission requires its interface path}}
+            set design [::GX::viewerGuiDesignRead [lindex $arguments 0]]
+            set tools {}
+            foreach component [dict get $design components] {
+                if {[dict get $component type] ne {native2d}} continue
+                set catalog [::GX::datasetPublicationV2DictDefault [dict get $component properties] diagram_catalog {}]
+                if {$catalog ne {}} {dict set tools $catalog [concat {select wire junction label pan probe} [dict keys [dict get [::GX::native2DGeometryDiagramCatalog $catalog] symbols]]]}
+            }
+            set result [dict create design $design catalog [::GX::_viewerDevelopmentRequestApiCatalog] diagram_tools $tools]
+        }
         validate_design {
             if {[llength $arguments] ni {1 2} || ([llength $arguments]==2 && [lindex $arguments 1] ne {with_catalog})} {error {validate_design requires one inert design path and optional with_catalog}}
             set result [::GX::viewerGuiDesignRead [lindex $arguments 0]]
+            ::GX::_viewerGuiTeXDesignValidate $result 1
             if {[llength $arguments]==2} {set result [dict create design $result catalog [::GX::_viewerDevelopmentRequestApiCatalog]]}
         }
         numeric_add - numeric_sqrt - numeric_exp {

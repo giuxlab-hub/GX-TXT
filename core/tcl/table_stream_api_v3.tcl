@@ -34,9 +34,25 @@ proc ::GX::tableStreamRequire {stream {allowFailed 0}} {
 # Metadata-only compatibility query; the ordinary stream owner validates the
 # provider and each row-oriented scalar Variable without scanning payload rows.
 proc ::GX::tableStreamCompatibleSchema {session datasetId} {
-    set table [datasetStorageTableDescription $session $datasetId]
+    set descriptor [_datasetAccessDescriptor [file normalize $session] $datasetId]
+    set variables [dict get $descriptor variables]
+    if {$variables eq {}} {error "Dataset $datasetId has no variables"}
+    # Preserve the lossless table-shape admission of the old storage query,
+    # without letting that legacy query activate its explicit Session.
+    set dimension {};set count -1
+    foreach variable $variables {
+        set dimensions [datasetSchemaV3SplitIds [dict get $variable dimension_ids]]
+        set shape [datasetSchemaV3SplitIds [dict get $variable shape]]
+        if {[dict get $variable rank]!=1 || [llength $dimensions]!=1 || [llength $shape]!=1} {error "Dataset $datasetId is not losslessly table-shaped"}
+        if {$dimension eq {}} {set dimension [lindex $dimensions 0]}
+        if {[lindex $dimensions 0] ne $dimension} {error "Dataset $datasetId is not losslessly table-shaped: variables use different dimensions"}
+        set rows [lindex $shape 0]
+        if {![string is integer -strict $rows] || $rows<0} {error "Dataset $datasetId has an unknown table row count"}
+        if {$count<0} {set count $rows}
+        if {$rows!=$count} {error "Dataset $datasetId is not losslessly table-shaped: variable row counts differ"}
+    }
     set result {};set ids {}
-    foreach variable [dict get $table variables] {
+    foreach variable $variables {
         if {![dict get $variable enabled] || [dict get $variable dtype] ni [tableStreamKnownDtypes] || [string match complex* [dict get $variable dtype]]} continue
         lappend result $variable;lappend ids [dict get $variable variable_id]
     }
@@ -46,7 +62,6 @@ proc ::GX::tableStreamCompatibleSchema {session datasetId} {
     return $result
 }
 proc ::GX::tableStreamOpenDataset {session datasetId variableIds chunkRows {options {}}} {
-    variable currentSession
     variable tableStreamState
     variable tableStreamCounter
     set session [file normalize $session]
@@ -59,7 +74,6 @@ proc ::GX::tableStreamOpenDataset {session datasetId variableIds chunkRows {opti
     if {$numericTransport ni {values auto resource}} { error "Table Stream numeric_transport must be values, auto or resource" }
     if {![string is integer -strict $start] || $start < 0} { error "Table Stream start must be an integer >= 0" }
     if {![string is integer -strict $count] || $count < -1} { error "Table Stream count must be -1 or an integer >= 0" }
-    set currentSession $session
     set access ""
     try {
         set access [datasetAccessOpen $session $datasetId]

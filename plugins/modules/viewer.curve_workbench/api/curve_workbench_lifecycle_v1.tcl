@@ -5,6 +5,7 @@ proc ::GX::CurveWorkbench::_documentOwnerInvalidated {w event} {
     _pointSyncCancel $w
     set st($w,ownerInvalidated) 1
     set st($w,token) "invalidated:[dict get $event owner_generation]"
+    _residualDispose $w
     if {$st($w,publishBusy)} {
         # The existing cooperative Source/Transform checks cancel this request
         # at its next bounded boundary. Keep the owned Native scene alive until
@@ -34,8 +35,9 @@ proc ::GX::CurveWorkbench::_disposeInvalidated {w} {
     if {![info exists st($w,ownerInvalidated)]} return
     if {$st($w,publishBusy)} {set st($w,disposeAfter) [after 50 [list ::GX::CurveWorkbench::_disposeInvalidated $w]];return}
     set sources [_ownedSources $w];set failures {}
+    if {[catch {_residualDispose $w} message]} {lappend failures $message}
     set disposed {}
-    foreach property {selectionScene residualScene scene} {
+    foreach property {selectionScene scene} {
         if {$st($w,$property) eq ""||$st($w,$property) in $disposed} continue
         lappend disposed $st($w,$property)
         if {[catch {

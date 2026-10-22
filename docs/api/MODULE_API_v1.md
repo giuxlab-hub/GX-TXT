@@ -414,3 +414,23 @@ Saved acquisition toggles cannot disable import or select an analysis run.
 The existing selection serializer retains selectable Viewer/export availability;
 those six shipped provider choices are managed in Configuration → Modules.
 Analysis lists, groups and CORE filters use the shared eligibility predicate.
+
+### Transitive disable
+
+`moduleSetEnabled id 0` disables enabled consumers transitively through the
+registered dependency graph. A disabled dependency cannot leave an indirect
+consumer enabled. Each module is marked OFF before visiting its enabled
+consumers, so shared dependencies and cycles terminate. Always-available
+services retain their existing protection. Explicit `cascade=0` retains the
+existing noncascading behavior used when restoring a bulk module selection.
+
+## Saved activation and always-available providers
+
+Restoring `module_state.enabled` distinguishes scientific activation from CORE
+or UI provider availability. An always-available Viewer/service remains available
+but does not implicitly enable its optional scientific dependencies merely
+because a Session is opened. Modules explicitly selected by the saved manifest
+continue to resolve their declared dependencies through the existing activation
+owner, including legacy manifests that omit a required dependency from the list.
+Run-selection restoration retains its existing separate contract. The saved
+manifest is read without rewriting it or changing scientific Dataset contents.

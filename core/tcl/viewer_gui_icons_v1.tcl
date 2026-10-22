@@ -13,6 +13,13 @@ proc ::GX::viewerGuiIconImport {path title category license} {
     if {![dict get $response ok]} {error [dict get $response error]}
     return [dict get $response result]
 }
+proc ::GX::viewerGuiIconImportSvg {source title category license} {
+    if {[string length [encoding convertto utf-8 $source]]>262144} {error {Inline SVG exceeds 256 KiB}}
+    set helper [file join $::GX::scriptDir core python gxtxt_viewer_icons.py]
+    if {[catch {exec [runtimeToolRequired python] -I -B $helper import_svg $title $category $license [runtimeToolRequired magick] << $source} response]} {error "Icon import rejected: $response"}
+    if {![dict get $response ok]} {error [dict get $response error]}
+    return [dict get $response result]
+}
 proc ::GX::viewerGuiIconsValidate {icons} {
     if {[dict size $icons]>64||[string bytelength $icons]>2097152} {error {Project icon catalog exceeds 64 icons / 2 MiB}}
     dict for {id asset} $icons {
@@ -35,6 +42,15 @@ proc ::GX::viewerGuiIconPhoto {asset size} {
     set image [image create photo -data [dict get $response result png] -format png]
     dict set ::GX::ViewerGui::iconPhotos $key $image
     return $image
+}
+proc ::GX::_viewerGuiIconPathPhoto {path size} {
+    # Catalog-owned distributed PNG, not a new project resource/import.
+    set f [open $path rb];try {set pixels [read $f 262145]} finally {close $f}
+    if {[string length $pixels]>262144} {error {Catalog icon exceeds the shared icon resource bound}}
+    set helper [file join $::GX::scriptDir core python gxtxt_viewer_icons.py]
+    set response [exec [runtimeToolRequired python] -I -B $helper photo_png $size [runtimeToolRequired magick] << [binary encode base64 -maxlen 0 $pixels]]
+    if {![dict get $response ok]} {error [dict get $response error]}
+    return [image create photo -data [dict get $response result png] -format png]
 }
 proc ::GX::uiFieldIconApply {widget properties asset {catalog {}}} {
     set signature [list [ttk::style theme use] [tk scaling] $properties [dict get $asset png_sha256]]
@@ -72,11 +88,16 @@ proc ::GX::uiFieldIconApply {widget properties asset {catalog {}}} {
     # image/text gap, independently of the control's outside padding. Retain a
     # caller's base style; do not replace theme colors, layout, font or enablement.
     set base [$widget cget -style];if {$base eq {}} {set base [winfo class $widget]}
-    if {[regexp {^GXIconSpace[0-9]+\.(.+)$} $base -> original]} {set base $original}
+    set selectedStyle 0
+    while {[regexp {^(GXSelected|GXIconSpace[0-9]+)\.(.+)$} $base -> wrapper original]} {
+        if {$wrapper eq {GXSelected}} {set selectedStyle 1}
+        set base $original
+    }
     set space [expr {int([datasetPublicationV2DictDefault $properties icon_spacing 4]*max(1.0,[tk scaling]/1.333333))}]
     set style GXIconSpace${space}.$base
     ttk::style configure $style -space $space
     $widget configure -style $style
+    if {$selectedStyle} {native2DViewportToolState $widget [expr {{selected} in [$widget state]}]}
 }
 proc ::GX::_uiFieldIconTooltip {widget} {
     if {![dict exists $::GX::ViewerGui::iconBindings $widget properties]} return

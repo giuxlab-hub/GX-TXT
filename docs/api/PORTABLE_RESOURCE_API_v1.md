@@ -26,6 +26,15 @@ A Graph contains `graph/graph.png`, `graph-state.json`, optional notes/metadata/
 
 Graph Dataset dependencies use the same Dataset transport rules. Scientific import errors on a dependency ID collision. Explicit rendered-only import skips Dataset imports and can be used when source plugins are absent or dependencies collide. Imported Clones retain title/USE and ordinary independent note/metadata lifecycle. Static Plot Dataset and explicitly owned native Plot Dataset snapshots are supported scientific reconstruction providers; other providers retain rendered output.
 
+`portableResourceInspect` retains `dependency_ids`/`dependency_count` for outer
+Dataset dependencies adopted into the destination Session, with their existing
+collision rules. Its additive `native_snapshot_dataset_ids` (semicolon-separated)
+and `native_snapshot_dataset_count` describe the independently validated canonical
+Dataset ZIPs retained inside a native scientific snapshot. Those frozen resources
+belong to the Clone and do not adopt their IDs into the caller's registry. The
+import dialog reports these two scopes separately; zero Session imports does
+not mean that a native scientific snapshot contains no Dataset resources.
+
 Native snapshots use `native_v4_snapshot.tcldict` and complete canonical Dataset ZIPs under `resources/<dataset-id>.zip`. The bounded manifest is parsed as inert Tcl lists and dictionaries, never sourced or evaluated. Dataset IDs, declared paths, nested package type and every SHA-256 must agree. Nested Graph packages and undeclared scientific files are rejected. Existing metadata `renderer_owner=PLOT_DATASET_API_v4` selects the public native reconstruction provider. A caller-requested rendered-only import removes that owner marker because the resulting Clone has no scientific rerender capability. Full native snapshot capture and validation remain owned by public Plot Dataset API v4; portable transport does not create another data store.
 
 ## GUI and security

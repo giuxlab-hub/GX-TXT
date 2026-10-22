@@ -31,6 +31,7 @@ except ImportError:
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "core" / "python"))
 sys.modules.setdefault("gxtxt_script_bridge_server", sys.modules[__name__])
 
 
@@ -227,6 +228,72 @@ def encode_value(value, arrays=None):
     raise BridgeError("GXTXT:ScriptBridge:Transport", f"unsupported provider result type {type(value).__name__}")
 
 
+def discover_registrations(core_service="", session=""):
+    """Installed registration metadata only; shared with actual execution.
+
+    Imports provider declaration modules and validates their original ownership
+    contracts. Never constructs Host or invokes a registered operation.
+    """
+    bindings = {}; modules = {}
+    files = list(sorted((ROOT / "core" / "script_bindings").glob("*.py")))
+    files += list(sorted((ROOT / "plugins" / "modules").glob("*/api/script_bridge_binding.py")))
+    files += list(sorted((ROOT / "plugins" / "modules").glob("*/api/script_bridge_binding_v[0-9]*.py")))
+    if core_service:
+        # Same registration and invocation as real Jobs, without Session
+        # creation, callback registration or a numerical worker.
+        files = [ROOT / "core" / "script_bindings" / "statistical_result_semantics.py"]
+        if core_service == "scientific_presentation":
+            files.append(ROOT / "core" / "script_bindings" / "dataset_metadata.py")
+    for index, path in enumerate(files):
+        name = f"gxtxt_script_binding_{index}"
+        spec = importlib.util.spec_from_file_location(name, path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        registrations = getattr(module, "REGISTRATIONS", None)
+        if registrations is None:
+            registrations = [module.REGISTRATION]
+        for registration in registrations:
+            descriptor = dict(registration)
+            api_id = descriptor["api_id"]
+            if core_service == "scientific_presentation" and api_id == "STATISTICAL_RESULT_SEMANTICS_API_v1":
+                descriptor["operations"] = {key: value for key, value in descriptor["operations"].items() if key != "store_columns"}
+            if core_service == "scientific_presentation" and api_id == "DATASET_METADATA_API_v1":
+                allowed = {"coordinate_snapshot_values", "coordinate_snapshot_view_range", "coordinate_snapshot_affine_plan"}
+                if session:
+                    allowed.update({"coordinate_read", "coordinate_inspect", "coordinate_validate"})
+                descriptor["operations"] = {key: value for key, value in descriptor["operations"].items() if key in allowed}
+            if api_id in bindings:
+                raise BridgeError("GXTXT:ScriptBridge:Transport", f"duplicate script binding {api_id}")
+            for key in ("api_version", "provider_kind", "provider_id", "documentation_ref", "operations"):
+                if key not in descriptor:
+                    raise BridgeError("GXTXT:ScriptBridge:Transport", f"incomplete script binding {api_id}: {key}")
+            if descriptor["provider_kind"] == "module":
+                provider = descriptor["provider_id"]
+                module_dir = ROOT / "plugins" / "modules" / provider
+                if path.parent.parent != module_dir:
+                    raise BridgeError("GXTXT:ScriptBridge:Transport", f"binding ownership mismatch for {api_id}")
+                declared = configparser.ConfigParser(interpolation=None)
+                declared.read(module_dir / "module.ini", encoding="utf-8")
+                section = f"public_api.{api_id}"
+                ids = declared.get("public_apis", "ids", fallback="").split(";")
+                if api_id not in ids or not declared.has_section(section):
+                    raise BridgeError("GXTXT:ScriptBridge:Transport", f"{provider} does not declare {api_id}")
+                actual_version = declared.getint(section, "api_version", fallback=-1)
+                if actual_version != descriptor["api_version"]:
+                    raise BridgeError("GXTXT:ScriptBridge:Transport", f"API version mismatch for {api_id}")
+                descriptor["capabilities"] = [item for item in declared.get(section, "capabilities", fallback="").split(";") if item]
+            descriptor.setdefault("capabilities", [])
+            descriptor["script_available"] = True
+            for op_id, op in descriptor["operations"].items():
+                if (not isinstance(op, dict) or op.get("name") != op_id or
+                    "arguments" not in op or "result_contract" not in op or "summary" not in op):
+                    raise BridgeError("GXTXT:ScriptBridge:Transport", f"invalid operation descriptor {api_id}/{op_id}")
+            bindings[api_id] = descriptor
+            modules[api_id] = module
+
+    return bindings, modules
+
+
 class Host:
     def __init__(self, runtime_path: Path):
         if not runtime_path.is_file():
@@ -291,61 +358,7 @@ class Host:
         self._discover()
 
     def _discover(self):
-        files = list(sorted((ROOT / "core" / "script_bindings").glob("*.py")))
-        files += list(sorted((ROOT / "plugins" / "modules").glob("*/api/script_bridge_binding.py")))
-        files += list(sorted((ROOT / "plugins" / "modules").glob("*/api/script_bridge_binding_v[0-9]*.py")))
-        if self.core_service:
-            # Same registration and invocation as real Jobs, without Session
-            # creation, callback registration or a numerical worker.
-            files = [ROOT / "core" / "script_bindings" / "statistical_result_semantics.py"]
-            if self.core_service == "scientific_presentation":
-                files.append(ROOT / "core" / "script_bindings" / "dataset_metadata.py")
-        for index, path in enumerate(files):
-            name = f"gxtxt_script_binding_{index}"
-            spec = importlib.util.spec_from_file_location(name, path)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            registrations = getattr(module, "REGISTRATIONS", None)
-            if registrations is None:
-                registrations = [module.REGISTRATION]
-            for registration in registrations:
-                descriptor = dict(registration)
-                api_id = descriptor["api_id"]
-                if self.core_service == "scientific_presentation" and api_id == "STATISTICAL_RESULT_SEMANTICS_API_v1":
-                    descriptor["operations"] = {key: value for key, value in descriptor["operations"].items() if key != "store_columns"}
-                if self.core_service == "scientific_presentation" and api_id == "DATASET_METADATA_API_v1":
-                    allowed = {"coordinate_snapshot_values", "coordinate_snapshot_view_range", "coordinate_snapshot_affine_plan"}
-                    if self.session:
-                        allowed.update({"coordinate_read", "coordinate_inspect", "coordinate_validate"})
-                    descriptor["operations"] = {key: value for key, value in descriptor["operations"].items() if key in allowed}
-                if api_id in self.bindings:
-                    raise BridgeError("GXTXT:ScriptBridge:Transport", f"duplicate script binding {api_id}")
-                for key in ("api_version", "provider_kind", "provider_id", "documentation_ref", "operations"):
-                    if key not in descriptor:
-                        raise BridgeError("GXTXT:ScriptBridge:Transport", f"incomplete script binding {api_id}: {key}")
-                if descriptor["provider_kind"] == "module":
-                    provider = descriptor["provider_id"]
-                    module_dir = ROOT / "plugins" / "modules" / provider
-                    if path.parent.parent != module_dir:
-                        raise BridgeError("GXTXT:ScriptBridge:Transport", f"binding ownership mismatch for {api_id}")
-                    declared = configparser.ConfigParser(interpolation=None)
-                    declared.read(module_dir / "module.ini", encoding="utf-8")
-                    section = f"public_api.{api_id}"
-                    ids = declared.get("public_apis", "ids", fallback="").split(";")
-                    if api_id not in ids or not declared.has_section(section):
-                        raise BridgeError("GXTXT:ScriptBridge:Transport", f"{provider} does not declare {api_id}")
-                    actual_version = declared.getint(section, "api_version", fallback=-1)
-                    if actual_version != descriptor["api_version"]:
-                        raise BridgeError("GXTXT:ScriptBridge:Transport", f"API version mismatch for {api_id}")
-                    descriptor["capabilities"] = [item for item in declared.get(section, "capabilities", fallback="").split(";") if item]
-                descriptor.setdefault("capabilities", [])
-                descriptor["script_available"] = True
-                for op_id, op in descriptor["operations"].items():
-                    if (not isinstance(op, dict) or op.get("name") != op_id or
-                        "arguments" not in op or "result_contract" not in op or "summary" not in op):
-                        raise BridgeError("GXTXT:ScriptBridge:Transport", f"invalid operation descriptor {api_id}/{op_id}")
-                self.bindings[api_id] = descriptor
-                self.modules[api_id] = module
+        self.bindings, self.modules = discover_registrations(self.core_service, self.session)
 
     def require(self, requirements):
         if not isinstance(requirements, list):
@@ -607,6 +620,15 @@ class Host:
 
 
 def main():
+    if sys.argv[1:] == ["--metadata-tcl"]:
+        from gxtxt_job_supervisor import tcl_result
+        try:
+            bindings, _ = discover_registrations()
+            print(tcl_result({"ok": True, "registrations": bindings, "execution_context": "inactive_metadata_only", "supported_languages": ["Python", "Octave"]}))
+        except Exception as error:
+            print(tcl_result({"ok": False, "error": str(error), "execution_context": "inactive_metadata_only"}))
+            raise SystemExit(1)
+        return
     if len(sys.argv) != 2:
         raise SystemExit("usage: gxtxt_script_bridge_server.py <runtime-config>")
     host = Host(Path(sys.argv[1]))

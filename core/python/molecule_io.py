@@ -49,10 +49,22 @@ def infer_bonds(atoms):
 def read_sdf(path):
     text = path.read_text(encoding="utf-8", errors="replace")
     frames = []
-    for block in text.split("$$$$"):
-        lines = block.splitlines()
+    # A separator is a complete line, including its line ending. Splitting on
+    # the four characters alone leaves an extra empty header line in each
+    # subsequent record. Do not strip headers: an empty molecule title is valid.
+    records, pending = [], []
+    for line in text.splitlines():
+        if line.strip() == "$$$$":
+            records.append(pending)
+            pending = []
+        else:
+            pending.append(line)
+    # MOL input and an unterminated final SDF record use the same V2000 reader.
+    if any(line.strip() for line in pending):
+        records.append(pending)
+    for record_number, lines in enumerate(records, 1):
         if len(lines) < 5 or not lines[3].strip():
-            continue
+            raise ValueError(f"SDF record {record_number} is missing a valid V2000 counts line")
         if "V3000" in lines[3]:
             raise ValueError("SDF V3000 is not yet supported; use V2000")
         try:

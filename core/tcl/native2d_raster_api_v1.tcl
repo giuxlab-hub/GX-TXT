@@ -1,11 +1,83 @@
 # Native2D retained image geometry/attributes + existing supervised IM execution.
 # SPDX-License-Identifier: GPL-3.0-or-later
+proc ::GX::native2DGeometryRasterDatasetBind {token dataset {options {}}} {
+    variable ::GX::Native2DGeometry::scenes
+    set scene [_native2DGeometryRequire $token]
+    foreach key [dict keys $options] {if {$key ni {expected_source_sha256 state}} {error "Unknown canonical raster binding option: $key"}}
+    if {[datasetField $dataset contract [datasetField $dataset kind {}]] ne {image.raster}} {error {Canonical raster binding requires an image.raster Dataset, not a numerical XYZ table}}
+    set payload [sessionInspectionDatasetPayload $dataset]
+    set identity [sessionInspectionDataset $dataset]
+    set schema [datasetVariableSchemaV3 $dataset]
+    set hash [dict get $payload sha256]
+    if {[dict exists $options expected_source_sha256] && [dict get $options expected_source_sha256] ne $hash} {error {Canonical raster source changed; select and bind it explicitly}}
+    set stamp [datasetViewerStamp $dataset [dict get $payload path]]
+    set state [datasetPublicationV2DictDefault $options state {}]
+    foreach key [dict keys $state] {if {$key ni {scale translation rotation opacity visible locked}} {error {Raster bind accepts presentation transforms; physical calibration requires its explicit Native2D operation}}}
+    # Copy exact admitted source bytes through the existing managed Resource
+    # writer. This is the original Document's resource, not a raster cache or a
+    # new Dataset, and no Viewer receives a source filename.
+    set document [dict get $scene document_id]
+    set writer [interactiveDocumentResourceOpenWriter $document [dict create format [dict get $payload format] source_kind canonical_dataset source_dataset_id $dataset source_sha256 $hash origin [datasetOriginRead $dataset]]]
+    set input {};set object {}
+    try {
+        set input [open [dict get $payload path] rb]
+        while {![eof $input]} {interactiveDocumentResourceAppend $writer [read $input 1048576]}
+        close $input;set input {}
+        set resource [interactiveDocumentResourceFinalize $writer];set writer {}
+        if {[dict get $resource sha256] ne $hash || [sessionInspectionDatasetPayload $dataset] ne $payload || [datasetViewerStamp $dataset [dict get $payload path]] ne $stamp || [sessionInspectionDataset $dataset] ne $identity || [datasetVariableSchemaV3 $dataset] ne $schema} {error {Canonical raster changed while binding; previous valid viewport is retained}}
+        _native2DGeometryRequire $token
+        set result [native2DGeometryCall $token image_attach [dict create resource $resource working_unit px state $state]]
+        set object [dict get $result object_token]
+        set source [dict create dataset_id $dataset dataset_identity $identity variable_schema $schema source_sha256 $hash origin [datasetOriginRead $dataset]]
+        dict set scenes $token objects $object metadata raster_dataset $source
+        dict set scenes $token raster_dataset_stamps $object $stamp
+        _native2DRasterUUID [dict get $scenes $token] $object
+        dict set result source $source
+        dict set result coordinate_kind source_pixel
+        dict set result implicit_dataset_publication 0
+        return $result
+    } on error {message options} {
+        if {$object ne {}} {catch {native2DGeometryCall $token delete [dict create object_token $object]}}
+        return -options $options $message
+    } finally {
+        if {$input ne {}} {close $input}
+        if {$writer ne {}} {interactiveDocumentResourceAbort $writer}
+    }
+}
+proc ::GX::_native2DRasterDatasetCheck {scene object} {
+    variable ::GX::Native2DGeometry::scenes
+    set metadata [dict get $scene objects $object metadata]
+    if {![dict exists $metadata raster_dataset]} return
+    set source [dict get $metadata raster_dataset]
+    set dataset [dict get $source dataset_id]
+    if {[datasetField $dataset contract [datasetField $dataset kind {}]] ne {image.raster} || [sessionInspectionDataset $dataset] ne [dict get $source dataset_identity] || [datasetVariableSchemaV3 $dataset] ne [dict get $source variable_schema]} {error {Canonical raster Dataset identity or schema changed; explicitly rebind the source. The previous valid frame is retained}}
+    set location [sessionInspectionDatasetLocation $dataset]
+    if {[dict get $location expected_sha256] ne [dict get $source source_sha256]} {error {Canonical raster content revision changed; explicitly rebind the source. The previous valid frame is retained}}
+    set stamp [datasetViewerStamp $dataset [dict get $location path]]
+    set token [dict get $scene scene_token]
+    if {[dict exists $scenes $token raster_dataset_stamps $object]} {
+        if {$stamp ne [dict get $scenes $token raster_dataset_stamps $object]} {error {Canonical raster file or revision changed; explicitly rebind the source. The previous valid frame is retained}}
+    } else {
+        # Restored portable resources get one actual integrity admission. The
+        # existing Dataset reader stamp guards subsequent pointer frames; no
+        # repeated image hashing/process launch or second pixel cache is used.
+        if {[dict get [sessionInspectionDatasetPayload $dataset] sha256] ne [dict get $source source_sha256] || [datasetViewerStamp $dataset [dict get $location path]] ne $stamp} {error {Canonical raster changed while restoring its binding}}
+        dict set scenes $token raster_dataset_stamps $object $stamp
+    }
+}
 proc ::GX::_native2DRasterImage {scene object} {
+    _native2DRasterDatasetCheck $scene $object
     set native [dict get $scene native];set id [_native2DGeometryObject $scene $object]
     set state [::GX::Native2D::core image_get $native $id]
     if {$state eq {}} {error {Raster operation requires an owned reference image}}
     set resource [dict get $scene objects $object metadata image_resource]
-    interactiveDocumentResourceInfo $resource
+    variable ::GX::Native2DGeometry::scenes
+    set token [dict get $scene scene_token]
+    if {![dict exists $scenes $token raster_resource_readers $object]} {
+        dict set scenes $token raster_resource_readers $object [interactiveDocumentResourceOpenReader $resource]
+    }
+    set admitted [interactiveDocumentResourceReaderInfo [dict get $scenes $token raster_resource_readers $object]]
+    if {[dict get $admitted reference] ne $resource} {error {Raster image resource was replaced; explicitly rebind the image}}
     if {[dict get $state resource_id] ne [dict get $resource sha256]} {error {Raster image resource identity changed}}
     return [dict create id $id state $state resource $resource]
 }
@@ -97,14 +169,88 @@ proc ::GX::_native2DRasterSnapshot {token request} {
         base_image_state $state base_resource [dict get $baseImage resource] roi $roi layers $layers]
     return [dict create manifest $manifest resources $resources]
 }
+proc ::GX::_native2DRasterAnnotationDefinition {definition} {
+    foreach key [dict keys $definition] {if {$key ni {point text anchor font_family font_size color}} {error "Unknown image annotation field: $key"}}
+    foreach key {point text} {if {![dict exists $definition $key]} {error "Image annotation requires $key"}}
+    set point [dict get $definition point]
+    if {[llength $point]!=2} {error {Image annotation point requires two source-pixel coordinates}}
+    dict set definition point [lmap value $point {uiFieldNormalize {type number required 1} $value}]
+    if {[string bytelength [dict get $definition text]]>256 || [string first \x00 [dict get $definition text]]>=0} {error {Image annotation text exceeds the Native2D bounded text contract}}
+    if {[datasetPublicationV2DictDefault $definition anchor sw] ni {n ne e se s sw w nw center}} {error {Invalid image annotation anchor}}
+    set normalized [native2DAnnotationStyleNormalize [dict merge {anchor sw font_family Sans font_size 14 color #233746} $definition]]
+    # Field insertion order is not a scientific edit. Canonicalize it before
+    # no-op comparison and ordinary native resource persistence.
+    return [dict create point [dict get $normalized point] text [dict get $normalized text] anchor [dict get $normalized anchor] font_family [dict get $normalized font_family] font_size [dict get $normalized font_size] color [dict get $normalized color]]
+}
+proc ::GX::_native2DRasterAnnotations {token operation request} {
+    set scene [_native2DGeometryRequire $token];set native [dict get $scene native]
+    set object [dict get $request object_token];set image [_native2DRasterImage $scene $object]
+    set attributes [::GX::Native2D::core identity_attributes $native [dict get $image id]]
+    # The same retained native image identity owns its portable annotations,
+    # just as it owns gx.image.rois. No Viewer or second storage/cache owns them.
+    set state [datasetPublicationV2DictDefault $attributes gx.image.annotations [dict create format gxtxt.native2d.image_annotations.v1 source_resource_id [dict get $image state resource_id] revision 0 annotations {} generations {}]]
+    if {[dict get $state format] ne {gxtxt.native2d.image_annotations.v1} || [dict get $state source_resource_id] ne [dict get $image state resource_id] || ![string is entier -strict [dict get $state revision]] || [dict get $state revision]<0 || [dict size [dict get $state annotations]]>512 || [string bytelength $state]>16384} {error {Image annotation collection is invalid or belongs to another retained source}}
+    set normalized {}
+    if {[lsort [dict keys [dict get $state generations]]] ne [lsort [dict keys [dict get $state annotations]]]} {error {Image annotation identity generations are inconsistent}}
+    dict for {id definition} [dict get $state annotations] {
+        if {![regexp {^[A-Za-z][A-Za-z0-9_.-]{0,63}$} $id]} {error {Invalid stable image annotation ID}}
+        set generation [dict get $state generations $id]
+        if {![string is entier -strict $generation] || $generation<1 || $generation>[dict get $state revision]} {error {Invalid image annotation identity generation}}
+        dict set normalized $id [_native2DRasterAnnotationDefinition $definition]
+    }
+    dict set state annotations $normalized
+    if {$operation eq {raster_annotation_get}} {return $state}
+    if {$operation eq {raster_annotation_project}} {
+        set result {}
+        dict for {id definition} $normalized {
+            set world [dict get [native2DGeometryCall $token image_map [dict create object_token $object point [dict get $definition point] inverse 0]] point]
+            dict set definition point $world;dict set definition id $id
+            lappend result $definition
+        }
+        return [dict create annotations $result revision [dict get $state revision] source_resource_id [dict get $state source_resource_id]]
+    }
+    if {$operation ni {raster_annotation_set raster_annotation_remove}} {error {Unknown image annotation operation}}
+    _native2DRasterEditable $scene $object
+    set expected [dict get $request expected_revision]
+    if {![string is entier -strict $expected] || $expected!=[dict get $state revision]} {error {Image annotation collection changed; reopen its current editor}}
+    set id [dict get $request annotation_id]
+    if {![regexp {^[A-Za-z][A-Za-z0-9_.-]{0,63}$} $id]} {error {Invalid stable image annotation ID}}
+    set proposed $state
+    if {$operation eq {raster_annotation_set}} {
+        set definition [_native2DRasterAnnotationDefinition [dict get $request definition]]
+        if {[dict exists $normalized $id] && [dict get $normalized $id] eq $definition} {return $state}
+        dict set proposed annotations $id $definition
+        if {![dict exists $normalized $id]} {dict set proposed generations $id [expr {[dict get $state revision]+1}]}
+    } else {
+        if {![dict exists $normalized $id]} {error {Image annotation no longer exists}}
+        dict unset proposed annotations $id
+        dict unset proposed generations $id
+    }
+    dict incr proposed revision
+    if {[dict size [dict get $proposed annotations]]>512 || [string bytelength $proposed]>16384} {error {Image annotations exceed the existing Native2D identity attribute budget (16384 UTF-8 bytes or 512 entries); the previous collection is unchanged}}
+    ::GX::Native2D::core identity_attribute $native [dict get $image id] gx.image.annotations $proposed
+    return $proposed
+}
 proc ::GX::_native2DRasterCall {token operation request} {
     set scene [_native2DGeometryRequire $token];set native [dict get $scene native]
     if {$operation in {raster_snapshot raster_save raster_restore}} {return [_native2DRasterPersistence $token $operation $request]}
     switch -- $operation {
+        raster_annotation_get - raster_annotation_set - raster_annotation_remove - raster_annotation_project {return [_native2DRasterAnnotations $token $operation $request]}
+        raster_dataset_bind {return [native2DGeometryRasterDatasetBind $token [dict get $request dataset_id] [datasetPublicationV2DictDefault $request options {}]]}
+        raster_roi_geometry - raster_roi_pick - raster_roi_propose {
+            set image [_native2DRasterImage $scene [dict get $request object_token]]
+            if {$operation eq {raster_roi_propose}} {_native2DRasterEditable $scene [dict get $request object_token]}
+            set options [dict remove $request object_token]
+            return [::GX::Native2D::core [dict get {raster_roi_geometry image_roi_geometry raster_roi_pick image_roi_pick raster_roi_propose image_roi_propose} $operation] $native [dict get $image id] $options]
+        }
         raster_roi_set - raster_roi_get - raster_roi_remove {
             set image [_native2DRasterImage $scene [dict get $request object_token]];set args [list $native [dict get $image id]]
             if {$operation ne {raster_roi_get}} {_native2DRasterEditable $scene [dict get $request object_token];lappend args [dict get $request roi_id]}
-            if {$operation eq {raster_roi_set}} {lappend args [dict get $request definition]}
+            if {$operation eq {raster_roi_set}} {
+                set definition [dict get $request definition]
+                if {[dict exists $request expected_revision]} {dict set definition expected_revision [dict get $request expected_revision]}
+                lappend args $definition
+            } elseif {$operation eq {raster_roi_remove} && [dict exists $request expected_revision]} {lappend args [dict get $request expected_revision]}
             return [::GX::Native2D::core [dict get {raster_roi_set image_roi_set raster_roi_get image_roi_get raster_roi_remove image_roi_remove} $operation] {*}$args]
         }
         raster_layer_get {return [_native2DRasterProperties $scene [dict get $request object_token]]}
@@ -250,6 +396,11 @@ proc ::GX::native2DGeometryViewportDraw {token canvas {changed {}}} {
     ::GX::Native2D::core view $native $view
     native2DCanvasSnapshot $canvas [native2DPresentationSnapshot $native {point_budget 4096 legend 0}]
     native2DCanvasReferenceImages $native $canvas
+    # Semantic editors follow the existing scene camera/geometry projection;
+    # fixed viewport chrome retains its current placement policy.
+    dict for {id panel} [dict get $::GX::ViewportHost::hosts $canvas panels] {
+        if {[dict exists $panel target]} {native2DViewportInvalidate $canvas;break}
+    }
     if {$changed ne {}} {uplevel #0 $changed}
     return [dict create status ready]
 }

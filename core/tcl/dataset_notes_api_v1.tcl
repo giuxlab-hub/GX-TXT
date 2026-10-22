@@ -736,7 +736,24 @@ proc ::GX::markupRenderStringToWidget {w src {imageCommand {}}} {
     $w configure -state normal -wrap word
     $w delete 1.0 end
     set inCode 0
+    set paragraph {}
     foreach line [split $src "\n"] {
+        # Inline delimiters can span source lines within one ordinary paragraph.
+        # Keep the original newlines, and flush before every existing block kind.
+        if {!$inCode && [string trim $line] ne {} &&
+            ![regexp {^```[[:alnum:]_+.-]*$} [string trim $line]] &&
+            !($imageCommand ne {} && [regexp {^!\[([^]]*)\]\(([^)]+)\)[[:space:]]*$} $line]) &&
+            ![regexp {^(#{1,3})[[:space:]]+} $line] &&
+            ![regexp {^[[:space:]]*([-*]|[0-9]+[.])[[:space:]]+} $line] &&
+            ![regexp {^[[:space:]]*\|.*\|[[:space:]]*$} $line]} {
+            lappend paragraph $line
+            continue
+        }
+        if {[llength $paragraph]} {
+            markupPreviewInsertInline $w [join $paragraph "\n"]
+            $w insert end "\n"
+            set paragraph {}
+        }
         if {[regexp {^```[[:alnum:]_+.-]*$} [string trim $line]]} { set inCode [expr {!$inCode}]; continue }
         if {$inCode} { $w insert end "$line\n" gx_codeblock; continue }
         if {$imageCommand ne {} && [regexp {^!\[([^]]*)\]\(([^)]+)\)[[:space:]]*$} $line -> caption relative]} {
@@ -760,6 +777,10 @@ proc ::GX::markupRenderStringToWidget {w src {imageCommand {}}} {
             continue
         }
         markupPreviewInsertInline $w $line
+        $w insert end "\n"
+    }
+    if {[llength $paragraph]} {
+        markupPreviewInsertInline $w [join $paragraph "\n"]
         $w insert end "\n"
     }
     $w configure -state disabled

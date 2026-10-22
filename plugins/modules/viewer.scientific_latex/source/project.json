@@ -1,0 +1,51 @@
+{
+  "schema": "gxtxt.viewer_development_project.v1",
+  "module_id": "viewer.scientific_latex",
+  "version": "0.2.5",
+  "language": "cpp",
+  "source": "handlers.cpp",
+  "design": "design.gxtxt-viewer",
+  "profile": "document_view_v1",
+  "capabilities": [
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "version": 1,
+      "operations": [
+        "tex_command"
+      ]
+    },
+    {
+      "api_id": "SESSION_WORKSPACE_API_v1",
+      "version": 1,
+      "operations": [
+        "create",
+        "get",
+        "update",
+        "list"
+      ]
+    },
+    {
+      "api_id": "SCIENTIFIC_RECIPE_API_v1",
+      "version": 1,
+      "operations": [
+        "scientificHistoryViewerRecord",
+        "scientificHistoryViewerNavigate"
+      ]
+    }
+  ],
+  "provenance": {
+    "template": "restricted_cpp_viewer_v1",
+    "scientific_source": null
+  },
+  "tests": {
+    "events": [
+      {
+        "component": 0,
+        "kind": 0,
+        "value": 0
+      }
+    ],
+    "expected_counter": 0,
+    "expected_values": {}
+  }
+}

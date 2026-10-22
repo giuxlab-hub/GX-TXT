@@ -13,7 +13,7 @@ proc ::GX::scientificExecutionCoreCapabilities {} {
     return [dict create numeric $numeric statistics $statistics scientific_execution [scientificExecutionApiInfo] script_job [scriptJobApiInfo] parallel_execution [parallelExecutionApiInfo] scope {Installed public API/catalog and actual declared runtime availability; not execution acceptance}]
 }
 proc ::GX::scientificExecutionApiInfo {} {
-    return [dict create api_id SCIENTIFIC_EXECUTION_API_v1 api_version 1 authority SCRIPT_JOB_API_v1 backend {local remote} operations {core_capabilities node_list node_inspect destination discover describe prepare discard submit status log cancel outputs read_output read_records freeze_resource import_results reconnect circuit_inspect circuit_prepare circuit_sweep_prepare circuit_sweep_submit import_table import_table_cancel} circuit_format gxtxt.native2d.diagram.v1 circuit_provider core.ngspice.circuit security_boundary cooperating_trusted_provider_not_OS_sandbox persistence existing_Job_journal]
+    return [dict create api_id SCIENTIFIC_EXECUTION_API_v1 api_version 1 authority SCRIPT_JOB_API_v1 backend {local remote} operations {core_capabilities node_list node_inspect destination discover describe prepare discard submit status log cancel outputs read_output read_records freeze_resource import_results reconnect circuit_inspect circuit_prepare circuit_sweep_prepare circuit_sweep_submit import_table import_table_cancel} circuit_format gxtxt.native2d.diagram.v1 circuit_provider core.ngspice.circuit security_boundary cooperating_trusted_provider_not_OS_sandbox persistence existing_Job_journal host_operation_contracts [_scientificExecutionRemoteHostContracts]]
 }
 proc ::GX::scientificExecutionRegister {id descriptor} {
     variable ::GX::ScientificExecution::providers
@@ -119,11 +119,7 @@ proc ::GX::scientificExecutionSubmit {token} {
     if {[dict get $p session_token] ne [interactiveDocumentSessionToken]} {error {Scientific preparation belongs to another Session lifetime}}
     dict for {alias reference} [dict get $p resources] {interactiveDocumentResourceInfo $reference}
     set request [dict get $p request]
-    if {[dict exists $p options document_id]} {
-        set current [interactiveDocumentRead [dict get $p options document_id]]
-        if {[dict get $current sha256] ne [dict get $request source_identities workspace sha256]||[dict get $current revision] ne [dict get $request source_identities workspace revision]} {error {Scientific Workspace changed after preparation}}
-    }
-    if {[dict exists $request source_identities datasets]} {dict for {id expected} [dict get $request source_identities datasets] {if {[datasetRevisionToken $id [dict get $p session]] ne $expected} {error {Scientific Dataset changed after preparation}}}}
+    _scientificExecutionSourcesCurrent [dict get $request source_identities]
     if {[sha256File [dict get $request worker]] ne [dict get $request worker_sha256]} {error {Scientific provider changed after preparation}}
     dict for {relative expected} [dict get $request runtime_files] {if {[sha256File [scriptModuleSafeRelative $::GX::scriptDir $relative]] ne $expected} {error {Scientific native/runtime dependency changed after preparation}}}
     if {[sha256File [file join $::GX::scriptDir core python gxtxt_scientific_execution.py]] ne [dict get $request adapter_sha256]} {error {Scientific CORE adapter changed after preparation}}
@@ -204,12 +200,20 @@ proc ::GX::scientificExecutionImportResults {id token request} {
     variable ::GX::ScientificExecution::providers
     set job [_scientificExecutionJob $id]
     if {[dict get $job state] ne {COMPLETED}} {error {Only a completed scientific Job may be imported}}
+    _scientificExecutionSourcesCurrent [dict get $job scientific_request source_identities]
     set provider [dict get $job scientific_request provider_id]
     if {![dict exists $providers $provider import_command]} {error {This provider has no registered scientific result importer}}
     set output [_scientificExecutionOutput $id freeze $token 0 16777216]
     if {[dict get $output availability] ne {available}||![dict exists $output sha256]||![dict get $output complete]} {error {Import requires a complete coherent bounded result; use a provider streaming importer for larger results}}
     set bytes [binary decode base64 [dict get $output bytes_base64]]
-    return [{*}[dict get $providers $provider import_command] $id $token $bytes $request]
+    _scientificExecutionSourcesCurrent [dict get $job scientific_request source_identities]
+    # The registered scientific provider owns result publication. A Viewer or
+    # Script Bridge caller may have a different active module context; passing
+    # that context through would misattribute the provider's canonical outputs.
+    # Scope the existing module context to the registered owner and restore the
+    # caller on both success and failure. All source/output guards above remain.
+    return [_datasetPrivateWithModule [dict get $providers $provider module_id] \
+        [dict get $providers $provider import_command] $id $token $bytes $request]
 }
 proc ::GX::scientificExecutionRegisterBuiltins {} {
     scientificExecutionRegister core.ngspice.rc_transient [dict create module_id core.scientific_execution version 1.0.0 worker core/python/gxtxt_scientific_builtin_providers.py tools {spice} parameters [dict create step_seconds {type number default 0.00001 min 0.00000001 max 0.0001} stop_seconds {type number default 0.005 min 0.001 max 0.1}] import_command ::GX::_scientificRcImport]
@@ -250,13 +254,37 @@ source [file join [file dirname [info script]] scientific_execution_circuit.tcl]
 
 # Bounded cooperative CSV result adoption through existing output and Publication owners.
 namespace eval ::GX::ScientificTableImport {variable serial 0;variable tasks {}}
+proc ::GX::_scientificExecutionSourcesCurrent {identities} {
+    # Historical outputs stay readable. Adoption into current scientific state
+    # requires the exact captured source, including replacement generations.
+    if {[dict exists $identities workspace]} {
+        set expected [dict get $identities workspace]
+        if {[catch {set current [interactiveDocumentRead [dict get $expected id]]}]} {
+            return -code error -errorcode {GX SCIENTIFIC STALE_SOURCE} {Scientific Workspace is unavailable; rerun before publication}
+        }
+        foreach field {generation revision sha256} {
+            if {[dict exists $expected $field] && (![dict exists $current $field] || [dict get $current $field] ne [dict get $expected $field])} {
+                return -code error -errorcode {GX SCIENTIFIC STALE_SOURCE} {Scientific Workspace changed; rerun before publication}
+            }
+        }
+    }
+    if {[dict exists $identities datasets]} {
+        dict for {dataset expected} [dict get $identities datasets] {
+            if {[catch {set current [datasetRevisionToken $dataset]}] || $current ne $expected} {
+                return -code error -errorcode {GX SCIENTIFIC STALE_SOURCE} {Scientific Dataset changed; rerun before publication}
+            }
+        }
+    }
+}
 proc ::GX::_scientificExecutionPublicationJob {id} {
     if {[scientificExecutionRemoteId $id]} {
         set status [scientificExecutionStatus $id]
         if {[dict exists $status source_identities datasets] && [dict size [dict get $status source_identities datasets]]} {error {Remote source Datasets require node-authoritative publication validation}}
         return [dict merge $status [dict create scientific_request [dict create source_identities [datasetPublicationV2DictDefault $status source_identities {}]]]]
     }
-    return [_scientificExecutionJob $id]
+    set job [_scientificExecutionJob $id]
+    _scientificExecutionSourcesCurrent [dict get $job scientific_request source_identities]
+    return $job
 }
 proc ::GX::_scientificExecutionPublicationGuard {guard} {
     if {$guard eq {}} return
@@ -268,7 +296,6 @@ proc ::GX::scientificExecutionImportTable {id outputToken producer definition ca
     _scientificExecutionPublicationGuard $sourceGuard
     set job [_scientificExecutionPublicationJob $id]
     if {[dict get $job state] ne {COMPLETED}} {error {Only a completed scientific Job may publish a result table}}
-    if {[dict exists $job scientific_request source_identities datasets]} {dict for {dataset expected} [dict get $job scientific_request source_identities datasets] {if {[datasetRevisionToken $dataset] ne $expected} {error {Scientific source changed after computation; rerun before publication}}}}
     set output [scientificExecutionReadRecords $id $outputToken 0 65536]
     if {[dict get $output format] ne {csv} || [dict get $output live]} {error {Result publication requires an immutable declared scientific CSV table}}
     set plan [datasetPublicationV2Prepare $::GX::currentSession $producer $definition]
@@ -290,6 +317,7 @@ proc ::GX::_scientificExecutionImportTableStep {ticket} {
         if {[dict get $task cancelled]} {error {Result publication cancelled}}
         if {[dict get $task session_token] ne [interactiveDocumentSessionToken]} {error {Result publication Session changed}}
         _scientificExecutionPublicationGuard [dict get $task source_guard]
+        _scientificExecutionPublicationJob [dict get $task job]
         set page [scientificExecutionReadRecords [dict get $task job] [dict get $task output] [dict get $task offset] 65536 [dict get $task generation]]
         set data {};foreach col [dict get $page columns] {dict set data [dict get $col id] {}}
         foreach row [dict get $page records] {foreach col [dict get $page columns] value $row {dict lappend data [dict get $col id] $value}}
@@ -297,7 +325,6 @@ proc ::GX::_scientificExecutionImportTableStep {ticket} {
         if {[dict get $page next_offset]>=[dict get $page size_bytes]} {
             set job [_scientificExecutionPublicationJob [dict get $task job]]
             if {[dict get $job state] ne {COMPLETED}} {error {Scientific Job is no longer completed}}
-            if {[dict exists $job scientific_request source_identities datasets]} {dict for {dataset expected} [dict get $job scientific_request source_identities datasets] {if {[datasetRevisionToken $dataset] ne $expected} {error {Scientific source changed before result publication}}}}
             set receipt [datasetPublicationV2Finalize $writer];set completed 1
             dict unset ::GX::ScientificTableImport::tasks $ticket
         } else {

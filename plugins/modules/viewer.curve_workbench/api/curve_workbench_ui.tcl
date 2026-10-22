@@ -1,11 +1,56 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # UI construction has one owner. Initialize feature state in dependency order,
 # then build each surface once. Builders never call preceding UI versions.
+proc ::GX::CurveWorkbench::_sketchOpenReviewCheck {guard {checkParent 1}} {
+    if {$guard eq {}} return
+    set session [dict get $guard session];set dataset [dict get $guard dataset]
+    if {[dict get $guard token] ne [::GX::interactiveDocumentSessionToken] || $session ne [_session]} {error {Session changed while reviewing Sketch axes; reopen the Dataset.}}
+    if {$checkParent} {
+        set parent [dict get $guard parent]
+        if {![winfo exists $parent] || [winfo id $parent] ne [dict get $guard incarnation]} {error {Workspace changed while reviewing Sketch axes; reopen the Dataset.}}
+    }
+    if {[::GX::sessionInspectionDatasetPayload $dataset] ne [dict get $guard source] || [::GX::sketchDatasetRead $session $dataset] ne [dict get $guard sketch]} {error {Sketch source changed while reviewing its axes; reopen the Dataset.}}
+}
+proc ::GX::CurveWorkbench::_sketchOpenReview {dataset sketch context} {
+    # Trusted callers can already supply their explicit creation policy. The
+    # ordinary Dataset/Preview Open action supplies only the canonical ID.
+    if {[dict exists $context coordinate_configuration]} {return [list 1 $context {}]}
+    set example {}
+    dict for {id object} [dict get $sketch objects] {
+        set units [dict get $object units]
+        set metadata [::GX::datasetPublicationV2DictDefault $object metadata {}]
+        set frame [::GX::_native2DCoordinateFrame $units [::GX::datasetPublicationV2DictDefault $metadata gx.coordinate_relations {}]]
+        set dimensions [_coordinateDimensions $units [dict get $frame coordinate_relations]]
+        if {[lindex $dimensions 0] eq [lindex $dimensions 1]} continue
+        foreach axis {x y} unit $units {
+            set effective [::GX::datasetPublicationV2DictDefault [dict get $frame coordinate_relations] $axis {}]
+            set effective [::GX::datasetPublicationV2DictDefault $effective canonical_unit $unit]
+            if {$unit eq {}} {set unit {undeclared numeric}}
+            if {$effective eq {}} {set effective {undeclared numeric}}
+            lappend example "[string toupper $axis]: $unit (effective $effective)"
+        }
+        break
+    }
+    if {$example eq {}} {return [list 1 $context {}]}
+    set session [_session];set token [::GX::interactiveDocumentSessionToken]
+    set source [::GX::sessionInspectionDatasetPayload $dataset]
+    set parent [expr {[winfo exists .curve_workbench] ? {.curve_workbench} : {.}}]
+    set incarnation [winfo id $parent]
+    set guard [dict create session $session token $token dataset $dataset source $source sketch $sketch parent $parent incarnation $incarnation]
+    set answer [tk_messageBox -parent $parent -type yesno -default no -icon question -title {Review Sketch coordinate plane} -message "This Sketch contains X and Y quantities with different physical dimensions. Example: [join $example {; }].\n\nEnable Allow dimensionally heterogeneous axes explicitly for its new Workspace? Numeric plane editing does not establish a physical distance or angle between unlike axes. The source Sketch is preserved.\n\nNo leaves the current Workspace unchanged."]
+    if {$answer ne {yes}} {return [list 0 $context {}]}
+    _sketchOpenReviewCheck $guard
+    dict set context coordinate_configuration [dict replace [_coordinateConfigurationDefault] allow_heterogeneous 1]
+    return [list 1 $context $guard]
+}
 proc ::GX::CurveWorkbench::open {{context {}}} {
     variable st;variable openingWorkspace;variable openingName
+    set reviewGuard {}
     set sketch [::GX::datasetPublicationV2DictDefault $context sketch_dataset_id {}]
     if {$sketch ne {}} {
-        ::GX::sketchDatasetRead [_session] $sketch
+        set content [::GX::sketchDatasetRead [_session] $sketch]
+        lassign [_sketchOpenReview $sketch $content $context] proceed context reviewGuard
+        if {!$proceed} {return [expr {[winfo exists .curve_workbench] ? {.curve_workbench} : {}}]}
         set base "Sketch $sketch draft";set name $base;set names {};set serial 1
         foreach workspace [::GX::sessionWorkspaceList] {lappend names [dict get $workspace name]}
         while {$name in $names} {set name "$base ([incr serial])"}
@@ -18,7 +63,12 @@ proc ::GX::CurveWorkbench::open {{context {}}} {
         dict set context workspace_id new;dict set context workspace_name $name
     }
     set id [::GX::datasetPublicationV2DictDefault $context workspace_id {}]
-    if {[winfo exists .curve_workbench]&&$id ne {}&&($id eq "new"||$st(.curve_workbench,document) ne $id)} {if {![_replaceDecision .curve_workbench]} {return .curve_workbench};_close .curve_workbench}
+    if {[winfo exists .curve_workbench]&&$id ne {}&&($id eq "new"||$st(.curve_workbench,document) ne $id)} {
+        if {![_replaceDecision .curve_workbench]} {return .curve_workbench}
+        # Replacement can ask further Save/discard questions after axis review.
+        _sketchOpenReviewCheck $reviewGuard
+        _close .curve_workbench
+    }
     if {[winfo exists .curve_workbench]} {raise .curve_workbench;return .curve_workbench}
     set openingWorkspace $id
     if {$id ne {}&&$id ne "new"} {
@@ -28,6 +78,11 @@ proc ::GX::CurveWorkbench::open {{context {}}} {
     }
     try {
         set w [_openWindow $context]
+        if {[dict exists $context coordinate_configuration]} {
+            if {![_coordinateWorkspaceEmpty $w]} {error {A creation Configuration cannot reinterpret restored geometry}}
+            set st($w,coordinateConfiguration) [_coordinateConfigurationNormalize [dict get $context coordinate_configuration]]
+            set st($w,sketchUnit) [dict get $st($w,coordinateConfiguration) x_unit]
+        }
         # Default viewer opening resolves its persisted document during restore.
         # Its canonical name is available only after that resolution.
         if {$st($w,document) ne {}} {set st($w,workspaceName) [dict get [::GX::sessionWorkspaceGet $st($w,document)] name]}
@@ -55,7 +110,15 @@ proc ::GX::CurveWorkbench::open {{context {}}} {
     if {[info exists st($w,restoreFailed)]&&$st($w,restoreFailed)} {
         set st($w,status) $st($w,restoreError)
     } elseif {$st($w,document) ne {}} {_parameterRecalculate $w [_parameterBind $w]}
-    if {$sketch ne {}} {_datasetImport $w $sketch}
+    if {$sketch ne {}} {
+        # The reviewed old parent may now be deliberately closed/replaced.
+        _sketchOpenReviewCheck $reviewGuard 0
+        _datasetImport $w $sketch
+        # The window's tables were built before canonical Sketch intake.
+        # Project the completed import through the existing selection owners.
+        _curveList $w
+        _pointList $w
+    }
     if {[dict exists $context planar_document]} {_planarIntake $w [dict get $context planar_document] [dict get $context planar_mode]} else {_planarControls $w}
     _coordinateMagnify $w 0
     ::GX::sessionWorkspaceViewerTitle $w {Curve Workbench · planar 2-D} [list set ::GX::CurveWorkbench::st($w,document)] [list set ::GX::CurveWorkbench::st($w,workspaceName)]
@@ -93,6 +156,7 @@ proc ::GX::CurveWorkbench::_initWorkbenchState {w} {
     variable st
     set st($w,coordinatePresentation) {};set st($w,coordinateCache) {};set st($w,coordinateView) {}
     set st($w,coordinateFrameViews) {}
+    set st($w,coordinateConfiguration) [_coordinateConfigurationDefault]
     set st($w,coordinateSubscription) [::GX::datasetCatalogSubscribe [list ::GX::CurveWorkbench::_coordinateCatalogChanged $w]]
     set st($w,comparisonEnabled) 0;set st($w,comparisonConfig) {};set st($w,comparisonRecord) {};set st($w,comparisonText) {Comparison inactive}
     set st($w,constructionPlaces) {};set st($w,chainReferences) {};set st($w,moreControls) 0
@@ -131,7 +195,7 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     set initialView [::GX::Native2D::core view_requested $st($w,scene)]
     lset initialView 6 {-10 -10 10 10}
     ::GX::Native2D::core view $st($w,scene) $initialView
-    set st($w,selectionScene) "";set st($w,selectionObject) "";set st($w,residualScene) ""
+    set st($w,selectionScene) "";set st($w,selectionObject) "";set st($w,residualWidget) {};set st($w,residualBinding) {}
     set st($w,selectionEpoch) 0;set st($w,pointSyncAfter) "";set st($w,pointSyncPending) {}
     set st($w,pointSyncRunning) 0;set st($w,pointSyncCommits) 0;set st($w,pointTableSignature) {}
     set st($w,pointPageStart) 0;set st($w,pointPageLabel) "";set st($w,pointPageInput) 1
@@ -275,7 +339,7 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     ttk::frame $w.right.viewport;pack $w.right.viewport -fill both -expand 1
     canvas $w.right.viewport.canvas -background white -height 580 -highlightthickness 0;pack $w.right.viewport.canvas -fill both -expand 1
     ttk::label $w.right.residualLabel -text "Signed residual by reference X or path distance (maximum highlighted)";pack $w.right.residualLabel -fill x
-    canvas $w.right.residual -background white -height 150 -highlightthickness 0;pack $w.right.residual -in $w.right -fill x
+    ttk::frame $w.right.residual -height 220;pack propagate $w.right.residual 0;pack $w.right.residual -in $w.right -fill x
     ttk::frame $w.validation -padding 5;pack $w.validation -side top -fill x
     ttk::label $w.validation.refLabel -text "Reference"
     ttk::combobox $w.validation.reference -textvariable ::GX::CurveWorkbench::st($w,referenceLabel) -state readonly -width 32
@@ -299,6 +363,7 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     ttk::button $w.publish.save -text "Save workspace" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_save $w]]
     foreach key {idLabel id go externalLabel external save} {pack $w.publish.$key -side left -padx 4}
     ttk::label $w.status -textvariable ::GX::CurveWorkbench::st($w,status) -anchor w -wraplength 1450
+    bind $w.status <Configure> [list $w.status configure -wraplength %w]
     pack $w.status -side bottom -fill x -padx 8 -pady 5
     # Reserve publication and validation controls before the expanding pane.
     pack forget $w.main $w.validation $w.metric $w.publish $w.status
@@ -318,7 +383,6 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     bind $w.right.viewport.canvas <Button-4> [list ::GX::CurveWorkbench::_wheel $w %x %y 120]
     bind $w.right.viewport.canvas <Button-5> [list ::GX::CurveWorkbench::_wheel $w %x %y -120]
     bind $w.right.viewport.canvas <Configure> [list ::GX::CurveWorkbench::_draw $w]
-    bind $w.right.residual <Configure> [list ::GX::CurveWorkbench::_drawResidual $w]
     bind $w.publish.external <Return> [list ::GX::CurveWorkbench::_save $w]
     wm protocol $w WM_DELETE_WINDOW [list ::GX::CurveWorkbench::_close $w]
     _selectionScene $w

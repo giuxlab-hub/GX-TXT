@@ -87,7 +87,7 @@ proc ::GX::Workbench3D::acceptCombinePreview {} {
         if {$replace ne {}||$removed ne {}} {structuralCommit $before combine $parameters [linsert $tools 0 $target] [list $id] $priorTokens} else {commit $before combine $parameters [linsert $tools 0 $target] [list $id]}
     } on error {message options} {set model $before;set tokens $priorTokens;return -options $options $message}
     set preview {};set selection [list $id]
-    $panel.objects selection set $id;$panel.objects see $id
+    projectSelection
     if {"operation_preview" in [::GX::viewerLayerIds viewer.3d_workbench workbench_3d]} {::GX::viewerLayerRemove viewer.3d_workbench workbench_3d operation_preview}
     ::GX::Engine3D::rerender
 }

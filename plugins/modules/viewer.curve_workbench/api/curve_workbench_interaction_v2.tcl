@@ -4,7 +4,7 @@
 proc ::GX::CurveWorkbench::_installCommandLayout {w} {
     
     _commandLayout $w [winfo width $w.toolbar]
-    ::GX::native2DToolbarLayout $w.publish [winfo width $w.publish]
+    _publicationLayout $w [winfo width $w.publish]
 
 }
 proc ::GX::CurveWorkbench::_buildCommandMenus {w} {
@@ -42,12 +42,32 @@ proc ::GX::CurveWorkbench::_buildCommandMenus {w} {
     $w.publish.batch.menu add command -label {Separate Dataset outputs…} -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_publishBatchOpen $w]]
     pack $w.publish.batch -side left -padx 3 -before $w.publish.save
     foreach child [winfo children $w.publish] {pack forget $child}
-    bind $w.publish <Configure> [list ::GX::native2DToolbarLayout $w.publish %w]
-    ::GX::native2DToolbarLayout $w.publish [winfo width $w.publish]
+    ttk::button $w.publish.options -text {Publication settings…} -command [list ::GX::CurveWorkbench::_publicationOptions $w]
+    $w.publish.batch.menu insert 0 command -label {Publish selected curve(s)} -command [$w.publish.go cget -command]
+    bind $w.publish <Configure> [list ::GX::CurveWorkbench::_publicationLayout $w %w]
+    _publicationLayout $w [winfo width $w.publish]
     _commandLayout $w [winfo width $w.toolbar]
     _sketchBarLayout $w [winfo width $w.sketchbar]
 }
 proc ::GX::CurveWorkbench::_scienceTool {w mode} {variable st;_sketchIdle $w;set st($w,tool) $mode;set st($w,toolLabel) "[string totitle $mode] — scientific point interaction. Esc returns to Select."}
+proc ::GX::CurveWorkbench::_publicationLayout {w width} {
+    if {![winfo exists $w.publish.options]} return
+    set commands [list $w.publish.save $w.publish.batch $w.publish.options]
+    foreach child [winfo children $w.publish] {if {$child ni $commands} {pack forget $child;grid forget $child}}
+    ::GX::native2DToolbarLayout $w.publish $width $commands
+}
+proc ::GX::CurveWorkbench::_publicationOptions {w} {
+    variable st
+    set fields [dict create resultId {type string required 1 label {New Dataset ID}} externalFeedback {type string label {External downstream feedback}} publicationRepresentation {type choice values {cartesian polar both} label Coordinates} publicationArrangement {type choice values {table long wide} label Arrangement}]
+    set values {};foreach key [dict keys $fields] {dict set values $key $st($w,$key)}
+    ::GX::uiFieldFormCreate $w.publicationOptions {Publication settings} $fields $values [list ::GX::CurveWorkbench::_publicationOptionsApply $w $st($w,token)] $w
+}
+proc ::GX::CurveWorkbench::_publicationOptionsApply {w token values} {
+    variable st
+    if {$token ne [::GX::interactiveDocumentSessionToken] || $token ne $st($w,token)} {error {Session changed; reopen Publication settings}}
+    foreach key {resultId externalFeedback publicationRepresentation publicationArrangement} {set st($w,$key) [dict get $values $key]}
+    _save $w
+}
 proc ::GX::CurveWorkbench::_moreControls {w} {
     variable st;set st($w,moreControls) [expr {!$st($w,moreControls)}]
     if {$st($w,moreControls)} {pack $w.editbar -side top -fill x -before $w.sketchbar} else {pack forget $w.editbar}
@@ -63,7 +83,7 @@ proc ::GX::CurveWorkbench::_commandLayout {w width} {
 proc ::GX::CurveWorkbench::_sketchBarLayout {w width} {
     variable st
     if {![winfo exists $w.sketchbar.feedback]} return
-    set children {};foreach key {create modify constraints represent unitLabel unit snap dimension parameters palette finish} {lappend children $w.sketchbar.$key}
+    set children {};foreach key {create modify constraints represent snap dimension parameters palette finish} {lappend children $w.sketchbar.$key}
     pack forget $w.sketchbar.select
     grid forget $w.sketchbar.select
     # Only this completed grid layout owns feedback; never pack it here.
@@ -172,31 +192,45 @@ proc ::GX::CurveWorkbench::_createCommit {w} {
     set before [_snapshotIds $w [lsort -unique $parents]];set oldUndo $st($w,undo);set oldRedo $st($w,redo);set native {};set joined 0
     _toolPreviewClear $w
     try {
-        ::GX::unitRegistryHomogeneousCoordinatePlan $unit $unit
-        if {$parents ne {}&&[_cadUnits $w [lsort -unique $parents]] ne $unit} {error {Construction attachment requires the same declared working units. Normalize the workspace through Unit Registry before joining geometry.}}
+        set context [_sketchCoordinateContext $w {}]
+        set coordinateUnits [dict get $context units]
+        _coordinatePlaneAdmit $w [lsort -unique [concat $parents [dict get $context parents]]]
+        if {$unit ne [lindex $coordinateUnits 0]} {error {Creation unit differs from the workspace coordinate frame}}
+        foreach parent [lsort -unique $parents] {
+            if {[_coordinateUnits [_record $w $parent]] ne $coordinateUnits} {error {Construction attachment requires the same declared X/Y coordinate frame. Explicitly normalize incoming geometry first.}}
+        }
+        # Native construction remains available in the explicitly chosen
+        # coordinate plane. Per-axis units describe its controls; construction
+        # does not assert a physical Euclidean length/radius across unlike axes.
         set symmetry {}
         if {[info exists st($w,symmetryEnabled)]&&$st($w,symmetryEnabled)} {
             set axis [_record $w $st($w,symmetryAxis)]
-            if {[lindex [_coordinateUnits $axis] 0] ne $unit} {error {Symmetry axis and new geometry require the same working unit}}
+            _coordinatePlaneAdmit $w [lsort -unique [concat $parents [dict get $context parents] [list $st($w,symmetryAxis)]]]
+            if {[_coordinateUnits $axis] ne $coordinateUnits} {error {Symmetry axis and new geometry require the same X/Y coordinate frame}}
             set symmetry [list [::GX::Native2D::core interaction_reference $st($w,scene) [dict get $axis native] segment 0]]
         }
         dict for {image record} $st($w,images) {
             foreach placement $placements {
-                if {[dict exists $placement reference]&&[dict get $placement reference object]==[dict get $record native]&&[dict get [::GX::Native2D::core image_get $st($w,scene) [dict get $record native]] length_unit] ne $unit} {error {Image reference attachment requires the same declared working unit}}
+                if {[dict exists $placement reference]&&[dict get $placement reference object]==[dict get $record native]} {
+                    set imageUnit [dict get [::GX::Native2D::core image_get $st($w,scene) [dict get $record native]] length_unit]
+                    if {$coordinateUnits ne [list $imageUnit $imageUnit]} {error {Image reference attachment requires the same declared physical X/Y units}}
+                    foreach basis [dict get $context parents] {if {[_coordinateSourceRelations [_record $w $basis]] ne {}} {error {Image calibration cannot silently adopt a custom coordinate relation}}}
+                }
             }
         }
         set receipt [::GX::Native2D::core construction_create $st($w,scene) $family $placements 257 $chain {*}$symmetry]
         set native [dict get $receipt id]
         set operation [dict create operation attached_canvas_construction family $family authority Native2D closed [dict get $receipt closed] periodic 0]
         set record [_newRecord $w "[string totitle [string map {_ { }} $family]] [expr {[dict size $st($w,curves)]+1}]" [_sketchSamples $w $native] {} x y {} {} {} {} [lsort -unique $parents] [list $operation]]
-        dict set record working_unit $unit;dict set record conversion_provenance $operation
+        dict set record coordinate_units $coordinateUnits;dict set record conversion_provenance $operation
+        if {$parents eq {}} {set record [_coordinateRetainFrame $w $record [dict get $context parents]]}
         dict set record materialization_sampling [dict create method uniform_parameter first 0 last 1 total [::GX::Native2D::core count $st($w,scene) $native] geometry_authority retained_sketch]
         set id [dict get $record id];dict set before $id {};_addRecord $w $record $native
         set resultIds [list $id]
         if {[dict exists $receipt mirror_id]} {
             set mirror [dict get $receipt mirror_id]
             set mirrored [_newRecord $w "Mirror — [dict get $record name]" [_sketchSamples $w $mirror] {} x y {} {} {} {} [list $id] [list [dict create operation symmetric_construction]]]
-            dict set mirrored working_unit $unit
+            dict set mirrored coordinate_units $coordinateUnits
             set mirroredId [dict get $mirrored id];dict set before $mirroredId {};_addRecord $w $mirrored $mirror;lappend resultIds $mirroredId
         }
         set reverse [_logicalNativeMap $w]
@@ -316,6 +350,8 @@ proc ::GX::CurveWorkbench::_publishBatchMember {w token ids session module reque
     if {[dict exists $record sketch_definition]} {
         set definition [::GX::Native2D::core sketch_definition $st($w,scene) [dict get $record native]]
         set sampling [dict create first 0 last 1 total [dict get $request samples] curved_samples [dict get $request samples] forward [dict get [::GX::Native2D::core direction_marker $st($w,scene) [dict get $record native]] forward]]
+        dict set sampling coordinate_units [_coordinateUnits $record]
+        dict set sampling coordinate_relations [_coordinateSourceRelations $record]
         if {[dict exists $request part_index]} {
             set index [dict get $request part_index]
             set part [::GX::Native2D::core composition_part $st($w,scene) [dict get $record native] $index]

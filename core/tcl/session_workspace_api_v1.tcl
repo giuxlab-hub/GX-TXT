@@ -301,7 +301,7 @@ proc ::GX::sessionWorkspaceExport {id} {
     set archive "${plan}.zip"
     try {
         fconfigure $channel -encoding utf-8 -translation lf
-        foreach {key value} [list workspace_id $id name [dict get $workspace name] provider_id [dict get $workspace provider_id] module_id [dict get $workspace module_id] schema [dict get $workspace schema] schema_version [dict get $workspace schema_version] payload [dict get $doc payload]] {puts $channel "$key\t[binary encode base64 -maxlen 0 [encoding convertto utf-8 $value]]"}
+        foreach {key value} [list workspace_id $id name [dict get $workspace name] provider_id [dict get $workspace provider_id] module_id [dict get $workspace module_id] schema [dict get $workspace schema] schema_version [dict get $workspace schema_version] source_document_receipt [dict remove $doc payload] source_session_origin [sessionOriginRead [_interactiveDocumentRequireSession]] payload [dict get $doc payload]] {puts $channel "$key\t[binary encode base64 -maxlen 0 [encoding convertto utf-8 $value]]"}
         set references {};_workspacePackageReferences [dict get $doc payload] 0 references
         dict for {sha reference} $references {
             interactiveDocumentResourceInfo $reference
@@ -309,6 +309,8 @@ proc ::GX::sessionWorkspaceExport {id} {
         }
         close $channel;set channel {}
         _portableResourceRun export-workspace [_interactiveDocumentRequireSession] $plan $archive $version
+        set current [interactiveDocumentRead $id]
+        foreach key {generation revision sha256} {if {[dict get $current $key] ne [dict get $doc $key]} {error {Workspace changed during export; create a fresh package}}}
         return [interactiveDocumentResourceImportNumeric $id $archive {format gxtxt.workspace.zip}]
     } finally {if {$channel ne {}} {close $channel};file delete -force -- $plan $archive}
 }
@@ -343,6 +345,25 @@ proc ::GX::sessionWorkspaceImport {resource {name {}}} {
     set path [file join [_documentResourceRoot [dict get $resource document_id]] [dict get $resource sha256].blob]
     return [_sessionWorkspaceImportPath $path $name]
 }
+# Verified package metadata is provenance, not authentication. Foreign IDs are
+# retained as inert source receipts, never resolved against the receiving Session.
+proc ::GX::_workspacePackageSourceOrigin {fields payloadHash archiveHash} {
+    set parent [dict create source_archive_sha256 $archiveHash]
+    if {![dict exists $fields source_document_receipt] && ![dict exists $fields source_session_origin]} {dict set parent source_document_lineage unavailable;return $parent}
+    if {![dict exists $fields source_document_receipt] || ![dict exists $fields source_session_origin]} {error {Workspace source lineage receipt is incomplete}}
+    set source [dict get $fields source_document_receipt]
+    foreach key {id generation revision sha256 module_id provider_id format format_version origin} {if {![dict exists $source $key]} {error "Workspace source receipt is missing $key"}}
+    if {[dict get $source id] ne [dict get $fields workspace_id] || [dict get $source module_id] ne [dict get $fields module_id] || [dict get $source provider_id] ne [dict get $fields provider_id] || [dict get $source format] ne [dict get $fields schema] || [dict get $source format_version] ne [dict get $fields schema_version] || [dict get $source sha256] ne $payloadHash} {error {Workspace source receipt differs from packaged identity or payload}}
+    _interactiveDocumentValidateSingleLine [dict get $source generation] {Workspace source generation}
+    if {![interactiveDocumentIdValid [dict get $source id]] || ![string is entier -strict [dict get $source revision]] || [dict get $source revision]<1 || ![regexp {^[0-9a-f]{64}$} $payloadHash]} {error {Workspace source receipt has invalid identity or revision}}
+    foreach origin [list [dict get $source origin] [dict get $fields source_session_origin]] {
+        if {[catch {dict size $origin}] || ![dict exists $origin version] || [dict get $origin version] ne {1}} {error {Workspace source origin snapshot is malformed}}
+    }
+    dict set parent source_document_lineage recorded
+    dict set parent source_document $source
+    dict set parent source_session_origin [dict get $fields source_session_origin]
+    return $parent
+}
 proc ::GX::_sessionWorkspaceImportPath {path {name {}} {expectedProvider {}}} {
     set session [_interactiveDocumentRequireSession]
     set stage [file join $session metadata .workspace-import-[pid]-[clock clicks]]
@@ -355,6 +376,7 @@ proc ::GX::_sessionWorkspaceImportPath {path {name {}} {expectedProvider {}}} {
         set descriptor [_workspaceProvider $provider]
         if {[dict get $fields schema] ne [dict get $descriptor schema]||[dict get $fields module_id] ne [dict get $descriptor module_id]} {error {Workspace provider/schema mismatch}}
         set payload [noteReadUtf8 [file join $stage workspace payload.utf8]]
+        set sourceOrigin [_workspacePackageSourceOrigin $fields [sha256File [file join $stage workspace payload.utf8]] [sha256File $path]]
         _workspaceValidatePayload $provider $payload [dict get $fields schema_version]
         if {$name eq {}} {set name [dict get $fields name]}
         set name [_workspaceName $name]
@@ -368,7 +390,7 @@ proc ::GX::_sessionWorkspaceImportPath {path {name {}} {expectedProvider {}}} {
         }
         set note [file join $stage workspace notes.md]
         if {[dict get $old note] ne {}&&(![file isfile $note]||[sha256File $note] ne [dict get $old note sha256])} {error {Packaged note is missing or corrupt}}
-        set receipt [interactiveDocumentCreate [dict get $descriptor module_id] $provider gxtxt.workspace.staging [dict get $descriptor version] {}];set created [dict get $receipt id]
+        set receipt [_interactiveDocumentCreateWithOrigin [dict get $descriptor module_id] $provider gxtxt.workspace.staging [dict get $descriptor version] {} {} $sourceOrigin];set created [dict get $receipt id]
         set mapping {}
         dict for {sha ref} $references {dict set mapping $sha [interactiveDocumentResourceImportNumeric $created [file join $stage workspace blobs $sha.blob] [dict get $ref metadata]]}
         set payload [_workspaceRemapResources $payload $mapping 0]

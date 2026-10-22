@@ -11,57 +11,131 @@ proc ::GX::moduleGroups {} {
     return [lsort -dictionary $groups]
 }
 
+# Read-only presentation helpers; moduleSetEnabled remains the sole mutator.
+proc ::GX::moduleCardsFeedbackSet {message} {
+    set ::GX::ui(moduleFeedback) $message
+    set page .top.nb.modules
+    if {[llength [info commands winfo]] && [winfo exists $page.feedback]} {
+        if {$message eq {}} {
+            pack forget $page.feedback
+        } else {
+            pack $page.feedback -after $page.tools -fill x -padx 12 -pady {0 4}
+        }
+    }
+}
+proc ::GX::moduleCardsEnabledSnapshot {} {
+    set states {}
+    foreach id $::GX::moduleOrder {dict set states $id [moduleIsEnabled $id]}
+    return $states
+}
+proc ::GX::moduleCardsRelatedChanges {id enabled} {
+    set names {}
+    if {$enabled} {
+        foreach dependency [splitList [moduleField $id depends {}]] {
+            if {![moduleIsEnabled $dependency]} {lappend names [moduleField $dependency name $dependency]}
+        }
+    } else {
+        foreach other $::GX::moduleOrder {
+            if {[moduleIsEnabled $other] && $id in [splitList [moduleField $other depends {}]]} {
+                lappend names [moduleField $other name $other]
+            }
+        }
+    }
+    return $names
+}
+proc ::GX::moduleCardsChangeSummary {id before} {
+    set changes {}
+    foreach other $::GX::moduleOrder {
+        if {$other eq $id || ![dict exists $before $other]} continue
+        if {[dict get $before $other] != [moduleIsEnabled $other]} {
+            lappend changes "[moduleField $other name $other]: [moduleOperationalState $other]"
+        }
+    }
+    set message "[moduleField $id name $id]: [moduleOperationalState $id]."
+    if {[llength $changes]} {append message " Related changes: [join $changes {; }]."}
+    return $message
+}
+proc ::GX::moduleCardStateText {id} {
+    set state [moduleOperationalState $id]
+    if {$state eq {ALWAYS}} {set state {Always available}}
+    # Package runtime status is separate from the Session enable flag.
+    set runtime [pluginRuntimeInfo $id]
+    if {[dict get $runtime status] eq {Updated — restart required}} {
+        append state "\nRestart required"
+    }
+    return $state
+}
+
 proc ::GX::refreshModuleCatalog {} {
     variable ui
     variable moduleOrder
-    variable moduleSearch
-    variable moduleKindFilter
-    variable moduleGroupFilter
-    variable moduleCoreFilter
-    if {![info exists ui(moduleTree)] || ![winfo exists $ui(moduleTree)]} return
-    set t $ui(moduleTree)
-    foreach item [$t children {}] { $t delete $item }
-    foreach k [array names ui "moduleId,*"] { unset ui($k) }
-    set q [string tolower [string trim $moduleSearch]]
-    array set groupIid {}
-    set ng 0; set nm 0; set firstLeaf ""
-    foreach id $moduleOrder {
-        if {![moduleAnalysisEligible $id] || $id in {plot.dataset analysis.octave_script analysis.python_script}} continue
-        if {$moduleCoreFilter eq "CORE" && ![moduleIsCore $id]} continue
-        if {$moduleCoreFilter eq "Non-CORE" && [moduleIsCore $id]} continue
-        set kind [moduleKindLabel [moduleField $id kind]]
-        set group [moduleField $id group "General"]
-        set name [moduleField $id name $id]
-        set ver [moduleField $id version ""]
-        if {$moduleKindFilter ne "All" && $kind ne $moduleKindFilter} continue
-        if {$moduleGroupFilter ne "All" && $group ne $moduleGroupFilter} continue
-        if {$q ne ""} {
-            set hay [string tolower "$id $name $group $kind [moduleField $id description]"]
-            if {[string first $q $hay] < 0} continue
-        }
-        if {![info exists groupIid($group)]} {
-            incr ng; set gi "grp$ng"; set groupIid($group) $gi
-            $t insert {} end -id $gi -text $group -open 1 -values [list "" "" "" ""]
-        }
-        incr nm; set iid "mod$nm"
-        set ui(moduleId,$iid) $id
-        set state [moduleOperationalState $id]
-        $t insert $groupIid($group) end -id $iid -text $name -values [list $state $kind $ver $id]
-        if {$firstLeaf eq ""} { set firstLeaf $iid }
+    if {![info exists ui(moduleCards)] || ![winfo exists $ui(moduleCards)]} return
+    set stateSignature [list $::GX::currentSession [moduleCardsEnabledSnapshot]]
+    if {![info exists ui(moduleCardsStateSignature)] || $ui(moduleCardsStateSignature) ne $stateSignature} {
+        moduleCardsFeedbackSet {}
+        set ui(moduleCardsStateSignature) $stateSignature
     }
-    if {$firstLeaf ne ""} { $t selection set $firstLeaf; $t see $firstLeaf }
-    refreshModuleDetails
-    foreach id {plot.dataset analysis.octave_script analysis.python_script} {set ui(moduleQuick,$id) [moduleIsEnabled $id]}
+    set signature {};set groups {}
+    foreach id $moduleOrder {
+        set group [string trim [moduleField $id group General]]
+        if {$group eq {}} {set group General}
+        dict lappend groups $group $id
+        lappend signature [list $id $group [moduleField $id name $id] [moduleOperationalClass $id]]
+    }
+    if {$signature ne $ui(moduleCardsSignature)} {
+        foreach child [winfo children $ui(moduleCards)] {destroy $child}
+        set ui(moduleGroupCards) {};set ui(moduleCardLabels) {};set ui(moduleStateWidgets) {}
+        foreach column {0 1} {
+            ttk::frame $ui(moduleCards).column$column
+            grid columnconfigure $ui(moduleCards).column$column 0 -weight 1
+        }
+        set n 0
+        foreach group [lsort -dictionary [dict keys $groups]] {
+            set box $ui(moduleCards).group[incr n]
+            ttk::labelframe $box -text $group -padding 8
+            lappend ui(moduleGroupCards) $box
+            dict set ui(moduleCardLabels) $box {}
+            grid columnconfigure $box 1 -weight 1
+            set row 0
+            foreach id [dict get $groups $group] {
+                set item $box.module$row
+                ttk::frame $item -padding {2 5}
+                ttk::checkbutton $item.toggle -variable ::GX::ui(moduleQuick,$id) -command [list ::GX::moduleCardToggle $id] -takefocus 1
+                ttk::label $item.name -text [moduleField $id name $id] -wraplength 230 -justify left
+                ttk::label $item.state -width 14 -anchor w -justify left
+                ttk::button $item.help -text Help -command [list ::GX::moduleCardHelp $id] -width 5
+                if {[moduleIsAlwaysAvailable $id]} {$item.toggle state disabled}
+                grid $item.toggle -row 0 -column 0 -padx {0 5} -sticky w
+                grid $item.name -row 0 -column 1 -sticky ew -padx {0 8}
+                grid $item.state -row 0 -column 2 -sticky w -padx {0 5}
+                grid $item.help -row 0 -column 3 -sticky e
+                grid columnconfigure $item 1 -weight 1
+                grid $item -row $row -column 0 -columnspan 2 -sticky ew
+                bind $item.name <Button-1> [list ::GX::moduleCardSelect $id]
+                bind $item.toggle <FocusIn> [list ::GX::moduleCardSelect $id]
+                dict set ui(moduleStateWidgets) $id $item.state
+                dict lappend ui(moduleCardLabels) $box $item.name
+                incr row
+            }
+        }
+        set ui(moduleCardsSignature) $signature
+        unset -nocomplain ui(moduleCardsColumns) ui(moduleCardsWidth)
+        modulesCardsLayout $ui(moduleCards) [winfo width $ui(moduleCards)]
+    }
+    dict for {id widget} $ui(moduleStateWidgets) {
+        set enabled [moduleIsEnabled $id]
+        set ui(moduleQuick,$id) $enabled
+        set toggle [winfo parent $widget].toggle
+        $toggle state [expr {[moduleIsAlwaysAvailable $id]?{disabled}:{!disabled}}]
+        set state [moduleCardStateText $id]
+        $widget configure -text $state -foreground [expr {$enabled?{#25633a}:{#666666}}]
+    }
 }
 
 proc ::GX::selectedModuleFromTree {} {
     variable ui
-    if {![info exists ui(moduleTree)] || ![winfo exists $ui(moduleTree)]} { return "" }
-    set sel [$ui(moduleTree) selection]
-    if {[llength $sel] != 1} { return "" }
-    set iid [lindex $sel 0]
-    if {[info exists ui(moduleId,$iid)]} { return $ui(moduleId,$iid) }
-    return ""
+    if {[info exists ui(moduleSelected)]} {return $ui(moduleSelected)}
+    return {}
 }
 
 proc ::GX::refreshModuleDetails {} {
@@ -145,7 +219,7 @@ proc ::GX::moduleHelpDialog {{initial ""}} {
 
 proc ::GX::showSelectedModuleHelp {} {
     set id [selectedModuleFromTree]
-    moduleHelpDialog $id
+    if {$id ne {}} {moduleCardHelp $id}
 }
 
 proc ::GX::resourceLifecycleModuleResetSelected {} {

@@ -16,6 +16,16 @@ proc ::GX::buildPreviewPage {} {
     grid $f.sy -row 2 -column 1 -sticky ns
     grid $f.sx -row 3 -column 0 -sticky ew -padx {5 0}
     set ui(preview) $f.txt
+    ttk::frame $f.imageTools
+    foreach {name title operation} {out {Zoom out} out actual {100%} actual in {Zoom in} in fit {Fit image} fit} {
+        ttk::button $f.imageTools.$name -text $title -command [list ::GX::datasetPreviewImageView $f.txt $operation]
+        pack $f.imageTools.$name -side left -padx 3 -pady 3
+    }
+    ttk::label $f.imageTools.scale -text {Preview 100%}
+    pack $f.imageTools.scale -side left -padx 8
+    bind $f.txt <Control-Button-4> {if {[::GX::datasetPreviewImageView %W in]} break}
+    bind $f.txt <Control-Button-5> {if {[::GX::datasetPreviewImageView %W out]} break}
+    bind $f.txt <Destroy> +[list ::GX::datasetPreviewImageDestroyed $f.txt %W]
     ttk::frame $f.actions -relief raised -borderwidth 1
     ttk::label $f.actions.grip -text ⋮ -cursor fleur
     pack $f.actions.grip -side left
@@ -32,5 +42,6 @@ proc ::GX::buildPreviewPage {} {
         bind $f.actions.$key <Leave> {catch {destroy .gxViewportTip}}
     }
     bind $f.txt <Configure> {::GX::datasetPreviewToolsPlace}
+    bind $f.txt <Configure> +[list ::GX::datasetPreviewImagePropertiesFit $f.txt %w]
     datasetPreviewToolsPlace
 }

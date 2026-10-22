@@ -5,6 +5,14 @@ The shared host loader is `::GX::native2DEnsure`, backed by the installed
 loader. The `GX2D_TCL_LIBRARY` host environment override permits controlled
 builds and validation.
 
+The native Plot v4 painter wraps an overflowing automatic inside-series legend
+within its panel using Cairo glyph metrics. It keeps the complete source label,
+declared font, series identity and scientific geometry. Short captions and
+explicit manual anchors retain their previous primitives. If the wrapped legend
+cannot fit vertically, the painter reports insufficient viewport space rather
+than silently clipping its text. This policy is separate from the cell-field
+scalar-range legend and does not alter scalar values or physical axis units.
+
 `gx2d_curve_endpoint_frame` and `gx2d_curve_point_frame` return exact endpoint
 coordinates and incident derivatives, including reversed traversal and native
 Catmull–Rom interpolation. Derivatives use the incident source segment's local

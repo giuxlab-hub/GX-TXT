@@ -49,7 +49,7 @@ proc ::GX::_viewerGuiScientificForm {window form} {
     foreach key {scientific_parameters scientific_destination scientific_status scientific_log} {if {![dict exists $properties $key]} {error "Scientific form requires $key"}}
     return $properties
 }
-proc ::GX::viewerGuiDesignScientificProbe {window form endpoint} {
+proc ::GX::viewerGuiDesignScientificProbe {window form endpoint {hitContext {}}} {
     try {
         set p [_viewerGuiScientificForm $window $form]
         foreach key {scientific_probe_diagram scientific_probe_plot scientific_probe_mode} {if {![dict exists $p $key]} {error {Declare diagram, Plot and mode references for scientific probing}}}
@@ -60,8 +60,14 @@ proc ::GX::viewerGuiDesignScientificProbe {window form endpoint} {
         set values [viewerGuiDesignValues $window]
         set mode [dict get $values [dict get $p scientific_probe_mode]]
         if {$mode ni {voltage current}} {error {Select voltage or current probe mode}}
+        if {$mode eq {current} && [datasetPublicationV2DictDefault $hitContext hit_kind terminal] eq {wire}} {error {An arbitrary ideal-wire location has no defined branch-current observable. Select a supported device terminal; this solver exposes independent voltage-source branch current.}}
         set binding [dict get $::GX::ViewerGui::instances $window bindings $diagram]
         if {[dict get $binding kind] ne {diagram}} {error {Scientific probe needs the canonical electrical diagram}}
+        if {[datasetPublicationV2DictDefault $hitContext hit_kind terminal] eq {wire}} {
+            set owner [native2DGeometryDiagramRead [dict get $binding document_id]]
+            if {![dict exists $owner payload wires [dict get $hitContext wire_id]] || [dict get $owner payload wires [dict get $hitContext wire_id] start] ne $endpoint} {error {Wire probe no longer refers to the current canonical electrical wire}}
+            _native2DDiagramWireTargets [dict get $owner payload] [list [dict create kind wire wire_id [dict get $hitContext wire_id] point [dict get $hitContext point]]]
+        }
         set job [_viewerGuiScientificJob $window $form]
         _scientificExecutionPublicationGuard [dict get $job source_guard]
         if {[dict get $job source_guard document_id] ne [dict get $binding document_id] || [datasetPublicationV2DictDefault $job last_status {}] ne {COMPLETED}} {error {Probe requires this source's completed published Job or selected sweep case}}
@@ -99,8 +105,12 @@ proc ::GX::viewerGuiDesignScientificProbe {window form endpoint} {
         }
         set variable [datasetVariableV3ById $dataset $selected]
         if {[dict get $variable unit] ne $unit} {error {Canonical probe variable has incompatible units}}
-        set result [viewerGuiDesignPlotBind $window $plot $plotForm [dict create y_variable_id $selected]]
-        set receipt [dict create mode $mode endpoint $endpoint variable_id $selected unit $unit dataset_id $dataset job_id [dict get $job job_id] source_guard [dict get $job source_guard] authority SCIENTIFIC_EXECUTION_API_v1]
+        set axis [dict get $inspected independent_variable]
+        set x [dict get $axis id];set xVariable [datasetVariableV3ById $dataset $x]
+        if {[dict get $xVariable unit] ne [dict get $axis unit] || [dict get $xVariable dtype] ne [dict get $axis dtype] || [dict get $xVariable shape] ne [dict get $variable shape] || [llength [dict get $variable shape]]!=1} {error {Canonical probe coordinate and observable must have the provider's declared units, dtype and aligned rows}}
+        _scientificExecutionPublicationGuard [dict get $job source_guard]
+        set result [viewerGuiDesignPlotBind $window $plot $plotForm [dict create x_variable_id $x y_variable_id $selected]]
+        set receipt [dict create mode $mode endpoint $endpoint variable_id $selected unit $unit x_variable_id $x x_unit [dict get $axis unit] dataset_id $dataset job_id [dict get $job job_id] source_guard [dict get $job source_guard] authority SCIENTIFIC_EXECUTION_API_v1]
         if {[dict exists $plotProperties plot_probe]} {viewerGuiDesignTextSet $window [dict get $plotProperties plot_probe] "[string totitle $mode] probe: $endpoint\n$selected ($unit)\nDataset: $dataset\nOriginal Job: [dict get $job job_id]\nRelease the pointer on a computed Plot point for its exact source row."}
         viewerGuiTraceEmit $window $form scientific_probe [dict merge {status selected} $receipt]
         return $receipt

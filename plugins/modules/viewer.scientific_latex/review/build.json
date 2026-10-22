@@ -1,0 +1,180 @@
+{
+  "adapter_sha256": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66",
+  "binary_sha256": "354c14c9ea2afd772007eaade3d224569bd109fb59bd482da8f8564789280616",
+  "build_dependencies": {
+    "files": {
+      "/srv/gxtxt/agents/worktrees/author_document_metadata252/core/development/policy_v1.json": "b0b8115c624297c86e5eb390d46e5380f2c1494b225c5b8d24a1202dd2f49ca2",
+      "/srv/gxtxt/agents/worktrees/author_document_metadata252/core/development/sdk/gxtxt_viewer_sdk_v1.hpp": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
+      "/srv/gxtxt/agents/worktrees/author_document_metadata252/core/development/sdk/trusted_adapter_v1.cpp": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66",
+      "/srv/gxtxt/agents/worktrees/author_document_metadata252/core/development/toolchain/clang-19": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
+      "/srv/gxtxt/agents/worktrees/author_document_metadata252/core/development/toolchain/manifest.json": "5ec19600eb988358ed8467daec98420a3adc78ff0393e8d9fd5b39a440bd4ee7"
+    },
+    "flags": [
+      "--no-default-config",
+      "-std=c++17",
+      "-x",
+      "c++",
+      "-Werror",
+      "-fno-color-diagnostics",
+      "-pthread",
+      "-isystem",
+      "/usr/lib/gcc/x86_64-linux-gnu/14/include"
+    ],
+    "recipe_sha256": "464ca270e7d308a85c5a4d6a273221a87afa81b850118c2469bfddd5cce6abaf",
+    "validation_owner_sha256": "0f3d450622d930a6d0fbc82fb98ded6776495e9da17085d7701494729c13671f"
+  },
+  "capabilities": [
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "operations": [
+        "tex_command"
+      ],
+      "version": 1
+    },
+    {
+      "api_id": "SESSION_WORKSPACE_API_v1",
+      "operations": [
+        "create",
+        "get",
+        "update",
+        "list"
+      ],
+      "version": 1
+    },
+    {
+      "api_id": "SCIENTIFIC_RECIPE_API_v1",
+      "operations": [
+        "scientificHistoryViewerRecord",
+        "scientificHistoryViewerNavigate"
+      ],
+      "version": 1
+    }
+  ],
+  "code_generation_invoked": true,
+  "compiler_version": "19.1.7",
+  "debug_symbols": false,
+  "header_dependencies": {
+    "/srv/gxtxt/agents/worktrees/author_document_metadata252/core/development/sdk/gxtxt_viewer_sdk_v1.hpp": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
+    "/srv/gxtxt/agents/worktrees/author_document_metadata252/core/development/sdk/trusted_adapter_v1.cpp": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66"
+  },
+  "link_policy": "fixed SDK adapter; reviewed system C/C++ runtime, math and pthread; no undefined symbols; extra libraries/options require review",
+  "log": "\n\n",
+  "schema": "gxtxt.viewer_build.v1",
+  "status": "BUILT",
+  "validation": {
+    "admitted_headers": [
+      "algorithm",
+      "array",
+      "assert.h",
+      "atomic",
+      "cassert",
+      "cerrno",
+      "chrono",
+      "condition_variable",
+      "cstddef",
+      "cstdint",
+      "cstdio",
+      "cstdlib",
+      "cstring",
+      "deque",
+      "errno.h",
+      "exception",
+      "functional",
+      "limits",
+      "list",
+      "map",
+      "memory",
+      "mutex",
+      "new",
+      "pthread.h",
+      "queue",
+      "set",
+      "stack",
+      "stddef.h",
+      "stdexcept",
+      "stdint.h",
+      "stdio.h",
+      "stdlib.h",
+      "string",
+      "string.h",
+      "string_view",
+      "sys/types.h",
+      "sys/wait.h",
+      "thread",
+      "tuple",
+      "type_traits",
+      "typeinfo",
+      "unistd.h",
+      "unordered_map",
+      "unordered_set",
+      "utility",
+      "vector"
+    ],
+    "architecture_review": "Language admission is not approval of alternate canonical Dataset/Job/Workspace/Plot ownership; review author data flows separately.",
+    "author_ast_kinds": [
+      "BinaryOperator",
+      "BreakStmt",
+      "CXXMemberCallExpr",
+      "CaseStmt",
+      "CompoundStmt",
+      "ConstantExpr",
+      "DeclRefExpr",
+      "DefaultStmt",
+      "FunctionDecl",
+      "IfStmt",
+      "ImplicitCastExpr",
+      "IntegerLiteral",
+      "MemberExpr",
+      "ParmVarDecl",
+      "ReturnStmt",
+      "StringLiteral",
+      "SwitchStmt"
+    ],
+    "canonical_lifecycle_scope": "declared canonical Viewer state through existing guarded Workspace/History owners",
+    "code_generation_invoked": false,
+    "compiler_sha256": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
+    "compiler_version": "19.1.7",
+    "design_sha256": "32f251173670802ec3a3891a1d84428f2818294db2b6e1506c082236d4c0febf",
+    "diagnostics": [],
+    "functions": [
+      "on_event"
+    ],
+    "language_support": {
+      "debugger": "Existing managed GDB/MI; detailed threading/fork/aggregate usability requires the next acceptance matrix, not assumed from compilation",
+      "features": [
+        "functions",
+        "pointers/references",
+        "classes/structs/enums/unions",
+        "inheritance/virtual dispatch/RTTI",
+        "overloads/templates",
+        "recursion",
+        "callbacks/lambdas",
+        "malloc/free/new/delete/RAII",
+        "containers/algorithms",
+        "preprocessing/macros/assert",
+        "exceptions",
+        "threads/synchronization",
+        "fork/wait"
+      ],
+      "ownership": "Local project logic/data/concurrency are allowed. Canonical Dataset/Schema/Publication/Session/Workspace/History/Job/scientific Plot remain public CORE responsibilities. Language admission does not approve an architectural bypass.",
+      "runtime": "Debian system libc/libstdc++/libm/pthread; extra libraries and compiler options require purpose-specific review",
+      "standard": "C++17 including C facilities"
+    },
+    "policy_sha256": "b0b8115c624297c86e5eb390d46e5380f2c1494b225c5b8d24a1202dd2f49ca2",
+    "profile": "cpp_view_v1",
+    "project_profile": "document_view_v1",
+    "project_sha256": "0527f12c8a5a9c4a927fd16c10a17df6c59282506ef07165d76ec1fbf65c80c5",
+    "schema": "gxtxt.cpp_validation.v1",
+    "sdk_calls": [
+      "tex_command"
+    ],
+    "sdk_sha256": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
+    "source_sha256": "4cdf528e70688b835e096c834244763f9d75b4bc19097790597cc1dd805257c3",
+    "stages": [
+      "clang_raw_lexer",
+      "clang_resolved_ast"
+    ],
+    "status": "PASS",
+    "workspace_callback_contract_sha256": "a4dd82b75076992b99a686aa9727170d4d4f41a5912169def3a60bcaa7cacfb7"
+  }
+}

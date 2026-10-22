@@ -207,6 +207,15 @@ written yet. datasetMetadataWrite replaces the complete resource explicitly.
 datasetMetadataUpdate reads and merges the existing resource, so fields unknown
 to the caller are preserved. datasetMetadataUnset removes only the named keys.
 
+An explicit `datasetMetadataRead session datasetId` reads that Session's
+canonical registry record and existing metadata resource without replacing the
+live current-Session registry or catalog projection. Local values and declared
+remote metadata values use the same metadata reader and ordinary/private field
+filtering. `datasetPrivateMetadataRead`, metadata groups and contributor reads
+share this read path. This adds no second metadata store or registry. Mutation
+operations retain their existing Dataset Authority transaction and registry
+refresh semantics; a read does not perform that refresh as a side effect.
+
 Keys may be simple generic identifiers such as `description` or `function`, or
 dot-separated namespaced identifiers such as `audio.title`, `image.exposure`,
 `experimental.temperature` or `source.original_filename`. Key segments may use
@@ -462,3 +471,14 @@ self-grant. Private namespaces and scientific payload ownership remain enforced.
 Preview resolves actual installed names and only present contributor groups.
 Publication v2, File Publication and Acquisition use the same CORE boundary: supplied
 keys belong to their module, CORE integrity/administrative fields to System.
+
+Publication by the explicit CORE producers `core.native2d` and
+`core.dataset_transform` attributes supplied metadata through the existing
+`System` actor only when the canonical Dataset's `producer_module` exactly matches
+the publication producer. These services have no loadable module descriptor;
+their canonical producer and scientific provenance identities remain unchanged.
+This is not a wildcard rule for `core.*`. Other contributors retain the registered
+module descriptor requirement and `module:<id>` attribution. Existing metadata
+origin preservation, namespace/contributor guards, transaction cleanup and private
+capability issuance are unchanged; this mapping adds no caller-supplied actor or
+second metadata store.

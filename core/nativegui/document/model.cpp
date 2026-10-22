@@ -45,7 +45,9 @@ static int xmlcmd(ClientData data,Tcl_Interp*ip,int objc,Tcl_Obj *const objv[]){
             if(op=="parse") {
                 if(input.size()>4194304)throw std::runtime_error("XML parse limit is 4 MiB");
                 xmlParserCtxt*ctxt=xmlNewParserCtxt();if(!ctxt)throw std::bad_alloc();
-                raw=xmlCtxtReadMemory(ctxt,input.data(),(int)input.size(),nullptr,"UTF-8",XML_PARSE_NONET|XML_PARSE_NOERROR|XML_PARSE_NOWARNING|XML_PARSE_COMPACT);
+                // These documents are editable. libxml2 explicitly forbids
+                // modifying trees parsed with XML_PARSE_COMPACT.
+                raw=xmlCtxtReadMemory(ctxt,input.data(),(int)input.size(),nullptr,"UTF-8",XML_PARSE_NONET|XML_PARSE_NOERROR|XML_PARSE_NOWARNING);
                 if(!raw){const xmlError*e=xmlCtxtGetLastError(ctxt);string message="XML parse error at line "+std::to_string(e?e->line:0)+" column "+std::to_string(e?e->int2:0)+": "+(e&&e->message?e->message:"Invalid XML");xmlFreeParserCtxt(ctxt);throw std::runtime_error(message);}
                 xmlFreeParserCtxt(ctxt);
             } else {if(xmlValidateName(BAD_CAST input.c_str(),0)||input.find(':')!=string::npos)throw std::runtime_error("Root must be an unqualified XML name; declare namespaces explicitly");raw=xmlNewDoc(BAD_CAST "1.0");xmlDocSetRootElement(raw,xmlNewNode(nullptr,BAD_CAST input.c_str()));}
@@ -69,7 +71,9 @@ static int xmlcmd(ClientData data,Tcl_Interp*ip,int objc,Tcl_Obj *const objv[]){
                 put(ip,result,"namespace",str(n->ns&&n->ns->href?(const char*)n->ns->href:""));put(ip,result,"prefix",str(n->ns&&n->ns->prefix?(const char*)n->ns->prefix:""));
                 xmlChar*t=xmlNodeGetContent(n);put(ip,result,"text",str(t?(const char*)t:""));xmlFree(t);
                 Tcl_Obj*children=Tcl_NewListObj(0,nullptr),*attrs=Tcl_NewDictObj();for(xmlNode*c=n->children;c;c=c->next)add(ip,children,str(d.handle(c)));
-                for(xmlAttr*a=n->properties;a;a=a->next){xmlChar*v=xmlNodeListGetString(d.doc,a->children,1);string key=a->ns&&a->ns->prefix?string((const char*)a->ns->prefix)+":"+(const char*)a->name:(const char*)a->name;Tcl_DictObjPut(ip,attrs,str(key),str(v?(const char*)v:""));xmlFree(v);}
+                // Only elements have an attribute list. Compact parsed text
+                // may use this storage for content; never walk it as xmlAttr.
+                for(xmlAttr*a=n->type==XML_ELEMENT_NODE?n->properties:nullptr;a;a=a->next){xmlChar*v=xmlNodeListGetString(d.doc,a->children,1);string key=a->ns&&a->ns->prefix?string((const char*)a->ns->prefix)+":"+(const char*)a->name:(const char*)a->name;Tcl_DictObjPut(ip,attrs,str(key),str(v?(const char*)v:""));xmlFree(v);}
                 put(ip,result,"children",children);put(ip,result,"attributes",attrs);put(ip,result,"node_type",Tcl_NewIntObj(n->type));
             } else if(op=="append"||op=="insert"){
                 xmlNode*parent=op=="append"?n:n->parent;if(!parent||parent->type!=XML_ELEMENT_NODE)throw std::runtime_error("XML element parent required");
@@ -98,7 +102,29 @@ static int xmlcmd(ClientData data,Tcl_Interp*ip,int objc,Tcl_Obj *const objv[]){
                 if(n==xmlDocGetRootElement(d.doc))throw std::runtime_error("Cannot remove document root");
                 d.invalidate(n);xmlUnlinkNode(n);xmlFreeNode(n);
             } else if(op=="move"){
-                xmlNode*parent=d.node(arg(4));if(n==xmlDocGetRootElement(d.doc)||parent->type!=XML_ELEMENT_NODE)throw std::runtime_error("Invalid move destination");for(xmlNode*p=parent;p;p=p->parent)if(p==n)throw std::runtime_error("XML move would create a cycle");xmlNode*old=n->parent,*next=n->next;xmlUnlinkNode(n);xmlAddChild(parent,n);unsigned count=0;try{budget(xmlDocGetRootElement(d.doc),0,count);}catch(...){xmlUnlinkNode(n);if(next)xmlAddPrevSibling(next,n);else xmlAddChild(old,n);throw;}xmlReconciliateNs(d.doc,n);
+                xmlNode*parent=d.node(arg(4));
+                if(n==xmlDocGetRootElement(d.doc)||parent->type!=XML_ELEMENT_NODE)throw std::runtime_error("Invalid move destination");
+                unsigned depth=0;
+                for(xmlNode*p=parent;p;p=p->parent){
+                    if(p==n)throw std::runtime_error("XML move would create a cycle");
+                    if(p->parent&&p->parent->type!=XML_DOCUMENT_NODE)++depth;
+                }
+                // Moving within this document cannot increase its node count.
+                // Check the new subtree depth before libxml2 can merge/free text:
+                // rollback through the original pointer would then be unsafe.
+                if(depth+1>64)throw std::runtime_error("XML depth exceeds 64");
+                unsigned count=1;budget(n->children,depth+2,count);
+                xmlNode*old=n->parent,*next=n->next;
+                xmlUnlinkNode(n);
+                xmlNode*actual=xmlAddChild(parent,n);
+                if(!actual){
+                    if(next)xmlAddPrevSibling(next,n);else xmlAddChild(old,n);
+                    throw std::runtime_error("Unable to attach XML node");
+                }
+                // xmlAddChild consumes a text node when it joins existing text.
+                // Remove its opaque handle without dereferencing the freed node.
+                if(actual!=n)d.nodes.erase(arg(3));
+                if(actual->type==XML_ELEMENT_NODE)xmlReconciliateNs(d.doc,actual);
             } else if(op=="query"){
                 string name=arg(4);result=Tcl_NewListObj(0,nullptr);std::vector<xmlNode*> todo{n};while(!todo.empty()){xmlNode*x=todo.back();todo.pop_back();if(x->type==XML_ELEMENT_NODE&&(name=="*"||name==(const char*)x->name))add(ip,result,str(d.handle(x)));std::vector<xmlNode*> children;for(xmlNode*c=x->children;c;c=c->next)children.push_back(c);for(auto c=children.rbegin();c!=children.rend();++c)todo.push_back(*c);}
             } else throw std::runtime_error("Unknown public XML operation");
@@ -119,9 +145,44 @@ static int scancmd(ClientData,Tcl_Interp*ip,int objc,Tcl_Obj *const objv[]){
     const std::set<string> builtins={"print","len","range","str","dict","list","set","tuple","int","float","bool","sum","min","max","enumerate","zip","open","isinstance","super","self","disp","printf","fprintf","size","length","zeros","ones","sin","cos","sqrt","plot","puts","format","expr","lindex","lappend","array","string"};
     auto emit=[&](const char*kind,size_t a,size_t b){if(++count>200000)return;Tcl_Obj*t=Tcl_NewDictObj();put(ip,t,"category",str(kind));put(ip,t,"start",Tcl_NewIntObj(chars[a]));put(ip,t,"end",Tcl_NewIntObj(chars[b]));put(ip,t,"line",Tcl_NewIntObj(lines[a]));put(ip,t,"column",Tcl_NewIntObj(cols[a]));put(ip,t,"end_line",Tcl_NewIntObj(lines[b]));put(ip,t,"end_column",Tcl_NewIntObj(cols[b]));put(ip,t,"byte_start",Tcl_NewWideIntObj(a));put(ip,t,"byte_end",Tcl_NewWideIntObj(b));add(ip,tokens,t);};
     auto starts=[&](size_t i,const char*x){return s.compare(i,strlen(x),x)==0;};
-    bool octave=lang=="octave"||lang=="matlab"||lang=="matlab-octave";bool python=lang=="python";bool markup=lang=="xml"||lang=="html";bool cstyle=lang=="c"||lang=="cpp"||lang=="javascript";
+    bool octave=lang=="octave"||lang=="matlab"||lang=="matlab-octave";bool python=lang=="python";bool markup=lang=="xml"||lang=="html";bool cstyle=lang=="c"||lang=="cpp"||lang=="javascript";bool tex=lang=="tex"||lang=="latex";
     bool definition=false,inTag=false;int grouping=0;size_t definition_target=string::npos;std::vector<std::pair<int,int>> structure;
     for(size_t i=0;i<s.size()&&count<200000;){size_t a=i;unsigned char c=s[i];
+        if(tex) {
+            // Lexical presentation only: TeX expansion and math remain the
+            // configured compiler's authority. Quotes are ordinary prose.
+            if(c=='%'){auto e=s.find('\n',i);i=e==string::npos?s.size():e;emit("comment",a,i);continue;}
+            if(c=='\\') {
+                i++;
+                if(i<s.size()&&std::isalpha(static_cast<unsigned char>(s[i]))) {
+                    while(i<s.size()&&std::isalpha(static_cast<unsigned char>(s[i])))i++;
+                    string command=s.substr(a+1,i-a-1);
+                    if(i<s.size()&&s[i]=='*')i++;
+                    if(command=="verb"&&i<s.size()&&s[i]!='\n'&&s[i]!='\r') {
+                        char delimiter=s[i++];while(i<s.size()&&s[i]!=delimiter&&s[i]!='\n'&&s[i]!='\r')i++;
+                        if(i<s.size()&&s[i]==delimiter)i++;
+                        emit("string",a,i);continue;
+                    }
+                    if(command=="begin") {
+                        for(const char*environment:{"verbatim","verbatim*","lstlisting"}) {
+                            string begin="{"+string(environment)+"}";
+                            if(s.compare(i,begin.size(),begin)==0) {
+                                string end="\\end{"+string(environment)+"}";
+                                auto last=s.find(end,i+begin.size());i=last==string::npos?s.size():last+end.size();
+                                emit("string",a,i);break;
+                            }
+                        }
+                        if(i>a+command.size()+2)continue;
+                    }
+                    emit("keyword",a,i);
+                } else {if(i<s.size())i++;emit("escape",a,i);}
+                continue;
+            }
+            if(c=='$'){i++;if(i<s.size()&&s[i]=='$')i++;emit("constant",a,i);continue;}
+            if(c=='{'||c=='}'){i++;emit("tag",a,i);continue;}
+            if(c=='^'||c=='_'){i++;emit("attribute",a,i);continue;}
+            i++;continue;
+        }
         if(markup&&starts(i,"<!--")){auto e=s.find("-->",i+4);i=e==string::npos?s.size():e+3;emit("comment",a,i);continue;}
         if((cstyle&&starts(i,"/*"))||(octave&&starts(i,"%{"))){const char*end=octave?"%}":"*/";auto e=s.find(end,i+2);i=e==string::npos?s.size():e+2;emit("comment",a,i);continue;}
         bool comment=(cstyle&&starts(i,"//"))||((python||lang=="perl"||lang=="tcl"||lang=="tk")&&c=='#')||(octave&&(c=='%'||c=='#'))||(lang=="fortran"&&c=='!');

@@ -193,6 +193,11 @@ proc ::GX::pluginPackageRead {root} {
             }
         }
     }
+    if {$type eq {module} && {RESTRICTED_VIEWER_CLIENT_API_v1} in [splitList [descriptorValue $pd public_apis ids {}]]} {
+        # An installable C++ Viewer supplies its binary. Admission verifies the
+        # actual artifact and current SDK/runtime; it never invokes Build.
+        viewerDevelopmentPackageVerify $root
+    }
     return [dict create root [file normalize $root] manifest $mf id $id type $type version $pver name $name descriptor $descriptor dict $d]
 }
 
@@ -317,6 +322,7 @@ proc ::GX::pluginRefreshAfterChange {} {
     catch {pluginInstallRefreshButtons}
     catch {sessionActionGuiRefresh}
     catch {configurationModulesReload}
+    if {[llength [info commands ::GX::apiBrowserCatalogChanged]]} {apiBrowserCatalogChanged}
 }
 
 # mode: install (must be absent), update (must exist and be newer), auto (install or update).
@@ -422,7 +428,14 @@ proc ::GX::pluginUninstall {type id} {
     variable pluginRegistryOrder
     pluginRegistryLoad
     set id [pluginSafeId $id]
-    if {$type eq "module" && ![moduleField $id selectable 1]} {error "Module '$id' is ALWAYS and cannot be uninstalled."}
+    if {$type eq "module" && ![moduleField $id selectable 1]} {
+        # Non-runnable provider services are independent installed plugins, not
+        # protected ALWAYS analyses. Keep the existing CORE check below.
+        set libraryProvider [expr {[moduleField $id runner {}] eq {service} &&
+            [info exists ::GX::moduleCatalog($id,dict)] &&
+            [descriptorValue $::GX::moduleCatalog($id,dict) library_type_provider api_version {}] eq {1}}]
+        if {!$libraryProvider} {error "Module '$id' is ALWAYS and cannot be uninstalled."}
+    }
     if {[pluginIsCore $type $id]} { error "Plugin '$id' is CORE and cannot be uninstalled." }
     if {![pluginRegistryIsManaged $id]} { error "Plugin '$id' is not managed by Plugin Install API v1" }
     set regType [pluginInstalledField $id type ""]

@@ -1,5 +1,13 @@
 # 3D Workbench
 
+This legacy Viewer is deprecated and remains functional for existing
+`workbench3d.document.v1` Workspaces and their original Curve Workbench return
+receipts. The staged successor is
+`viewer.scientific_3d_workbench/scientific_3d_workbench`; its dev109 parity and
+installed acceptance are still in progress. Keep using the legacy Viewer for
+existing work until the successor compatibility gates are verified. No automatic
+migration or loss of the original owner is implied.
+
 **Compare complete geometry / deviations…** captures a named reference/target
 comparison through Native. Inspect RMS, sampled Hausdorff/closest, exact Native
 area/defined-volume differences, complete bounds and scientific policies. Source
@@ -51,8 +59,14 @@ Accept use the same retained CORE result. Cancel removes the preview.
 
 Box and Cylinder use the public analytical solid APIs. Shared navigation,
 navcube, presentation and transform gizmos use the existing Native3D host.
-Accepted geometry is stored as complete owned STEP/STL resources. STEP input
-is converted from millimetres back to the document working unit on restore.
+Accepted geometry is stored as complete owned STEP resources for exact solids
+and Float64 VTP resources for meshes. Local coordinates and the separate world
+placement are retained without the Float32 rounding imposed by binary STL.
+The separate STL display artifact is a derived presentation, not the mesh source
+used for Document or History restoration. Existing saved STL/OBJ mesh resources
+remain readable; reopening them cannot recover precision already lost when they
+were written. STEP input is converted from millimetres back to the document
+working unit on restore.
 Undo/Redo store at most 32 semantic snapshots and recipes at most 128 operations.
 Acknowledged body/profile/group/constraint/measurement allocation counters are
 stored separately from undo snapshots. Undo retires committed logical IDs, and

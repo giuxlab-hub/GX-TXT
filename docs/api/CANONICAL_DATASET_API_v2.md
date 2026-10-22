@@ -86,6 +86,18 @@ already closed handle is harmless. Operations on an unknown handle fail.
 - Dataset Variable Schema v3 records;
 - logical group IDs.
 
+Explicit `datasetAccessOpen session dataset` is a source-qualified read, not
+Session activation. Interleaved handles retain their own schema, CSV delimiter,
+HDF5 locators and implicit coordinates while another Session stays active.
+Remote handles use the same existing remote admission/provider owner with the
+bound Session, Dataset and revision.
+
+Local CSV/HDF5 reads reject a replaced or missing physical path before payload
+access; diagnostics and Close remain usable. The check uses device, inode,
+size, modification time and change time. It is not a content digest or atomic
+snapshot: same-stamp in-place changes and mutations racing an individual read
+remain subject to the existing outer scientific source/revision guards.
+
 Metadata is cached per open handle. HDF5 metadata reads object headers,
 attributes, dtype, shape and chunk information without reading numeric array
 elements.

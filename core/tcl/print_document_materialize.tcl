@@ -29,7 +29,11 @@ try {
         incr index
         set kind [dict get $item source_kind];set id [dict get $item source_id];set presentation [dict get $item presentation]
         set expected [dict get $item source_signature]
-        if {$kind eq {dataset}} {
+        if {$kind eq {literal}} {
+            # Authored poster content belongs to the validated recipe, not to a
+            # fabricated scientific Dataset/Graph or scientific source token.
+            set signature {}
+        } elseif {$kind eq {dataset}} {
             set signature [::GX::printRecipeSourceSignature $kind $id]
             if {$signature ne $expected} {error "Dataset $id changed; update the composition source."}
         } else {
@@ -42,9 +46,12 @@ try {
             set signature $expected
         }
         set result [dict create id [dict get $item id] kind $presentation caption [dict get $item caption] source_id $id]
+        foreach key {frame style text} {if {[dict exists $item $key]} {dict set result $key [dict get $item $key]}}
         set options [dict get $item options]
         set target [file join [file dirname $outputFile] item_$index]
-        if {$kind eq {dataset}} {
+        if {$kind eq {literal}} {
+            dict set result text [dict get $item text]
+        } elseif {$kind eq {dataset}} {
             set payload [watchDataset $id]
             switch $presentation {
                 table {

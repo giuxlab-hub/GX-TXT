@@ -2,8 +2,13 @@
 # Presentation and editing only; scientific commit belongs to the source owner.
 proc ::GX::CurveWorkbench::_planarIntake {w document mode} {
     variable st
+    if {![_coordinateWorkspaceEmpty $w]} {error {Physical planar intake requires a genuinely empty workspace}}
     set begin [::GX::native3DPlanarEditBegin $document $mode]
     set payload [dict get $begin payload]
+    set units [lrepeat 2 [dict get $payload working_unit]]
+    _coordinateAxesAdmit $w $units
+    dict set st($w,coordinateConfiguration) x_unit [lindex $units 0]
+    dict set st($w,coordinateConfiguration) y_unit [lindex $units 1]
     set st($w,planarToken) [dict get $begin token]
     set st($w,planarContext) [dict get $begin context]
     set st($w,sketchUnit) [dict get $payload working_unit]
@@ -63,7 +68,7 @@ proc ::GX::CurveWorkbench::_planarControls {w} {
     ttk::checkbutton $w.planar.visible -text {Show 3D Reference Image} -variable ::GX::CurveWorkbench::st($w,referenceVisible) -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_planarPresentation $w]]
     ttk::label $w.planar.label -text {Reference Image Opacity 0–100%}
     ttk::scale $w.planar.opacity -from 0 -to 100 -variable ::GX::CurveWorkbench::st($w,referenceOpacity) -command [list ::GX::CurveWorkbench::_planarOpacity $w]
-    ttk::button $w.planar.accept -text {Accept → 3D} -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_planarFinish $w 1]]
+    ttk::button $w.planar.accept -text [expr {[::GX::datasetPublicationV2DictDefault $st($w,planarContext) staged_origin 0] ? {Commit staged result → 3D} : {Accept → 3D}}] -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_planarFinish $w 1]]
     ttk::button $w.planar.cancel -text {Cancel 3D Edit} -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_planarFinish $w 0]]
     if {$stale ne {}} {$w.planar.accept state disabled}
     pack $w.planar.visible $w.planar.label $w.planar.opacity $w.planar.accept $w.planar.cancel -side left -padx 5
@@ -79,6 +84,7 @@ proc ::GX::CurveWorkbench::_planarPresentation {w} {
 }
 proc ::GX::CurveWorkbench::_planarFinish {w accept} {
     variable st
+    set incarnation [winfo id $w];set token $st($w,token)
     set context $st($w,planarContext);set document [dict get $context document_id]
     set staged [::GX::datasetPublicationV2DictDefault $context staged_origin 0]
     set origin [dict exists [dict get [::GX::_native3DPlanarOwner $document] payload] origin_workspace]
@@ -107,12 +113,20 @@ proc ::GX::CurveWorkbench::_planarFinish {w accept} {
     }
     if {$accept && $origin} {
         if {[catch {set returned [::GX::native3DPlanarOriginCommit $document]} message opts]} {
+            if {![_windowCurrent $w $incarnation $token]} {return -options $opts $message}
             _planarControls $w
             $w.planar.accept configure -text {Commit staged result → 3D}
             set st($w,status) "Planar result retained; originating3D commit is pending: $message"
             return -options $opts $message
         }
     } elseif {!$accept && [info exists st($w,planarToken)]} {::GX::native3DPlanarEditCancel $st($w,planarToken)}
+    if {![_windowCurrent $w $incarnation $token]} {
+        # The durable staged context was saved before destination acceptance.
+        # Leave it for the normal idempotent retry on Workspace reopen. A late
+        # presentation acknowledgement cannot recreate or save a closed UI.
+        if {$accept && $origin} {return $returned}
+        return
+    }
     unset -nocomplain st($w,planarToken) st($w,planarContext)
     destroy $w.planar;_save $w
     if {!($accept && $origin)} {

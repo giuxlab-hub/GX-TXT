@@ -74,11 +74,19 @@ A top-level switches through the shared Save/Discard/Cancel review and the
 provider close/open callbacks; sources and accepted fits cannot merge across Workspaces. Generation/revision/lifetime
 checks reject stale saves. Metadata-only note/name updates are reconciled.
 
-`sessionWorkspaceViewerMenu menu provider callbacks parent` connects a Viewer to the shared host. Required callback prefixes remain `current`, `save`, `close` and `open`. Optional `dirty` returns whether editor changes remain uncommitted, `prepare action` refuses an unsafe transition with a clear error, `discard` releases the window without another save, and optional `review boolean` suspends field FocusOut commits while the Save/Discard/Cancel question owns focus. These callbacks are host-only and are never transported through Script Bridge. Existing four-callback adapters retain their provider-owned lifecycle behavior.
+`sessionWorkspaceViewerMenu menu provider callbacks parent` connects a Viewer to the shared host. Required callback prefixes remain `current`, `save`, `close` and `open`. Optional `dirty` returns whether editor changes remain uncommitted, `prepare action` refuses an unsafe transition with a clear error, `discard` releases the window without another save, and optional `review boolean` suspends field FocusOut commits while the Save/Discard/Cancel question owns focus. Optional `rename workspace_id name` lets the originating adapter update its own source receipt after a successful canonical Rename of its current Workspace. It must preserve the draft and scientific associations, revalidate source/Session/window after any yielding confirmation, and never refresh another window's receipt. A noncurrent row or adapter without this callback retains the ordinary canonical Rename path. These callbacks are host-only and are never transported through Script Bridge. Existing four-callback adapters retain their provider-owned lifecycle behavior.
 
 The same `sessionWorkspaceHostState` and `sessionWorkspaceHostDispatch` serve the embedded manager, top-level manager and Viewer menu. `sessionWorkspaceBuild frame ?provider? ?callbacks? ?parent?` embeds the surface. `sessionWorkspaceDialog ?parent? ?provider? ?callbacks?` opens it as a top-level. Optional provider scope restricts the visible saved Workspaces and imported package provider. Without scope, the filter discovers actual installed/enabled providers; text search matches name/type/provider. New and Save require a live compatible Viewer adapter; unsupported actions remain disabled instead of inventing a blank generic Document.
 
 The host exposes New, Open, Save, Duplicate, Rename, Close, Delete, Notes, Preview, Import, Export, Refresh and existing descriptor-owned Actions. New creates an unsaved draft through the provider's `open` callback with `workspace_id=new` and `workspace_name`; registration occurs through Save or the provider's established scientific edit/autosave path. Rename edits only the name. Duplicate uses the official export/import service, including nested managed-resource ownership remapping. Delete confirms removal of the Document, notes, scientific History and owned resources while preserving source and published Datasets.
+
+In a Viewer menu, **Open workspace…** opens the existing scoped Manager for
+browsing, including when the Viewer has no current Workspace. Its enabled state
+therefore follows the Manager's valid Session/host context. The Manager's actual
+row **Open** still requires a selected compatible Workspace and preserves all
+provider, pending-operation, source-revision and Save/Discard/Cancel guards.
+Browsing alone does not select, load or modify a scientific document. A stale
+Session or replaced/closed Viewer cannot browse through its old context.
 
 Commands and naming forms capture the Session token, host window incarnation and selected Document generation/revision. Stale, deleted or replaced identities fail before mutation. Selection refresh uses existing coalesced idle notifications and weak widget references; destroying a host unsubscribes it. No polling, saved UI registry or replacement History exists. Save/Discard/Cancel reviews occur at the transition, not when a naming form opens, so cancelling the form never saves a draft. A successful notes Save advances only that editor's exact receipt; another stale editor cannot overwrite it. Preview reads verified managed PNG resources through bounded CORE image preview and reports unavailable/corrupt resources truthfully.
 
@@ -164,3 +172,30 @@ Workspace descriptor. For modules of kind `viewer`, Workspace availability then
 uses that registered Viewer's presentation policy, independently of Analysis/Run
 selection. Other providers retain module enablement. Disabling the declared
 Viewer policy prevents Workspace access; it does not change scientific modules.
+
+### Source-grounded import lineage (dev109)
+
+New managed Workspace packages retain the actual exported public Document
+receipt and source Session origin alongside their existing identity metadata.
+The exporter checks the source generation/revision/content again after package
+creation. Import verifies the retained receipt against the packaged owner,
+schema, Workspace ID and exact payload SHA before allocating a new Document.
+The receiving Document receives its own actual creator, generation and
+creation event, with the verified source Document/Session snapshots and archive
+SHA in its existing origin parent. Foreign IDs remain inert source identities;
+they are not looked up in the receiving Session. Re-export preserves the nested
+origin history. These integrity/provenance receipts are not authentication.
+
+Legacy packages without either new source field remain supported and record
+`source_document_lineage unavailable`; no original creator or missing source
+generation is invented. A partial or mismatched source receipt is rejected.
+Source Documents and their original payload/revision/origin are unchanged;
+export adds only its ordinary managed archive resource. Final import uses the
+registered schema's derived duplication policy, rather than its staging policy.
+The public Interactive Document creation signature is unchanged. No second
+registry, new storage subsystem or retrospective metadata rewrite is introduced.
+
+The isolated public contract exercises managed import and nested re-export,
+final policy/new-generation checks and ten malformed-receipt negatives. Actual
+installed Duplicate/import, portable cross-Session use and GUI provenance
+inspection remain additional acceptance gates.

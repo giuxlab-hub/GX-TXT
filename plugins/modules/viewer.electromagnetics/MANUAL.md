@@ -1,5 +1,14 @@
 # Electromagnetics Studio
 
+This retained implementation continues to open existing models. When the approved
+compiled `viewer.electromagnetics_studio/electromagnetics_studio` presentation is
+installed and enabled, the catalog presents that implementation once and the
+original `em_models` Workspace owner dispatches to it. The scientific model
+identity and `gxtxt.em_model` schema remain unchanged. The legacy launcher is
+available when the compiled presentation is absent or disabled; its public API
+and original source remain installed. This staged transition still requires
+independent GUI acceptance before release.
+
 ## Start and runtime
 
 Open a scientific Session, enable Electromagnetics Studio in the Plugin Manager if necessary, then open it from Viewers. The bundled Electromagnetic Simulation CORE supplies `ELECTROMAGNETIC_SIMULATION_API_v1`. Actual Gmsh and GetDP installations are required. Configuration → Backend Settings selects the main GX-TXT Configuration → Runtime page, where their executable configuration belongs. Solver paths are not part of the scientific model.

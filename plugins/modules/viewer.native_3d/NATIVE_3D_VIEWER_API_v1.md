@@ -5,7 +5,21 @@ The backend is activated only when the viewer opens. Preprocessing and rendering
 run in separate native processes; Tcl receives progress and camera events through
 nonblocking channels.
 
-## Canonical scientific workflow
+The dev109 adapter registers a single root-destruction hook when starting the
+host. It closes the dedicated interactive process through its ordinary QUIT
+protocol, independently of preprocessing cancellation. The native event loop
+also handles command-pipe EOF, so loss of its owning application cannot leave
+an idle scientific window behind. The normal shutdown drain is bounded at
+250 ms. This is process-lifetime handling, not a new scientific renderer.
+
+Closing the standalone native window flushes its existing `closed` event and
+terminates the dedicated host process immediately, using the same process-exit
+policy as QUIT and command-pipe EOF. Its detached stdin reader must not outlive
+the stack-owned Host or race with global stream destruction while the owning
+application remains open. Later root shutdown therefore has no lingering native
+reader to command. Rendering, camera events and scientific data are unchanged.
+
+## Canonical scientific workflow (0.9.0)
 
 Import STL, OBJ, STEP or VTU through `acq.geometry_3d`, then bind the Session
 Dataset with the public Viewer Provider API. Opening the provider does not

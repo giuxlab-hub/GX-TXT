@@ -77,7 +77,11 @@ function pd_render_3d(outdir,cfg,P,graph,file_name,preview_dir)
         fixed=[0.0 0.447 0.741];
       endif
       color_mode='interp';
-      if(isprop(h,'facecolor')),color_mode=get(h,'facecolor');endif
+      if(strcmp(ptype,'mesh')&&isprop(h,'edgecolor'))
+        color_mode=get(h,'edgecolor');
+      elseif(isprop(h,'facecolor'))
+        color_mode=get(h,'facecolor');
+      endif
       display_groups{end+1}=struct('data',D,'color',fixed,'color_mode',color_mode);
     endif
     if(!strcmp(legend_mode,'none')&&!isempty(h))
@@ -141,10 +145,12 @@ function pd_render_3d(outdir,cfg,P,graph,file_name,preview_dir)
     endif
   endif
   apply_3d_layout_override(ax,cfg,graph);
-  if(!isempty(labels)&&!strcmp(legend_mode,'none')),gxtxt_plot_legend(handles,labels,pcfg,graph,cfg);endif
+  legend_handle=[];
+  if(!isempty(labels)&&!strcmp(legend_mode,'none')),legend_handle=gxtxt_plot_legend(handles,labels,pcfg,graph,cfg);endif
   if(!isempty(preview_dir))
     unwind_protect
-      pd_preview_export(fig,ax,P,display_groups,order_mode,cfg,graph,preview_dir,labels,lw,ms,{xl,yl,zl});
+      policy=preview_presentation_policy(pcfg,cfg,graph);policy.legend_handle=legend_handle;
+      pd_preview_export(fig,ax,P,display_groups,order_mode,cfg,graph,preview_dir,labels,lw,ms,{xl,yl,zl},policy);
     unwind_protect_cleanup
       close(fig);
     end_unwind_protect
@@ -198,3 +204,19 @@ endfunction
 function v=parse_positive(s,d),v=str2double(s);if(!isfinite(v)||v<=0),v=d;endif;endfunction
 function v=parse_line_width(s,d),if(isempty(strtrim(s))||strcmpi(strtrim(s),'inherit')),v=d;else v=parse_positive(s,d);endif;endfunction
 function u=normunit(u),u=strrep(strrep(strtrim(u),'µ','u'),'μ','u');endfunction
+
+function policy=preview_presentation_policy(pcfg,cfg,graph)
+  % This records placement intent only. Actual geometry/style/text comes from
+  % the normal renderer's returned objects, never a second legend renderer.
+  explicit=any(strcmpi(strtrim(pcfg.legend_mode),{'manual','above','below','left','right','none','off','hidden'}));
+  saved=gxtxt_plot_legend_override(graph); % shared TSV authority/enable rules
+  if((isfield(saved,'placement')&&!isempty(saved.placement))||(isfield(saved,'mode')&&!isempty(saved.mode))),explicit=true;endif
+  enabled=lower(strtrim(gxtxt_ini_get(cfg,['legend.' graph '.enabled'],'')));
+  if(any(strcmp(enabled,{'1','true','yes','on'})))
+    placement=strtrim(gxtxt_ini_get(cfg,['legend.' graph '.placement'],''));
+    if(isempty(placement)),placement=strtrim(gxtxt_ini_get(cfg,['legend.' graph '.mode'],''));endif
+    if(!isempty(placement)),explicit=true;endif
+  endif
+  policy=struct('legend_position_explicit',explicit, ...
+    'layout_auto',!strcmp(strtrim(gxtxt_ini_get(cfg,['axis.' graph '.layout_auto'],'1')),'0'));
+endfunction

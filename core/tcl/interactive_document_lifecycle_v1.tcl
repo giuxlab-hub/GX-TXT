@@ -32,7 +32,7 @@ proc ::GX::_interactiveDocumentLifecycleWatch {} {
     }
     dict for {token subscriber} $subscribers {
         set window [dict get $subscriber owner_window]
-        if {$window ne ""&&(![llength [info commands winfo]]||![winfo exists $window])} {dict unset subscribers $token;continue}
+        if {$window ne ""&&([catch {winfo exists $window} exists]||!$exists)} {dict unset subscribers $token;continue}
         set document [dict get $subscriber document_id]
         if {$document eq ""||[dict get $subscriber notified]} continue
         set event ""
@@ -61,7 +61,7 @@ proc ::GX::_interactiveDocumentDeletedDeliver {delivery} {
         set subscriber [dict get $subscribers $token]
         if {[dict get $subscriber session_token] ne [dict get $event session_token]} continue
         set owner [dict get $subscriber owner_window]
-        if {$owner ne ""&&(![llength [info commands winfo]]||![winfo exists $owner])} {dict unset subscribers $token;continue}
+        if {$owner ne ""&&([catch {winfo exists $owner} exists]||!$exists)} {dict unset subscribers $token;continue}
         if {[catch {uplevel #0 [list {*}[dict get $subscriber callback] $event]} message options]} {
             # The scientific deletion is already committed. Make a failed view
             # cleanup explicit without reporting a false deletion rollback.

@@ -1,0 +1,16 @@
+{
+  "schema": "gxtxt.viewer_icon_resources.v1",
+  "icons": {
+    "scientific_library": {
+      "title": "Scientific Library books",
+      "category": "Science",
+      "license": "GPL-3.0-or-later; original author-drawn SVG using the existing CORE icon importer",
+      "source_format": "svg",
+      "sha256": "ae310e0e4cc09efdb3ddbd91b612b66489860d77fad65e7f1714cf089fc83fda",
+      "png_sha256": "66e31d5e5045edabcf38f88551a9261a7a630524627fedbac56f4077c6723ca0",
+      "width": "64",
+      "height": "64",
+      "alpha": "1"
+    }
+  }
+}

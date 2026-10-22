@@ -1,5 +1,31 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Native2D semantic document bindings share the existing Viewer state/history.
+proc ::GX::viewerGuiDesignDiagramToolBindings {design} {
+    set definitions {};set result {}
+    foreach c [dict get $design components] {dict set definitions [dict get $c id] $c}
+    foreach c [dict get $design components] {
+        set p [dict get $c properties]
+        if {![dict exists $p diagram_tool]} continue
+        if {[dict get $c type] ne {action} || [llength [dict get $p diagram_tool]]!=2} {error {Diagram tool binding requires an action and a component/tool pair}}
+        lassign [dict get $p diagram_tool] target tool
+        if {![dict exists $definitions $target] || [dict get $definitions $target type] ne {native2d}} {error {Diagram tool binding must target a Native2D component in this design}}
+        set catalog [datasetPublicationV2DictDefault [dict get $definitions $target properties] diagram_catalog {}]
+        if {$catalog eq {}} {error {Diagram tool binding requires a declared diagram catalog}}
+        set symbols [dict get [native2DGeometryDiagramCatalog $catalog] symbols]
+        if {$tool ni {select wire junction label pan probe} && ![dict exists $symbols $tool]} {error {Tool binding is outside the declared diagram catalog}}
+        set action [dict get $p action];set pair [list $target $tool]
+        if {[dict exists $result $action] && [dict get $result $action] ne $pair} {error {One action cannot represent conflicting diagram tools}}
+        if {[dict exists $p component_visibility]} {error {A diagram tool action cannot also toggle component visibility}}
+        dict set result $action $pair
+    }
+    return $result
+}
+proc ::GX::viewerGuiDesignDiagramToolChecked {window component tool} {
+    if {![viewerGuiDesignGuard $window] || ![dict exists $::GX::ViewerGui::instances $window widgets $component]} {return 0}
+    set viewport [dict get $::GX::ViewerGui::instances $window widgets $component].diagram
+    if {![winfo exists $viewport]} {return 0}
+    return [expr {[dict get [native2DGeometryDiagramViewportDescribe $viewport 0] tool] eq $tool}]
+}
 proc ::GX::viewerGuiDesignDiagramSet {window component {document {}} {snapshot {}} {viewState {}}} {
     if {![viewerGuiDesignGuard $window]} {error {Viewer belongs to a previous Session lifetime}}
     set definition [viewerGuiDesignComponent $window $component]
@@ -25,6 +51,7 @@ proc ::GX::viewerGuiDesignDiagramSet {window component {document {}} {snapshot {
         native2DGeometryCall $token view_state [dict create view_state $viewState]
     }
     dict set ::GX::ViewerGui::instances $window bindings $component [dict create kind diagram document_id $document document_receipt [dict remove $owner payload] payload [dict get $owner payload]]
+    viewerGuiActionsRefresh $window
     if {$created && ![dict get $instance restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window {New diagram}}
     return $widget.diagram
 }
@@ -49,7 +76,7 @@ proc ::GX::_viewerGuiDiagramEvent {window component widget event} {
         foreach definition [dict get $::GX::ViewerGui::instances $window design components] {
             set p [dict get $definition properties]
             if {[dict get $definition type] eq {section} && [datasetPublicationV2DictDefault $p scientific_probe_diagram {}] eq $component} {
-                viewerGuiDesignScientificProbe $window [dict get $definition id] [dict get $event detail endpoint]
+                viewerGuiDesignScientificProbe $window [dict get $definition id] [dict get $event detail endpoint] [dict get $event detail]
             }
         }
     }

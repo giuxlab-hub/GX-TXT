@@ -732,7 +732,17 @@ proc ::GX::sessionGeneratorInfoText {libraryInfo generatorInfo} {
 proc ::GX::sessionGeneratorBrowserPopulate {w} {
     variable sessionGeneratorGui
     sessionGeneratorRegistryLoad
-    set tree $w.generator.tree
+    set tree $w.generator.split.navigation.table
+    # Snapshot by actual registry identity, never by a row's display name/index.
+    set selected {};set expanded {};set focused {};set y [$tree yview];set x [$tree xview]
+    foreach key [array names sessionGeneratorGui "$w,node,*"] {
+        set node [string range $key [string length "$w,node,"] end]
+        if {![$tree exists $node]} continue
+        set spec $sessionGeneratorGui($key)
+        dict set expanded $spec [$tree item $node -open]
+        if {$node in [$tree selection]} {set selected $spec}
+        if {$node eq [$tree focus]} {set focused $spec}
+    }
     $tree delete [$tree children {}]
     array unset sessionGeneratorGui "$w,node,*"
     set libraryCounter 0
@@ -761,6 +771,18 @@ proc ::GX::sessionGeneratorBrowserPopulate {w} {
             }
         }
     }
+    foreach key [array names sessionGeneratorGui "$w,node,*"] {
+        set node [string range $key [string length "$w,node,"] end]
+        set spec $sessionGeneratorGui($key)
+        if {[dict exists $expanded $spec]} {$tree item $node -open [dict get $expanded $spec]}
+        if {$spec eq $selected} {$tree selection set $node}
+        if {$spec eq $focused} {$tree focus $node}
+    }
+    uiFieldInspectionColumnsFit $tree {recursive 1 fill {#0}}
+    if {[llength $y]} {$tree yview moveto [lindex $y 0]}
+    if {[llength $x]} {$tree xview moveto [lindex $x 0]}
+    sessionGeneratorBrowserSelection $w
+
 }
 
 proc ::GX::sessionGeneratorCompareByName {a b} {
@@ -770,34 +792,64 @@ proc ::GX::sessionGeneratorCompareByName {a b} {
 proc ::GX::sessionGeneratorBrowserSelection {w} {
     variable sessionGeneratorGui
     variable ui
-    set tree $w.generator.tree
+    set tree $w.generator.split.navigation.table
+    if {![winfo exists $tree]} return
+    unset -nocomplain sessionGeneratorGui($w,selected_library) sessionGeneratorGui($w,selected_generator)
+    $w.generator.actions.generate state disabled
+    set text "Select a library, category or generator on the left.
+
+Choose a generator to enable Generate Session."
     set sel [$tree selection]
-    if {[llength $sel] != 1} return
-    set node [lindex $sel 0]
-    if {![info exists sessionGeneratorGui($w,node,$node)]} return
-    set spec $sessionGeneratorGui($w,node,$node)
-    if {[lindex $spec 0] ne "generator"} return
-    lassign [lrange $spec 1 end] libraryId generatorId
-    set libraryInfo [sessionGeneratorLibraryInfo $libraryId]
-    set generatorInfo [sessionGeneratorGeneratorInfo $libraryId $generatorId]
-    set sessionGeneratorGui($w,selected_library) $libraryId
-    set sessionGeneratorGui($w,selected_generator) $generatorId
-    $w.generator.info configure -state normal
-    $w.generator.info delete 1.0 end
-    $w.generator.info insert 1.0 [sessionGeneratorInfoText $libraryInfo $generatorInfo]
-    $w.generator.info configure -state disabled
-    if {[string trim $ui(newSessionName)] eq "" && [dict get $generatorInfo suggested_session_name] ne ""} {
-        set ui(newSessionName) [dict get $generatorInfo suggested_session_name]
+    if {[llength $sel] == 1 && [info exists sessionGeneratorGui($w,node,[lindex $sel 0])]} {
+        set spec $sessionGeneratorGui($w,node,[lindex $sel 0])
+        lassign $spec kind libraryId identity
+        if {[catch {
+            set lib [sessionGeneratorLibraryInfo $libraryId]
+            switch $kind {
+                library {set text "[dict get $lib name]
+
+[dict get $lib description]
+
+Expand a category and select a generator.
+
+Library ID: $libraryId"}
+                category {set text "$identity
+Library: [dict get $lib name]
+
+Select a generator in this category to read its description and generate a Session."}
+                generator {
+                    set gen [sessionGeneratorGeneratorInfo $libraryId $identity]
+                    set text [sessionGeneratorInfoText $lib $gen]
+                    set sessionGeneratorGui($w,selected_library) $libraryId
+                    set sessionGeneratorGui($w,selected_generator) $identity
+                    $w.generator.actions.generate state !disabled
+                    if {[string trim $ui(newSessionName)] eq "" && [dict get $gen suggested_session_name] ne ""} {
+                        set ui(newSessionName) [dict get $gen suggested_session_name]
+                    }
+                    variable sessionGeneratorRegistryLastSelected
+                    set sessionGeneratorRegistryLastSelected $libraryId
+                    catch {sessionGeneratorRegistryWrite}
+                }
+            }
+        } reason]} {set text "This library or generator is no longer available.
+
+$reason"}
     }
-    variable sessionGeneratorRegistryLastSelected
-    set sessionGeneratorRegistryLastSelected $libraryId
-    catch {sessionGeneratorRegistryWrite}
+    set info $w.generator.split.description.info
+    if {[$info get 1.0 end-1c] ne $text} {
+        $info configure -state normal
+        $info delete 1.0 end
+        $info insert 1.0 $text
+        $info configure -state disabled
+    }
 }
 
 proc ::GX::sessionGeneratorBrowserGenerate {w} {
     variable sessionGeneratorGui
     variable ui
     variable cfg
+    # Resolve the live tree selection synchronously, including queued selection events.
+    sessionGeneratorBrowserSelection $w
     if {![info exists sessionGeneratorGui($w,selected_generator)]} {
         tk_messageBox -parent $w -icon info -title "Generate Session" -message "Select a Session generator first."
         return
@@ -826,24 +878,26 @@ proc ::GX::sessionGeneratorBrowserGenerate {w} {
 
 proc ::GX::sessionGeneratorBrowserShow {w} {
     variable sessionGeneratorGui
-    if {[info exists sessionGeneratorGui($w,browser_visible)] && $sessionGeneratorGui($w,browser_visible)} { return }
+    if {$sessionGeneratorGui($w,manager_visible)} {sessionGeneratorManagerHide $w;return}
+    if {$sessionGeneratorGui($w,browser_visible)} {focus $w.generator.split.navigation.table;return}
     set sessionGeneratorGui($w,browser_visible) 1
     grid $w.generator -row 4 -column 0 -columnspan 2 -sticky nsew -padx 6 -pady {0 6}
     grid rowconfigure $w 4 -weight 1
     sessionGeneratorBrowserPopulate $w
-    wm resizable $w 1 1
     sessionGeneratorFitDialog $w
+    focus $w.generator.split.navigation.table
 }
 
 proc ::GX::sessionGeneratorManagerRefresh {w} {
     variable sessionGeneratorGui
     sessionGeneratorRegistryLoadRaw
-    set lt $w.manager.libraries.tree
+    set lt $w.manager.split.catalog.libraries.list.table
     $lt delete [$lt children {}]
     foreach id [sessionGeneratorLibraryIds 0] {
         if {[catch {set info [sessionGeneratorLibraryInfo $id]}]} continue
         $lt insert {} end -id $id -text [dict get $info name]
     }
+    uiFieldInspectionColumnsFit $lt {fill {#0}}
     if {[info exists sessionGeneratorGui($w,manager_library)] && [$lt exists $sessionGeneratorGui($w,manager_library)]} {
         $lt selection set $sessionGeneratorGui($w,manager_library)
         sessionGeneratorManagerLibrarySelection $w
@@ -856,42 +910,53 @@ proc ::GX::sessionGeneratorManagerRefresh {w} {
 
 proc ::GX::sessionGeneratorManagerLibrarySelection {w} {
     variable sessionGeneratorGui
-    set lt $w.manager.libraries.tree
+    set lt $w.manager.split.catalog.libraries.list.table
     set sel [$lt selection]
     if {[llength $sel] != 1} return
     set id [lindex $sel 0]
     set info [sessionGeneratorLibraryInfo $id]
+    set previousGenerator {}
+    if {[info exists sessionGeneratorGui($w,manager_library)] && $sessionGeneratorGui($w,manager_library) eq $id &&
+        [info exists sessionGeneratorGui($w,manager_generator)]} {
+        set previousGenerator $sessionGeneratorGui($w,manager_generator)
+    }
     set sessionGeneratorGui($w,manager_library) $id
     foreach field {name description version author} {
         set sessionGeneratorGui($w,meta_$field) [dict get $info $field]
     }
-    set gt $w.manager.generators.tree
+    unset -nocomplain sessionGeneratorGui($w,manager_generator)
+    set gt $w.manager.split.catalog.generators.list.table
     $gt delete [$gt children {}]
     foreach gen [dict get $info generators] {
         $gt insert {} end -id [dict get $gen generator_id] -text [dict get $gen name]
     }
-    $w.manager.add.destination configure -values [sessionGeneratorLibraryIds]
+    uiFieldInspectionColumnsFit $gt {fill {#0}}
+    $w.manager.split.inspector.copy.add.destination configure -values [sessionGeneratorLibraryIds]
     set details "Library ID: $id\nVersion: [dict get $info version]\nAuthor: [dict get $info author]\n\n[dict get $info description]"
-    $w.manager.details configure -state normal
-    $w.manager.details delete 1.0 end
-    $w.manager.details insert 1.0 $details
-    $w.manager.details configure -state disabled
+    $w.manager.split.inspector.details.info configure -state normal
+    $w.manager.split.inspector.details.info delete 1.0 end
+    $w.manager.split.inspector.details.info insert 1.0 $details
+    $w.manager.split.inspector.details.info configure -state disabled
+    if {$previousGenerator ne {} && [$gt exists $previousGenerator]} {
+        $gt selection set $previousGenerator
+        sessionGeneratorManagerGeneratorSelection $w
+    }
 }
 
 proc ::GX::sessionGeneratorManagerGeneratorSelection {w} {
     variable sessionGeneratorGui
     if {![info exists sessionGeneratorGui($w,manager_library)]} return
-    set gt $w.manager.generators.tree
+    set gt $w.manager.split.catalog.generators.list.table
     set sel [$gt selection]
     if {[llength $sel] != 1} return
     set gid [lindex $sel 0]
     set info [sessionGeneratorGeneratorInfo $sessionGeneratorGui($w,manager_library) $gid]
     set sessionGeneratorGui($w,manager_generator) $gid
     set lib [sessionGeneratorLibraryInfo $sessionGeneratorGui($w,manager_library)]
-    $w.manager.details configure -state normal
-    $w.manager.details delete 1.0 end
-    $w.manager.details insert 1.0 [sessionGeneratorInfoText $lib $info]
-    $w.manager.details configure -state disabled
+    $w.manager.split.inspector.details.info configure -state normal
+    $w.manager.split.inspector.details.info delete 1.0 end
+    $w.manager.split.inspector.details.info insert 1.0 [sessionGeneratorInfoText $lib $info]
+    $w.manager.split.inspector.details.info configure -state disabled
 }
 
 proc ::GX::sessionGeneratorManagerCreateLibraryDialog {w} {
@@ -1018,107 +1083,146 @@ proc ::GX::sessionGeneratorManagerRemoveGenerator {w} {
     sessionGeneratorBrowserPopulate $w
 }
 
+# Only this dialog's two native splitters are remembered here. Creation,
+# resizing, controls and window fitting remain owned by public UI Field.
+proc ::GX::sessionGeneratorPaneRemember {w mode} {
+    variable sessionGeneratorGui
+    set panel [expr {$mode eq {browser} ? {generator} : {manager}}]
+    set split $w.$panel.split
+    if {[winfo ismapped $split] && [winfo width $split]>1} {
+        set sessionGeneratorGui($w,$mode,ratio) [expr {double([$split sashpos 0])/[winfo width $split]}]
+    }
+}
+
+proc ::GX::sessionGeneratorPaneRestore {w} {
+    variable sessionGeneratorGui
+    set mode [expr {$sessionGeneratorGui($w,manager_visible) ? {manager} : {browser}}]
+    set panel [expr {$mode eq {browser} ? {generator} : {manager}}]
+    set split $w.$panel.split
+    if {![winfo ismapped $split]} return
+    set ratio [expr {[info exists sessionGeneratorGui($w,$mode,ratio)] ? $sessionGeneratorGui($w,$mode,ratio) : 0.52}]
+    $split sashpos 0 [expr {int($ratio*[winfo width $split])}]
+}
+
 proc ::GX::sessionGeneratorManagerHide {w} {
     variable sessionGeneratorGui
+    sessionGeneratorPaneRemember $w manager
     grid remove $w.manager
-    if {[info exists sessionGeneratorGui($w,browser_visible)] && $sessionGeneratorGui($w,browser_visible)} {
-        grid $w.generator -row 4 -column 0 -columnspan 2 -sticky nsew -padx 6 -pady {0 6}
-        sessionGeneratorBrowserPopulate $w
-    }
+    grid $w.generator -row 4 -column 0 -columnspan 2 -sticky nsew -padx 6 -pady {0 6}
+    set sessionGeneratorGui($w,browser_visible) 1
     set sessionGeneratorGui($w,manager_visible) 0
-    update idletasks
+    sessionGeneratorBrowserPopulate $w
     sessionGeneratorFitDialog $w
+    focus $w.generator.split.navigation.table
 }
 
 proc ::GX::sessionGeneratorFitDialog {w} {
+    variable sessionGeneratorGui
     update idletasks
-    set width [expr {min([winfo reqwidth $w], [winfo screenwidth $w] - 40)}]
-    set height [expr {min([winfo reqheight $w], [winfo screenheight $w] - 80)}]
-    wm geometry $w "${width}x${height}+20+20"
+    # Fit once on entering extended mode; subsequent transitions retain the
+    # actual user window size/position and native splitter allocations.
+    if {($sessionGeneratorGui($w,browser_visible) || $sessionGeneratorGui($w,manager_visible)) &&
+        ![info exists sessionGeneratorGui($w,extended_geometry)]} {
+        set sessionGeneratorGui($w,extended_geometry) 1
+        uiFieldWindowFit $w 1040 680
+    } elseif {![winfo ismapped $w]} {
+        uiFieldWindowFit $w [winfo reqwidth $w] [winfo reqheight $w]
+    } else {uiFieldWindowFit $w}
+    update idletasks
+    sessionGeneratorPaneRestore $w
 }
 
 proc ::GX::sessionGeneratorManagerShow {w} {
     variable sessionGeneratorGui
-    if {![winfo exists $w.manager]} { return }
-    # The browser already fills a normal laptop display. Give the manager the
-    # same dialog area so its actions remain visible instead of extending the
-    # window beyond the screen edge.
+    if {![winfo exists $w.manager] || $sessionGeneratorGui($w,manager_visible)} return
+    sessionGeneratorPaneRemember $w browser
     grid remove $w.generator
     grid $w.manager -row 4 -column 0 -columnspan 2 -sticky nsew -padx 6 -pady {0 6}
     set sessionGeneratorGui($w,manager_visible) 1
+    if {![info exists sessionGeneratorGui($w,manager_library)] && [info exists sessionGeneratorGui($w,selected_library)]} {
+        set sessionGeneratorGui($w,manager_library) $sessionGeneratorGui($w,selected_library)
+    }
     sessionGeneratorManagerRefresh $w
     sessionGeneratorFitDialog $w
+    focus $w.manager.split.catalog.libraries.list.table
 }
 
 proc ::GX::sessionGeneratorBuildManager {w} {
     variable sessionGeneratorGui
-    ttk::labelframe $w.manager -text "Library Manager"
+    uiFieldComponentCreate $w.manager section {title {Manage Libraries}} {} {}
     grid columnconfigure $w.manager 0 -weight 1
     grid rowconfigure $w.manager 1 -weight 1
-    grid rowconfigure $w.manager 3 -weight 1
-
-    ttk::frame $w.manager.top
-    ttk::label $w.manager.top.title -text "Libraries"
-    ttk::button $w.manager.top.hide -text "Hide Manager" -command [list ::GX::sessionGeneratorManagerHide $w]
-    pack $w.manager.top.title -side left
+    uiFieldComponentCreate $w.manager.top panel {} {} {}
+    uiFieldComponentCreate $w.manager.top.title label {text {Import, export and edit installed libraries.}} {} {}
+    uiFieldComponentCreate $w.manager.top.hide action {label {Hide Manager / Back to browsing}} {} [list ::GX::sessionGeneratorManagerHide $w]
+    pack $w.manager.top.title -side left -fill x -expand 1
     pack $w.manager.top.hide -side right
-    grid $w.manager.top -row 0 -column 0 -sticky ew -padx 5 -pady 4
-
-    ttk::labelframe $w.manager.libraries -text "Installed Libraries"
-    ttk::treeview $w.manager.libraries.tree -show tree -height 5 -selectmode browse
-    pack $w.manager.libraries.tree -fill both -expand 1
-    grid $w.manager.libraries -row 1 -column 0 -sticky nsew -padx 5 -pady 3
-    bind $w.manager.libraries.tree <<TreeviewSelect>> [list ::GX::sessionGeneratorManagerLibrarySelection $w]
-
-    ttk::frame $w.manager.libActions
-    foreach {name label command} {
-        import "Import Library..." sessionGeneratorManagerImportLibrary
-        export "Export Library..." sessionGeneratorManagerExportLibrary
-        create "Create Library..." sessionGeneratorManagerCreateLibraryDialog
-        remove "Remove Library" sessionGeneratorManagerRemoveLibrary
+    grid $w.manager.top -row 0 -column 0 -sticky ew
+    uiFieldComponentCreate $w.manager.split splitter {orientation horizontal} {} {}
+    grid $w.manager.split -row 1 -column 0 -sticky nsew
+    uiFieldComponentCreate $w.manager.split.catalog panel {} {} {}
+    uiFieldComponentCreate $w.manager.split.inspector tabs {} {} {}
+    $w.manager.split add $w.manager.split.catalog -weight 1
+    $w.manager.split add $w.manager.split.inspector -weight 1
+    set c $w.manager.split.catalog
+    grid columnconfigure $c 0 -weight 1
+    foreach {name title row command} {
+        libraries {Installed Libraries} 0 sessionGeneratorManagerLibrarySelection
+        generators {Generators in Selected Library} 2 sessionGeneratorManagerGeneratorSelection
     } {
-        ttk::button $w.manager.libActions.$name -text $label -command [list ::GX::$command $w]
-        pack $w.manager.libActions.$name -side left -padx 2 -pady 2
+        uiFieldComponentCreate $c.$name section [dict create title $title] {} {}
+        uiFieldComponentCreate $c.$name.list table {columns {Name} scrollbars both} {} {}
+        # Reuse the same shared native table owner in hierarchical presentation.
+        $c.$name.list.table configure -show tree -columns {} -height 5 -selectmode browse
+        pack $c.$name.list -fill both -expand 1
+        grid $c.$name -row $row -column 0 -sticky nsew
+        grid rowconfigure $c $row -weight 1
+        bind $c.$name.list.table <<TreeviewSelect>> [list ::GX::$command $w]
     }
-    grid $w.manager.libActions -row 2 -column 0 -sticky ew -padx 5
-
-    ttk::labelframe $w.manager.generators -text "Generators in Selected Library"
-    ttk::treeview $w.manager.generators.tree -show tree -height 5 -selectmode browse
-    pack $w.manager.generators.tree -fill both -expand 1
-    grid $w.manager.generators -row 3 -column 0 -sticky nsew -padx 5 -pady 3
-    bind $w.manager.generators.tree <<TreeviewSelect>> [list ::GX::sessionGeneratorManagerGeneratorSelection $w]
-
-    ttk::frame $w.manager.genActions
-    ttk::button $w.manager.genActions.import -text "Import Generator..." -command [list ::GX::sessionGeneratorManagerImportGenerator $w]
-    ttk::button $w.manager.genActions.export -text "Export Generator..." -command [list ::GX::sessionGeneratorManagerExportGenerator $w]
-    ttk::button $w.manager.genActions.remove -text "Remove Generator" -command [list ::GX::sessionGeneratorManagerRemoveGenerator $w]
-    pack $w.manager.genActions.import $w.manager.genActions.export $w.manager.genActions.remove -side left -padx 2
-    grid $w.manager.genActions -row 4 -column 0 -sticky ew -padx 5 -pady 2
-
-    ttk::frame $w.manager.add
-    ttk::label $w.manager.add.label -text "Destination library:"
-    ttk::combobox $w.manager.add.destination -textvariable ::GX::sessionGeneratorGui($w,destination_library) -state readonly -width 28
-    ttk::button $w.manager.add.copy -text "Add Generator to Library..." -command [list ::GX::sessionGeneratorManagerAddGenerator $w]
-    pack $w.manager.add.label $w.manager.add.destination $w.manager.add.copy -side left -padx 2
-    grid $w.manager.add -row 5 -column 0 -sticky ew -padx 5 -pady 2
-
-    ttk::labelframe $w.manager.meta -text "Library Metadata"
-    grid columnconfigure $w.manager.meta 1 -weight 1
+    foreach {frame row actions} {
+        libActions 1 {import {Import Library...} sessionGeneratorManagerImportLibrary export {Export Library...} sessionGeneratorManagerExportLibrary create {Create Library...} sessionGeneratorManagerCreateLibraryDialog remove {Remove Library} sessionGeneratorManagerRemoveLibrary}
+        genActions 3 {import {Import Generator...} sessionGeneratorManagerImportGenerator export {Export Generator...} sessionGeneratorManagerExportGenerator remove {Remove Generator} sessionGeneratorManagerRemoveGenerator}
+    } {
+        uiFieldComponentCreate $c.$frame panel {} {} {}
+        foreach {name label command} $actions {
+            uiFieldComponentCreate $c.$frame.$name action [dict create label $label] {} [list ::GX::$command $w]
+        }
+        bind $c.$frame <Configure> [list ::GX::uiFieldControlsLayout $c.$frame %w]
+        grid $c.$frame -row $row -column 0 -sticky ew
+    }
+    set i $w.manager.split.inspector
+    foreach {name title} {details Details metadata {Library metadata} copy {Copy generator}} {
+        uiFieldComponentCreate $i.$name tab {} {} {}
+        $i add $i.$name -text $title
+        grid columnconfigure $i.$name 0 -weight 1
+        grid rowconfigure $i.$name 0 -weight 1
+    }
+    uiFieldComponentCreate $i.details.info log {height 8 width 32} {} {}
+    ttk::scrollbar $i.details.scroll -command [list $i.details.info yview]
+    $i.details.info configure -font TkDefaultFont -yscrollcommand [list $i.details.scroll set]
+    grid $i.details.info -row 0 -column 0 -sticky nsew
+    grid $i.details.scroll -row 0 -column 1 -sticky ns
+    set m $i.metadata.meta
+    uiFieldComponentCreate $m section {title {Library Metadata}} {} {}
+    grid columnconfigure $m 1 -weight 1
     set row 0
-    foreach {field label} {name "Name" description "Description" version "Version" author "Author"} {
-        ttk::label $w.manager.meta.l$row -text "$label:"
-        ttk::entry $w.manager.meta.e$row -textvariable ::GX::sessionGeneratorGui($w,meta_$field)
-        grid $w.manager.meta.l$row -row $row -column 0 -sticky e -padx 3 -pady 2
-        grid $w.manager.meta.e$row -row $row -column 1 -sticky ew -padx 3 -pady 2
+    foreach {field label} {name Name description Description version Version author Author} {
+        uiFieldComponentCreate $m.l$row label [dict create text "$label:"] {} {}
+        uiFieldComponentCreate $m.e$row entry {width 20} ::GX::sessionGeneratorGui($w,meta_$field) {}
+        grid $m.l$row -row $row -column 0 -sticky w
+        grid $m.e$row -row $row -column 1 -sticky ew -pady 4
         incr row
     }
-    ttk::button $w.manager.meta.save -text "Save Metadata" -command [list ::GX::sessionGeneratorManagerSaveMetadata $w]
-    grid $w.manager.meta.save -row $row -column 0 -columnspan 2 -pady 3
-    grid $w.manager.meta -row 6 -column 0 -sticky ew -padx 5 -pady 3
-
-    text $w.manager.details -height 7 -width 48 -wrap word -state disabled
-    grid $w.manager.details -row 7 -column 0 -sticky nsew -padx 5 -pady 4
-    grid rowconfigure $w.manager 7 -weight 1
+    uiFieldComponentCreate $m.save action {label {Save Metadata}} {} [list ::GX::sessionGeneratorManagerSaveMetadata $w]
+    grid $m.save -row $row -column 0 -columnspan 2 -pady 6
+    grid $m -row 0 -column 0 -sticky new
+    set a $i.copy.add
+    uiFieldComponentCreate $a panel {} {} {}
+    uiFieldComponentCreate $a.label label {text {Destination library:}} {} {}
+    uiFieldComponentCreate $a.destination combobox {width 20} ::GX::sessionGeneratorGui($w,destination_library) {}
+    uiFieldComponentCreate $a.copy action {label {Add Generator to Library...}} {} [list ::GX::sessionGeneratorManagerAddGenerator $w]
+    pack $a.label $a.destination $a.copy -fill x -pady 5
+    grid $a -row 0 -column 0 -sticky new
 }
 
 # Keep the established manual New Session path untouched and replace only the
@@ -1142,17 +1246,17 @@ proc ::GX::newSessionDialog {{preferredProjectId ""}} {
     wm transient $w .
     grid columnconfigure $w 1 -weight 1
     ttk::label $w.rootLabel -text "Session root:"
-    ttk::label $w.root -text $root
+    uiFieldComponentCreate $w.root label [dict create text $root wraplength 800] {} {}
     ttk::label $w.nameLabel -text "Session name:"
     ttk::entry $w.name -textvariable ::GX::ui(newSessionName) -width 36
     ttk::label $w.projectLabel -text "Location:"
-    ttk::combobox $w.project -textvariable ::GX::ui(newSessionProject) -values $projectChoices -state readonly -width 45
+    uiFieldComponentCreate $w.project combobox [dict create choices $projectChoices width 30] ::GX::ui(newSessionProject) {}
     ttk::frame $w.buttons
     ttk::button $w.buttons.create -text "Create" -command [list ::GX::newSessionDialogCommit $w]
     ttk::button $w.buttons.generate -text "Generate Session..." -command [list ::GX::sessionGeneratorBrowserShow $w]
     ttk::button $w.buttons.cancel -text "Cancel" -command [list destroy $w]
     grid $w.rootLabel -row 0 -column 0 -sticky e -padx 6 -pady 6
-    grid $w.root -row 0 -column 1 -sticky w -padx 6 -pady 6
+    grid $w.root -row 0 -column 1 -sticky ew -padx 6 -pady 6
     grid $w.nameLabel -row 1 -column 0 -sticky e -padx 6 -pady 6
     grid $w.name -row 1 -column 1 -sticky ew -padx 6 -pady 6
     grid $w.projectLabel -row 2 -column 0 -sticky e -padx 6 -pady 6
@@ -1160,22 +1264,30 @@ proc ::GX::newSessionDialog {{preferredProjectId ""}} {
     pack $w.buttons.create $w.buttons.generate $w.buttons.cancel -side left -padx 4
     grid $w.buttons -row 3 -column 0 -columnspan 2 -pady 8
 
-    ttk::labelframe $w.generator -text "Session Generator Library"
-    grid columnconfigure $w.generator 0 -weight 3 -minsize 380
-    grid columnconfigure $w.generator 2 -weight 2 -minsize 340
+    uiFieldComponentCreate $w.generator section {title {Browse Session Generators}} {} {}
+    grid columnconfigure $w.generator 0 -weight 1
     grid rowconfigure $w.generator 0 -weight 1
-    ttk::treeview $w.generator.tree -show tree -height 16 -selectmode browse -yscrollcommand [list $w.generator.scroll set]
-    ttk::scrollbar $w.generator.scroll -orient vertical -command [list $w.generator.tree yview]
-    text $w.generator.info -height 12 -width 48 -wrap word -state disabled
-    grid $w.generator.tree -row 0 -column 0 -sticky nsew -padx 4 -pady 4
-    grid $w.generator.scroll -row 0 -column 1 -sticky ns -pady 4
-    grid $w.generator.info -row 0 -column 2 -sticky nsew -padx 4 -pady 4
-    ttk::frame $w.generator.actions
-    ttk::button $w.generator.actions.generate -text "Generate Session" -command [list ::GX::sessionGeneratorBrowserGenerate $w]
-    ttk::button $w.generator.actions.manage -text "Manage Libraries..." -command [list ::GX::sessionGeneratorManagerShow $w]
-    pack $w.generator.actions.generate $w.generator.actions.manage -side left -padx 4
-    grid $w.generator.actions -row 1 -column 0 -columnspan 3 -pady 4
-    bind $w.generator.tree <<TreeviewSelect>> [list ::GX::sessionGeneratorBrowserSelection $w]
+    uiFieldComponentCreate $w.generator.split splitter {orientation horizontal} {} {}
+    uiFieldComponentCreate $w.generator.split.navigation table {columns {Name} scrollbars both} {} {}
+    $w.generator.split.navigation.table configure -show tree -columns {} -height 12 -selectmode browse
+    uiFieldComponentCreate $w.generator.split.description panel {} {} {}
+    uiFieldComponentCreate $w.generator.split.description.info log {height 12 width 38} {} {}
+    ttk::scrollbar $w.generator.split.description.scroll -command [list $w.generator.split.description.info yview]
+    $w.generator.split.description.info configure -font TkDefaultFont -yscrollcommand [list $w.generator.split.description.scroll set]
+    grid columnconfigure $w.generator.split.description 0 -weight 1
+    grid rowconfigure $w.generator.split.description 0 -weight 1
+    grid $w.generator.split.description.info -row 0 -column 0 -sticky nsew
+    grid $w.generator.split.description.scroll -row 0 -column 1 -sticky ns
+    $w.generator.split add $w.generator.split.navigation -weight 1
+    $w.generator.split add $w.generator.split.description -weight 1
+    grid $w.generator.split -row 0 -column 0 -sticky nsew
+    uiFieldComponentCreate $w.generator.actions panel {} {} {}
+    uiFieldComponentCreate $w.generator.actions.generate action {label {Generate Session}} {} [list ::GX::sessionGeneratorBrowserGenerate $w]
+    $w.generator.actions.generate state disabled
+    uiFieldComponentCreate $w.generator.actions.manage action {label {Manage Libraries...}} {} [list ::GX::sessionGeneratorManagerShow $w]
+    bind $w.generator.actions <Configure> [list ::GX::uiFieldControlsLayout $w.generator.actions %w]
+    grid $w.generator.actions -row 1 -column 0 -sticky ew
+    bind $w.generator.split.navigation.table <<TreeviewSelect>> [list ::GX::sessionGeneratorBrowserSelection $w]
 
     sessionGeneratorBuildManager $w
     grid remove $w.manager

@@ -43,11 +43,18 @@ set json [::GX::CurveDigitizerQuality::reportJson $datasetId]
 | `image_evidence_available` | Source-image raster contrast evidence was evaluated. |
 | `source_dataset_id`, `source_sha256` | Source Dataset and SHA-256 recorded at publication. |
 | `source_integrity`, `source_current_sha256` | Live source status (`verified`, `changed`, `missing`, `unknown`). |
-| `accuracy_status`, `uncertainty_status` | Explicitly `not_assessed`. |
+| `accuracy_status` | Explicitly `not_assessed`; structural/image diagnostics do not establish image-to-curve accuracy. |
+| `uncertainty_status` | `declared_propagated` when published Dataset metadata declares `curve_digitizer.uncertainty_schema_version=2`; otherwise `not_declared`. This facade flag reports the declaration, not an independent validation of its uncertainty values or statistical coverage. |
 | `report_json` | Complete report, encoded as JSON, schema 2. |
 
 A report of a different version produces an explicit error from `read` and
 `hasReport` returns false. Missing data are not interpreted as perfect quality.
+
+The facade `uncertainty_status` above is distinct from
+`report_json.metrology.uncertainty.status`, which remains `not_assessed` in the
+quality report. A published propagation declaration is not proof of accuracy,
+calibration uncertainty or independently validated coverage. Use the existing
+uncertainty API and its source/Dataset binding checks for that separate contract.
 
 ## JSON report schema 2 (public contract)
 
@@ -58,7 +65,7 @@ Top-level objects:
 | `schema_version`, `producer`, `scope`, `image_space` | Identity and coordinate convention. |
 | `source` | Dataset identity, raster SHA-256 and width/height. |
 | `publication` | Layout (`separate` / `combined`), selected measurement IDs, realization count, source-point count, *actual* row count, curve count and point-ordering policy. |
-| `calibrations[]` | One entry per **published** measurement, including calibration identifier, label/state, axis units, polygon area/validity, homography condition number and exact-four-point RMS (explicitly not an accuracy metric). Independent verification is marked not recorded unless it becomes available as persistent data. |
+| `calibrations[]` | One entry per **published** measurement, including calibration identifier, label/state, axis units, polygon area/validity, homography condition number and same-four-control reprojection RMS in normalized unit-square mapping coordinates (dimensionless, not px or physical uncertainty, and not independent accuracy). Independent verification is marked not recorded unless it becomes available as persistent data. |
 | `calibration_realization_spread` | Descriptive range across published maps at bounded sampled raster locations, per axis, with physical units. No statistical or uncertainty claim. |
 | `curves[]` | Stable curve ID/label, point and segment counts, origin counts, raster bounds, point spacing statistics, observed line-contrast statistics, issue counts, monotonicity checks and rows per realization. |
 | `segments.records[]` | Source raster XY endpoints, stable curve ID, zero-based `segment_index`, raster length, flags, local image evidence if sampled. |
@@ -76,9 +83,11 @@ absence of a record is **never evidence that an interval is error-free**.
 
 ### Raster evidence interpretation
 
-Image evidence measures **local median contrast of a line midpoint against
-samples 4 pixels either side along the segment normal**. It can indicate
-weakly visible intervals. It does **not** distinguish curves from grid lines,
+Image evidence uses **bounded samples along each segment**, with between one
+and seven centers and flanks 4 pixels either side along the segment normal.
+The segment diagnostics retain median contrast and a threshold-visible fraction;
+per-curve fields summarize those segment fractions. This can indicate weakly
+visible intervals. It does **not** distinguish curves from grid lines,
 text or intersecting curves, and it cannot resolve overlapping traces. The
 original canonical source image is used, not GUI opacity or a display filter.
 Publishing a processed image Dataset and then selecting it as a new source

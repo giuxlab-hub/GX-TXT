@@ -23,6 +23,8 @@ proc ::GX::CurveWorkbench::_timelineBuild {w} {
     ttk::combobox $w.strip.choice -values {Description History} -state readonly -width 12 -textvariable ::GX::CurveWorkbench::st($w,stripView)
     pack $w.strip.choice -side left -fill y
     pack $w.status -in $w.strip -side left -fill x -expand 1;raise $w.status
+    bind $w.status <Configure> +[list ::GX::CurveWorkbench::_timelineDescriptionLayout $w]
+    bind $w.strip <Configure> +[list ::GX::CurveWorkbench::_timelineDescriptionLayout $w]
     canvas $w.strip.timeline -height [expr {$height-2}] -highlightthickness 0 -background #edf1f5
     bind $w.strip.choice <<ComboboxSelected>> [list ::GX::CurveWorkbench::_timelineSwitch $w]
     bind $w.strip.timeline <Button-1> [list ::GX::CurveWorkbench::_timelineClick $w %x %y]
@@ -41,6 +43,15 @@ proc ::GX::CurveWorkbench::_timelineSwitch {w} {
     variable st
     pack forget $w.status $w.strip.timeline
     if {$st($w,stripView) eq "History"} {pack $w.strip.timeline -fill both -expand 1;_timelineRender $w} else {pack $w.status -in $w.strip -fill both -expand 1;raise $w.status}
+    _timelineDescriptionLayout $w
+}
+proc ::GX::CurveWorkbench::_timelineDescriptionLayout {w} {
+    variable st
+    if {![winfo exists $w.strip] || $st($w,stripView) ne {Description}} return
+    set width [expr {max(80,[winfo width $w.strip]-[winfo reqwidth $w.strip.choice]-8)}]
+    $w.status configure -wraplength $width
+    set height [expr {max([winfo reqheight $w.status]+4,[winfo reqheight $w.strip.choice]+2)}]
+    if {[$w.strip cget -height]!=$height} {$w.strip configure -height $height}
 }
 proc ::GX::CurveWorkbench::_timelineKind {before after step} {
     set old [::GX::datasetPublicationV2DictDefault [dict get $before @cad] constraints {}]
@@ -77,6 +88,7 @@ proc ::GX::CurveWorkbench::_timelineRender {w} {
     set groups [linsert $groups 0 [list base 0]]
     set lane [expr {max(24,[font metrics TkDefaultFont -linespace]+8)}]
     $w.strip configure -height [expr {max($lane+4,[winfo reqheight $w.strip.choice]+2)}]
+    _timelineDescriptionLayout $w
     set x 3
     foreach group $groups {
         set kind [lindex $group 0];set members [lrange $group 1 end]
@@ -301,20 +313,36 @@ foreach command {undo redo} {
         }
         set before [_recipeState $w];set record $st($w,scientificRecipe)
         set undo $st($w,undo);set redo $st($w,redo)
+        set stack [set st($w,%s)]
+        set target {}
+        if {[llength $stack]} {set target [lindex [lindex $stack end] %d]}
+        set token [_parameterBind $w];set priorDefinitions [::GX::parameterDefinitions $token]
         set st($w,importTransaction) 1
         try {
+            # Parameters are part of the same scientific snapshot as retained
+            # geometry. Restore through their existing transactional owner,
+            # then let the native snapshot restore exact geometry/constraints.
+            if {[dict exists $target @cad parameter_definitions]} {
+                set definitions [dict get $target @cad parameter_definitions]
+                if {[::GX::parameterDefinitions $token] ne $definitions} {
+                    ::GX::_parameterWrite $token $definitions
+                }
+            }
             %s_history_base $w
             set after [_recipeState $w]
             if {$record eq {}} {set record [dict create base $before steps {} retention complete]}
             dict set record retention complete
             set st($w,scientificRecipe) [::GX::scientificRecipeAppend $record $before $after {api_id SCIENTIFIC_RECIPE_API_v1 api_version 1 operation %s parameters {} targets {} result_ids {} working_unit {}}]
         } on error {message options} {
+            if {[::GX::parameterDefinitions $token] ne $priorDefinitions} {
+                ::GX::_parameterWrite $token $priorDefinitions
+            }
             _recipeApplyState $w [dict create base $before steps {}]
             set st($w,undo) $undo;set st($w,redo) $redo;set st($w,scientificRecipe) $record
             return -options $options $message
         } finally {unset -nocomplain st($w,importTransaction)}
         _save $w;_timelineRender $w
-    } [expr {$command eq "undo"?-1:1}] $command $command]
+    } [expr {$command eq "undo"?-1:1}] $command [expr {$command eq "undo"?0:1}] $command $command]
 }
 
 # Direct identities are obtained from the immutable recipe patch, never guessed

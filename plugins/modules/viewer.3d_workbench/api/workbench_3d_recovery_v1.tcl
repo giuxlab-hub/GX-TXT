@@ -13,7 +13,7 @@ proc ::GX::Workbench3D::saveExplicit {} {
     variable document;variable recoveryNotice;variable status
     checkpoint
     if {[catch {set result [::GX::workbenchRecoveryMarkSaved $document]} message]} {set result [dict create status corrupt reason $message]}
-    if {[dict get $result status] eq "corrupt"} {set recoveryNotice "Workbench saved; recovery journal remains unavailable: [dict get $result reason]";set status "Workbench saved."} else {set recoveryNotice "";set status "Workbench saved; recovery journal compacted and marked clean."}
+    if {[dict get $result status] eq "corrupt"} {set recoveryNotice "Workbench saved; recovery journal remains unavailable: [dict get $result reason]";set status $recoveryNotice} else {set recoveryNotice "";set status "Workbench saved; recovery journal compacted and marked clean."}
 }
 rename ::GX::Workbench3D::buildPanel ::GX::Workbench3D::buildPanel_recovery_base
 proc ::GX::Workbench3D::buildPanel {args} {
@@ -25,9 +25,13 @@ proc ::GX::Workbench3D::buildPanel {args} {
 }
 rename ::GX::Workbench3D::close ::GX::Workbench3D::close_recovery_base
 proc ::GX::Workbench3D::close {} {
-    variable scene;variable document;variable recoveryNotice
+    variable scene;variable document;variable recoveryNotice;variable status
     if {$scene ne {}&&![catch {::GX::native3DGeometrySceneInfo $scene}]} {
-        if {[catch {::GX::workbenchRecoveryClose $document} message]} {set recoveryNotice "Closing Workbench; recovery journal could not be marked clean: $message"}
+        if {[catch {set result [::GX::workbenchRecoveryClose $document]} message]} {
+            set recoveryNotice "Closing Workbench; recovery journal could not be marked clean: $message";set status $recoveryNotice
+        } elseif {[dict get $result status] eq {corrupt}} {
+            set recoveryNotice "Closing Workbench; recovery journal remains unavailable: [dict get $result reason]";set status $recoveryNotice
+        }
     }
     tailcall close_recovery_base
 }

@@ -37,7 +37,9 @@ proc ::GX::coreUiSurfaceBuildModulesControls {} {
     if {![llength [info commands winfo]] || ![winfo exists $host]} return
     catch {destroy $host.surfaces}
     ttk::labelframe $host.surfaces -text "Optional CORE workspace surfaces"
-    grid $host.surfaces -row 4 -column 0 -columnspan 2 -sticky ew -padx 5 -pady 4
+    if {[winfo exists $host.cards]} {
+        pack $host.surfaces -before $host.cards -fill x -padx 12 -pady 4
+    } else {grid $host.surfaces -row 4 -column 0 -columnspan 2 -sticky ew -padx 5 -pady 4}
     set i 0
     dict for {id info} $coreUiSurfaces {
         ttk::checkbutton $host.surfaces.c$i -text [dict get $info label] \

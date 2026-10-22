@@ -53,6 +53,15 @@ only that selection predicate. Curve sources specify `x_variable_id/y_variable_i
 Family sources also specify `family_coordinates`. Source/member order is the
 request order; ordinary row order is source order. Interpolation is never implicit.
 
+For `project_variables` and `rename_reorder`, coordinate relationships retain
+only referenced Variables selected into the output, remapped through the existing
+`options.rename` or per-source `variable_map`. Excluded coordinate references are
+omitted; no unrequested coordinate column is added and an alias cannot make a
+different source Variable impersonate an excluded coordinate. Reordering and
+display labels do not change ID-based relationships. The existing provenance
+`transform.effective.effective_options.coordinate_reference_policy` records this
+preserve/remap/omit policy. Other transform materialization policies are unchanged.
+
 Per-source `assume_units` maps undeclared numeric Variable IDs to explicitly
 chosen input units. It cannot override a known unit or hide variable-specific
 calibration. Combine it with `convert_units` to normalize otherwise undeclared

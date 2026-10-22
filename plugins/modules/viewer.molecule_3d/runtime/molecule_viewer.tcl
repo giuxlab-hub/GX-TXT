@@ -287,7 +287,8 @@ proc ::GX::MoleculeViewer::render3D {} {
         sha256 [dict get $artifact sha256] format vtp format_version 1 \
         scalar_array element source_dataset_id $selected \
         source_dataset_sha256 [dict get $source sha256] layer_order 10]
-    set result [::GX::viewerOpen viewer.native_3d native_3d [dict create scene_only 1]]
+    set result [::GX::viewerOpen viewer.native_3d native_3d [dict create \
+        scene_only 1 presentation_layer_ids {molecule_main}]]
     saveState
     return $result
 }

@@ -58,6 +58,13 @@ def _receipt(host, raw):
     for key, value in list(result.items()):
         if key == "axis_presentation":
             result[key] = _axis_presentation(host, value)
+        elif key == "coordinate_units":
+            result[key] = host.as_list(value)
+        elif key in {"coordinate_relations", "original_source_variable_schema"}:
+            # Ordered axis meanings retain the Unit Registry's literal strings.
+            # Decode structure only; this transport does not evaluate relations.
+            result[key] = {axis: host.as_dict(fields)
+                           for axis, fields in host.as_dict(value).items()}
         elif key == "coordinate_frame":
             frame = host.as_dict(value)
             result[key] = {"schema_version": int(frame["schema_version"]), "method": frame["method"],
@@ -89,7 +96,7 @@ def _receipt(host, raw):
             result[key] = float(value)
         elif key in {"width", "height"}:
             result[key] = int(float(value))
-        elif key in {"part_id", "ordinal", "part_identity_counter", "knot_count", "index_start", "index_step", "knot", "parameter_count", "rank", "dof", "branch", "sample_budget", "count_a", "count_b", "revision", "topology_epoch", "epoch", "unit_power", "point_count", "point_index", "a_index", "b_index", "axis_index", "segment", "row_count", "display_budget", "start", "count", "first", "last", "size_bytes", "display_rows", "max_index", "max_source_index", "index", "control_count", "object_count", "columns", "positions", "total", "subdivisions", "major_interval", "radial_major_interval", "angular_major_interval", "order", "line_style", "marker", "interpolation", "layer"}:
+        elif key in {"part_id", "ordinal", "part_identity_counter", "knot_count", "index_start", "index_step", "knot", "parameter_count", "rank", "dof", "branch", "sample_budget", "count_a", "count_b", "revision", "topology_epoch", "epoch", "unit_power", "point_count", "point_index", "a_index", "b_index", "axis_index", "segment", "row_count", "display_budget", "start", "count", "first", "last", "size_bytes", "display_rows", "max_index", "max_source_index", "index", "control_count", "object_count", "columns", "positions", "total", "subdivisions", "major_interval", "radial_major_interval", "angular_major_interval", "order", "line_style", "marker", "interpolation", "layer", "traversal_contract", "curved_samples"}:
             result[key] = None if key == "part_id" and not value else int(value)
         elif key in {"effective_direction", "reversed", "original_dataset_modified", "source_modified", "repeat_endpoint", "materialization_verified", "calibrated", "explicit", "incoming", "connected", "periodic", "analysis_complete", "hit", "solved", "driven", "placed", "area_supported", "projection_exact_a", "projection_exact_b", "closest_exact", "normal_output", "geometry_modified", "parameter", "missing", "angular", "exact", "unit_declared", "disabled", "valid", "geometry_supported", "general_solver", "circular", "include_origin", "rotate_geometry", "finite_bounds", "copy", "found", "intersects_image", "physical_scale", "assumed_undeclared", "closed", "c0", "c1_start", "c1_end", "tangent_start", "tangent_end", "display_is_scientific_data", "visible", "locked", "selectable", "selected", "enabled", "snap_enabled", "major_visible", "minor_visible", "axes_visible", "clockwise", "degrees", "present", "forward", "base_selected"}:
             result[key] = bool(int(value))
@@ -107,7 +114,7 @@ def _receipt(host, raw):
             result[key] = [[int(host.as_list(item)[0]), _array(host, host.as_list(item)[1]), _array(host, host.as_list(item)[2])] for item in host.as_list(value)]
         elif key in {"points", "controls", "calibration"}:
             result[key] = _matrix(host, value)
-        elif key in {"images", "inputs", "series_containers", "saved_views", "layers", "selection_sets", "members", "fragments", "constraints", "objects", "parts", "segments", "variables", "source_identities", "coordinate_conversions", "handles", "compatible_constraints"}:
+        elif key in {"images", "inputs", "series_containers", "saved_views", "layers", "selection_sets", "members", "fragments", "constraints", "objects", "parts", "segments", "variables", "source_identities", "coordinate_conversions", "handles", "compatible_constraints", "constituents"}:
             result[key] = [_receipt(host, item) for item in host.as_list(value)]
         elif key in {"missing_refs", "source_tokens", "object_tokens", "operations", "host_operations"}:
             result[key] = host.as_list(value)

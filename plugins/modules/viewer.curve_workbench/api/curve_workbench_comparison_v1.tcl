@@ -42,13 +42,6 @@ proc ::GX::CurveWorkbench::_compare {w} {
     set st($w,status) "[::GX::StatisticsV1::report [dict get $result statistics reference] {n rmse}]; [::GX::StatisticsV1::report [dict get $result statistics bidirectional] {sampled_hausdorff_distance}]"
     return $result
 }
-rename ::GX::CurveWorkbench::_drawResidual ::GX::CurveWorkbench::_drawResidual_comparison_base
-proc ::GX::CurveWorkbench::_drawResidual {w} {
-    variable st
-    _drawResidual_comparison_base $w
-    if {$st($w,compareMethod) ne "geometry"||![winfo exists $w.right.residual]} return
-    foreach id [$w.right.residual find all] {if {[$w.right.residual type $id] ne "text"} continue;set text [$w.right.residual itemcget $id -text];if {$text eq "signed\nresidual"} {$w.right.residual itemconfigure $id -text "distance\nto curve"} elseif {$text eq "reference path distance"} {$w.right.residual itemconfigure $id -text "sampled reference path distance"}}
-}
 proc ::GX::CurveWorkbench::_comparisonPublishOpen {w} {
     variable st
     if {$st($w,lastGeometricComparison) eq {}} {error "Run a geometry comparison first"}
@@ -114,7 +107,12 @@ proc ::GX::CurveWorkbench::_residualLayout {w} {
     # lifetime. Residual visibility changes only its sibling widgets; repeated
     # unmanage/remanage cycles can leave Tk geometry-maintenance callbacks stale.
     pack forget $w.right.residual $w.right.residualLabel
-    if {$show} {pack $w.right.residual -in $w.right -side bottom -fill x;pack $w.right.residualLabel -side bottom -fill x}
+    if {$show} {
+        # Reserve the fixed residual height before the expanding viewport
+        # consumes the remaining parcel; changing -side alone does not reorder.
+        pack $w.right.residual -in $w.right -side bottom -fill x -before $w.right.viewport
+        pack $w.right.residualLabel -side bottom -fill x -before $w.right.viewport
+    }
     # Shared viewport chrome retains its dedicated canvas host through both
     # residual changes and recovery/history restoration.
     set parent [expr {[winfo exists $w.right.viewport]?"$w.right.viewport":"$w.right"}]

@@ -4,7 +4,7 @@
 proc ::GX::CurveWorkbench::_coordinateContext {w id} {
     variable st
     set record [_record $w $id]
-    set signature [list [dict get $record source] [dict get $record x] [dict get $record y] [_coordinateUnits $record] [::GX::datasetPublicationV2DictDefault $record source_descriptor {}] [::GX::datasetPublicationV2DictDefault $record source_assumed_units {}]]
+    set signature [list [dict get $record source] [dict get $record x] [dict get $record y] [_coordinateUnits $record] [::GX::datasetPublicationV2DictDefault $record source_descriptor {}] [::GX::datasetPublicationV2DictDefault $record source_assumed_units {}] [::GX::datasetPublicationV2DictDefault $record coordinate_snapshot {}] [::GX::datasetPublicationV2DictDefault $record coordinate_snapshot_variables {}] [_coordinateSourceRelations $record]]
     if {[dict exists $st($w,coordinateCache) $id]&&[dict get $st($w,coordinateCache) $id signature] eq $signature} {return [dict get $st($w,coordinateCache) $id]}
     set result [dict create signature $signature context {} reason {}]
     if {[dict get $record source] ne {}} {
@@ -24,13 +24,18 @@ proc ::GX::CurveWorkbench::_coordinateContext {w id} {
             }
             dict set result context $context
         } reason]} {dict set result reason $reason}
+    } elseif {[dict exists $record coordinate_snapshot]} {
+        if {[catch {
+            set context [_coordinateSnapshotValidate $record]
+            dict set result context $context
+        } reason]} {dict set result reason $reason}
     }
     dict set st($w,coordinateCache) $id $result
     return $result
 }
 proc ::GX::CurveWorkbench::_coordinateAxis {w id axis} {
     variable st
-    set record [_record $w $id];set vid [dict get $record $axis]
+    set record [_record $w $id];set vid [_coordinateSnapshotVariable $record $axis]
     set unit [lindex [_coordinateUnits $record] [expr {$axis eq "x"?0:1}]]
     set label [::GX::datasetPublicationV2DictDefault $record source_${axis}_name $vid]
     set cache [_coordinateContext $w $id];set context [dict get $cache context]
@@ -81,6 +86,73 @@ proc ::GX::CurveWorkbench::_coordinateTick {w axis value} {
     }
     return [format %.4g $value]
 }
+proc ::GX::CurveWorkbench::_coordinateAutomaticDisplay {unit values} {
+    set magnitude 0.0
+    foreach value $values {set magnitude [expr {max($magnitude,abs($value))}]}
+    set result [dict create unit $unit scale 1.0 offset 0.0 exponent 0]
+    if {$magnitude==0 || ($magnitude>=1 && $magnitude<1000)} {return $result}
+    if {$unit ni {{} 1 dimensionless} && ![catch {set family [lindex [::GX::unitTclSingle $unit] 1]}]} {
+        set best {};set score Inf
+        foreach candidate [::GX::unitSelectorCandidates] {
+            if {[catch {set candidateFamily [lindex [::GX::unitTclSingle $candidate] 1]}] || $candidateFamily ne $family} continue
+            if {[catch {set conversion [::GX::unitRegistryAffinePlan $unit $candidate]}] || ![dict get $conversion affine] || [dict get $conversion offset]!=0 || [dict get $conversion scale]<=0} continue
+            set presented [expr {$magnitude*[dict get $conversion scale]}]
+            if {$presented<1 || $presented>=1000} continue
+            set distance [expr {abs(log10($presented)-1)}]
+            if {$distance<$score} {set score $distance;set best [dict create unit $candidate scale [dict get $conversion scale] offset 0.0 exponent 0]}
+        }
+        if {$best ne {}} {return $best}
+    }
+    # A numeric multiplier never introduces a physical unit. It also provides
+    # truthful engineering notation for compound quantities without inventing a
+    # registered prefixed compound unit.
+    set exponent [expr {int(max(-24,min(24,3*floor(log10($magnitude)/3))))}]
+    dict set result exponent $exponent
+    dict set result scale [expr {pow(10.0,-$exponent)}]
+    return $result
+}
+proc ::GX::CurveWorkbench::_coordinateAxisPlans {w {fontPixels {}}} {
+    variable st
+    if {$fontPixels eq {}} {set fontPixels [font metrics TkSmallCaptionFont -linespace]}
+    lassign [::GX::Native2D::core view $st($w,scene)] width height left top right bottom bounds
+    lassign $bounds x0 y0 x1 y1
+    set plans {}
+    foreach axis {x y} lower [list $x0 $y0] upper [list $x1 $y1] pixels [list [expr {$width-$left-$right}] [expr {$height-$top-$bottom}]] {
+        set active [expr {$st($w,active) ne {} && [dict exists $st($w,curves) $st($w,active)]}]
+        set values [list $lower $upper];set label [string toupper $axis]
+        set unit [dict get $st($w,coordinateConfiguration) ${axis}_unit]
+        set automatic 1
+        if {$active} {
+            set info [_coordinateAxis $w $st($w,active) $axis]
+            set label [dict get $info label];set unit [dict get $info display_unit]
+            set values [_coordinateValues $w $st($w,active) $axis $values]
+            if {[dict exists $st($w,coordinatePresentation) $st($w,active) $axis]} {set automatic 0}
+        }
+        set mapping [dict create unit $unit scale 1.0 offset 0.0 exponent 0]
+        if {$automatic} {set mapping [_coordinateAutomaticDisplay $unit $values]}
+        set scale [dict get $mapping scale];set offset [dict get $mapping offset]
+        lassign [lmap value $values {expr {$value*$scale+$offset}}] a b
+        set plan [::GX::native2DAxisPlan [expr {min($a,$b)}] [expr {max($a,$b)}] $pixels $fontPixels]
+        set ticks {}
+        foreach tick [dict get $plan ticks] {
+            set display [dict get $tick value]
+            set value [expr {($display-$offset)/$scale}]
+            if {$active} {set value [lindex [_coordinateValues $w $st($w,active) $axis [list $value] inverse] 0]}
+            if {$value<$lower || $value>$upper} continue
+            dict set tick display_value $display;dict set tick value $value
+            lappend ticks $tick
+        }
+        set unitLabel [dict get $mapping unit]
+        if {$unitLabel eq {}} {set unitLabel numeric} elseif {$unitLabel in {1 dimensionless}} {set unitLabel dimensionless}
+        if {[dict get $mapping exponent]!=0} {append unitLabel " ×10^[dict get $mapping exponent]"}
+        dict set plan ticks $ticks
+        dict set plan label "$label ($unitLabel)"
+        dict set plan lower $lower;dict set plan upper $upper
+        dict set plan presentation $mapping
+        dict set plans $axis $plan
+    }
+    return $plans
+}
 proc ::GX::CurveWorkbench::_coordinateReadout {w device} {
     variable st
     if {$st($w,active) eq {}||![dict exists $st($w,curves) $st($w,active)]} {return [::GX::native2DCoordinateReadout $st($w,scene) $device]}
@@ -117,7 +189,7 @@ proc ::GX::CurveWorkbench::_coordinatePolicy {w} {
         if {[dict exists $st($w,curves) $basis]} {
             set c [dict get [_coordinateContext $w $basis] context]
             if {$c ne {}} {
-                set record [_record $w $basis];set x [dict get $record x];set y [dict get $record y]
+                set record [_record $w $basis];set x [_coordinateSnapshotVariable $record x];set y [_coordinateSnapshotVariable $record y]
                 append st($w,coordinatePolicy) " · view basis: [dict get $record name], X ×[dict get $c variables $x view_factor], Y ×[dict get $c variables $y view_factor]"
             }
         }
@@ -204,14 +276,14 @@ proc ::GX::CurveWorkbench::_coordinateMagnify {w capture} {
         return
     }
     set record [_record $w $id];set policy {}
-    foreach axis {x y} {set settings [dict get $context variables [dict get $record $axis]];lappend policy [dict get $settings view_factor] [dict get $settings view_pivot]}
+    foreach axis {x y} {set settings [dict get $context variables [_coordinateSnapshotVariable $record $axis]];lappend policy [dict get $settings view_factor] [dict get $settings view_pivot]}
     set signature [list [dict get $context source_sha256] [_coordinateUnits $record] $policy]
     if {!$capture&&[dict get $st($w,coordinateView) applied] eq $signature} return
     set bounds [dict get $st($w,coordinateView) reference];set next $bounds
     set record [_record $w $id];set independent 0
     lassign [_coordinateUnits $record] ux uy
     if {$ux ne $uy} {set independent 1}
-    if {[dict get $context variables [dict get $record x] view_factor]!=[dict get $context variables [dict get $record y] view_factor]} {set independent 1}
+    if {[dict get $context variables [_coordinateSnapshotVariable $record x] view_factor]!=[dict get $context variables [_coordinateSnapshotVariable $record y] view_factor]} {set independent 1}
     foreach axis {x y} lo {0 1} hi {2 3} {
         set info [_coordinateAxis $w $id $axis];set vid [dict get $info variable_id];set native [dict get $info native_unit]
         set range [dict get [::GX::datasetCoordinateSnapshotValues $context $vid [list [lindex $bounds $lo] [lindex $bounds $hi]] [_coordinateOptions $info [dict create unit $native direction inverse]]] values]
@@ -338,14 +410,9 @@ proc ::GX::CurveWorkbench::_coordinateExportContext {w} {
     set context [_extensionContext $w];set labels {};set options [dict create point_budget 4096 legend auto font_size 11 title {Curve Workbench sketch}]
     dict for {id record} $st($w,curves) {dict set labels [dict get $record native] [dict get $record name]}
     dict set options object_labels $labels
-    if {$st($w,active) ne {}} {
-        lassign [lindex [::GX::Native2D::core view $st($w,scene)] 6] x0 y0 x1 y1
-        foreach axis {x y} lower [list $x0 $y0] upper [list $x1 $y1] {
-            dict set options ${axis}_label [_coordinateLabel $w $st($w,active) $axis]
-            set ticks {};for {set i 0} {$i<=5} {incr i} {lappend ticks [_coordinateTick $w $axis [expr {$lower+($upper-$lower)*$i/5.0}]]}
-            dict set options ${axis}_tick_labels $ticks
-        }
-    }
+    set plans [_coordinateAxisPlans $w 11]
+    dict set options axis_plans $plans
+    foreach axis {x y} {dict set options ${axis}_label [dict get $plans $axis label]}
     set snapshot [::GX::native2DPresentationSnapshot $st($w,scene) $options]
     set background [::GX::uiFieldColorFromRGBA [dict get $snapshot presentation background]]
     set background [::GX::uiFieldColorComposite $background #FFFFFF]

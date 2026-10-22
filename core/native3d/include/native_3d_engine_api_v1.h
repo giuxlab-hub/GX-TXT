@@ -1102,6 +1102,11 @@ GX3DE_API gx3de_result gx3de_step_node_get(gx3de_step_document *document,uint64_
 GX3DE_API gx3de_result gx3de_step_text_get(gx3de_step_document *document,uint32_t field,uint64_t index,char *buffer,uint64_t capacity,uint64_t *required_bytes);
 GX3DE_API gx3de_result gx3de_step_source_sha256(gx3de_step_document *document,char out_hex65[65]);
 GX3DE_API gx3de_result gx3de_step_instance_create(gx3de_scene *scene,gx3de_step_document *document,uint64_t node_index,gx3de_object **out);
+/* Explicitly collect all STEP part occurrences into one immutable B-Rep
+ * compound, preserving their world placements without Boolean fusion.
+ * Intended for rehydrating a previously saved single multi-solid object.
+ * Ordinary assembly intake continues to use distinct instance identities. */
+GX3DE_API gx3de_result gx3de_step_compound_create(gx3de_scene *scene,gx3de_step_document *document,gx3de_object **out);
 GX3DE_API gx3de_result gx3de_step_instance_mesh_create(gx3de_scene *scene,gx3de_step_document *document,uint64_t node_index,const gx3de_step_mesh_spec *spec,gx3de_object **out);
 GX3DE_API gx3de_result gx3de_object_brep_mesh_create(gx3de_object *source,const gx3de_brep_mesh_spec *spec,gx3de_object **out);
 /* Explicit world-space tolerance and identity-placement mesh derivation. */

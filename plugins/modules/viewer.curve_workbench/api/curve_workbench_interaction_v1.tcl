@@ -38,12 +38,23 @@ proc ::GX::CurveWorkbench::_createCount {family} {
 }
 proc ::GX::CurveWorkbench::_commitDefinition {w definition unit name operation {parents {}}} {
     variable st
-    ::GX::unitRegistryHomogeneousCoordinatePlan $unit $unit
+    set coordinateUnits [list [dict get $st($w,coordinateConfiguration) x_unit] [dict get $st($w,coordinateConfiguration) y_unit]]
+    if {$parents ne {}} {set coordinateUnits [_coordinateUnits [_record $w [lindex $parents 0]]]}
+    if {$parents eq {} && $st($w,active) ne {} && [dict exists $st($w,curves) $st($w,active)]} {set coordinateUnits [_coordinateUnits [_record $w $st($w,active)]]}
+    set relations {}
+    if {$parents ne {}} {set relations [_coordinateSourceRelations [_record $w [lindex $parents 0]]]} elseif {$st($w,active) ne {}&&[dict exists $st($w,curves) $st($w,active)]} {set relations [_coordinateSourceRelations [_record $w $st($w,active)]]}
+    _coordinateAxesAdmit $w $coordinateUnits $relations
+    if {[dict exists $operation coordinate_units]} {
+        if {[dict get $operation coordinate_units] ne $coordinateUnits} {error {Retained conversion does not belong to the selected coordinate plane}}
+        set unit [lindex $coordinateUnits 0]
+    }
+    if {$unit ne [lindex $coordinateUnits 0]} {error {Creation unit differs from the current coordinate frame. Configure an empty workspace or explicitly convert existing geometry first.}}
     set before [_snapshotIds $w {}];set undo $st($w,undo);set redo $st($w,redo);set native {}
     try {
         set native [::GX::Native2D::core sketch_create $st($w,scene) $definition 257]
         set record [_newRecord $w $name [_sketchSamples $w $native] {} x y {} {} {} {} $parents [list $operation]]
-        dict set record working_unit $unit;dict set record conversion_provenance $operation
+        dict set record coordinate_units $coordinateUnits;dict set record conversion_provenance $operation
+        if {$parents eq {}&&$st($w,active) ne {}&&[dict exists $st($w,curves) $st($w,active)]} {set record [_coordinateRetainFrame $w $record [list $st($w,active)]]}
         dict set record materialization_sampling [dict create method uniform_parameter first 0 last 1 total [::GX::Native2D::core count $st($w,scene) $native] geometry_authority retained_sketch]
         set id [dict get $record id];dict set before $id {};_addRecord $w $record $native
         set st($w,active) $id;set st($w,objectSelection) [list $id];set st($w,sketchSelection) {}
@@ -53,7 +64,7 @@ proc ::GX::CurveWorkbench::_commitDefinition {w definition unit name operation {
         if {$native ne {}&&$native in [::GX::Native2D::core ids $st($w,scene)]} {::GX::Native2D::core delete $st($w,scene) $native}
         set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message
     }
-    set st($w,status) "$name — exact retained primitive committed in $unit."
+    set st($w,status) [_coordinatePlaneParameterLabel $coordinateUnits "$name — exact retained primitive committed"]
     return $id
 }
 proc ::GX::CurveWorkbench::_createCommit {w} {
@@ -99,9 +110,16 @@ proc ::GX::CurveWorkbench::_selectReference {w ref additive} {
 }
 proc ::GX::CurveWorkbench::_controlDragStart {w ref x y} {
     variable st
+    set ids [list [dict get $ref logical]]
+    # Pointer bindings must surface a denied frame through the existing inline
+    # notice, before creating a gesture or taking any geometry/History action.
+    if {[catch {_coordinatePlaneAdmit $w $ids} message]} {
+        _notice $w $message
+        return
+    }
     # Preserve the pick offset: a rounded screen pixel is not the exact control
     # coordinate. An axis-aligned drag must not perturb a locked other axis.
-    set st($w,handleDrag) [dict create reference $ref before [_snapshotIds $w [list [dict get $ref logical]]] target {} origin [::GX::Native2D::core interaction_resolve $st($w,scene) $ref] pointer [::GX::Native2D::core world $st($w,scene) [list $x $y]]]
+    set st($w,handleDrag) [dict create reference $ref coordinate_key [_coordinateControlKey $w $ids] before [_snapshotIds $w $ids] target {} origin [::GX::Native2D::core interaction_resolve $st($w,scene) $ref] pointer [::GX::Native2D::core world $st($w,scene) [list $x $y]]]
 }
 proc ::GX::CurveWorkbench::_pointerDownRetained {w x y state} {
     variable st
@@ -143,6 +161,7 @@ proc ::GX::CurveWorkbench::_pointerMoveControl {w x y} {
     variable st
     if {$st($w,handleDrag) eq {}} {return 0}
     set ref [dict get $st($w,handleDrag) reference]
+    if {[catch {_coordinateControlCheck $w [list [dict get $ref logical]] [dict get $st($w,handleDrag) coordinate_key]} message]} {set st($w,handleDrag) {};_toolPreviewClear $w;_sketchIdle $w $message;return 1}
     set target [_placement $w $x $y [list [dict get $ref object]]]
     if {[dict get $st($w,snapCandidate) kind] eq "none"&&[dict exists $st($w,handleDrag) origin]} {
         set target [lmap now $target start [dict get $st($w,handleDrag) pointer] origin [dict get $st($w,handleDrag) origin] {expr {$origin+($now-$start)}}]
@@ -159,7 +178,11 @@ proc ::GX::CurveWorkbench::_pointerUpControl {w x y} {
     set drag $st($w,handleDrag);set st($w,handleDrag) {};_toolPreviewClear $w;set st($w,snapCandidate) {}
     if {[dict get $drag target] eq {}} {_draw $w;return 1}
     set ref [dict get $drag reference];set id [dict get $ref logical]
-    if {[catch {::GX::Native2D::core interaction_edit $st($w,scene) $ref [dict get $drag target]} message]} {_sketchIdle $w "Edit rejected: $message. Existing geometry and constraints preserved.";return 1}
+    if {[catch {
+        _coordinateControlCheck $w [list $id] [dict get $drag coordinate_key]
+        _coordinatePlaneAdmit $w [list $id]
+        ::GX::Native2D::core interaction_edit $st($w,scene) $ref [dict get $drag target]
+    } message]} {_sketchIdle $w "Edit rejected: $message. Existing geometry and constraints preserved.";return 1}
     set undo $st($w,undo);set redo $st($w,redo)
     try {_syncSamples $w $id;_history $w [dict get $drag before] [list $id]} on error {message options} {_restoreSnapshot $w [dict get $drag before];set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
     set st($w,status) "Defining handle edited; retained primitive and Native constraints preserved."
@@ -257,7 +280,11 @@ proc ::GX::CurveWorkbench::_drawCreationPreview {w} {
         set radius [::GX::Native2D::core device $st($w,scene) [dict get [lindex $previewHandles 1] point]]
         _renderPath $w.right.viewport.canvas [list $center $radius] #159768 1 {3 3}
         if {![catch {set measured [::GX::Native2D::core measure $st($w,scene) [dict create kind radius a $st($w,toolPreview)]]}]} {
-            $w.right.viewport.canvas create text {*}$radius -text "R [format %.4g [dict get $measured value]] $st($w,sketchUnit)" -anchor sw -fill #159768 -tags tool_preview
+            set units [list [dict get $st($w,coordinateConfiguration) x_unit] [dict get $st($w,coordinateConfiguration) y_unit]]
+            lassign $units xUnit yUnit
+            if {$xUnit eq {}} {set xUnit numeric};if {$yUnit eq {}} {set yUnit numeric}
+            set hint "Plane R [format %.4g [dict get $measured value]] · X $xUnit; Y $yUnit"
+            $w.right.viewport.canvas create text {*}$radius -text $hint -anchor sw -fill #159768 -tags tool_preview
         }
     }
     if {$st($w,snapCandidate) ne {}&&[dict get $st($w,snapCandidate) kind] ne "none"} {lassign [::GX::Native2D::core device $st($w,scene) [dict get $st($w,snapCandidate) point]] x y
@@ -285,13 +312,9 @@ proc ::GX::CurveWorkbench::_buildConstruction {w} {
     menu $w.sketchbar.constraints.menu -tearoff 0 -postcommand [list ::GX::CurveWorkbench::_constraintMenu $w]
     ttk::menubutton $w.sketchbar.represent -text Representation -menu $w.sketchbar.represent.menu;menu $w.sketchbar.represent.menu -tearoff 0
     foreach {label callback} [list {Publish primitive as Dataset…} [list _primitivePublishOpen $w] {Reconstruct exact primitive from Dataset} [list _reconstructPrimitive $w] {Fit to retained primitive…} [list _fitPrimitiveOpen $w] {Dataset → Native editable points…} [list _convertOpen $w] {Primitive → Native sampled points…} [list _sketchSampleOpen $w] {Construction / reference role…} [list _geometryRoleOpen $w]] {$w.sketchbar.represent.menu add command -label $label -command [list ::GX::CurveWorkbench::_safe $w [lreplace $callback 0 0 ::GX::CurveWorkbench::[lindex $callback 0]]]}
-    ttk::label $w.sketchbar.unitLabel -text {Common working unit}
-    ttk::combobox $w.sketchbar.unit -width 9 -values [_workingUnitCandidates] -state normal -textvariable ::GX::CurveWorkbench::st($w,sketchUnit)
-    bind $w.sketchbar.unit <<ComboboxSelected>> [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_sketchUnitChoice $w]]
-    bind $w.sketchbar.unit <Return> [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_sketchUnitChoice $w]]
     ttk::checkbutton $w.sketchbar.snap -text {Object snap} -variable ::GX::CurveWorkbench::st($w,cadObjectSnap)
     ttk::button $w.sketchbar.finish -text Finish -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_createCommit $w]]
-    foreach key {select create modify constraints represent unitLabel unit snap finish} {pack $w.sketchbar.$key -side left -padx 3}
+    foreach key {select create modify constraints represent snap finish} {pack $w.sketchbar.$key -side left -padx 3}
     # The feedback label is a real child; its host is gridded only after reflow.
     ttk::frame $w.sketchbar.feedback
     ttk::label $w.sketchbar.feedback.active -textvariable ::GX::CurveWorkbench::st($w,toolLabel) -wraplength 500

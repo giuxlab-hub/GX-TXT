@@ -9,10 +9,18 @@ namespace eval ::GX::DatasetPrivate {
 }
 proc ::GX::_datasetMetadataPublicationWrite {session id metadata module suppliedKeys} {
     variable ::GX::DatasetPrivate::publicationActors
-    if {[moduleField $module descriptor {}] eq {}} {error {Unknown publication metadata contributor}}
+    if {$module in {core.native2d core.dataset_transform}&&[datasetField $id producer_module {}] eq $module} {
+        # These explicit CORE services are not loadable modules. Keep their
+        # canonical producer/provenance identities and use the existing System
+        # actor only when the registered producer agrees with this publication.
+        set actor System
+    } else {
+        if {[moduleField $module descriptor {}] eq {}} {error {Unknown publication metadata contributor}}
+        set actor module:$module
+    }
     set prior $publicationActors
     set publicationActors [dict create default System]
-    foreach key $suppliedKeys {dict set publicationActors $key module:$module}
+    foreach key $suppliedKeys {dict set publicationActors $key $actor}
     try {return [datasetMetadataWrite $session $id $metadata]} finally {set publicationActors $prior}
 }
 proc ::GX::_datasetMetadataReserved {key} {

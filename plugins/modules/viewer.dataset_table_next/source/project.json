@@ -1,0 +1,46 @@
+{
+  "schema": "gxtxt.viewer_development_project.v1",
+  "module_id": "viewer.dataset_table_next",
+  "version": "1.0.2",
+  "language": "cpp",
+  "source": "handlers.cpp",
+  "design": "design.gxtxt-viewer",
+  "profile": "document_view_v1",
+  "capabilities": [
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "version": 1,
+      "operations": [
+        "text_set",
+        "document_bind"
+      ]
+    }
+  ],
+  "provenance": {
+    "scientific_source": null,
+    "template": "restricted_cpp_viewer_v1",
+    "author_scope": "14D stand-alone read-only canonical Dataset Table Viewer",
+    "continuation205": "Preserved original 14D author project1.0.1; declarative optional selector only; no C++ change. Installed acceptance pending."
+  },
+  "tests": {
+    "events": [
+      {
+        "component": 0,
+        "kind": 0,
+        "value": 0.0
+      },
+      {
+        "component": 5,
+        "kind": 1,
+        "value": 0.0
+      },
+      {
+        "component": 4,
+        "kind": 2,
+        "value": 0.0
+      }
+    ],
+    "expected_counter": 0,
+    "expected_values": {}
+  }
+}

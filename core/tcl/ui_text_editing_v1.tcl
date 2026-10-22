@@ -37,7 +37,7 @@ proc ::GX::uiTextEditCan {window operation} {
     if {$widget eq {}} {return 0}
     set text [expr {[winfo class $widget] eq "Text"}]
     set state [$widget cget -state]
-    if {$state eq "disabled"} {return 0}
+    if {$state eq "disabled" && $operation ni {copy select_all}} {return 0}
     if {$operation in {cut paste undo redo} && $state ne "normal"} {return 0}
     switch -- $operation {
         undo - redo {return [expr {$text && [$widget cget -undo] && [$widget edit can$operation]}]}

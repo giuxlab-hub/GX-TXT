@@ -10,6 +10,7 @@ namespace eval ::GX::Native3D {
     variable hostGraphicsFailure 0
     variable hostStartupCommands {}
     variable hostQuitAcknowledged 0
+    variable shutdownHook 0
     variable source ""
     variable session ""
     variable portable 0
@@ -138,6 +139,11 @@ proc ::GX::Native3D::startHost {command {software 0} {retry 0}} {
     variable hostGraphicsFailure
     variable hostStartupCommands
     variable hostQuitAcknowledged
+    variable shutdownHook
+    if {!$shutdownHook && [info commands bind] ne {} && [winfo exists .]} {
+        bind . <Destroy> +[list ::GX::Native3D::rootShutdown %W]
+        set shutdownHook 1
+    }
     set hostCommand $command
     set hostReady 0
     set hostGraphicsFailure 0
@@ -2080,6 +2086,30 @@ proc ::GX::Native3D::screenshot {path} {
 }
 proc ::GX::Native3D::refreshScene {} {::GX::viewerRerender viewer.native_3d native_3d}
 proc ::GX::Native3D::closeViewer {} {send QUIT}
+
+# The dedicated native window is owned by this application, independently of
+# the preprocessing worker. Closing an idle host must not depend on cancel().
+proc ::GX::Native3D::rootShutdown {widget} {
+    if {$widget ne "."} return
+    variable host
+    variable worker
+    if {$worker ne {}} {catch {cancel}}
+    if {$host eq {}} return
+    catch {closeViewer}
+    # Drain the ordinary QUIT acknowledgement/EOF before Tcl exits. Keep the
+    # existing nonblocking protocol and bound the shutdown wait only.
+    set deadline [expr {[clock milliseconds]+250}]
+    while {$host ne {} && [clock milliseconds]<$deadline} {
+        update
+        if {$host ne {}} {after 10}
+    }
+    if {$host ne {}} {
+        set channel $host
+        set host {}
+        catch {fileevent $channel readable {}}
+        catch {close $channel}
+    }
+}
 proc ::GX::Native3D::openExternalModel {path {copyIntoSession 0}} {
     if {$copyIntoSession ni {0 1}} {error "copyIntoSession must be 0 or 1"}
     tailcall ::GX::Native3D::openSource $path $copyIntoSession

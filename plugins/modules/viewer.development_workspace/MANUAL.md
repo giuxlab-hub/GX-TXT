@@ -20,12 +20,16 @@ supplies display-only examples through the same public native constructors.
    admission and project/facility checks. Validation does not produce object code.
    Diagnostics identify file, physical line, column and reason; double-click a
    diagnostic to select its source line.
-5. Choose **Build / F6**. The same validation runs again before a fixed compiler
-   command creates the author object and trusted adapter, then links a bounded
-   native library. Source, SDK, policy, design, compiler and binary SHA are retained.
-6. Choose **Demo / Preview / F7**. Policy is checked before constructing the
-   declared interface. C++ events execute in a separate bounded worker. The
-   public CORE applies only typed admitted UI operations to the actual Viewer.
+5. Choose **Build / F6**. An unchanged successful artifact is reused after checking
+   its source, design, project, SDK, policy, compiler, adapter, build recipe and
+   recorded header dependencies. Missing or changed inputs require fresh admission,
+   compilation and linking through the same Build owner. Build receipts retain
+   those fingerprints and the binary SHA; reuse reports `artifact_reused=1` and
+   `code_generation_invoked=0`.
+6. Choose **Demo / Preview / F7**. Preview prepares the same source-bound artifact;
+   an unchanged build does not invoke the compiler again. C++ events execute in
+   one separate bounded worker for that Preview's lifetime. The public CORE
+   applies the typed admitted local UI plan before returning to queued input.
    The default Open event creates the same Native2D RAM fixture used by Gallery.
 7. Invoke **Run C++ handler** in Preview. The sample uses public Numeric
    `array_binary.add` to convert the synthetic value 18 to 291.15 kelvin, updates
@@ -34,16 +38,22 @@ supplies display-only examples through the same public native constructors.
 8. **Test / F8** exercises the compiled handler through the same backend. Inspect
    its explicit event/state/output receipts; a passing source-policy result alone
    is not a native GUI or scientific correctness result.
-9. **Export candidate** revalidates/rebuilds and creates a normal Viewer ZIP with
-   source, Builder design, trusted facade, SDK contract, native binary, provenance,
-   validation/build reports and checksums. Export does not install. Review and
-   promotion use the ordinary Plugin Manager.
+9. **Export candidate** uses the same source-bound artifact, building it through
+   the existing owner if inputs are missing or changed, and creates a normal
+   Viewer ZIP with source, Builder design, trusted facade, SDK contract, native
+   binary, provenance, validation/build reports and checksums. Export does not
+   install. Review and promotion use the ordinary Plugin Manager.
 
 The bottom notebook separates diagnostics from bounded build/runtime output.
 Complete JSON receipts remain in `derived/`; the GUI truncates very long display
 logs explicitly. **Cancel** terminates only the request's owned process tree.
 Closing a Preview cancels its own native request and releases native children.
 Another Preview or the original scientific data is not its cleanup target.
+Build publishes a new binary inode atomically, so an existing Preview can keep
+its old mapping during a new Build. A source change still invalidates that
+Preview's callbacks; reopen Preview for the new revision. F7 normally replaces
+the Development Workspace's tracked Preview. Installed Viewers execute their
+distributed binary without invoking the development compiler.
 
 ## Files and preservation
 
@@ -71,14 +81,16 @@ rather than silently applied to another revision.
 `project.json` contains `tests` with 1–8 typed `events`, an `expected_counter` and
 an `expected_values` map whose keys are scalar slot indices0–15. The generated
 sample runs Open, Invoke18 and Invoke20; expected counter2 and slot0=293.15.
-Test compiles and executes those events in order, carrying returned state into
-the next bounded worker invocation. Inspect `derived/tests.json` for every
+Test uses the source-bound build artifact and executes those events in order,
+carrying returned state into the next bounded worker invocation. An unchanged
+artifact is reused; missing or changed inputs require the normal Build owner.
+Inspect `derived/tests.json` for every
 actual event and public Numeric receipt. These developer expectations cannot
 change the source policy or replace independent GUI/native acceptance.
 
 ## Exact C++ SDK v1
 
-CORE automatically supplies `gxtxt_viewer_sdk_v1.hpp`. Authors write no includes.
+CORE automatically supplies `gxtxt_viewer_sdk_v1.hpp`. Authors may include the explicitly reviewed C/C++ headers in the [current support catalog](../../../docs/api/CPP_SUPPORT_CATALOG.md).
 The SDK exposes `gx::Host`, `gx::State`, `gx::Event` and `gx::EventKind`. State has
 sixteen bounded scalar slots (`values[0]` through `values[15]`) and a uint32
 counter. Event has a kind, declared component index and finite scalar value.
@@ -125,6 +137,7 @@ The automatically supplied Host methods are:
 | `scientific_import(unsigned form, unsigned dataset_selector)` | Publish completed result through canonical Dataset services and set its selector. |
 | `plot_discover(unsigned form)` | Read canonical Dataset/Variable metadata for declared waveform controls. |
 | `plot_bind(unsigned plot, unsigned form)` | Bind explicit X/Y variables to the existing public Plot owner. |
+| `document_bind(unsigned document, unsigned dataset_selector)` | Bind compatible canonical HTML/PDF/Code/Table through the existing read-only CORE owner. |
 | `numeric_discover(unsigned form)` | Read actual canonical variables/units without changing explicit row counts. |
 | `numeric_evaluate(unsigned form)` | Use declared public Numeric profile; retain immutable canonical result. |
 | `numeric_statistics(unsigned form)` | Run the explicitly selected public reduction/statistics and persist its result. |
@@ -139,26 +152,55 @@ framework pointer, Dataset file path, Tcl command or generic expression reaches
 the author. SDK implementation pointers remain private and live only in the
 isolated worker; no authored library is loaded into the Tk process.
 
-Supported syntax is deliberately small: automatic scalar locals, ordinary scalar
-expressions, if/switch/loops, scalar helper functions, fixed event/state references
-and enumerated SDK member calls. Array indices must be literal 0..15. Recursive
-call graphs, globals, namespace/type definitions, external declarations, function
-pointers, casts/address-taking, allocation, lambdas, assembly, exceptions and
-unrecognized AST forms are rejected. This is not the full C++ standard library.
+Ordinary C++17 project logic is supported: author-defined types, pointers and
+references, templates, virtual functions/RTTI, recursion, callbacks, lambdas,
+allocation/RAII, macros/assertions, exceptions, reviewed standard containers and
+local threads/fork/wait. Literal0..15 indices apply to the fixed **SDK State
+transport**, not ordinary project arrays. Canonical scientific ownership remains
+with public Dataset/Schema/Publication, Workspace/History/Recovery, Jobs and Plot.
+A private replacement for one of those owners must be corrected through its
+existing public API. Extra direct headers/libraries/flags need concrete purpose
+and review. Read **Develop → C/C++ support catalog** for exact admitted headers,
+Host functions, actual budgets and synchronization fingerprints.
 
-There is no authored `#include`, macro/pragma, module/import, precompiled header,
-include search path, linker flag, dynamic loading, native GUI toolkit, I/O,
-filesystem/network/process facility, stdio/iostream, standard math library or
-private scientific fallback. Use approved public numerical facilities for
-scientific operations. A missing SDK facility requires CORE review.
+## Profiles and API Browser
 
-## Profiles and API Explorer
+Use **View → API Browser** to show or hide the Browser below **Developer project**
+in the left column. The same Browser is available in Python and GNU Octave Script
+Workspaces. Drag the vertical divider to share space with the Explorer. Searching
+and reading declarations require neither a scientific Session nor a C++ project.
 
-**Public APIs** lists the actual installed module API descriptors and registered
-CORE discovery entries. It shows provider, version, availability, exposed SDK
-subset, allowed operations, request/result shapes and exact authorization reason.
-An API may be installed and still be outside the SDK. No generic Invoke-any-API
-button is provided.
+Family rows describe the actual installed public declarations. Separate provider
+children retain distinct declaring owners and versions. SDK exposure, allowed
+operations, declared request/result shapes and authorization reasons are shown
+where declared. An installed API may still be outside the C++ SDK or unavailable
+to the current runtime/project; presence is not permission to invoke it.
+
+Registered Python/Octave operation children show the owner's argument kinds,
+required/optional flags, declared conventions/context and result contract. Their
+language examples require an active managed Script Bridge. They do not provide
+a C++ invoke-any-API method. Undeclared signatures remain explicitly unknown;
+consult the owner manual and the C/C++ support catalog for admitted Host methods.
+
+In the C++ Workspace, **Host::method · C++** children show the exact installed
+SDK declaration, typed call pattern and required capabilities. Opening a saved
+project, saving `project.json`, or pressing Refresh compares its explicit requests
+with the same provider/version/profile admission used by Validate.
+`ADMITTED_REQUEST` describes that saved request only; Validate must still check
+source and declared forms, and runtime checks each finite action. `NOT_REQUESTED`
+and `NOT_ADMITTED` explain why an installed facility is unavailable to this
+project. A Script Bridge operation in this editor shows its actual C++ mapping,
+where one exists, or says explicitly that there is no direct C++ SDK method.
+Python and Octave editors show their respective managed Bridge syntax.
+
+The selected reference follows Session open/switch/close using the cached
+catalog, without another metadata worker or scientific Job. A Session does not
+activate a script. Narrow editors retain readable list/detail panes; their
+divider adapts to the actual font size while retaining the Explorer.
+Use Select All/Copy in the focused reference, and **Open full API manual** for
+the existing Documentation Browser. A manual can be unavailable; its name alone
+does not establish a complete reference for every operation. Browsing does not
+execute a provider operation, start a Script/Job or change source text.
 
 `synthetic_view_v1` grants the approved GUI/native-demo subset.
 `numeric_view_v1` adds the explicitly declared public numerical subset.
@@ -236,7 +278,8 @@ The Native3D example receives a real numeric change event for31°C and displays
 304.15K through public Numeric. Its C++ Open event binds fixture2 through the
 same public v2 host used by Gallery/Builder. Orbit/pan/zoom remain native.
 The runtime retains exact C++/design/project fingerprints; changing any source
-requires reopening Demo. CLI and GUI revalidate before build/run and discard
+requires reopening Demo. CLI and GUI check the source-bound artifact before
+build/run, require fresh admission and compilation for changed inputs, and reject
 incomplete/stale output. The common footer distinguishes compiled-event state
 from the native viewport's separate rendering state.
 
@@ -263,7 +306,7 @@ source path mapping; GDB/MI runs the same separate native ABI worker. Numeric an
 SDK calls retain the exact normal admission/public broker contracts. Debugger
 execution and its returned operation plan are distinct from a scientific GUI
 submission; no scientific Job is implied by inspecting a scalar event. There is no arbitrary GDB
-console, expression evaluator, compiler option or author process permission.
+console or expression evaluator. Compiler options and dependencies remain explicitly reviewed; ordinary project-local process facilities are documented in the support catalog.
 
 Open/save `handlers.cpp`, wait for source structure, set a breakpoint in the
 compact red-dot gutter or with F9, then choose Start Debug. A yellow arrow marks
@@ -291,8 +334,15 @@ changing them. Source/design/facility changes cancel stale binary execution.
 
 The lower **Call Stack** contains actual native function/file/line identities.
 Select a permitted frame to inspect its genuine local values and source line;
-inspection is not program execution. **Variables** shows bounded values from
-GDB, not invented source evaluation. A value before assignment can be unavailable
+inspection is not program execution. **Variables** initially shows each struct
+or array as one collapsed row. Click its row or disclosure arrow to inspect real
+members/elements vertically; click again to collapse. Keyboard Right/Left and
+Space also operate the tree. Nested aggregates remain collapsed until requested.
+Large arrays retrieve at most64 children per explicit request; use **Load next
+members…** for another page. Inspection is limited to depth8 and512 displayed
+nodes per stop/frame. New stops, selected frames and continuation discard prior
+child identities and expansion state. Values come from GDB, not invented source
+evaluation. A value before assignment can be unavailable
 or uninitialized; Step Over the assignment before interpreting it. Trusted ABI
 and interpreter frames can appear in the native stack. The **Build / runtime
 output** tab retains actual structured diagnostics and execution receipts;
@@ -330,8 +380,7 @@ void on_event(gx::Host& host, gx::State& state, const gx::Event& event) {
 This scalar control fixture demonstrates debugger mechanics, not scientific
 computation. Break on the call to `increment`, Start, Into, inspect `value`,
 Over, Out, then Continue. Observe `state.counter=3` in the actual native result.
-For scientific work, use only explicitly admitted public Numeric/Math/Stats SDK
-operations; no direct numerical library or arbitrary imports are exposed.
+For scientific framework operations, use the explicitly admitted public Numeric/Math/Stats SDK contracts. Ordinary local C/C++ computation remains available; new dependencies require review against public scientific ownership.
 
 ### Author SDK, Builder and CORE-gap handshake
 

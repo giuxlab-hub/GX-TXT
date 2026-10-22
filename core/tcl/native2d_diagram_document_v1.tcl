@@ -22,14 +22,29 @@ proc ::GX::native2DGeometryDiagramCatalogRegister {id descriptor} {
         foreach key {title prefix paths pins attributes} {if {![dict exists $symbol $key]} {error "Symbol requires $key"}}
         _native2DDiagramId [dict get $symbol prefix]
         if {[llength [dict get $symbol paths]]>32 || [dict size [dict get $symbol pins]]>16} {error {Symbol geometry/pins exceed bounds}}
-        foreach path [dict get $symbol paths] {
-            if {[llength $path]<2 || [llength $path]>128} {error {Symbol path requires 2..128 vertices}}
-            foreach point $path {_native2DDiagramPoint $point}
+        set pathSets [list [dict get $symbol paths]]
+        if {[dict exists $symbol variants]} {
+            set variants [dict get $symbol variants];set attribute [dict get $variants attribute]
+            if {![dict exists $symbol attributes $attribute] || [dict get $symbol attributes $attribute type] ne {choice} || [dict size [dict get $variants marks]]>16} {error {Symbol variants require a bounded declared choice attribute}}
+            dict for {choice paths} [dict get $variants marks] {
+                if {$choice ni [dict get $symbol attributes $attribute values]} {error {Symbol variant is outside its attribute choices}}
+                lappend pathSets $paths
+            }
+        }
+        foreach paths $pathSets {
+            if {[llength $paths]>32} {error {Symbol variant exceeds 32 paths}}
+            foreach path $paths {
+                if {[llength $path]<2 || [llength $path]>128} {error {Symbol path requires 2..128 vertices}}
+                foreach point $path {_native2DDiagramPoint $point}
+            }
         }
         dict for {pin point} [dict get $symbol pins] {_native2DDiagramId $pin;_native2DDiagramPoint $point}
         dict for {attribute field} [dict get $symbol attributes] {
             _native2DDiagramId $attribute
             if {![dict exists $field type] || [dict get $field type] ni {number string choice} || ![dict exists $field default]} {error {Symbol attribute requires typed default}}
+            if {$id eq {electrical.basic} && [dict get $field type] eq {number}} {
+                dict set descriptor symbols $kind attributes $attribute notation electrical_engineering
+            }
         }
     }
     dict set ::GX::Native2DDiagram::catalogs $id $descriptor
@@ -40,17 +55,53 @@ proc ::GX::native2DGeometryDiagramCatalog {{id {}}} {
     if {![dict exists $::GX::Native2DDiagram::catalogs $id]} {error {Unknown registered symbol catalog}}
     return [dict get $::GX::Native2DDiagram::catalogs $id]
 }
+proc ::GX::_native2DDiagramElectricalNumber {value} {
+    set value [string trim $value]
+    if {[string is double -strict $value]} {return $value}
+    if {![regexp -nocase {^([+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?)(meg|[tgkmunpfµμ])$} $value -> number suffix]} {
+        error {Enter a finite SI number or an engineering value such as 4.7k, 470n or 1meg (m means milli; meg means mega).}
+    }
+    set exponent [dict get {t 12 g 9 meg 6 k 3 m -3 u -6 µ -6 μ -6 n -9 p -12 f -15} [string tolower $suffix]]
+    lassign [split [string tolower $number] e] mantissa suppliedExponent
+    if {$suppliedExponent ne {}} {scan $suppliedExponent %d suppliedExponent;incr exponent $suppliedExponent}
+    # Parse the combined decimal exponent once rather than rounding a parsed
+    # mantissa and then multiplying it by another rounded floating point value.
+    set result [expr {double("${mantissa}e${exponent}")}]
+    if {abs($result)>=Inf || ($result==0 && double($number)!=0)} {error {Engineering value is outside the finite SI range}}
+    return $result
+}
+proc ::GX::_native2DDiagramElectricalDisplay {value} {
+    # Presentation only. An editable engineering string must round-trip to the
+    # identical double; fall back to its full SI representation otherwise.
+    if {$value==0} {return 0}
+    foreach {exponent suffix} {12 t 9 g 6 meg 3 k 0 {} -3 m -6 u -9 n -12 p -15 f} {
+        if {abs(double($value))<pow(10.0,$exponent)} continue
+        set scaled [expr {double($value)/pow(10.0,$exponent)}]
+        foreach digits {12 17} {
+            set candidate [format %.*g $digits $scaled]$suffix
+            if {![catch {_native2DDiagramElectricalNumber $candidate} parsed] && $parsed==$value} {return $candidate}
+        }
+        break
+    }
+    return [format %.17g $value]
+}
+proc ::GX::_native2DDiagramAttributeNormalize {field value} {
+    if {[datasetPublicationV2DictDefault $field notation {}] eq {electrical_engineering}} {set value [_native2DDiagramElectricalNumber $value]}
+    if {[dict get $field type] eq {number}} {
+        if {![string is double -strict $value] || [catch {expr {abs(double($value))<Inf}} finite] || !$finite} {error {Electrical attribute requires a finite numeric SI value}}
+        foreach {bound relation} {min < max >} {
+            if {[dict exists $field $bound] && [expr "$value $relation [dict get $field $bound]"]} {error "Attribute violates $bound"}
+        }
+    } elseif {[dict get $field type] eq {choice} && $value ni [dict get $field values]} {error {Attribute is outside catalog choices}}
+    return $value
+}
 proc ::GX::_native2DDiagramAttributes {symbol attributes} {
     set schema [dict get $symbol attributes];set result {}
     dict for {key value} $attributes {if {![dict exists $schema $key]} {error "Unknown symbol attribute '$key'"}}
     dict for {key field} $schema {
         set value [datasetPublicationV2DictDefault $attributes $key [dict get $field default]]
         if {[string bytelength $value]>256 || [regexp {[\x00\r\n]} $value]} {error {Diagram attribute exceeds single-line text bounds}}
-        switch [dict get $field type] {
-            number {if {![string is double -strict $value] || [catch {expr {abs(double($value))<Inf}} finite] || !$finite} {error "Attribute '$key' requires finite numeric SI value"};foreach {bound relation} {min < max >} {if {[dict exists $field $bound] && [expr "$value $relation [dict get $field $bound]"]} {error "Attribute '$key' violates $bound"}}}
-            choice {if {$value ni [dict get $field values]} {error "Attribute '$key' is outside catalog choices"}}
-        }
-        dict set result $key $value
+        dict set result $key [_native2DDiagramAttributeNormalize $field $value]
     }
     return $result
 }
@@ -71,6 +122,9 @@ proc ::GX::native2DGeometryDiagramValidate {payload} {
         _native2DDiagramPoint [dict get $item position]
         if {[dict get $item rotation] ni {0 90 180 270}} {error {Diagram rotation requires a quarter turn}}
         _native2DDiagramAttributes $symbol [dict get $item attributes]
+        dict for {attribute field} [dict get $symbol attributes] {
+            if {[dict get $field type] eq {number} && [dict exists $item attributes $attribute] && ![string is double -strict [dict get $item attributes $attribute]]} {error {Canonical diagram numeric attributes must contain SI numbers, not suffix strings}}
+        }
     }
     set names {}
     dict for {id item} [dict get $payload components] {set name [dict get $item name];if {$name in $names} {error {Duplicate component name}};lappend names $name}
@@ -118,6 +172,138 @@ proc ::GX::native2DGeometryDiagramRead {document} {
     native2DGeometryDiagramValidate [dict get $result payload]
     return $result
 }
+proc ::GX::_native2DDiagramWirePoints {payload wire} {
+    set start [native2DGeometryDiagramEndpoint $payload [dict get $wire start]]
+    set end [native2DGeometryDiagramEndpoint $payload [dict get $wire end]]
+    set route [dict get $wire route]
+    if {$route eq {}} {set route [list [list [lindex $end 0] [lindex $start 1]]]}
+    return [list $start {*}$route $end]
+}
+proc ::GX::_native2DDiagramIsWireTarget {target} {
+    return [expr {[llength $target]==6 && [dict exists $target kind] && [dict get $target kind] eq {wire} && [lsort [dict keys $target]] eq {kind point wire_id}}]
+}
+proc ::GX::_native2DDiagramTargetPoint {payload target} {
+    if {[_native2DDiagramIsWireTarget $target]} {return [_native2DDiagramPoint [dict get $target point]]}
+    return [native2DGeometryDiagramEndpoint $payload $target]
+}
+proc ::GX::_native2DDiagramSamePoint {a b} {
+    return [expr {[lindex $a 0]==[lindex $b 0] && [lindex $a 1]==[lindex $b 1]}]
+}
+proc ::GX::_native2DDiagramAllocate {payloadVariable prefix} {
+    upvar 1 $payloadVariable payload
+    while {1} {
+        set n [dict get $payload next_id];dict incr payload next_id;set id ${prefix}_$n;set occupied 0
+        foreach collection {components junctions wires labels} {if {[dict exists $payload $collection $id]} {set occupied 1;break}}
+        if {!$occupied} {return [list $id $n]}
+    }
+}
+proc ::GX::_native2DDiagramWireTargets {payload targets} {
+    # Resolve all intentional attachments against the SAME original payload.
+    # The existing C kernel owns segment projection; this owner only splits
+    # canonical endpoint references in one document/History transaction.
+    set groups {};set resolved {};set scene {};set index -1
+    try {
+        foreach target $targets {
+            incr index
+            if {![_native2DDiagramIsWireTarget $target]} {
+                native2DGeometryDiagramEndpoint $payload $target
+                dict set resolved $index $target
+                continue
+            }
+            set wireId [dict get $target wire_id];set wire [dict get $payload wires $wireId]
+            set points [_native2DDiagramWirePoints $payload $wire]
+            if {$scene eq {}} {native2DEnsure;set scene [::GX::Native2D::core scene]}
+            set object [::GX::Native2D::core add $scene $points]
+            set hit [::GX::Native2D::core nearest_segment $scene $object [_native2DDiagramPoint [dict get $target point]]]
+            ::GX::Native2D::core delete $scene $object
+            if {[dict get $hit distance]>1e-7} {error {Wire attachment no longer lies on the selected segment}}
+            set point [dict get $hit point]
+            if {[_native2DDiagramSamePoint $point [lindex $points 0]]} {dict set resolved $index [dict get $wire start];continue}
+            if {[_native2DDiagramSamePoint $point [lindex $points end]]} {dict set resolved $index [dict get $wire end];continue}
+            set junction {}
+            foreach cut [datasetPublicationV2DictDefault $groups $wireId {}] {
+                if {[_native2DDiagramSamePoint $point [lindex $cut 3]]} {set junction [lindex $cut 2];break}
+            }
+            if {$junction eq {}} {
+                lassign [_native2DDiagramAllocate payload junction] junction n
+                dict set payload junctions $junction $point
+                dict lappend groups $wireId [list [dict get $hit segment] [dict get $hit t] $junction $point]
+            }
+            dict set resolved $index $junction
+        }
+        dict for {wireId cuts} $groups {
+            set wire [dict get $payload wires $wireId]
+            set points [_native2DDiagramWirePoints $payload $wire]
+            set start [dict get $wire start];set part [list [lindex $points 0]];set pieces {}
+            set cuts [lsort -real -index 1 $cuts]
+            for {set segment 0} {$segment<[llength $points]-1} {incr segment} {
+                foreach cut $cuts {
+                    if {[lindex $cut 0]!=$segment} continue
+                    lassign $cut unused fraction end point
+                    if {![_native2DDiagramSamePoint $point [lindex $part end]]} {lappend part $point}
+                    set route [lrange $part 1 end-1]
+                    # A nonempty explicit route preserves a diagonal straight
+                    # segment instead of invoking the empty-route elbow default.
+                    if {$route eq {}} {set route [list [lindex $part 0]]}
+                    lappend pieces [dict create start $start end $end route $route]
+                    set start $end;set part [list $point]
+                }
+                set point [lindex $points [expr {$segment+1}]]
+                if {![_native2DDiagramSamePoint $point [lindex $part end]]} {lappend part $point}
+            }
+            set route [lrange $part 1 end-1]
+            if {$route eq {}} {set route [list [lindex $part 0]]}
+            lappend pieces [dict create start $start end [dict get $wire end] route $route]
+            set first 1
+            foreach piece $pieces {
+                if {$first} {set id $wireId;set first 0} else {lassign [_native2DDiagramAllocate payload wire] id n}
+                dict set payload wires $id $piece
+            }
+        }
+    } finally {if {$scene ne {}} {::GX::Native2D::core destroy $scene}}
+    set endpoints {}
+    for {set i 0} {$i<[llength $targets]} {incr i} {lappend endpoints [dict get $resolved $i]}
+    return [list $payload $endpoints]
+}
+proc ::GX::_native2DDiagramJunctionTargets {payload targets} {
+    if {![llength $targets] || [llength $targets]>1024} {error {Intentional junction requires 1..1024 electrical targets}}
+    set point [_native2DDiagramTargetPoint $payload [lindex $targets 0]]
+    foreach target $targets {
+        if {![_native2DDiagramSamePoint $point [_native2DDiagramTargetPoint $payload $target]]} {error {Intentional junction targets must share one location}}
+    }
+    set original [dict get $payload junctions]
+    lassign [_native2DDiagramWireTargets $payload $targets] payload endpoints
+    # Target picking order does not change an already intentional junction.
+    set endpoints [lsort -unique $endpoints]
+    set common [lindex $endpoints 0]
+    foreach endpoint $endpoints {
+        if {[llength $endpoint]==2 || [dict exists $original $endpoint]} {set common $endpoint;break}
+    }
+    foreach endpoint [lsort -unique $endpoints] {
+        if {$endpoint eq $common} continue
+        if {[llength $endpoint]==1 && [dict exists $payload junctions $endpoint] && ![dict exists $original $endpoint]} {
+            # Coalesce only junctions created by this transaction. Existing
+            # junction/component identities survive an intentional net join.
+            dict for {id wire} [dict get $payload wires] {
+                foreach side {start end} {if {[dict get $wire $side] eq $endpoint} {dict set wire $side $common}}
+                dict set payload wires $id $wire
+            }
+            dict unset payload junctions $endpoint
+        } else {
+            # Repeating an intentional join must reuse its existing canonical
+            # connection rather than manufacture another zero-length wire.
+            set joined 0
+            dict for {id wire} [dict get $payload wires] {
+                set a [dict get $wire start];set b [dict get $wire end]
+                if {($a eq $common && $b eq $endpoint) || ($b eq $common && $a eq $endpoint)} {set joined 1;break}
+            }
+            if {$joined} continue
+            lassign [_native2DDiagramAllocate payload wire] id n
+            dict set payload wires $id [dict create start $common end $endpoint route [list $point]]
+        }
+    }
+    return [list $payload $common]
+}
 proc ::GX::native2DGeometryDiagramEdit {document expected operation request {mode commit}} {
     if {$mode ni {commit preview}} {error {Diagram edit mode must be commit or preview}}
     set owner [native2DGeometryDiagramRead $document]
@@ -125,27 +311,42 @@ proc ::GX::native2DGeometryDiagramEdit {document expected operation request {mod
     set payload [dict get $owner payload]
     set catalog [native2DGeometryDiagramCatalog [dict get $payload catalog]]
     set id [datasetPublicationV2DictDefault $request id {}]
-    set allowed [dict get {place {kind name position rotation attributes} junction {position} wire {start end route} label {id endpoint text offset} properties {id name attributes} transform {id position rotation} route {id route start end} remove {id} restore {payload}} $operation]
+    set allowed [dict get {place {kind name position rotation attributes} junction {position target targets} wire {start end route} label {id endpoint text offset} properties {id name attributes} transform {id position rotation} route {id route start end} remove {id} restore {payload}} $operation]
     foreach key [dict keys $request] {if {$key ni $allowed} {error "Unsupported diagram '$operation' field '$key'"}}
     switch $operation {
         place {
             set kind [dict get $request kind];set symbol [dict get $catalog symbols $kind]
-            set n [dict get $payload next_id];dict incr payload next_id
-            set id component_$n
+            lassign [_native2DDiagramAllocate payload component] id n
             set name [datasetPublicationV2DictDefault $request name [dict get $symbol prefix]$n]
             dict set payload components $id [dict create kind $kind name $name position [dict get $request position] rotation [datasetPublicationV2DictDefault $request rotation 0] attributes [_native2DDiagramAttributes $symbol [datasetPublicationV2DictDefault $request attributes {}]]]
         }
         junction {
-            set n [dict get $payload next_id];dict incr payload next_id;set id junction_$n
-            dict set payload junctions $id [dict get $request position]
+            if {[dict exists $request targets]} {
+                lassign [_native2DDiagramJunctionTargets $payload [dict get $request targets]] payload endpoint
+                set id [lindex $endpoint 0]
+            } elseif {[dict exists $request target]} {
+                lassign [_native2DDiagramWireTargets $payload [list [dict get $request target]]] payload endpoints
+                set id [lindex [lindex $endpoints 0] 0]
+            } else {
+                lassign [_native2DDiagramAllocate payload junction] id n
+                dict set payload junctions $id [dict get $request position]
+            }
         }
         wire {
-            set n [dict get $payload next_id];dict incr payload next_id;set id wire_$n
-            dict set payload wires $id [dict create start [dict get $request start] end [dict get $request end] route [datasetPublicationV2DictDefault $request route {}]]
+            lassign [_native2DDiagramWireTargets $payload [list [dict get $request start] [dict get $request end]]] payload endpoints
+            lassign [_native2DDiagramAllocate payload wire] id n
+            dict set payload wires $id [dict create start [lindex $endpoints 0] end [lindex $endpoints 1] route [datasetPublicationV2DictDefault $request route {}]]
         }
         label {
+            if {[dict exists $request endpoint] && [_native2DDiagramIsWireTarget [dict get $request endpoint]]} {
+                # Validate the same canonical segment target before resolving
+                # its net. The temporary split candidate is deliberately not
+                # committed: a net label needs no additional electrical node.
+                _native2DDiagramWireTargets $payload [list [dict get $request endpoint]]
+                dict set request endpoint [dict get $payload wires [dict get $request endpoint wire_id] start]
+            }
             if {$id eq {}} {
-                set n [dict get $payload next_id];dict incr payload next_id;set id label_$n
+                lassign [_native2DDiagramAllocate payload label] id n
                 set item [dict create endpoint [dict get $request endpoint] text [dict get $request text] offset {5 12}]
             } else {
                 if {![dict exists $payload labels $id]} {error {Select an existing net label}}
@@ -200,9 +401,18 @@ proc ::GX::native2DGeometryDiagramEdit {document expected operation request {mod
     set updated [interactiveDocumentUpdate $document $payload]
     return [dict create document $updated object_id $id operation $operation payload $payload]
 }
-proc ::GX::native2DGeometryDiagramProject {document} {
+proc ::GX::native2DGeometryDiagramProject {document {preview {}}} {
     set owner [native2DGeometryDiagramRead $document]
     set payload [dict get $owner payload]
+    if {$preview ne {}} {
+        if {[dict get $preview status] ne {VALIDATED}} {error {A validated diagram preview is required}}
+        foreach field {id generation revision sha256} {
+            if {[dict get $owner $field] ne [dict get $preview source $field]} {return -code error -errorcode {GX NATIVE2D STALE_SOURCE} {Diagram changed during transient presentation}}
+        }
+        set payload [dict get $preview proposed_payload]
+        native2DGeometryDiagramValidate $payload
+        if {[dict get $payload catalog] ne [dict get $owner payload catalog]} {error {A preview cannot replace its diagram catalog}}
+    }
     set catalog [native2DGeometryDiagramCatalog [dict get $payload catalog]]
     set token [native2DGeometryOpen $document]
     set map {};set annotations {}
@@ -210,7 +420,13 @@ proc ::GX::native2DGeometryDiagramProject {document} {
         dict for {id item} [dict get $payload components] {
             set symbol [dict get $catalog symbols [dict get $item kind]]
             set parts {}
-            foreach path [dict get $symbol paths] {lappend parts [dict get [native2DGeometryCall $token curve [dict create points $path]] object_token]}
+            set paths [dict get $symbol paths]
+            if {[dict exists $symbol variants]} {
+                set variants [dict get $symbol variants];set attribute [dict get $variants attribute]
+                set choice [datasetPublicationV2DictDefault [dict get $item attributes] $attribute [dict get $symbol attributes $attribute default]]
+                if {[dict exists $variants marks $choice]} {lappend paths {*}[dict get $variants marks $choice]}
+            }
+            foreach path $paths {lappend parts [dict get [native2DGeometryCall $token curve [dict create points $path]] object_token]}
             set native [dict get [_native2DGeometryRequire $token] native]
             set matrix [::GX::Native2D::core rotation_matrix_degrees $native {0 0} [dict get $item rotation]]
             native2DGeometryCall $token affine [dict create object_tokens $parts matrix $matrix]
@@ -219,16 +435,16 @@ proc ::GX::native2DGeometryDiagramProject {document} {
             foreach part $parts {native2DGeometryCall $token style [dict create object_token $part properties {color {0.12 0.22 0.38 1} line_width 2 marker 0}]}
             dict set map $id $parts
             set text [dict get $item name]
-            if {[dict exists $item attributes value]} {append text " · [dict get $item attributes value] [datasetPublicationV2DictDefault [dict get $symbol attributes value] unit {}]"}
+            if {[dict exists $item attributes value]} {
+                set value [dict get $item attributes value]
+                if {[datasetPublicationV2DictDefault [dict get $symbol attributes value] notation {}] eq {electrical_engineering}} {set value [_native2DDiagramElectricalDisplay $value]}
+                append text " · $value [datasetPublicationV2DictDefault [dict get $symbol attributes value] unit {}]"
+            }
             if {[dict exists $item attributes caption]} {append text " · [dict get $item attributes caption]"}
-            lappend annotations [dict create point [list $x [expr {$y+30}]] text $text anchor s]
+            lappend annotations [dict create id $id point [list $x [expr {$y+30}]] text $text anchor s]
         }
         dict for {id wire} [dict get $payload wires] {
-            set start [native2DGeometryDiagramEndpoint $payload [dict get $wire start]]
-            set end [native2DGeometryDiagramEndpoint $payload [dict get $wire end]]
-            set route [dict get $wire route]
-            if {$route eq {}} {set route [list [list [lindex $end 0] [lindex $start 1]]]}
-            set object [dict get [native2DGeometryCall $token curve [dict create points [list $start {*}$route $end]]] object_token]
+            set object [dict get [native2DGeometryCall $token curve [dict create points [_native2DDiagramWirePoints $payload $wire]]] object_token]
             native2DGeometryCall $token style [dict create object_token $object properties {color {0.05 0.45 0.25 1} line_width 2 marker 0}]
             dict set map $id [list $object]
         }

@@ -198,10 +198,17 @@ def analysis_command(circuit, p):
     else: raise ValueError('Unsupported circuit analysis')
     return analysis, command
 
+def observation_axis(analysis, parameters):
+    """One declared independent coordinate for inspection and raw publication."""
+    axis_id = dict(op='index', tran='time', ac='frequency', dc='source_value')[analysis]
+    axis_unit = dict(op='', tran='s', ac='Hz', dc='A' if parameters['source'].lower().startswith('i') else 'V')[analysis]
+    return dict(id=axis_id, dtype='float64', unit=axis_unit)
+
 def inspect(raw, parameters):
     circuit = compile_circuit(raw, parameters.get('override_component',''), parameters.get('override_value',0), parameters.get('component_values',''))
     analysis, command = analysis_command(circuit,parameters)
     return dict(analysis=analysis,analysis_command=command,source_sha256=circuit['source_sha256'],netlist='\n'.join(circuit['lines'])+'\n.end\n',
+                independent_variable=observation_axis(analysis, parameters),
                 probes=circuit['probes'],net_mapping=circuit['net_mapping'],component_values=circuit['component_values'],model_origin=circuit['model_origin'])
 
 def run(context):
@@ -219,9 +226,7 @@ def run(context):
     context.run('spice',['-b','circuit.cir'])
     source = context.scratch/'observations.txt'
     if not source.is_file() or source.stat().st_size>16777216: raise ValueError('Solver produced no bounded observation table')
-    axis_id = dict(op='index',tran='time',ac='frequency',dc='source_value')[analysis]
-    axis_unit = dict(op='',tran='s',ac='Hz',dc='A' if p['source'].lower().startswith('i') else 'V')[analysis]
-    columns = [dict(id=axis_id,dtype='float64',unit=axis_unit)]
+    columns = [observation_axis(analysis, p)]
     for probe in circuit['probes']:
         for suffix in ('_real','_imag') if complex_output else ('',):
             columns.append(dict(id=probe['id']+suffix,dtype='float64',unit=probe['unit']))

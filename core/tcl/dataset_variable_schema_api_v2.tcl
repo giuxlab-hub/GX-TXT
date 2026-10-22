@@ -349,7 +349,7 @@ proc ::GX::datasetVariableSchemaUpdate {id changes} {
                 if {$field eq "decimal_separator" && $value ni {. ,}} { error "Unsupported decimal_separator $value" }
                 if {$field eq "time_reference" && $value ni {elapsed absolute}} { error "Unsupported time_reference $value" }
                 if {$field in {to_canonical from_canonical} && $value ne ""} { unitFormulaValidate $value }
-                if {$field eq "semantic_source" && $value ni {user importer plugin inferred default}} { error "Unsupported semantic_source $value" }
+                if {$field eq "semantic_source" && $value ni {user importer plugin generator inferred default}} { error "Unsupported semantic_source $value" }
                 if {$field eq "semantic_role" && $value ni {"" Auto} && ![regexp {^[A-Za-z_][A-Za-z0-9_.-]*$} $value]} { error "Invalid semantic role ID $value" }
                 if {$field in {enabled canonical} && $value ne [dict get $prev $field]} { set structural 1 }
                 set datasetRegistry($id,var${j}_$field) $value

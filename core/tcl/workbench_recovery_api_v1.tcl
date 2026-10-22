@@ -3,7 +3,7 @@
 # geometry remains in content-addressed Document resources, never copied here.
 namespace eval ::GX::WorkbenchRecovery {variable maximumBytes 16777216;variable maximumReceipts 128;variable choices;variable serial 0}
 proc ::GX::workbenchRecoveryApiInfo {} {
-    return [dict create api_id WORKBENCH_RECOVERY_API_v1 api_version 1 provider workbench_recovery host_only 1 maximum_bytes 16777216 maximum_receipts 128 operations {begin checkpoint inspect resolve mark_saved close forget} implicit_recovery 0]
+    return [dict create api_id WORKBENCH_RECOVERY_API_v1 api_version 1 provider workbench_recovery host_only 1 maximum_bytes 16777216 journal_encodings {utf8_v1 zlib_utf8_v1} maximum_receipts 128 operations {begin checkpoint inspect resolve mark_saved close forget} implicit_recovery 0]
 }
 proc ::GX::_workbenchRecoveryPath {document} {
     if {![interactiveDocumentIdValid $document]} {error "Invalid recovery Document ID"}
@@ -25,9 +25,15 @@ proc ::GX::_workbenchRecoveryRead {document} {
     if {![file isfile $path]||[file size $path]>$maximumBytes} {error "Recovery checkpoint exceeds its size limit or is not a regular file"}
     set f [open $path rb];try {set bytes [read $f [expr {$maximumBytes+1}]]} finally {close $f}
     set first [string first \n $bytes];set second [string first \n $bytes [expr {$first+1}]]
-    if {$first<0||$second<0||[string range $bytes 0 [expr {$first-1}]] ne "GXTXT_RECOVERY_V1"} {error "Recovery checkpoint header is corrupt"}
+    set header [string range $bytes 0 [expr {$first-1}]]
+    if {$first<0||$second<0||$header ni {GXTXT_RECOVERY_V1 GXTXT_RECOVERY_ZLIB_V1}} {error "Recovery checkpoint header is corrupt"}
     set sha [string range $bytes [expr {$first+1}] [expr {$second-1}]];set data [string range $bytes [expr {$second+1}] end]
+    # Hash the exact stored envelope bytes, including compressed stream
+    # boundaries. A permissive decoder must not hide appended corruption.
     if {![regexp {^[a-f0-9]{64}$} $sha]||[_workbenchRecoveryDigest $data] ne $sha} {error "Recovery checkpoint SHA-256 mismatch"}
+    if {$header eq {GXTXT_RECOVERY_ZLIB_V1}} {
+        if {[catch {set data [zlib decompress $data]} message]} {error "Recovery checkpoint compressed data is corrupt: $message"}
+    }
     set state [encoding convertfrom utf-8 $data]
     if {[catch {dict size $state}]} {error "Recovery checkpoint data is corrupt"}
     foreach field {api_version document_id generation module_id provider_id clean saved latest receipts} {if {![dict exists $state $field]} {error "Recovery checkpoint is missing $field"}}
@@ -45,8 +51,15 @@ proc ::GX::_workbenchRecoveryWrite {document state} {
     variable ::GX::WorkbenchRecovery::maximumBytes
     set path [_workbenchRecoveryPath $document];file mkdir [file dirname $path]
     set data [encoding convertto utf-8 $state]
-    if {[string length $data]+100>$maximumBytes} {error "Recovery checkpoint exceeds the bounded 16 MiB document limit; retain bulk geometry in owned resources"}
-    set bytes "GXTXT_RECOVERY_V1\n[_workbenchRecoveryDigest $data]\n$data"
+    set header GXTXT_RECOVERY_V1;set encoded $data
+    # saved/latest retain complete semantic History, often with repeated text.
+    # Compress only the existing journal envelope; never omit either snapshot
+    # or relocate scientific geometry out of its normal Document resources.
+    if {[string length $encoded]+100>$maximumBytes} {
+        set encoded [zlib compress $data];set header GXTXT_RECOVERY_ZLIB_V1
+    }
+    if {[string length $encoded]+100>$maximumBytes} {error "Recovery checkpoint exceeds the 16 MiB stored journal limit after lossless compression; retain bulk geometry in owned resources"}
+    set bytes "$header\n[_workbenchRecoveryDigest $encoded]\n$encoded"
     set f [file tempfile temporary [file join [file dirname $path] .pending-]]
     try {
         fconfigure $f -translation binary -encoding binary;puts -nonewline $f $bytes;close $f;set f {}
@@ -94,8 +107,11 @@ proc ::GX::workbenchRecoveryResolve {document choice} {
 }
 proc ::GX::workbenchRecoveryMarkSaved {document} {
     if {[catch {set state [_workbenchRecoveryRead $document]} message]} {return [dict create status corrupt reason $message]}
-    if {$state eq {}} {return [dict create status absent]}
     set snapshot [_workbenchRecoverySnapshot $document]
+    if {$state eq {}} {
+        set owner [interactiveDocumentRead $document]
+        set state [dict create api_version 1 document_id $document generation [dict get $owner generation] module_id [dict get $owner module_id] provider_id [dict get $owner provider_id] receipts {}]
+    }
     dict set state saved $snapshot;dict set state latest $snapshot;dict set state receipts {};dict set state clean 1
     return [_workbenchRecoveryWrite $document $state]
 }

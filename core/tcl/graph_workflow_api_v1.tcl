@@ -16,6 +16,40 @@ proc ::GX::modulePublicApiIds {moduleId} {
     set d [parseIni $descriptor]
     return [splitList [descriptorValue $d public_apis ids ""]]
 }
+proc ::GX::modulePublicApiDocumentation {moduleId apiId} {
+    set path [moduleField $moduleId descriptor {}]
+    if {$path eq {} || ![file isfile $path]} {error {Public API provider descriptor is unavailable}}
+    set d [parseIni $path]
+    if {$apiId ni [splitList [descriptorValue $d public_apis ids {}]]} {error {Provider does not declare this public API}}
+    set contract [descriptorValue $d public_api.$apiId public_contract {}]
+    return [_modulePublicApiDocumentationValidate $contract]
+}
+proc ::GX::_modulePublicApiDocumentationValidate {contract} {
+    if {$contract eq {}} {return {}}
+    # Provider-owned inert documentation. Reading never activates the provider
+    # or changes Script Bridge / restricted SDK authorization.
+    if {[catch {dict size $contract}] || ![dict exists $contract schema] || [dict get $contract schema] ne {gxtxt.public_api_documentation.v1} || ![dict exists $contract purpose] || [string trim [dict get $contract purpose]] eq {} || ![dict exists $contract operations]} {error {Invalid provider public documentation contract}}
+    foreach key [dict keys $contract] {if {$key ni {schema purpose operations context}} {error {Unknown public documentation field}}}
+    if {![dict size [dict get $contract operations]]} {error {Public documentation requires at least one declared operation}}
+    dict for {operation item} [dict get $contract operations] {
+        if {![regexp {^[A-Za-z][A-Za-z0-9_]*$} $operation]} {error {Public documentation needs logical operation names}}
+        foreach key {command arguments parameters result context} {if {![dict exists $item $key]} {error "Public documentation operation '$operation' requires '$key'"}}
+        if {[string trim [dict get $item context]] eq {}} {error {Public operations require their actual context}}
+        foreach key [dict keys $item] {if {$key ni {command arguments parameters result context example}} {error {Unknown public operation documentation field}}}
+        if {![regexp {^::[A-Za-z][A-Za-z0-9_]*(?:::[A-Za-z][A-Za-z0-9_]*)+$} [dict get $item command]]} {error {Public documentation requires a literal qualified host command}}
+        set names {}
+        foreach formal [dict get $item arguments] {
+            if {[llength $formal] ni {1 2} || ![regexp {^[A-Za-z][A-Za-z0-9_]*$} [lindex $formal 0]]} {error {Invalid public host formal argument}}
+            lappend names [lindex $formal 0]
+        }
+        if {[llength [lsort -unique $names]]!=[llength $names] || [lsort [dict keys [dict get $item parameters]]]!=[lsort $names]} {error {Public parameter descriptions must match every declared formal argument}}
+        dict for {name parameter} [dict get $item parameters] {
+            foreach key {type description} {if {![dict exists $parameter $key] || [string trim [dict get $parameter $key]] eq {}} {error {Public parameters require actual type and description}}}
+        }
+        foreach key {type description} {if {![dict exists $item result $key] || [string trim [dict get $item result $key]] eq {}} {error {Public results require actual type and description}}}
+    }
+    return $contract
+}
 proc ::GX::modulePublicApiActivate {moduleId apiId} {
     variable modulePublicApiActivated
     pluginRuntimeTryPending $moduleId
@@ -319,6 +353,178 @@ proc ::GX::graphWorkflowProviderAliasPaths {session} {
     }
     return [lsort -unique $aliases]
 }
+# Resolve a producer graph and its existing scientific representation separately.
+# This is inspection only: it never creates a Plot Variant or rewrites bindings.
+proc ::GX::graphWorkflowScientific3DSource {reference} {
+    variable currentSession
+    variable moduleBindingIdentity
+    variable moduleBinding
+    variable modulePlotCfg
+    set ref [graphResourceRef $reference]
+    if {[dict get $ref kind] ne "provider"} {error {This graph has no declared interactive scientific 3D source.}}
+    set mid [dict get $ref module_id];set gid [dict get $ref graph_id];set vid [dict get $ref variant_id]
+    if {$mid eq "plot.dataset" && $gid eq "plot.dataset.xyz"} {
+        modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+        set owner ::GX::PlotDatasetAPIv4
+        if {![${owner}::isOwned $ref]} {modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3;set owner ::GX::PlotDatasetAPIv3}
+        ${owner}::previewCompatibility $ref
+        return [dict create original_reference $ref representation_reference $ref owner $owner source_info [${owner}::interactiveSourceInfo $ref]]
+    }
+    if {$currentSession eq {} || ![file isdirectory $currentSession]} {error {Open the graph's Session first.}}
+    set type [moduleGraphField $mid $gid interactive_3d_plot_type {}]
+    set sourceRole [moduleGraphField $mid $gid interactive_3d_source {}]
+    set bridgeKey [moduleGraphField $mid $gid interactive_3d_key {}]
+    if {[moduleGraphField $mid $gid interactive_3d_provider {}] ne "plot.dataset" ||
+        $type ni {surface mesh contour3 scatter3 line3 trisurf heatmap} || $sourceRole eq {} || $bridgeKey eq {}} {
+        error {The provider has no declared scientific 3D geometry contract; a PNG alone cannot supply interactive geometry.}
+    }
+    set artifact [graphAxisArtifactPath $mid $gid $vid]
+    set dir [file dirname $artifact]
+    set manifest [file join $dir automatic_graphs.ini]
+    if {![file isfile $manifest] || [file size $manifest]>8388608} {error {The graph's scientific provider bridge is unavailable.}}
+    set bridge [parseIni $manifest]
+    foreach {field expected} {provider plot.dataset api PLOT_DATASET_API_v2 bridge PLOT_DATASET_OCTAVE_BRIDGE_v1} {
+        if {[descriptorValue $bridge automatic_graphs $field {}] ne $expected} {error "Unsupported scientific provider bridge: $field."}
+    }
+    set count [descriptorValue $bridge automatic_graphs count 0]
+    if {![string is integer -strict $count] || $count<1 || $count>10000} {error {Invalid scientific provider bridge count.}}
+    set scope [expr {$vid eq {}?"base":$vid}]
+    set matches {}
+    for {set i 1} {$i<=$count} {incr i} {
+        set section [format graph.%02d $i]
+        if {[descriptorValue $bridge $section png {}] eq [file tail $artifact]} {lappend matches $section}
+    }
+    if {[llength $matches]!=1} {error {The selected graph has no unique scientific provider bridge entry.}}
+    set section [lindex $matches 0]
+    if {[descriptorValue $bridge $section key {}] ne $bridgeKey ||
+        [descriptorValue $bridge $section scope {}] ne $scope ||
+        [descriptorValue $bridge $section graph_id {}] ne "plot.dataset.xyz"} {error {Scientific bridge identity does not match the selected graph contract.}}
+    set representationId [descriptorValue $bridge $section variant_id {}]
+    if {![regexp {^p[0-9]+$} $representationId]} {error {Invalid scientific representation identity.}}
+    # Recorded absolute paths remain provenance after a Session copy. Current
+    # Session ownership, not the old workstation path, locates preparation.
+    set preparedDir [file join $currentSession analysis plot.dataset variants plot.dataset.xyz $representationId]
+    set runtime [file join $preparedDir runtime.ini]
+    set cache [file join $preparedDir render_cache.mat]
+    if {![file isfile $cache] || ![file isfile $runtime]} {error {The graph has no retained scientific 3D preparation/runtime.}}
+    if {[file size $cache]>134217728 || [file size $runtime]>8388608} {error {Prepared graph exceeds the existing preview intake budget.}}
+    set saved [parseIni $runtime]
+    if {[descriptorValue $saved plot_variant graph_id {}] ne "plot.dataset.xyz" ||
+        [descriptorValue $saved plot_variant variant_id {}] ne $representationId ||
+        [descriptorValue $saved plot.plot.dataset.xyz plot_type {}] ne $type} {error {Retained scientific geometry kind or representation identity differs from the graph contract.}}
+    set dataset [analysisSourceDatasetFor $mid $sourceRole]
+    if {$dataset eq {} || [descriptorValue $saved dataset id {}] ne $dataset ||
+        [descriptorValue $saved analysis_source.primary dataset_id {}] ne $dataset} {error {Graph source Dataset changed since its scientific preparation.}}
+    set payload [sessionInspectionDatasetPayload $dataset]
+    set bindings {};set variables {}
+    set n [descriptorValue $saved analysis_source.primary variable_count 0]
+    if {![string is integer -strict $n] || $n<1 || $n>100000} {error {Prepared source has no valid Variable identity metadata.}}
+    foreach role {x y z} {
+        if {![info exists moduleBindingIdentity($mid,$role)] || [llength [split $moduleBindingIdentity($mid,$role) |]]!=3} {error "Resolve the graph's $role Variable identity through its normal binding controls first."}
+        lassign [split $moduleBindingIdentity($mid,$role) |] selectedRole selectedDataset variableId
+        if {$selectedRole ne $sourceRole || $selectedDataset ne $dataset} {error "Graph $role source binding changed since preparation."}
+        set variable [datasetVariableById $dataset $variableId]
+        set name [dict get $variable canonical]
+        if {![dict get $variable enabled] || ![info exists moduleBinding($mid,$role)] || $moduleBinding($mid,$role) ne "$sourceRole.$name" ||
+            [descriptorValue $saved bindings $role {}] ne "primary.$name"} {error "Graph $role binding no longer matches its prepared source."}
+        set matched 0
+        for {set i 1} {$i<=$n} {incr i} {
+            set prefix analysis_source.primary.variable.$i
+            if {[descriptorValue $saved $prefix variable_id {}] ne $variableId} continue
+            if {[descriptorValue $saved $prefix name {}] ne $name || [descriptorValue $saved $prefix unit {}] ne [dict get $variable unit]} {error "Graph $role Variable name/unit changed since preparation."}
+            incr matched
+        }
+        if {$matched!=1} {error "Prepared source has no unique $role Variable identity."}
+        dict set bindings $role [dict create dataset_id $dataset variable_id $variableId]
+        dict set variables $role $variable
+    }
+    foreach role {family color} {
+        if {[descriptorValue $saved bindings $role {}] ne {}} {error {This producer contract does not declare additional family/color bindings.}}
+    }
+    # Current producer presentation is compared with its retained runtime;
+    # unlike graphAxisConfigSnapshot this read does not initialize overrides.
+    set producerRuntime [file join $dir runtime.ini]
+    if {![file isfile $producerRuntime] || [file size $producerRuntime]>8388608} {error {The producer's retained presentation receipt is missing.}}
+    set producer [parseIni $producerRuntime]
+    foreach field [moduleGraphConfigKeys $mid $gid] {
+        set previous [descriptorValue $producer plot.$gid $field {}]
+        set current [moduleGraphConfigField $mid $gid $field default {}]
+        if {$vid ne {}} {set current [plotVariantConfigGet $mid $gid $vid $field]} elseif {[info exists modulePlotCfg($mid,$gid,$field)]} {set current $modulePlotCfg($mid,$gid,$field)}
+        if {$current ne $previous} {error "Graph $field changed; render the graph to update its scientific presentation."}
+        if {$field in {title contour_levels x_label y_label z_label} && $previous ne {} && $previous ne "auto" && $previous ne [descriptorValue $saved plot.plot.dataset.xyz $field {}]} {error "Prepared graph $field differs from its producer presentation."}
+    }
+    set graphKey [graphAxisAddress $mid $gid $vid]
+    set presentation {}
+    foreach array {axisOverride legendOverride} prefix {axis legend} {
+        upvar #0 ::GX::$array values
+        set defaults [expr {$array eq "axisOverride"?[dict merge [axisOverrideFieldDefaults] [plot3dAxisFieldDefaults] [layoutOverrideFieldDefaults]]:[legendOverrideFieldDefaults]}]
+        foreach name [lsort [array names values "$graphKey,*"]] {
+            set field [string range $name [expr {[string length $graphKey]+1}] end]
+            if {$field eq "panels"} continue
+            if {$array eq "axisOverride" && [string match layout_* $field] && $field ne {layout_auto}} {
+                set automatic [expr {![info exists values($graphKey,layout_auto)] || $values($graphKey,layout_auto) ne {0}}]
+                if {$automatic && [descriptorValue $producer axis.$gid layout_auto 1] ne {0}} continue
+            }
+            set default [expr {[dict exists $defaults $field]?[dict get $defaults $field]:{}}]
+            set previous [descriptorValue $producer $prefix.$gid $field $default]
+            set current $values($name)
+            if {$array eq "axisOverride" && $field eq {layout_auto}} {
+                set previous [expr {$previous eq {0}?0:1}]
+                set current [expr {$current eq {0}?0:1}]
+            }
+            # Existing legend owner normalizes the old empty alignment to
+            # center. Treat that migration as the same effective setting.
+            if {$array eq "legendOverride" && $field eq "alignment"} {
+                if {$previous eq {}} {set previous center}
+                if {$current eq {}} {set current center}
+            }
+            if {$current ne $previous} {error "Graph $array/$field changed; render before interactive Preview."}
+            lappend presentation $array $field $values($name)
+        }
+    }
+    foreach axis {y y2 z} {
+        set current [levelScaleGet $graphKey $axis]
+        dict for {field default} [levelScaleDefaults] {
+            if {[dict get $current $field] ne [descriptorValue $producer level_scale.$gid.$axis $field $default]} {error "Graph $axis level scale changed; render before interactive Preview."}
+        }
+        lappend presentation levelScale $axis $current
+    }
+    dict for {key value} $saved {
+        if {[regexp {^axis\.plot\.dataset\.xyz\.(x|y|z)_?(scale|dir)$} $key] && $value ni {{} inherit linear normal}} {error {Logarithmic/reversed axes require a Native3D nonlinear calibrated coordinate-mapping contract.}}
+    }
+    set context [datasetCoordinateRead $currentSession $dataset]
+    set coordinatePath [file join $preparedDir coordinate_presentation.ini]
+    set coordinate {}
+    if {[file isfile $coordinatePath]} {
+        set coordinate [parseIni $coordinatePath]
+        set count [descriptorValue $coordinate coordinate_presentation count 0]
+        if {[descriptorValue $coordinate coordinate_presentation api_version {}] ne "1" || ![string is integer -strict $count] || $count<0 || $count>1024} {error {Invalid coordinate render receipt; render the graph again.}}
+        set matched 0
+        for {set i 1} {$i<=$count} {incr i} {
+            if {[descriptorValue $coordinate dataset.$i id {}] ne $dataset} continue
+            if {[descriptorValue $coordinate dataset.$i revision {}] ne [dict get $context revision] || [descriptorValue $coordinate dataset.$i source_sha256 {}] ne [dict get $context source_sha256]} {error {Dataset coordinate settings changed since static render; render before interactive Preview.}}
+            set matched 1
+        }
+        if {!$matched && [dict get $context revision]>0} {error {The retained graph has no current Dataset coordinate receipt.}}
+    } elseif {[dict get $context revision]>0} {error {The retained graph has no current Dataset coordinate receipt.}}
+    set representation {}
+    if {[plotVariantExists plot.dataset plot.dataset.xyz $representationId]} {
+        if {[plotVariantField plot.dataset plot.dataset.xyz $representationId provider_key {}] ne "${mid}:${scope}:${bridgeKey}"} {error {The scientific representation belongs to another producer.}}
+        set representation [graphResourceRef [dict create module_id plot.dataset graph_id plot.dataset.xyz variant_id $representationId]]
+        foreach role {x y z} {
+            set binding [plotVariantBindingGet plot.dataset plot.dataset.xyz $representationId $role]
+            if {$binding eq {} || [dict get $binding dataset_id] ne $dataset || [dict get $binding variable_id] ne [dict get $bindings $role variable_id]} {error "Registered scientific representation $role binding differs from the producer source."}
+        }
+        if {[plotVariantConfigGet plot.dataset plot.dataset.xyz $representationId plot_type] ne $type} {error {Registered scientific representation has a different geometry kind.}}
+    }
+    set identities [list [interactiveDocumentSessionToken] $ref $representation $dataset [dict get $payload sha256] $bindings $variables $type $presentation $context $coordinate]
+    foreach path [list $manifest $runtime $cache $producerRuntime] {lappend identities $path [sha256File $path]}
+    set fingerprint [exec -- [runtimeToolRequired python] -c {import hashlib,sys; print(hashlib.sha256(sys.stdin.buffer.read()).hexdigest())} << [encoding convertto utf-8 $identities]]
+    set sourceInfo [dict create plot_ref $ref bindings $bindings source_dataset_id $dataset source_sha256 [dict get $payload sha256] fingerprint $fingerprint representation_reference $representation bridge_manifest $manifest geometry_kind $type]
+    return [dict create original_reference $ref representation_reference $representation owner ::GX::PlotDataset3DAPIv1 source_info $sourceInfo \
+        prepared_source [dict create cache $cache runtime $runtime saved $saved variables $variables source_payload $payload plot_type $type session $currentSession] fingerprint $fingerprint]
+}
+
 proc ::GX::scheduledModuleGraphIds {moduleId} {
     variable graphRuntimeSelectionOverride
     set out {}

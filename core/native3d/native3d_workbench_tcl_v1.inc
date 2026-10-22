@@ -384,7 +384,7 @@ int cadCall(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]) {
             auto* frame=get(ip,request,"plane");check(gx3de_plane_create(state.cadScene,cadVector(ip,get(ip,frame,"origin"),"origin"),cadVector(ip,get(ip,frame,"normal"),"normal"),cadVector(ip,get(ip,frame,"u_axis"),"U"),&plane),"projection frame");
             std::string id=field(ip,request,"object_token");kind=state.cadKinds.at(id);
             check(gx3de_object_project(cadObject(state,id),plane,nullptr,&pending),"orthogonal projection (CAD requires explicit tessellation first)");gx3de_plane_destroy(plane);plane=nullptr;
-        } else if(action=="load_step") {
+        } else if(action=="load_step"||action=="restore_step") {
             std::string path=field(ip,request,"path");
             double scale=number(field(ip,request,"millimeters_per_working_unit"),"STEP unit scale");
             if(scale<=0)throw std::runtime_error("STEP unit scale must be positive");
@@ -393,17 +393,24 @@ int cadCall(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]) {
             check(gx3de_step_open(state.cadEngine,&spec,&step),"restore exact STEP resource");
             gx3de_step_summary summary{};summary.struct_size=sizeof summary;
             check(gx3de_step_summary_get(step,&summary),"read saved STEP structure");
-            uint64_t selected=UINT64_MAX;
-            for(uint64_t i=0;i<summary.nodes;++i) {
-                gx3de_step_node node{};node.struct_size=sizeof node;
-                check(gx3de_step_node_get(step,i,&node),"read saved STEP occurrence");
-                if(node.kind==GX3DE_STEP_PART_OCCURRENCE) {
-                    if(selected!=UINT64_MAX)throw std::runtime_error("A saved object resource must contain exactly one STEP occurrence; import assemblies as separate objects");
-                    selected=i;
+            if(action=="restore_step") {
+                // An exported Document object can legitimately contain several
+                // disconnected solids. Rehydrate its complete immutable shape;
+                // do not fuse parts or reinterpret them as new Document IDs.
+                check(gx3de_step_compound_create(state.cadScene,step,&pending),"restore complete saved B-Rep compound");
+            } else {
+                uint64_t selected=UINT64_MAX;
+                for(uint64_t i=0;i<summary.nodes;++i) {
+                    gx3de_step_node node{};node.struct_size=sizeof node;
+                    check(gx3de_step_node_get(step,i,&node),"read saved STEP occurrence");
+                    if(node.kind==GX3DE_STEP_PART_OCCURRENCE) {
+                        if(selected!=UINT64_MAX)throw std::runtime_error("A saved object resource must contain exactly one STEP occurrence; import assemblies as separate objects");
+                        selected=i;
+                    }
                 }
+                if(selected==UINT64_MAX)throw std::runtime_error("Saved STEP resource contains no solid occurrence");
+                check(gx3de_step_instance_create(state.cadScene,step,selected,&pending),"restore authoritative B-Rep");
             }
-            if(selected==UINT64_MAX)throw std::runtime_error("Saved STEP resource contains no solid occurrence");
-            check(gx3de_step_instance_create(state.cadScene,step,selected,&pending),"restore authoritative B-Rep");
             gx3de_mat4 matrix;check(gx3de_object_get_transform(pending,&matrix),"read saved STEP placement");
             // STEP input is normalized to millimetres. Scale both geometry and
             // translated occurrence placement into the document's working unit.
@@ -592,7 +599,7 @@ int cadCall(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]) {
             if(pending){gx3de_object_destroy(pending);pending=nullptr;}
             Tcl_SetObjResult(ip,Tcl_NewStringObj("staged",-1));return TCL_OK;
         } else throw std::runtime_error("Unknown Native3D geometry operation");
-        if((action=="load_step"||action=="load_mesh")&&get(ip,request,"matrix")) {
+        if((action=="load_step"||action=="restore_step"||action=="load_mesh")&&get(ip,request,"matrix")) {
             auto values=cadList(ip,get(ip,request,"matrix"));if(values.size()!=16)throw std::runtime_error("Saved placement needs 16 finite coefficients");
             gx3de_mat4 matrix;for(size_t i=0;i<16;++i)matrix.m[i]=number(str(values[i]),"saved placement");
             check(gx3de_object_set_transform(pending,&matrix),"restore editable local placement");

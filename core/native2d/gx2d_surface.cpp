@@ -7,6 +7,7 @@
 #include <cairo-pdf.h>
 #include <cairo-svg.h>
 #include <X11/keysym.h>
+#include <X11/Xutil.h>
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -176,6 +177,84 @@ int render(ClientData,Tcl_Interp *ip,int n,Tcl_Obj *const v[]){
  if(validatePrimitives(ip,v[4])!=TCL_OK)return TCL_ERROR;
  Host host;host.ip=ip;host.win=nullptr;host.primitives=v[4];return exportPrimitives(&host,Tcl_GetString(v[1]),w,z);
 }
+/* Canvas text has no alpha option. Obtain glyph coverage from Tk's existing
+ * font/layout owner, then retain a transparent photo. Tk composites this over
+ * the actual canvas items; no flat-background approximation or source sampling.
+ * Cairo, already owned by this device host, handles the same CCW rotation. */
+int textPhoto(ClientData,Tcl_Interp *ip,int n,Tcl_Obj *const v[]){
+ if(n!=7)return error(ip,"Usage: native text_photo photo font text anchor angle rgba");
+ Tk_Window win=Tk_MainWindow(ip);
+ if(!win)return error(ip,"Native text requires a live Tk interpreter");
+ Tk_PhotoHandle photo=Tk_FindPhoto(ip,Tcl_GetString(v[1]));
+ if(!photo)return error(ip,"Native text destination must be an existing photo");
+ Tk_Anchor anchor;double angle,rgba[4];int channels;Tcl_Obj **values;
+ if(Tk_GetAnchorFromObj(ip,v[4],&anchor)!=TCL_OK || Tcl_GetDoubleFromObj(ip,v[5],&angle)!=TCL_OK || !std::isfinite(angle) ||
+    Tcl_ListObjGetElements(ip,v[6],&channels,&values)!=TCL_OK || channels!=4)return error(ip,"Native text requires a valid anchor, finite angle and normalized RGBA");
+ for(int i=0;i<4;++i)if(Tcl_GetDoubleFromObj(ip,values[i],rgba+i)!=TCL_OK || !std::isfinite(rgba[i]) || rgba[i]<0 || rgba[i]>1)return error(ip,"Native text RGBA must be finite and normalized");
+ int textBytes;const char *s=Tcl_GetStringFromObj(v[3],&textBytes);
+ if(textBytes>65536)return error(ip,"Native text exceeds bounded layout capacity");
+ Tk_Font font=Tk_GetFont(ip,win,Tcl_GetString(v[2]));if(!font)return TCL_ERROR;
+ Tk_FontMetrics metrics;Tk_GetFontMetrics(font,&metrics);
+ if(metrics.linespace<1 || metrics.linespace>4096){Tk_FreeFont(font);return error(ip,"Native text font metrics exceed bounded capacity");}
+ int width,height;Tk_TextLayout layout=Tk_ComputeTextLayout(font,s,Tcl_NumUtfChars(s,textBytes),0,TK_JUSTIFY_LEFT,0,&width,&height);
+ int pad=metrics.linespace+4;int64_t wide=std::max(1,width)+2LL*pad,high=std::max(1,height)+2LL*pad;
+ if(width<0 || height<0 || wide>16384 || high>16384 || wide*high>16000000){Tk_FreeTextLayout(layout);Tk_FreeFont(font);return error(ip,"Native text bitmap exceeds bounded capacity");}
+ int w=int(wide),h=int(high);
+ Tk_MakeWindowExist(win);Display *display=Tk_Display(win);
+ Pixmap pix=Tk_GetPixmap(display,Tk_WindowId(win),w,h,Tk_Depth(win));
+ XColor *black=Tk_GetColor(ip,win,Tk_GetUid("black")),*white=Tk_GetColor(ip,win,Tk_GetUid("white"));
+ if(!black || !white){if(black)Tk_FreeColor(black);if(white)Tk_FreeColor(white);Tk_FreePixmap(display,pix);Tk_FreeTextLayout(layout);Tk_FreeFont(font);return TCL_ERROR;}
+ XGCValues gcValues;gcValues.foreground=black->pixel;gcValues.background=black->pixel;gcValues.font=Tk_FontId(font);
+ GC gc=Tk_GetGC(win,GCForeground|GCBackground|GCFont,&gcValues);
+ XFillRectangle(display,pix,gc,0,0,w,h);Tk_FreeGC(display,gc);
+ gcValues.foreground=white->pixel;gc=Tk_GetGC(win,GCForeground|GCBackground|GCFont,&gcValues);
+ Tk_DrawTextLayout(display,pix,gc,layout,pad,pad,0,-1);
+ XImage *glyph=XGetImage(display,pix,0,0,w,h,AllPlanes,ZPixmap);
+ Tk_FreeGC(display,gc);Tk_FreeColor(black);Tk_FreeColor(white);Tk_FreePixmap(display,pix);Tk_FreeTextLayout(layout);Tk_FreeFont(font);
+ if(!glyph)return error(ip,"Native text glyph coverage could not be read");
+ auto channel=[](unsigned long pixel,unsigned long mask){if(!mask)return 0.;unsigned shift=0;while(!(mask&1)){mask>>=1;++shift;}return double((pixel>>shift)&mask)/mask;};
+ std::vector<uint32_t> pixels(size_t(w)*h);int left=w,top=h,right=0,bottom=0;
+ for(int y=0;y<h;++y)for(int x=0;x<w;++x){
+  unsigned long p=XGetPixel(glyph,x,y);
+  Visual *visual=Tk_Visual(win);
+  double coverage=(channel(p,visual->red_mask)+channel(p,visual->green_mask)+channel(p,visual->blue_mask))/3.;
+  unsigned a=unsigned(std::lround(255*coverage*rgba[3]));
+  pixels[size_t(y)*w+x]=(a<<24)|(unsigned(std::lround(a*rgba[0]))<<16)|(unsigned(std::lround(a*rgba[1]))<<8)|unsigned(std::lround(a*rgba[2]));
+  if(coverage>0){left=std::min(left,x);top=std::min(top,y);right=std::max(right,x+1);bottom=std::max(bottom,y+1);}
+ }
+ XDestroyImage(glyph);
+ double ax=width/2.,ay=height/2.;
+ if(anchor==TK_ANCHOR_NW || anchor==TK_ANCHOR_W || anchor==TK_ANCHOR_SW)ax=0;
+ if(anchor==TK_ANCHOR_NE || anchor==TK_ANCHOR_E || anchor==TK_ANCHOR_SE)ax=width;
+ if(anchor==TK_ANCHOR_NW || anchor==TK_ANCHOR_N || anchor==TK_ANCHOR_NE)ay=0;
+ if(anchor==TK_ANCHOR_SW || anchor==TK_ANCHOR_S || anchor==TK_ANCHOR_SE)ay=height;
+ if(left>=right || top>=bottom){left=pad;top=pad;right=pad+1;bottom=pad+1;}
+ double radians=-std::remainder(angle,360.)*acos(-1)/180.,cs=std::cos(radians),sn=std::sin(radians);
+ double minX=1e30,minY=1e30,maxX=-1e30,maxY=-1e30;
+ for(int x:{left,right})for(int y:{top,bottom}){double dx=x-pad-ax,dy=y-pad-ay;double px=cs*dx-sn*dy,py=sn*dx+cs*dy;minX=std::min(minX,px);maxX=std::max(maxX,px);minY=std::min(minY,py);maxY=std::max(maxY,py);}
+ int x0=int(std::floor(minX))-1,y0=int(std::floor(minY))-1;
+ int ow=int(std::ceil(maxX))-x0+1,oh=int(std::ceil(maxY))-y0+1;
+ if(ow>16384 || oh>16384 || int64_t(ow)*oh>16000000)return error(ip,"Rotated native text bitmap exceeds bounded capacity");
+ cairo_surface_t *input=cairo_image_surface_create_for_data(reinterpret_cast<unsigned char*>(pixels.data()),CAIRO_FORMAT_ARGB32,w,h,w*4);
+ cairo_surface_t *output=cairo_image_surface_create(CAIRO_FORMAT_ARGB32,ow,oh);
+ cairo_t *cr=cairo_create(output);cairo_translate(cr,-x0,-y0);cairo_rotate(cr,radians);cairo_translate(cr,-pad-ax,-pad-ay);
+ cairo_set_source_surface(cr,input,0,0);cairo_paint(cr);
+ cairo_status_t status=cairo_status(cr);cairo_destroy(cr);cairo_surface_destroy(input);cairo_surface_flush(output);
+ if(status!=CAIRO_STATUS_SUCCESS || cairo_surface_status(output)!=CAIRO_STATUS_SUCCESS){cairo_surface_destroy(output);return error(ip,"Native text coverage rotation failed");}
+ // Cairo owns premultiplied native-endian ARGB; Tk photos require straight RGBA.
+ std::vector<unsigned char> bytes(size_t(ow)*oh*4);
+ auto data=cairo_image_surface_get_data(output);int stride=cairo_image_surface_get_stride(output);
+ for(int y=0;y<oh;++y)for(int x=0;x<ow;++x){uint32_t p=reinterpret_cast<uint32_t*>(data+y*stride)[x];unsigned a=p>>24;size_t i=(size_t(y)*ow+x)*4;
+  bytes[i]=a?std::min(255u,(((p>>16)&255)*255+a/2)/a):0;bytes[i+1]=a?std::min(255u,(((p>>8)&255)*255+a/2)/a):0;bytes[i+2]=a?std::min(255u,((p&255)*255+a/2)/a):0;bytes[i+3]=a;
+ }
+ cairo_surface_destroy(output);
+ Tk_PhotoImageBlock block;block.pixelPtr=bytes.data();block.width=ow;block.height=oh;block.pitch=ow*4;block.pixelSize=4;
+ block.offset[0]=0;block.offset[1]=1;block.offset[2]=2;block.offset[3]=3;
+ if(Tk_PhotoSetSize(ip,photo,ow,oh)!=TCL_OK || Tk_PhotoPutBlock(ip,photo,&block,0,0,ow,oh,TK_PHOTO_COMPOSITE_SET)!=TCL_OK)return TCL_ERROR;
+ Tcl_Obj *receipt=Tcl_NewDictObj();
+ Tcl_Obj *offset[2]={Tcl_NewIntObj(x0),Tcl_NewIntObj(y0)};put(receipt,"offset",Tcl_NewListObj(2,offset));
+ put(receipt,"width",Tcl_NewIntObj(ow));put(receipt,"height",Tcl_NewIntObj(oh));put(receipt,"renderer",str("Native2D.TkGlyph.CairoRGBA"));Tcl_SetObjResult(ip,receipt);return TCL_OK;
+}
 void display(ClientData data){auto h=(Host*)data;h->pending=false;if(h->dead||!h->win||!Tk_IsMapped(h->win))return;Tcl_Preserve(h);h->drawing=true;h->clamp();uint64_t gen=h->generation,rev=h->revision;
  if(h->grid&&h->fetch){Tcl_Obj *reply=nullptr;++h->fetches;if(call(h,h->fetch,{str(Tk_PathName(h->win)),range(h)},&reply)&&reply){if(!h->dead&&h->generation==gen&&h->revision==rev&&!loadCells(h,reply))h->lastError="Invalid bounded grid cell reply";Tcl_DecrRefCount(reply);}}
  if(!h->dead&&h->win&&Tk_IsMapped(h->win)){int w=h->width(),z=h->height();Pixmap pix=Tk_GetPixmap(Tk_Display(h->win),Tk_WindowId(h->win),w,z,Tk_Depth(h->win));cairo_surface_t *surface=cairo_xlib_surface_create(Tk_Display(h->win),pix,Tk_Visual(h->win),w,z);cairo_t *cr=cairo_create(surface);color(h,cr,h->background);cairo_paint(cr);if(h->grid)paintGrid(h,cr);else paintPrimitives(h,cr);cairo_destroy(cr);cairo_surface_destroy(surface);GC gc=Tk_GetGC(h->win,0,nullptr);XCopyArea(Tk_Display(h->win),pix,Tk_WindowId(h->win),gc,0,0,w,z,0,0);Tk_FreeGC(Tk_Display(h->win),gc);Tk_FreePixmap(Tk_Display(h->win),pix);++h->draws;
@@ -252,4 +331,4 @@ int command(ClientData data,Tcl_Interp *ip,int n,Tcl_Obj *const v[]){auto h=(Hos
 }
 int create(ClientData data,Tcl_Interp *ip,int n,Tcl_Obj *const v[]){if(n<2)return error(ip,"Usage: native surface|grid widgetPath ?options?");Tk_Window main=Tk_MainWindow(ip);if(!main)return error(ip,"Native2D presentation requires a live Tk interpreter");Tk_Window win=Tk_CreateWindowFromPath(ip,main,Tcl_GetString(v[1]),nullptr);if(!win)return TCL_ERROR;auto h=new Host;h->ip=ip;h->win=win;h->grid=data!=nullptr;Tk_SetClass(win,h->grid?"GXNativeGrid":"GXNativeSurface");Tk_GeometryRequest(win,600,350);Tk_CreateEventHandler(win,ExposureMask|StructureNotifyMask|ButtonPressMask|ButtonReleaseMask|PointerMotionMask|KeyPressMask,event,h);h->command=Tcl_CreateObjCommand(ip,Tk_PathName(win),command,h,deleted);if(n>2){std::vector<Tcl_Obj*> args={v[1],str("configure")};args.insert(args.end(),v+2,v+n);if(command(h,ip,args.size(),args.data())!=TCL_OK){Tk_DestroyWindow(win);return TCL_ERROR;}}Tcl_SetObjResult(ip,v[1]);return TCL_OK;}
 }
-extern "C" int gx2d_surface_init(Tcl_Interp *ip){Tcl_CreateNamespace(ip,"::gx::native2d",nullptr,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::surface",create,nullptr,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::grid",create,(ClientData)1,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::render",render,nullptr,nullptr);return TCL_OK;}
+extern "C" int gx2d_surface_init(Tcl_Interp *ip){Tcl_CreateNamespace(ip,"::gx::native2d",nullptr,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::surface",create,nullptr,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::grid",create,(ClientData)1,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::render",render,nullptr,nullptr);Tcl_CreateObjCommand(ip,"::gx::native2d::text_photo",textPhoto,nullptr,nullptr);return TCL_OK;}

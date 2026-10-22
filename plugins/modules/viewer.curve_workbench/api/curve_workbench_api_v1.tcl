@@ -73,7 +73,9 @@ proc ::GX::CurveWorkbench::_active {w} {
     return $id
 }
 proc ::GX::CurveWorkbench::_editable {w} {
-    set id [_active $w];if {[dict get [_record $w $id] locked]} {error "The active curve is locked"};return $id
+    set id [_active $w];if {[dict get [_record $w $id] locked]} {error "The active curve is locked"}
+    _coordinatePlaneAdmit $w [list $id]
+    return $id
 }
 proc ::GX::CurveWorkbench::_addRecord {w record {nativeId ""}} {
     variable st
@@ -221,7 +223,7 @@ proc ::GX::CurveWorkbench::_load {w} {
     set st($w,next) [dict get $payload next]
     dict for {id record} [dict get $payload curves] {_addRecord $w $record}
     set st($w,active) [dict get $payload active]
-    if {![dict exists $st($w,curves) $st($w,active)]} {set st($w,active) [lindex [dict keys $st($w,curves)] 0]}
+    if {$st($w,active) ne {} && ![dict exists $st($w,curves) $st($w,active)]} {set st($w,active) [lindex [dict keys $st($w,curves)] 0]}
     set st($w,reference) [dict get $payload reference]
     set st($w,target) [dict get $payload target]
     set st($w,externalFeedback) [dict get $payload external_feedback]
@@ -232,7 +234,19 @@ proc ::GX::CurveWorkbench::_load {w} {
         set st($w,bridgeTolerance) [dict get $settings tolerance]
         set st($w,bridge) [expr {$st($w,bridgeKind) eq "straight"}]
     }
-    if {[dict exists $payload cad_workspace]} {_cadRestoreState $w [dict get $payload cad_workspace]}
+    if {[dict exists $payload cad_workspace]} {
+        _cadRestoreState $w [dict get $payload cad_workspace]
+    } elseif {[dict exists $payload coordinate_configuration]} {
+        set st($w,coordinateConfiguration) [_coordinateConfigurationNormalize [dict get $payload coordinate_configuration]]
+    } elseif {$st($w,active) ne {}} {
+        # Legacy archives retain their real plane for inspection. Unlike axes
+        # do not silently gain consent for subsequent numeric-plane editing.
+        set st($w,coordinateConfiguration) [_coordinateConfigurationDefault]
+        lassign [_coordinateUnits [_record $w $st($w,active)]] xUnit yUnit
+        dict set st($w,coordinateConfiguration) x_unit $xUnit
+        dict set st($w,coordinateConfiguration) y_unit $yUnit
+    }
+    set st($w,sketchUnit) [dict get $st($w,coordinateConfiguration) x_unit]
     foreach property {grid background aspect} {
         if {[dict exists $payload $property]} {::GX::Native2D::core $property $st($w,scene) [dict get $payload $property]}
     }
@@ -893,6 +907,16 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
         ::GX::Native2D::core view $st($w,scene) $view
     }
     set view [::GX::Native2D::core view $st($w,scene)]
+    set plans [_coordinateAxisPlans $w]
+    set requiredLeft 80
+    foreach tick [dict get $plans y ticks] {set requiredLeft [expr {max($requiredLeft,36+[font measure TkSmallCaptionFont [dict get $tick label]])}]}
+    set requiredLeft [expr {min($requiredLeft,int($width*.4))}]
+    if {$requiredLeft>[lindex $view 2]} {
+        lset view 2 $requiredLeft
+        ::GX::Native2D::core view $st($w,scene) $view
+        set view [::GX::Native2D::core view $st($w,scene)]
+        set plans [_coordinateAxisPlans $w]
+    }
     if {$st($w,active) ne "" && [dict exists $st($w,curves) $st($w,active)]} {
         set currentMarker [::GX::Native2D::core direction_marker $st($w,scene) [dict get [_record $w $st($w,active)] native]]
         set st($w,directionShown) [dict get $currentMarker visible]
@@ -910,13 +934,23 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
     set grid [::GX::Native2D::core grid $st($w,scene)]
     set st($w,gridShown) [dict get $grid visible]
     set st($w,gridSnap) [dict get $grid snap_enabled]
-    ::GX::native2DCanvasGrid $st($w,scene) $c
-    for {set i 0} {$i<=5} {incr i} {
-        set x [expr {$x0+($x1-$x0)*$i/5.0}];set y [expr {$y0+($y1-$y0)*$i/5.0}]
-        lassign [::GX::Native2D::core device $st($w,scene) [list $x $y0]] sx _
-        lassign [::GX::Native2D::core device $st($w,scene) [list $x0 $y]] _ sy
-        $c create text $sx [expr {$plotBottom+15}] -text [_coordinateTick $w x $x] -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_x_tick}
-        $c create text [expr {$left-5}] $sy -text [_coordinateTick $w y $y] -anchor e -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_y_tick}
+    ::GX::native2DCanvasGrid $st($w,scene) $c construction_grid 16
+    set st($w,coordinateAxisPlans) $plans
+    foreach axis {x y} {
+        foreach tick [dict get $plans $axis ticks] {
+            set value [dict get $tick value]
+            if {$axis eq {x}} {
+                lassign [::GX::Native2D::core device $st($w,scene) [list $value $y0]] sx unused
+                if {[dict get $grid visible]} {$c create line $sx $top $sx $plotBottom -fill #d8e1e9 -dash {2 4} -tags coordinate_grid}
+                $c create line $sx $plotBottom $sx [expr {$plotBottom+4}] -fill $textRgb -tags {axis_graduation coordinate_x_graduation}
+                $c create text $sx [expr {$plotBottom+15}] -text [dict get $tick label] -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_x_tick}
+            } else {
+                lassign [::GX::Native2D::core device $st($w,scene) [list $x0 $value]] unused sy
+                if {[dict get $grid visible]} {$c create line $left $sy $plotRight $sy -fill #d8e1e9 -dash {2 4} -tags coordinate_grid}
+                $c create line [expr {$left-4}] $sy $left $sy -fill $textRgb -tags {axis_graduation coordinate_y_graduation}
+                $c create text [expr {$left-7}] $sy -text [dict get $tick label] -anchor e -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_y_tick}
+            }
+        }
     }
     set index 0
     dict for {id r} $st($w,curves) {
@@ -971,41 +1005,45 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
     }
     if {$st($w,box) ne {}} {$c create rectangle {*}$st($w,box) -outline #234e9b -dash {4 3}}
     ::GX::native2DCanvasViewportClip $c $st($w,scene)
-    if {$st($w,active) ne "" && [dict exists $st($w,curves) $st($w,active)]} {
-        set xLabel [_coordinateLabel $w $st($w,active) x];set yLabel [_coordinateLabel $w $st($w,active) y]
-        $c create text [expr {($left+$plotRight)/2}] [expr {$height-14}] -text $xLabel -fill $textRgb -tags {axis_label coordinate_axis_label}
-        $c create text 13 [expr {($top+$plotBottom)/2}] -text $yLabel -angle 90 -fill $textRgb -tags {axis_label coordinate_axis_label}
+    $c create text [expr {($left+$plotRight)/2}] [expr {$height-14}] -text [dict get $plans x label] -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_axis_label}
+    $c create text 13 [expr {($top+$plotBottom)/2}] -text [dict get $plans y label] -angle 90 -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_axis_label}
+}
+# The residual is an actual derived comparison, never a canonical Dataset.
+proc ::GX::CurveWorkbench::_residualDispose {w} {
+    variable st
+    set path [expr {[info exists st($w,residualWidget)] ? $st($w,residualWidget) : {}}]
+    set st($w,residualWidget) {};set st($w,residualBinding) {}
+    if {$path ne {}} {
+        try {::GX::PlotDatasetAPIv4::widgetDestroy $path} finally {if {[winfo exists $path]} {destroy $path}}
     }
 }
 proc ::GX::CurveWorkbench::_drawResidual {w} {
     variable st
     if {![winfo exists $w.right.residual]} return
-    set c $w.right.residual;$c delete all
-    if {$st($w,residual) eq {}} return
-    set rows [dict get $st($w,residual) rows]
-    if {[llength $rows]<2} return
-    set points [lmap r $rows {list [lindex $r 0] [lindex $r 1]}]
-    if {$st($w,residualScene) ne ""} {::GX::Native2D::core destroy $st($w,residualScene)}
-    set st($w,residualScene) [::GX::Native2D::core scene]
-    set scene $st($w,residualScene)
-    set obj [::GX::Native2D::core add $scene $points]
-    set width [winfo width $c];set height [winfo height $c]
-    if {$width<100} {set width 900};if {$height<80} {set height 150}
-    ::GX::Native2D::core view $scene [list $width $height 55 10 20 28 {0 0 1 1}]
-    ::GX::Native2D::core fit $scene $obj
-    $c create rectangle 55 10 [expr {$width-20}] [expr {$height-28}] -outline #9babbc -fill white
-    set coords [::GX::Native2D::core render $scene $obj]
-    _renderPath $c $coords #b12535 2 {}
-    set index [dict get $st($w,residual) max_index]
-    lassign [lindex $coords $index] sx sy
-    $c create oval [expr {$sx-5}] [expr {$sy-5}] [expr {$sx+5}] [expr {$sy+5}] -fill #e6b433 -outline #711822
-    set unit [::GX::datasetPublicationV2DictDefault $st($w,residual) unit {}]
-    set xUnit $unit
-    if {$st($w,compareMethod) eq "x"&&[dict exists $st($w,residual) coordinate_frame]} {set xUnit [lindex [dict get $st($w,residual) coordinate_frame output_units] 0]}
-    set kind [expr {$st($w,compareMethod) eq "geometry"?"distance":"signed\nresidual"}]
-    $c create text 8 [expr {$height/2}] -text "$kind\n($unit)" -anchor w -fill #48566b
-    $c create text [expr {$width/2}] [expr {$height-11}] -text "[expr {$st($w,compareMethod) eq "x" ? "reference X" : "reference path distance"}] ($xUnit)" -fill #48566b
+    if {$st($w,residual) eq {} || [llength [dict get $st($w,residual) rows]]<2} {_residualDispose $w;return}
+    set record $st($w,comparisonRecord)
+    # Resize belongs to the public widget scheduler. An unchanged comparison
+    # keeps its native view rather than preparing/fitting a second scene.
+    if {$st($w,residualWidget) ne {} && $st($w,residualBinding) ne {} &&
+        ![catch {comparisonDisplayValidate $st($w,residualBinding) $record}]} return
+    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+    if {![llength [info commands ::GX::PlotDatasetAPIv4::comparisonModel]]} {error {Installed Plot v4 lacks public comparison display support}}
+    if {$st($w,residualWidget) ne {}} {
+        ::GX::PlotDatasetAPIv4::widgetRetain $st($w,residualWidget) {Previous comparison render — select Compare to refresh}
+    }
+    set binding [comparisonDisplaySource $w]
+    set model [::GX::PlotDatasetAPIv4::comparisonModel $binding $record]
+    set policy {prepared_model 1 refresh_hint {Select Compare to refresh.}}
+    ::GX::PlotDatasetAPIv4::widgetValidateSources $model $policy
+    set path $w.right.residual.plot
+    if {$st($w,residualWidget) eq {}} {
+        ::GX::PlotDatasetAPIv4::widgetCreate $path $model $policy
+        pack $path -fill both -expand 1
+        set st($w,residualWidget) $path
+    } else {::GX::PlotDatasetAPIv4::widgetConfigure $path $model $policy}
+    set st($w,residualBinding) $binding
 }
+
 proc ::GX::CurveWorkbench::_hitCurve {w world tolerance} {
     variable st
     set best {};set distance $tolerance
@@ -1173,10 +1211,19 @@ proc ::GX::CurveWorkbench::_fit {w {selected 0}} {
     _coordinateMagnify $w 1
     _draw $w;_save $w
 }
+proc ::GX::CurveWorkbench::_windowCurrent {w incarnation token} {
+    variable st
+    expr {[winfo exists $w] && [winfo id $w] eq $incarnation &&
+        [info exists st($w,token)] && $st($w,token) eq $token &&
+        $token eq [::GX::interactiveDocumentSessionToken]}
+}
 proc ::GX::CurveWorkbench::_safe {w command} {
     variable st
+    if {![winfo exists $w] || ![info exists st($w,token)]} return
+    set incarnation [winfo id $w];set token $st($w,token)
     if {[info exists st($w,publishBusy)]&&$st($w,publishBusy)} {set st($w,status) "Publication in progress; Escape cancels before commit.";return}
     if {[catch {uplevel #0 $command} err opts]} {
+        if {![_windowCurrent $w $incarnation $token]} return
         set st($w,status) $err
         if {[dict exists $opts -errorcode]&&[dict get $opts -errorcode] in {{GX DATASET_TRANSFORM CANCELLED} {GX CURVE_SOURCE CANCELLED}}} {return}
         tk_messageBox -parent $w -icon error -type ok -title "Curve Workbench" -message $err
@@ -1293,7 +1340,9 @@ proc ::GX::CurveWorkbench::_sourceOpen {w} {
     ttk::frame $d.buttons;grid $d.buttons -row 9 -column 0 -columnspan 2 -sticky e -padx 14 -pady 12
     ttk::button $d.buttons.add -text "Add to workspace" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_sourceAdd $w]]
     ttk::button $d.buttons.cancel -text Cancel -command [list ::GX::CurveWorkbench::_sourceClose $w]
+    ttk::button $d.buttons.configuration -text {Workspace Configuration…} -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_coordinateConfigurationOpen $w]]
     pack $d.buttons.cancel $d.buttons.add -side right -padx 4
+    pack $d.buttons.configuration -side left -padx 4
     bind $d.dataset <<ComboboxSelected>> [list ::GX::CurveWorkbench::_sourceDataset $w]
     bind $d.filter <<ComboboxSelected>> [list ::GX::CurveWorkbench::_sourceFilter $w]
     bind $d.filterValue <<ComboboxSelected>> [list ::GX::CurveWorkbench::_sourceFamily $w]

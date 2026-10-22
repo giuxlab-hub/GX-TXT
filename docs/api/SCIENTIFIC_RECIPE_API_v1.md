@@ -12,6 +12,12 @@ complete bulk Native2D and Native3D geometry uses content-addressed Interactive
 Document resources. Replay resolves captured results through public geometry and
 resource authorities. It does not rerun a version-dependent fitting or Boolean
 algorithm; original parameters and producer provenance remain inspectable.
+In the 3D Workbench, a transaction containing logical recipe replay preserves
+the complete captured object derivation/source provenance. Replay invocation
+provenance is retained separately in the existing extension transaction History,
+for both the graphical Replay action and generated public extension proposals.
+It does not replace the restored producer chain. An extension result without
+provenance likewise cannot erase an existing object's provenance.
 An accepted drag records one action, rather than pointer-motion callbacks.
 
 The rolling window has at most128 steps and8MiB of structured recipe data. When

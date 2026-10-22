@@ -29,6 +29,16 @@ Previous/Next, and direct row entry. `datasetPreviewOpenTable(dataset_id)` opens
 the reusable table window. These GUI operations remain host-only.
 The legacy `datasetPreviewTableSnapshot` delegates to the same page authority.
 
+**Column details** reveals a read-only, scrollable inspection of the displayed
+columns' exact Variable IDs, labels, declared dtypes/value kinds, units, semantic
+roles and shapes. Missing metadata says `(not declared)`; it is never inferred
+from values. The panel states how many columns are displayed out of the full
+schema. Page and Dataset changes refresh it from the same `datasetPreviewPage`
+result. Ctrl+C copies the selected schema row without editing data.
+`datasetPreviewTableInspect(parent)` observes that same bounded page, current
+selected one-based source rows, read-only state and details visibility. These
+host operations introduce no schema parser, data store or publication route.
+
 Script Bridge `DATASET_PREVIEW_API_v1/page` takes Dataset ID and an options
 struct, returns the same bounded model, and never exposes a provider path.
 Preview is read-only. A displayed page is not the input for fit-all or publication.
@@ -42,10 +52,24 @@ shared Native3D preview guide; no scientific Dataset is created by activation.
 
 ## Native graphical consultation
 
-`native3DPreviewAcquire` retains its existing shared DatasetViewer host/worker and
-RAM frame. Plots' eligibility control is a placed canvas child, with no layout row;
-`PLOT_DATASET_API_v3.previewCompatibility ref` gates supported prepared XYZ Variants.
-No persistent Viewer Document is needed. Ordinary 2D/static double-click is unchanged.
+`native3DPreviewAcquire` retains the existing shared DatasetViewer host/worker
+and RAM frame. Plots' eligibility control is a placed canvas child and does not
+reserve a layout row. The shared Graph Workflow owner resolves the exact selected
+Graph reference and verifies its scientific 3D source before consultation.
+Plot Dataset v4-owned `plot.dataset.xyz` references use the v4 compatibility,
+source-fingerprint and preview-export contract. Existing legacy Plot Dataset
+XYZ references remain readable through CORE's v3 compatibility path; this does
+not authorize direct v3 use in new restricted Viewer authoring.
+
+A different producer Graph can use its declared scientific 3D bridge when the
+retained preparation, runtime geometry kind, current canonical Dataset SHA,
+Variable IDs/units/bindings, coordinate receipt and presentation agree. CORE
+retains the original producer/Graph/Variant identity and uses the existing Plot
+Dataset 3D exporter and Native3D consultation. A retained compatible preparation
+may be used even when its representation Variant is not currently registered;
+consultation does not create a Variant or rename the provider. A static PNG
+alone supplies no interactive geometry. No persistent Viewer Document is needed,
+and ordinary 2D/static double-click is unchanged.
 The compact controls provide orbit left/right/up/down, native camera roll clockwise/
 counterclockwise, exact reset, Exit and a presentation-only scientific axes/grid toggle.
 
@@ -74,8 +98,12 @@ margins. Flat source surfaces retain constant per-cell RGB on both triangles of 
 original quad; interpolated source colors remain interpolated. No scientific smoothing.
 Ticks/grid/font layout follows Native3D's scientific presentation rather than Octave's
 pixel layout. Logarithmic/reversed axes still require a nonlinear calibrated coordinate
-mapping contract and are rejected, never labeled as linear. Other providers/base graphs
-need an exact prepared-scene identity API. Transparent figure backgrounds remain unsupported.
+mapping contract and are rejected, never labeled as linear. The producer bridge
+admits its declared `surface`, `mesh`, `contour3`, `scatter3`, `line3`, `trisurf`
+or `heatmap` preparation only after the shared source/configuration checks above.
+Missing or inconsistent scientific preparation is refused with its actual
+diagnostic; an unrelated provider or PNG is never relabelled as compatible
+geometry. Transparent figure backgrounds remain unsupported.
 
 ## Persistent Session Preview cache
 
@@ -86,6 +114,14 @@ After a successful canonical catalog commit, CORE schedules standard Preview pre
 Entries live only under `Session/cache/dataset_previews/SHA256`. Keys bind canonical identity/content/schema, coordinate/calibration metadata, source revision, rendering code and exact render options. Representation and derived artifacts carry SHA checks. Symlink entries are refused. Missing, stale or damaged entries are regenerated; an explicitly restored stale custom view is visibly labelled previous render. Configurable preparation policy and a default 64 MiB Session budget apply. Clearing/eviction never deletes canonical payloads, Graphs, Workspaces or original images. This subtree is hidden from ordinary Session Files and omitted from portable exports.
 
 Sessions → Preview Cache shows Dataset, representation, generation date, source/render key, size, status and errors and offers refresh, regenerate, clear selected/all and policy. Standard automated previews and explicit custom Render have separate keys. Successful custom Render persists its exact options and cache key through Dataset Preview Configuration. Controls restore on reopen; changing axes, filters, grouping, calibration or ordering keeps the previous successful frame until explicit Render. Failed/cancelled preparation preserves that frame. Source changes are labelled stale rather than current.
+
+Before any successful render exists, the Plot placeholder and Source pane show
+the same current preparation, cancellation or failure message as the 2D status.
+A terminal failure must leave no obsolete Loading/Preparing message in those
+initial panes. Once an accepted representation replaces the placeholder, later
+status changes preserve its frame and source contents. This is presentation of
+the existing lifecycle receipt; it neither validates an unavailable source nor
+starts another preparation.
 
 The Digitalizer chart is a resizable retained Plot Dataset native viewport. Visibility changes affect existing XY objects and raster overlay primitives, retain camera/zoom/pan, and start no reader or Job. Visibility preferences are saved after a short idle period. Expensive scientific reads, raster decoding and Quality preparation run in managed Jobs. Session lifetime, generation and source guards reject stale completions; asynchronous status polling does not block Tk. Processed-image choices require verified identity-preserving raster lineage and retain the original source alongside the chosen derivative.
 
@@ -98,3 +134,10 @@ same Native3D layer contract and installed read-only renderer as live consultati
 the disposable standard frame uses Software policy. Open Dataset retains the
 interactive camera, navigation and resize. Missing codecs/native support report
 the actual limitation without changing publication success or source bytes.
+
+The retained 2D generation status is independent of an active XYZ overlay.
+While XYZ is visible, the shared status reports its actual preparation/frame
+state and checks its existing source/configuration contract. A source or mapping
+change remains explicitly stale. Exiting XYZ restores the retained 2D status;
+this transition does not apply pending 2D options, acknowledge a revision or
+request a new scientific Job. An explicit 2D Render keeps its existing meaning.

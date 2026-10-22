@@ -20,7 +20,7 @@ These fields remain separate:
 | `value_kind` | Parsing/interpretation: number, text, elapsed_time |
 | `unit` | Unit of the stored value |
 | `semantic_role` | Scientific meaning, independent of unit |
-| `semantic_source` | user, importer, plugin, inferred, or default |
+| `semantic_source` | user, importer, plugin, generator, inferred, or default |
 | `canonical_unit` | Optional conversion target |
 | `to_canonical` / `from_canonical` | Explicit reversible relation |
 | `display_label` | Presentation text, independent of canonical name |

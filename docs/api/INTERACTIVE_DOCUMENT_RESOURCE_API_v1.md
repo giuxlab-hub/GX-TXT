@@ -28,6 +28,19 @@ the hash on opening and completion and keep bounded buffers. Reader tokens are
 Session-scoped. Missing/corrupt resources and cross-Session use raise explicit
 errors.
 
+`interactiveDocumentResourceReaderInfo token` returns the admitted `reference`
+and current byte `offset`, without a filename or resource bytes. It does not
+advance the reader or hash its complete content again. OpenReader verifies the
+SHA and captures the regular file's device, inode, size, mtime and ctime before
+and after admission; ReaderInfo and Next reject changed file versions, replaced
+Document generations and expired Session lifetimes. Next still verifies the
+complete SHA at EOF. These checks rely on the managed resource's immutable
+content contract; ReaderInfo is a live admitted-handle check, not a new hash
+verification receipt. CloseReader remains valid after expiry for cleanup.
+An image controller may retain this existing reader for repeated bounded
+metadata operations and close it with its object/scene, avoiding full-image
+hash subprocesses on each pointer update. No pixel cache is created.
+
 `interactiveDocumentResourceReadRanges reference {{start count} ...}` reads
 an ordered sparse page with one verification transaction. It validates all
 ranges first, permits at most 65536 ranges and 1 MiB total output, and returns

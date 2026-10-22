@@ -10,6 +10,17 @@ proc ::GX::PlotDatasetAPIv4::cellFieldSpec {dataset xVariable yVariable binding 
     set spec [newSpec -title $title];dict set spec panels [list [dict create id main axes {} annotations {} series [list $s]]]
     return $spec
 }
+proc ::GX::PlotDatasetAPIv4::cellFieldProfileSpec {fieldSpec} {
+    # A profile of the actual stored samples, with no interpolation/centerline.
+    # The same complete field admission authenticates its scalar and topology.
+    cellFieldSourceIdentity $fieldSpec
+    set field [lindex [dict get [lindex [dict get $fieldSpec panels] 0] series] 0]
+    set sample [dict create id samples dataset_id [dict get $field dataset_id] x_variable_id [dict get $field x_variable_id] y_variable_id [dict get $field cell_field scalar_variable_id] kind scatter axis left label {Actual cell-centroid samples, all Y}]
+    set spec [newSpec -title {Field magnitude versus X at actual cell centroids}]
+    dict set spec panels [list [dict create id main axes {} annotations {} series [list $sample]]]
+    validateSpec $spec
+    return $spec
+}
 proc ::GX::PlotDatasetAPIv4::_cellFieldValidate {series} {
     set b [dict get $series cell_field]
     if {[_get $b schema {}] ne {GXTXT_CELL_FIELD_BINDING_v1}} {error {Unsupported cell-field binding schema}}
@@ -35,6 +46,63 @@ proc ::GX::PlotDatasetAPIv4::_cellFieldColumns {ds ids limit} {
     return $columns
 }
 proc ::GX::PlotDatasetAPIv4::_cellFieldDescriptor {ds x y} {set token [::GX::curveSourceOpen $::GX::currentSession [dict create dataset_id $ds x_variable_id $x y_variable_id $y display_budget 16]];try {return [::GX::curveSourceDescribe $token]} finally {::GX::curveSourceClose $token}}
+proc ::GX::PlotDatasetAPIv4::cellFieldSourceIdentity {spec} {
+    # The same complete canonical binding as the 2D owner; no renderer tokens.
+    validateSpec $spec
+    if {[llength [dict get $spec panels]]!=1} {error {A Native3D cell field requires exactly one panel}}
+    set series [dict get [lindex [dict get $spec panels] 0] series]
+    if {[llength $series]!=1 || ![dict exists [lindex $series 0] cell_field]} {error {Choose one complete cell-associated field}}
+    set s [lindex $series 0];set b [_cellFieldValidate $s];set sources {}
+    foreach ds [list [dict get $s dataset_id] [dict get $b nodes_dataset_id]] {
+        dict set sources $ds [dict create scientific_identity [::GX::datasetViewerScientificIdentity $ds] coordinates [::GX::datasetCoordinateRead $::GX::currentSession $ds]]
+    }
+    return [dict create spec $spec sources $sources]
+}
+proc ::GX::PlotDatasetAPIv4::_cellFieldColorRange {lo hi} {
+    foreach value [list $lo $hi] {
+        if {![string is double -strict $value] || [catch {expr {abs(double($value))<Inf}} finite] || !$finite} {error {Cell-field scalar range requires finite values}}
+    }
+    if {$hi<$lo} {error {Cell-field scalar range must be ordered}}
+    set source [list $lo $hi]
+    # Match the existing Native2D cell-field display policy. This changes only
+    # color normalization, never canonical values, precision or uncertainty.
+    set scale [expr {max(abs($lo),abs($hi),1e-300)}]
+    set flat [expr {$hi-$lo<=1e-12*$scale}]
+    if {$flat} {
+        set center [expr {$lo/2.0+$hi/2.0}];set pad [expr {.05*$scale}]
+        set lo [expr {max(-1.7976931348623157e308,$center-$pad)}]
+        set hi [expr {min(1.7976931348623157e308,$center+$pad)}]
+    }
+    return [dict create source_scalar_range $source color_range [list $lo $hi] display_range_expanded $flat]
+}
+proc ::GX::PlotDatasetAPIv4::cellFieldNativeScene {spec} {
+    set identity [cellFieldSourceIdentity $spec]
+    set s [lindex [dict get [lindex [dict get $spec panels] 0] series] 0]
+    set b [dict get $s cell_field];set nodes [dict get $b nodes_dataset_id]
+    set unit [dict get [::GX::datasetVariableV3ById $nodes [dict get $b x_variable_id]] unit]
+    # A planar spatial mesh has two length coordinates. Convert compatible Y
+    # coordinates to X units; never turn field amplitude into geometric height.
+    ::GX::unitRegistryConversionPlan $unit mm
+    set axes [dict create x [dict create display_unit $unit] left [dict create display_unit $unit]]
+    set field [_cellFieldSeries $s $axes]
+    if {[cellFieldSourceIdentity $spec] ne $identity} {error {Cell-field source changed during preparation; rebind explicitly}}
+    set lo Inf;set hi -Inf
+    foreach cell [dict get $field mesh_cells] {set value [lindex $cell 4];set lo [expr {min($lo,$value)}];set hi [expr {max($hi,$value)}]}
+    set scalarDisplay [_cellFieldColorRange $lo $hi]
+    lassign [dict get $scalarDisplay color_range] colorLo colorHi
+    set view [::GX::viewerSceneDefaults];dict set view lighting 0;dict set view initial_fit_scene 1
+    set layer [dict create source_mode cell_field kind surface dataset_id [dict get $s dataset_id] source_dataset_id $nodes \
+        mesh_nodes [dict get $field mesh_nodes] mesh_cells [dict get $field mesh_cells] \
+        layer_order 0 visible 1 opacity 1 representation surface_edges base_color {0.7;0.8;0.9} \
+        line_width 1 point_size 3 backface_culling 0 scalar_coloring 1 scalar_array cell_value \
+        vector_array {} radius_array {} opacity_array {} color_array {} tube_radius 0 colormap viridis \
+        scalar_unit [dict get $field scalar_unit] scalar_range "$colorLo;$colorHi" coordinate_unit $unit local_transform {} texture {} \
+        provenance canonical_planar_cell_field embedding {XY plane; Z=0; no 3D physics or CAD volume}]
+    set rangeCaption "cell values [format %.8g $lo]..[format %.8g $hi] [dict get $field scalar_unit]"
+    if {[dict get $scalarDisplay display_range_expanded]} {append rangeCaption " · colors [format %.8g $colorLo]..[format %.8g $colorHi] (display scale)"}
+    return [dict create layers [dict create canonical_cell_field $layer] view $view source_identity $identity scalar_display $scalarDisplay \
+        caption "XY ($unit), Z=0 · $rangeCaption · exact cells; no interpolation"]
+}
 proc ::GX::PlotDatasetAPIv4::_cellFieldSeries {series axes} {
     if {{native_cell_field} ni [dict get [::GX::Native2D::core api_info] capabilities]} {error {The installed Native2D owner lacks exact cell-field support; no scatter fallback is allowed}}
     set b [_cellFieldValidate $series];set ds [dict get $series dataset_id];set nodes [dict get $b nodes_dataset_id]

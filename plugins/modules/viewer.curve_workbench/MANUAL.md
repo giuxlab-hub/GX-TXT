@@ -581,7 +581,7 @@ Save workspace and close normally. Existing Interactive Documents/owned resource
 <a id="dev-055-drawing-and-compact-controls"></a>
 ### Drawing and compact controls
 
-Line creates one connected retained Path continuously; click successive endpoints, then Esc or Finish. Click a chain's initial/intermediate defining endpoint for semantic closure. Polyline and Spline remain separate primitives; Enter/Finish completes them. Endpoint coincidence does not mean periodic spline topology. Placed defining controls and attachment feedback remain visible. Single Points are filled dots even when deselected.
+Line creates one connected retained Path continuously; click successive endpoints, then Enter or Finish to commit. Escape cancels an unfinished Path; after a commit, Escape returns to Select. Click a chain's initial/intermediate defining endpoint for semantic closure. Polyline and Spline remain separate primitives; Enter/Finish completes them. Endpoint coincidence does not mean periodic spline topology. Placed defining controls and attachment feedback remain visible. Single Points are filled dots even when deselected.
 
 Objects contains selection operations including explicit Show/Hide; they cover the full current selection in one Undo. Points/ranges contains the existing scientific point/range operations. View contains Pan, Fit, Source Dataset Preview and More scientific controls. All existing source, range, composition, measurement, comparison, fitting, representation and publication workflows remain available. Compact Constraints groups Directions, Connections, Shape, Fixing and Dimensional, with corresponding tool-first cascades.
 
@@ -762,9 +762,11 @@ Readable menu labels preserve the existing saved metric IDs.
 
 New Dataset sources enter an existing compatible working axis frame when the
 CORE can establish positive affine unit conversions. Different physical axes
-remain in separate viewports: selecting a curve switches frames and restores
-that frame's pan/zoom. Curve-list state and the viewport notice identify hidden
-frames. Source values, units and stable Dataset/Variable IDs are unchanged.
+cannot be imported into a populated incompatible frame. Create a separate
+Workspace or explicitly declare/normalize the source first. Historical Workspaces
+may retain separate frames: selecting a curve switches those preserved frames
+and restores each frame's pan/zoom. The curve list and viewport notice identify
+hidden historical frames. Source values, units and stable Dataset/Variable IDs are unchanged.
 View → Align Dataset working axes explicitly changes an existing untouched
 binding's working frame; Undo/Redo and Workspace reopen retain its conversion.
 Historical Workspaces are not silently converted. Custom Variable formulas need
@@ -826,17 +828,33 @@ Offsets apply to coordinate locks, never to displacement or distance. A nonlinea
 display relation cannot define a constant displacement: choose a linear display
 unit or explicitly normalize the Dataset.
 
-Metric rotation, reflection and Euclidean dimensions require a common native
-unit on both axes. Compatible geometry may still use independent display units;
-reflection-axis points convert back to the native frame before Native2D acts.
-The toolbar's **Common working unit** controls the common Euclidean frame; use **Axis
-display units…** for scientific X/Y choices. Exact primitive parameters identify
+Rotation and reflection operate in the explicitly authorized native coordinate
+plane. For unlike physical axes their angle, radius and norm are numeric plane
+parameters; they do not establish physical equivalence, distance or area.
+Euclidean physical metrics retain their compatible-unit checks. Geometry may use
+independent display units; reflection-axis points convert back to the native
+frame before Native2D acts.
+The rotation form calls this **Numeric plane rotation (degrees)**. Angular and
+mixed-axis scalar dimension labels identify both stored native axes, for example
+`rad · native plane X [V], Y [A]` or `numeric plane parameter · native plane
+X [V], Y [A]`. Read these as parameters of that chosen plane, not a physical
+mixed-axis angle or length. X/Y displacements and coordinate locks retain their
+own axis units; changing display units does not redefine the native plane.
+
+If an open Join/composition or coordinate-action form reports that its coordinate
+context changed, close and reopen that action after reviewing the current frame.
+For example, a form opened before a whole-Workspace unit conversion cannot apply
+its old coordinate inputs to the converted state. An active handle gesture may
+instead be cancelled by that conversion; start a fresh gesture afterward.
+
+Use **Workspace → Workspace Configuration…** for the physical context of a new
+or empty workspace, and **Axis display units…** for presentation choices. Exact primitive parameters identify
 local native units explicitly because their retained world transform is separate.
 
 ## Common physical working units
 
-The primitive form and editable **Common working unit** control accept registered
-or CORE-validated intrinsic expressions. V/V, kg/kg and (m/s)/(m/s) planes support
+Creation Configuration accepts registered or CORE-validated intrinsic unit
+expressions. V/V, kg/kg and (m/s)/(m/s) planes support
 the same applicable Native2D primitives as mm/mm. **Working units…** converts a
 whole consistent frame explicitly: cm→mm multiplies coordinates by10 and mV→V by
 0.001. Known mixed source units must first be normalized explicitly with Dataset
@@ -850,6 +868,68 @@ not promise conversion of every formal expression. Physical Native3D/export and
 raster-calibration contracts still require length where their API mandates it.
 Source Dataset/Variable identities and bytes remain unchanged; Workspace,
 History, Undo/Redo and explicit publication retain the conversion provenance.
+
+### Workspace physical Configuration and Dataset intake
+
+**Workspace → New named workspace…** asks for the name, X and Y stored coordinate
+units, and **Allow dimensionally heterogeneous axes**, initially off. Unit Registry
+dimensions determine homogeneity; similar numerical ranges do not. Use `1` for an
+explicit dimensionless axis or an empty unit for plain numeric coordinates.
+**Workspace Configuration…** exposes the same policy. It cannot relabel stored
+coordinates after geometry exists; use an explicit compatible conversion instead.
+
+Adding a canonical Dataset to a genuinely empty workspace adopts its actual X/Y
+Variable units and source meaning. Heterogeneous quantities such as V/A require
+the explicit Configuration opt-in before intake. Numeric axes remain numeric.
+A populated workspace retains its dimensional identity and coordinates: an
+incoming compatible source can be converted into that working frame with recorded
+provenance, while incompatible or undeclared frames require a separate workspace
+or an explicit source declaration/normalization. Original Dataset bytes and
+Variable identities remain unchanged. Stored units, display units and calibration
+are separate. Preserved historical heterogeneous workspaces are not silently
+given consent for new heterogeneous geometry or imports.
+
+Native construction and point editing use the current declared coordinate frame.
+Dimension-dependent Euclidean distances, areas and other metric actions retain
+their existing compatibility checks; independent scientific axes do not acquire
+physical length merely because a geometric primitive is visible.
+
+Axis graduations use the shared Native2D numerical planner at their true world
+positions. Tick marks and the light dashed scientific grid align with the labels;
+the authored CAD construction/snap grid remains separate. Zoom, pan and resize
+adapt graduation spacing and automatic engineering prefixes through Unit Registry.
+For numeric/dimensionless axes, a displayed `×10^n` multiplier introduces no physical
+unit. Explicit axis display-unit choices remain fixed. Presentation changes never
+rewrite geometry or canonical source values. Native exports consume the same
+mapped tick positions instead of six arbitrary viewport fractions.
+
+### Opening a canonical Sketch Dataset
+
+Use the Dataset browser's **Open** action for a canonical Sketch Dataset. This
+opens an editable new draft; it does not reinterpret or replace its source.
+To show its imported objects, enable **Settings → Left utility area** and
+**Settings → Objects list**. Click a visible object-name row to select it; the
+existing tables show its defining handles or points. These visibility controls
+do not change the source Dataset.
+
+When an object has unlike effective X/Y dimensions, **Review Sketch coordinate
+plane** shows an example's stored and effective units before replacing a draft.
+Identical stored unit labels alone do not establish matching physical dimensions.
+
+**No** is the default: it leaves the current Workspace in place, or creates no
+Workbench window if none is open. **Yes** explicitly enables **Allow dimensionally
+heterogeneous axes** for this new draft. Existing Save/discard/Cancel questions
+still apply when replacing another draft. That consent does not convert source
+values, establish physical metric equivalence, or silently carry the previous
+Workspace's policy into a new draft.
+
+If the reviewed Session, source or parent window changes, reopen the Dataset
+rather than applying an old review. A rejection during later window construction
+can leave an empty new draft; it does not promise restoration of a closed window.
+Homogeneous objects need no extra axis-review question. The existing **Add curve…**
+route for ordinary table Datasets still uses the Workspace Configuration policy
+described above. Keep that policy enabled while heterogeneous geometry remains;
+turning it off cannot reinterpret existing geometry.
 
 **Help → User Manual… / F1** opens this rendered guide in an independent nonmodal
 window. Search, links, scrolling and navigation belong to this manual; other

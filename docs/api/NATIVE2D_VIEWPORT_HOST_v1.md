@@ -20,6 +20,25 @@ fallback are shared. Panels support show/hide, collapse/reopen, optional close,
 bounded size, scroll content and keyboard focus. Pinning is optional and not
 implemented. Explicit reopen overrides automatic narrow collapse.
 
+`native2DViewportPanelTarget host panel_id target` optionally anchors an existing
+panel to current native geometry. Pass `{}` to restore its fixed viewport
+anchor. A target contains `scene_token`, `kind` (`object`, `selection`,
+`reference` or `roi`) and the corresponding `object_token`,
+`selection_set_token`, `reference` or `object_token` plus `roi_id`. Optional
+`offset {dx dy}` is finite and bounded to1024 device pixels. The scene must be
+owned by this viewport. Original native bounds, reference resolution or clipped
+source-pixel ROI bounds supply the target; this service creates no geometry.
+Placement follows native pan/zoom and image transformations through the existing
+draw invalidation and collision layout. It flips/clamps to available viewport
+space. Missing targets, removed ROIs, stale sources and expired Sessions hide
+the editor instead of leaving a floating control bound to old science. A hidden
+object, image or Native2D layer also hides its dependent editor; restoring
+visibility restores valid placement. A write
+of the same unchanged Session preserves a valid target. The existing panel body
+can contain the existing typed UI Field controls, including text editors.
+Builder declarations and SDK exposure require their separate integration;
+this host capability is not evidence that those workflows are complete.
+
 `native2DViewportPanelContent` embeds existing provider widgets with a Tk canvas
 window item; its clipping and scroll region belong to the shared container.
 Do not simulate this by packing a sibling over a blank scroll frame. Focus
@@ -115,6 +134,51 @@ mask, blend, persistence, bounds and ownership contracts.
 
 ## Explicit diagram wire bends (dev108)
 
+### Shared electrical interaction extensions (dev109)
+
+`native2DGeometryDiagramViewportDescribe viewport ?includeSource?` returns `document_id`,
+`tool`, `selected`, boolean `routing_active`, `last_notice`, and the current guarded Document
+`source` receipt by default. It exposes no raw scene handles. The existing `tool` command
+sets the authoritative tool synchronously and emits `tool_changed` with
+`detail {tool MODE}` before returning. Toolbar and keyboard changes share that
+owner. An unchanged validated edit returns its ordinary receipt without
+`before_edit` or `committed`, preserving an existing History redo tail.
+An interaction error remains in the visible viewport status and `last_notice`
+through pointer release, hover and redraw. The next deliberate Canvas press or
+viewport command clears it. This includes a scientifically unavailable Probe;
+it does not manufacture a result or change circuit History.
+Symbol and net-label Properties diagnostics use the shared UI Field label
+wrapping service against their actual allocated width (up to 440 pixels).
+Narrow dialogs retain the complete validation message and normal Apply/Close
+controls; invalid electrical values leave the canonical Document and History
+unchanged. This is presentation behavior, independent of suffix validation.
+The dialog's minimum allocation follows its natural field/message/action height
+when a diagnostic wraps; Apply and Close retain their complete native buttons.
+
+`native2DGeometryDiagramViewportHitTest viewport device_x device_y` returns an
+empty dictionary on a miss, `{kind terminal endpoint ENDPOINT point {x y}}`
+for a catalog pin/junction, or `{kind wire wire_id ID point {x y}}` for an
+existing wire segment. Pins/junctions take precedence within10 device pixels;
+wire selection and projection use existing Native2D C picking, grid and nearest
+segment operations. Coordinates in a returned point use diagram world units.
+These descriptors are transient hit results, not a second circuit graph.
+
+Wire can start or finish on a segment. The canonical diagram owner atomically
+splits that wire, creates/reuses the junction and commits the new wire. Bends,
+original wire identity and endpoint identities survive. Preview/cancel create
+no canonical junction. Ordinary geometric crossings stay disconnected. Only
+the explicit Junction tool joins all actual segments at the selected location.
+Repeated intentional joins reuse existing connections. Wire/Junction/Label/
+Probe show actual available terminals and hovered segment attachment feedback.
+
+A segment Probe event carries `endpoint` (the canonical wire's start),
+`hit_kind wire`, `wire_id` and `point`. The existing Scientific bridge validates
+the actual wire and resolves its canonical node using the registered provider;
+it never creates a junction just to probe or label. See the corresponding
+Scientific Probe contract in [Viewer GUI Host](VIEWER_GUI_HOST_API_v1.md).
+These are shared host capabilities; installed GUI, History and scientific
+acceptance require their own current evidence.
+
 The existing canonical diagram label accepts optional `id` to update an existing
 label in place, and optional `offset {dx dy}` in display coordinates. Omit `id`
 to create a fresh stable identity. Existing payloads containing only endpoint
@@ -203,3 +267,80 @@ Tk's second rapid click invokes Properties only in Select mode. With the wire
 tool it reaches the ordinary routing transaction, so ending one wire and
 starting another at the same junction cannot lose that second press to a
 Properties popup. Other non-Select tools likewise retain their ordinary press.
+
+
+## Tooltip window ownership and dismissal
+
+`native2DViewportTooltip widget text` attaches the shared tooltip to a control;
+`native2DViewportTooltipShow widget text` also supports existing delayed toolbar
+requests. `native2DViewportTooltipHide ?widget?` dismisses the current tooltip,
+optionally only when that control owns it. Catalog and legacy Plots toolbar
+presentation use this same owner; the legacy delay/cancellation names remain.
+The tooltip is withdrawn while measured/positioned, transient to the hovered
+control's actual toplevel, wrapped and clipped to Tk's virtual-screen bounds,
+and moved above its target when space below is insufficient. It requests no
+keyboard focus. Pointer leave/click, target destruction and owning-window focus,
+visibility, geometry or lifetime changes dismiss it. Delayed requests from an
+inactive owner are ignored. These are host presentation operations only.
+
+Actual dev109 public-owner fixtures reproduced an orphan after a separate
+window's switch/close and verified dismissal after correction. Default placement
+was already near both targets in that fixture; it does not establish the cause
+of the user's original top-left screenshot. Installed Debian dev109 tests have
+now passed catalog and separate Viewer hovers, normal/maximized/narrow sizes,
+DPI scaling, simultaneous Builder/Development Workspace ownership, focus and
+close transitions, and actual catalog-control destruction followed by a new
+tile with its correct identity. Native geometry receipts and original desktop
+captures support all 19 mapped tooltip criteria. These results apply to the
+tested display and source versions; they do not establish the historical
+top-left cause or imply acceptance of unrelated Viewer functionality.
+
+## Shared canonical raster controller (dev109)
+
+`native2DViewportRasterAttach host scene_token object_token callback` attaches
+the existing owned image scene to the existing viewport. `RasterDescribe`,
+`RasterTool` and `RasterCommand` share that owner; no Viewer supplies a private
+Tcl controller or alternate geometry store. The eight admitted tools are
+select/rectangle/polygon/annotation/move/rotate/pivot/pan. Native image ROI APIs compute
+source-pixel geometry and picks; image movement/rotation/pivot reuse the native
+gizmo, parameter and drag transaction operations. The renderer consumes native
+projected ROI outlines and handles and honors actual image/layer visibility.
+
+Events are `before_edit`, `committed`, `cancelled`, `selection_changed`,
+`tool_changed`, `view_changed`, `error`. The Viewer GUI owner handles canonical
+checkpoints and History, never a restricted author's widget callback. Pointer
+previews do not change accepted ROI geometry. Resize/Fit cancels device drafts;
+Escape also rejects a subsequent late release. Source/lifetime errors clean up
+the same retained native owner even when new scientific requests are forbidden.
+They use inline diagnostics rather than recurring modal application errors.
+
+Builder/SDK binding and finite command signatures are documented in
+`VIEWER_GUI_HOST_API_v1.md` and `VIEWER_DEVELOPMENT_API_v1.md`. Public native and
+typed Tk tests are implementation evidence. Separate independent installed
+GUI evidence now covers the declared semantic menus and anchored UI Field
+editors, including actual input, source/History preservation and lifecycle
+checks; see the scoped acceptance.
+
+## Annotation target visibility
+
+After scene, object visibility and annotation-generation checks succeed, an
+annotation panel avoids the actual rendered `native_annotation_ID` bounds.
+Placement considers the four adjacent areas and existing panel lanes. It
+preserves the form width where possible and reduces the existing scroll-body
+height when a full-height panel would obscure its target. This is presentation
+layout only: it does not pan the scientific view or modify the source, annotation
+definition, Document or History. Deleted or replaced targets retain the existing
+stale-target refusal and hide behavior. If no adjacent area can accommodate the
+minimum form/header size, the existing clamped placement remains; this is not a
+guarantee of non-overlap for a target that occupies the entire usable viewport.
+
+## Local diagram tool chrome
+
+`includeSource` defaults to true, preserving the full source receipt and its
+scientific validation. False returns only the same viewport's current local
+interaction fields and omits `source`. The Builder's tool checked-state uses
+this form, avoiding repeated Document payload reads and hashes for each toolbar
+control. It is not a scientific source receipt. Both forms check the existing
+Session lifetime, and tool changes, edits and full descriptions retain their
+normal source validation. This adds no worker, compiler, independent tool state
+or persistent scientific cache.

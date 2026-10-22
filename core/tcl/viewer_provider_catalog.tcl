@@ -27,8 +27,19 @@ proc ::GX::viewerProviderIconPath {module relative} {
     if {![string match "$root/*" $path] || ![file isfile $path] || [file type $path] eq "link" || [file size $path]>2097152} {error {Viewer icon is missing, unsafe or exceeds 2 MiB}}
     return $path
 }
-proc ::GX::viewerProviderCatalog {} {
+proc ::GX::viewerProviderCatalog {{includeReplaced 0}} {
+    uiFieldNormalize {type boolean} $includeReplaced
     set result {}
-    foreach module $::GX::moduleOrder {foreach viewer [viewerProviderIds $module] {lappend result [viewerProviderDefinition $module $viewer 1]}}
+    foreach module $::GX::moduleOrder {
+        foreach viewer [viewerProviderIds $module] {
+            set definition [viewerProviderDefinition $module $viewer 1]
+            set replacement [dict get $definition catalog_replacement]
+            if {!$includeReplaced && $replacement ne {}} {
+                if {![regexp {^(viewer\.[a-z0-9_]+)/([a-z][a-z0-9_]*)$} $replacement -> targetModule targetViewer] || $replacement eq "$module/$viewer"} {error {Catalog replacement must name a different registered Viewer module/provider}}
+                if {[info exists ::GX::moduleCatalog($targetModule,dict)] && $targetViewer in [viewerProviderIds $targetModule] && [viewerProviderEnabled $targetModule $targetViewer]} continue
+            }
+            lappend result $definition
+        }
+    }
     return $result
 }

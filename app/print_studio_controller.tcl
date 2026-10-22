@@ -3,7 +3,7 @@
 namespace eval ::GX::PrintStudio {variable state;array set state {revision 0 mediaChecking 0 printUnsupported {} outputLabel {No exported PDF yet. Choose Save PDF after reviewing the document.} query {} representation {} sourceStatus {Choose a source to inspect its supported Preview.} documentStatus {Empty composition} currentPage 1 pageCount 0 zoom 1 pageMode fit_page showBrowser 1 logVisible 0 item_columns {} item_start 0 item_count 200 pages {} id {} stamp {} saved {} previewWatch {} selectedSource {} sourceGeneration 0}}
 proc ::GX::printStudioInit {} {
     variable ::GX::PrintStudio::state
-    if {![info exists state(recipe)]} {set state(recipe) [printRecipeNew];set state(history) [printRecipeHistoryCreate $state(recipe)];set state(saved) $state(recipe);set state(session_token) {};catch {set state(session_token) [interactiveDocumentSessionToken]}}
+    if {![info exists state(recipe)]} {set state(recipe) [printRecipePosterNew];set state(history) [printRecipeHistoryCreate $state(recipe)];set state(saved) $state(recipe);set state(session_token) {};catch {set state(session_token) [interactiveDocumentSessionToken]}}
     set state(logVisible) [configurationGet printing.log_visible]
     set ::GX::ui(printStatus) {Add supported content, update the document Preview, then export or print explicitly.}
     set ::GX::ui(cupsStatus) {Printer metadata has not been verified. PDF export is independent.}
@@ -35,6 +35,10 @@ proc ::GX::printStudioCommandCatalog {} {
         previous Previous {printStudioPage -1} {} next Next {printStudioPage 1} {}
         browser {Show / hide browser} printStudioBrowserToggle {} log Diagnostics printStudioLogToggle {}
         help {Print Studio guide} {documentationBrowserOpenApi PRINT_DOCUMENT_API_v1} {}
+        heading {Insert heading} {printStudioPosterInsert heading} {} body {Insert body text} {printStudioPosterInsert body} {}
+        annotation {Insert annotation} {printStudioPosterInsert annotation} {} block {Insert color block} {printStudioPosterInsert block} {}
+        separator {Insert separator} {printStudioPosterInsert separator} {} properties {Object properties…} printStudioPosterProperties {}
+        edit_layout {Edit layout} {printStudioPosterReview 0} {} review_pdf {Review PDF} {printStudioPosterReview 1} {}
     } {dict set result $id [dict create label $label default $key method $method]}
     return $result
 }
@@ -52,7 +56,10 @@ proc ::GX::printStudioEnabled {id} {
         export - print - open_pdf {return [printStudioDocumentReady]}
         previous {return [expr {$state(currentPage)>1}]}
         next {return [expr {$state(currentPage)<$state(pageCount)}]}
-        fit_page - fit_width - zoom_in - zoom_out {return [expr {$state(pageCount)>0}]}
+        fit_page - fit_width - zoom_in - zoom_out {return [expr {[printStudioIsPoster] || $state(pageCount)>0}]}
+        properties {return [expr {[printStudioIsPoster] && [info exists ::GX::ui(printQueue)] && [winfo exists $::GX::ui(printQueue)] && [llength [$::GX::ui(printQueue) selection]]==1}]}
+        heading - body - annotation - block - separator - edit_layout {return [printStudioIsPoster]}
+        review_pdf {return [printStudioDocumentReady]}
         job_status - cancel_job {return [expr {$state(job) ne {} && [dict get $state(job) job_id] ne {}}]}
         undo {return [expr {[dict get $state(history) cursor]>0}]}
         redo {return [expr {[dict get $state(history) cursor]<[llength [dict get $state(history) steps]]}]}
@@ -71,7 +78,7 @@ proc ::GX::printStudioNew {} {
     variable ::GX::PrintStudio::state
     if {![printStudioPrepare]} return
     printStudioClearDocument
-    set state(recipe) [printRecipeNew];set state(saved) $state(recipe);set state(history) [printRecipeHistoryCreate $state(recipe)];set state(id) {};set state(stamp) {}
+    set state(recipe) [printRecipePosterNew];set state(saved) $state(recipe);set state(history) [printRecipeHistoryCreate $state(recipe)];set state(id) {};set state(stamp) {}
     set state(session_token) {};catch {set state(session_token) [interactiveDocumentSessionToken]}
     printStudioInvalidate {New empty composition};printStudioQueueRefresh
 }
@@ -87,7 +94,12 @@ proc ::GX::printStudioInvalidate {reason} {
     if {[dict get [printCupsState submission] request] ne {}} {printCupsCancel submission}
     incr state(revision);set state(documentStatus) "Update required — $reason"
     if {[info exists state(documentRequest)]} {printDocumentCancel $state(documentRequest)}
+    if {[dict get $state(recipe) items] eq {}} {
+        printStudioClearDocument
+        set state(documentStatus) {Empty composition — add content to create a document}
+    }
     set ::GX::ui(printStatus) $state(documentStatus)
+    printStudioPosterAfterEdit
     if {[winfo exists .top.nb.print]} {viewerGuiActionsRefresh .top.nb.print}
 }
 proc ::GX::printStudioDocumentReady {{verifyNow 0}} {
@@ -98,6 +110,7 @@ proc ::GX::printStudioDocumentReady {{verifyNow 0}} {
     if {!$verifyNow && [info exists state(readyCache)] && [dict get $state(readyCache) key] eq $key} {return [dict get $state(readyCache) ready]}
     set ready [file isfile [dict get $state(document) pdf]]
     foreach item [dict get $state(recipe) items] {
+        if {[dict get $item source_kind] eq {literal}} continue
         if {[catch {printRecipeSourceSignature [dict get $item source_kind] [dict get $item source_id]} signature] || $signature ne [dict get $item source_signature]} {set state(documentStatus) {Update required — Scientific source changed};set ready 0;break}
     }
     # Menus, toolbar and dock share one source check within this event turn.
@@ -159,6 +172,12 @@ proc ::GX::printStudioApplySetup {args} {
         if {$state(session_token) ne {} || [dict get $state(recipe) items] ne {}} {printStudioDocumentSession}
         set recipe $state(recipe);dict set recipe title $cfg(print_title)
         foreach {field key} {paper print_page orientation print_orientation rows print_rows columns print_cols margin_mm print_margin_mm gap_mm print_gap_mm captions print_captions} {dict set recipe page $field $cfg($key)}
+        dict set recipe page layout_mode $state(layout_mode);dict set recipe page background $state(page_background)
+        if {$state(layout_mode) eq {poster}} {
+            set placed {};set initial $recipe;dict set initial items {}
+            foreach item [dict get $recipe items] {if {![dict exists $item frame]} {dict set item frame [printStudioPosterFrame $initial]};lappend placed $item;dict lappend initial items $item}
+            dict set recipe items $placed
+        }
         printStudioEdit $recipe {Page setup changed}
     } message]} {printStudioInvalidate {Invalid page settings};set ::GX::ui(printStatus) $message;return 0}
     return 1
@@ -168,8 +187,10 @@ proc ::GX::printStudioQueueRefresh {} {
     if {![info exists ::GX::ui(printQueue)] || ![winfo exists $::GX::ui(printQueue)]} return
     foreach {field key} {paper print_page orientation print_orientation rows print_rows columns print_cols margin_mm print_margin_mm gap_mm print_gap_mm captions print_captions} {set ::GX::cfg($key) [dict get $state(recipe) page $field]}
     set ::GX::cfg(print_title) [dict get $state(recipe) title]
+    set state(layout_mode) [datasetPublicationV2DictDefault [dict get $state(recipe) page] layout_mode grid]
+    set state(page_background) [datasetPublicationV2DictDefault [dict get $state(recipe) page] background #ffffff]
     set tree $::GX::ui(printQueue);set selected [$tree selection];$tree delete [$tree children {}]
-    foreach item [dict get $state(recipe) items] {$tree insert {} end -id [dict get $item id] -text [dict get $item caption] -values [list [dict get $item presentation] [dict get $item source_id]]}
+    foreach item [dict get $state(recipe) items] {$tree insert {} end -id [dict get $item id] -text [printRecipeItemLabel $item] -values [list [dict get $item presentation] [expr {[dict get $item source_kind] eq {literal} ? {Document} : [dict get $item source_id]}]]}
     foreach id $selected {if {[$tree exists $id]} {$tree selection add $id}}
     viewerGuiActionsRefresh .top.nb.print
 }
@@ -331,7 +352,9 @@ proc ::GX::printStudioAdd {} {
         if {$state(representation) eq {xy}} {set numeric [dict get $descriptor xy_variables];set options [dict create x_variable_id [lindex $numeric 0] y_variable_id [lindex $numeric 1]]}
     }
     set item [dict create id print_[clock microseconds] source_kind [dict get $source kind] source_id [dict get $source id] presentation $state(representation) source_signature [printRecipeSourceSignature [dict get $source kind] [dict get $source id]] options $options caption [dict get $descriptor title]]
+    if {[printStudioIsPoster]} {dict set item frame [printStudioPosterFrame $state(recipe)];set state(currentPage) [dict get $item frame page];set state(posterSelection) [dict get $item id]}
     set recipe $state(recipe);dict lappend recipe items $item;printStudioEdit $recipe {Content added}
+    if {[printStudioIsPoster]} {$::GX::ui(printQueue) selection set [dict get $item id];printStudioItemSelected}
 }
 proc ::GX::printStudioAddLegacy {} {
     variable ::GX::PrintStudio::state
@@ -342,13 +365,16 @@ proc ::GX::printStudioAddLegacy {} {
     foreach path $paths {
         set relative [string range [file normalize $path] [expr {[string length [file normalize $::GX::currentSession]]+1}] end]
         set descriptor [printContentDescribe graph $relative]
-        dict lappend recipe items [dict create id print_[clock microseconds] source_kind graph source_id $relative presentation graph source_signature [printRecipeSourceSignature graph $relative] options {} caption [dict get $descriptor title]]
+        set item [dict create id print_[clock microseconds] source_kind graph source_id $relative presentation graph source_signature [printRecipeSourceSignature graph $relative] options {} caption [dict get $descriptor title]]
+        if {[printStudioIsPoster]} {dict set item frame [printStudioPosterFrame $recipe]}
+        dict lappend recipe items $item
     }
     printStudioEdit $recipe {Selected legacy Graphs added}
 }
 proc ::GX::printStudioItemSelected {} {
     variable ::GX::PrintStudio::state
     set id [lindex [$::GX::ui(printQueue) selection] 0]
+    set state(posterSelection) $id
     foreach item [dict get $state(recipe) items] {
         if {[dict get $item id] ne $id} continue
         set options [dict get $item options]
@@ -356,6 +382,7 @@ proc ::GX::printStudioItemSelected {} {
         set state(item_start) [datasetPublicationV2DictDefault $options start 0]
         set state(item_count) [datasetPublicationV2DictDefault $options count 200]
     }
+    if {[printStudioIsPoster]} {printStudioPosterDraw}
 }
 proc ::GX::printStudioItemApply {} {
     variable ::GX::PrintStudio::state
@@ -385,7 +412,9 @@ proc ::GX::printStudioPageResize {args} {
 }
 proc ::GX::printStudioPageShow {} {
     variable ::GX::PrintStudio::state
+    if {[printStudioIsPoster] && !$state(posterReview)} {printStudioPosterDraw}
     if {$state(pageCount)<1 || ![info exists state(document)]} return
+    if {[printStudioIsPoster] && $state(currentPage)>[dict get $state(document) page_count]} return
     printStudioPageRequest
 }
 
@@ -401,7 +430,7 @@ proc ::GX::printStudioPreview {} {
     set recipe $state(recipe);set items {}
     foreach item [dict get $recipe items] {
         # Update Preview explicitly accepts current sources, then freezes them.
-        dict set item source_signature [printRecipeSourceSignature [dict get $item source_kind] [dict get $item source_id]]
+        if {[dict get $item source_kind] ne {literal}} {dict set item source_signature [printRecipeSourceSignature [dict get $item source_kind] [dict get $item source_id]]}
         lappend items $item
     }
     if {$items eq {}} {error {Add supported scientific content first.}}
@@ -424,6 +453,7 @@ proc ::GX::printStudioDocumentPrepared {revision token response} {
     foreach key {document pageReceipt thumbnailReceipt} {if {[info exists state($key)]} {printDocumentRelease [dict get $state($key) resource_id];unset state($key)}}
     foreach key [array names state thumb,*] {catch {image delete $state($key)};unset state($key)}
     dict set document revision $revision;dict set document session_token $token
+    dict set document recipe $state(recipe)
     set state(document) $document;set state(pageCount) [dict get $document page_count];set state(currentPage) 1
     set state(documentStatus) "Current PDF · $state(pageCount) pages"
     set notices {};foreach notice [dict get $document notices] {lappend notices "[dict get $notice message] ([dict get $notice effective_ppi] PPI)"}
@@ -442,16 +472,21 @@ proc ::GX::printStudioDocumentArguments {} {
     foreach key {pdf pdf_sha256 source_manifest page_count} {dict set arguments $key [dict get $state(document) $key]}
     return $arguments
 }
+proc ::GX::printStudioPagePixelWidth {canvas widthPt heightPt} {
+    variable ::GX::PrintStudio::state
+    set width [expr {max(200,[winfo width $canvas]-32)}]
+    set ratio [expr {double($widthPt)/$heightPt}]
+    if {$state(pageMode) eq {fit_page}} {set width [expr {int(min($width,max(200,[winfo height $canvas]-32)*$ratio))}]}
+    if {$state(pageMode) eq {zoom}} {set width [expr {int($widthPt*96/72*$state(zoom))}]}
+    return [expr {max(200,min(3000,$width))}]
+}
 proc ::GX::printStudioPageRequest {} {
     variable ::GX::PrintStudio::state;variable ui
     if {![info exists state(document)] || ![winfo exists $ui(printPageCanvas)]} return
     if {![string is integer -strict $state(currentPage)] || $state(currentPage)<1 || $state(currentPage)>$state(pageCount)} {set state(currentPage) 1}
-    set canvas $ui(printPageCanvas);set width [expr {max(200,[winfo width $canvas]-32)}]
+    set canvas $ui(printPageCanvas)
     set dimensions [lindex [dict get $state(document) pages] [expr {$state(currentPage)-1}]]
-    set pageRatio [expr {[dict get $dimensions width_pt]/double([dict get $dimensions height_pt])}]
-    if {$state(pageMode) eq {fit_page}} {set width [expr {int(min($width,max(200,[winfo height $canvas]-32)*$pageRatio))}]}
-    if {$state(pageMode) eq {zoom}} {set width [expr {int([dict get $dimensions width_pt]*96/72*$state(zoom))}]}
-    set width [expr {max(200,min(3000,$width))}]
+    set width [printStudioPagePixelWidth $canvas [dict get $dimensions width_pt] [dict get $dimensions height_pt]]
     set key [list [dict get $state(document) pdf_sha256] $state(currentPage) $width]
     if {[info exists state(pageKey)] && $state(pageKey) eq $key} return
     set state(pageKey) $key
@@ -475,6 +510,12 @@ proc ::GX::printStudioPagePrepared {key response} {
     set state(pageReceipt) $result
     if {[info exists state(pagePhoto)]} {catch {image delete $state(pagePhoto)}}
     set state(pagePhoto) [image create photo -file [dict get $result path]]
+    if {[printStudioIsPoster] && !$state(posterReview)} {
+        printStudioPosterPhotos $result;printStudioPosterDraw
+        $ui(printPages) selection set page:$state(currentPage)
+        viewerGuiActionsRefresh .top.nb.print
+        return
+    }
     set canvas $ui(printPageCanvas);$canvas delete all
     set width [dict get $result width];set height [dict get $result height]
     set left [expr {max(16,([winfo width $canvas]-$width)/2)}]
@@ -520,6 +561,7 @@ proc ::GX::printStudioExported {response} {
 proc ::GX::printStudioSourceNodes {recipe} {
     set selected {}
     foreach item [dict get $recipe items] {
+        if {[dict get $item source_kind] eq {literal}} continue
         if {[dict get $item source_kind] eq {dataset}} {set ids [list [dict get $item source_id]]} else {set ids [dict keys [lindex [dict get $item source_signature] 8]]}
         foreach id $ids {if {[datasetProviderFor $id] eq {remote}} {set node [datasetField $id remote_node_id];set nodes [scientificExecutionNodes];if {![dict exists $nodes $node]} {error {Remote source node configuration is unavailable.}};dict set selected $node [dict get $nodes $node]}}
     }
@@ -543,10 +585,16 @@ proc ::GX::printStudioLogMapped {widget} {
 }
 proc ::GX::printStudioClearDocument {} {
     variable ::GX::PrintStudio::state;variable ui
-    foreach key {documentRequest pageRequest thumbnailRequest} {if {[info exists state($key)]} {printDocumentCancel $state($key)}}
+    foreach key {documentRequest pageRequest thumbnailRequest objectRequest} {if {[info exists state($key)]} {printDocumentCancel $state($key)}}
     foreach key {document pageReceipt thumbnailReceipt} {if {[info exists state($key)]} {printDocumentRelease [dict get $state($key) resource_id];unset state($key)}}
     foreach key [array names state thumb,*] {catch {image delete $state($key)};unset state($key)}
     if {[info exists state(pagePhoto)]} {catch {image delete $state(pagePhoto)};unset state(pagePhoto)}
+    foreach key [array names state objectPhoto,*] {catch {image delete $state($key)};unset state($key)}
+    foreach key [array names state objectContent,*] {unset state($key)}
+    if {[info exists state(objectTimer)]} {after cancel $state(objectTimer)}
+    unset -nocomplain state(objectTimer) state(objectKey) state(objectPending) state(objectProjection)
+    set state(posterSelection) {};set state(posterGesture) {};set state(posterReview) 0
+    if {[winfo exists .gxPrintObjectProperties]} {destroy .gxPrintObjectProperties}
     unset -nocomplain state(pageKey);set state(pageCount) 0;set state(currentPage) 1;set ::GX::cfg(print_output_pdf) {}
     if {[info exists ui(printPages)] && [winfo exists $ui(printPages)]} {$ui(printPages) delete [$ui(printPages) children {}]}
     if {[info exists ui(printPageCanvas)] && [winfo exists $ui(printPageCanvas)]} {$ui(printPageCanvas) delete all;$ui(printPageCanvas) create text 30 30 -anchor nw -fill white -text {No assembled document. Add content, then Update Preview.}}
@@ -575,3 +623,4 @@ proc ::GX::printStudioSourceCurrent {generation} {
     variable ::GX::PrintStudio::state
     return [expr {$generation==$state(sourceGeneration) && [info exists state(sourceToken)] && ![catch {interactiveDocumentSessionToken} token] && $token eq $state(sourceToken)}]
 }
+source [file join $::GX::scriptDir app print_studio_poster.tcl]

@@ -38,7 +38,7 @@ proc ::GX::Workbench3D::meshPairApply {captured names values} {
         if {$receipt ne {}&&[catch {call delete [dict create object_token [dict get $receipt object_token]]} cleanup]} {append message "; derived mesh cleanup failed: $cleanup"}
         return -options $options $message
     } finally {set busy 0}
-    set selection [list $id];$panel.objects selection set $id;$panel.objects see $id
+    set selection [list $id];projectSelection
     ::GX::Engine3D::rerender
 }
 proc ::GX::Workbench3D::meshInspection {action parameters} {

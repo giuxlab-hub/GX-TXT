@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Shared extension of the existing read-only Dataset host, worker and RAM frame.
 # Two embedded owners at most; one retained source per owner. No Documents.
-namespace eval ::GX::Native3DPreview {variable hosts {};variable serial 0}
+namespace eval ::GX::Native3DPreview {variable hosts {};variable serial 0;variable iconAfter {};variable iconRootHook 0}
 proc ::GX::native3DPreviewLayer {} {
     return [dict create kind surface source_mode artifact format vtp visible 1 opacity 1 colormap viridis scalar_range {} scalar_array {} vector_array {} radius_array {} opacity_array {} color_array {} sphere_glyphs 0 tube_radius 0 isovalues {} volume_transfer {} volume_sample_distance .05 layer_order 0 representation surface base_color {0.0;0.447;0.741} line_width 1 point_size 4 backface_culling 0 scalar_coloring 0 local_transform {}]
 }
@@ -23,6 +23,7 @@ proc ::GX::native3DPreviewAcquire {parent id key check prepare {options {}}} {
     set canvas $parent.native3d
     if {![winfo exists $canvas]} {canvas $canvas -background white -highlightthickness 0}
     set w [meshDatasetViewerOpen $id {} [dict create compactCanvas $canvas sourceKey $key sourceCheck $check active 1 geometryBuilds 0 warmReturns 0 caption {Preparing interactive preview…} toolsY [datasetPublicationV2DictDefault $options tools_y 8]]]
+    set state($w,sourceScientificIdentity) [datasetViewerScientificIdentity $id]
     dict set hosts $parent $w
     set state($w,embeddedCanvas) $canvas;set state($w,hostParent) $parent
     set state($w,started) [clock milliseconds]
@@ -55,6 +56,9 @@ proc ::GX::native3DPreviewControls {w} {
     ttk::button $c.tools.exit -text ✕ -width 3 -command [list ::GX::native3DPreviewExit $w]
     grid $c.tools.exit -row 2 -column 2 -padx 1 -pady 1
     native2DViewportTooltip $c.tools.exit {Exit / Close interactive view}
+    ttk::button $c.tools.fit -text Fit -command [list ::GX::native3DPreviewCamera $w fit]
+    grid $c.tools.fit -row 3 -column 0 -columnspan 3 -sticky ew -padx 1 -pady 1
+    native2DViewportTooltip $c.tools.fit {Fit the complete source geometry in the current view}
     if {![info exists state($w,scientificFigure)]} {$c.tools.axes configure -state disabled}
     bind $c <ButtonPress-1> [list ::GX::meshDatasetDrag $w start orbit %x %y]
     bind $c <B1-Motion> [list ::GX::meshDatasetDrag $w move orbit %x %y]
@@ -98,6 +102,7 @@ proc ::GX::native3DPreviewDisplay {w} {
     if {![info exists state($w,id)]} return
     set c $state($w,compactCanvas)
     if {![winfo exists $c]} return
+    if {[llength [info commands ::GX::datasetPreviewLiveRefreshStatus]]} {datasetPreviewLiveRefreshStatus}
     $c delete all
     if {$state($w,image) ne {}} {$c create image 0 0 -anchor nw -image $state($w,image);set state($w,frameReadyMs) [expr {[clock milliseconds]-$state($w,started)}]}
     if {[info exists state($w,scientificFigure)]} {raise $c.tools;return}
@@ -127,6 +132,7 @@ proc ::GX::native3DPreviewCamera {w action} {
         down {meshDatasetNavigate $w orbit 0 24}
         cw {meshDatasetNavigate $w roll 24 0}
         ccw {meshDatasetNavigate $w roll -24 0}
+        fit {meshDatasetPreset $w fit_scene}
         reset {meshDatasetRequest $w [list camera $state($w,initialCamera) [file join $state($w,temp) render.png]]}
     }
 }
@@ -136,9 +142,17 @@ proc ::GX::native3DPreviewExit {w} {
     if {[info exists state($w,largeWindow)]} {native3DPreviewLargeClose $w;return}
     set state($w,active) 0
     place forget $state($w,compactCanvas)
+    if {[info exists state($w,hostParent)] && $state($w,hostParent) eq {.top.nb.preview.live.panes.plot} &&
+        [winfo exists .top.nb.preview.live.panes] && ![winfo exists .top.nb.preview.live.panes.plot.retainedXY]} {
+        # XYZ does not require a valid 2D curve mapping. In that case there is
+        # no previous XY controller to expose when the 3D overlay is closed.
+        .top.nb.preview.live.panes select .top.nb.preview.live.panes.source
+        .top.nb.preview.live.panes tab .top.nb.preview.live.panes.plot -state disabled
+    }
     # An in-flight preparation is cancelled; completed frames/scenes are retained.
     if {![info exists state($w,initialCamera)]} {datasetViewerClose $w}
     native3DPreviewPlotIcon
+    if {[llength [info commands ::GX::datasetPreviewLiveRefreshStatus]]} {datasetPreviewLiveRefreshStatus}
 }
 proc ::GX::native3DPreviewClosed {w} {
     variable ::GX::Native3DPreview::hosts
@@ -148,8 +162,9 @@ proc ::GX::native3DPreviewClosed {w} {
     set c $state($w,compactCanvas)
     if {[info exists state($w,embeddedCanvas)]} {set c $state($w,embeddedCanvas)}
     if {[winfo exists $c]} {place forget $c;catch {destroy $c.tools};$c delete all}
-    if {[info exists state($w,hostParent)]} {after idle ::GX::native3DPreviewPlotIcon}
+    if {[info exists state($w,hostParent)]} {native3DPreviewIconSchedule}
     dict for {parent host} $hosts {if {$host eq $w} {dict unset hosts $parent}}
+    if {[llength [info commands ::GX::datasetPreviewLiveRefreshStatus]]} {datasetPreviewLiveRefreshStatus}
 }
 proc ::GX::native3DPreviewRelease {parent} {
     variable ::GX::Native3DPreview::hosts
@@ -187,13 +202,16 @@ proc ::GX::native3DPreviewPrepared {w} {
     }
     if {[catch {
         datasetViewerCheck $w
-        set f [open [file join $state($w,temp) scene.tcldict]]
-        try {set descriptor [read $f 8388608]} finally {close $f}
+        ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+        set descriptor [::GX::PlotDatasetAPIv4::consultationScene [dict get $state($w,sourceInfo) plot_ref] $state($w,plotV4SourceKey) $state($w,temp)]
+        set state($w,plotV4Receipt) [dict create renderer_owner [dict get $descriptor renderer_owner] source_key [dict get $descriptor source_key] source_info [dict get $descriptor source_info]]
         set state($w,compactLayers) [dict get $descriptor layers]
         set state($w,view) [dict merge [viewerSceneDefaults] [dict get $descriptor view]]
         set state($w,caption) [dict get $descriptor caption]
         if {[info exists state($w,sourceInfo)]} {
-            append state($w,caption) "\nDataset: $state($w,id) · Variant: [dict get $state($w,sourceInfo) plot_ref variant_id]"
+            set ref [dict get $state($w,sourceInfo) plot_ref]
+            set variant [dict get $ref variant_id];if {$variant eq {}} {set variant base}
+            append state($w,caption) "\nDataset: $state($w,id) · Graph: [dict get $ref module_id] / [dict get $ref graph_id] · Variant: $variant"
         }
         if {[dict exists $descriptor scientific_figure]} {set state($w,scientificFigure) [dict get $descriptor scientific_figure];set state($w,presentation) [dict get $descriptor presentation];$state($w,compactCanvas).tools.axes configure -state normal}
         if {[dict exists $descriptor colorbar]} {set state($w,colorbar) [dict get $descriptor colorbar]}
@@ -202,41 +220,16 @@ proc ::GX::native3DPreviewPrepared {w} {
 }
 proc ::GX::native3DPreviewPlotKey {ref} {
     ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
-    if {[::GX::PlotDatasetAPIv4::isOwned $ref]} {return [list [interactiveDocumentSessionToken] PLOT_DATASET_API_v4 $ref [::GX::PlotDatasetAPIv4::sourceFingerprint $ref]]}
-    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
-    set artifact [dict get [::GX::PlotDatasetAPIv3::artifacts $ref] graph_artifact]
-    file stat $artifact st
-    set key [plotVariantKey [dict get $ref graph_id] [dict get $ref variant_id]]
-    set presentation {}
-    foreach array {axisOverride legendOverride levelScale plotVariantGraphics} {
-        upvar #0 ::GX::$array a
-        foreach name [lsort [array names a]] {
-            if {[string match "$key,*" $name] || [string match "plot.dataset,[dict get $ref graph_id],[dict get $ref variant_id],*" $name]} {lappend presentation $array $name $a($name)}
-        }
-    }
-    set sources {}
-    foreach role {x y z family color} {
-        set b [plotVariantBindingGet plot.dataset plot.dataset.xyz [dict get $ref variant_id] $role]
-        if {$b eq {}} continue
-        set id [dict get $b dataset_id]
-        lappend sources $role $b [datasetViewerStamp $id [datasetResolvePath $::GX::currentSession $id]]
-    }
-    set config {}
-    foreach field [moduleConfigKeys plot.dataset] {if {[info exists ::GX::moduleCfg(plot.dataset,$field)]} {lappend config $field $::GX::moduleCfg(plot.dataset,$field)}}
-    set resources {}
-    set artifacts [::GX::PlotDatasetAPIv3::artifacts $ref]
-    foreach path [list [dict get $artifacts render_cache] [file join [dict get $artifacts output_dir] runtime.ini]] {
-        if {[file isfile $path]} {file stat $path r; lappend resources $path $r(ino) $r(size) $r(mtime) $r(ctime)} else {lappend resources $path missing}
-    }
-    return [list $resources $config [interactiveDocumentSessionToken] $ref [::GX::PlotDatasetAPIv3::readPlot $ref] $sources $st(ino) $st(mtime) $st(ctime) $st(size) $presentation [plotEnv plot.dataset]]
+    return [dict get [::GX::PlotDatasetAPIv4::consultationSource $ref] source_key]
 }
 proc ::GX::native3DPreviewPlotPrepare {ref w} {
     variable ::GX::DatasetViewer::state
-    set owner ::GX::PlotDatasetAPIv3
     ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
-    if {[::GX::PlotDatasetAPIv4::isOwned $ref]} {set owner ::GX::PlotDatasetAPIv4}
-    set state($w,sourceInfo) [${owner}::interactiveSourceInfo $ref]
-    set command [${owner}::previewExportCommand $ref $state($w,temp)]
+    set resolved [::GX::PlotDatasetAPIv4::consultationSource $ref]
+    set state($w,sourceInfo) [dict get $resolved source_info]
+    set state($w,plotV4SourceKey) [dict get $resolved source_key]
+    set state($w,plotV4SourceReceipt) $resolved
+    set command [::GX::PlotDatasetAPIv4::consultationExportCommand $ref $state($w,temp)]
     set state($w,prepareLog) {}
     if {[auto_execok prlimit] ne {}} {set command [concat [list [auto_execok prlimit] --as=[expr {[configurationGet viewers.native3d.worker_address_space_budget_mib]*1024*1024}] --] $command]}
     if {[auto_execok setsid] ne {}} {set command [concat [list [auto_execok setsid]] $command];set state($w,prepareGroup) 1}
@@ -247,12 +240,9 @@ proc ::GX::native3DPreviewPlotPrepare {ref w} {
 proc ::GX::native3DPreviewPlotActivate {} {
     if {[catch {
         set ref [graphResourceRefForPath [currentGraphPath]]
-        if {[dict get $ref module_id] ne "plot.dataset" || [dict get $ref graph_id] ne "plot.dataset.xyz"} {error {Select an existing Plot Dataset 3D graph/Variant.}}
-        ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
-        set owner ::GX::PlotDatasetAPIv3
         ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
-        if {[::GX::PlotDatasetAPIv4::isOwned $ref]} {set owner ::GX::PlotDatasetAPIv4}
-        set info [${owner}::interactiveSourceInfo $ref]
+        set resolved [::GX::PlotDatasetAPIv4::consultationSource $ref]
+        set info [dict get $resolved source_info]
         set key [native3DPreviewPlotKey $ref]
         native3DPreviewAcquire .top.nb.graphs.preview.img [dict get $info source_dataset_id] $key [list ::GX::native3DPreviewPlotKey $ref] [list ::GX::native3DPreviewPlotPrepare $ref]
     } message]} {native3DPreviewDiagnostic .top.nb.graphs.preview.img $message}
@@ -269,153 +259,97 @@ proc ::GX::native3DPreviewPlotSelection {} {
 proc ::GX::native3DPreviewXYZKey {id axes} {
     set selectors {}
     foreach axis {x y z} {if {[info exists ::GX::ui(previewMap,$axis)]} {lappend selectors $::GX::ui(previewMap,$axis)}}
-    return [list $selectors [interactiveDocumentSessionToken] [datasetViewerStamp $id [datasetResolvePath $::GX::currentSession $id]] [datasetMetadataRead $::GX::currentSession $id] $axes]
+    set sourceStamp [scientificDatasetCoordinateSourceStamp [datasetViewerStamp $id [datasetResolvePath $::GX::currentSession $id]]]
+    set predicates [scientificDatasetFilterSelectionPredicates $::GX::ui(previewMap,dimensions) $::GX::ui(previewMap,filters)]
+    # Independent 2D grouping/order do not alter unfiltered XYZ geometry.
+    # Meaningful row predicates still retire that unfiltered presentation;
+    # activation explains the unsupported filtered-XYZ request explicitly.
+    return [list $selectors [interactiveDocumentSessionToken] $sourceStamp [datasetViewerScientificIdentity $id] $axes $predicates]
+}
+proc ::GX::native3DPreviewXYZParent {id} {
+    # The retained Preview owns a separate Plot pane. Its Source image Text
+    # remains available, but it may be hidden when XYZ is requested.
+    set parent .top.nb.preview.txt
+    set plot .top.nb.preview.live.panes.plot
+    if {[winfo exists $plot] && [info exists ::GX::PreviewLive::active] &&
+        [dict exists $::GX::PreviewLive::active id] && [dict exists $::GX::PreviewLive::active token] &&
+        [dict get $::GX::PreviewLive::active id] eq $id &&
+        [dict get $::GX::PreviewLive::active token] eq [interactiveDocumentSessionToken]} {
+        # A missing Y mapping may disable the initial 2D tab; independent XYZ
+        # admission has its own explicit three-variable scientific contract.
+        .top.nb.preview.live.panes tab $plot -state normal
+        .top.nb.preview.live.panes select $plot
+        set parent $plot
+    }
+    return $parent
 }
 proc ::GX::native3DPreviewXYZActivate {} {
+    set parent .top.nb.preview.txt
     if {[catch {
         lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] mode id
         if {$mode ne "imported"} {error {Activate a canonical numerical Dataset.}}
+        set parent [native3DPreviewXYZParent $id]
         set axes [list $::GX::ui(previewMap,x) $::GX::ui(previewMap,y) $::GX::ui(previewMap,z)]
         if {{} in $axes || [llength [lsort -unique $axes]]!=3} {error {Select three explicit, distinct canonical X/Y/Z variable IDs.}}
-        if {[dict size $::GX::ui(previewMap,filters)] || $::GX::ui(previewMap,separate)} {error {XYZ scatter currently requires the unfiltered Dataset; clear the 2D family filters first.}}
+        set predicates [scientificDatasetFilterSelectionPredicates $::GX::ui(previewMap,dimensions) $::GX::ui(previewMap,filters)]
+        if {[llength $predicates]} {error {3D XYZ displays the unfiltered Dataset. Clear the configured row predicates first; 2D series grouping and row order do not affect 3D XYZ.}}
         # XYZ activation owns the current mapping. Keep the last static 2D
         # content intact; an explicit 2D Render remains its generation action.
         # Source changes still invalidate through the common stamp/watch.
         set ::GX::ui(previewSignature) [datasetPreviewCacheSignature]
         set key [native3DPreviewXYZKey $id $axes]
-        native3DPreviewAcquire .top.nb.preview.txt $id $key [list ::GX::native3DPreviewXYZKey $id $axes] [list ::GX::native3DPreviewXYZPrepare $id $axes] [dict create tools_y 50]
-    } message]} {native3DPreviewDiagnostic .top.nb.preview.txt $message}
+        native3DPreviewAcquire $parent $id $key [list ::GX::native3DPreviewXYZKey $id $axes] [list ::GX::native3DPreviewXYZPrepare $id $axes] [dict create tools_y 50]
+        if {[llength [info commands ::GX::datasetPreviewLiveRefreshStatus]]} {datasetPreviewLiveRefreshStatus}
+    } message]} {native3DPreviewDiagnostic $parent $message}
+}
+proc ::GX::native3DPreviewXYZStatus {parent id} {
+    variable ::GX::Native3DPreview::hosts
+    variable ::GX::DatasetViewer::state
+    if {![dict exists $hosts $parent]} {return {}}
+    set w [dict get $hosts $parent]
+    if {![info exists state($w,xyzAxes)] || ![info exists state($w,active)] || !$state($w,active) ||
+        ![info exists state($w,id)] || $state($w,id) ne $id} {return {}}
+    if {[catch {datasetViewerCheck $w}]} {return {Previous 3D XYZ render — source or XYZ mapping changed; select 3D XYZ to refresh}}
+    if {!$state($w,ready) || $state($w,image) eq {}} {return {Preparing source-verified 3D XYZ}}
+    if {$state($w,busy)} {return {3D XYZ — source verified; updating view}}
+    return {3D XYZ — source verified; 2D Render applies separately}
 }
 proc ::GX::native3DPreviewXYZPrepare {id axes w} {
-    variable ::GX::DatasetViewer::state
-    set state($w,coordinateContext) [datasetCoordinateRead $::GX::currentSession $id]
-    set labels {}
-    foreach axis {X Y Z} vid $axes {
-        set v [datasetVariableV3ById $id $vid]
-        if {![dict get $v enabled] || [dict get $v rank]!=1 || [dict get $v value_kind] eq "text"} {error "Variable $vid is not an enabled rank-one numerical variable."}
-        lappend labels "$axis: $vid — [dict get $v canonical] ([dict get $v unit])"
-    }
-    set access [datasetAccessOpen $::GX::currentSession $id]
-    try {set rows [dict get [datasetAccessMetadata $access] row_count]} finally {datasetAccessClose $access}
-    set limit [expr {$rows<0?100000:min(100000,$rows)}]
-    set stream [tableStreamOpenDataset $::GX::currentSession $id $axes 2048 [dict create count $limit]]
-    set total [dict get [tableStreamMetadata $stream] row_count]
-    set state($w,xyzStream) $stream;set state($w,xyzAxes) $axes
-    set state($w,xyzTotal) $total;set state($w,xyzRows) 0;set state($w,xyzPoints) {};set state($w,xyzSourceRows) {}
-    set state($w,xyzStride) [expr {max(1,int(ceil(($total<0?100000:min(100000,$total))/12000.0)))}]
-    set state($w,caption) "$id · read-only 3D scatter\n[join $labels { · }]"
-    set state($w,prepareAfter) [after idle [list ::GX::native3DPreviewXYZChunk $w]]
+    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+    return [::GX::PlotDatasetAPIv4::xyzConsultationPrepare $id $axes $w]
 }
 proc ::GX::native3DPreviewXYZChunk {w} {
-    variable ::GX::DatasetViewer::state
-    if {![info exists state($w,xyzStream)]} return
-    if {[catch {
-        datasetViewerCheck $w
-        set chunk [tableStreamNext $state($w,xyzStream)]
-        lassign $state($w,xyzAxes) x y z
-        set n 0
-        foreach xv [dict get $chunk values $x] yv [dict get $chunk values $y] zv [dict get $chunk values $z] {
-            set row [expr {[dict get $chunk offset]+$n}];incr n
-            if {$row%$state($w,xyzStride) || [llength $state($w,xyzPoints)]>=12000} continue
-            if {[catch {expr {abs(double($xv))<Inf && abs(double($yv))<Inf && abs(double($zv))<Inf}} finite] || !$finite} continue
-            lappend state($w,xyzPoints) [list $xv $yv $zv]
-            lappend state($w,xyzSourceRows) [expr {$row+1}]
-        }
-        incr state($w,xyzRows) [dict get $chunk nrows]
-        if {![dict get $chunk eof]} {
-            set state($w,prepareAfter) [after 1 [list ::GX::native3DPreviewXYZChunk $w]]
-            return
-        }
-        tableStreamClose $state($w,xyzStream);unset state($w,xyzStream)
-        set state($w,xyzCanonicalPoints) $state($w,xyzPoints)
-        set presentation [native3DPreviewXYZPresentation $state($w,coordinateContext) $state($w,xyzAxes) $state($w,xyzCanonicalPoints)]
-        set points [dict get $presentation points];set count [llength $points]
-        if {!$count} {error {No finite XYZ triples in the bounded display selection.}}
-        set path [file join $state($w,temp) xyz.vtp]
-        set f [open $path w]
-        try {
-            puts $f "<?xml version=\"1.0\"?><VTKFile type=\"PolyData\" version=\"0.1\" byte_order=\"LittleEndian\"><PolyData><Piece NumberOfPoints=\"$count\" NumberOfVerts=\"$count\" NumberOfLines=\"0\" NumberOfStrips=\"0\" NumberOfPolys=\"0\">"
-            puts $f {<PointData><DataArray type="Int64" Name="source_row" format="ascii">}
-            puts $f $state($w,xyzSourceRows);puts $f {</DataArray></PointData><Points><DataArray type="Float64" NumberOfComponents="3" format="ascii">}
-            foreach point $points {puts $f $point}
-            puts $f {</DataArray></Points><Verts><DataArray type="Int64" Name="connectivity" format="ascii">}
-            for {set i 0} {$i<$count} {incr i} {puts -nonewline $f "$i "}
-            puts $f {</DataArray><DataArray type="Int64" Name="offsets" format="ascii">}
-            for {set i 1} {$i<=$count} {incr i} {puts -nonewline $f "$i "}
-            puts $f {</DataArray></Verts></Piece></PolyData></VTKFile>}
-        } finally {close $f}
-        set layer [dict merge [native3DPreviewLayer] [dict create absolute_path $path resource_path $path sha256 [sha256File $path] kind points representation points local_transform [dict get $presentation local_transform]]]
-        set state($w,compactLayers) [dict create scatter $layer]
-        set state($w,view) [dict get $presentation view]
-        set state($w,scientificFigure) [dict get $presentation scientific_figure]
-        set state($w,presentation) [dict remove $presentation points]
-        $state($w,compactCanvas).tools.axes configure -state normal
-        set state($w,caption) [dict get $presentation caption]
-        append state($w,caption) "\n$count finite points; [expr {$state($w,xyzTotal)<0?{unknown}:$state($w,xyzTotal)}] canonical rows. Display scan: first $state($w,xyzRows) rows (limit 100000); stride $state($w,xyzStride), point limit 12000. No connectivity or interpolation."
-        dict append state($w,scientificFigure) legend " · $count pts / $state($w,xyzRows) scanned; stride $state($w,xyzStride)"
-        set state($w,xyzDisplayReceipt) [dict create dataset_id $state($w,id) variable_ids $state($w,xyzAxes) total_rows $state($w,xyzTotal) scanned_rows $state($w,xyzRows) displayed_points $count stride $state($w,xyzStride) source_rows $state($w,xyzSourceRows) coordinate_presentation [dict remove $presentation points]]
-        unset state($w,xyzPoints) state($w,xyzSourceRows)
-        meshDatasetWorkerStart $w
-    } message]==1} {native3DPreviewFailure $w $message}
+    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+    return [::GX::PlotDatasetAPIv4::xyzConsultationChunk $w]
 }
-
-# A view-owned normalized frame keeps independent scientific axis magnification
-# visible. The fixed camera never refits it away; VTP values remain display-unit
-# coordinates and the retained source triples are never transformed in place.
+# Compatibility entry point; the public Plot v4 owner now constructs scientific
+# coordinate presentation from the same canonical context and source triples.
 proc ::GX::native3DPreviewXYZPresentation {context axes canonicalPoints} {
-    if {[llength $axes]!=3||[llength [lsort -unique $axes]]!=3} {error {XYZ presentation requires three distinct Variables}}
-    if {![llength $canonicalPoints]||[llength $canonicalPoints]>12000} {error {XYZ presentation requires 1..12000 finite source triples}}
-    foreach point $canonicalPoints {
-        if {[llength $point]!=3} {error {XYZ source samples must be triples}}
-        foreach value $point {if {![string is double -strict $value]||[catch {expr {abs(double($value))<Inf}} finite]||!$finite} {error {XYZ source samples must be finite}}}
-    }
-    set columns {};set labels {};set lows {};set highs {};set ranges {};set policies {};set notices {}
-    set transform {0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1}
-    foreach index {0 1 2} axis {X Y Z} vid $axes {
-        set settings [scientificDatasetCoordinateSettings $context $vid]
-        set values [lmap p $canonicalPoints {lindex $p $index}];set shown {}
-        if {[dict exists $context variables $vid]} {
-            # Canonical Dataset readers expose HMS values in seconds. Return
-            # only the presentation buffer to the declared source frame before
-            # using the shared source-pivot coordinate policy.
-            set source [dict get $settings source]
-            if {[dict get $source value_kind] eq "elapsed_time"&&[dict get $source value_format] eq "hms"} {set values [elapsedTimeConvert $values [dict get $source unit]]}
-            for {set start 0} {$start<[llength $values]} {incr start 4096} {
-                set result [datasetCoordinateSnapshotValues $context $vid [lrange $values $start [expr {$start+4095}]] {mode canonical}]
-                lappend shown {*}[dict get $result values]
-            }
-        } else {set shown $values}
-        set sorted [lsort -real $shown];set lo [lindex $sorted 0];set hi [lindex $sorted end]
-        set pad [expr {$lo==$hi?max(1.0,abs($lo)*.05):($hi-$lo)*.05}]
-        set reference [list [expr {$lo-$pad}] [expr {$hi+$pad}]];set displayed $reference
-        if {[dict get $settings view_factor]!=1} {
-            set sourceRange [lsort -real [dict get [datasetCoordinateSnapshotValues $context $vid $reference {direction inverse}] values]]
-            set range [datasetCoordinateSnapshotViewRange $context $vid $sourceRange]
-            set displayed [lsort -real [dict get [datasetCoordinateSnapshotValues $context $vid [dict get $range canonical_range]] values]]
-        } else {set range [dict create view_factor 1 view_pivot [dict get $settings view_pivot]]}
-        lassign $displayed lo hi
-        if {[catch {expr {$lo<$hi&&abs($lo)<Inf&&abs($hi)<Inf&&abs($hi-$lo)<Inf}} valid]||!$valid} {error {XYZ coordinate policy collapses or overflows the display range}}
-        set width [expr {$hi-$lo}];set scale [expr {1.0/$width}];set offset [expr {-($lo/$width+.5)}]
-        if {$scale==0||abs($scale)>=Inf||abs($offset)>=Inf} {error {XYZ coordinate frame is not representable}}
-        lset transform [expr {$index*5}] $scale;lset transform [expr {12+$index}] $offset
-        lappend columns $shown;lappend lows $lo;lappend highs $hi
-        set unit [dict get $settings display_unit];set source [dict get $settings source]
-        lappend labels "$vid ([expr {$unit eq {}?{undeclared}:$unit}])"
-        dict set policies $vid $settings
-        lappend ranges [dict merge $range [dict create variable_id $vid reference_display_range $reference display_range $displayed]]
-        lappend notices "$axis×[format %.6g [dict get $settings view_factor]] @[format %.6g [dict get $settings view_pivot]] [dict get $source unit]"
-    }
-    set points {};foreach x [lindex $columns 0] y [lindex $columns 1] z [lindex $columns 2] {lappend points [list $x $y $z]}
-    set notice "[join $notices { · }]; calibration unapplied"
-    set view [dict replace [viewerSceneDefaults] background_rgb {1;1;1} background_bottom_rgb {1;1;1} background_gradient 0 lighting 0 axes_world 0 orientation_indicator_visible 1 camera_position {2;2;2} camera_target {0;0;0} camera_up {0;0;1} projection orthographic orthographic_height 2 near_clip .001 far_clip 100 clip_box {-.5;-.5;-.5;.5;.5;.5}]
-    set figure [dict create axes_grid_visible 1 colorbar_visible 0 bounds_min {-.5;-.5;-.5} bounds_max {.5;.5;.5} axis_min [join $lows {;}] axis_max [join $highs {;}] x_label [lindex $labels 0] y_label [lindex $labels 1] z_label [lindex $labels 2] title "[dict get $context dataset_id] — XYZ scatter" legend $notice scalar_label {}]
-    return [dict create schema gxtxt.xyz_coordinate_presentation.v1 context $context variable_ids $axes points $points local_transform [join $transform {;}] view $view scientific_figure $figure ranges $ranges coordinate_policies $policies calibration_applied 0 source_values_modified 0 caption "[dict get $figure title]\n[join $labels { · }]\n$notice"]
+    ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+    return [::GX::PlotDatasetAPIv4::xyzCoordinatePresentation $context $axes $canonicalPoints]
 }
 
 # Same shared host/worker/source; an enlarged viewport never prepares another scene.
+proc ::GX::native3DPreviewIconRootDestroyed {actual} {
+    if {$actual ne {.}} return
+    variable ::GX::Native3DPreview::iconAfter
+    if {$iconAfter ne {}} {after cancel $iconAfter;set iconAfter {}}
+}
+proc ::GX::native3DPreviewIconSchedule {} {
+    variable ::GX::Native3DPreview::iconAfter
+    variable ::GX::Native3DPreview::iconRootHook
+    if {[catch {winfo exists .top.nb.graphs.preview.img.interactive} alive] || !$alive} return
+    if {!$iconRootHook} {bind . <Destroy> +[list ::GX::native3DPreviewIconRootDestroyed %W];set iconRootHook 1}
+    if {$iconAfter ne {}} {after cancel $iconAfter}
+    set iconAfter [after idle ::GX::native3DPreviewIconRefresh]
+}
+proc ::GX::native3DPreviewIconRefresh {} {
+    set ::GX::Native3DPreview::iconAfter {}
+    native3DPreviewPlotIcon
+}
 proc ::GX::native3DPreviewPlotIcon {} {
     set parent .top.nb.graphs.preview.img
-    if {![winfo exists $parent.interactive]} return
+    if {[catch {winfo exists $parent.interactive} alive] || !$alive} return
     place forget $parent.interactive
     if {[dict exists $::GX::Native3DPreview::hosts $parent]} {
         set w [dict get $::GX::Native3DPreview::hosts $parent]
@@ -423,10 +357,8 @@ proc ::GX::native3DPreviewPlotIcon {} {
     }
     if {[catch {
         set ref [graphResourceRefForPath [currentGraphPath]]
-        if {[dict get $ref module_id] ne "plot.dataset" || [dict get $ref graph_id] ne "plot.dataset.xyz"} {error unsupported}
-        modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3
         ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
-        if {[::GX::PlotDatasetAPIv4::isOwned $ref]} {::GX::PlotDatasetAPIv4::previewCompatibility $ref} else {::GX::PlotDatasetAPIv3::previewCompatibility $ref}
+        ::GX::PlotDatasetAPIv4::consultationSource $ref
     } message]} {set ::GX::ui(native3DEligibility) $message;return}
     set ::GX::ui(native3DEligibility) supported
     place $parent.interactive -relx 1 -x -8 -y 8 -anchor ne

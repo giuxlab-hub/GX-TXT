@@ -131,8 +131,10 @@ def raster(source,fmt,size=None,tool='/usr/bin/magick'):
 def admit(path,title,category,license,tool='/usr/bin/magick'):
     p=Path(path)
     if p.is_symlink() or p.resolve()!=p.absolute() or not p.is_file() or p.stat().st_nlink!=1 or p.stat().st_size>LIMIT:raise ValueError('Use an ordinary bounded owned icon file; links are refused')
-    if not title.strip() or not category.strip() or not license.strip() or max(map(len,(title,category,license)))>200:raise ValueError('Title/category/license provenance is required')
     data=p.read_bytes();fmt=p.suffix.lower().lstrip('.')
+    return admit_bytes(data,fmt,title,category,license,tool)
+def admit_bytes(data,fmt,title,category,license,tool='/usr/bin/magick'):
+    if not title.strip() or not category.strip() or not license.strip() or max(map(len,(title,category,license)))>200:raise ValueError('Title/category/license provenance is required')
     if fmt=='png':width,height,alpha=png(data);pixels=raster(data,'png',tool=tool)
     elif fmt=='svg':svg(data);pixels=raster(data,'svg',tool=tool);width,height,alpha=png(pixels)
     else:raise ValueError('Icon import accepts PNG or the documented safe SVG subset only')
@@ -171,6 +173,18 @@ if __name__=='__main__':
             if len(sys.argv)!=2:raise ValueError('Shared icon discovery accepts no path or arguments')
             result=shared_catalog()
         elif sys.argv[1]=='import':result=admit(*sys.argv[2:])
+        elif sys.argv[1]=='import_svg':
+            if len(sys.argv)!=6:raise ValueError('Inline SVG requires title, category, license and managed raster tool')
+            data=sys.stdin.buffer.read(LIMIT+1)
+            result=admit_bytes(data,'svg',sys.argv[2],sys.argv[3],sys.argv[4],sys.argv[5])
+        elif sys.argv[1]=='photo_png':
+            # Distributed catalog resources already have their provider/package
+            # provenance. Reuse the same decoder/resizer without reimporting
+            # them into a project or assuming a 192-pixel source image.
+            if len(sys.argv)!=4:raise ValueError('PNG display requires size and managed raster tool')
+            raw=sys.stdin.read(4*((LIMIT+2)//3)+2).strip()
+            pixels=base64.b64decode(raw,validate=True);png(pixels)
+            result={'png':base64.b64encode(raster(pixels,'png',int(sys.argv[2]),sys.argv[3])).decode()}
         elif sys.argv[1] in {'validate','photo'}:
             raw=sys.stdin.read(1048577)
             if len(raw)>1048576:raise ValueError('Icon resource exceeds bound')

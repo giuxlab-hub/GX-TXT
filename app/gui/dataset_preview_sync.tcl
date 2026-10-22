@@ -73,7 +73,7 @@ proc ::GX::datasetPreviewStop {} {
     datasetDigitizerPreviewClear
     if {[winfo exists .top.nb.preview.geometry]} {place forget .top.nb.preview.geometry}
     if {$::GX::DatasetViewer::previewImage ne {}} {catch {image delete $::GX::DatasetViewer::previewImage};set ::GX::DatasetViewer::previewImage {}}
-    if {[info exists ui(preview)] && [winfo exists $ui(preview)]} {previewDescriptorClearWidgetArtifact $ui(preview)}
+    if {[info exists ui(preview)] && [winfo exists $ui(preview)]} {datasetPreviewImageRelease $ui(preview);previewDescriptorClearWidgetArtifact $ui(preview)}
 }
 # Rendering identity deliberately excludes scroll positions and the Native3D
 # camera: those belong to the retained widgets/worker. No scientific reads here.
@@ -96,6 +96,15 @@ proc ::GX::datasetPreviewCacheSignature {} {
 proc ::GX::datasetPreviewCacheWatch {} {
     variable ui
     unset -nocomplain ui(previewCacheWatch)
+    if {[catch {winfo exists .} rootExists] || !$rootExists} return
+    # A previously dispatched legacy observer has no ownership of a newer
+    # retained Preview. Its signature describes the old text/image surface.
+    if {[dict size $::GX::PreviewLive::active]} {
+        unset -nocomplain ui(previewSignature) ui(previewSourceStamp) ui(previewGenerating)
+        datasetPreviewLiveCheck
+        if {[dict size $::GX::PreviewLive::active]} {set ui(previewCacheWatch) [after 1000 ::GX::datasetPreviewCacheWatch]}
+        return
+    }
     if {![info exists ui(previewSignature)]} return
     if {![winfo exists $ui(preview)] || [catch {set signature [datasetPreviewCacheSignature]}] || $signature ne $ui(previewSignature)} {
         datasetPreviewStop
@@ -146,7 +155,7 @@ proc ::GX::datasetPreviewActionsState {} {
     set tabular 0
     if {$mode eq "imported" && $id ne {}} {catch {set page [datasetPreviewPage $::GX::currentSession $id [dict create count 1]];set tabular [dict get $page available]}}
     $f.actions.pages state [expr {$tabular?"!disabled":"disabled"}]
-    set visual [expr {[dict size $::GX::DigitizerPreview::state]>0 || $::GX::DatasetViewer::previewImage ne {} || $::GX::DatasetViewer::previewJob ne {} || [info exists ::GX::previewBinaryTaskState] && $::GX::previewBinaryTaskState in {running ready} || [info exists ::GX::previewArtifactImages($f.txt)]}]
+    set visual [expr {[dict exists $::GX::PreviewLive::active rendered_key] || [dict size $::GX::DigitizerPreview::state]>0 || $::GX::DatasetViewer::previewImage ne {} || $::GX::DatasetViewer::previewJob ne {} || [info exists ::GX::previewBinaryTaskState] && $::GX::previewBinaryTaskState in {running ready} || [info exists ::GX::previewArtifactImages($f.txt)]}]
     $f.actions.clear state [expr {$visual?"!disabled":"disabled"}]
     $f.actions.copy state [expr {[$f.txt compare end-1c > 1.0]?"!disabled":"disabled"}]
     datasetPageEditState
@@ -159,7 +168,17 @@ proc ::GX::refreshCsvPreview {} {
     datasetPageEditState
     lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] liveMode liveId
     set cleared [expr {[info exists ui(previewCleared)] && $ui(previewCleared) eq [list [dict get [datasetCatalogSnapshot] session_token] $::GX::variableDatasetChoice]}]
-    if {!$cleared && $liveMode eq "imported" && [datasetPreviewLiveEligible $liveId] && [datasetPreviewVisible]} {datasetBrowserActiveRefresh;datasetPreviewLiveActivate $liveId;return}
+    if {!$cleared && $liveMode eq "imported" && [datasetPreviewLiveEligible $liveId]} {
+        set visible [datasetPreviewVisible]
+        set retained [expr {$::GX::currentSession ne {} && [dict exists $::GX::PreviewLive::active id] && [dict get $::GX::PreviewLive::active id] eq $liveId && [dict get $::GX::PreviewLive::active token] eq [interactiveDocumentSessionToken]}]
+        if {$visible || $retained} {
+            if {$visible} {datasetBrowserActiveRefresh}
+            # Existing same-source activation validates even while hidden and
+            # retains the live controller/camera. It never prepares a new view.
+            datasetPreviewLiveActivate $liveId
+            return
+        }
+    }
     if {[dict size $::GX::PreviewLive::active]} {datasetPreviewLiveRelease}
     datasetBrowserRefresh
     # Responsive scientific reads service Tk events. Keep a reentrant refresh

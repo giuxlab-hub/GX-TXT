@@ -36,6 +36,32 @@ Each graph ID is a fixed plot type declared by the module. The default/base conf
 
 ## GUI
 
+### Scientific 3D preview declarations (dev109)
+
+A producer using `PLOT_DATASET_OCTAVE_BRIDGE_v1` may declare the scientific
+representation of an offered graph:
+
+```ini
+[graph.my.analysis.mesh]
+interactive_3d_provider=plot.dataset
+interactive_3d_plot_type=mesh
+interactive_3d_source=primary
+interactive_3d_key=mesh
+```
+
+These fields describe existing provider geometry. The key must match the selected
+artifact's unique `automatic_graphs.ini` entry, including scope and provider
+contract. Graph Workflow validates the canonical Dataset and stable Variable
+bindings, units, retained runtime/cache and presentation. A registered
+representation must have the matching producer key and bindings. If registration
+is absent, verified immutable preparation can still be previewed without creating
+a replacement Variant. The thermal demo declares surface, mesh and contour3
+separately. Millimetre X/Y and kelvin Z retain their own physical axis units;
+they do not define a fictitious solid or common-length coordinate system.
+
+Graphs without this contract retain their normal static presentation. A 2D-only
+provider is not promoted merely because its image resembles a 3D drawing.
+
 For an enabled analysis module, Analysis shows every graph offered by the descriptor. Each graph has a `Generate / include this plot` switch followed by its descriptor-generated configuration controls.
 
 A disabled offering is not part of the current experiment and is hidden from the Plots tab even if an older derived PNG is still present on disk.

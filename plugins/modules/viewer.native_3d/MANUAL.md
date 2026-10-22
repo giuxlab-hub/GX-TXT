@@ -143,4 +143,11 @@ CASCADE Technology (LGPL-2.1 with OCCT exception), OpenSSL (Apache-2.0) and
 system graphics libraries. The exact binary dependency and license notices
 belong with each platform package.
 
-Debian package 0.9.6 uses the library next to the installed module. Rebuilds must use CMake install output, which applies `$ORIGIN/../lib`; do not package a build-tree host. See `docs/legal/DEBIAN_NATIVE_REBUILD_dev097.md` in the framework.
+Debian package 0.9.6 uses the library next to the installed module. Rebuilds must use CMake install output, which applies `$ORIGIN/../lib`; do not package a build-tree host. See `docs/legal/DEBIAN_NATIVE_REBUILD_dev097.md` in the framework. The `Native3DHost` CMake install component permits packaging a changed host alone while retaining the compatible existing worker and library.
+
+In dev109 the dedicated native window follows its application's lifetime. Normal
+root closure sends the existing QUIT command and briefly drains its response.
+The host also exits when its owning command pipe reaches EOF, including loss of
+the parent process. Closing an idle interactive scene is independent of cancelling
+a preprocessing worker. The user-reproduced orphan-window failure is preserved;
+corrected installed GUI closure acceptance remains pending its recorded test.

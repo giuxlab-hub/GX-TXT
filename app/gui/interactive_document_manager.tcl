@@ -66,12 +66,21 @@ proc ::GX::_interactiveDocumentManagerDelete {} {
     if {[llength $selected]!=1} {set state(status) "Select one document to delete.";return}
     set id [lindex $selected 0]
     if {[catch {
-        if {$state(token) ne [interactiveDocumentSessionToken]} {error "Session lifetime changed; refresh the document list before deleting"}
+        set reviewedToken $state(token)
+        if {$reviewedToken ne [interactiveDocumentSessionToken]} {error "Session lifetime changed; refresh the document list before deleting"}
         set captured [dict get $state(rows) $id];set current [interactiveDocumentRead $id]
         foreach field {generation revision} {if {[dict get $captured $field] ne [dict get $current $field]} {error "Document changed; refresh and review its current revision before deleting"}}
     } message]} {set state(status) $message;return}
     set message "Delete document '$id' owned by [dict get $captured module_id]?\n\nIts live views will close. Unreferenced owned geometry/resources and its recovery journal will be removed. Source Datasets and already published results remain available; their retained provenance resources are preserved."
     if {[tk_messageBox -parent $w -title "Delete Interactive Document" -type yesno -default no -icon warning -message $message] ne "yes"} return
+    # The confirmation runs a nested event loop. Refresh may replace manager
+    # state, so compare the immutable review snapshot before deleting anything.
+    if {![winfo exists $w] || ![winfo exists $w.tree] || ![info exists state(token)]} return
+    if {[catch {
+        if {$reviewedToken ne [interactiveDocumentSessionToken]} {error "Session lifetime changed; refresh the document list before deleting"}
+        set current [interactiveDocumentRead $id]
+        foreach field {generation revision} {if {[dict get $captured $field] ne [dict get $current $field]} {error "Document changed; refresh and review its current revision before deleting"}}
+    } message]} {set state(status) $message;return}
     wm transient $w {}
     if {[catch {interactiveDocumentDelete $id} message options]} {
         if {[dict get $options -errorcode] eq {GX DOCUMENT DELETE_COMMITTED}} {_interactiveDocumentManagerRefresh;set state(status) $message} else {set state(status) "Deletion failed: $message"}

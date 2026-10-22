@@ -41,7 +41,13 @@ def check_project_root(project: Path, allow_missing=False) -> Path:
         for name in directories + files:
             count += 1
             if count > 10000: raise ValueError('Project exceeds the 10,000-entry grant audit bound')
-            p = Path(directory)/name; info = p.lstat()
+            p = Path(directory)/name
+            try:
+                info = p.lstat()
+            except FileNotFoundError:
+                # Concurrent ordinary owner operations atomically rename their
+                # temporary receipt files. A vanished entry grants no path.
+                continue
             if stat.S_ISLNK(info.st_mode) or (stat.S_ISREG(info.st_mode) and info.st_nlink != 1):
                 raise ValueError('Project-write grant refuses symlinks and hardlinked files')
             if not (stat.S_ISREG(info.st_mode) or stat.S_ISDIR(info.st_mode)):

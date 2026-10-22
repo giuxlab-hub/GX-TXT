@@ -21,6 +21,31 @@ A view's figure may be disabled; all figure props/rail are then removed. Updatin
 calibration changes presentation while retaining source objects. Default legacy
 views have no figure and retain their existing rendering and navigation cube.
 
+Numeric tick density uses the actual projected spacing of all four parallel box
+edges and the native vector-text footprint. It first chooses two or three
+calibrated interior values per numeric axis. Five significant digits are
+increased when needed to distinguish adjacent values; compact text may use
+three or four digits only if rounding is at most one tenth of the native major
+interval and every displayed value remains distinct. The internal label array preserves VTK's
+complete major-interval count, leaving corner and omitted slots blank. Its
+calibrated values and tick phase start at the declared axis minimum; no source
+coordinates are changed. A candidate still containing duplicate strings at
+round-trip precision is rejected rather than presenting misleading repeats.
+Explicit axis-label arrays and their order are preserved. Resizing, orbiting or changing labels may recreate only the cube-axes
+presentation prop to refresh VTK's cached tick intervals; scientific actors,
+coordinates, resources, camera and source identities remain under their existing
+owners. If a foreshortened axis cannot fit two interior values, it displays one
+interior value instead of overprinting two. No extra scientific samples or
+geometry are generated to conceal limited display space.
+
+The automatic legend occupies the top annotation band with pixel-based spacing
+below the title. An explicit `legend_y` presentation setting retains its requested
+position. Automatic top/bottom plot margins reserve pixel space for the current
+axis-title, title and legend fonts, including compact viewports. Explicit margin
+settings remain authoritative. Native rendering, pan and both world/screen
+projection directions use the same rectangle. This does not override manual
+legend layout or graphics-quality policy.
+
 The shared Tcl worker exposes `scientific_axes visible PNG`, `viewport width height PNG`,
 `navigate roll delta 0 PNG` and `export_png path width height ?graphics_policy?`.
 Resize uses the same native scene/objects. Export uses current effective graphics

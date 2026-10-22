@@ -32,3 +32,13 @@ sardinia_levoglucosan_campaign_1.1.1 | sardinia_levoglucosan_campaign | 876d2e3e
 surface3d_thermal_field_1.0.1 | surface3d_thermal_field | 9dc20af2f1ae2957c28e050f57ef32dee5e3e84d33bc36528e0015703a0080f3
 table_join_extract_1.0.1 | table_join_extract | becc3018e5ab987831906b5583134cd3e3d8553b68453850dd142a0a8456ed37
 triode_fit_spice_1.0.1 | triode_fit_spice | 8f42869068cff1a49d3e1c52900d31be0619c25eea0d554ec00c531cdc3242f6
+
+## Development candidate addition309
+
+The original owner-delivered index above is preserved. The following source-only fixture awaits MAIN1 integration and acceptance; its library location does not imply scientific acceptance.
+
+Package | Generator ID | Descriptor SHA-256
+--- | --- | ---
+molecular_structure_practice_1.0.0 | molecular_structure_practice | 9cb3734d0503820ef081eb64b450a8d1df18af95dad466d2206e4a4cb1985efa
+
+Package/source-lineage qualifications: `docs/development/main2_preview109/MOLECULAR_GENERATOR_LINEAGE309.md`; normal user steps are in the generator's `template/STUDENT_GUIDE.md`.

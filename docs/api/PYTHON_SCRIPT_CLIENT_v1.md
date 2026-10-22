@@ -27,10 +27,14 @@ datasets = gxtxt_api_call("CANONICAL_DATASET_API_v2", "list", [])
 
 `gxtxt_api_list()` and `gxtxt_api_describe(api_id)` provide machine-readable
 provider identity, version, capabilities and structured operation arguments.
-`gxtxt_api_has` and `gxtxt_api_has_operation` check availability. These are
+`gxtxt_api_has` and `gxtxt_api_has_operation` check registration in the active
+Bridge. They do not prove a provider's external runtime is configured, that
+the operation accepts the present scientific inputs, or that it is admitted
+to the restricted C++ SDK. These are
 the same provider-owned descriptors and operations used by Octave. The
-machine-readable [coverage inventory](SCRIPT_BRIDGE_COVERAGE_v1.json) marks
-availability for both languages. A future provider supplies one binding.
+machine-readable [coverage inventory](SCRIPT_BRIDGE_COVERAGE_v1.json) records
+version-qualified coverage for both languages; use the current Bridge descriptor
+for the actual installed registration. A future provider supplies one binding.
 See [Script Callback API v1](SCRIPT_CALLBACK_API_v1.md) for functions passed
 to mathematical operations.
 
@@ -42,16 +46,22 @@ outside an active GX-TXT run raise `GXTXT:ScriptBridge:NotActive`.
 
 ## Values
 
-The client carries UTF-8 strings, booleans, integers, floating-point
-scalars, dictionaries, lists, nested values and numeric vectors/matrices.
-Numeric arrays returned by public APIs are NumPy `ndarray` values when NumPy
-is installed in the configured runtime. Without NumPy they are Python lists;
-the script may convert them itself. NumPy arrays passed to an operation keep
-their shape, including column-major matrix transport compatible with Octave.
-Arrays over 10,000 elements reuse the Bridge's private little-endian float64
-binary payload. A script never manages transport files. Integer scalars retain
-integer identity; numeric array transport uses float64, as in the existing
-Bridge contract.
+The client carries UTF-8 strings, booleans, exact integer scalars, floating-point
+scalars, dictionaries, lists and nested values. Supported NumPy numeric arrays
+include boolean, integer, floating-point and complex values. In an active managed
+Bridge, arrays with more than 64 elements, or a dtype other than `float64`, use
+the existing typed binary descriptor transport. Small `float64` arrays may use
+inline values. A one-dimensional NumPy input is represented as a column array;
+matrix shape and column-major logical order remain explicit.
+
+The current dtype/shape/exact-integer/complex contract is
+[scientific binary descriptor v2](SCIENTIFIC_BINARY_TRANSPORT_v2.md).
+The dev093 transport page describes its historical predecessor. Do not infer
+that current arrays always narrow to float64. The configured runtime and
+operation still determine which input dtypes and scientific shapes are accepted.
+Ordinary legacy float64 results can fall back to Python lists when NumPy is
+absent; that fallback is not a promise that all typed/complex operations work
+without their required runtime support. Scripts do not manage transport files.
 
 ```python
 import numpy as np
@@ -73,7 +83,7 @@ Script Registry `required_apis` is checked before Python source executes.
 Use semicolon-separated declarations:
 
 ```text
-CANONICAL_DATASET_API_v2@2;PLOT_DATASET_API_v3@3:plot.dataset+plotspec
+CANONICAL_DATASET_API_v2@2;PLOT_DATASET_API_v4@4:plot.dataset+plotspec
 ```
 
 The optional `@version`, `:provider_id` and `+capability|capability` clauses
@@ -92,7 +102,9 @@ run identity and `output_dir`. Write a completed scientific file inside that
 framework-owned directory and call
 `DATASET_FILE_PUBLICATION_API_v1/publish` to retain it as a Canonical Dataset
 with source lineage. Structured Datasets use `DATASET_PUBLICATION_API_v2`;
-graphs use `PLOT_DATASET_API_v3`; progress uses `PROGRESS_API_v1`.
+new or rebuilt Viewer scientific 2D/3D graphs use `PLOT_DATASET_API_v4`;
+v3 remains deprecated historical compatibility and is denied to new restricted
+C++ Viewer authoring. Progress uses `PROGRESS_API_v1`.
 
 Read `PARALLEL_EXECUTION_API_v1/resources` before creating a Python pool:
 
@@ -113,7 +125,9 @@ The acceptance example is
 
 ## dev093 local bulk transport
 
-The public v1 API and complete default results are retained. Large arrays use
-scoped binary buffers and a per-job Octave context through the existing provider
-bindings. See `docs/api/SCIENTIFIC_BINARY_TRANSPORT_dev093.md` for shape, dtype,
-resource limits, optional Signal uniform grids/result projection and output bindings.
+The public v1 client calls and complete default results are retained. Large arrays
+use scoped binary buffers and a per-job Octave context through existing provider
+bindings. The dev093 history describes
+that implementation's resource limits, optional Signal uniform grids/result
+projection and output bindings. The current additive dtype contract is
+[scientific binary descriptor v2](SCIENTIFIC_BINARY_TRANSPORT_v2.md).

@@ -12,7 +12,7 @@ namespace eval ::GX {
 }
 
 proc ::GX::configurationApiInfo {} {
-    return [dict create api_name CONFIGURATION_API_v1 api_version 1 scopes {framework user module session runtime} module_scopes {user session} operations {register fields get set validate save module_discover module_fields resolve scoped_value commit subscribe unsubscribe viewer_command_catalog viewer_commands_attach viewer_command_invoke viewer_commands_detach}]
+    return [dict create api_name CONFIGURATION_API_v1 api_version 1 scopes {framework user module session runtime} module_scopes {user session} operations {register fields get set validate save module_discover module_fields resolve scoped_value commit subscribe unsubscribe viewer_command_catalog viewer_commands_attach viewer_command_invoke viewer_commands_detach open_page}]
 }
 
 proc ::GX::configurationPath {} {
@@ -243,6 +243,9 @@ proc ::GX::configurationRegisterBuiltins {} {
         storage.package_dir Storage {Framework package directory} path [file join $::GX::scriptDir plugin_packages] framework \
         runtime.octave Runtime {Octave CLI} command auto user \
         runtime.python Runtime {Python} command auto user \
+        runtime.latex Runtime {LaTeX build driver / engine} command auto user \
+        runtime.bibtex Runtime {BibTeX bibliography tool} command auto user \
+        runtime.biber Runtime {Biber bibliography tool} command auto user \
         runtime.ffmpeg Runtime {FFmpeg} command auto user \
         runtime.ffprobe Runtime {FFprobe} command auto user \
         runtime.tesseract Runtime {Tesseract OCR} command auto user \
@@ -404,7 +407,7 @@ proc ::GX::configurationSave {{fields {}} {apply 1}} {
 
 proc ::GX::runtimeToolDetect {name} {
     set candidates [dict create octave {octave octave-cli} python {python3 python} \
-        ffmpeg {ffmpeg} ffprobe {ffprobe} tesseract {tesseract} spice {ngspice} gmsh {gmsh} getdp {getdp} mpi {mpirun mpiexec} \
+        ffmpeg {ffmpeg} ffprobe {ffprobe} tesseract {tesseract} spice {ngspice} gmsh {gmsh} getdp {getdp} mpi {mpirun mpiexec} latex {latexmk pdflatex xelatex lualatex} bibtex {bibtex} biber {biber} \
         magick {magick} pdftoppm {pdftoppm} mutool {mutool} qpdf {qpdf}]
     if {![dict exists $candidates $name]} { error "Unknown runtime tool '$name'." }
     if {$::tcl_platform(platform) eq "windows"} {
@@ -476,3 +479,4 @@ proc ::GX::openSessionPath {path} {
 
 source [file join [file dirname [info script]] configuration_modules_v1.tcl]
 source [file join [file dirname [info script]] configuration_viewer_commands.tcl]
+source [file join [file dirname [info script]] configuration_latex_v1.tcl]

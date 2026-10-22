@@ -275,6 +275,7 @@ proc ::GX::unitRegistryLoadCore {} {
         unitRegistryRegister $symbol [dict create conversion_kind $kind description "CORE unit"]
     }
     unitRegistryRegister 1 [dict create label Dimensionless conversion_kind intrinsic description {Explicit dimensionless physical coordinate or ratio}]
+    unitRegistryRegister px [dict create label {Source pixel} conversion_kind opaque description {Uncalibrated raster coordinate; no implicit conversion to physical length}]
     unitRegistryRegister mol/L [dict create conversion_kind opaque description "Molar concentration base for explicit relations"]
     unitRegistryRegister mmol/L [dict create conversion_kind scale canonical_unit mol/L scale 0.001 description "Millimolar concentration"]
     unitRegistryRegister °C [dict create label Celsius conversion_kind affine canonical_unit K scale 1 offset 273.15 description "Celsius temperature"]

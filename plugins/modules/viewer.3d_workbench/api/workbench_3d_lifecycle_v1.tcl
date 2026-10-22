@@ -10,13 +10,18 @@ proc ::GX::Workbench3D::disposeInvalidated {} {
     if {$busy} {set invalidationAfter [after 50 ::GX::Workbench3D::disposeInvalidated];return}
     set invalidationAfter {};::GX::Engine3D::close
 }
+proc ::GX::Workbench3D::lifecycleAttach {} {
+    variable document;variable lifecycleSubscription;variable ownerSession
+    if {$lifecycleSubscription ne {}} {::GX::interactiveDocumentLifecycleUnsubscribe $lifecycleSubscription}
+    set ownerSession [::GX::interactiveDocumentSessionToken]
+    # The canonical owner survives widget mounting/suspension. Normal close
+    # unsubscribes; Session/deletion/generation invalidation still disposes it.
+    set lifecycleSubscription [::GX::interactiveDocumentLifecycleSubscribe ::GX::Workbench3D::documentOwnerInvalidated {} $document]
+}
 rename ::GX::Workbench3D::buildPanel ::GX::Workbench3D::buildPanel_lifecycle_base
 proc ::GX::Workbench3D::buildPanel {args} {
     variable panel;variable document;variable lifecycleSubscription;variable ownerSession
     buildPanel_lifecycle_base {*}$args
-    if {$lifecycleSubscription ne {}} {::GX::interactiveDocumentLifecycleUnsubscribe $lifecycleSubscription}
-    set ownerSession [::GX::interactiveDocumentSessionToken]
-    set lifecycleSubscription [::GX::interactiveDocumentLifecycleSubscribe ::GX::Workbench3D::documentOwnerInvalidated $::GX::Engine3D::window $document]
     ttk::button $panel.documents -text "Interactive Documents…" -command [list ::GX::interactiveDocumentManagerDialog $::GX::Engine3D::window]
     pack $panel.documents -fill x
 }

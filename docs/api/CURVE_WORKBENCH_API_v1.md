@@ -3,18 +3,40 @@
 Owner: `viewer.curve_workbench`. Activate through
 `modulePublicApiActivate viewer.curve_workbench CURVE_WORKBENCH_API_v1`.
 
+Restoring a saved workspace re-evaluates its existing driving dimensions without
+creating a scientific edit when the complete retained geometry, constraints and
+parameter definitions are unchanged. Such a no-op preserves the curve's prior
+`edited` flag, empty focus, scientific recipe, canonical payload SHA and revision.
+Actual geometry changes still mark the curve edited; actual parameter-definition
+changes remain History changes even when their evaluated geometry is identical.
+The existing parameter transaction and rollback, source-lifetime guards and
+recovery journal lifecycle continue to apply. A live recovery journal's `unclean`
+status alone does not mean the scientific document was modified.
+
+Undo/Redo restores workspace parameter definitions through their existing
+transactional owner together with the retained native geometry and constraints.
+A later Undo/Redo failure restores the previous parameter definitions, geometry,
+recipe and both command stacks before reporting the original failure.
+After a completed Planar intake, subsequent parameter definitions and edits
+also enter normal History. Only an actively running import suppresses these
+steps; an existing false transaction flag is not an active import. The original
+Planar source remains unchanged until the existing explicit Accept operation.
+
 `::GX::CurveWorkbench::datasetIds` lists compatible Session Dataset IDs;
 `variables dataset_id` returns stable IDs and display labels.
-`loadCurves dataset_id x_id y_id filter_id filter_value family_id order_id`
+`loadCurves dataset x y ?filter=""? ?value=""? ?family=""? ?order=""?`
 reads exact canonical rows through Table Stream, preserving source identity.
-Optional filter, family and ordering bindings remain explicit.
+It returns a dictionary mapping each family key to its sample list, with at most
+65,536 canonical source rows per curve in this point-list loader. Larger sources
+use the existing paged source path. Optional filter, family and ordering
+bindings remain explicit.
 
 `open ?context?` opens the Tk Workbench, with optional `dataset_id` preferred
 source. The Native2D CORE retains geometry and view authority. GUI controllers
 with underscore-prefixed names are host implementation details, not Script
 Bridge entry points.
 
-`publish window requested_dataset_id ?curve_ids?` publishes selected workspace
+`publish w requested ?ids={}?` publishes selected workspace
 geometry through Dataset Publication v2. The supplied ID is validated and
 retained unchanged; collisions reject create-only publication. Point identity,
 source row ordinal, source order, segment identity where applicable, source
@@ -56,15 +78,19 @@ uses bounded clipped native primitives; the host does not invent grid geometry.
 See the [manual](../../plugins/modules/viewer.curve_workbench/MANUAL.md) and
 [Native2D API](../../core/native2d/README.md).
 
-`importFitGeometry name transfer` is the headless provider payload adapter for
+`importFitGeometry name transfer ?coordinateConfiguration={}?` is the headless provider payload adapter for
 `gxtxt.fitter_workbench_transfer.v1`. It validates retained Native2D geometry and
 independent axis units, creates a new Workspace and adopts the archived model
-resources. Scripts use the end-to-end Fitter `result_workbench` operation; no Tk
+resources. It returns a `gxtxt.fit_workbench_receipt.v1` dictionary, including
+`workspace_id`, `curve_id`, `representation`, `reason`, `parameter_domain`,
+`coordinate_units`, `source_reference`, `independent_resources=1` and
+`fit_performed=0`. Explicit coordinate configuration preserves independent X/Y
+units. Scripts use the end-to-end Fitter `result_workbench` operation; no Tk
 window is required. [Transfer contract](FITTER_WORKBENCH_TRANSFER_v1.md).
 
 `openFitTransfer workspace_id` is a host-only GUI adapter: ordinary Session
 Workspace opening plus a visible exact/sampled notice. Scripts use the headless
-transfer and Workspace API operations.
+transfer and Workspace API operations. Its result is the actual Tk window path.
 
 
 ## Explicit scientific coordinate declarations
@@ -119,3 +145,14 @@ translations use only the shared plan's scale. Nonlinear constant-displacement
 requests are rejected. Physical geometry, source bytes and canonical Variable
 metadata remain distinct from display state. Existing Script consumers continue
 to use the public Native/Dataset/Unit APIs; no new private unit engine is exposed.
+
+
+## Source-bound numerical comparison presentation
+
+`comparisonDisplaySource w` returns a binding to the live enabled comparison's actual window/incarnation, Session token, Document identity/generation, explicit reference/target/method and unchanged comparison record. Source provenance is sampled at admission; cached editable geometry does not assert that its original canonical Dataset remains current.
+
+`comparisonDisplayValidate binding record` returns `valid=1` only while the same owner, active definition, exact record/receipt, geometry fingerprints, coordinate signature, Document generation and referenced resources remain valid. Otherwise it reports a precise stale/closed/inactive condition. Neither operation evaluates geometry, saves a Workspace or publishes data. Both are trusted host APIs; Script Bridge and C++ SDK grants are unchanged.
+
+The residual display uses public Plot v4 `comparisonModel` and its existing native widget. Numerical/statistical authority remains the original comparison receipt, including evaluation indices, maximum and sampling policy. Display points are derived comparison samples, never canonical Dataset row identities. Editable main geometry remains under Native2D. Closing or invalidating its owner retires the residual controller and child surface. A stale comparison requires the ordinary Compare action to refresh. Saving an authorized Workspace may rebind its presentation; display failure does not undo a committed scientific save.
+
+The dev109 implementation is integrated separately from focused runtime/GUI acceptance; see `docs/development/plot_comparison418/IMPLEMENTATION.md` in the framework.

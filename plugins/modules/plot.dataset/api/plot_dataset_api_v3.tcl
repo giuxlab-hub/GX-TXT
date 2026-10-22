@@ -84,7 +84,7 @@ proc ::GX::PlotDatasetAPIv3::requireCapability {capability} {
 proc ::GX::PlotDatasetAPIv3::apiInfo {} {
     _v2
     return [dict replace [::GX::PlotDatasetAPIv2::apiInfo] \
-        api_name PLOT_DATASET_API_v3 api_version 3 capabilities [capabilities]]
+        api_name PLOT_DATASET_API_v3 api_version 3 deprecated 1 superseded_by PLOT_DATASET_API_v4 new_viewer_admission denied capabilities [capabilities]]
 }
 
 # These are explicit public v2 delegates. The PlotSpec schema stays v2.

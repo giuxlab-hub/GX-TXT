@@ -84,7 +84,7 @@ proc ::GX::scriptJobsDialog {} {
     wm minsize $w 760 500
     wm protocol $w WM_DELETE_WINDOW ::GX::scriptJobsClose
     bind $w <Destroy> [list ::GX::scriptJobsDestroyed %W]
-    ttk::label $w.intro -text {Local jobs continue after GX-TXT closes. Double-click a script to inspect that exact execution and complete log.}
+    ttk::label $w.intro -text {Local Jobs: double-click an execution for details. Jobs > Open/reconnect Job ID also opens configured remote Jobs. Closing this window does not cancel Jobs.} -wraplength 1150
     pack $w.intro -side top -anchor w -padx 8 -pady 5
     scriptJobsBuildMenus $w
     ttk::panedwindow $w.split -orient vertical

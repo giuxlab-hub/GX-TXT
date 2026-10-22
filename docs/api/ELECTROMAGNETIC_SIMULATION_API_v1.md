@@ -12,6 +12,7 @@ Provider: `math.electromagnetic_simulation`. Activate `ELECTROMAGNETIC_SIMULATIO
 | `loadModel` | Document ID | Normalized scientific model |
 | `runAsync` | model, optional host callback and Document ID | Existing durable managed Job ID |
 | `jobStatus` | Job ID | Actual public durable state |
+| `jobLog` | Job ID, optional offset/count (default 0/65536) | Existing bounded Scientific Execution log receipt; rejects a foreign provider |
 | `cancel` | Job ID | Existing supervisor cancellation receipt |
 | `resultDescribe` | Job ID | Verified physical/residual receipt, solver versions and native SHA |
 | `resultPreview` | Job ID, optional offset and count | At most 100 actual cell rows through bounded public output snapshots |

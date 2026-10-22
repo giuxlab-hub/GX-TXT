@@ -98,3 +98,12 @@ header) must identify one candidate among known datasets. Otherwise the
 binding stays unresolved and requires an explicit selection. Old name-only
 records remain readable through the existing compatibility path; new
 bindings are persisted with Dataset-qualified IDs.
+
+### Generator semantic origin (dev109)
+
+The accepted `semantic_source` values are `user`, `importer`, `plugin`,
+`generator`, `inferred` and `default`. A registered Session Generator may
+explicitly declare `generator`; schema edits and portable Dataset transport
+retain that existing origin rather than relabel it as a user/plugin choice.
+Unknown source tags still reject transactionally. Existing Auto inference and
+explicit user-override behavior are unchanged.

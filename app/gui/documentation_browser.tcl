@@ -33,16 +33,40 @@ proc ::GX::documentationBrowserShow {id} {
     if {[catch {set source [documentationBrowserRead $id]} reason]} {
         set source "# Documentation unavailable\n\n$reason"
     }
-    markupRenderStringToWidget $w $source
+    documentationBrowserManualImagesClear $w
+    set ::GX::DocumentationManual::state($w,text) $w
+    set ::GX::DocumentationManual::state($w,path) [dict get $entry path]
+    set assetRoot {}
+    set docsRoot [file normalize [file join $::GX::scriptDir docs]]
+    if {[dict get $entry path] ne {}} {
+        set documentPath [file normalize [dict get $entry path]]
+        if {[string first "$docsRoot/" $documentPath]==0} {
+            set assetRoot $docsRoot
+        } else {
+            set descriptor [moduleField [dict get $entry owner] descriptor {}]
+            if {$descriptor ne {}} {
+                set moduleRoot [file normalize [file dirname $descriptor]]
+                if {[string first "$moduleRoot/" $documentPath]==0} {set assetRoot $moduleRoot}
+            }
+        }
+    }
+    set ::GX::DocumentationManual::state($w,asset_root) $assetRoot
+    set imageCallback [expr {$assetRoot ne {} ? [list ::GX::documentationBrowserManualImage $w] : {}}]
+    foreach tag [$w tag names] {if {[string match gx_manual_image_* $tag]} {$w tag delete $tag}}
+    markupRenderStringToWidget $w $source $imageCallback
     foreach tag [$w tag names] { if {[string match gx_doc_link_* $tag]} { $w tag delete $tag } }
     set display [$w get 1.0 end-1c]
-    set at 0; set number 0
+    set at 0; set number 0;set textAt 1.0
     while {[regexp -indices -start $at {\[[^]]+\]\([^)]+\)} $display match]} {
         lassign $match first last
         set markdown [string range $display $first $last]
         if {[regexp {\[[^]]+\]\(([^)]+)\)} $markdown -> target]} {
             set tag "gx_doc_link_[incr number]"
-            $w tag add $tag "1.0 + $first chars" "1.0 + [expr {$last+1}] chars"
+            # Embedded images occupy Tk indices but are absent from Text.get.
+            set index [$w search -exact -- $markdown $textAt end]
+            if {$index eq {}} {set at [expr {$last+1}];continue}
+            set textAt "$index + [string length $markdown] chars"
+            $w tag add $tag $index $textAt
             $w tag configure $tag -foreground #145da0 -underline 1
             $w tag bind $tag <Button-1> [list ::GX::documentationBrowserFollow $target]
         }
@@ -153,6 +177,8 @@ proc ::GX::buildHelpPage {} {
     $f.right.text configure -yscrollcommand [list $f.right.sy set]
     pack $f.right.sy -side right -fill y
     pack $f.right.text -fill both -expand 1
+    bind $f.right.text <Configure> [list ::GX::documentationBrowserManualImagesFit $f.right.text]
+    bind $f.right.text <Destroy> [list ::GX::documentationBrowserManualDestroyed $f.right.text %W]
     ttk::label $f.status -textvariable ::GX::documentationBrowserUi(status) -anchor w
     grid $f.status -row 2 -column 0 -sticky ew -padx 9 -pady {0 5}
     set documentationBrowserUi(search) ""

@@ -10,6 +10,8 @@ def main():
     config=configparser.ConfigParser(interpolation=None,strict=False);config.read(runtime)
     directory=Path(os.environ['GXTXT_DEBUG_DIRECTORY']);token=os.environ['GXTXT_DEBUG_TOKEN'];sha=config['config']['script_sha256']
     native=directory/'native_state.json';sequence=0;last_command='';paused=False;buffer=b'';deadline=time.monotonic()+600;pending_capture=False
+    last_user_observation=None
+    exception_observation=None
     master,slave=pty.openpty();settings=termios.tcgetattr(slave);settings[3]&=~(termios.ECHO|termios.ECHONL);termios.tcsetattr(slave,termios.TCSANOW,settings)
     # The existing CORE runner and registered snapshot remain the scientific executor.
     command.insert(1,'--interactive');command.insert(2,'--no-history')
@@ -27,6 +29,27 @@ def main():
         send("[__gx_dbg_native_stack,__gx_dbg_native_frame]=dbstack('-completenames');gxtxt_debug_capture("+literal(native)+','+literal(token)+','+literal(sha)+",__gx_dbg_native_stack,__gx_dbg_native_frame);clear __gx_dbg_native_stack __gx_dbg_native_frame;");pending_capture=True
     normal_prompt=('GXTXT_'+token+'> ').encode('ascii')
     snapshot=Path(config['runtime']['output_dir'])/'executed_script.m'
+    def exception_attribution(observed=None):
+        path=directory/'exception.json'
+        if not path.is_file():return None
+        if path.is_symlink() or path.stat().st_size>1048576:raise ValueError('Native exception sideband exceeds managed bounds')
+        exception=json.loads(path.read_text())
+        if exception.pop('token',None)!=token or exception.get('source_sha256')!=sha or exception.get('source')!=str(snapshot):
+            raise ValueError('Native exception source identity mismatch')
+        frames=exception.get('stack',[])
+        if isinstance(frames,dict):frames=[frames]
+        if not frames or not any(frame.get('file')==str(snapshot) for frame in frames):return None
+        # These are the actual err.stack frames, not inferred source parsing.
+        result=dict(observed or {},exception=exception,stack=frames,selected_frame=0,
+                    line=frames[0].get('line',0),function=frames[0].get('name',''),
+                    locals_status='last known paused user snapshot; user exception has unwound',
+                    locals=(last_user_observation or {}).get('locals',{}),
+                    globals=(last_user_observation or {}).get('globals',{}))
+        if observed:
+            result['technical_stack']=observed.get('stack',[])
+            result['technical_locals']=observed.get('locals',{})
+        result['last_user_snapshot_sequence']=(last_user_observation or {}).get('observation_sequence')
+        return result
     native_heading=re.compile(rb'(?m)^stopped in [^\r\n]+ at line [0-9]+ \['+re.escape(str(snapshot).encode('utf-8'))+rb'\][ \t]*\r?\n')
     def emit(data):
         def diagnostic(match):
@@ -67,6 +90,11 @@ def main():
                 if isinstance(observed.get('stack'),dict):observed['stack']=[observed['stack']]
                 observed.setdefault('selected_frame',0)
                 observed.pop('state',None);observed.pop('sequence',None);observed.pop('schema',None);observed.pop('backend',None);observed.pop('source_sha256',None)
+                attributed=exception_attribution(observed)
+                if attributed:
+                    observed=attributed;exception_observation=attributed
+                elif observed['stack'][observed.get('selected_frame',0)].get('file')==str(snapshot):
+                    last_user_observation=dict(observed,observation_sequence=sequence+1)
                 publish('PAUSED',**observed);paused=True;pending_capture=False
             control=directory/'command.json'
             if control.is_file():
@@ -87,7 +115,10 @@ def main():
             if report.is_file() and buffer.endswith(normal_prompt) and not paused:
                 emit(buffer[:-len(normal_prompt)]);buffer=b'';send('exit;')
         if buffer:emit(buffer)
-        rc=child.wait();publish('COMPLETED' if rc==0 else 'FAILED',line=0,exit_code=rc);return rc
+        rc=child.wait()
+        attributed=exception_attribution(exception_observation)
+        publish('FAILED' if attributed or rc else 'COMPLETED',**(dict(attributed,exit_code=rc) if attributed else dict(line=0,exit_code=rc)))
+        return rc
     finally:
         if child.poll() is None:
             child.terminate()

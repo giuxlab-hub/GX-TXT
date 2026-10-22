@@ -16,11 +16,37 @@ namespace eval ::GX::Workbench3D {
     variable cleanupNotice {}
     variable allocationCounters {}
     variable extrusionTargets {};variable keepExtrusionTool 0
+    # Tk presentation destinations are process-local, never scientific payload.
+    variable guiHost {};variable planarHosts {}
 }
 proc ::GX::Workbench3D::defaultModel {} {
-    return [dict create format workbench3d.document.v1 working_unit mm objects {} profiles {} next_object 0 next_profile 0 next_organization 0 next_comparison 0 recipe {} groups {} constraints {} measurements {} comparisons {} views {} selection_sets {} layers {} attrs {}]
+    return [dict create format workbench3d.document.v1 working_unit mm objects {} profiles {} next_object 0 next_profile 0 next_organization 0 next_comparison 0 recipe {} groups {} constraints {} measurements {} comparisons {} views {} selection_sets {} layers {} attrs {} view [::GX::viewerSceneDefaults]]
+}
+proc ::GX::Workbench3D::apiInfo {} {
+    return [dict create api_id WORKBENCH_3D_API_v1 api_version 1 scientific_owner viewer.3d_workbench/workbench_3d document_format workbench3d.document.v1 operations {activateDocument guiMount guiInspect selectionSet selectionApply guiCommand} gui_commands [concat {primitive inspect save undo redo close} [guiFormCommands]] editable_hosts 1 sdk_exposure finite_declared_workbench_command full_parity_acceptance pending]
 }
 proc ::GX::Workbench3D::call {action request} {variable scene;return [::GX::native3DGeometryCall $scene $action $request]}
+proc ::GX::Workbench3D::projectSelection {} {
+    # Semantic selection belongs to this owner; a legacy tree is optional.
+    # Never turn an accepted geometry commit into a failed operation because
+    # its old presentation is absent or its widget acknowledgement fails.
+    variable panel;variable selection;variable model;variable profile;variable status
+    set ::GX::Engine3D::selectedLayer {}
+    if {[llength $selection]==1} {
+        set id [lindex $selection 0]
+        if {[dict exists $model objects $id] || [dict exists $model profiles $id]} {
+            set ::GX::Engine3D::selectedLayer $id
+            if {[dict exists $model profiles $id]} {set profile $id}
+        }
+    }
+    if {$panel ne {} && [winfo exists $panel.objects]} {
+        if {[catch {
+            $panel.objects selection set $selection
+            if {[llength $selection]} {$panel.objects see [lindex $selection 0]}
+        } message]} {set status "Selection presentation failed: $message"}
+    }
+    guiPresentationChanged
+}
 proc ::GX::Workbench3D::millimeters {} {
     variable model
     set unit [dict get $model working_unit]
@@ -86,6 +112,7 @@ proc ::GX::Workbench3D::commit {before operation parameters targets results} {
     # that committed action into an apparent rollback or discard its undo.
     set cleanup ok
     if {[catch {::GX::interactiveDocumentResourceCollect $document $preview} message]} {set cleanup $message;set cleanupNotice $message;set status "Action committed. Resource cleanup failed: $message"}
+    guiPresentationChanged
     return [dict create status committed cleanup_status $cleanup]
 }
 proc ::GX::Workbench3D::resourceToFile {reference path} {
@@ -111,7 +138,10 @@ proc ::GX::Workbench3D::renderResource {reference id fields} {
 proc ::GX::Workbench3D::snapshotObject {receipt} {
     variable scene
     set token [dict get $receipt object_token];set kind [dict get $receipt kind]
-    set format [expr {$kind eq "brep" ? "step" : "stl"}]
+    # Authoritative mesh snapshots must preserve native Float64 coordinates.
+    # Binary STL is suitable for the separate display artifact, but rounds
+    # coordinates to Float32 and cannot be the Document/History source.
+    set format [expr {$kind eq "brep" ? "step" : "vtp"}]
     set resource [::GX::native3DGeometryExportResource $scene $token $format [millimeters] local]
     if {$kind eq "brep"} {
         set mesh [call mesh [dict create object_token $token linear_deflection .01 angular_deflection .3 weld_tolerance 1e-8 max_triangles 1000000 max_output_bytes 134217728]]
@@ -134,7 +164,7 @@ proc ::GX::Workbench3D::restoreStage {} {
     variable scene;variable document;variable model;variable tokens;variable profileTokens;variable groupTokens;variable module;variable provider
     set scene [::GX::native3DGeometryOpen $document];set tokens {};set profileTokens {};set groupTokens {}
     dict for {id record} [dict get $model objects] {
-        set action [expr {[dict get $record kind] eq "brep" ? "load_step" : "load_mesh"}]
+        set action [expr {[dict get $record kind] eq "brep" ? "restore_step" : "load_mesh"}]
         set receipt [call $action [dict create resource [dict get $record geometry]]]
         dict set tokens $id [dict get $receipt object_token]
     }
@@ -149,10 +179,12 @@ proc ::GX::Workbench3D::restoreStage {} {
         foreach original $originals {call delete [dict create object_token $original]}
         dict set groupTokens $id [dict get $receipt group_token]
     }
-    if {[dict exists $model view]} {
-        ::GX::viewerSceneSet $module $provider [dict get $model view]
-        foreach {field key} {cameraPosition camera_position cameraTarget camera_target cameraUp camera_up planeOrigin working_plane_origin planeNormal working_plane_normal planeU working_plane_u_axis} {set ::GX::Engine3D::$field [dict get $model view $key]}
-    }
+    # The shared editable host survives Document switches. An older or empty
+    # Document without a saved view must not inherit another Document's marker,
+    # measurement, field or curve source references.
+    set view [::GX::datasetPublicationV2DictDefault $model view [::GX::viewerSceneDefaults]]
+    ::GX::viewerSceneSet $module $provider $view
+    foreach {field key} {cameraPosition camera_position cameraTarget camera_target cameraUp camera_up planeOrigin working_plane_origin planeNormal working_plane_normal planeU working_plane_u_axis} {set ::GX::Engine3D::$field [dict get $view $key]}
     refresh
 }
 proc ::GX::Workbench3D::restore {} {
@@ -205,43 +237,74 @@ proc ::GX::Workbench3D::loadProfile {} {
     variable closedProfile;variable includeProfile
     variable convertProfileUnits;variable assumeProfileUnit
     set before $model
-    set plane [dict create origin [split $::GX::Engine3D::planeOrigin {;}] normal [split $::GX::Engine3D::planeNormal {;}] u_axis [split $::GX::Engine3D::planeU {;}]]
-    if {$includeProfile} {
-        if {![dict exists $model profiles $profile]} {error "Select a profile to receive the additional contour"}
-        if {[dict get $model profiles $profile plane] ne $plane} {error "Additional contours must use the same captured working plane"}
+    # Retain admitted operation inputs while the native owner yields for RPC.
+    set sourceDataset $dataset;set sourceX $x;set sourceY $y
+    set sourceClosed $closedProfile;set append $includeProfile
+    set targetProfile $profile;set priorActiveProfile $profile
+    set convertUnits $convertProfileUnits;set assumeUnit $assumeProfileUnit
+    set captured [::GX::native3DGeometrySceneInfo $scene]
+    set view [::GX::viewerSceneGet viewer.3d_workbench workbench_3d]
+    set plane [dict create origin [split [dict get $view working_plane_origin] {;}] normal [split [dict get $view working_plane_normal] {;}] u_axis [split [dict get $view working_plane_u_axis] {;}]]
+    if {$append} {
+        if {![dict exists $model profiles $targetProfile]} {error "Select a profile to receive the additional contour"}
+        if {[::GX::datasetPublicationV2DictDefault [dict get $model profiles $targetProfile] locked 0]} {error "The selected profile is locked"}
+        if {[dict get $model profiles $targetProfile plane] ne $plane} {error "Additional contours must use the same captured working plane"}
     }
-    set request [dict create dataset_id $dataset x_variable_id $x y_variable_id $y]
-    set schema [::GX::datasetVariableSchemaV3 $dataset];set units {}
-    foreach axis [list $x $y] {foreach variable $schema {if {[dict get $variable variable_id] eq $axis} {lappend units [dict get $variable unit];break}}}
+    set request [dict create dataset_id $sourceDataset x_variable_id $sourceX y_variable_id $sourceY]
+    set schema [::GX::datasetVariableSchemaV3 $sourceDataset];set units {}
+    foreach axis [list $sourceX $sourceY] {foreach variable $schema {if {[dict get $variable variable_id] eq $axis} {lappend units [dict get $variable unit];break}}}
     set working [dict get $model working_unit];set needsConversion 0;set emptyUnits 0
     foreach unit $units {if {$unit eq {}} {set emptyUnits 1} elseif {$unit ne $working} {set needsConversion 1;::GX::unitRegistryConversionPlan $unit $working}}
-    if {$emptyUnits&&(!$assumeProfileUnit||$needsConversion||[llength [lsort -unique $units]]!=1)} {error "Missing coordinate units: explicitly assume the working unit for both axes, or normalize the Dataset Schema first"}
+    if {$emptyUnits&&(!$assumeUnit||$needsConversion||[llength [lsort -unique $units]]!=1)} {error "Missing coordinate units: explicitly assume the working unit for both axes, or normalize the Dataset Schema first"}
     if {$needsConversion} {
-        if {!$convertProfileUnits} {error "Coordinate units differ from $working; enable explicit profile unit conversion"}
-        dict set request transform_manifest [dict create api_version 1 operation convert_units sources [list [dict create dataset_id $dataset variable_ids [list $x $y] x_variable_id $x y_variable_id $y]] output {} options [dict create target_units [dict create $x $working $y $working] include_lineage 1 lineage_prefix native3d_unit_]]
+        if {!$convertUnits} {error "Coordinate units differ from $working; enable explicit profile unit conversion"}
+        dict set request transform_manifest [dict create api_version 1 operation convert_units sources [list [dict create dataset_id $sourceDataset variable_ids [list $sourceX $sourceY] x_variable_id $sourceX y_variable_id $sourceY]] output {} options [dict create target_units [dict create $sourceX $working $sourceY $working] include_lineage 1 lineage_prefix native3d_unit_]]
     }
     set source [::GX::curveSourceOpen $::GX::currentSession $request]
     try {
         set descriptor [::GX::curveSourceDescribe $source]
         set units [lmap variable [dict get $descriptor variables] {dict get $variable unit}]
-        foreach unit $units {if {$unit ne $working&&!($unit eq {}&&$assumeProfileUnit)} {error "Profile coordinate conversion did not produce the working unit $working"}}
-        set receipt [::GX::native3DGeometryProfileFromSources $scene [list [dict create source_token $source closed $closedProfile]] $plane 1e-8]
+        foreach unit $units {if {$unit ne $working&&!($unit eq {}&&$assumeUnit)} {error "Profile coordinate conversion did not produce the working unit $working"}}
+        set receipt [::GX::native3DGeometryProfileFromSources $scene [list [dict create source_token $source closed $sourceClosed]] $plane 1e-8]
     } finally {::GX::curveSourceClose $source}
-    set id [nextId next_profile profile];set contours {};set bindings [dict get $receipt source_bindings]
+    if {[::GX::native3DGeometrySceneInfo $scene] ne $captured} {error "Profile geometry owner changed during intake; reopen source selection"}
+    set contours {};set bindings [dict get $receipt source_bindings]
+    set previousToken {};set appendTarget {}
     foreach binding $bindings {lappend contours [dict create xy_resource [dict get $binding xy_resource] gap_resource [dict get $binding gap_resource] closed [dict get $binding closed]]}
-    if {$includeProfile} {
-        if {![dict exists $model profiles $profile]} {error "Select a profile to receive the additional contour"}
-        set prior [dict get $model profiles $profile]
+    if {$append} {
+        if {![dict exists $model profiles $targetProfile]} {error "Select a profile to receive the additional contour"}
+        set prior [dict get $model profiles $targetProfile]
         if {[dict get $prior plane] ne $plane} {error "Additional contours must use the same captured working plane"}
         set contours [concat [dict get $prior contours] $contours];set bindings [concat [dict get $prior source_bindings] $bindings]
         set singleToken [dict get $receipt profile_token]
         try {set receipt [call profile [dict create contours $contours plane $plane tolerance 1e-8]]} finally {call profile_delete [dict create profile_token $singleToken]}
+        set id $targetProfile;set appendTarget $id
+        set previousToken [dict get $profileTokens $id]
+        set record [dict merge $prior [dict create contours $contours source_bindings $bindings]]
+    } else {
+        set id {}
+        set record [dict create contours $contours source_bindings $bindings plane $plane tolerance 1e-8 name $sourceDataset source_dataset_id $sourceDataset working_unit $working assumed_coordinate_unit [expr {$emptyUnits ? $working : {}}]]
     }
-    dict set model profiles $id [dict create contours $contours source_bindings $bindings plane $plane tolerance 1e-8 name $dataset source_dataset_id $dataset]
-    dict set model profiles $id working_unit $working;dict set model profiles $id assumed_coordinate_unit [expr {$emptyUnits ? $working : {}}]
-    dict set model profiles $id display_geometry [::GX::native3DGeometryProfileViewResource $scene [dict get $receipt profile_token]]
+    try {
+        dict set record display_geometry [::GX::native3DGeometryProfileViewResource $scene [dict get $receipt profile_token]]
+    } on error {message options} {
+        catch {call profile_delete [dict create profile_token [dict get $receipt profile_token]]}
+        return -options $options $message
+    }
+    if {$id eq {}} {set id [nextId next_profile profile]}
+    dict set model profiles $id $record
     dict set profileTokens $id [dict get $receipt profile_token];set profile $id
-    commit $before profile_from_sources [dict create source_request $request plane $plane closed $closedProfile tolerance 1e-8] {} [list $id]
+    try {
+        commit $before profile_from_sources [dict create source_request $request plane $plane closed $sourceClosed tolerance 1e-8 append_to $appendTarget] $appendTarget [list $id]
+    } on error {message options} {
+        if {$previousToken ne {}} {dict set profileTokens $id $previousToken} else {dict unset profileTokens $id}
+        set profile $priorActiveProfile
+        catch {call profile_delete [dict create profile_token [dict get $receipt profile_token]]}
+        return -options $options $message
+    }
+    if {$previousToken ne {} && [catch {call profile_delete [dict create profile_token $previousToken]} cleanup]} {
+        set ::GX::Workbench3D::cleanupNotice "Accepted profile; previous native contour cleanup failed: $cleanup"
+    }
     ::GX::Engine3D::rerender
 }
 proc ::GX::Workbench3D::cancelPreview {} {
@@ -283,7 +346,7 @@ proc ::GX::Workbench3D::acceptPreview {} {
         dict set model objects $id source_bindings [dict get $preview profile_snapshot source_bindings]
         if {$replace ne {}&&[dict get $before objects $replace group] ne {}} {structuralCommit $before extrude $parameters [list [dict get $parameters profile_id] $replace] [list $id] $priorTokens} else {commit $before extrude $parameters [list [dict get $parameters profile_id] $replace] [list $id]}
     } on error {message options} {set model $before;set tokens $priorTokens;return -options $options $message}
-    set preview {};set selection [list $id];$::GX::Workbench3D::panel.objects selection set $selection
+    set preview {};set selection [list $id];projectSelection
     if {$replace ne {}} {
         if {[dict get $before objects $replace group] eq {}} {committedCleanupDelete [list [dict get $priorTokens $replace]]}
     }
@@ -300,7 +363,7 @@ proc ::GX::Workbench3D::createPrimitive {} {
         if {[catch {call delete [dict create object_token [dict get $receipt object_token]]} cleanup]} {append message "; temporary geometry cleanup failed: $cleanup"}
         return -options $options $message
     }
-    set selection [list $id];$panel.objects selection set $id;$panel.objects see $id
+    selectionSet [list $id]
     ::GX::Engine3D::rerender
 }
 proc ::GX::Workbench3D::importDatasetForm {} {
@@ -328,7 +391,7 @@ proc ::GX::Workbench3D::importDatasetApply {captured values} {
         if {$receipt ne {}&&[catch {call delete [dict create object_token [dict get $receipt object_token]]} cleanup]} {append message "; intake cleanup failed: $cleanup"}
         return -options $options $message
     } finally {set busy 0}
-    set selection [list $id];$panel.objects selection set $id;$panel.objects see $id
+    set selection [list $id];projectSelection
     ::GX::Engine3D::rerender
 }
 proc ::GX::Workbench3D::selected {} {
@@ -354,7 +417,7 @@ proc ::GX::Workbench3D::deriveSelected {action parameters {replace 0} {render 1}
     if {$replace} {
         if {[dict get $before objects $id group] eq {}} {committedCleanupDelete [list [dict get $priorTokens $id]]}
     }
-    set selection [list $result];$::GX::Workbench3D::panel.objects selection set $selection
+    set selection [list $result];projectSelection
     if {$render} {::GX::Engine3D::rerender}
 }
 proc ::GX::Workbench3D::constraintSpecs {id} {
@@ -383,7 +446,7 @@ proc ::GX::Workbench3D::enforceConstraints {id receipt} {
     return $result
 }
 proc ::GX::Workbench3D::constraintForm {} {
-    variable constraintKind;variable model
+    variable constraintKind;variable model;variable scene
     set id [selected];set fields {};set values {}
     dict set fields kind [dict create type choice label {Constraint type} values {fixed coincident distance point_on_plane angle_lines parallel_lines perpendicular_lines point_on_line point_on_surface aligned_axes} default $constraintKind]
     dict set values kind $constraintKind
@@ -391,13 +454,13 @@ proc ::GX::Workbench3D::constraintForm {} {
         dict set fields $key [dict create type [expr {$key in {target tolerance} ? "number" : "string"}] label $label default $value];dict set values $key $value
     }
     dict set fields tolerance min 1e-300
-    ::GX::uiFieldFormCreate $::GX::Engine3D::window.constraint "Add constraint — $id ([dict get $model working_unit])" $fields $values [list ::GX::Workbench3D::constraintApply $id] $::GX::Engine3D::window
+    ::GX::uiFieldFormCreate $::GX::Engine3D::window.constraint "Add constraint — $id ([dict get $model working_unit])" $fields $values [list ::GX::Workbench3D::purposeFormApply [::GX::native3DGeometrySceneInfo $scene] [list ::GX::Workbench3D::constraintApply $id]] $::GX::Engine3D::window
 }
 proc ::GX::Workbench3D::measurementForm {} {
-    variable measurementKind;variable model
+    variable measurementKind;variable model;variable scene
     set id [selected]
     set fields [dict create kind [dict create type choice label Measurement values {distance delta_x delta_y delta_z angle distance_on_plane point_line_distance point_plane_distance line_line_angle line_plane_angle plane_plane_angle point_surface_distance} default $measurementKind] space [dict create type choice label {Point coordinate frame} values {world local} default world] points [dict create type string label {Up to four XYZ triples} default {{0 0 0} {1 0 0} {0 1 0} {0 0 1}}] surface_object_id [dict create type string label {Surface mesh object ID} default {}] plane2_origin [dict create type string label {Second plane origin (XYZ)} default {0 0 0}] plane2_normal [dict create type string label {Second plane normal (XYZ)} default {1 0 0}] plane2_u [dict create type string label {Second plane U axis (XYZ)} default {0 1 0}]]
-    ::GX::uiFieldFormCreate $::GX::Engine3D::window.measurement "Measure — $id ([dict get $model working_unit])" $fields {} [list ::GX::Workbench3D::measurementApply $id] $::GX::Engine3D::window
+    ::GX::uiFieldFormCreate $::GX::Engine3D::window.measurement "Measure — $id ([dict get $model working_unit])" $fields {} [list ::GX::Workbench3D::purposeFormApply [::GX::native3DGeometrySceneInfo $scene] [list ::GX::Workbench3D::measurementApply $id]] $::GX::Engine3D::window
 }
 proc ::GX::Workbench3D::measurementApply {id values} {
     variable model;variable tokens;variable measurementKind;variable status
@@ -627,7 +690,7 @@ proc ::GX::Workbench3D::constraintApply {id values} {
         if {[dict get $before objects $id group] ne {}} {structuralCommit $before constraint_solve [dict create constraint_id $constraint specification $spec] [list $id] [list $id] $priorTokens} else {commit $before constraint_solve [dict create constraint_id $constraint specification $spec] [list $id] [list $id]}
     } on error {message options} {set model $before;set tokens $priorTokens;if {$receipt ne {}} {call delete [dict create object_token [dict get $receipt object_token]]};return -options $options $message}
     if {[dict get $before objects $id group] eq {}} {committedCleanupDelete [list [dict get $priorTokens $id]]}
-    set selection [list $id];$::GX::Workbench3D::panel.objects selection set $selection
+    set selection [list $id];projectSelection
     set status "Constraint residual [dict get $receipt maximum_residual]; [expr {[dict get $receipt constraint_status]==3 ? {satisfied, remaining degrees of freedom} : {satisfied}}]"
     ::GX::Engine3D::rerender
 }
@@ -645,13 +708,13 @@ proc ::GX::Workbench3D::constraintsPanel {} {
     ttk::button $window.solve -text "Solve selected object's complete constraint set" -command [list ::GX::Workbench3D::safe [list ::GX::Workbench3D::solveConstraints $window]];pack $window.solve -fill x
 }
 proc ::GX::Workbench3D::editConstraint {window} {
-    variable model
+    variable model;variable scene
     set ids [$window.list selection];if {[llength $ids]!=1} {error "Select one constraint"};set id [lindex $ids 0]
     set record [dict get $model constraints $id];set spec [dict get $record specification]
     set fields [dict create tolerance [dict create type number label Tolerance min 1e-300 required 1] enabled [dict create type boolean label Enabled default 1]]
     set values [dict create tolerance [dict get $spec tolerance] enabled [dict get $record enabled]]
     if {[dict exists $spec target]} {dict set fields target [dict create type number label {Target (length or radians, according to type)} required 1];dict set values target [dict get $spec target]}
-    ::GX::uiFieldFormCreate $::GX::Engine3D::window.constraintEdit "Edit $id" $fields $values [list ::GX::Workbench3D::editConstraintApply $id] $::GX::Engine3D::window
+    ::GX::uiFieldFormCreate $::GX::Engine3D::window.constraintEdit "Edit $id" $fields $values [list ::GX::Workbench3D::purposeFormApply [::GX::native3DGeometrySceneInfo $scene] [list ::GX::Workbench3D::editConstraintApply $id]] $::GX::Engine3D::window
 }
 proc ::GX::Workbench3D::editConstraintApply {id values} {
     variable model
@@ -679,8 +742,8 @@ proc ::GX::Workbench3D::deleteConstraints {window} {
     commit $before delete_constraints [dict create constraint_ids $ids] {} {};destroy $window;constraintsPanel
 }
 proc ::GX::Workbench3D::editForm {} {
-    variable editAction;variable model
-    selected
+    variable editAction;variable model;variable scene
+    if {[string match group_* $editAction]} {selectedGroup} else {selected}
     set fields {};set values {}
     set action [string map {group_ {}} $editAction]
     switch -- $action {
@@ -696,7 +759,7 @@ proc ::GX::Workbench3D::editForm {} {
     }
     foreach component $components value $defaults {
         set label [string map {_ { }} $component]
-        if {$component in {dx dy dz pivot_x pivot_y pivot_z origin_x origin_y origin_z tolerance linear_deflection}} {append label " ([dict get $model working_unit])"} elseif {$component eq "angle_deg"} {append label " (degrees)"} elseif {$component eq "angular_deflection"} {append label " (radians)"} elseif {$component eq "max_output_bytes"} {append label " (bytes)"} elseif {$component eq "max_triangles"} {append label " (count)"} else {append label " (dimensionless)"}
+        if {$component in {dx dy dz pivot_x pivot_y pivot_z origin_x origin_y origin_z tolerance linear_deflection weld_tolerance}} {append label " ([dict get $model working_unit])"} elseif {$component eq "angle_deg"} {append label " (degrees)"} elseif {$component eq "angular_deflection"} {append label " (radians)"} elseif {$component eq "max_output_bytes"} {append label " (bytes)"} elseif {$component eq "max_triangles"} {append label " (count)"} else {append label " (dimensionless)"}
         dict set fields $component [dict create type number label $label required 1 default $value];dict set values $component $value
     }
     if {$editAction eq "mesh"} {foreach key {max_triangles max_output_bytes} {dict set fields $key type integer;dict set fields $key min 1}}
@@ -707,7 +770,7 @@ proc ::GX::Workbench3D::editForm {} {
         dict set fields tolerance [dict create type number label "Alignment tolerance ([dict get $model working_unit])" required 1 min 0];dict set values tolerance 1e-8
     }
     if {$editAction in {clip clip_cap}} {dict set fields keep_positive [dict create type boolean label {Keep positive side} default 1];dict set values keep_positive 1}
-    ::GX::uiFieldFormCreate $::GX::Engine3D::window.operation "[string totitle $editAction] — [dict get $model working_unit]" $fields $values [list ::GX::Workbench3D::editApply $editAction] $::GX::Engine3D::window
+    ::GX::uiFieldFormCreate $::GX::Engine3D::window.operation "[string totitle $editAction] — [dict get $model working_unit]" $fields $values [list ::GX::Workbench3D::purposeFormApply [::GX::native3DGeometrySceneInfo $scene] [list ::GX::Workbench3D::editApply $editAction]] $::GX::Engine3D::window
 }
 proc ::GX::Workbench3D::editApply {action values} {
     set grouped [string match group_* $action];set action [string map {group_ {}} $action]
@@ -724,13 +787,24 @@ proc ::GX::Workbench3D::editApply {action values} {
     if {$action in {mesh_boundaries mesh_intersection_pairs}} {meshInspection $action $parameters;return}
     if {$grouped} {groupOperation $action $parameters} else {deriveSelected $action $parameters [expr {$action in {translate rotate scale reset_transform}}]}
 }
+proc ::GX::Workbench3D::selectedGroup {} {
+    variable model;variable selection
+    if {![llength $selection]} {error {Select a grouped object or members of one group}}
+    set group {}
+    foreach id $selection {
+        if {![dict exists $model objects $id]} {error {Select accepted objects from one group}}
+        set candidate [dict get $model objects $id group]
+        if {$candidate eq {} || ![dict exists $model groups $candidate] || ($group ne {} && $candidate ne $group)} {error {Select accepted objects from one group}}
+        set group $candidate
+    }
+    return $group
+}
 proc ::GX::Workbench3D::groupOperation {{action create} {parameters {}}} {
     variable model;variable tokens;variable selection;variable groupTokens;variable groupName
     if {![llength $selection]} {error "Select objects in the Workbench tree"}
     set ids $selection;set before $model;set priorTokens $tokens;set group {}
     if {$action ne "create"} {
-        set group [dict get $model objects [lindex $ids 0] group]
-        if {$group eq {}||![dict exists $model groups $group]} {error "Select a grouped object"}
+        set group [selectedGroup]
         set ids [dict get $model groups $group members]
     }
     foreach id $ids {
@@ -771,7 +845,7 @@ proc ::GX::Workbench3D::groupOperation {{action create} {parameters {}}} {
         if {$priorGroupToken ne {}} {if {[catch {call group_delete [dict create group_token $priorGroupToken]} message]} {lappend cleanup $message}} else {foreach original $originals {if {[catch {call delete [dict create object_token $original]} message]} {lappend cleanup $message}}}
         if {$cleanup ne {}} {set ::GX::Workbench3D::cleanupNotice "Group action committed; predecessor cleanup failed: [join $cleanup {; }]"}
     }
-    set selection $results;$::GX::Workbench3D::panel.objects selection set $selection
+    set selection $results;projectSelection
     ::GX::Engine3D::rerender
 }
 proc ::GX::Workbench3D::sectionProfile {parameters} {
@@ -1002,10 +1076,9 @@ proc ::GX::Workbench3D::buildPanel {window} {
 proc ::GX::Workbench3D::selectTree {} {variable panel;variable selection;variable model;variable profile;set selection [$panel.objects selection];if {[llength $selection]==1} {set ::GX::Engine3D::selectedLayer [lindex $selection 0];if {[dict exists $model profiles [lindex $selection 0]]} {set profile [lindex $selection 0]}}}
 proc ::GX::Workbench3D::hostSelection {pick} {
     variable panel;variable selection;variable model;variable status
-    if {$panel eq {}||![winfo exists $panel]} return
     set id [dict get $pick layer_id]
     if {![dict exists $model objects $id]&&![dict exists $model profiles $id]} return
-    set selection [list $id];$panel.objects selection set $id;$panel.objects see $id
+    selectionSet [list $id]
     set status "Selected $id at [dict get $pick world_point]"
 }
 proc ::GX::Workbench3D::close {} {
@@ -1014,22 +1087,29 @@ proc ::GX::Workbench3D::close {} {
     if {$scene ne {}} {::GX::native3DGeometryClose $scene;set scene {}}
     set panel {};set preview {}
 }
-proc ::GX::Workbench3D::open {{context {}}} {
-    variable module;variable provider;variable document;variable model;variable undo;variable redo;variable scene;variable allocationCounters
-    package require Tk
+proc ::GX::Workbench3D::activateDocument {{context {}}} {
+    variable module;variable provider;variable document;variable model;variable undo;variable redo;variable scene;variable allocationCounters;variable status;variable recoveryNotice
     if {$::GX::currentSession eq {}} {error "Open a Session first"}
+    package require Tk
     set requested [::GX::datasetPublicationV2DictDefault $context workspace_id {}]
+    set forceNew [expr {$requested eq {new}}]
+    if {$forceNew} {set requested {}}
     if {$requested ne {}} {
         set requestedOwner [::GX::interactiveDocumentRead $requested]
         if {[dict get $requestedOwner module_id] ne $module || [dict get $requestedOwner provider_id] ne $provider || [dict get $requestedOwner format] ne "workbench3d.document.v1"} {error {Requested3D Workspace has another scientific owner}}
     }
-    if {$scene ne {}&&[winfo exists $::GX::Engine3D::window]} {
+    if {$scene ne {}} {
         if {$requested ne {} && $requested ne $document} {error {Close the active3D Workspace before opening another explicit identity}}
-        raise $::GX::Engine3D::window;return $::GX::Engine3D::window
+        if {$forceNew} {error {Close the active3D Workspace before creating another Document}}
+        ::GX::native3DGeometrySceneInfo $scene
+        return $document
     }
-    ::GX::Engine3D::configureHost $module $provider [dict create panel ::GX::Workbench3D::buildPanel close ::GX::Workbench3D::close edit ::GX::Workbench3D::hostEdit selection ::GX::Workbench3D::hostSelection]
+    if {[::GX::Engine3D::ownerModule] ne $module || [::GX::Engine3D::ownerProvider] ne $provider} {
+        ::GX::Engine3D::configureHost $module $provider [dict create close ::GX::Workbench3D::close edit ::GX::Workbench3D::hostEdit selection ::GX::Workbench3D::hostSelection]
+    }
+    set recoveryNotice {}
     set docs [::GX::interactiveDocumentList $module $provider]
-    if {$requested ne {} || [llength $docs]} {
+    if {!$forceNew && ($requested ne {} || [llength $docs])} {
         if {$requested ne {}} {set document $requested} else {set document [dict get [lindex $docs end] id]}
         set recovery [::GX::workbenchRecoveryPrompt $document .]
         if {[dict get $recovery status] eq "corrupt"} {set ::GX::Workbench3D::recoveryNotice "Recovery journal is corrupt; normal document remains available: [dict get $recovery reason]"}
@@ -1046,9 +1126,148 @@ proc ::GX::Workbench3D::open {{context {}}} {
     set ::GX::Workbench3D::requestedUnit [dict get $model working_unit]
     if {[dict get [::GX::workbenchRecoveryInspect $document] status] ne "corrupt"&&[catch {::GX::workbenchRecoveryBegin $document} recoveryMessage]} {set ::GX::Workbench3D::recoveryNotice "Recovery journal unavailable: $recoveryMessage"}
     restore
-    set view [::GX::viewerSceneResolve $module $provider]
-    return [::GX::Engine3D::backend open $view]
+    set status [expr {$forceNew ? {New empty geometry Document.} : {Opened canonical geometry Document.}}]
+    lifecycleAttach
+    return $document
 }
+proc ::GX::Workbench3D::open {{context {}}} {
+    variable module;variable provider;variable scene
+    if {$scene ne {} && [winfo exists $::GX::Engine3D::window]} {
+        activateDocument $context
+        raise $::GX::Engine3D::window
+        return $::GX::Engine3D::window
+    }
+    ::GX::Engine3D::configureHost $module $provider [dict create panel ::GX::Workbench3D::buildPanel close ::GX::Workbench3D::close edit ::GX::Workbench3D::hostEdit selection ::GX::Workbench3D::hostSelection]
+    activateDocument $context
+    return [::GX::Engine3D::backend open [::GX::viewerSceneResolve $module $provider]]
+}
+proc ::GX::Workbench3D::guiMount {parent {context {}}} {
+    variable module;variable provider;variable panel;variable document;variable guiHost
+    if {![winfo exists $parent]} {error {The declared editable3D viewport no longer exists}}
+    # Configure before hydration: switching the existing editable owner can
+    # close its prior geometry, and must never close newly activated state.
+    set callbacks [dict create close ::GX::Workbench3D::close edit ::GX::Workbench3D::hostEdit selection ::GX::Workbench3D::hostSelection]
+    ::GX::Engine3D::configureHost $module $provider $callbacks
+    activateDocument $context
+    set panel {}
+    set mounted [::GX::native3DGuiHostMount $parent $module $provider $callbacks]
+    set owner [::GX::interactiveDocumentRead $document]
+    set guiHost [dict create parent $parent incarnation [winfo id $parent] session_token [::GX::interactiveDocumentSessionToken] document_id $document generation [dict get $owner generation]]
+    # The component parent survives a planar handoff; the native child does not.
+    # Forward changes to that stable presentation owner after every remount.
+    bind $mounted <<GXWorkbench3DChanged>> [list event generate $parent <<GXWorkbench3DChanged>>]
+    ::GX::Engine3D::backend open [::GX::viewerSceneResolve $module $provider]
+    return $mounted
+}
+proc ::GX::Workbench3D::guiInspect {} {
+    variable document;variable scene;variable model;variable selection;variable undo;variable redo;variable preview;variable busy;variable status;variable recoveryNotice
+    if {$scene eq {}} {return [dict create status unbound owner viewer.3d_workbench/workbench_3d]}
+    ::GX::native3DGeometrySceneInfo $scene
+    set owner [::GX::interactiveDocumentRead $document]
+    set objects {};set profiles {}
+    dict for {id record} [dict get $model objects] {dict set objects $id [dict create name [dict get $record name] kind [dict get $record kind] visible [dict get $record visible] locked [dict get $record locked]]}
+    dict for {id record} [dict get $model profiles] {dict set profiles $id [dict create name [dict get $record name] working_unit [dict get $record working_unit]]}
+    return [dict create status ready owner viewer.3d_workbench/workbench_3d document_id $document generation [dict get $owner generation] revision [dict get $owner revision] sha256 [dict get $owner sha256] working_unit [dict get $model working_unit] objects $objects profiles $profiles selected $selection undo_count [llength $undo] redo_count [llength $redo] preview_pending [expr {$preview ne {}}] busy $busy message $status recovery_notice $recoveryNotice]
+}
+proc ::GX::Workbench3D::selectionSet ids {
+    variable scene;variable model;variable selection;variable tokens
+    if {$scene eq {}} {error {Open an actual3D Workspace first}}
+    ::GX::native3DGeometrySceneInfo $scene
+    if {[llength $ids]!=[llength [lsort -unique $ids]]} {error {Selection requires distinct canonical object/profile identities}}
+    foreach id $ids {
+        if {![dict exists $model objects $id] && ![dict exists $model profiles $id]} {error {Selected3D object/profile no longer exists}}
+        if {![organizationSelectable $id]} {error {Object is not selectable in its Layer}}
+    }
+    set members {}
+    foreach id $ids {
+        if {[dict exists $model objects $id]} {lappend members [dict create object_token [dict get $tokens $id]]}
+    }
+    # Use the same current-member authority as named Selection Sets. Profiles
+    # remain valid Workbench selections without masquerading as native bodies.
+    call selection_set_apply [dict create members $members mode replace]
+    set selection $ids
+    projectSelection
+    return [guiInspect]
+}
+proc ::GX::Workbench3D::selectionApply {ids {mode replace}} {
+    variable selection;variable model;variable tokens
+    if {$mode ni {replace add subtract}} {error {Selection mode must be replace, add or subtract}}
+    if {[llength $ids]!=[llength [lsort -unique $ids]]} {error {Selection requires distinct canonical identities}}
+    if {$mode eq {replace}} {return [selectionSet $ids]}
+    set wanted $selection;set members {}
+    foreach id $ids {
+        if {![dict exists $model objects $id] && ![dict exists $model profiles $id]} {error {Selected3D object/profile no longer exists}}
+        if {![organizationSelectable $id]} {error {Object is not selectable in its Layer}}
+        if {[dict exists $model objects $id]} {lappend members [dict create object_token [dict get $tokens $id]]}
+        set index [lsearch -exact $wanted $id]
+        if {$mode eq {add} && $index<0} {lappend wanted $id
+        } elseif {$mode eq {subtract} && $index>=0} {set wanted [lreplace $wanted $index $index]}
+    }
+    set receipt [call selection_set_apply [dict create members $members mode $mode]]
+    set profiles [lmap id $wanted {if {![dict exists $model profiles $id]} continue;set id}]
+    set selection [concat [selectionMemberObjects [dict get $receipt selected_members]] $profiles]
+    projectSelection
+    return [guiInspect]
+}
+proc ::GX::Workbench3D::selectionMemberObjects {members} {
+    variable tokens
+    set reverse {};dict for {id token} $tokens {dict set reverse $token $id}
+    set result {}
+    foreach member $members {
+        set token [dict get $member object_token]
+        if {![dict exists $reverse $token]} {error {Selection member is outside the current canonical Workbench}}
+        set id [dict get $reverse $token]
+        if {$id ni $result} {lappend result $id}
+    }
+    return $result
+}
+proc ::GX::Workbench3D::guiCommand {action {values {}}} {
+    variable scene;variable busy;variable primitive;variable dimensions;variable radius;variable height;variable nextName;variable status;variable cleanupNotice
+    if {$scene eq {}} {error {Open an actual3D Workspace first}}
+    if {$busy || $::GX::Engine3D::workerBusy} {error {Finish or cancel the active3D operation first}}
+    ::GX::native3DGeometrySceneInfo $scene
+    if {$action eq {primitive}} {
+        if {[lsort [dict keys $values]] ne [lsort {primitive dimensions radius height name}]} {error {Primitive form requires kind, dimensions, radius, height and name}}
+        if {[dict get $values primitive] ni {box cylinder}} {error {Choose the existing exact box or cylinder primitive}}
+        set kind [dict get $values primitive]
+        if {$kind eq {box}} {
+            set lengths [dict get $values dimensions]
+            if {[llength $lengths]!=3} {error {A box requires three positive lengths in the working unit}}
+            foreach value $lengths {if {[::GX::uiFieldNormalize {type number min 0} $value]<=0} {error {Box lengths must be positive in the working unit}}}
+        } else {
+            foreach key {radius height} {if {[::GX::uiFieldNormalize {type number min 0} [dict get $values $key]]<=0} {error {Cylinder radius and height must be positive in the working unit}}}
+        }
+        set name [::GX::uiFieldNormalize {type string required 1} [dict get $values name]]
+        set primitive $kind;set dimensions [dict get $values dimensions];set radius [dict get $values radius];set height [dict get $values height];set nextName $name
+        createPrimitive
+    } else {
+        if {$values ne {}} {error {This3D command accepts no extra parameters}}
+        switch -- $action {
+            inspect {inspectSelected}
+            save {saveExplicit}
+            undo - redo {undoRedo $action}
+            close {::GX::Engine3D::close}
+            default {
+                if {$action ni [guiFormCommands]} {error {This finite3D host command is not implemented; request its existing-owner binding}}
+                guiForm $action
+            }
+        }
+    }
+    set inspection [guiInspect]
+    if {$action in {preview_accept preview_cancel undo redo}} {
+        # This shared host route bypasses the legacy panel's safe/Working
+        # wrapper. Project the successful current state instead of retaining
+        # the old preview's instruction to Accept, or its unchanged-body claim.
+        set outcome [dict get [dict create preview_accept {Preview accepted} preview_cancel {Preview cleared} undo Undo redo Redo] $action]
+        set status "$outcome; current document revision [dict get $inspection revision]."
+        if {[dict get $inspection preview_pending]} {append status { An operation preview remains pending.}}
+        if {$cleanupNotice ne {}} {append status "; resource cleanup pending: $cleanupNotice"}
+        dict set inspection message $status
+        guiPresentationChanged
+    }
+    return $inspection
+}
+
 proc ::GX::Workbench3D::dispatch {action scene} {
     if {$action eq "rerender"} {return [::GX::Engine3D::backend rerender $scene]}
     if {$action ne "open"} {error "Unsupported 3D Workbench action"}
@@ -1068,3 +1287,4 @@ source [file join [file dirname [info script]] workbench_3d_comparison_v1.tcl]
 
 source [file join [file dirname [info script]] workbench_3d_planar_return.tcl]
 source [file join [file dirname [info script]] workbench_3d_texture_v1.tcl]
+source [file join [file dirname [info script]] workbench_3d_builder_forms_v1.tcl]

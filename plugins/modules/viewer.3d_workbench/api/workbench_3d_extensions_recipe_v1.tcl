@@ -69,7 +69,15 @@ proc ::GX::Workbench3D::extensionApply {id result} {
 proc ::GX::Workbench3D::extensionCommit {id applied} {
     variable extensionTransactions;variable model;variable busy;variable document;variable cleanupNotice
     set before [extensionRequire $id]
-    foreach object [concat [dict get $applied created_ids] [dict get $applied modified_ids]] {if {[dict exists $model objects $object]} {dict set model objects $object provenance [dict get $before provenance]}}
+    # A logical replay restores complete scientific object records, including
+    # their producer/source chain. Its invocation belongs to the transaction
+    # History below, not in place of the restored object's derivation.
+    set replay 0
+    foreach operation [dict get $applied operations] {if {[dict get $operation operation] eq {replay_recipe}} {set replay 1}}
+    set invocation [dict get $before provenance]
+    if {!$replay && $invocation ne {}} {
+        foreach object [concat [dict get $applied created_ids] [dict get $applied modified_ids]] {if {[dict exists $model objects $object]} {dict set model objects $object provenance $invocation}}
+    }
     commit [dict get $before model] extension_transaction [dict create operations [dict get $applied operations] provenance [dict get $before provenance]] [dict get $before context selection ids] [dict get $applied created_ids]
     set warnings {};if {[catch {::GX::native3DGeometryClose [dict get $before scene]} message]} {lappend warnings "Extension committed; predecessor scene cleanup failed: $message"}
     dict unset extensionTransactions $id;set busy 0
@@ -129,7 +137,7 @@ proc ::GX::Workbench3D::recipeValidate {recipe} {
 }
 proc ::GX::Workbench3D::recipeReplay {context recipe} {
     set transaction [extensionBegin $context]
-    try {set applied [extensionApply $transaction [dict create status ok operations [list [dict create operation replay_recipe encoded [::GX::scientificRecipeEncode $recipe]]]]];set receipt [extensionCommit $transaction $applied];set transaction {};return $receipt} finally {if {$transaction ne {}} {extensionRollback $transaction}}
+    try {set applied [extensionApply $transaction [dict create status ok operations [list [dict create operation replay_recipe encoded [::GX::scientificRecipeEncode $recipe]]] provenance [dict create api_id SCIENTIFIC_RECIPE_API_v1 api_version 1 replay_policy validated_logical_geometry_operations]]];set receipt [extensionCommit $transaction $applied];set transaction {};return $receipt} finally {if {$transaction ne {}} {extensionRollback $transaction}}
 }
 rename ::GX::Workbench3D::commit ::GX::Workbench3D::commit_recipe_base
 proc ::GX::Workbench3D::commit {before operation parameters targets results} {

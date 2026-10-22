@@ -1,13 +1,130 @@
 # Restricted Viewer Development API v1
 
-## Fresh admission and responsive compiled events (dev108)
+Installed and development Viewer opens accept `workspace_name` only together
+with `workspace_id new`, as emitted by the normal **New Workspace** form. The
+existing Workspace owner validates the name before the Viewer opens. The
+shared GUI retains it until the first normal Save; opening a saved Workspace
+does not rename it. Unknown context keys remain rejected. This context change
+uses the packaged binary for installed Viewers and adds no compiler fallback.
 
-Build and Run each perform a fresh source AST, complete design and capability
-admission. Run compiles from that same request's in-memory admission rather than
-repeating it after Build. Post-compile source/design/project digests are checked
-again before executing the bounded worker. Prior project reports and binaries
-cannot authorize execution. This is request-local reuse, with no approval cache,
-new worker pool or widened SDK policy; debugger Build uses the same fixed owner.
+Dev109 adds reviewed typed SDK methods `Host.catalog_refresh(unsigned form)`,
+`Host.catalog_inspect(unsigned form)` and
+`Host.catalog_action(unsigned form, const char* action)`. They require a declared
+GUI Host section with `catalog_owner scientific_libraries` and exact manager API
+grants. Refresh maps to libraryCatalogPage; inspect to getLibraryCapabilities;
+each finite action maps to its separately requested manager operation. Invalid
+form/action/grant rejects at the existing broker. The Host applies successful
+source-guarded event plans through the existing manager and GUI owners. No
+arbitrary invoke, provider import or registry path is exposed to the author.
+See the [complete Step2 public contract](SCIENTIFIC_LIBRARY_MANAGER_API_v1.md#step2-catalog-capability-declarations-and-provider-delegation-dev109)
+for declarations, shapes, action vocabulary, bounds and lifecycle.
+
+The existing source-identical private-fixture `gui_test` additionally admits
+`{"operation":"list_select","component":"DECLARED_LIST","index":0}`.
+Index is an existing row0..999; the host scrolls that actual list row into view,
+checks the owned pointer hit and change-action grant, then sends native input.
+It cannot nominate a widget path or manager ID. Direct `entry` and `combobox`
+controls use their actual leaves for existing text/choice operations. Status
+adds read-only `lists` (count, first1000 labels bounded256characters, selection),
+`tables` (columns/count, first50 rows with1024characters per cell, selection) and
+`library_catalogs` summaries from the public CatalogDescribe owner (current
+generation/selection/request/page and capability strings bounded4096characters).
+These are bounded QA observations; full scientific records remain public-owner
+data. They do not create an author filesystem or administration bypass.
+For declared read-only tables, `table_select` takes `component` and an existing
+zero-based `index`0..999 and clicks that actual native row. `table_scroll` takes
+`component`, `axis` (`x` or `y`) and `direction` (`backward` or `forward`); it
+clicks a visible arrow of the component's declared native scrollbar and reports
+before/after view fractions and the actual pointer. A theme without such an
+arrow is rejected explicitly. `table_copy` takes only `component`, requires an
+actual selected row and sends native Ctrl+C. Its clipboard observation contains
+the first4096 characters plus full character/UTF-8 byte counts, marked bounded.
+The receipt requires observing the existing copy service complete during the
+actual Ctrl+C event, with unchanged selected values and matching clipboard.
+An old clipboard after a rejected/missing copy cannot pass. Data values follow
+the existing tab-separated contract; source-row labels are correlated separately.
+Table status includes declared `scrollbars` and current `xview`/`yview` fractions.
+These operations never set a cell value, synthesize a selection callback or
+directly change a table's scroll fraction.
+The same table input operations also accept a declared `document` whose `kind`
+is `table`, bound to a current canonical Dataset. No internal child widget path
+is accepted. Its `document_receipts` status comes from the public table Preview
+owner and retains the actual Dataset ID, source rows and declared column schema.
+For that document, `table_page` takes `component` and `command`:
+`previous`, `next`, `first`, `last`, `goto` or `schema`. Only `goto` also takes
+`row`, a bounded integer literal entered into the real Go-to-source-row field.
+The public CLI admits these same six commands and preserves exact decimal row
+identities, including integers beyond binary64 precision. CLI admission still
+requires the normal live Workspace attachment before any native input.
+First/last use that same visible field and Go button. `schema` clicks Column
+details. Actual native typing/clicks operate the existing pager; the facade does
+not set page state or replace its validation. An out-of-range/negative row reaches
+the normal validation and preserves the previous page, with its visible status
+included in the receipt. Disabled navigation is refused precisely. A nonpaged
+`table` still supports selection/scroll/copy and rejects paging. Session/source
+attachment checks continue to apply before input and after focus/layout settling.
+The catalog summary also retains the public correlated `last_action` receipt;
+result scalar strings are bounded4096characters for this GUI-test projection
+and marked `result_presentation_bounded=1`. The actual Activity/public owner
+retains the manager response independently of automatic capability refresh.
+
+## Compiled artifacts and responsive events (dev109)
+
+Development Build reuses its existing successful artifact while its source,
+Builder interface, build-relevant project metadata, SDK, trusted adapter, policy, compiler,
+toolchain manifest, effective flags, compile recipe and recorded included-header
+bytes match. A changed input requires fresh source AST/design/capability admission
+and compilation through the same Build owner. Normal and debug artifacts have
+separate receipts. Build reports `artifact_reused=1` and
+`code_generation_invoked=0` on reuse. Existing Preview preparation, Run, Test and
+Export use the source-bound artifact; they do not rebuild every unchanged event.
+
+Changing only development test events, provenance, package version or interface
+presentation retains the compiled binary when the existing callback contract is
+identical. Project/interface module and version must agree. Source bytes,
+component ordinals/types/defaults, scientific references, capability grants,
+profile, unknown semantic fields and every recorded build/header dependency
+remain checked. The original compilation receipt is not rewritten.
+Export records the current metadata admission in `review/build.json` and retains
+the actual compilation receipt as `review/original-build.json`; the binary is
+unchanged. Installed admission still requires exact packaged source, interface
+and project fingerprints. This exception never enables compilation at runtime.
+
+Build dependency identities use fixed framework-relative roles and content
+hashes, rather than the absolute checkout location. Historical absolute receipt
+paths are matched only to those same known roles; missing, duplicate, extra or
+changed dependencies still invalidate reuse. Recorded SDK/adapter header paths
+resolve to the current corresponding inputs; other included headers retain
+their original path/content checks. Moving an unchanged development tree or
+opening it through its compatibility alias therefore does not require a build.
+Compiler bytes, flags, recipe and validation-owner fingerprints remain exact.
+
+Installed applications execute the distributed `native/viewer.so`. Admission
+checks binary/build/source/interface correlation, packaged SDK/build fingerprints,
+compatible SDK-v1 Event/State/Host and entry ABI, existing adapter-operation
+mappings and current public grants. Additive SDK methods do not alone invalidate
+an older compatible package. A bounded separate native probe checks runtime
+libraries and the actual exported entry after admission. Missing/incompatible
+artifacts produce explicit errors and require a matching precompiled package;
+installed startup/events do not invoke source AST validation or Build.
+
+The existing Script Job auxiliary owner retains one duplex compiled worker per
+Viewer lifetime. Short native events return typed plans through
+`scriptJobRequestExchange`; the exchange does not pump Tk input. The host applies
+successful, unchanged-source plans through the existing public owners before
+returning to queued input. Long-running scientific plans retain their existing
+asynchronous service/Job owners. Default exchange timeout preserves the existing
+12000ms native wall budget; worker
+startup uses5000ms. These limits describe the current transport, not a measured
+latency or native GUI acceptance result. Workspace persistence captures the
+existing explicit SDK state and callback fingerprint; native process globals
+do not gain automatic Workspace serialization.
+
+Development builds publish a new binary inode atomically, so an open Preview
+never maps a file that Build truncates. Source changes still invalidate that
+Preview's callback snapshot; reopen it for the new explicit build. Ordinary
+C/C++ stdout/stderr go to the existing runtime allocation's bounded
+`derived/native-output.log`, separately from the typed reply channel.
 
 The fixed Development CORE request `validate_design PATH` retains its legacy
 validated-design result. Its optional exact `with_catalog` argument returns
@@ -66,6 +183,71 @@ Dev108 additive authoring facilities (same API family and kernel project grant):
   History belongs to the existing `gxtxt.viewer_design_model.v1` model and resets
   after an external GUI edit. The request and design hash are retained in
   `derived/builder-receipt.json`. Design mutations do not change C++ source.
+
+The same `metadata` operation accepts the optional project `catalog` dictionary:
+
+```json
+{"operation":"metadata","arguments":["catalog",{"semantic_group":"documents","group_title":"Documents","short_title":"HTML","icon":"html-document"}]}
+```
+
+Use an icon ID already admitted into this design by the existing `icon_import`
+or icon editor. The normal exporter copies the admitted icon and these semantic
+catalog fields into the ordinary Module descriptor. They change catalog
+presentation only, without changing compiled handlers or granting capabilities.
+Discover shared icon sources with `{"operation":"icon","arguments":["catalog"]}`;
+import takes source path, logical ID, title, category and license. Source paths
+must belong to the author project or the shared CORE icon catalog.
+
+### Bound read-only document GUI tests (dev109)
+
+These are author-test operations on an explicitly attached, source-identical
+private Viewer, not additional authored C++ runtime capabilities. `status` and
+`capture` include the actual selector `choices` per component and
+`document_receipts` for bound HTML/code documents: actual Text `state`, bounded
+`text_prefix` (16,384 characters), rendered character count, `xview`/`yview`,
+first/last visible indices, mapped state and pixel dimensions. Canonical source
+SHA and identity remain in the ordinary `bindings` receipt.
+
+```json
+{"operation":"key","component":"html_content","key":"Page_Down"}
+{"operation":"document_pointer","component":"html_content","x":0.5,"y":0.5,"phase":"wheel_down"}
+{"operation":"click","component":"html_content"}
+```
+
+`document_pointer` accepts only `click`, `wheel_up`, `wheel_down`; x/y are
+normalized0..1 within that actual visible read-only component. It accepts no
+widget, window, file or desktop path. Document keyboard input permits exactly
+`Escape`, `ctrl+f`, `F3`, `shift+F3`, `ctrl+a`, `ctrl+c`, `Home`, `End`,
+`ctrl+Home`, `ctrl+End`, `Page_Up`, `Page_Down`, `Up`, `Down`, `Left`, `Right`,
+`Tab`, `shift+Tab`. `PageUp`/`PageDown` are aliases for the underscored names.
+Find shortcuts act only where the existing source surface provides a Find bar;
+they do not add an HTML search implementation. Editing/execution keys reject.
+After native `ctrl+c` with a selection, `clipboard_receipt` reports actual
+clipboard character/UTF-8 byte counts, SHA256, bounded prefix/completeness and
+`matches_selection`; with no selected text it returns `no_selected_text` and
+does not read unrelated clipboard contents. `document_find` is code-only and
+takes declared component, literal value and `forward`/`backward` direction.
+
+Empty `host.document_bind` selection returns `awaiting_selection` and a prompt;
+an incompatible/missing source clears previous content and reports its actual
+error. A nonnumeric changed selector emits scalar `Event.value=0`; the typed
+Host binding reads the actual declared selection through its existing owner.
+
+To draw an original project icon without writing an asset file, the first
+`icon_import` argument may instead be an inline SVG object:
+
+```json
+{"operation":"icon_import","arguments":[{"source_format":"svg","source":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><rect x=\"8\" y=\"4\" width=\"48\" height=\"56\" fill=\"none\" stroke=\"#245678\" stroke-width=\"4\"/></svg>"},"html_document","HTML document","Documents","GPL-3.0-or-later"]}
+```
+
+The same icon admission, safe SVG validation, managed rasterization and Builder
+Undo/Redo owners process both forms. Inline source has a 256 KiB bound (the
+whole author request retains its 64 KiB transport bound), explicit 1–512 pixel
+dimensions and at most256 elements. Supported geometry is svg/g/path/rect/
+circle/ellipse/line/polyline/polygon with literal paint; script, text, styles,
+external resources and references are rejected. Accepted original SVG and PNG
+bytes are embedded in the design and preserved by ordinary export. Logical IDs
+use lowercase letters, digits and underscore, starting with a letter.
 
 GUI clients call `viewerDevelopmentRequest facility_request|builder PROJECT CALLBACK
 {request_json JSON}`. JSON is data, never executable source. These authoring
@@ -141,6 +323,13 @@ operations: `node_list,circuit_prepare,submit,status,cancel,reconnect,log,import
 Legacy profiles retain denial. Fixed C++ methods return no arbitrary strings,
 tokens, paths or vectors:
 
+The document and scientific profiles also admit the explicitly requested finite
+`CONFIGURATION_API_v1/open_page` and `FILE_PUBLICATION_API_v1/publish_bundle`
+facilities used by declared EM forms. Their typed Host operations retain the
+complete-form and finite-action checks. This does not expose arbitrary
+Configuration changes or writer callbacks to C++. Synthetic/numeric profiles
+and unreviewed operations remain denied.
+
 | Method | Exact component arguments / effect |
 | --- | --- |
 | `host.scientific_discover(form)` | declared scientific section; populates its registered destination choice |
@@ -193,33 +382,36 @@ requested profile before the GUI accepts an import; it produces no object code.
 Invalid source/project JSON can still be saved for repair, but cannot bypass a
 future Validate/Build/Run admission. A source payload is at most64KiB valid UTF-8.
 
-`viewerDevelopmentPreview project ?module? ?provider?` validates before composing
-the design; the loading window is trusted CORE UI. After admission and exact
-three-file SHA comparison, the original public Builder constructors mount the
-interface and a bounded compiled Open event runs in a separate native worker.
+`viewerDevelopmentPreview project ?module? ?provider?` prepares/reuses the current
+development artifact before composing the design; the loading window is trusted
+CORE UI. After admission and exact three-file SHA comparison, the original public
+Builder constructors mount the interface and a compiled Open event runs in the
+managed separate worker lifetime.
 `viewerDevelopmentInvoke window action` maps an admitted declared control to a
 typed C++ event. Returned UI operations are applied only after successful worker
 completion and unchanged source SHA. Closing cancels the owned request and
 releases native children. No authored C++ library is loaded into the Tk process.
 
 `viewerDevelopmentInstalledOpen module provider root ?context?` requires the
-actual Plugin Manager registration, uses the installed original source, and
-revalidates/rebuilds against the current fixed SDK. A shipped green report or
-binary alone cannot authorize execution. Export creates an ordinary candidate,
-not an active plugin or implicit installation.
+actual Plugin Manager registration and compatible packaged build/source/interface
+identity. It executes `native/viewer.so` in place and allocates temporary runtime
+receipts through Resource Management; it does not copy source into a development
+project or compile it. Closing cancels the owned compiled worker through Script
+Job and releases the temporary allocation with retained diagnostics. Export
+creates an ordinary candidate for normal Plugin Manager admission/installation.
 
 ## Facility matrix
 
 | Facility | Author exposure / authorization | Independent owner / evidence |
 |---|---|---|
-| C++ scalar locals, conditions, switch, loops, scalar helpers | Actual resolved Clang AST positive allowlist | Fixed Clang19 lexer/AST policy, rejected before object generation |
+| Ordinary C++17 local logic/types/templates/pointers/recursion/RAII/exceptions/concurrency | Real Clang parsing, explicit reviewed headers and typed SDK/entrypoint checks | [Exact current support catalog](CPP_SUPPORT_CATALOG.md); CORE ownership review |
 | Fixed Event and State | Literal indices0..15, finite scalar fields, counter | Versioned automatically supplied SDK v1 |
 | Host.text / number / flag | Declared compatible component; bounded literal/finite scalar/boolean | Public Viewer GUI Host, no Tcl/eval/widget pointer |
 | Host.demo | Matching0 Native2D,1 Plot,2 Native3D; requested facility/profile | B1 RAM native owners, no scientific publication |
 | Host.numeric_add | numeric_view_v1 + requested array_binary.add | Real public math.numeric NUMERIC_API_v1 |
 | Host.numeric_sqrt | numeric_view_v1 + requested array_unary.sqrt | Same public Numeric owner, finite nonnegative scalar |
-| I/O, processes, external headers, std/math libraries, pointers, casts, allocation, modules/preprocessors | Unavailable and rejected | Actual raw tokens and resolved AST, no author flags |
-| Recursive/indirect author calls, attributes, assembly, external declarations | Unavailable and rejected | Resolved call graph and declaration/type ownership |
+| Reviewed C/C++ headers; local files, threads, fork/wait | Admitted for ordinary project logic; canonical framework stores/execution remain public owners | Exact header rationale, actual budgets and toolchain in support catalog |
+| Author types, recursive/indirect calls, macros, normal C++ facilities | Supported by actual C++17 toolchain, with fixed public SDK integration | New headers/libraries/compiler flags require purpose-specific architectural review |
 | Canonical Workspace/History/publish | Unavailable in read-only SDK profiles | Existing canonical owners remain separate |
 | Python authoring/imports/eval/reflection | Disabled | No restricted-Python security PASS is claimed |
 
@@ -381,6 +573,32 @@ separate. Source metadata and pointer probing do not grant C++ raw array access.
 
 ## Optional installed native GUI tests (dev108; GAP014)
 
+For a complete declared TeX article form, `source_text` takes `component` and
+`value` (at most 4096 UTF-8 bytes). It types through native OS input at the current
+source caret or selection. It does not set source through an API, select all,
+save, or build. Use an explicit native `key` action with `ctrl+a` when replacement
+of the whole draft is intended. The current article generation and source/assets
+stamp must still match; the source must be visible and editable. Its `key` action
+also accepts ordinary navigation, Return, Delete/BackSpace, source Undo/Redo,
+Find/Replace and Copy. `document_find` and click/wheel `document_pointer` accept
+this same source. Read-only HTML/code components retain their existing key
+restrictions. Native `document_find` queries reject control characters (including
+Return, Tab and newline) before input, so typing a query cannot transfer focus
+and send its remainder into editable source. The article identity, canonical
+content stamp and editability are rechecked after focus/event-loop settlement.
+`source_replace` takes `component`, nonempty `query`, `replacement` and `scope`
+(`current` or `all`). Both literals are bounded to 4096 UTF-8 bytes and exclude
+control characters. It types the actual visible Find/Replace fields and clicks
+their normal Next and Replace/Replace all buttons through native input; it never
+calls a source setter or replacement API. Source must remain unchanged while
+the fields are entered. Normal source Undo remains a separate native key action.
+Status/capture receipts include the actual TeX source prefix,
+character count, native selection/search and scrolling presentation. These are
+author test transports on an explicitly attached installed Viewer; source
+changes are committed only through the normal article Save/Build controls.
+The additive transport is source implemented; installed native validation remains
+required before acceptance.
+
 The existing declared Scientific section also supports the optional
 `scientific_probe_diagram`, `scientific_probe_plot`, `scientific_probe_mode`
 references documented in `VIEWER_GUI_HOST_API_v1`. Configure these with the
@@ -421,7 +639,7 @@ script, command, file destination, executable or desktop coordinate is accepted.
 | tab | component | Native selection of a declared tab |
 | choice | component,value | Native selection from actual current choice/Dataset choices |
 | text | component,value | Native entry editing of a declared scalar field |
-| pointer | component,x,y,phase | Diagram world coordinate through public world_to_device; phase click/double/press/move/release; point must lie inside the visible assigned viewport |
+| pointer | component,x,y,phase | Diagram world coordinate through public world_to_device; phase click/double/press/move/release/wheel_up/wheel_down; point must lie inside the visible assigned viewport. Wheel phases deliver actual native buttons4/5; no arbitrary button or desktop destination is accepted. Keyboard actions preserve held pointer buttons so Escape can genuinely cancel an in-progress drag. |
 | plot_pointer | component,x,y; optional phase | Native input on a declared visible Plot; x/y are normalized0..1 fractions of its own device bounds. Default click returns actual public hit receipt. Phase may be click,double,wheel_up,wheel_down,press,move,release; press/move/release is an owned middle-button pan on that same Plot |
 | key | component, key | Actual native keyboard input: bound mapped Plot permits Escape only; diagram permits the documented schematic keys; source/Session lifetime, ownership and visible viewport guards remain |
 | property | component,field,value | Edit an attribute in the actual already-open diagram symbol properties dialog |
@@ -615,4 +833,310 @@ Review is intentionally narrow and fails closed: the C++ bytes, profile, grants,
 
 Human authors use **Develop → Review saved Workspace upgrade…**, select the canonical saved item, choose **Review selected**, inspect the report and then **Create upgraded copy**. Trusted hosts use `viewerDevelopmentWorkspaceReview project workspace_id callback` and `viewerDevelopmentWorkspaceUpgrade project review_id`. The fixed structured CLI `workspace_upgrade_review` only reviews supplied inert old declaration/snapshot/contract text; it has no Session filesystem authority and cannot apply state. The trusted GUI owns canonical resolution and copying. These are extensions of the existing Development and Session Workspace owners, with no new API family.
 
+The current source-reviewed additive allowance also permits adding the checked
+presentation property `diagram_tool {ORIGINAL_DIAGRAM_ID TOOL}` to an **original
+action** that did not have it. Its target must be an original declared `native2d`
+component with a canonical `diagram_catalog`; complete current GUI Host admission
+validates the real catalog tool. It only displays the authoritative viewport's
+selected tool. The original C++ bytes/profile/grants/handler/defaults/component
+ordinals remain unchanged; it neither intercepts the existing action nor writes
+a separate tool state. Review reports `diagram_tool_checked:ACTION_ID` in
+`approved_presentation_changes`. Changing/removing an existing binding, adding an
+arbitrary callback, changing the original target contracts, or using an appended
+replacement diagram remains outside this allowance.
+
+Other currently source-reviewed additive profiles include original-form netlist
+consultation, Plot-series controls, checked visibility bindings, inert layout
+reparenting into newly appended containers and trusted presentation-menu suffixes,
+under the same full original callback/source/grant and retained-History checks.
+Their complete model validation still applies; this does not authorize arbitrary
+source evolution or migration code. A review receipt is not an applied canonical
+copy. The CLI success-status set now includes `REVIEWED_INERT_ADDITIVE_UPGRADE`,
+so a successful review returns exit0 consistently with its success payload.
+The positive fourteen-binding review and five rejection cases still require
+their current-source verification. Actual GUI review/apply and Workspace
+preservation evidence remain separately qualified.
+
 GAP032 extends the existing `key` GUI-test action to `Escape` on an already bound, mapped, unobscured declared Plot. This sends the actual native keyboard event to that Plot, clearing its source cursor through the normal host binding. Other Plot keys, hidden/unbound/foreign targets and input during an owned pan remain denied. Existing Diagram keys retain their enum and now also require an unobscured declared viewport. No global desktop key delivery or new restricted SDK operation is exposed.
+
+## Canonical read-only consultation binding (next candidate)
+
+The reviewed `VIEWER_GUI_HOST_API_v1` operation `document_bind` maps to exactly
+`host.document_bind(unsigned document, unsigned dataset_selector)`. Both arguments
+are one-based original Builder component ordinals. Declare `document {kind
+html|pdf|code|table}` and a matching `dataset_selector {content_kind ...}`. The
+trusted broker rejects mismatched kinds/types before a GUI plan is applied.
+Existing native HTML, Source Surface, PDF reader and Preview paging owners retain
+all decoding, source identities, read-only state and lifecycle. See GUI Host's
+manual for syntax and limits; no general Document/private file/compile permission
+is implied. This does not yet provide editable TeX or managed TeX compilation.
+
+The exact Builder action binding request is
+`{"operation":"bind","arguments":["COMPONENT_ID","ACTION_ID","presentation"]}`.
+The first ID is the existing action/menu/input component, the second the handler
+identity; the third is `unbound`, `presentation` or `mutating`. Selector bindings
+use the same arguments and set that component's `change_action`. `save` stdin is
+raw UTF-8 source (or raw JSON for `--file project.json`), not a JSON envelope.
+
+## API Browser project and language context
+
+The shared reference transport `--api-browser-tcl` accepts optional `--project`
+for a saved C++ project. It reads bounded project inputs and fingerprints them;
+it does not validate/compile source, write grants or activate a scientific API.
+`cpp_context` distinguishes `NO_PROJECT`, saved metadata and unavailable/invalid
+projects. Each family retains actual provider availability and SDK exposure
+separately from `cpp_project_status` / `cpp_project_request`.
+
+`cpp_methods` contains exact prototypes and typed call patterns from the current
+SDK, linked to the same method-capability requirements used by Validate.
+`ADMITTED_REQUEST` means the saved request matches current provider/version and
+profile policy. It is not a source validation, successful Build or active runtime
+grant. Additional form and finite action requirements still apply. Unrequested
+methods and Script Bridge operations without a direct C++ method stay explicit.
+Python/Octave references retain the actual registered argument/result contracts
+and show syntax for the current language only.
+
+The Workspace passes its selected project through the shared Browser context
+owner and refreshes after project metadata Save. Browser-owned Session traces
+refresh only the cached selected reference and are disposed with their widget.
+No Session transition starts a metadata request, renderer or scientific Job.
+The common layout measures actual Treeview rows and font lines to preserve three
+list rows/four detail lines at the supported narrow editor size; the reference
+text remains scrollable and the main source editor retains its own layout.
+
+## Current C/C++ support and structured aggregate inspection
+
+**Develop → C/C++ support catalog** opens the existing rendered manual window,
+with exact current headers/rationales, compiler/runtime choices, SDK signatures
+and source fingerprints. Author CLI: `api PROJECT --document CPP_SUPPORT_CATALOG`.
+The catalog is generated from actual owners and must pass synchronization check
+before packaging; ordinary C/C++ availability never grants canonical owner bypass.
+
+Public `debug_status` includes `inspection_id`, root `locals` and `variable_nodes`.
+A node has its opaque `node_id`, actual name/type/value, `child_count`, loaded
+`children` identities, `loaded_count`, depth and inspection identity. The initial
+state fetches no aggregate members. `debug_control` accepts the additional typed
+operation `children` with current `source_sha256`, actual `node_id`, current
+`inspection_id` and `offset` equal to the node's actual `loaded_count`. It returns
+SAVED; poll status for the asynchronous GDB response. At most64 children per
+request, depth8 and512 active nodes; further ranges are explicit. Children are
+read-only GDB/MI variable objects, not arbitrary expressions. A stop/frame change
+or continuation invalidates old identities; stale requests return DEBUG_VARIABLE.
+GUI aggregates default collapsed at every new stop/frame; click row/disclosure
+or Space to toggle vertical children. Existing scalar values and unavailable
+diagnostics remain truthful. Source and run tokens retain existing admission.
+
+For a bound HTML document, native GUI testing accepts
+`{"operation":"document_zoom","component":"html_content","value":"in"}`
+(`out` and `reset` are the other fixed values). This clicks the actual existing
+Smaller/Larger/Reset button; it never invokes the zoom callback directly. Native
+`key` also permits `ctrl+plus`, `ctrl+equal`, `ctrl+minus`, `ctrl+0` for HTML.
+Document receipts include the actual Text font and visible zoom percentage, in
+addition to the canonical binding/source SHA and read-only text/scroll receipt.
+
+### Existing PDF reader: native GUI test targeting
+
+A declared PDF document can expose its existing source-bound CORE reader through
+the same attached `gui_test` facility. No caller supplies a window, PID or path.
+After native selector/Open actions, poll `status` until
+`document_receipts.COMPONENT.state` is `ready` (or an actual `unavailable` error).
+The receipt reports actual page count/current page, zoom, page dimensions,
+rendered page SHA/pixels and canvas view fractions. Actions return observations;
+wait for the desired settled state after asynchronous child-window input.
+
+- `pdf_control` takes `component` and `command`: `previous`, `next`, `zoom_out`,
+  `zoom_in`, `fit_page`, `fit_width`; it clicks the actual enabled button.
+- `pdf_pointer` takes `component`, normalized `x`,`y` in0..1 and `phase`:
+  `click`, `press`, `move`, `release`, `wheel_up`, `wheel_down`. Finish a native
+  owned canvas pan before changing the source or closing its parent.
+- `pdf_key` takes `component`,`key`: Left/Right/Up/Down or Tab/shift+Tab.
+- `pdf_resize` takes `component`,`width`,`height` within640..1880 by480..1100.
+- `pdf_close` takes `component` and sends native Alt-F4 to that owned reader.
+- `capture` with `component` and `dialog: pdf_reader` captures its actual native
+  frame; normal capture verification/manual asset provenance applies.
+
+The trusted Dataset Media owner receives bounded observations over its existing
+child-process pipe. Source/Session admission, rebind and parent-close cleanup use
+that same owner. The PDF decoder/rendering remains the existing Poppler reader;
+no OCR or scientific Dataset mutation is implied. Native installed acceptance
+must be recorded separately from successful transport or package builds.
+
+## Shared electrical diagram interaction (dev109)
+
+Existing typed SDK diagram selection executes its compiled local event before
+the next queued Canvas input. Builder action property `diagram_tool` binds
+checked presentation to that actual controller; it adds no new C++ call or
+private tool variable. Native segment attachment, electrical engineering input,
+canonical waveform symbols and wire voltage Probe are shared diagram/GUI Host
+services. See [Native2D viewport](NATIVE2D_VIEWPORT_HOST_v1.md),
+[geometry](NATIVE_2D_GEOMETRY_API_v1.md) and
+[GUI Host](VIEWER_GUI_HOST_API_v1.md) for exact target/guard contracts.
+Normal installed startup and events load the packaged compiled binary, including
+these public service calls; only an explicit new development build compiles.
+
+The additive SDK method `void Host::tex_command(unsigned form, const char*
+operation) const` uses operation 30 and the `VIEWER_GUI_HOST_API_v1.tex_command`
+grant. Existing Event/State/Host storage, entry point and operations 1–29 retain
+their ABI. The full declared form, finite operations and canonical article versus
+interface Workspace distinction are documented in
+[GUI Host](VIEWER_GUI_HOST_API_v1.md#declared-tex-article-form-dev109).
+Builder export contributes each canonical article provider through the existing
+module Workspace descriptors, so articles remain discoverable after restart
+before opening their Viewer. Ordinary installed runtime executes the distributed
+binary; a TeX document Build invokes the native TeX typesetter and never rebuilds
+the C++ Viewer.
+
+### Explicit EM presentation copies and inert review request (dev109)
+
+The fixed `workspace_upgrade_review PROJECT` CLI reads a JSON object from
+standard input with exactly three inert string fields:
+
+```json
+{"saved_design":"<saved design Tcl dictionary>","saved_snapshot":"<source_sha256/design_sha256/project_sha256 Tcl dictionary>","callback_contract":"<64 lowercase hex characters>"}
+```
+
+The trusted normal GUI derives these fields from the chosen canonical saved
+Workspace. The CLI reviews only declarations and source contracts; it cannot
+apply a canonical state. The exact current source bytes/profile/grants and old
+callback contract remain mandatory. Ordinary installed Workspace Open retains
+its exact snapshot guard.
+
+Explicit presentation review additionally admits a validated change of
+`shell.inspector_width` and a Plot component's display `title`. Other shell
+properties, handlers, scalar defaults, scientific model/variable references and
+original declaration order remain significant. This allows the same-source
+EM031→032 width/caption correction to be reviewed as a separate copy.
+
+The original shared EM owner performs read-only admission of saved model
+associations. Current state requires the actual canonical model and generation;
+retained History may contain valid earlier models or an unsaved initial draft.
+Review never restores or saves a model. A retained Job must be the genuine
+EM-provider execution of that model generation; its original source receipt is
+preserved even when it precedes a later model edit. Document/table bindings use
+the same scientific identity/schema/content checks as normal restoration,
+independently of any selected field Dataset. Plot cell and node sources are
+rechecked using their original canonical public identities. Review and Apply
+recheck source stamps, original Workspace, Session lifetime and current project.
+Every retained History state, including redo, is transformed in RAM before a
+normal managed export/import can create the reviewed copy.
+
+The actual retained E/M typed contract covers both original interfaces and all
+nine History states each, with generation, missing-Job and table-hash negatives.
+Canonical copy creation and actual installed Save/Open remain separate GUI
+acceptance gates. No source hash override, author migration code, new solver
+Job, renderer or scientific Dataset is part of this operation.
+
+## Canonical raster SDK methods (dev109)
+
+The additive SDK v1 methods below require the identically named explicit
+`VIEWER_GUI_HOST_API_v1@1` grants:
+
+```cpp
+void Host::raster_bind(unsigned viewport, unsigned dataset_selector) const;
+void Host::raster_tool(unsigned viewport, const char* tool) const;
+void Host::raster_command(unsigned viewport, const char* command) const;
+```
+
+Component numbers are their ordinary one-based Builder declaration ordinals.
+The viewport must be `native2d` with `source_kind raster`; the selector must be
+`dataset_selector` with `content_kind raster`. The shared host admits only a real
+canonical `image.raster` source. It returns `awaiting_selection` for an empty
+selector and precise errors for incompatible/changed identities. Neither file
+paths nor source pixels are returned to C++.
+
+Tools: `select`, `rectangle`, `polygon`, `annotation`, `move`, `rotate`, `pivot`, `pan`.
+SDK commands include `fit`, `cancel`, `delete_roi`, `delete_annotation` and the
+declared anchored-section commands described in the shared host contract. Return or the shared local Finish
+polygon action completes a valid polygon; `finish` is not an SDK command.
+Declare action property `raster_tool {viewport_id tool}` for immediate local
+toolbar selection without executing a C++ event. Checked state follows the real
+controller. Native mapping, ROI admission, gizmo transforms, Document/Resource
+ownership and Scientific History remain shared CORE facilities.
+
+Builder and the Development Workspace use these same declarations and methods.
+New source or actual SDK build dependencies require an explicit development
+Build; installed compatible precompiled packages execute their distributed
+binary with zero compiler/linker invocations. SDK v1 additions preserve the
+existing Event/State/Host data ABI and exact existing method bodies. They do not
+authorize silent runtime recompilation or bypassing compatibility checks.
+
+Independent installed generic-Viewer acceptance covers canonical binding, real
+rectangle and irregular-polygon gestures, semantic menus, anchored editors,
+History, Save/Reopen, Session switching and native action/menu icons. See the
+[generic Builder example](../examples/GENERIC_RASTER_BUILDER.md) and
+acceptance scope. This evidence
+uses an uncalibrated pixel source; physical calibration remains an explicit
+existing Native2D operation, never an inferred measurement.
+
+A canonical raster declaration plus the explicit `raster_bind` grant admits
+Workspace/History for the existing `document_view_v1` or `scientific_view_v1`
+profile. Their original `SESSION_WORKSPACE_API_v1` create/get/update/list and
+`SCIENTIFIC_RECIPE_API_v1` record/navigation grants remain mandatory. A raster
+slot without its binding grant, a legacy profile or an unbound display-only demo
+does not gain a canonical lifecycle through this declaration.
+
+### Explicit CAD multiple-selection presentation copies (dev109)
+
+The same reviewed-copy owner admits an optional complete pair on an existing
+canonical geometry form: `workbench_selection` names a newly appended empty
+`list` with `extended` or `multiple` selection, and `workbench_selection_mode`
+names a new inert `choice`/`combobox` with exactly `replace add subtract` and
+`replace` default. The original viewport, parameter mapping, single-object
+choice, component ordinals, C++ bytes, profile, grants and handlers remain
+significant. A choice's display label may change; its retained value, default,
+choices and callback semantics may not. Arbitrary new lists remain inadmissible.
+
+Review records `new_workbench_selection_forms`. For each retained state, the
+existing transformer copies its original single-object ID choices into the new
+list and projects its saved candidate to the corresponding index. It does not
+read today's selected geometry to rewrite an old state. An empty candidate
+stays empty; a missing candidate or duplicate IDs refuses the reviewed copy.
+The original shared Workbench association checker validates the source owner,
+format and generation, and the review/apply guard pins its current canonical
+revision/SHA. Only the existing explicit managed Workspace duplication may
+apply this declaration change. Ordinary installed Open keeps its exact source
+snapshot check; this review is an explicit development operation.
+
+The actual source review of the preserved 014 Workspace against official015
+passed. Focused tests cover three derived control states, original-value
+preservation, callback/ordinal refusal and real private canonical association
+checks. They do not constitute installed GUI or full retained-History copy
+acceptance, which remains a separate gate.
+
+### API reference allocation with enlarged fonts (dev109)
+
+The shared Browser computes its required height from actual font metrics,
+control chrome, three API tree rows and four reference text lines. The C++
+Workspace uses that same budget when distributing space between the source
+and its scrollable diagnostics. Diagnostics retain their heading, at least two
+rows and scrollbars; the explorer stays accessible. No API, source document or
+metadata generation is changed by reflow.
+
+Refresh uses a compact circular-arrow control with the existing shared tooltip
+“Refresh API declarations”; the normal `API manual` button still opens the
+selected public API manual. A redundant successful family-count status row
+releases its space to the reference. Pending metadata, errors and empty search
+results retain visible status feedback. Full Session/project/admission context
+remains in the scrollable reference.
+
+A focused actual-widget contract at Tk scaling1.998 verified 1000×700 and
+1260×820, readable complete captions, three real tree rows, four actual24-pixel
+text lines, source/diagnostic space, unchanged source text and one unchanged
+metadata generation. Those 21 assertions do not substitute for the separate
+installed Debian pointer/keyboard high-DPI regression.
+
+### API Browser at the minimum client height
+
+Browser layout budgets use the actual client area, font metrics and native
+scrollbars. At the C++ Workspace minimum height, Diagnostics may show one row
+plus its heading and scrollbars to keep three API rows and four detail lines
+readable; larger windows retain two or more diagnostic rows. Window-manager
+menu/decorations are outside this client budget. The shared Browser repairs a
+selected row clipped by resize through the native Treeview scrolling methods,
+while preserving deliberate scrolling away from a selection. Its deferred resize
+callback is retired with the Browser. Metadata and source text are unchanged.
+
+
+## Generated installed-provider reference
+
+Export emits an inert `public_contract` in the generated Restricted Viewer client descriptor. It documents the exact generated `handlers`, `dispatch`, `workspaceOpen` and `texOpen` host signatures and their existing Session/Workspace contexts. API Browser can inspect these declarations without loading the provider. They do not grant Script Bridge or C++ SDK operations. Re-exporting unchanged compiled source retains its native artifact; changing this documentation formatter alone does not invalidate the native build dependencies.

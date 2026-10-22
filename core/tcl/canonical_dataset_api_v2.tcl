@@ -71,32 +71,136 @@ proc ::GX::datasetAccessProviderCall {handle operation args} {
     variable datasetAccessHandle
     variable datasetStorageProviderCommand
     datasetAccessRequireHandle $handle
+    if {[string match read_* $operation]} {_datasetAccessSourceCheck $handle}
     set provider $datasetAccessHandle($handle,provider)
     set command $datasetStorageProviderCommand($provider)
     return [uplevel #0 [list {*}$command $operation $datasetAccessHandle($handle,provider_token) {*}$args]]
 }
 
-proc ::GX::datasetAccessOpen {session datasetId} {
+proc ::GX::_datasetAccessPathStamp {path} {
+    file stat $path status
+    return [list $status(dev) $status(ino) $status(size) $status(mtime) $status(ctime)]
+}
+proc ::GX::_datasetAccessCheckBinding {binding} {
+    lassign $binding path expected
+    if {[catch {_datasetAccessPathStamp $path} current] || $current ne $expected} {
+        error {Canonical Dataset source changed or is unavailable; close and reopen this read handle.}
+    }
+}
+proc ::GX::_datasetAccessProviderBinding {context descriptor} {
+    set path [dict get $context path]
+    set stamp [_datasetAccessPathStamp $path]
+    if {[dict exists $descriptor path_stamp] && [dict get $descriptor path_stamp] ne {} &&
+        [file normalize $path] eq [file normalize [dict get $descriptor path]]} {
+        # Keep the descriptor-to-provider admission window guarded too. A
+        # separately materialized representation owns its actual read path.
+        set stamp [dict get $descriptor path_stamp]
+    }
+    set binding [list $path $stamp]
+    _datasetAccessCheckBinding $binding
+    return $binding
+}
+proc ::GX::_datasetAccessSourceCheck {handle} {
     variable datasetAccessHandle
-    variable datasetAccessCounter
+    set token $datasetAccessHandle($handle,provider_token)
+    switch -- $datasetAccessHandle($handle,provider) {
+        csv {if {[info exists ::GX::csvProviderState($token,source_binding)]} {_datasetAccessCheckBinding $::GX::csvProviderState($token,source_binding)}}
+        hdf5 {if {[info exists ::GX::hdf5ProviderState($token,source_binding)]} {_datasetAccessCheckBinding $::GX::hdf5ProviderState($token,source_binding)}}
+    }
+}
+
+# Resolve a read descriptor through the existing schema/transaction owners.
+# A foreign read borrows only their synchronous registry projection. It never
+# activates a Session, publishes a catalog event, or opens a provider while that
+# projection is installed. The returned descriptor belongs to the access handle.
+proc ::GX::_datasetAccessDescriptorLoaded {session datasetId} {
+    variable datasetRegistry
+    if {[datasetField $datasetId id ""] eq ""} {error "Unknown dataset: $datasetId"}
+    set variables [datasetVariableSchemaV3 $datasetId]
+    set fields {};set locators {};set index 0
+    foreach name [array names datasetRegistry "$datasetId,*"] {
+        dict set fields [string range $name [expr {[string length $datasetId]+1}] end] $datasetRegistry($name)
+    }
+    foreach variable $variables {
+        incr index
+        dict set locators [dict get $variable variable_id] [datasetField $datasetId var${index}_storage_locator {}]
+    }
+    set path [datasetResolvePath $session $datasetId];set stamp {}
+    if {$path ne {} && [file isfile $path]} {set stamp [_datasetAccessPathStamp $path]}
+    return [dict create session $session dataset_id $datasetId record $fields variables $variables locators $locators provider [datasetProviderFor $datasetId] path $path path_stamp $stamp]
+}
+proc ::GX::_datasetAccessDescriptor {session datasetId} {
+    variable currentSession;variable datasetRegistry
+    if {$currentSession ne {} && [file normalize $currentSession] eq $session} {
+        loadDatasetRegistry $session
+        return [_datasetAccessDescriptorLoaded $session $datasetId]
+    }
+    if {[info commands ::GX::datasetAuthorityActive] ne {} && [datasetAuthorityActive]} {
+        error {A Dataset transaction cannot switch Sessions}
+    }
+    set pending [array get datasetRegistry];set hints {}
+    foreach name {datasetAuthorityBaseline datasetAuthorityLoadedSession datasetAuthorityReadSnapshot datasetAuthorityNotification datasetAuthorityFailure} {
+        set var ::GX::$name
+        if {[info exists $var]} {dict set hints $name [list 1 [set $var]]} else {dict set hints $name [list 0 {}]}
+    }
+    try {
+        # Do not merge the active Session's pending edits into another source.
+        array unset datasetRegistry *
+        dict for {name saved} $hints {if {[lindex $saved 0]} {set ::GX::$name {}}}
+        if {[info commands ::GX::datasetAuthorityTransaction] ne {}} {
+            return [datasetAuthorityTransaction $session ::GX::_datasetAccessDescriptorLoaded $session $datasetId]
+        }
+        loadDatasetRegistry $session
+        return [_datasetAccessDescriptorLoaded $session $datasetId]
+    } finally {
+        array unset datasetRegistry *;array set datasetRegistry $pending
+        dict for {name saved} $hints {
+            if {[lindex $saved 0]} {set ::GX::$name [lindex $saved 1]} else {unset -nocomplain ::GX::$name}
+        }
+    }
+}
+proc ::GX::_datasetAccessField {descriptor field {default {}}} {
+    if {[dict exists $descriptor record $field]} {return [dict get $descriptor record $field]}
+    return $default
+}
+proc ::GX::_datasetAccessHandleDescriptor {handle} {
+    variable datasetAccessHandle
+    datasetAccessRequireHandle $handle
+    if {![info exists datasetAccessHandle($handle,descriptor)]} {
+        # Older representation-open callers still construct the ordinary
+        # handle fields. Reuse the descriptor captured by their provider at
+        # open, rather than resolving a different later global schema.
+        set provider $datasetAccessHandle($handle,provider)
+        set token $datasetAccessHandle($handle,provider_token)
+        if {$provider eq "csv" && [info exists ::GX::csvProviderState($token,descriptor)]} {
+            set descriptor $::GX::csvProviderState($token,descriptor)
+        } elseif {$provider eq "hdf5" && [info exists ::GX::hdf5ProviderState($token,descriptor)]} {
+            set descriptor $::GX::hdf5ProviderState($token,descriptor)
+        } else {set descriptor [_datasetAccessDescriptor $datasetAccessHandle($handle,session) $datasetAccessHandle($handle,dataset_id)]}
+        set datasetAccessHandle($handle,descriptor) $descriptor
+    }
+    return $datasetAccessHandle($handle,descriptor)
+}
+proc ::GX::datasetAccessOpen {session datasetId} {
+    variable datasetAccessHandle;variable datasetAccessCounter
     variable datasetStorageProviderCommand
     set session [file normalize $session]
-    if {![file isdirectory $session]} { error "Dataset session directory does not exist: $session" }
-    loadDatasetRegistry $session
-    if {[datasetField $datasetId id ""] eq ""} { error "Unknown dataset: $datasetId" }
-    set provider [datasetProviderFor $datasetId]
-    if {![info exists datasetStorageProviderCommand($provider)]} { error "Dataset storage provider '$provider' is unavailable" }
-    if {$provider eq "remote"} {return [datasetRemoteAccessOpen $session $datasetId]}
-    set path [datasetResolvePath $session $datasetId]
-    if {$path eq "" || ![file isfile $path]} { error "Dataset $datasetId has no readable storage object" }
-    set context [dict create session $session dataset_id $datasetId path $path]
+    if {![file isdirectory $session]} {error "Dataset session directory does not exist: $session"}
+    set descriptor [_datasetAccessDescriptor $session $datasetId]
+    set provider [dict get $descriptor provider]
+    if {![info exists datasetStorageProviderCommand($provider)]} {error "Dataset storage provider '$provider' is unavailable"}
+    if {$provider eq "remote"} {
+        return [datasetRemoteAccessOpen $session $datasetId $descriptor]
+    }
+    set path [dict get $descriptor path]
+    if {$path eq {} || ![file isfile $path]} {error "Dataset $datasetId has no readable storage object"}
+    set context [dict create session $session dataset_id $datasetId path $path descriptor $descriptor]
     set token [uplevel #0 [list {*}$datasetStorageProviderCommand($provider) open {} $context]]
+    set metadata {}
     set handle "dataset#[incr datasetAccessCounter]"
-    set datasetAccessHandle($handle,dataset_id) $datasetId
-    set datasetAccessHandle($handle,session) $session
-    set datasetAccessHandle($handle,provider) $provider
-    set datasetAccessHandle($handle,provider_token) $token
-    set datasetAccessHandle($handle,metadata) ""
+    foreach {key value} [list dataset_id $datasetId session $session provider $provider provider_token $token metadata $metadata descriptor $descriptor] {
+        set datasetAccessHandle($handle,$key) $value
+    }
     return $handle
 }
 
@@ -122,10 +226,11 @@ proc ::GX::datasetAccessMetadata {handle} {
     datasetAccessRequireHandle $handle
     if {$datasetAccessHandle($handle,metadata) ne ""} { return $datasetAccessHandle($handle,metadata) }
     set datasetId $datasetAccessHandle($handle,dataset_id)
+    set descriptor [_datasetAccessHandleDescriptor $handle]
     set providerMeta [datasetAccessProviderCall $handle metadata]
     set variables {}
     set groupIds {}
-    foreach variable [datasetVariableSchemaV3 $datasetId] {
+    foreach variable [dict get $descriptor variables] {
         set variableId [dict get $variable variable_id]
         set providerVariable [dict create]
         if {[dict exists $providerMeta variables $variableId]} { set providerVariable [dict get $providerMeta variables $variableId] }
@@ -143,17 +248,17 @@ proc ::GX::datasetAccessMetadata {handle} {
         if {$groupId ne "" && $groupId ni $groupIds} { lappend groupIds $groupId }
         lappend variables $variable
     }
-    set rowCount [datasetField $datasetId row_count ""]
+    set rowCount [_datasetAccessField $descriptor row_count ""]
     if {$rowCount eq "" && [dict exists $providerMeta row_count]} { set rowCount [dict get $providerMeta row_count] }
     if {$rowCount eq ""} { set rowCount -1 }
     set metadata [dict create \
         api_version 2 \
         dataset_id $datasetId \
-        contract [datasetField $datasetId kind ""] \
+        contract [_datasetAccessField $descriptor kind ""] \
         storage_provider $datasetAccessHandle($handle,provider) \
-        format [datasetField $datasetId format ""] \
+        format [_datasetAccessField $descriptor format ""] \
         row_count $rowCount \
-        sample_count [datasetField $datasetId sample_count $rowCount] \
+        sample_count [_datasetAccessField $descriptor sample_count $rowCount] \
         capabilities [datasetAccessCapabilities $handle] \
         variables $variables \
         groups $groupIds]
@@ -256,12 +361,14 @@ proc ::GX::datasetAccessVariableIsImplicit {handle variable} {
     variable datasetAccessHandle
     if {$datasetAccessHandle($handle,provider) eq "remote"} {return 0}
     set representationImplicit [expr {[info exists datasetAccessHandle($handle,is_representation)] && $datasetAccessHandle($handle,is_representation)}]
-    return [expr {[dict get $variable axis_kind] eq "uniform" && ($representationImplicit || [datasetStorageVariableLocator $datasetAccessHandle($handle,dataset_id) [dict get $variable variable_id]] eq "")}]
+    set descriptor [_datasetAccessHandleDescriptor $handle]
+    return [expr {[dict get $variable axis_kind] eq "uniform" && ($representationImplicit || [dict get $descriptor locators [dict get $variable variable_id]] eq "")}]
 }
 
 proc ::GX::datasetAccessReadRangeBinary {handle variableIds start count} {
     variable datasetAccessHandle
     datasetAccessRequireHandle $handle
+    _datasetAccessSourceCheck $handle
     if {![string is integer -strict $start] || $start < 0} { error "start must be an integer >= 0" }
     if {![string is integer -strict $count] || $count < -1} { error "count must be -1 or an integer >= 0" }
     set variableIds [datasetAccessNormalizeVariableIds $handle $variableIds]
@@ -331,6 +438,7 @@ proc ::GX::datasetAccessReadRangeTransport {handle variableIds start count} {
 proc ::GX::datasetAccessReadRange {handle variableIds start count} {
     variable datasetAccessHandle
     datasetAccessRequireHandle $handle
+    _datasetAccessSourceCheck $handle
     if {![string is integer -strict $start] || $start < 0} { error "start must be an integer >= 0" }
     if {![string is integer -strict $count] || $count < -1} { error "count must be -1 or an integer >= 0" }
     set variableIds [datasetAccessNormalizeVariableIds $handle $variableIds]
@@ -339,8 +447,7 @@ proc ::GX::datasetAccessReadRange {handle variableIds start count} {
     foreach variable [dict get [datasetAccessMetadata $handle] variables] { dict set byId [dict get $variable variable_id] $variable }
     foreach variableId $variableIds {
         set variable [dict get $byId $variableId]
-        set representationImplicit [expr {[info exists datasetAccessHandle($handle,is_representation)] && $datasetAccessHandle($handle,is_representation)}]
-        if {[dict get $variable axis_kind] eq "uniform" && ($representationImplicit || [datasetStorageVariableLocator $datasetId $variableId] eq "")} {
+        if {[datasetAccessVariableIsImplicit $handle $variable]} {
             lappend implicit $variableId
         } else {
             lappend physical $variableId
@@ -409,7 +516,8 @@ proc ::GX::datasetAccessIterateChunks {handle variableIds chunkSize commandPrefi
     if {![llength $commandPrefix]} { error "Chunk iteration requires a callback command" }
     set variableIds [datasetAccessNormalizeVariableIds $handle $variableIds]
     set metadata [datasetAccessMetadata $handle]
-    set first [datasetVariableV3ById [dict get $metadata dataset_id] [lindex $variableIds 0]]
+    set first {}
+    foreach variable [dict get $metadata variables] {if {[dict get $variable variable_id] eq [lindex $variableIds 0]} {set first $variable;break}}
     set shape [datasetSchemaV3SplitIds [dict get $first shape]]
     set total [expr {[llength $shape] ? [lindex $shape 0] : [dict get $metadata row_count]}]
     set start 0; set chunks 0
@@ -592,9 +700,13 @@ proc ::GX::csvStorageProvider {operation token args} {
     switch -- $operation {
         open {
             set context [lindex $args 0]
+            set descriptor [expr {[dict exists $context descriptor] ? [dict get $context descriptor] : [_datasetAccessDescriptor [dict get $context session] [dict get $context dataset_id]]}]
+            set binding [_datasetAccessProviderBinding $context $descriptor]
             set token "csv#[incr csvProviderCounter]"
             set csvProviderState($token,dataset_id) [dict get $context dataset_id]
             set csvProviderState($token,path) [dict get $context path]
+            set csvProviderState($token,descriptor) $descriptor
+            set csvProviderState($token,source_binding) $binding
             set csvProviderState($token,fd) ""
             set csvProviderState($token,next_row) 0
             set csvProviderState($token,payload_elements_read) 0
@@ -605,8 +717,9 @@ proc ::GX::csvStorageProvider {operation token args} {
         metadata {
             set datasetId $csvProviderState($token,dataset_id)
             set vars [dict create]
-            foreach variable [datasetVariableSchemaV3 $datasetId] { dict set vars [dict get $variable variable_id] [dict create dtype [dict get $variable dtype] rank [dict get $variable rank] shape [dict get $variable shape]] }
-            return [dict create row_count [datasetField $datasetId row_count -1] variables $vars]
+            set descriptor $csvProviderState($token,descriptor)
+            foreach variable [dict get $descriptor variables] {dict set vars [dict get $variable variable_id] [dict create dtype [dict get $variable dtype] rank [dict get $variable rank] shape [dict get $variable shape]]}
+            return [dict create row_count [_datasetAccessField $descriptor row_count -1] variables $vars]
         }
         read_range { return [csvStorageProviderReadRange $token {*}$args] }
         read_hyperslab { error "CSV storage does not support multidimensional hyperslabs" }
@@ -647,7 +760,8 @@ proc ::GX::csvStorageProviderReadRange {token variableIds start count} {
     variable csvProviderState
     set datasetId $csvProviderState($token,dataset_id)
     set path $csvProviderState($token,path)
-    set delimiter [datasetField $datasetId canonical_delimiter ""]
+    set descriptor $csvProviderState($token,descriptor)
+    set delimiter [_datasetAccessField $descriptor canonical_delimiter ""]
     if {$delimiter eq ""} {
         set delimiter [datasetSchemaDetectDelimiter $path]
     } else {
@@ -657,9 +771,10 @@ proc ::GX::csvStorageProviderReadRange {token variableIds start count} {
             comma { set delimiter "," }
         }
     }
-    set variables [dict create]
+    set variables [dict create];set schema {}
+    foreach variable [dict get $descriptor variables] {dict set schema [dict get $variable variable_id] $variable}
     foreach variableId $variableIds {
-        set variable [datasetVariableV3ById $datasetId $variableId]
+        set variable [dict get $schema $variableId]
         set position [dict get $variable canonical_position]
         if {![string is integer -strict $position] || $position < 1} { error "Variable $variableId is not physically present in CSV storage" }
         dict set variables $variableId [dict create variable $variable column [expr {$position-1}]]
@@ -755,9 +870,10 @@ proc ::GX::hdf5ProviderMetadata {token} {
     if {[gets $channel line] < 0 || $line ne "END"} { error "Invalid HDF5 metadata terminator" }
     set datasetId $hdf5ProviderState($token,dataset_id)
     set mapped [dict create]; set rowCount -1
-    foreach schema [datasetVariableSchemaV3 $datasetId] {
+    set descriptor $hdf5ProviderState($token,descriptor)
+    foreach schema [dict get $descriptor variables] {
         set variableId [dict get $schema variable_id]
-        set wanted [datasetStorageVariableLocator $datasetId $variableId]
+        set wanted [dict get $descriptor locators $variableId]
         set match [dict create]
         foreach candidate $rawVariables {
             if {[info exists hdf5ProviderState($token,representation)] && $hdf5ProviderState($token,representation) && [dict get $candidate variable_id] eq $variableId} { set match $candidate; break }
@@ -825,6 +941,8 @@ proc ::GX::hdf5StorageProvider {operation token args} {
     switch -- $operation {
         open {
             set context [lindex $args 0]
+            set descriptor [expr {[dict exists $context descriptor] ? [dict get $context descriptor] : [_datasetAccessDescriptor [dict get $context session] [dict get $context dataset_id]]}]
+            set binding [_datasetAccessProviderBinding $context $descriptor]
             set helper [file join $scriptDir core python gxtxt_hdf5_provider.py]
             if {![file isfile $helper]} { error "HDF5 provider helper is missing" }
             set python [runtimeToolRequired python]
@@ -835,9 +953,12 @@ proc ::GX::hdf5StorageProvider {operation token args} {
             fconfigure $channel -encoding utf-8 -translation {auto lf} -buffering line
             if {[catch {set ready [hdf5ProviderReadLine $channel]} failure]} { catch {close $channel}; error $failure }
             if {[lindex $ready 1] ne "READY"} { catch {close $channel}; error "HDF5 provider did not become ready" }
+            if {[catch {_datasetAccessCheckBinding $binding} failure]} {catch {close $channel};error $failure}
             set token "hdf5#[incr hdf5ProviderCounter]"
             set hdf5ProviderState($token,channel) $channel
             set hdf5ProviderState($token,dataset_id) [dict get $context dataset_id]
+            set hdf5ProviderState($token,descriptor) $descriptor
+            set hdf5ProviderState($token,source_binding) $binding
             set hdf5ProviderState($token,representation) [expr {[dict exists $context representation] && [dict get $context representation] ? 1 : 0}]
             set hdf5ProviderState($token,metadata) ""
             return $token

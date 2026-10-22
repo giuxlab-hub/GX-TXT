@@ -20,6 +20,12 @@ proc ::GX::CurveWorkbench::_save {w} {
             error "Document owner was deleted or replaced; the stale workspace was not saved. Reopen Curve Workbench."
         }
     }
+    # Saving an unsaved workspace establishes its existing Document owner.
+    # Capture only the current public view before that legitimate transition.
+    set residualAxes {}
+    if {$st($w,document) eq {} && [info exists st($w,residualWidget)] && $st($w,residualWidget) ne {}} {
+        catch {set residualAxes [dict get [::GX::PlotDatasetAPIv4::widgetReceipt $st($w,residualWidget)] axes]}
+    }
     set result [_writeWorkspace $w]
     if {[dict get [::GX::workbenchRecoveryInspect $st($w,document)] status] eq "absent"} {
         if {[catch {::GX::workbenchRecoveryBegin $st($w,document)} message]} {
@@ -34,6 +40,14 @@ proc ::GX::CurveWorkbench::_save {w} {
         set st($w,lifecycleSubscription) [::GX::interactiveDocumentLifecycleSubscribe [list ::GX::CurveWorkbench::_documentOwnerInvalidated $w] $w $st($w,document)]
     }
     _parameterPersistBindings $w
+    if {[info exists st($w,residualWidget)] && $st($w,residualWidget) ne {}} {
+        # A committed Workspace save does not depend on display preparation.
+        # Rebinding is explicit presentation work; a rejected view stays stale.
+        if {[catch {
+            _drawResidual $w
+            if {$residualAxes ne {} && $st($w,residualWidget) ne {}} {::GX::PlotDatasetAPIv4::widgetView $st($w,residualWidget) restore $residualAxes}
+        } message]} {set st($w,comparisonText) "Previous comparison display — $message Select Compare to refresh."}
+    }
     return $result
 }
 
@@ -82,7 +96,7 @@ proc ::GX::CurveWorkbench::_close {w} {
     _pointSyncCancel $w
     if {$st($w,token) eq [::GX::interactiveDocumentSessionToken]} {_save $w}
     if {$st($w,selectionScene) ne ""&&$st($w,selectionScene)!=$st($w,scene)} {catch {::GX::Native2D::core destroy $st($w,selectionScene)}}
-    if {$st($w,residualScene) ne ""} {catch {::GX::Native2D::core destroy $st($w,residualScene)}}
+    _residualDispose $w
     catch {::GX::Native2D::core destroy $st($w,scene)}
     if {[info exists st($w,planarFocusJob)]} {after cancel $st($w,planarFocusJob)}
     if {[info exists st($w,planarToken)]} {catch {::GX::native3DPlanarEditCancel $st($w,planarToken)}}

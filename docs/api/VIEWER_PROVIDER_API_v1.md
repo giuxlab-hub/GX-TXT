@@ -103,7 +103,7 @@ CORE exposes:
 ::GX::viewerAttributeSet module_id viewer_id layer_id attribute_id fields
 ::GX::viewerAttributeIds module_id viewer_id layer_id
 ::GX::viewerAttributeRemove module_id viewer_id layer_id attribute_id
-::GX::viewerSceneResolve module_id viewer_id
+::GX::viewerSceneResolve module_id viewer_id ?presentation_context_dict?
 ```
 
 A scene stores camera position/target/up, projection and clipping planes. A
@@ -126,6 +126,19 @@ existing single-light consumers. New layer fields are `base_color`,
 `representation=surface_edges` alongside existing style, visibility, opacity,
 scientific roles and source fields. All of these are descriptors; authoritative
 geometry and Dataset payloads stay in their source files.
+`sphere_glyphs` selects the existing point presentation: omit it or use an
+empty value for legacy kind-derived behavior, `0` for native point markers,
+or `1` for geometric spheres on a point layer/representation. Other values
+are rejected before replacing the previous layer. Native markers use
+`point_size` in screen pixels; geometric spheres are transformed with the
+geometry. An explicit `radius_array` still requests radius-driven geometry;
+it must not be used for ordinary screen-sized scatter markers.
+Scientific scatter with independently normalized axes of different
+physical units should use `sphere_glyphs=0` and `representation=points` to
+avoid stretching geometric glyphs. This changes presentation only: source
+points, scalar arrays, physical axis units and source SHA checks are retained.
+The option persists with the layer and survives Session reopening. Existing
+layers without it retain their previous behavior; no native rebuild is needed.
 `opacity_array` optionally names a point scalar array with values in `[0,1]`;
 the engine maps it to per-point opacity independently of layer opacity.
 `local_transform` optionally stores 16 finite column-major affine matrix values
@@ -175,6 +188,23 @@ as `open_context` in that dispatch dictionary. Dataset Preview uses this to
 pass the selected source path, media type, contract and format to a viewer.
 The context is invocation state; the provider must explicitly register any
 source it wants to preserve in the Session.
+
+For a dedicated scientific presentation, `presentation_layer_ids` in that
+context explicitly selects registered layer IDs. `viewerSceneResolve` accepts
+the same optional context. Selection occurs before resolving source artifacts
+or Dataset bindings: unrelated stored sources are preserved and are not added
+to this presentation. Duplicate or unknown layer IDs reject, and all selected
+sources retain the normal identity, revision and digest checks. Omitting the
+key retains the existing complete multilayer scene; an explicit empty list
+selects no layers.
+
+After a successful scoped `viewerOpen`, `viewerRerender` retains that active
+subset. A failed open does not replace it. A subsequent unscoped `viewerOpen`
+restores the full multilayer presentation. This process-local dispatch scope
+is cleared by Session load/defaults and is not saved as scientific state.
+The Molecule Viewer uses `{presentation_layer_ids molecule_main}` so retained
+Crystal Viewer layers do not obscure a molecular structure. Their original
+sources, layer descriptors and resources remain stored and available.
 
 `rerender` means "refresh from authoritative/persistent state as appropriate to
 the provider". It must not silently destroy authoritative user work.
@@ -322,3 +352,25 @@ Each `[viewer.ID]` descriptor can supply `short_title`, `semantic_group`, `group
 `viewerProviderCatalog` reads installed descriptors without activating desktop backends. `viewerProviderDefinition module viewer ?include_disabled?` includes presentation metadata and `enabled`. `viewerProviderEnabled` and `viewerProviderSetEnabled module viewer boolean` use the existing account-local Configuration authority. Config → Modules has separate Services and Viewers tabs. Disabling a Viewer removes its launcher and refuses subsequent Open/Rerender; active Workspaces and essential scientific services remain available. Enabling checks installed dependencies. This is a presentation flag, separate from Analysis Run selection and module service state. In particular, Python/Octave script editors remain available when their Analysis Run checkbox is off; opening an editor does not select it for scientific execution. It survives restart through Configuration's atomic writer.
 
 The catalog groups short titled icon buttons by scientific purpose, offers search, keyboard focus/Enter, readable tooltips, scrolling and responsive columns. Provider IDs remain stable technical identities and are available in tooltips and management details. These GUI operations are host-only; provider discovery and scientific API activation retain their existing public contracts.
+
+### Descriptor-driven legacy presentation
+
+`viewerProviderDefinition` additionally exposes boolean `deprecated` and a
+`replacement` module/provider reference, reading provider fields first and module
+metadata as fallback. The catalog labels a deprecated presentation as legacy and
+its standard tooltip identifies the successor. Neither field disables or migrates
+the original scientific provider, Workspace or public API.
+
+Optional provider `catalog_replacement=MODULE/VIEWER` suppresses only that old
+launcher while the named installed replacement presentation is enabled.
+`viewerProviderCatalog ?includeReplaced?` defaults to the normal single-launcher
+catalog; pass true for the full descriptor inventory. The original provider still
+opens normally through its registered identity. Absent/disabled replacements leave
+the legacy launcher available. References must name another registered Viewer;
+this is presentation metadata, not a second dispatcher or scientific model owner.
+
+The existing EM model Workspace owner prefers the installed compiled presentation
+through `viewerOpen` and passes only `em_document_id`; otherwise it uses the normal
+legacy Viewer dispatcher. Model identity/schema and publication remain with the
+original mathematical service. Installed binary validation and strict SDK/runtime
+compatibility still occur through the common compiled Viewer lifecycle.

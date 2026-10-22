@@ -42,6 +42,9 @@ bool create_cylinder(double radius,double height,
  * the source XDE document is closed. No occurrence transform is baked in. */
 bool adopt_step_shape(const TopoDS_Shape& native,
                       std::shared_ptr<BrepShape>& out, std::string& error);
+/* Collect already placed shapes without fusing or rebuilding their topology. */
+bool compound_shapes(const std::vector<std::shared_ptr<BrepShape>>& shapes,
+                     std::shared_ptr<BrepShape>& out, std::string& error);
 
 /* Exact OCCT intersection, returned as sampled 3D edge segments. Curved edges
  * are sampled to a chordal deflection of max(1e-7, 1e-5 * shape diagonal).

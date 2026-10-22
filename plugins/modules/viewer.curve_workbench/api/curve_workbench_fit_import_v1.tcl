@@ -11,11 +11,23 @@ proc ::GX::CurveWorkbench::openFitTransfer {workspace} {
     set st($w,status) "$label — original scientific model preserved separately in this Workspace."
     return $w
 }
-proc ::GX::CurveWorkbench::importFitGeometry {name transfer} {
+proc ::GX::CurveWorkbench::importFitGeometry {name transfer {coordinateConfiguration {}}} {
     if {[dict get $transfer schema] ne "gxtxt.fitter_workbench_transfer.v1"} {error {Unsupported fit transfer contract}}
     set units [dict get $transfer coordinate_units]
     if {[llength $units]!=2} {error {Fit transfer requires independent X/Y unit declarations}}
     foreach unit $units {if {$unit ne {}} {::GX::unitRegistryConversionPlan $unit $unit}}
+    if {$coordinateConfiguration eq {}} {
+        set coordinateConfiguration [_coordinateConfigurationDefault]
+        dict set coordinateConfiguration x_unit [lindex $units 0]
+        dict set coordinateConfiguration y_unit [lindex $units 1]
+        if {[catch {_coordinateConfigurationNormalize $coordinateConfiguration} reason options]} {
+            if {[dict get $options -errorcode] ne {GX COORDINATE HETEROGENEOUS_CONSENT_REQUIRED}||![llength [info commands tk_messageBox]]} {return -options $options $reason}
+            if {[tk_messageBox -type yesno -default no -icon question -title {Review fit coordinate plane} -message "The fit declares X ([lindex $units 0]) and Y ([lindex $units 1]) with different physical dimensions. Enable dimensionally heterogeneous axes explicitly for the new Workspace? Numeric plane editing does not establish a physical distance or angle between unlike axes. The original fit is preserved."] ne {yes}} {error {Fit transfer cancelled; heterogeneous axes were not enabled}}
+            dict set coordinateConfiguration allow_heterogeneous 1
+        }
+    }
+    set coordinateConfiguration [_coordinateConfigurationNormalize $coordinateConfiguration]
+    if {[list [dict get $coordinateConfiguration x_unit] [dict get $coordinateConfiguration y_unit]] ne $units} {error {Fit transfer Configuration must preserve its actual declared X/Y units}}
     set geometry [dict get $transfer geometry];set status [dict get $geometry status]
     if {$status ni {exact sampled_required}} {error {Unknown fit geometry representation}}
     set representation [expr {$status eq "exact"?"exact retained model":"sampled approximation"}]
@@ -30,7 +42,7 @@ proc ::GX::CurveWorkbench::importFitGeometry {name transfer} {
         }
         set record [dict create id curve1 name $label samples $samples source {} x x y y source_x_name X source_y_name Y filter {} filter_value {} family {} order {} parents {} ancestors {} operations {} representation linear visible 1 locked 0 edited 0 breaks [::GX::Native2D::core breaks $scene $native] coordinate_units $units sketch_definition $definition sketch_samples [llength $samples] geometry_authority retained_sketch]
         ::GX::Native2D::core fit $scene
-        set payload [dict create version 2 curves [dict create curve1 $record] next 1 active curve1 selected_indices {} view [::GX::Native2D::core view $scene] reference {} target {} external_feedback {}]
+        set payload [dict create version 2 coordinate_configuration $coordinateConfiguration curves [dict create curve1 $record] next 1 active curve1 selected_indices {} view [::GX::Native2D::core view $scene] reference {} target {} external_feedback {}]
         set created [::GX::sessionWorkspaceCreate curve_workbench $name $payload];set document [dict get $created id]
         # No reference to another owner's generation survives in the scientific
         # archive. The original source_reference remains an identity receipt only.

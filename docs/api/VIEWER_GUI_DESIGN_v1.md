@@ -75,6 +75,14 @@ command_catalog owned by the actual installed module. Its default is
 `module.provider.design_commands`. Workspace/scientific ownership remains the
 actual module. UI Field owns generic widgets, scrolling and geometry.
 
+The normal **New Workspace** action passes `workspace_id new` and the chosen
+`workspace_name`. The existing Workspace owner validates that name; it is kept
+with the unsaved interface until the first normal Save creates the canonical
+Workspace with that exact name. Existing saved Workspaces cannot receive a new
+name through this context. Unnamed opens retain the existing available-title
+fallback. This applies to both designed and installed restricted C++ Viewers;
+it neither compiles a Viewer nor modifies an existing scientific document.
+
 Preview returns `not_connected` for custom actions. Runtime binding records have
 a command prefix and optional enabled prefix; a callback receives `(window,
 action)` and may return a dictionary containing status. Fit/Zoom require an
@@ -224,7 +232,8 @@ command owner still decides enablement, dispatch and shortcuts.
 
 Toolbar controls support normal/disabled/hover and declared selected resources
 where the actual native control has selected semantics. Plain command buttons
-have no selection state. Native command menus support normal/disabled image,
+have no selection state unless declaratively bound to an actual diagram tool
+with `diagram_tool` as documented below. Native command menus support normal/disabled image,
 image+text/text and placement; custom spacing, hover/selected image variants and
 icon-only tooltips are explicitly unavailable. Assign rejects unsupported
 requests and keeps its error visible in Icon Library. Menu Preview is an actual
@@ -244,6 +253,28 @@ access is needed.
 
 ## Existing navigation command IDs
 
+### Native2D tool presentation (dev109)
+
+An existing `action` may declare `diagram_tool {COMPONENT_ID MODE}` through
+normal Builder properties. The target must be a declared Native2D component
+with `diagram_catalog`; MODE must be select, wire, junction, label, pan, probe
+or a symbol in that catalog. One handler cannot declare conflicting pairs, and
+the same action cannot also declare `component_visibility`. Validation rejects
+foreign/non-diagram targets before composition.
+
+The property declares a pure local tool-selection action. The common GUI Host
+applies it directly through the existing Native2D Diagram controller before
+authored C++ dispatch; no worker exchange, source validation, compiler or Job is
+needed. It also supplies the checked predicate from that same actual viewport
+tool. Existing packaged C++ tool handlers remain compatible; the declared local
+action does not call them or change authored C++ state. Scientific or other
+nonlocal operations retain their ordinary handlers. Native `tool_changed`,
+keyboard shortcuts, Escape, diagram rebind and normal restore refresh command
+widgets and toolbars using existing selected/hover/disabled presentation.
+Icon spacing and existing base styles are preserved across theme refresh.
+One-shot actions such as Rotate, Delete and Fit do not declare this property.
+No new C++ header, method, raw widget path or runtime compiler is required.
+
 The Host already implements the reserved presentation commands `fit`, `zoom_in`
 and `zoom_out`. Declare the corresponding ordinary handler contract (arguments
 `window action`, effect `presentation`) and an action/menu/toolbar using that
@@ -255,3 +286,95 @@ different bound canvases should not navigate together. Existing diagram commands
 with domain-specific IDs retain their separate callback behavior. Native Plot
 wheel zoom, middle-button pan and double-click fit also remain available to human
 developers; approved automated gestures have their own bounded testing contract.
+
+
+Catalog PNG display sizing uses the actual distributed resource dimensions;
+a 64-pixel Builder icon is not assumed to be 192 pixels and reduced to 21.
+Integer scaling uses the existing Tk photo operations; fractional DPI scaling
+uses the existing shared Icon service's PNG decoder/resizer. This creates no
+project import or second resource catalog. Transparency, aspect, provider
+identity and packaged resource bytes are preserved. The public-owner contract
+covers actual 64/192-pixel packaged icons at measured display sizes 64, 95 and
+192 (Tk DPI quantization), plus a fractional non-square alpha fixture. Installed
+catalog appearance/interaction remains independently verified before acceptance.
+
+Saved document components restore through the same canonical Dataset reader used
+by Open. Restoration validates the declared content kind, Dataset identity,
+Variable schema and source SHA-256 before replacing visible content. Remote
+revision stamps remain exact. Process-local Session tokens and local file
+inode/path stamps are reacquired from the current validated Session; they are
+not portable scientific identities. A changed source requires explicit selection
+and Open. PDF readers retain their normal runtime ownership and disposal.
+
+Saved Plot view axes contain only panel ID, axis ID, limits, scale and direction.
+Device tick positions and plot rectangles belong to the current rendering size
+and are excluded from durable interface state. Existing snapshots containing
+full axis receipts remain readable by the existing native restore operation.
+This keeps an unchanged hidden tab or resized Viewer from becoming dirty solely
+because its pixel geometry differs. Genuine limits and scientific source guards
+remain authoritative.
+
+A declared editable3d component places the embedded frame returned by the
+existing Workbench3D owner with fill/expand in its viewport. The owner still
+controls the only editable model, renderer, History and process lifetime.
+
+## Raster controls anchored to scientific targets
+
+A `section` may declare `viewport_anchor` as an inert dictionary:
+`{viewport image_canvas target annotation offset {12 12}}`. The viewport must
+be a declared `native2d` component with `source_kind raster`. Targets are
+`object`, `selection`, `roi` or `annotation`; offsets are two finite device-pixel
+values of magnitude at most1024. The existing Native2D panel follows its real
+target through pan, zoom and image transforms. Author widget paths and drawing
+callbacks are not admitted. Anchored sections cannot nest.
+
+Children use existing `section`, `panel`, `label`, `status`, `field`, `choice`,
+`entry`, `combobox`, `toggle`, `checkbutton` or `action` components. Logical IDs,
+layouts, validation, icons and command ownership stay unchanged. Native widgets
+are constructed in the actual panel body when the raster is bound. Candidate
+fields and command mappings are admitted before the new raster checkpoint and
+widget swap; a preparation failure retains the previous valid host. Transient
+children cannot declare `change_action` or `component_visibility`.
+
+For an annotation editor, declare `annotation_fields`, for example
+`{text annotation_text font_family annotation_font font_size annotation_size
+color annotation_color}`. These four keys are required; optional `anchor` edits
+the native text anchor. Each value names a distinct child field in this section.
+Font size requires a numeric `field`; color requires a color `field` with
+`alpha 1`, preserving its native opacity. Text, font family and anchor use text
+or choice fields. The original native annotation owner validates the accepted
+content, bounded style and source-pixel position.
+
+An ordinary action may declare `raster_command {image_canvas
+panel_open:annotation_properties}`. Other commands are `panel_close:SECTION`,
+`editor_apply:SECTION` and `editor_cancel:SECTION`. The section must belong to
+that viewport; Apply requires annotation fields. These shared local operations
+run before authored C++ dispatch and do not submit a worker Job. Existing `fit`,
+`cancel`, `finish`, `delete_roi` and `delete_annotation` commands remain available.
+A command action cannot also declare a raster/diagram tool or visibility toggle.
+
+Open captures the actual selected annotation ID, generation and collection
+revision. Apply reads through UI Field and commits one native Document/History
+edit; an equivalent definition is a no-op. Invalid values, changed selection,
+locks, replaced generations, foreign Document revisions and expired lifetimes
+reject without redirecting the edit. Selection and ownership are checked again
+after a History decision. Cancel or Escape from a focused editor field discards
+its draft. A selector/color dialog with its own grab retains its own Escape.
+
+Public `viewerGuiDesignValues` and existing SDK reads return actual drafts.
+Workspace/History capture excludes those transient drafts; accepted annotations
+remain in the original image Resource and Document. Save/reopen reconstructs
+the panel; an old Apply callback cannot act on the replacement viewport.
+After Workspace restoration, public runtime inspection and command widgets
+resolve those rebuilt controls in the current native panel. Final shell/menu
+setup preserves the scientific host's committed component mapping, including
+anchored section children; destroyed inspector placeholders are not reused.
+Installed Builder-generated GUI acceptance and first-click usability remain
+separate gates from typed owner contracts.
+
+Anchored raster panel transitions refresh the shared command projection before
+returning: opening a valid target enables its mapped Close/Cancel controls,
+and closing or invalidating that target disables them. This also applies when
+a compiled Viewer callback invokes `viewerGuiDesignRasterCommand` outside a
+normal command-widget callback. The transition changes presentation state only;
+it does not commit a scientific Document or add a History entry.

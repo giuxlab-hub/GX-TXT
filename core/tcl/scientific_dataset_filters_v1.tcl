@@ -160,44 +160,60 @@ proc ::GX::scientificDatasetFilterApply {w arrayName prefix vid type all} {
     destroy $w
     scientificDatasetFilterLabels $arrayName $prefix
 }
-proc ::GX::scientificDatasetPreviewFiltered {id x y output requests {options {}}} {
-    set context [datasetCoordinateRead $::GX::currentSession $id]
-    set scene {};set rows 0;set reduced 0;set traces {};set displayed 0;set nativeSeries {}
-    try {
-        foreach filters $requests {
-            set request [dict create dataset_id $id x_variable_id $x y_variable_id $y display_budget 4096 filters $filters]
-            set config [datasetPreviewConfigurationRead $id]
-            set ordering [datasetPublicationV2DictDefault $options ordering [datasetPublicationV2DictDefault $config ordering {}]]
-            if {$ordering eq {} && ![catch {set manifest [datasetPreviewCurveManifest $id]}] && $manifest ne {}} {set ordering [dict get $manifest columns point_order]}
-            if {$ordering ne {}} {dict set request order_variable_id $ordering}
-            set source [curveSourceOpen $::GX::currentSession $request]
-            try {set display [curveSourceDisplayResponsive $source];set sourceIdentity [curveSourceDescribe $source]} finally {curveSourceClose $source}
-            set nativeIndex [llength $nativeSeries]
-            set palette {#0876BD #C84427 #238B45 #8849A3 #A67513 #008B8B #BA3377}
-            lappend nativeSeries [dict create id preview_$nativeIndex label "Trace [expr {$nativeIndex+1}]" axis left kind line style [dict create color [lindex $palette [expr {$nativeIndex%7}]] line_width 1.5 marker none] points [dict get $display points] source_rows [dict get $display source_rows] breaks [dict get $display breaks] full_bounds [dict get $display full_bounds] source_descriptor $sourceIdentity row_count [dict get $display row_count] filters $filters]
-            foreach identity [dict get $sourceIdentity source_identities] {if {[dict get $identity dataset_id] eq $id&&[dict get $identity sha256] ne [dict get $context source_sha256]} {error {Preview coordinate context belongs to changed source bytes}}}
-            set display [scientificDatasetCoordinateDisplay $context $x $y $display]
-            set native [lindex $nativeSeries end];foreach key {points full_bounds breaks} {dict set native $key [dict get $display $key]};lset nativeSeries end $native
-            incr rows [dict get $display row_count];set reduced [expr {$reduced || [dict get $display reduced]}]
-            lappend traces [dict remove $display points canonical_points]
-            incr displayed [llength [dict get $display points]]
-            if {![llength [dict get $display points]]} continue
-            if {$scene eq {}} {set scene [scientificDatasetDisplayScene $display]} else {scientificDatasetCoordinateAddTrace $scene $display [expr {[llength $traces]-1}]}
+# Metadata is read from the public Plot receipt; no frontend viewport math.
+proc ::GX::scientificDatasetPlotReceiptBounds {receipt} {
+    set limits {}
+    foreach axis [dict get $receipt axes] {
+        if {[dict get $axis panel_id] eq {main} && [dict get $axis axis] in {x left}} {
+            dict set limits [dict get $axis axis] [dict get $axis limits]
         }
-        if {$scene eq {}} {error {No finite X/Y pairs match the selected filters.}}
-        if {[datasetCoordinateRead $::GX::currentSession $id] ne $context} {error {Preview coordinate settings changed during preparation; render again}}
-        set view [::GX::Native2D::core view_requested $scene];lset view 0 960;lset view 1 580
-        ::GX::Native2D::core view $scene $view
-        set fit [scientificDatasetFitBounds $scene $traces]
-        set presentation [scientificDatasetCoordinateView $scene [dict get [lindex $traces 0] coordinate_presentation]]
-        set view [::GX::Native2D::core view_requested $scene]
-        lset view 2 [expr {min(320,max(85,[native2DAxisLabelMargin $scene]))}]
-        ::GX::Native2D::core view $scene $view
-        native2DCanvasPreview $scene {} current [dict create width 960 height 580 output_file $output background {1 1 1 1} annotations 1 include_construction_reference 0]
-        set view [::GX::Native2D::core preview_view $scene 0 960 580 .03]
-        set axes [dict create x [dict create label "X ([scientificDatasetCoordinateLabel $context $x])"] left [dict create label "Y ([scientificDatasetCoordinateLabel $context $y])"]]
-        set nativeModel [dict create title {Calibrated scientific curves} panels [list [dict create id main axes $axes series $nativeSeries annotations {}]] native_presentation {schema GXTXT_NATIVE_GRAPH_PRESENTATION_v1 graphics {} axes {} panels {} layout {} legend {placement none}}]
-        return [dict merge [lindex $traces 0] [dict create row_count $rows reduced $reduced trace_count [llength $requests] traces $traces displayed_points $displayed view_bounds [lindex $view 6] axis_aspect auto coordinate_presentation $presentation native_model $nativeModel]]
-    } finally {if {$scene ne {}} {::GX::Native2D::core destroy $scene}}
+    }
+    if {![dict exists $limits x] || ![dict exists $limits left]} {error {Public Plot receipt has no complete main X/Y limits}}
+    lassign [dict get $limits x] x0 x1
+    lassign [dict get $limits left] y0 y1
+    return [list $x0 $y0 $x1 $y1]
 }
+proc ::GX::scientificDatasetPreviewFiltered {id x y output requests {options {}}} {
+    scientificDatasetPlotRequire
+    set context [datasetCoordinateRead $::GX::currentSession $id]
+    set rows 0;set reduced 0;set traces {};set displayed 0;set prepared {}
+    foreach filters $requests {
+        set request [dict create dataset_id $id x_variable_id $x y_variable_id $y display_budget 4096 filters $filters]
+        set config [datasetPreviewConfigurationRead $id]
+        set ordering [datasetPublicationV2DictDefault $options ordering [datasetPublicationV2DictDefault $config ordering {}]]
+        if {$ordering eq {} && ![catch {set manifest [datasetPreviewCurveManifest $id]}] && $manifest ne {}} {set ordering [dict get $manifest columns point_order]}
+        if {$ordering ne {}} {dict set request order_variable_id $ordering}
+        set source [curveSourceOpen $::GX::currentSession $request]
+        try {set display [curveSourceDisplayResponsive $source];set descriptor [curveSourceDescribe $source]} finally {curveSourceClose $source}
+        foreach identity [dict get $descriptor source_identities] {
+            if {[dict get $identity dataset_id] eq $id && [dict get $identity sha256] ne [dict get $context source_sha256]} {error {Preview coordinate context belongs to changed source bytes}}
+        }
+        set display [scientificDatasetCoordinateDisplay $context $x $y $display]
+        incr rows [dict get $display row_count]
+        set reduced [expr {$reduced || [dict get $display reduced]}]
+        lappend traces [dict remove $display points canonical_points]
+        incr displayed [llength [dict get $display points]]
+        if {![llength [dict get $display points]]} continue
+        set index [llength $prepared]
+        lappend prepared [dict create id preview_$index y_variable_id $y label "Trace [expr {$index+1}]" filters $filters source_descriptor $descriptor display $display]
+    }
+    if {![llength $prepared]} {error {No finite X/Y pairs match the selected filters.}}
+    if {[datasetCoordinateRead $::GX::currentSession $id] ne $context} {error {Preview coordinate settings changed during preparation; render again}}
+    set labels {}
+    foreach axis {x y} vid [list $x $y] {
+        set variable [datasetVariableV3ById $id $vid]
+        set label [string trim [dict get $variable display_label]]
+        if {$label eq {}} {set label [string trim [dict get $variable canonical]]}
+        if {$label eq {}} {set label $vid}
+        dict set labels $axis "$label ([scientificDatasetCoordinateLabel $context $vid])"
+    }
+    set presentationOptions [dict create title {Scientific curves} axis_labels $labels aspect auto \
+        native_presentation {schema GXTXT_NATIVE_GRAPH_PRESENTATION_v1 graphics {} axes {} panels {} layout {} legend {placement none}}]
+    set model [::GX::PlotDatasetAPIv4::scientificModel $id $x $prepared $context $presentationOptions]
+    set receipt [::GX::PlotDatasetAPIv4::renderModel $model $output 960 580]
+    set bounds [scientificDatasetPlotReceiptBounds $receipt]
+    set presentation [dict get $receipt coordinate_presentation]
+    return [dict merge [lindex $traces 0] [dict create row_count $rows reduced $reduced trace_count [llength $requests] traces $traces displayed_points $displayed view_bounds $bounds axis_aspect auto coordinate_presentation $presentation native_model $model]]
+}
+
 source [file join [file dirname [info script]] scientific_dataset_filter_configuration_v1.tcl]

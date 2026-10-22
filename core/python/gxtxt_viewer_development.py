@@ -37,7 +37,7 @@ def cancel_children(signum, frame):
     raise SystemExit(128+signum)
 
 SOURCE = '''// SPDX-License-Identifier: GPL-3.0-or-later
-// Restricted SDK v1 is supplied automatically; do not add includes.
+// Public SDK v1 is supplied automatically; reviewed standard headers are supported.
 void on_event(gx::Host& host, gx::State& state, const gx::Event& event) {
     if (event.kind == gx::EventKind::open) {
         host.demo(3, 0);
@@ -99,9 +99,15 @@ def builder_edit(project, payload):
         raise DevelopmentError('Unsupported public Builder model operation','BUILDER_REQUEST')
     if payload['operation']=='icon_import':
         if len(payload['arguments'])!=5:raise DevelopmentError('Icon import requires path, ID, title, category, license','BUILDER_REQUEST')
-        path=Path(payload['arguments'][0]).absolute()
-        if not (path.is_relative_to(project) or path.is_relative_to(FRAMEWORK/'core/assets/icons')):
-            raise DevelopmentError('Author icons must be project-owned or shared CORE assets','CAPABILITY_DENIED')
+        source=payload['arguments'][0]
+        if isinstance(source,dict):
+            if set(source)!={'source_format','source'} or source['source_format']!='svg' or not isinstance(source['source'],str) or len(source['source'].encode('utf-8'))>262144:
+                raise DevelopmentError('Inline icon source requires bounded SVG text','BUILDER_REQUEST')
+        else:
+            if not isinstance(source,str):raise DevelopmentError('Icon source requires an owned path or inline SVG','BUILDER_REQUEST')
+            path=Path(source).absolute()
+            if not (path.is_relative_to(project) or path.is_relative_to(FRAMEWORK/'core/assets/icons')):
+                raise DevelopmentError('Author icons must be project-owned or shared CORE assets','CAPABILITY_DENIED')
     result=dictionary(core(project,'builder_edit',project/'design.gxtxt-viewer',tcl_result(payload)))
     receipt={'request':payload,'result':result,'design_sha256':digest((project/'design.gxtxt-viewer').read_bytes())}
     write_json(project/'derived/builder-receipt.json',receipt)
@@ -132,7 +138,7 @@ def core(project, operation, *arguments, timeout=12):
         except subprocess.TimeoutExpired:
             os.killpg(child.pid,signal.SIGKILL);child.wait();raise DevelopmentError('Public CORE request timed out','CORE_TIMEOUT')
         finally: ACTIVE_PROCESSES.discard(child.pid)
-        response_limit=16777216 if operation=='builder_edit' or (operation=='validate_design' and len(arguments)==2 and str(arguments[1])=='with_catalog') else 4194304
+        response_limit=16777216 if operation in {'builder_edit','runtime_design'} or (operation=='validate_design' and len(arguments)==2 and str(arguments[1])=='with_catalog') else 4194304
         output.seek(0);errors.seek(0);raw=output.read(response_limit+1);err=errors.read(65536)
     if len(raw)>response_limit: raise DevelopmentError('Public CORE response exceeds bound')
     try: response=dictionary(raw.decode())
@@ -142,8 +148,9 @@ def core(project, operation, *arguments, timeout=12):
         raise DevelopmentError(message,response.get('code','CORE_API_GAP'))
     return response['result']
 
-def read_project(project):
-    check_project_root(project)
+def read_project(project, *, installed=False):
+    if not installed:
+        check_project_root(project)
     expected={'schema','module_id','version','profile','language','source','design','capabilities','provenance','tests'}
     for name in ('project.json','handlers.cpp','design.gxtxt-viewer'):
         path=project/name
@@ -166,6 +173,11 @@ def _describe_api_catalog(raw):
     shapes={
         'value_set':{'request':{'component':'declared component index','value':'finite number or boolean'},'result':'display applied; no scientific effect'},
         'text_set':{'request':{'component':'declared status/label index','text':'literal UTF-8 <=256 bytes'},'result':'display applied'},
+        'document_bind':{'request':{'document':'declared document component index, kind html/pdf/code/table','dataset_selector':'declared compatible Dataset selector with matching content_kind'},'result':'existing CORE read-only document/PDF/source/paged-table consultation; original Session/source revision, no author filesystem/renderer'},
+        'raster_bind':{'request':{'viewport':'declared native2d component with source_kind raster','dataset_selector':'declared canonical selector with content_kind raster'},'result':'canonical image.raster admission into existing Native2D Document/Resource owner; original bytes/identity/units, no author path or pixel array'},
+        'raster_tool':{'request':{'viewport':'declared raster Native2D component','tool':'select/rectangle/polygon/annotation/move/rotate/pivot/pan'},'result':'local shared Native2D controller tool; geometry stays in the existing native owner'},
+        'raster_command':{'request':{'viewport':'declared raster Native2D component','command':'fit/cancel/finish/delete_roi/delete_annotation or panel_open/panel_close/editor_apply/editor_cancel:declared_section_id'},'result':'finite existing native controller or declared anchored UI Field operation, original Document and History lifetime checks'},
+        'tex_command':{'request':{'form':'complete declared TeX article section index','operation':'new/open/save/build/rebuild/cancel/preview/diagnostic_open/import_assets/remove_asset/export_tex/export_pdf/export_assets/refresh/import_source'},'result':'existing Document/Resource/SourceSurface/managed native TeX/PDF/FilePublication owners; explicit build only, no author source store or renderer'},
         'describe':{'request':{},'result':'public component contract'},
         'open':{'request':{'component':'declared graphics index','fixture':'0 Native2D, 1 Plot, 2 Native3D'},'result':'inert typed binding operation; actual GUI construction after successful event; no C++ return value'},
         'inspect':{'request':{'component':'declared graphics index'},'result':'public native receipt'},
@@ -180,50 +192,70 @@ def _describe_api_catalog(raw):
         'get':{'request':{'scope':'document_view_v1 declared Workspace component only'},'result':'existing owner opens its saved Viewer state'},
         'update':{'request':{'scope':'document_view_v1 declared Workspace component only'},'result':'existing owner saves with generation/revision/SHA guards'},
         'list':{'request':{'scope':'document_view_v1 declared Workspace component only'},'result':'existing scoped provider Workspace selector'},
+        'export':{'request':{'scope':'complete declared EM form; finite duplicate/Workspace manager action; current original em_models Document only'},'result':'existing Workspace export retains original nested managed resources; no C++ path or package bytes'},
+        'import':{'request':{'scope':'complete declared EM form; finite duplicate/Workspace manager action only'},'result':'existing Workspace import with normal names/dialogs and resource ownership; no C++ path or arbitrary payload'},
+        'em_command':{'request':{'scope':'complete declared EM model section index plus finite operation; exact EM service grants required'},'result':'deferred original native EM/Workspace/Job/Plot service action; no model arrays or execution paths returned to C++'},
+        'workbench_command':{'request':{'scope':'complete declared canonical geometry section index; finite lifecycle and public Workbench3D purpose-form commands'},'result':'original Workbench3D Document, editable Native3D v1 host and semantic History; no author geometry/model/renderer or Tcl dispatcher'},
+        'open_page':{'request':{'scope':'Host::em_command(form, runtime) only; fixed existing Runtime page'},'result':'ordinary Configuration navigation; no configuration mutation or widget paths returned to C++'},
+        'cellFieldProfileSpec':{'request':{'scope':'finite EM profile or publish_charts; actual canonical field roles'},'result':'source-bound scatter of actual stored cell-centroid samples at all Y; no interpolation or arrays returned to C++'},
+        'upsertPlotFromSpec':{'request':{'scope':'finite EM publish_charts; stable installed Viewer producer and actual Dataset identity'},'result':'two independent retained Graph/Variants through existing Plot owner; no author spec/file path'},
+        'render':{'request':{'scope':'finite EM publish_charts and its two source-bound Graphs'},'result':'existing native Plot rendering and scientific revision checks'},
+        'widgetExport':{'request':{'scope':'finite EM export_field; current declared field Plot and normal Save dialog'},'result':'existing native PNG/SVG/PDF export; no author path or renderer'},
+        'publish_bundle':{'request':{'scope':'finite EM export_field; explicit user destination and existing Plot writer'},'result':'existing complete-file publication with normal overwrite policy; no arbitrary author writer or destination'},
+        'cell_field_bind':{'request':{'scope':'declared Native3D target on a complete EM field form; Host::em_command(form, field_3d), exact Plot v4 and EM fieldDescribe grants'},'result':'same canonical linked triangles and cell values through existing Native3D renderer; planar XY with Z=0, no interpolation, 3D solve or CAD volume'},
         'scientificHistoryViewerRecord':{'request':{'scope':'document_view_v1 declared History component only'},'result':'existing owner captures this Viewer state'},
         'scientificHistoryViewerNavigate':{'request':{'scope':'document_view_v1 declared History component only'},'result':'existing owner restores bounded Undo/Redo; no author callbacks, raw recipes or files'},
     }
     for operation in ('node_list','circuit_prepare','circuit_sweep_prepare','circuit_sweep_submit','submit','status','cancel','reconnect','log','import_table'):
         shapes[operation]={'request':{'scope':'scientific_view_v1 declared scientific section and explicit component indices'},'result':'deferred trusted GUI Host operation through existing Scientific Execution/Script Job/Publication; no raw paths or author Job registry'}
+    for operation in ('libraryCatalogPage','getProviderCapabilities','getLibraryCapabilities','listLibraryEntries','openLibraryViewer','verifyLibrary','installLibrary','updateLibrary','removeLibrary','registerLibrary','unregisterLibrary','invokeLibraryAction'):
+        shapes[operation]={'request':{'scope':'declared catalog_owner=scientific_libraries section; actual selected registry IDs; operation-specific explicit project grant'},'result':'deferred typed catalog presentation/action through existing CORE ScientificLibraryManager; capability/availability gating and normal shared administrative dialogs; no author registry, provider invocation or filesystem access'}
     for operation in ('dataset_expression','array_reduce.rms','array_reduce.minimum','array_reduce.maximum','statistics','residual_metrics','interpolate','complex_unary.magnitude','complex_unary.phase_rad','complex_unary.phase_deg'):
         shapes[operation]={'request':{'scope':'declared Numeric form, explicit canonical Variable IDs, scalar parameters, units and row bounds'},'result':'deferred GUI Host operation through public Numeric; vectors remain Managed Resources in canonical result Documents; no arrays returned to C++'}
     shapes['datasetPublicationV2Finalize']={'request':{'scope':'Numeric result and declared Dataset selector only'},'result':'explicit canonical Dataset transaction; original request/units/source revisions retained; no author paths or writer handles'}
     shapes['uniform_grid']={'request':{'scope':'declared Scientific physical sweep axes, finite SI bounds and count1..4'},'result':'existing public Numeric grid retained by trusted form; no arrays returned to C++'}
+    for operation in ('defaultModel','validate','saveModel','listModels','loadModel','runAsync','jobStatus','jobLog','cancel','resultDescribe','resultPreview','publish','fieldDescribe'):
+        if operation not in shapes:
+            shapes[operation]={'request':{'scope':'complete declared electromagnetic model section; exact finite em_command action and explicit native service grants'},'result':'existing native EM validation/model Workspace/managed Gmsh-GetDP Job/canonical publication/exact field owner; no raw source payload, process, renderer or path from C++'}
     shapes['parallelExecutionExecute']={'request':{'scope':'declared Scientific physical sweep submission only, at most16 cases'},'result':'existing Parallel admission coordination; ordinary Script Job supervisor owns actual simulations, no author callbacks/processes'}
+    for operation in ('activateDocument','guiMount','guiInspect','selectionSet','guiCommand'):
+        shapes[operation]={'request':{'scope':'complete declared editable3d geometry form through workbench_command only'},'result':'original Workbench3D canonical lifecycle and finite geometry command; no arbitrary owner dispatch'}
     for key,row in catalog.items():
+        row['providers']=[dictionary(value) for value in tkinter.Tcl().splitlist(row.get('providers',''))]
+        row['version_conflict']=len({str(p.get('version','')) for p in row['providers']})>1
+        if len(row['providers'])>1:row['provider']='';row['provider_selection']='multiple_declaring_owners; inspect provider-qualified declaration'
+        if row['version_conflict']:row['version']=''
         allowed=POLICY['capabilities'].get(key)
         row['sdk_exposed']=bool(allowed)
         if key=='VIEWER_DEVELOPMENT_API_v1':
-            row['author_tools']={'inspect':{'targets':['handlers.cpp','project.json','MANUAL.md','design.gxtxt-viewer','sdk_v1'],'result':'bounded inert UTF-8 content/sha256/bytes; no arbitrary paths'},'api_document':{'request':'api --document catalogued_PUBLIC_API_vN','result':'bounded exact installed public manual; no private file reader'},'manual_asset':{'operations':['list','add','remove'],'input':'logical asset_id and exact source-identical gui_test capture_id; JSON stdin','result':'images/ASSET_ID.png preserved by normal export;32 images,8MiB each,16MiB total; no author paths'},'gui_test':{'requires':'explicit real Workspace attachment; identical normally installed source; current Session','actions':['open','workspace_open','workspace_save','workspace_review','workspace_upgrade','status','close','capture','capture_verify','capture_preview','resize','label','label_apply','label_close','click','choice','text','tab','pointer','plot_pointer','key','property','wire_route','properties_commit','properties_close'],'scope':'assigned Viewer only; no Tcl, widget paths, filesystem destinations or global desktop; not a C++ runtime capability'}}
+            row['author_tools']={'inspect':{'targets':['handlers.cpp','project.json','MANUAL.md','design.gxtxt-viewer','sdk_v1'],'result':'bounded inert UTF-8 content/sha256/bytes; no arbitrary paths'},'api_document':{'request':'api --document catalogued_PUBLIC_API_vN','result':'bounded exact installed public manual; no private file reader'},'manual_asset':{'operations':['list','add','remove'],'input':'logical asset_id and exact source-identical gui_test capture_id; JSON stdin','result':'images/ASSET_ID.png preserved by normal export;32 images,8MiB each,16MiB total; no author paths'},'gui_test':{'requires':'explicit real Workspace attachment; identical normally installed source; current Session','actions':['open','workspace_open','workspace_save','workspace_review','workspace_upgrade','status','close','capture','capture_verify','capture_preview','resize','label','label_apply','label_close','click','choice','list_select','table_select','table_scroll','table_copy','table_page','text','tab','pointer','plot_pointer','key','document_find','document_pointer','document_zoom','pdf_control','pdf_pointer','pdf_key','pdf_resize','pdf_close','property','wire_route','properties_commit','properties_close'],'scope':'assigned Viewer only; no Tcl, widget paths, filesystem destinations or global desktop; not a C++ runtime capability'}}
         row['allowed_operations']=allowed['operations'] if allowed else []
         row['operation_shapes']={op:shapes[op] for op in row['allowed_operations']}
+        if key=='ELECTROMAGNETIC_SIMULATION_API_v1':
+            row['operation_shapes']={op:{'request':{'scope':'complete declared EM model form; Host::em_command(form, finite_action), explicit native service grants'},'result':'original EM model/managed FEM Job/retained log/canonical publication/exact node-cell field service; no source payload, process or file path returned to C++'} for op in row['allowed_operations']}
+        if key=='WORKBENCH_3D_API_v1':
+            row['operation_shapes']={op:{'request':{'scope':'complete declared editable3d geometry form through workbench_command only'},'result':'original viewer.3d_workbench/workbench_3d scientific owner; one editable host, exact Document identity and native geometry resources'} for op in row['allowed_operations']}
         row['authorization_reason']='Explicit trusted SDK v1 facility; project must request it' if allowed else 'Installed public API is outside this restricted SDK; request a reviewed CORE facility extension'
     return catalog
 
-def capability_check(project,meta,catalog,validation):
-    requested={}
-    for request in meta['capabilities']:
-        if not isinstance(request,dict) or set(request)!={'api_id','version','operations'} or not isinstance(request['api_id'],str) or type(request['version']) is not int or not isinstance(request['operations'],list) or not all(isinstance(op,str) for op in request['operations']):
-            raise DevelopmentError('Capability request shape is not authorized','PROJECT_POLICY')
-        api=request['api_id'];policy=POLICY['capabilities'].get(api);available=catalog.get(api)
-        if not available or str(available.get('version'))!=str(request['version']) or str(available.get('available',available.get('enabled')))!='1':
-            base=api.rsplit('_v',1)[0]
-            closest={key:row for key,row in catalog.items() if key.rsplit('_v',1)[0]==base}
-            gap={'schema':'gxtxt.core_api_gap.v1','requested':request,'closest_public_owner':available or closest,
-                 'required_behavior':'Provide the requested typed, bounded public facility to this SDK',
-                 'proposed_contract':'CORE maintainer reviews API/version/operation shapes; author cannot add dependencies or private fallbacks'}
-            write_json(project/'derived/CORE_API_GAP.json',gap)
-            raise DevelopmentError('Requested public API is missing, disabled or version mismatched','CORE_API_GAP',gap)
-        if not policy or api not in POLICY['profiles'][meta['profile']] or request['version']!=policy['version'] or not set(request['operations']).issubset(policy['operations']):
-            raise DevelopmentError('Project request is outside the trusted profile: '+api,'CAPABILITY_DENIED')
-        if api in requested: raise DevelopmentError('Duplicate capability request','PROJECT_POLICY')
-        requested[api]=set(request['operations'])
+def _sdk_required():
     required={'text':('VIEWER_GUI_HOST_API_v1','text_set'), 'number':('VIEWER_GUI_HOST_API_v1','value_set'),
               'flag':('VIEWER_GUI_HOST_API_v1','value_set'), 'demo':('VIEWER_COMPONENT_DEMO_API_v1','open'),
               'numeric_add':('NUMERIC_API_v1','array_binary.add'), 'numeric_sqrt':('NUMERIC_API_v1','array_unary.sqrt'),'numeric_exp':('NUMERIC_API_v1','array_unary.exp'),
               'diagram_open':('NATIVE2D_VIEWPORT_HOST_v1','diagram_create'),
               'diagram_tool':('NATIVE2D_VIEWPORT_HOST_v1','diagram_command'),
               'diagram_command':('NATIVE2D_VIEWPORT_HOST_v1','diagram_command')}
+    required['document_bind']=('VIEWER_GUI_HOST_API_v1','document_bind')
+    for method in ('raster_bind','raster_tool','raster_command'):
+        required[method]=('VIEWER_GUI_HOST_API_v1',method)
+    required['tex_command']=('VIEWER_GUI_HOST_API_v1','tex_command')
+    required['em_command']=('VIEWER_GUI_HOST_API_v1','em_command')
+    required['workbench_command']=('VIEWER_GUI_HOST_API_v1','workbench_command')
+    required['catalog_refresh']=('SCIENTIFIC_LIBRARY_MANAGER_API_v1','libraryCatalogPage')
+    required['catalog_inspect']=('SCIENTIFIC_LIBRARY_MANAGER_API_v1','getLibraryCapabilities')
+    # The actual finite catalog_action is checked against its exact operation
+    # grant at runtime, in addition to the form's read/discovery grant.
+    required['catalog_action']=('SCIENTIFIC_LIBRARY_MANAGER_API_v1','getLibraryCapabilities')
     required['plot_discover']=('PLOT_DATASET_API_v4','widgetCreate')
     required['plot_bind']=('PLOT_DATASET_API_v4','widgetCreate')
     for method in ('numeric_discover','numeric_evaluate'):
@@ -233,10 +265,111 @@ def capability_check(project,meta,catalog,validation):
     required['numeric_publish']=('DATASET_PUBLICATION_API_v2','datasetPublicationV2Finalize')
     for method,operation in zip(('scientific_discover','scientific_prepare','scientific_submit','scientific_status','scientific_cancel','scientific_reconnect','scientific_log','scientific_import'),('node_list','circuit_prepare','submit','status','cancel','reconnect','log','import_table')):
         required[method]=('SCIENTIFIC_EXECUTION_API_v1',operation)
+    return required
+
+def _sdk_extra(method):
+    return {'numeric_statistics':{'array_reduce.rms','array_reduce.minimum','array_reduce.maximum'},'numeric_compare':{'dataset_expression'}}.get(method,set())
+
+def _capability_admission(meta, request, catalog):
+    """Read-only request admission, shared by validation and reference metadata."""
+    if not isinstance(request,dict) or set(request)!={'api_id','version','operations'} or not isinstance(request['api_id'],str) or type(request['version']) is not int or not isinstance(request['operations'],list) or not all(isinstance(op,str) for op in request['operations']):
+        return 'PROJECT_POLICY'
+    api=request['api_id'];policy=POLICY['capabilities'].get(api);available=catalog.get(api)
+    if api=='PLOT_DATASET_API_v3' or (api.startswith('PLOT_DATASET') and request['version']==3):
+        return 'DEPRECATED_PLOT_API'
+    if not available or available.get('version_conflict') or str(available.get('version'))!=str(request['version']) or str(available.get('available',available.get('enabled')))!='1':
+        return 'CORE_API_GAP'
+    if not policy or api not in POLICY['profiles'][meta['profile']] or request['version']!=policy['version'] or not set(request['operations']).issubset(policy['operations']):
+        return 'CAPABILITY_DENIED'
+    return 'ADMITTED_REQUEST'
+
+def _browser_cpp_catalog(catalog, project=None):
+    # Reference discovery is inert: no validate_source, source execution,
+    # compiler, build receipt update or grant file is involved.
+    context={'status':'NO_PROJECT','source_validation':'not_checked_by_metadata_browser',
+             'runtime_grants':'not_activated_by_metadata_browser'}
+    meta=None;requests={}
+    if project is not None:
+        try:
+            meta=read_project(project)
+            inputs=('project.json','handlers.cpp','design.gxtxt-viewer')
+            before={name:digest((project/name).read_bytes()) for name in inputs}
+            if read_project(project)!=meta or before!={name:digest((project/name).read_bytes()) for name in inputs}:
+                raise ValueError('Project changed during reference discovery; refresh its saved metadata')
+            context.update(status='SAVED_PROJECT_METADATA',project=str(project),profile=meta['profile'],
+                           project_sha256=before['project.json'],source_sha256=before['handlers.cpp'],
+                           design_sha256=before['design.gxtxt-viewer'])
+            for request in meta['capabilities']:
+                if not isinstance(request,dict) or not isinstance(request.get('api_id'),str):
+                    context['status']='PROJECT_POLICY';continue
+                api=request['api_id']
+                if api in requests:
+                    requests[api]={'request':request,'status':'DUPLICATE_REQUEST'}
+                    context['status']='PROJECT_POLICY'
+                else:
+                    requests[api]={'request':request,'status':_capability_admission(meta,request,catalog)}
+        except (DevelopmentError, OSError, ValueError, TypeError) as error:
+            context.update(status='PROJECT_UNAVAILABLE',reason=str(error));meta=None;requests={}
+    for api in requests:
+        if api not in catalog:
+            catalog[api]={'api_id':api,'available':False,'enabled':False,
+                          'metadata_error':'Requested API has no installed declaration; no provider is inferred'}
+    for api,row in catalog.items():
+        request=requests.get(api)
+        row['cpp_project_status']=request['status'] if request else ('NOT_REQUESTED' if meta else context['status'])
+        row['cpp_project_request']=request['request'] if request else {}
+        row['cpp_methods']={}
+    required=_sdk_required()
+    prototypes=re.findall(r'^\s*(void|double)\s+(\w+)\(([^;]*)\) const;',SDK.read_text(),re.M)
+    for result,method,arguments in prototypes:
+        if method not in required:continue
+        api,operation=required[method]
+        if api not in catalog:continue
+        grants=[(api,operation)]+[('NUMERIC_API_v1',op) for op in sorted(_sdk_extra(method))]
+        missing=[]
+        for family,op in grants:
+            requested=requests.get(family,{})
+            if requested.get('status')!='ADMITTED_REQUEST' or op not in requested.get('request',{}).get('operations',[]):
+                missing.append(family+'/'+op)
+        names=[re.search(r'(\w+)\s*$',arg).group(1) for arg in arguments.split(',') if arg.strip()]
+        call='host.'+method+'('+', '.join(names)+');'
+        if result!='void':call=result+' result = '+call
+        catalog[api]['cpp_methods'][method]={
+            'signature':result+' gx::Host::'+method+'('+arguments+') const;',
+            'example':call,'operation':operation,'result_type':result,
+            'required_capabilities':[family+'/'+op for family,op in grants],
+            'project_status':('ADMITTED_REQUEST' if not missing else 'NOT_ADMITTED') if context['status']=='SAVED_PROJECT_METADATA' else context['status'],
+            'missing_capabilities':missing,
+            'admission_scope':'saved request/profile/provider policy only; Validate checks source and declared forms; finite action grants are checked at runtime',
+            'sdk_sha256':digest(SDK.read_bytes())}
+    return context
+
+def capability_check(project,meta,catalog,validation):
+    requested={}
+    for request in meta['capabilities']:
+        admission=_capability_admission(meta,request,catalog)
+        if admission=='PROJECT_POLICY':
+            raise DevelopmentError('Capability request shape is not authorized','PROJECT_POLICY')
+        api=request['api_id'];policy=POLICY['capabilities'].get(api);available=catalog.get(api)
+        if admission=='DEPRECATED_PLOT_API':
+            raise DevelopmentError('DEPRECATED_PLOT_API: new Viewer plotting requires PLOT_DATASET_API_v4/widgetCreate','DEPRECATED_PLOT_API')
+        if admission=='CORE_API_GAP':
+            base=api.rsplit('_v',1)[0]
+            closest={key:row for key,row in catalog.items() if key.rsplit('_v',1)[0]==base}
+            gap={'schema':'gxtxt.core_api_gap.v1','requested':request,'closest_public_owner':available or closest,
+                 'required_behavior':'Provide the requested typed, bounded public facility to this SDK',
+                 'proposed_contract':'CORE maintainer reviews API/version/operation shapes; author cannot add dependencies or private fallbacks'}
+            write_json(project/'derived/CORE_API_GAP.json',gap)
+            raise DevelopmentError('Requested public API is missing, disabled or version mismatched','CORE_API_GAP',gap)
+        if admission=='CAPABILITY_DENIED':
+            raise DevelopmentError('Project request is outside the trusted profile: '+api,'CAPABILITY_DENIED')
+        if api in requested: raise DevelopmentError('Duplicate capability request','PROJECT_POLICY')
+        requested[api]=set(request['operations'])
+    required=_sdk_required()
     for method in validation['sdk_calls']:
         api,operation=required[method]
         if operation not in requested.get(api,set()): raise DevelopmentError('SDK call lacks requested authorized capability: '+method,'CAPABILITY_DENIED')
-        extra={'numeric_statistics':{'array_reduce.rms','array_reduce.minimum','array_reduce.maximum'},'numeric_compare':{'dataset_expression'}}.get(method,set())
+        extra=_sdk_extra(method)
         if not extra.issubset(requested.get('NUMERIC_API_v1',set())):
             raise DevelopmentError('SDK Numeric form needs its complete bounded operation grant: '+method,'CAPABILITY_DENIED')
     return requested
@@ -271,7 +404,7 @@ def workspace_callback_semantics(design):
                     'presentation', 'icon_position', 'icon_size', 'icon_spacing',
                     'command_icons'}
     semantic = {key: value for key, value in design.items()
-                if key not in {'icons', 'title', 'version', 'geometry', 'origin', 'components'}}
+                if key not in {'icons', 'title', 'version', 'geometry', 'origin', 'components', 'catalog'}}
     semantic['components'] = []
     for value in tkinter.Tcl().splitlist(design['components']):
         component = dictionary(value)
@@ -296,6 +429,8 @@ def validate(project):
     report=validate_source((project/'handlers.cpp').read_bytes(),project/'derived/tmp')
     admitted=dictionary(core(project,'validate_design',project/'design.gxtxt-viewer','with_catalog'))
     design=dictionary(admitted['design'])
+    if 'PLOT_DATASET_API_v3' in dictionary(design.get('requirements', '')):
+        raise DevelopmentError('DEPRECATED_PLOT_API: Builder requirements must use PLOT_DATASET_API_v4','DEPRECATED_PLOT_API')
     if design['module_id']!=meta['module_id'] or design['version']!=meta['version']:
         raise DevelopmentError('Project and Builder design identities differ','PROJECT_INVALID')
     report['design_sha256']=digest((project/'design.gxtxt-viewer').read_bytes())
@@ -306,8 +441,26 @@ def validate(project):
     requested=capability_check(project,meta,catalog,report)
     components=[dictionary(value) for value in tkinter.Tcl().splitlist(design['components'])]
     diagrams=[component for component in components if component['type']=='native2d' and dictionary(component['properties']).get('diagram_catalog')]
+    rasters=[component for component in components if component['type']=='native2d' and dictionary(component['properties']).get('source_kind')=='raster']
     numeric_forms=[component for component in components if component['type']=='section' and (dictionary(component['properties']).get('numeric_expression') or dictionary(component['properties']).get('numeric_kind'))]
+    tex_forms=[component for component in components if component['type']=='section' and dictionary(component['properties']).get('tex_source')]
+    em_forms=[component for component in components if component['type']=='section' and dictionary(component['properties']).get('em_parameters')]
+    geometry_forms=[component for component in components if component['type']=='section' and dictionary(component['properties']).get('workbench_parameters')]
     for component in components:
+        catalog_properties=dictionary(component['properties'])
+        if component['type']=='section' and catalog_properties.get('workbench_parameters'):
+            if not {'activateDocument','guiMount','guiInspect'}.issubset(requested.get('WORKBENCH_3D_API_v1',set())):
+                raise DevelopmentError('Editable geometry form requires its explicit canonical Workbench3D lifecycle grants','CAPABILITY_DENIED')
+        if component['type']=='section' and catalog_properties.get('em_parameters'):
+            if not {'defaultModel','validate','loadModel','saveModel','listModels'}.issubset(requested.get('ELECTROMAGNETIC_SIMULATION_API_v1',set())):
+                raise DevelopmentError('Declared EM form requires its explicit existing model/default/validation/discovery grants','CAPABILITY_DENIED')
+        if component['type']=='section' and catalog_properties.get('catalog_owner')=='scientific_libraries':
+            needed={'libraryCatalogPage','getLibraryCapabilities'}
+            if catalog_properties.get('catalog_entries'):needed.add('listLibraryEntries')
+            actions=dictionary(catalog_properties.get('catalog_actions',''))
+            if 'register_external' in actions or 'register_remote' in actions:needed.add('getProviderCapabilities')
+            if not needed.issubset(requested.get('SCIENTIFIC_LIBRARY_MANAGER_API_v1',set())):
+                raise DevelopmentError('Declared Library catalog lacks its explicit discovery/entry/provider grants','CAPABILITY_DENIED')
         if component['type']=='section' and dictionary(component['properties']).get('scientific_probe_diagram'):
             for api, needed in {'SCIENTIFIC_EXECUTION_API_v1':'circuit_prepare','PLOT_DATASET_API_v4':'widgetCreate','NATIVE2D_VIEWPORT_HOST_v1':'diagram_command'}.items():
                 if needed not in requested.get(api,set()):
@@ -315,17 +468,90 @@ def validate(project):
         if component['type']=='section' and dictionary(component['properties']).get('scientific_sweep_axes'):
             _sweep_grants(requested)
         if component['type'] in {'workspace','history'}:
-            if meta['profile'] not in {'document_view_v1','scientific_view_v1'} or not (diagrams or (numeric_forms and 'dataset_expression' in requested.get('NUMERIC_API_v1',set()))):
-                raise DevelopmentError('Canonical lifecycle requires explicit document_view_v1 and a declared canonical diagram or explicitly granted Numeric form; legacy profiles remain read-only','CAPABILITY_DENIED')
+            if meta['profile'] not in {'document_view_v1','scientific_view_v1'} or not (diagrams or geometry_forms or (rasters and 'raster_bind' in requested.get('VIEWER_GUI_HOST_API_v1',set())) or (numeric_forms and 'dataset_expression' in requested.get('NUMERIC_API_v1',set())) or (tex_forms and 'tex_command' in requested.get('VIEWER_GUI_HOST_API_v1',set())) or (em_forms and {'validate','loadModel','saveModel','listModels'}.issubset(requested.get('ELECTROMAGNETIC_SIMULATION_API_v1',set())))):
+                raise DevelopmentError('Canonical lifecycle requires a declared canonical diagram/geometry form or an explicitly granted raster, Numeric, TeX or electromagnetic model form; legacy profiles remain read-only','CAPABILITY_DENIED')
             api,required=('SESSION_WORKSPACE_API_v1',{'create','get','update','list'}) if component['type']=='workspace' else ('SCIENTIFIC_RECIPE_API_v1',{'scientificHistoryViewerRecord','scientificHistoryViewerNavigate'})
             if not required.issubset(requested.get(api,set())):
                 raise DevelopmentError('Declared lifecycle component requires explicit scoped capability: '+api,'CAPABILITY_DENIED')
-    report['canonical_lifecycle_scope']='declared diagram Viewer state through existing guarded Workspace/History owners' if meta['profile'] in {'document_view_v1','scientific_view_v1'} else 'read-only profiles unchanged'
+    report['canonical_lifecycle_scope']='declared canonical Viewer state through existing guarded Workspace/History owners' if meta['profile'] in {'document_view_v1','scientific_view_v1'} else 'read-only profiles unchanged'
     write_json(project/'derived/validation.json',report)
     write_json(project/'derived/api-catalog.json',catalog)
     return meta,report,design,requested
 
+def _artifact_dependency_paths():
+    paths = [SDK, SDK.parent/'trusted_adapter_v1.cpp', DEVELOPMENT/'policy_v1.json',
+             COMPILER, DEVELOPMENT/'toolchain/manifest.json']
+    return {path.relative_to(FRAMEWORK).as_posix(): path for path in paths}
+
+def _artifact_dependency_role(name):
+    """Resolve a current role or a historical absolute framework prefix."""
+    if not isinstance(name, str):
+        return None
+    for role in _artifact_dependency_paths():
+        if name == role or (Path(name).is_absolute() and name.endswith('/'+role)):
+            return role
+    return None
+
+def _artifact_dependencies_match(previous, current):
+    if not isinstance(previous, dict) or not isinstance(previous.get('files'), dict):
+        return False
+    files = {}
+    for name, checksum in previous['files'].items():
+        role = _artifact_dependency_role(name)
+        if role is None or role in files:
+            return False
+        files[role] = checksum
+    return dict(previous, files=files) == current
+
+def _artifact_dependencies():
+    """Build inputs, checked without executing a compiler on a reuse path."""
+    import inspect
+    return dict(files={role:digest(path.read_bytes()) for role,path in _artifact_dependency_paths().items()},
+                flags=list(FLAGS),recipe_sha256=digest(inspect.getsource(_compile_admitted).encode()),
+                validation_owner_sha256=digest((FRAMEWORK/'core/python/gxtxt_cpp_policy.py').read_bytes()))
+
+def _built_artifact(project, *, debug=False):
+    receipt = project/('derived/debug-build.json' if debug else 'derived/build.json')
+    library = project/('derived/debug-viewer.so' if debug else 'derived/viewer.so')
+    if not receipt.is_file() or not library.is_file():
+        return None
+    result = json.loads(receipt.read_text())
+    if result.get('status') != 'BUILT' or not _artifact_dependencies_match(result.get('build_dependencies'), _artifact_dependencies()):
+        return None
+    if digest((project/'handlers.cpp').read_bytes()) != result['validation']['source_sha256']:
+        return None
+    project_sha256 = digest((project/'project.json').read_bytes())
+    design_sha256 = digest((project/'design.gxtxt-viewer').read_bytes())
+    metadata_update = (project_sha256 != result['validation']['project_sha256'] or
+                       design_sha256 != result['validation']['design_sha256'])
+    if metadata_update:
+        # Package metadata and presentation do not participate in code generation.
+        # The existing callback contract retains ordinals, types, defaults,
+        # scientific references and unknown fields; semantic changes invalidate.
+        meta = read_project(project)
+        design = dictionary((project/'design.gxtxt-viewer').read_text())
+        if meta['module_id'] != design['module_id'] or meta['version'] != design['version']:
+            return None
+        contract = workspace_callback_contract(meta, design, result['validation']['source_sha256'])
+        if contract != result['validation'].get('workspace_callback_contract_sha256'):
+            return None
+        result = dict(result, validation=dict(result['validation'], project_sha256=project_sha256,
+                                             design_sha256=design_sha256),
+                      metadata_only_project_update=True,
+                      original_build_receipt_sha256=digest(receipt.read_bytes()))
+    for name, expected in result.get('header_dependencies', {}).items():
+        role = _artifact_dependency_role(name)
+        path = _artifact_dependency_paths()[role] if role is not None else Path(name)
+        if not path.is_file() or digest(path.read_bytes()) != expected:
+            return None
+    if library.is_symlink() or digest(library.read_bytes()) != result['binary_sha256']:
+        return None
+    return dict(result, code_generation_invoked=False, artifact_reused=True)
+
 def build(project, debug=False):
+    previous = _built_artifact(project, debug=debug)
+    if previous is not None:
+        return previous
     return _compile_admitted(project, *validate(project), debug=debug)
 
 def _compile_admitted(project, meta, report, design, requested, debug=False):
@@ -345,9 +571,9 @@ def _compile_admitted(project, meta, report, design, requested, debug=False):
             # name a const Event reference but cannot inspect its real members.
             fixed.append('-fstandalone-debug')
         commands=[
-            [str(COMPILER),*fixed,'-include',str(SDK),'-c',str(author),'-o',str(stage/'author.o')],
-            [str(COMPILER),*fixed,'-I'+str(SDK.parent),'-c',str(SDK.parent/'trusted_adapter_v1.cpp'),'-o',str(stage/'adapter.o')],
-            [str(COMPILER),'-nostdlib','-shared','-Wl,-z,defs','-Wl,--build-id=none',str(stage/'author.o'),str(stage/'adapter.o'),'-o',str(stage/'viewer.so')],
+            [str(COMPILER),*fixed,'-MD','-MF',str(stage/'author.d'),'-include',str(SDK),'-c',str(author),'-o',str(stage/'author.o')],
+            [str(COMPILER),*fixed,'-MD','-MF',str(stage/'adapter.d'),'-I'+str(SDK.parent),'-c',str(SDK.parent/'trusted_adapter_v1.cpp'),'-o',str(stage/'adapter.o')],
+            [str(COMPILER),'-shared','-pthread','-Wl,-z,defs','-Wl,--build-id=none',str(stage/'author.o'),str(stage/'adapter.o'),'-lstdc++','-lm','-o',str(stage/'viewer.so')],
         ]
         logs=[]
         for command in commands:
@@ -359,13 +585,29 @@ def _compile_admitted(project, meta, report, design, requested, debug=False):
         if digest(author.read_bytes())!=report['source_sha256'] or any(digest((project/name).read_bytes())!=report[key] for name,key in [('handlers.cpp','source_sha256'),('design.gxtxt-viewer','design_sha256'),('project.json','project_sha256')]):
             raise DevelopmentError('Project source/design/facilities changed during controlled build; rebuild explicitly','SOURCE_CHANGED')
         binary=(stage/'viewer.so').read_bytes()
-        (project/('derived/debug-viewer.so' if debug else 'derived/viewer.so')).write_bytes(binary)
+        target=project/('derived/debug-viewer.so' if debug else 'derived/viewer.so')
+        # A live Preview may still map the preceding inode. Publish a new inode
+        # atomically instead of truncating the binary underneath that worker.
+        with tempfile.NamedTemporaryFile(prefix='.viewer-',dir=target.parent,delete=False) as stream:
+            stream.write(binary);stage_binary=Path(stream.name)
+        os.replace(stage_binary,target)
         (project/'derived/trusted_adapter_v1.cpp').write_bytes((SDK.parent/'trusted_adapter_v1.cpp').read_bytes())
         result={'schema':'gxtxt.viewer_build.v1','status':'BUILT','code_generation_invoked':True,
                 'validation':report,'binary_sha256':digest(binary),'adapter_sha256':digest((SDK.parent/'trusted_adapter_v1.cpp').read_bytes()),
-                'compiler_version':'19.1.7','link_policy':'fixed SDK adapter; no author libraries/flags; no undefined symbols',
+                'compiler_version':'19.1.7','link_policy':'fixed SDK adapter; reviewed system C/C++ runtime, math and pthread; no undefined symbols; extra libraries/options require review',
                 'log':'\n'.join(logs),'capabilities':meta['capabilities']}
         result['debug_symbols']=debug
+        result['build_dependencies'] = _artifact_dependencies()
+        headers = {}
+        for dependency_file in (stage/'author.d', stage/'adapter.d'):
+            import shlex
+            dependencies = dependency_file.read_text().replace('\\\n', ' ').split(':', 1)[1]
+            for name in shlex.split(dependencies):
+                path = Path(name).resolve()
+                if path == author.resolve():
+                    continue
+                headers[str(path)] = digest(path.read_bytes())
+        result['header_dependencies'] = headers
         write_json(project/('derived/debug-build.json' if debug else 'derived/build.json'),result)
         return result
 
@@ -379,7 +621,7 @@ def _sweep_grants(requested):
         if not needed.issubset(requested.get(api,set())):
             raise DevelopmentError('Declared physical sweep requires explicit existing CORE capability: '+api,'CAPABILITY_DENIED')
 
-def broker_message(project,message,by_index,requested,deadline):
+def broker_message(project,message,by_index,requested,deadline,tool_catalog=None):
     operations=[];numeric=[]
     operation=message['operation'];component=by_index.get(message['component']);left=finite(message['left']);right=finite(message['right'])
     response={'request':message['request'],'ok':True,'value':0.0}
@@ -392,6 +634,135 @@ def broker_message(project,message,by_index,requested,deadline):
         values=tkinter.Tcl().splitlist(result['values'])
         if len(values)!=1: raise DevelopmentError('Numeric scalar result shape differs','CORE_RESULT')
         response['value']=finite(float(values[0]));numeric.append({'api_id':'NUMERIC_API_v1','operation':numeric_operation,'left':left,'right':right,'result':response['value']})
+    elif operation==32:
+        if 'workbench_command' not in requested.get('VIEWER_GUI_HOST_API_v1',set()):
+            raise DevelopmentError('Geometry form commands are not requested','CAPABILITY_DENIED')
+        properties=dictionary(component['properties']) if component is not None else {}
+        fields={'workbench_parameters','workbench_viewport','workbench_documents','workbench_objects','workbench_unit','workbench_status'}
+        if component is None or component['type']!='section' or not fields.issubset(properties):
+            raise DevelopmentError('Geometry commands require a complete declared canonical geometry form','RUNTIME_COMPONENT')
+        action=message.get('text','')
+        grants={'refresh':{'guiInspect'},'inspect':{'guiInspect'},'new':{'activateDocument','guiMount','guiInspect'},'open':{'activateDocument','guiMount','guiInspect'},
+                'primitive':{'guiCommand','guiInspect'},'select':{'selectionSet','guiInspect'},'save':{'guiCommand','guiInspect'},'undo':{'guiCommand','guiInspect'},'redo':{'guiCommand','guiInspect'},'close':{'guiCommand','guiInspect'}}
+        for form_action in (
+                'import_dataset_form','combine_form','extrusion_targets_form','mesh_pair_form',
+                'details_form','measurement_form','constraint_form','measurements_manager',
+                'constraints_manager','organization_manager','comparison_manager','texture_form',
+                'texture_clear','export_form','recipe_manager','extensions_manager','documents_manager',
+                'translate_form','rotate_form','scale_form','reset_transform_form','tessellate_form',
+                'mesh_clean_form','mesh_weld_form','mesh_orient_form','brep_heal_form',
+                'mesh_seam_form','mesh_lod_form','mesh_boundaries_form','mesh_intersections_form',
+                'align_three_points_form','clip_form','clip_cap_form','section_profile_form',
+                'duplicate_object','group_create','group_duplicate','group_ungroup','group_translate_form',
+                'group_rotate_form','group_scale_form','planar_section','planar_projection',
+                'preview_accept','preview_cancel','profile_source_form','extrusion_form',
+                'working_unit_form','working_plane_form','publish_dataset_form'):
+            grants[form_action]={'guiCommand','guiInspect'}
+        if action not in grants:
+            raise DevelopmentError('Unsupported finite canonical geometry command','RUNTIME_VALUE')
+        if not grants[action].issubset(requested.get('WORKBENCH_3D_API_v1',set())):
+            raise DevelopmentError('Geometry action lacks its exact public Workbench3D grants','CAPABILITY_DENIED')
+        operations.append({'operation':'workbench_command','component':component['id'],'value':action})
+    elif operation==31:
+        if 'em_command' not in requested.get('VIEWER_GUI_HOST_API_v1',set()):
+            raise DevelopmentError('EM form commands are not requested','CAPABILITY_DENIED')
+        properties=dictionary(component['properties']) if component is not None else {}
+        if component is None or component['type']!='section' or not {'em_parameters','em_models','em_status','em_log','em_output_id','em_dataset'}.issubset(properties):
+            raise DevelopmentError('EM commands require a complete declared electromagnetic model form','RUNTIME_COMPONENT')
+        action=message.get('text','')
+        action_grants={'refresh':{'listModels'},'new_electric':{'defaultModel'},'new_magnetic':{'defaultModel'},
+                       'validate':{'validate'},'open':{'loadModel'},'save':{'saveModel'},'duplicate':{'saveModel','loadModel'},
+                       'run':{'saveModel','runAsync','jobStatus'},'status':{'jobStatus'},'cancel':{'jobStatus','cancel'},
+                       'jobs':{'loadModel','jobStatus'},'reconnect':{'loadModel','jobStatus'},'log':{'jobStatus','jobLog'},'results':{'jobStatus','resultDescribe','resultPreview'},
+                       'workspaces':{'loadModel','saveModel'},'rename':{'loadModel'},
+                       'publish':{'jobStatus','publish'},'field':{'fieldDescribe'},'field_3d':{'fieldDescribe'},
+                       'profile':{'fieldDescribe'},'publish_charts':{'fieldDescribe'},'export_field':{'fieldDescribe'},'runtime':set()}
+        if action not in action_grants:
+            raise DevelopmentError('Unsupported finite electromagnetic model command','RUNTIME_VALUE')
+        if not action_grants[action].issubset(requested.get('ELECTROMAGNETIC_SIMULATION_API_v1',set())):
+            raise DevelopmentError('EM action lacks its exact public service grants','CAPABILITY_DENIED')
+        if action in {'field','field_3d'} and 'widgetCreate' not in requested.get('PLOT_DATASET_API_v4',set()):
+            raise DevelopmentError('Exact field presentation requires public Plot v4','CAPABILITY_DENIED')
+        if action=='field_3d' and ('cell_field_bind' not in requested.get('NATIVE_3D_GUI_HOST_API_v2',set()) or 'em_field_native3d' not in properties):
+            raise DevelopmentError('Planar 3D field requires its declared Native3D component and exact cell_field_bind grant','CAPABILITY_DENIED')
+        plot_grants={'profile':{'widgetCreate','cellFieldProfileSpec'},'publish_charts':{'cellFieldProfileSpec','upsertPlotFromSpec','render'},'export_field':{'widgetExport'}}
+        if not plot_grants.get(action,set()).issubset(requested.get('PLOT_DATASET_API_v4',set())):
+            raise DevelopmentError('EM presentation action lacks its exact public Plot v4 grants','CAPABILITY_DENIED')
+        if action=='profile' and 'em_profile_plot' not in properties:
+            raise DevelopmentError('Actual sample profile requires its declared Plot component','RUNTIME_COMPONENT')
+        if action=='export_field' and ('em_field_plot' not in properties or 'publish_bundle' not in requested.get('FILE_PUBLICATION_API_v1',set())):
+            raise DevelopmentError('Native field export requires its declared field Plot and File Publication grant','CAPABILITY_DENIED')
+        if action=='runtime' and 'open_page' not in requested.get('CONFIGURATION_API_v1',set()):
+            raise DevelopmentError('Runtime navigation requires the public Configuration open_page grant','CAPABILITY_DENIED')
+        if action in {'duplicate','workspaces'} and not {'export','import'}.issubset(requested.get('SESSION_WORKSPACE_API_v1',set())):
+            raise DevelopmentError('Model duplication requires the existing resource-preserving Workspace export/import grants','CAPABILITY_DENIED')
+        if action=='workspaces' and not {'create','get','update','list'}.issubset(requested.get('SESSION_WORKSPACE_API_v1',set())):
+            raise DevelopmentError('Model Workspace controls require the existing complete Workspace grants','CAPABILITY_DENIED')
+        if action=='rename' and 'update' not in requested.get('SESSION_WORKSPACE_API_v1',set()):
+            raise DevelopmentError('Model renaming requires the existing Workspace update grant','CAPABILITY_DENIED')
+        operations.append({'operation':'em_command','component':component['id'],'value':action})
+    elif operation==30:
+        if 'tex_command' not in requested.get('VIEWER_GUI_HOST_API_v1',set()):
+            raise DevelopmentError('TeX form commands are not requested','CAPABILITY_DENIED')
+        properties=dictionary(component['properties']) if component is not None else {}
+        required_form={'tex_source','tex_pdf','tex_projects','tex_assets','tex_diagnostics','tex_log','tex_status','tex_info','tex_source_status','tex_pdf_status'}
+        if component is None or component['type']!='section' or not required_form.issubset(properties):
+            raise DevelopmentError('TeX commands require a complete declared article form','RUNTIME_COMPONENT')
+        action=message.get('text','')
+        if action not in {'new','open','save','build','rebuild','cancel','preview','diagnostic_open','import_assets','remove_asset','export_tex','export_pdf','export_assets','refresh','import_source'}:
+            raise DevelopmentError('Unsupported finite TeX form command','RUNTIME_VALUE')
+        operations.append({'operation':'tex_command','component':component['id'],'value':action})
+    elif operation in {27,28,29}:
+        properties=dictionary(component['properties']) if component is not None else {}
+        if component is None or component['type']!='section' or properties.get('catalog_owner')!='scientific_libraries':
+            raise DevelopmentError('Catalog operations require a declared Scientific Libraries section','RUNTIME_COMPONENT')
+        grants=requested.get('SCIENTIFIC_LIBRARY_MANAGER_API_v1',set())
+        needed={27:'libraryCatalogPage',28:'getLibraryCapabilities'}.get(operation,'getLibraryCapabilities')
+        action=''
+        if operation==29:
+            action=message.get('text','')
+            action_grants={'open':'openLibraryViewer','entry_open':'openLibraryViewer','verify':'verifyLibrary','install':'installLibrary','update':'updateLibrary','remove':'removeLibrary','register_external':'registerLibrary','register_remote':'registerLibrary','unregister':'unregisterLibrary','extra_action':'invokeLibraryAction'}
+            if action not in action_grants or action_grants[action] not in grants:
+                raise DevelopmentError('Catalog action lacks its exact public manager grant','CAPABILITY_DENIED')
+        if needed not in grants:raise DevelopmentError('Catalog discovery capability is not requested','CAPABILITY_DENIED')
+        operations.append({'operation':{27:'catalog_refresh',28:'catalog_inspect',29:'catalog_action'}[operation],'component':component['id'],'value':action})
+    elif operation in {33,34,35}:
+        method={33:'raster_bind',34:'raster_tool',35:'raster_command'}[operation]
+        if method not in requested.get('VIEWER_GUI_HOST_API_v1',set()):
+            raise DevelopmentError('Raster operation lacks its explicit public GUI Host grant','CAPABILITY_DENIED')
+        properties=dictionary(component['properties']) if component is not None else {}
+        if component is None or component['type']!='native2d' or properties.get('source_kind')!='raster':
+            raise DevelopmentError('Raster operation requires a declared Native2D source_kind raster component','RUNTIME_COMPONENT')
+        if operation==33:
+            other=by_index.get(int(left)) if left==int(left) else None
+            if other is None or other['type']!='dataset_selector' or dictionary(other['properties']).get('content_kind')!='raster':
+                raise DevelopmentError('Raster binding requires a declared canonical raster Dataset selector','RUNTIME_COMPONENT')
+            value=other['id']
+        else:
+            value=message.get('text','')
+            admitted={34:{'select','rectangle','polygon','annotation','move','rotate','pivot','pan'},35:{'fit','cancel','finish','delete_roi','delete_annotation'}}[operation]
+            anchored = re.fullmatch(r'(panel_open|panel_close|editor_apply|editor_cancel):([a-z][a-z0-9_]*)', value) if operation==35 else None
+            if anchored:
+                section = next((c for c in by_index.values() if c['id']==anchored[2]), None)
+                panel = dictionary(section['properties']) if section is not None else {}
+                anchor = dictionary(panel.get('viewport_anchor',''))
+                if section is None or section['type']!='section' or anchor.get('viewport')!=component['id']:
+                    raise DevelopmentError('Anchored command requires its own declared raster section','RUNTIME_COMPONENT')
+                if anchored[1]=='editor_apply' and (anchor.get('target')!='annotation' or not panel.get('annotation_fields')):
+                    raise DevelopmentError('Apply requires declared native annotation property fields','RUNTIME_COMPONENT')
+            elif value not in admitted:
+                raise DevelopmentError('Raster intent is outside the finite public controller contract','RUNTIME_VALUE')
+        operations.append({'operation':method,'component':component['id'],'value':value})
+    elif operation==26:
+        if 'document_bind' not in requested.get('VIEWER_GUI_HOST_API_v1',set()):
+            raise DevelopmentError('Read-only document binding is not requested','CAPABILITY_DENIED')
+        other=by_index.get(int(left)) if left==int(left) else None
+        if component is None or component['type']!='document' or other is None or other['type']!='dataset_selector':
+            raise DevelopmentError('Document binding needs declared document and Dataset selector','RUNTIME_COMPONENT')
+        kind=dictionary(component['properties']).get('kind')
+        if kind not in {'html','pdf','code','table'} or dictionary(other['properties']).get('content_kind')!=kind:
+            raise DevelopmentError('Document selector content_kind must match document kind','RUNTIME_COMPONENT')
+        operations.append({'operation':'document_bind','component':component['id'],'value':other['id']})
     elif operation in {21,22,23,24,25}:
         needed={21:{'dataset_expression'},22:{'dataset_expression'},23:{'statistics','array_reduce.rms','array_reduce.minimum','array_reduce.maximum'},24:{'dataset_expression','residual_metrics'},25:set()}[operation]
         properties=dictionary(component['properties']) if component is not None else {}
@@ -441,8 +812,12 @@ def broker_message(project,message,by_index,requested,deadline):
         catalog=properties.get('diagram_catalog','')
         if not catalog: raise DevelopmentError('Declare the Native2D diagram_catalog in Builder','CORE_API_GAP')
         if operation==9:
-            try: core(project,'diagram_tool_validate',catalog,message['text'])
-            except DevelopmentError as error: raise DevelopmentError(str(error),'CAPABILITY_DENIED') from error
+            if tool_catalog is not None:
+                if message['text'] not in tool_catalog.get(catalog,[]):
+                    raise DevelopmentError('Tool is not exposed by the declared public diagram catalog','CAPABILITY_DENIED')
+            else:
+                try: core(project,'diagram_tool_validate',catalog,message['text'])
+                except DevelopmentError as error: raise DevelopmentError(str(error),'CAPABILITY_DENIED') from error
         if operation==10 and message['text'] not in {'fit','properties','rotate','delete'}:
             raise DevelopmentError('Unsupported admitted diagram command','CAPABILITY_DENIED')
         operations.append({'operation':{8:'diagram_open',9:'diagram_tool',10:'diagram_command'}[operation],
@@ -460,11 +835,17 @@ def broker_message(project,message,by_index,requested,deadline):
     else: raise DevelopmentError('Unknown SDK operation','CAPABILITY_DENIED')
     return response,operations,numeric
 
-def run(project,event=None,state=None):
-    meta,validation,design,requested=validate(project)
-    built=_compile_admitted(project,meta,validation,design,requested)
-    if built['status']!='BUILT': return built
-    if any(digest((project/name).read_bytes())!=validation[key] for name,key in [('handlers.cpp','source_sha256'),('design.gxtxt-viewer','design_sha256'),('project.json','project_sha256')]):
+def run(project,event=None,state=None, *, admission=None, work=None):
+    if admission is None:
+        built=build(project)
+        if built['status']!='BUILT': return built
+        meta,validation,design,requested=_admit_compiled(project, built, project)
+        library=project/'derived/viewer.so'
+    else:
+        meta,validation,design,requested,built,library=admission
+    source_project=project
+    project=work or project
+    if any(digest((source_project/name).read_bytes())!=validation[key] for name,key in [('handlers.cpp','source_sha256'),('design.gxtxt-viewer','design_sha256'),('project.json','project_sha256')]):
         raise DevelopmentError('Project changed after build; validate/build again','SOURCE_CHANGED')
     components=[dictionary(value) for value in tkinter.Tcl().splitlist(design['components'])]
     by_index={index+1:component for index,component in enumerate(components)}
@@ -483,7 +864,7 @@ def run(project,event=None,state=None):
                                  encoding='utf-8',bufsize=1,cwd=project,env=project_environment(project),start_new_session=True)
         ACTIVE_PROCESSES.add(process.pid)
         def reply(value): process.stdin.write(json.dumps(value,allow_nan=False)+'\n');process.stdin.flush()
-        reply({'library':str(project/'derived/viewer.so'),'event':event,'state':state})
+        reply({'library':str(library),'binary_sha256':built['binary_sha256'],'native_output_path':str(project/'derived/native-output.log'),'event':event,'state':state})
         done=None
         try:
             while time.monotonic()<deadline:
@@ -497,7 +878,7 @@ def run(project,event=None,state=None):
                 message=json.loads(line)
                 if message.get('done'): done=message;break
                 if len(operations)+len(numeric)>=64: raise DevelopmentError('Native operation count exceeded','RUNTIME_OUTPUT')
-                response,ui_receipts,numeric_receipts=broker_message(project,message,by_index,requested,deadline)
+                response,ui_receipts,numeric_receipts=broker_message(project,message,by_index,requested,deadline,design.get('_runtime_diagram_tools'))
                 operations.extend(ui_receipts);numeric.extend(numeric_receipts)
                 reply(response)
             if done is None:
@@ -516,11 +897,203 @@ def run(project,event=None,state=None):
             process.wait(timeout=5)
             ACTIVE_PROCESSES.discard(process.pid)
             process.stdin.close();process.stdout.close()
-        if result['status']=='COMPLETED' and any(digest((project/name).read_bytes())!=validation[key] for name,key in [('handlers.cpp','source_sha256'),('design.gxtxt-viewer','design_sha256'),('project.json','project_sha256')]):
+        if result['status']=='COMPLETED' and any(digest((source_project/name).read_bytes())!=validation[key] for name,key in [('handlers.cpp','source_sha256'),('design.gxtxt-viewer','design_sha256'),('project.json','project_sha256')]):
             result={'status':'SOURCE_CHANGED','operations':[],'state':state,'error':'Project changed during native execution; reopen the Preview'}
         errors.seek(0);result['stderr']=errors.read(65536).decode(errors='replace')
         write_json(project/'derived/run.json',result)
         return result
+
+def _runtime_contract():
+    return {str(path):digest(path.read_bytes()) for path in
+            (SDK,SDK.parent/'trusted_adapter_v1.cpp',DEVELOPMENT/'policy_v1.json')}
+
+def _installed_sdk_compatible(root, built):
+    """SDK v1 permits additive methods; compare its real ABI, not header age."""
+    report=built['validation']
+    for name,expected in [('gxtxt_viewer_sdk_v1.hpp',report['sdk_sha256']),
+                          ('trusted_adapter_v1.cpp',built['adapter_sha256']),
+                          ('SDK_CONTRACT.json',report['policy_sha256'])]:
+        path=root/'native'/name
+        if not path.is_file() or path.is_symlink() or digest(path.read_bytes())!=expected:
+            raise DevelopmentError('Distributed SDK/build receipt mismatch: '+name,'BINARY_INCOMPATIBLE')
+    contract=json.loads((root/'native/SDK_CONTRACT.json').read_text())
+    if contract.get('sdk_version')!=POLICY['sdk_version']:
+        raise DevelopmentError('Distributed Viewer uses another native SDK ABI version','BINARY_INCOMPATIBLE')
+    old=(root/'native/gxtxt_viewer_sdk_v1.hpp').read_text();current=SDK.read_text()
+    normalize=lambda value:re.sub(r'\s+','',value)
+    for pattern in [r'enum class EventKind\s*\{[^}]+\}',r'struct Event\s*\{[^}]+\}',
+                    r'struct State\s*\{[^}]+\}',r'private:\s*(.*?)friend struct HostAccess;']:
+        left=re.search(pattern,old,re.S);right=re.search(pattern,current,re.S)
+        if not left or not right or normalize(left.group())!=normalize(right.group()):
+            raise DevelopmentError('Distributed Viewer Event/State/Host ABI is incompatible','BINARY_INCOMPATIBLE')
+    old_adapter=(root/'native/trusted_adapter_v1.cpp').read_text()
+    current_adapter=(SDK.parent/'trusted_adapter_v1.cpp').read_text()
+    pattern=r'(?:void|double) Host::([a-z_]+)\([^{}]*\) const\s*\{[^{}]*\}'
+    current_methods={match.group(1):normalize(match.group()) for match in re.finditer(pattern,current_adapter)}
+    for match in re.finditer(pattern,old_adapter):
+        if current_methods.get(match.group(1))!=normalize(match.group()):
+            raise DevelopmentError('Distributed SDK operation changed incompatibly: '+match.group(1),'BINARY_INCOMPATIBLE')
+    entry=r'extern "C".*?int gxtxt_viewer_event_v1\(.*?\n\}'
+    left=re.search(entry,old_adapter,re.S);right=re.search(entry,current_adapter,re.S)
+    if not left or not right or normalize(left.group())!=normalize(right.group()):
+        raise DevelopmentError('Distributed Viewer C entry ABI is incompatible','BINARY_INCOMPATIBLE')
+
+def _admit_compiled(project, built, work, *, installed=False):
+    """Compatibility and public service admission; never C++ source validation."""
+    meta=read_project(project, installed=installed)
+    report=built['validation']
+    if built.get('status')!='BUILT' or report.get('status')!='PASS':
+        raise DevelopmentError('Viewer has no successful compiled build receipt; build it in Development Workspace', 'BINARY_MISSING')
+    for name,key in [('handlers.cpp','source_sha256'),('design.gxtxt-viewer','design_sha256'),('project.json','project_sha256')]:
+        if digest((project/name).read_bytes())!=report[key]:
+            raise DevelopmentError('Viewer source/interface differs from its compiled artifact; install a matching build', 'BINARY_SOURCE_MISMATCH')
+    if installed:
+        _installed_sdk_compatible(project.parent,built)
+    else:
+        for path,key in [(SDK,'sdk_sha256'),(DEVELOPMENT/'policy_v1.json','policy_sha256')]:
+            if digest(path.read_bytes())!=report[key]:
+                raise DevelopmentError('Development artifact dependencies changed; build the current version','BINARY_INCOMPATIBLE')
+        if digest((SDK.parent/'trusted_adapter_v1.cpp').read_bytes())!=built['adapter_sha256']:
+            raise DevelopmentError('Development adapter changed; build the current version','BINARY_INCOMPATIBLE')
+    admitted=dictionary(core(work,'runtime_design',project/'design.gxtxt-viewer'))
+    design=dictionary(admitted['design'])
+    design['_runtime_diagram_tools']={key:list(tkinter.Tcl().splitlist(value)) for key,value in dictionary(admitted['diagram_tools']).items()}
+    if design['module_id']!=meta['module_id'] or design['version']!=meta['version']:
+        raise DevelopmentError('Compiled Viewer interface and module identity differ','BINARY_INCOMPATIBLE')
+    requested=capability_check(work,meta,_describe_api_catalog(admitted['catalog']),report)
+    return meta,report,design,requested
+
+def installed_admission(root, work):
+    """Use the distributed binary in place. No source copy, grant or compiler."""
+    root=root.resolve()
+    for name in ('native/viewer.so','review/build.json','source/project.json','source/handlers.cpp','source/design.gxtxt-viewer','gui/design.tcldict'):
+        path=root/name
+        if not path.is_file() or path.is_symlink() or path.stat().st_size>16777216:
+            raise DevelopmentError('Installed Viewer is missing its ordinary bounded '+name+'; reinstall its precompiled package','BINARY_MISSING')
+    library=root/'native/viewer.so'
+    built=json.loads((root/'review/build.json').read_text())
+    binary=library.read_bytes()
+    if binary[:4]!=b'\x7fELF' or digest(binary)!=built.get('binary_sha256'):
+        raise DevelopmentError('Installed Viewer binary does not match its build receipt; reinstall the package','BINARY_INCOMPATIBLE')
+    if (root/'gui/design.tcldict').read_bytes()!=(root/'source/design.gxtxt-viewer').read_bytes():
+        raise DevelopmentError('Installed Viewer interface differs from its compiled source interface','BINARY_SOURCE_MISMATCH')
+    work.mkdir(parents=True,exist_ok=True)
+    (work/'derived/tmp').mkdir(parents=True,exist_ok=True)
+    admitted=_admit_compiled(root/'source',built,work,installed=True)
+    # Loading may run ordinary C++ initializers. Probe only after admission and
+    # under the same bounded auxiliary process/descendant owner as other native
+    # requests; never load an author library in the installer or Tk process.
+    from gxtxt_job_supervisor import auxiliary_request_run
+    probe=auxiliary_request_run([sys.executable,'-I','-B',str(FRAMEWORK/'core/python/gxtxt_viewer_native_worker.py'),'--probe',str(library)],timeout_seconds=5,max_bytes=8192)
+    if probe['returncode']:
+        raise DevelopmentError('Installed Viewer binary/runtime libraries cannot load: '+probe['output']+'; install a compatible precompiled package','BINARY_INCOMPATIBLE')
+    return (*admitted,built,library)
+
+def installed_inspect(root, work):
+    meta,report,design,requested,built,library=installed_admission(root,work)
+    record=dict(schema='gxtxt.compiled_viewer_runtime.v1', root=str(root.resolve()),
+                meta=meta, validation=report, design=design,
+                requested={key:sorted(value) for key,value in requested.items()},
+                build=built, library=str(library))
+    record['source_directory']=str(root.resolve()/'source')
+    record['kind']='installed'
+    record['runtime_contract']=_runtime_contract()
+    write_json(work/'derived/compiled-runtime.json',record)
+    return dict(report,status='PASS',binary_sha256=built['binary_sha256'],
+                library=str(library),runtime_compilation=False)
+
+def installed_run(root, work, event, state):
+    record=json.loads((work/'derived/compiled-runtime.json').read_text())
+    if record.get('schema')!='gxtxt.compiled_viewer_runtime.v1' or record['root']!=str(root.resolve()):
+        raise DevelopmentError('Installed runtime lifetime does not match this package','RUNTIME_LIFETIME')
+    library=root/'native/viewer.so';built=record['build'];report=record['validation']
+    if not library.is_file() or library.is_symlink() or digest(library.read_bytes())!=built['binary_sha256']:
+        raise DevelopmentError('Installed compiled binary changed; close and reinstall the matching package','BINARY_INCOMPATIBLE')
+    if _runtime_contract()!=record['runtime_contract']:
+        raise DevelopmentError('Runtime SDK/adapter contract changed; install a compatible precompiled Viewer','BINARY_INCOMPATIBLE')
+    admission=(record['meta'],report,record['design'],
+               {key:set(value) for key,value in record['requested'].items()},built,library)
+    result=run(root/'source',event,state,admission=admission,work=work)
+    result.update(runtime_compilation=False,distributed_library=str(library))
+    return result
+
+def prepare_preview(project):
+    built=build(project)
+    if built['status']!='BUILT':return built
+    meta,report,design,requested=_admit_compiled(project,built,project)
+    write_json(project/'derived/compiled-runtime.json',dict(
+        schema='gxtxt.compiled_viewer_runtime.v1',root=str(project.resolve()),kind='development',
+        source_directory=str(project.resolve()),library=str(project/'derived/viewer.so'),
+        meta=meta,validation=report,design=design,requested={key:sorted(value) for key,value in requested.items()},build=built,runtime_contract=_runtime_contract()))
+    return dict(report,status='PASS',binary_sha256=built['binary_sha256'],artifact_reused=built.get('artifact_reused',False))
+
+def compiled_serve(root, work):
+    """One managed lifetime, one distributed library load, short local RPCs.
+
+    Scientific SDK operations remain typed plans applied by their existing GUI
+    owners. No native author code is loaded in Tk and no compiler is reachable.
+    """
+    import base64
+    import ctypes
+    from gxtxt_viewer_native_worker import main as native_event, route_native_output, apply_runtime_limits
+    record=json.loads((work/'derived/compiled-runtime.json').read_text())
+    if record.get('schema')!='gxtxt.compiled_viewer_runtime.v1' or record['root']!=str(root.resolve()):
+        raise DevelopmentError('Compiled runtime allocation belongs to another package','RUNTIME_LIFETIME')
+    if record.get('kind')=='development':enforce_project_write(root)
+    elif record.get('kind')!='installed':raise DevelopmentError('Unknown compiled runtime kind','RUNTIME_LIFETIME')
+    library=Path(record['library']);source_directory=Path(record['source_directory'])
+    expected_library=root/('native/viewer.so' if record['kind']=='installed' else 'derived/viewer.so')
+    if library!=expected_library or source_directory!=(root/'source' if record['kind']=='installed' else root):
+        raise DevelopmentError('Compiled artifact location differs from its declared lifetime','RUNTIME_LIFETIME')
+    built=record['build'];report=record['validation']
+    design=record['design'];requested={key:set(value) for key,value in record['requested'].items()}
+    components={index+1:dictionary(item) for index,item in enumerate(tkinter.Tcl().splitlist(design['components']))}
+    def unchanged():
+        if digest(library.read_bytes())!=built['binary_sha256']:
+            raise DevelopmentError('Distributed Viewer binary changed; close and reinstall its matching package','BINARY_INCOMPATIBLE')
+        for name,key in [('handlers.cpp','source_sha256'),('design.gxtxt-viewer','design_sha256'),('project.json','project_sha256')]:
+            if digest((source_directory/name).read_bytes())!=report[key]:
+                raise DevelopmentError('Installed Viewer source/interface changed during this lifetime','SOURCE_CHANGED')
+        if _runtime_contract()!=record['runtime_contract']:
+            raise DevelopmentError('Viewer SDK/adapter compatibility changed during this lifetime','BINARY_INCOMPATIBLE')
+    native_log=work/'derived/native-output.log'
+    protocol=route_native_output(native_log)
+    def send(value):
+        print(base64.b64encode(tcl_result(value).encode('utf-8')).decode('ascii'),file=protocol,flush=True)
+    unchanged()
+    apply_runtime_limits()
+    loaded=ctypes.CDLL(str(library))
+    send(dict(ok=True,result=dict(status='READY',library=str(library),binary_sha256=built['binary_sha256'],pid=os.getpid())))
+    while True:
+        line=sys.stdin.readline(65537)
+        if not line:break
+        try:
+            if len(line.encode('utf-8'))>65536:raise DevelopmentError('Compiled event exceeds bound','RUNTIME_EVENT')
+            payload=json.loads(line);event=payload['event'];state=payload['state']
+            if set(payload)!={'event','state'} or set(event)!={'kind','component','value'} or type(event['kind']) is not int or event['kind'] not in range(6) or type(event['component']) is not int or event['component'] not in {0,*components}:
+                raise DevelopmentError('Invalid typed compiled event','RUNTIME_EVENT')
+            finite(event['value'])
+            if set(state)!={'values','counter'} or len(state['values'])!=16 or type(state['counter']) is not int or not 0<=state['counter']<2**32:
+                raise DevelopmentError('Invalid compiled state','RUNTIME_STATE')
+            for value in state['values']:finite(value)
+            unchanged();operations=[];numeric=[];deadline=time.monotonic()+POLICY['process_timeout_seconds']
+            def broker(message):
+                response,ui,math_receipts=broker_message(work,message,components,requested,deadline,design.get('_runtime_diagram_tools'))
+                operations.extend(ui);numeric.extend(math_receipts)
+                return response
+            outcome=native_event(dict(library=str(library),binary_sha256=built['binary_sha256'],event=event,state=state),broker,loaded)
+            unchanged()
+            result=dict(status='COMPLETED' if outcome['ok'] else 'FAILED',operations=operations if outcome['ok'] else [],
+                        state=outcome['state'] if outcome['ok'] else state,errors=outcome['errors'],numeric_receipts=numeric,
+                        source_sha256=report['source_sha256'],design_sha256=report['design_sha256'],project_sha256=report['project_sha256'],
+                        binary_sha256=built['binary_sha256'],distributed_library=str(library),runtime_compilation=False,
+                        native_output_path=str(native_log),native_output_bytes=native_log.stat().st_size,
+                        event=event,execution='persistent compiled C++ worker; existing typed public CORE broker')
+            write_json(work/'derived/run.json',result)
+            send(dict(ok=True,result=result))
+        except Exception as error:
+            send(dict(ok=False,error=str(error),code=getattr(error,'code','RUNTIME_ERROR')))
+    return 0
 
 def test_project(project):
     meta=read_project(project);configuration=meta['tests']
@@ -543,11 +1116,47 @@ def test_project(project):
     report={'schema':'gxtxt.viewer_project_tests.v1','status':'PASS' if not failures else 'FAILED','cases':cases,'state':state,'failures':failures,'scope':'Actual project-declared compiled event/state expectations only; independent source policy always reruns; native appearance is separate'}
     write_json(project/'derived/tests.json',report);return report
 
+def _manifest_value(value):
+    """Write the manifest's existing iniEscape convention, including Tcl lists."""
+    return str(value).replace('\\', '\\\\').replace('\n', '\\n').replace('\r', '\\r')
+
+
+def _installed_public_contract(namespace):
+    """Inert syntax for the exact facade emitted by this export owner."""
+    context = ('Trusted generated host callback for this exact installed provider. '
+               'Existing public CORE owners retain Session/Workspace lifetime, '
+               'packaged-binary compatibility and admission checks. This declaration '
+               'does not activate the provider or grant Script/SDK operations.')
+    signatures = {
+        'handlers': ({}, 'HandlerPrefixDictionary',
+                     'Declared handler IDs mapped to trusted generated command/enabled prefixes.'),
+        'dispatch': ({'operation': ('LifecycleOperation', 'Resolved Viewer lifecycle operation.'),
+                      'scene': ('ViewerSceneDictionary', 'Host-resolved scene; its open_context is forwarded.')},
+                     'TkWindowPath', 'Existing installed-open result for the provider and scene context.'),
+        'workspaceOpen': ({'context': ('ViewerOpenContextDictionary',
+                                      'Existing provider-qualified saved Workspace open context.')},
+                          'TkWindowPath', 'Existing installed-open result with canonical Workspace association.'),
+        'texOpen': ({'document': ('TeXDocumentID', 'Existing canonical TeX document identity.')},
+                    'TkWindowPath', 'Existing installed-open result with tex_document_id context.'),
+    }
+    operations = {}
+    for name, (parameters, result_type, description) in signatures.items():
+        operations[name] = dict(command=namespace+'::'+name,
+                                arguments=' '.join(parameters),
+                                parameters={key: dict(type=kind, description=about)
+                                            for key, (kind, about) in parameters.items()},
+                                result=dict(type=result_type, description=description),
+                                context=context)
+    return tcl_result(dict(schema='gxtxt.public_api_documentation.v1',
+                           purpose='Exact generated installed Viewer facade syntax; compiled runtime uses the distributed native binary.',
+                           context=context, operations=operations))
+
+
 def export_candidate(project):
-    """Rebuild from admitted source; never trust a project-authored green report."""
+    """Export the current source-bound artifact; build only changed inputs."""
     built=build(project)
     if built['status']!='BUILT': return built
-    meta,validation,design,requested=validate(project)
+    meta,validation,design,requested=_admit_compiled(project,built,project)
     module=meta['module_id'];provider=design['provider_id'];version=meta['version']
     namespace='::GX::Restricted_'+module.replace('.','_')
     backend=module.replace('.','_')+'_restricted_cpp_v1'
@@ -558,34 +1167,54 @@ namespace eval {namespace} {{variable root [file dirname [file dirname [info scr
 proc {namespace}::handlers {{}} {{return [::GX::viewerDevelopmentInstalledBindings {module} {provider} [set {namespace}::root]]}}
 proc {namespace}::dispatch {{operation scene}} {{return [::GX::viewerDevelopmentInstalledOpen {module} {provider} [set {namespace}::root] [::GX::datasetPublicationV2DictDefault $scene open_context {{}}]]}}
 proc {namespace}::workspaceOpen {{context}} {{return [::GX::viewerDevelopmentInstalledOpen {module} {provider} [set {namespace}::root] $context]}}
+proc {namespace}::texOpen {{document}} {{return [::GX::viewerDevelopmentInstalledOpen {module} {provider} [set {namespace}::root] [dict create tex_document_id $document]]}}
 ::GX::viewerBackendRegister {backend} {namespace}::dispatch
 '''
     def section(name,fields):
-        return '['+name+']\n'+''.join(str(k)+'='+str(v)+'\n' for k,v in fields.items())+'\n'
+        return '['+name+']\n'+''.join(str(k)+'='+_manifest_value(v)+'\n' for k,v in fields.items())+'\n'
     descriptor='; SPDX-License-Identifier: GPL-3.0-or-later\n'
     descriptor+=section('meta',{'api_version':1,'id':module,'kind':'viewer','group':'Viewers','name':design['title'],
                        'version':version,'license':'GPL-3.0-or-later','selectable':0,'default_enabled':1,'core':0,'runner':'service','order':900,
                        'depends':'math.numeric' if 'NUMERIC_API_v1' in requested else '','description':'Restricted C++ Viewer using approved public CORE facilities.'})
     descriptor+=section('viewers',{'api_version':1,'ids':provider})
+    catalog=dictionary(design.get('catalog',''))
     descriptor+=section('viewer.'+provider,{'name':design['title'],'backend':backend,'activation_api':'RESTRICTED_VIEWER_CLIENT_API_v1',
                          'gui_design':'gui/design.tcldict','gui_handler_command':namespace+'::handlers',
-                         'capabilities':'declarative_gui;restricted_cpp;public_core_broker','semantic_group':'development',
-                         'group_title':'Designed Viewers','short_title':design['title']})
-    descriptor+=section('public_apis',{'ids':'RESTRICTED_VIEWER_CLIENT_API_v1'})
+                         'capabilities':'declarative_gui;restricted_cpp;public_core_broker','semantic_group':catalog.get('semantic_group','development'),
+                         'group_title':catalog.get('group_title','Interface Tools'),'short_title':catalog.get('short_title',design['title']),
+                         'icon':('resources/icons/'+catalog['icon']+'.png') if catalog.get('icon') else ''})
+    # Rebuilding the existing HTML identity must preserve its public rendering
+    # facade. This trusted adapter still delegates to the CORE document owner;
+    # it grants no extra C++ capability and accepts no authored Tcl.
+    html_compatibility=module=='viewer.html' and provider=='html'
+    descriptor+=section('public_apis',{'ids':'RESTRICTED_VIEWER_CLIENT_API_v1'+(';HTML_VIEWER_API_v1' if html_compatibility else '')})
     descriptor+=section('public_api.RESTRICTED_VIEWER_CLIENT_API_v1',{'api_version':1,'name':'Restricted Viewer client',
-                         'entrypoint':'api/viewer.tcl','namespace':namespace,'capabilities':'viewer_backend;viewer_gui_manifest'})
+                         'entrypoint':'api/viewer.tcl','namespace':namespace,'capabilities':'viewer_backend;viewer_gui_manifest',
+                         'public_contract':_installed_public_contract(namespace)})
+    if html_compatibility:
+        descriptor+=section('public_api.HTML_VIEWER_API_v1',{'api_version':1,'name':'Native HTML presentation','entrypoint':'api/html.tcl','namespace':'::GX::HTMLViewer','capabilities':'render;headless_model;viewer_backend','documentation':'docs/api/HTML_VIEWER_API_v1.md'})
+    workspace_contributions=[]
     if any(dictionary(component)['type']=='workspace' for component in tkinter.Tcl().splitlist(design['components'])):
         workspace_id=module.replace('.','_').replace('-','_')+'_'+provider+'_interface_state'
-        descriptor+=section('workspaces',{'api_version':1,'ids':workspace_id})
-        descriptor+=section('workspace.'+workspace_id,{'entrypoint':'api/viewer.tcl','viewer_provider':provider,
+        workspace_contributions.append((workspace_id,{'entrypoint':'api/viewer.tcl','viewer_provider':provider,
             'type':'Restricted C++ Viewer state','schema':'gxtxt.viewer_interface_state.v1','version':1,'accepted_versions':1,
-            'validate':'::GX::viewerGuiDesignStateValidate','open':namespace+'::workspaceOpen'})
+            'validate':'::GX::viewerGuiDesignStateValidate','open':namespace+'::workspaceOpen'}))
+    for raw_component in tkinter.Tcl().splitlist(design['components']):
+        component=dictionary(raw_component)
+        if component['type']=='section' and dictionary(component['properties']).get('tex_source'):
+            article_provider=(module+'_'+provider+'_'+component['id']+'_tex_article').replace('.','_').replace('-','_')
+            workspace_contributions.append((article_provider,{'entrypoint':'api/viewer.tcl','viewer_provider':provider,
+                'type':'LaTeX article','schema':'gxtxt.tex_project.v1','version':1,
+                'validate':'::GX::_interactiveDocumentTeXValidate','open':namespace+'::texOpen'}))
+    if workspace_contributions:
+        descriptor+=section('workspaces',{'api_version':1,'ids':';'.join(key for key,_ in workspace_contributions)})
+        for key,contribution in workspace_contributions:descriptor+=section('workspace.'+key,contribution)
     descriptor+=section('documentation',{'api_version':1,'guide':'MANUAL.md',
                          'api_refs':';'.join(sorted({'VIEWER_DEVELOPMENT_API_v1'}|set(requested)|set(dictionary(design['requirements']))))})
     dev108_properties={'component_visibility','visibility_commands','scientific_provider','numeric_dataset','plot_dataset'}
     declared_dev108=any(dev108_properties.intersection(dictionary(dictionary(c)['properties'])) for c in tkinter.Tcl().splitlist(design['components']))
     package_meta=section('package',{'api_version':1,'id':module,'name':design['title'],'version':version,
-                                 'type':'module','framework_min':('0.9.8.10-dev-108' if declared_dev108 or design.get('icons') or meta['profile'] in {'document_view_v1','scientific_view_v1'} or set(validation['sdk_calls']) & {'numeric_exp','diagram_open','diagram_tool','diagram_command','numeric_discover','numeric_evaluate','numeric_statistics','numeric_compare','numeric_publish'} else '0.9.8.10-dev-107'),'framework_max':''})
+                                 'type':'module','framework_min':(FRAMEWORK/'VERSION.txt').read_text().strip(),'framework_max':''})
     manual=f'''# {design['title']}
 
 This ordinary Viewer was authored with the restricted C++ SDK v1. The public CORE
@@ -600,8 +1229,9 @@ through public NUMERIC_API_v1 array_binary.add and updates presentation only.
 The package includes exact original C++/Builder source, SDK contract, validation,
 build receipts, native binary, trusted C++/Tcl adapters and checksums. Reopen its
 source project in Viewer Development Workspace to edit. Visual design remains
-owned by Viewer Interface Builder. Runtime revalidates and builds a private copy
-against the current trusted SDK; copied project reports cannot authorize code.
+owned by Viewer Interface Builder. Installed runtime verifies compatibility and
+executes the distributed native/viewer.so directly; no development compiler is
+required. Build a changed source version in the Development Workspace.
 
 Candidate export does not install. Promotion belongs to the normal Plugin Manager.
 Python authoring is disabled. This is a cooperative architecture/quality workflow,
@@ -631,6 +1261,14 @@ absolute hostile-native-code or account-wide confinement promise.
         'MANUAL.md':manual_bytes,'LICENSE':(FRAMEWORK/'LICENSE').read_bytes(),
     }
     if manual_source.exists(): payload['source/MANUAL.md']=manual_bytes
+    if built.get('metadata_only_project_update'):
+        # Preserve the original genuine compilation receipt alongside the current
+        # metadata admission. Neither Test nor Export recompiles the same binary.
+        payload['review/original-build.json'] = payload['review/build.json']
+        payload['review/build.json'] = json.dumps(built, sort_keys=True, indent=2).encode()+b'\n'
+        payload['review/validation.json'] = json.dumps(validation, sort_keys=True, indent=2).encode()+b'\n'
+    if html_compatibility:
+        payload['api/html.tcl']=b'# SPDX-License-Identifier: GPL-3.0-or-later\nsource [file join $::GX::scriptDir core tcl html_viewer_api_v1.tcl]\n'
     from gxtxt_viewer_icons import package_resources
     payload.update(package_resources(design.get('icons','')))
     from gxtxt_viewer_manual_assets import resources
@@ -726,6 +1364,7 @@ def inspect_document(project,identity):
     # filenames need not themselves invent a versioned public API identity.
     companions={
         'VIEWER_GUI_DESIGN_v1':('VIEWER_GUI_HOST_API_v1','VIEWER_GUI_DESIGN_v1.md'),
+        'CPP_SUPPORT_CATALOG':('VIEWER_DEVELOPMENT_API_v1','CPP_SUPPORT_CATALOG.md'),
         'NUMERIC_EXPRESSION_OPERATIONS':('NUMERIC_API_v1','NUMERIC_EXPRESSION_OPERATIONS.md'),
     }
     api=identity.removesuffix('.md')
@@ -753,12 +1392,36 @@ def inspect_document(project,identity):
     raise DevelopmentError('Catalogued public manual is unavailable','DOCUMENT_TARGET')
 
 def main():
+    if sys.argv[1:2] == ['--api-browser-tcl']:
+        metadata_parser=argparse.ArgumentParser(description='Read-only installed API and saved project reference')
+        metadata_parser.add_argument('--project',type=Path)
+        metadata_arguments=metadata_parser.parse_args(sys.argv[2:])
+        # Existing discovery/SDK decoration owners, without a project or fake
+        # Session. Operations are described, never executed by this request.
+        with tempfile.TemporaryDirectory(prefix='gxtxt-api-metadata-') as temporary:
+            result=subprocess.run(['/usr/bin/tclsh',str(FRAMEWORK/'core/tcl/viewer_development_request.tcl'),str(FRAMEWORK),'api_catalog'],capture_output=True,timeout=15,env=environment(Path(temporary)))
+            if result.returncode or len(result.stdout)>4194304:
+                raise DevelopmentError('Installed API declarations could not be discovered','API_CATALOG')
+            envelope=dictionary(result.stdout.decode())
+            if envelope.get('ok')!='1':raise DevelopmentError(envelope.get('error','API discovery failed'),'API_CATALOG')
+            catalog=_describe_api_catalog(envelope['result'])
+        from gxtxt_script_bridge_server import discover_registrations
+        registrations,_=discover_registrations()
+        for api,descriptor in registrations.items():
+            if api not in catalog:
+                catalog[api]={'api_id':api,'version':descriptor['api_version'],'provider':descriptor['provider_id'],'providers':[],'sdk_exposed':False,'allowed_operations':[],'documentation':descriptor['documentation_ref']}
+            catalog[api]['script_descriptor']=descriptor
+        project=metadata_arguments.project.absolute() if metadata_arguments.project is not None else None
+        context=_browser_cpp_catalog(catalog,project)
+        print(tcl_result({'ok':True,'result':{'schema':'gxtxt.api_browser_catalog.v1','apis':catalog,'script_languages':['Python','Octave'],'execution_context':'inactive_metadata_only','cpp_context':context,'operation_invocations':0}}),flush=True)
+        return 0
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation',choices=['init','validate','build','run','test','export','api','inspect','manual_asset','save','check_source','grant','facility_request','builder','debug','debug_control','debug_status','gui_test','workspace_upgrade_review'])
+    parser.add_argument('operation',choices=['init','validate','build','prepare','run','test','export','api','inspect','manual_asset','save','check_source','grant','facility_request','builder','debug','debug_control','debug_status','gui_test','workspace_upgrade_review','runtime_inspect','runtime_run','runtime_serve'])
     parser.add_argument('project',type=Path)
     parser.add_argument('--module-id',default='viewer.restricted_example')
     parser.add_argument('--event',type=json.loads)
     parser.add_argument('--state',type=json.loads)
+    parser.add_argument('--runtime-work',type=Path,help='CORE-owned installed runtime allocation; never a development project')
     parser.add_argument('--breakpoints',type=json.loads,default=[])
     parser.add_argument('--file',choices=['handlers.cpp','project.json','MANUAL.md'],default='handlers.cpp')
     parser.add_argument('--target',choices=['handlers.cpp','project.json','MANUAL.md','design.gxtxt-viewer','sdk_v1'],default='handlers.cpp',help='Fixed read-only Workspace source browser target for inspect')
@@ -774,7 +1437,14 @@ def main():
         if arguments.document and arguments.operation!='api': raise DevelopmentError('--document belongs only to api','DOCUMENT_TARGET')
         if arguments.debug_token is not None and (arguments.operation not in {'debug','debug_status','debug_control'} or not re.fullmatch(r'[a-zA-Z0-9_-]{1,96}',arguments.debug_token)):
             raise DevelopmentError('Debugger token must be bounded opaque text on a debugger request','DEBUG_STATE')
-        if arguments.operation=='init': result=initialize(project,arguments.module_id)
+        if arguments.operation in {'runtime_inspect','runtime_run','runtime_serve'}:
+            if arguments.runtime_work is None or arguments.runtime_work.is_symlink():
+                raise DevelopmentError('Installed execution requires its CORE runtime allocation','RUNTIME_LIFETIME')
+            work=arguments.runtime_work.absolute()
+            if arguments.operation=='runtime_serve':return compiled_serve(project,work)
+            result=(installed_inspect(project,work) if arguments.operation=='runtime_inspect'
+                    else installed_run(project,work,arguments.event,arguments.state))
+        elif arguments.operation=='init': result=initialize(project,arguments.module_id)
         else:
             grant=enforce_project_write(project)
             if arguments.operation=='grant':
@@ -785,6 +1455,7 @@ def main():
             (project/'derived/tmp').mkdir(parents=True,exist_ok=True)
             if arguments.operation=='validate': result=validate(project)[1]
             elif arguments.operation=='build': result=build(project)
+            elif arguments.operation=='prepare': result=prepare_preview(project)
             elif arguments.operation=='export': result=export_candidate(project)
             elif arguments.operation=='inspect': result=inspect_source(project,arguments.target)
             elif arguments.operation=='api' and arguments.document: result=inspect_document(project,arguments.document)
@@ -818,7 +1489,7 @@ def main():
                 raw=sys.stdin.buffer.read(16385)
                 if len(raw)>16384:raise DevelopmentError('Debug control exceeds bound','DEBUG_CONTROL')
                 control=json.loads(raw)
-                if not isinstance(control,dict) or set(control)-{'operation','source_sha256','frame'} or control.get('operation') not in {'continue','into','over','out','pause','stop','frame'}:
+                if not isinstance(control,dict) or set(control)-{'operation','source_sha256','frame','node_id','inspection_id','offset'} or control.get('operation') not in {'continue','into','over','out','pause','stop','frame','children'}:
                     raise DevelopmentError('Only enumerated native debugger controls are admitted','DEBUG_CONTROL')
                 if digest((project/'handlers.cpp').read_bytes())!=control.get('source_sha256'):raise DevelopmentError('Source revision changed; restart Debug','SOURCE_CHANGED')
                 snapshot=json.loads((project/'derived/debug/state.json').read_text())
@@ -826,6 +1497,17 @@ def main():
                 if snapshot['source_sha256']!=control['source_sha256'] or snapshot['state'] not in {'RUNNING','PAUSED','CONTINUING','STARTING'}:raise DevelopmentError('Debugger is stale or terminal','DEBUG_STATE')
                 if control['operation'] not in {'pause','stop'} and snapshot['state']!='PAUSED':raise DevelopmentError('Control requires an actual paused C++ frame','DEBUG_STATE')
                 if type(control.get('frame',0))is not int or not 0<=control.get('frame',0)<16:raise DevelopmentError('Frame index outside bound','DEBUG_CONTROL')
+                if control['operation']=='children':
+                    node=control.get('node_id');inspection=control.get('inspection_id');offset=control.get('offset',0)
+                    if not isinstance(node,str) or len(node)>256 or node not in snapshot.get('variable_nodes',{}):
+                        raise DevelopmentError('Select an actual debugger-reported variable node','DEBUG_VARIABLE')
+                    parent=snapshot['variable_nodes'][node]
+                    if type(inspection)is not int or inspection!=snapshot.get('inspection_id') or type(offset)is not int or offset!=parent.get('loaded_count',0):
+                        raise DevelopmentError('Variable stop/frame or child range changed; refresh inspection','DEBUG_VARIABLE')
+                    if parent.get('depth',0)>=8 or len(snapshot.get('variable_nodes',{}))>=512:
+                        raise DevelopmentError('Variable inspection depth/node bound reached','DEBUG_VARIABLE')
+                elif set(control)&{'node_id','inspection_id','offset'}:
+                    raise DevelopmentError('Variable identity belongs only to children control','DEBUG_CONTROL')
                 path=project/'derived/debug/command.json'
                 if path.exists():raise DevelopmentError('Wait for the pending debugger command','DEBUG_BUSY')
                 write_json(path,control);result={'status':'SAVED','operation':control['operation']}
@@ -845,7 +1527,7 @@ def main():
             write_json(project/'derived/project-write-grant.json',grant)
         response={'ok':True,'result':result}
         print(tcl_result(response) if arguments.tcl else json.dumps(response,ensure_ascii=False,allow_nan=False),flush=True)
-        return 0 if result.get('status') in {'PASS','CREATED','BUILT','COMPLETED','CATALOG','CANDIDATE_EXPORTED','SAVED','REQUESTED'} else 1
+        return 0 if result.get('status') in {'PASS','CREATED','BUILT','COMPLETED','CATALOG','CANDIDATE_EXPORTED','SAVED','REQUESTED','REVIEWED_INERT_ADDITIVE_UPGRADE'} else 1
     except Exception as error:
         response={'ok':False,'error':str(error),'code':getattr(error,'code','DEVELOPMENT_ERROR'),'detail':getattr(error,'detail',None)}
         print(tcl_result(response) if arguments.tcl else json.dumps(response,ensure_ascii=False),flush=True)

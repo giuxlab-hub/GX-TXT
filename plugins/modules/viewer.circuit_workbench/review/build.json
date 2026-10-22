@@ -1,6 +1,28 @@
 {
-  "adapter_sha256": "31713b419c9b15f48ce6d3fd739543f37d15bc17c68ffc1ec46f1c9fcb52d996",
-  "binary_sha256": "3e2933de7b7c0d38318875a952c15ead4fce05cc8468b1f800db27c0d20da43e",
+  "adapter_sha256": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66",
+  "binary_sha256": "a65eaa03c2dae37c13e9c9c1200c65e2257902796e31526d6185c35636057f4f",
+  "build_dependencies": {
+    "files": {
+      "/srv/gxtxt/agents/worktrees/author_circuit_final253/core/development/policy_v1.json": "b0b8115c624297c86e5eb390d46e5380f2c1494b225c5b8d24a1202dd2f49ca2",
+      "/srv/gxtxt/agents/worktrees/author_circuit_final253/core/development/sdk/gxtxt_viewer_sdk_v1.hpp": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
+      "/srv/gxtxt/agents/worktrees/author_circuit_final253/core/development/sdk/trusted_adapter_v1.cpp": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66",
+      "/srv/gxtxt/agents/worktrees/author_circuit_final253/core/development/toolchain/clang-19": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
+      "/srv/gxtxt/agents/worktrees/author_circuit_final253/core/development/toolchain/manifest.json": "5ec19600eb988358ed8467daec98420a3adc78ff0393e8d9fd5b39a440bd4ee7"
+    },
+    "flags": [
+      "--no-default-config",
+      "-std=c++17",
+      "-x",
+      "c++",
+      "-Werror",
+      "-fno-color-diagnostics",
+      "-pthread",
+      "-isystem",
+      "/usr/lib/gcc/x86_64-linux-gnu/14/include"
+    ],
+    "recipe_sha256": "464ca270e7d308a85c5a4d6a273221a87afa81b850118c2469bfddd5cce6abaf",
+    "validation_owner_sha256": "0f3d450622d930a6d0fbc82fb98ded6776495e9da17085d7701494729c13671f"
+  },
   "capabilities": [
     {
       "api_id": "VIEWER_GUI_HOST_API_v1",
@@ -95,11 +117,64 @@
   "code_generation_invoked": true,
   "compiler_version": "19.1.7",
   "debug_symbols": false,
-  "link_policy": "fixed SDK adapter; no author libraries/flags; no undefined symbols",
+  "header_dependencies": {
+    "/srv/gxtxt/agents/worktrees/author_circuit_final253/core/development/sdk/gxtxt_viewer_sdk_v1.hpp": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
+    "/srv/gxtxt/agents/worktrees/author_circuit_final253/core/development/sdk/trusted_adapter_v1.cpp": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66"
+  },
+  "link_policy": "fixed SDK adapter; reviewed system C/C++ runtime, math and pthread; no undefined symbols; extra libraries/options require review",
   "log": "\n\n",
   "schema": "gxtxt.viewer_build.v1",
   "status": "BUILT",
   "validation": {
+    "admitted_headers": [
+      "algorithm",
+      "array",
+      "assert.h",
+      "atomic",
+      "cassert",
+      "cerrno",
+      "chrono",
+      "condition_variable",
+      "cstddef",
+      "cstdint",
+      "cstdio",
+      "cstdlib",
+      "cstring",
+      "deque",
+      "errno.h",
+      "exception",
+      "functional",
+      "limits",
+      "list",
+      "map",
+      "memory",
+      "mutex",
+      "new",
+      "pthread.h",
+      "queue",
+      "set",
+      "stack",
+      "stddef.h",
+      "stdexcept",
+      "stdint.h",
+      "stdio.h",
+      "stdlib.h",
+      "string",
+      "string.h",
+      "string_view",
+      "sys/types.h",
+      "sys/wait.h",
+      "thread",
+      "tuple",
+      "type_traits",
+      "typeinfo",
+      "unistd.h",
+      "unordered_map",
+      "unordered_set",
+      "utility",
+      "vector"
+    ],
+    "architecture_review": "Language admission is not approval of alternate canonical Dataset/Job/Workspace/Plot ownership; review author data flows separately.",
     "author_ast_kinds": [
       "ArraySubscriptExpr",
       "BinaryOperator",
@@ -115,22 +190,40 @@
       "ParmVarDecl",
       "StringLiteral"
     ],
-    "canonical_lifecycle_scope": "declared diagram Viewer state through existing guarded Workspace/History owners",
+    "canonical_lifecycle_scope": "declared canonical Viewer state through existing guarded Workspace/History owners",
     "code_generation_invoked": false,
     "compiler_sha256": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
     "compiler_version": "19.1.7",
-    "design_sha256": "86311e9933f2072c517636ee07e91c65336653ba49092179e437c6bf8cb91fdf",
+    "design_sha256": "49b38ccdaf36cac274b56037b364fc40511e0e08f022fd877cbe9d41fc43a3d2",
     "diagnostics": [],
     "functions": [
       "on_event"
     ],
-    "policy_sha256": "68af74c5241fdf782baf3ebab01720022f9272eb83ead49d0644fa0745267492",
+    "language_support": {
+      "debugger": "Existing managed GDB/MI; detailed threading/fork/aggregate usability requires the next acceptance matrix, not assumed from compilation",
+      "features": [
+        "functions",
+        "pointers/references",
+        "classes/structs/enums/unions",
+        "inheritance/virtual dispatch/RTTI",
+        "overloads/templates",
+        "recursion",
+        "callbacks/lambdas",
+        "malloc/free/new/delete/RAII",
+        "containers/algorithms",
+        "preprocessing/macros/assert",
+        "exceptions",
+        "threads/synchronization",
+        "fork/wait"
+      ],
+      "ownership": "Local project logic/data/concurrency are allowed. Canonical Dataset/Schema/Publication/Session/Workspace/History/Job/scientific Plot remain public CORE responsibilities. Language admission does not approve an architectural bypass.",
+      "runtime": "Debian system libc/libstdc++/libm/pthread; extra libraries and compiler options require purpose-specific review",
+      "standard": "C++17 including C facilities"
+    },
+    "policy_sha256": "b0b8115c624297c86e5eb390d46e5380f2c1494b225c5b8d24a1202dd2f49ca2",
     "profile": "cpp_view_v1",
     "project_profile": "scientific_view_v1",
-    "project_sha256": "7ad3ba6a6493a1c447417e1d6e29b51d50fac61817d757c2af67940e9b0299f0",
-    "resolved_call_graph": {
-      "on_event": []
-    },
+    "project_sha256": "79b7c7e089503e5d9b71a7031cab68389ff25795203429de62c3fbe8570614c3",
     "schema": "gxtxt.cpp_validation.v1",
     "sdk_calls": [
       "diagram_command",
@@ -155,13 +248,13 @@
       "scientific_submit",
       "text"
     ],
-    "sdk_sha256": "41610ccc9bfb310ce2fd7b45f5a26b1535296c9cfde272e1e036eca02c25cf47",
+    "sdk_sha256": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
     "source_sha256": "2d640a1126647b9c5645ebb6951bf26dcf5e99baa2756fdee67af32ff4c1f202",
     "stages": [
       "clang_raw_lexer",
       "clang_resolved_ast"
     ],
     "status": "PASS",
-    "workspace_callback_contract_sha256": "628efb4ebf0bfd9e2a91c06d6f0a79b3fce91810764b8c604255e971db2e06bf"
+    "workspace_callback_contract_sha256": "9fcdb344139626748b3215ed6330c87aa847a9640479dbf350ef5fd7f1c20feb"
   }
 }

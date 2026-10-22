@@ -1,12 +1,21 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # The existing3D Workspace owner alone commits accepted profiles and History.
 proc ::GX::Workbench3D::planarEditSelected {mode} {
-    variable document;variable scene;variable model;variable tokens
+    variable document;variable scene;variable model;variable tokens;variable guiHost;variable planarHosts
     if {$mode ni {section projection}} {error {Choose section or projection}}
     set id [selected]
     if {![dict exists $model objects $id]} {error {Select one actual3D body}}
     checkpoint
     set origin [::GX::native3DPlanarOriginReceipt $document $id]
+    set destinationHost {}
+    if {$guiHost ne {} && [dict get $guiHost document_id] eq $document &&
+        [dict get $guiHost generation] eq [dict get $origin generation] &&
+        [dict get $guiHost session_token] eq [::GX::interactiveDocumentSessionToken] &&
+        [winfo exists [dict get $guiHost parent]] &&
+        [winfo id [dict get $guiHost parent]] eq [dict get $guiHost incarnation] &&
+        $::GX::Engine3D::window eq "[dict get $guiHost parent].native3d"} {
+        set destinationHost $guiHost
+    }
     set object [dict get $tokens $id];set derived {}
     try {
         if {[dict get $model objects $id kind] eq "brep"} {
@@ -18,9 +27,33 @@ proc ::GX::Workbench3D::planarEditSelected {mode} {
         set plane [dict create origin [split $::GX::Engine3D::planeOrigin {;}] normal [split $::GX::Engine3D::planeNormal {;}] u_axis [split $::GX::Engine3D::planeU {;}]]
         ::GX::native3DPlanarOriginValidate $origin
     } finally {if {$derived ne {}} {call delete [dict create object_token $derived]}}
-    set planar [::GX::native3DPlanarCreate $path [dict get $model working_unit] $plane 1e-8 [dict create origin_workspace $origin]]
+    set planar [::GX::native3DPlanarCreate $path [dict get $model working_unit] $plane 1e-8 [dict create origin_workspace $origin mode $mode]]
+    if {$destinationHost ne {}} {dict set planarHosts $planar $destinationHost}
     set ::GX::PlanarGUI::document $planar
     return [::GX::viewerOpen viewer.curve_workbench curve_workbench [dict create workspace_id new workspace_name "3D $document $mode" planar_document $planar planar_mode $mode]]
+}
+proc ::GX::Workbench3D::_planarRestoreHost {planar destination generation} {
+    variable planarHosts;variable document;variable scene;variable module;variable provider
+    if {![dict exists $planarHosts $planar]} {return [dict create status not_requested]}
+    set host [dict get $planarHosts $planar];set parent [dict get $host parent]
+    # A closed/recreated component or a new Session is never a return target.
+    if {[dict get $host session_token] ne [::GX::interactiveDocumentSessionToken] ||
+        [dict get $host document_id] ne $destination || [dict get $host generation] ne $generation ||
+        ![winfo exists $parent] || [winfo id $parent] ne [dict get $host incarnation]} {
+        dict unset planarHosts $planar
+        return [dict create status expired]
+    }
+    # Acceptance has already activated exactly this canonical owner. Do not
+    # replace another active editor or bypass its normal owner/lifetime checks.
+    if {$scene eq {} || $document ne $destination ||
+        [::GX::Engine3D::ownerModule] ne $module || [::GX::Engine3D::ownerProvider] ne $provider ||
+        [dict get [::GX::interactiveDocumentRead $destination] generation] ne $generation} {
+        error {The accepted planar destination is not the active 3D owner; reopen it explicitly}
+    }
+    set mounted [guiMount $parent [dict create workspace_id $destination]]
+    pack $mounted -fill both -expand 1
+    guiPresentationChanged
+    return [dict create status restored parent $parent]
 }
 proc ::GX::Workbench3D::planarCopyResource {reference} {
     variable document
@@ -40,10 +73,14 @@ proc ::GX::Workbench3D::planarAcceptResult {planar origin accepted} {
     set owner [::GX::interactiveDocumentRead $destination]
     if {[dict get $owner generation] ne [dict get $origin generation]} {error {Originating3D Workspace was replaced}}
     dict for {id prior} [dict get $owner payload model profiles] {
-        if {[::GX::datasetPublicationV2DictDefault $prior planar_result_sha256 {}] eq $signature && [::GX::datasetPublicationV2DictDefault $prior source_planar_document {}] eq $planar} {return [dict create status already_committed document_id $destination profile_id $id planar_document_id $planar]}
+        if {[::GX::datasetPublicationV2DictDefault $prior planar_result_sha256 {}] eq $signature && [::GX::datasetPublicationV2DictDefault $prior source_planar_document {}] eq $planar} {
+            activateDocument [dict create workspace_id $destination]
+            set presentation [_planarRestoreHost $planar $destination [dict get $origin generation]]
+            return [dict create status already_committed document_id $destination profile_id $id planar_document_id $planar presentation $presentation]
+        }
     }
     ::GX::native3DPlanarOriginValidate $origin
-    open [dict create workspace_id $destination]
+    activateDocument [dict create workspace_id $destination]
     ::GX::native3DPlanarOriginValidate $origin
     if {[dict get $model working_unit] ne [dict get $accepted working_unit]} {error {Accepted planar unit does not match originating3D Workspace}}
     set before $model;set native {};set result {}
@@ -64,5 +101,6 @@ proc ::GX::Workbench3D::planarAcceptResult {planar origin accepted} {
         return -options $opts $message
     }
     ::GX::Engine3D::rerender
-    return [dict create status committed document_id $document profile_id $result planar_document_id $planar transaction_scope destination_owner_only original_body_preserved 1]
+    set presentation [_planarRestoreHost $planar $destination [dict get $origin generation]]
+    return [dict create status committed document_id $document profile_id $result planar_document_id $planar transaction_scope destination_owner_only original_body_preserved 1 presentation $presentation]
 }

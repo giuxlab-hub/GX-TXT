@@ -31,21 +31,21 @@ proc ::GX::layoutFieldNames {} {
 
 # Seed the per-graph layout state from the global stacked defaults, so the
 # sliders start from the values the automatic layout is anchored to.
-proc ::GX::layoutOverrideEnsure {gk} {
-    variable axisOverride
+proc ::GX::layoutOverrideFieldDefaults {} {
     variable cfg
-    if {[string trim $gk] eq ""} { return }
-    if {![info exists axisOverride($gk,layout_auto)]} { set axisOverride($gk,layout_auto) 1 }
-    if {![info exists axisOverride($gk,layout_ylabel_allow_negative)]} {set axisOverride($gk,layout_ylabel_allow_negative) 0}
-    set seed [list \
+    return [list layout_auto 1 layout_ylabel_allow_negative 0 \
         layout_margin_left   $cfg(plot_stacked_margin_left_pct) \
         layout_margin_right  $cfg(plot_stacked_margin_right_pct) \
         layout_margin_top    $cfg(plot_stacked_margin_top_pct) \
         layout_margin_bottom $cfg(plot_stacked_margin_bottom_pct) \
         layout_gap           $cfg(plot_stacked_gap_pct) \
         layout_ylabel_dist   8.5]
-    foreach {field def} $seed {
-        if {![info exists axisOverride($gk,$field)] || [string trim $axisOverride($gk,$field)] eq ""} {
+}
+proc ::GX::layoutOverrideEnsure {gk} {
+    variable axisOverride
+    if {[string trim $gk] eq ""} { return }
+    foreach {field def} [layoutOverrideFieldDefaults] {
+        if {![info exists axisOverride($gk,$field)] || ($field ni {layout_auto layout_ylabel_allow_negative} && [string trim $axisOverride($gk,$field)] eq "")} {
             set axisOverride($gk,$field) $def
         }
     }
@@ -131,18 +131,24 @@ proc ::GX::layoutControlsApply {} {
     variable axisOverride
     if {![info exists ui(layoutGraphKey)] || $ui(layoutGraphKey) eq ""} { return 0 }
     set gk $ui(layoutGraphKey)
+    set staged {}
     foreach {field label lo hi} [::GX::layoutFieldDefs] {
         set v [string trim $ui(layoutVal,$field)]
         if {$v eq ""} { set v 0 }
-        if {![string is double -strict $v]} {
-            tk_messageBox -icon error -message "$label must be numeric."
+        if {![string is double -strict $v] || [catch {expr {abs($v)<Inf}} finite] || !$finite} {
+            tk_messageBox -icon error -message "$label must be a finite numeric value."
             return 0
         }
         if {$field eq "layout_ylabel_dist" && $ui(layoutNegativeOffset)} {set lo -30}
         if {$v < $lo} { set v $lo }
         if {$v > $hi} { set v $hi }
-        set ui(layoutVal,$field) $v
-        set axisOverride($gk,$field) $v
+        dict set staged $field $v
+    }
+    # Validate the complete form before changing any accepted per-plot setting.
+    # An invalid later field must not silently commit earlier valid edits.
+    dict for {field value} $staged {
+        set ui(layoutVal,$field) $value
+        set axisOverride($gk,$field) $value
     }
     set axisOverride($gk,layout_auto) [expr {$ui(layoutAuto) ? 1 : 0}]
     set axisOverride($gk,layout_ylabel_allow_negative) [expr {$ui(layoutNegativeOffset) ? 1 : 0}]

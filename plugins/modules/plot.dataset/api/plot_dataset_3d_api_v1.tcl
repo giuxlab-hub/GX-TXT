@@ -11,7 +11,7 @@ proc ::GX::PlotDataset3DAPIv1::apiInfo {} {
     return [dict create api_name PLOT_DATASET_3D_API_v1 api_version 1 \
         module_id plot.dataset module_version [::GX::moduleField plot.dataset version] \
         plot_types {scatter3 line3 surface mesh contour3 trisurf heatmap} \
-        capabilities {build_scene open_interactive refresh_interactive persistent_source_binding static_plot_unchanged manual_sync source_fingerprint independent_representation readonly_native3d_preview_export calibrated_native3d_figure preview_compatibility}]
+        capabilities {build_scene open_interactive refresh_interactive persistent_source_binding static_plot_unchanged manual_sync source_fingerprint independent_representation readonly_native3d_preview_export calibrated_native3d_figure preview_compatibility producer_graph_preview_export}]
 }
 
 proc ::GX::PlotDataset3DAPIv1::sources {} {
@@ -382,10 +382,48 @@ proc ::GX::PlotDataset3DAPIv1::previewExportCommand {plotRef output} {
         set value [string trim [::GX::plotVariantGraphicsGet plot.dataset plot.dataset.xyz [dict get $ref variant_id] $field]]
         if {$value ne "" && $value ne "inherit" && [dict exists $graphicsMap $field]} {set envmap [::GX::envListReplace $envmap [dict get $graphicsMap $field] $value]}
     }
+    return [_previewCommand $cache $runtime $output $envmap]
+}
+
+# Both persistent Plot Variants and immutable producer preparations use this
+# same exporter, scientific renderer and native converter.
+proc ::GX::PlotDataset3DAPIv1::_previewCommand {cache runtime output envmap {expectation {}}} {
+    variable apiDir
     set script [file normalize [file join $apiDir .. runtime plot_dataset_preview_export.m]]
     return [concat [list env GXTXT_GRAPHICS_MODE=headless GXTXT_PROGRESS_ENABLED=0] $envmap [list [auto_execok tclsh] \
         [file join $::GX::scriptDir core tcl native3d_plot_prepare_worker.tcl] $::GX::cfg(octave_cmd) $script $cache $runtime $output \
-        [::GX::runtimeToolRequired python] [file join $::GX::scriptDir core python native3d_plot_preview.py]]]
+        [::GX::runtimeToolRequired python] [file join $::GX::scriptDir core python native3d_plot_preview.py]] $expectation]
+}
+
+# Finite graph identity intake, never caller-selected cache/runtime paths.
+# The Graph Workflow owner proves the producer bridge and source contract.
+proc ::GX::PlotDataset3DAPIv1::previewGraphExportCommand {reference output} {
+    set resolved [::GX::graphWorkflowScientific3DSource $reference]
+    if {![dict exists $resolved prepared_source]} {error {Use the graph's direct Plot preview exporter.}}
+    set prepared [dict get $resolved prepared_source]
+    set saved [dict get $prepared saved]
+    set envmap [::GX::plotEnv plot.dataset]
+    set recorded {}
+    dict for {key value} $saved {
+        if {[regexp {^graphics_effective\.(GXTXT_(PLOT(_|3D_).*|PNG_DPI))$} $key -> name] && ![string match *_FILE $name]} {lappend recorded "$name=$value"}
+    }
+    if {[llength $recorded]} {set envmap $recorded}
+    file mkdir $output
+    set expectation [file join $output source_expectation.ini]
+    set fd [open $expectation w]
+    try {
+        fconfigure $fd -encoding utf-8 -translation lf
+        puts $fd {[source]}
+        foreach {field value} [list dataset_id [dict get $resolved source_info source_dataset_id] \
+            sha256 [dict get $prepared source_payload sha256] path [dict get $prepared source_payload path] \
+            session [dict get $prepared session] plot_type [dict get $prepared plot_type] \
+            cache_sha256 [::GX::sha256File [dict get $prepared cache]] runtime_sha256 [::GX::sha256File [dict get $prepared runtime]]] {::GX::putKV $fd $field $value}
+        dict for {role variable} [dict get $prepared variables] {
+            puts $fd "\n\[variable.$role\]"
+            foreach {field value} [list variable_id [dict get $variable variable_id] name [dict get $variable canonical] unit [dict get $variable unit]] {::GX::putKV $fd $field $value}
+        }
+    } finally {close $fd}
+    return [_previewCommand [dict get $prepared cache] [dict get $prepared runtime] $output $envmap [list $expectation]]
 }
 
 # Read-only UI eligibility; diagnostics also guard the export itself.

@@ -2,7 +2,7 @@
 # Document-owned integration of existing Native3D/Native2D authorities.
 namespace eval ::GX::PlanarGeometry {variable edits {};variable serial 0}
 proc ::GX::native3DPlanarApiInfo {} {
-    return {api_id NATIVE_3D_GEOMETRY_API_v1 extension planar_workflow operations {create list show focus edit_begin edit_accept edit_cancel origin_receipt origin_validate origin_commit} working_units explicit frame right_handed projection orthogonal_source_boundary reverse_mapping new_curve_on_plane max_contours 4096 max_points 1000000 reference_pixels_max 4096}
+    return {api_id NATIVE_3D_GEOMETRY_API_v1 extension planar_workflow operations {create list show focus edit_begin edit_accept edit_cancel origin_receipt origin_validate origin_commit} working_units explicit frame right_handed projection orthogonal_source_boundary reverse_mapping new_curve_on_plane max_contours 4096 max_points 1000000 reference_pixels_max 4096 create_modes {both section projection}}
 }
 proc ::GX::_native3DPlanarOwner {document} {
     set owner [interactiveDocumentRead $document]
@@ -30,6 +30,8 @@ proc ::GX::native3DPlanarList {} {
     set result {};foreach record [interactiveDocumentList] {if {[dict get $record format] eq "gxtxt.native3d.planar"} {lappend result $record}};return $result
 }
 proc ::GX::native3DPlanarCreate {sourcePath unit plane tolerance {options {}}} {
+    set mode [datasetPublicationV2DictDefault $options mode both]
+    if {$mode ni {both section projection}} {error {Choose both, section or projection for planar preparation}}
     unitRegistryConversionPlan $unit m
     if {[dict exists $options origin_workspace]} {native3DPlanarOriginValidate [dict get $options origin_workspace]}
     if {![string is double -strict $tolerance]||$tolerance<=0||$tolerance>=Inf} {error {Declare a positive finite section tolerance}}
@@ -48,23 +50,33 @@ proc ::GX::native3DPlanarCreate {sourcePath unit plane tolerance {options {}}} {
         set normalized [native3DGeometryCall $scene plane_frame [dict create plane $plane]]
         dict set normalized working_unit $unit;dict set normalized orientation right_handed
         set request [dict create object_token [dict get $object object_token] plane $normalized tolerance $tolerance]
-        set section [native3DGeometryCall $scene section_profile $request]
-        set sectionData [_native3DPlanarProfile $scene [dict get $section profile_token] $unit section]
-        set projectionRequest $request
-        if {$format eq "step"} {
-            if {![dict exists $options tessellation]} {error {CAD reference projection requires an explicit tessellation policy: linear_deflection angular_deflection weld_tolerance max_triangles max_output_bytes}}
-            set mesh [native3DGeometryCall $scene mesh [dict merge [dict get $options tessellation] [dict create object_token [dict get $object object_token]]]]
-            dict set projectionRequest object_token [dict get $mesh object_token]
+        set sectionData [dict create definitions {} status not_requested]
+        set projectionData [dict create definitions {} status not_requested]
+        if {$mode in {both section}} {
+            set section [native3DGeometryCall $scene section_profile $request]
+            set sectionData [_native3DPlanarProfile $scene [dict get $section profile_token] $unit section]
         }
-        if {[catch {set projection [native3DGeometryCall $scene projection_profile $projectionRequest]} message errorOptions]} {
-            if {![string match {*Boundary projection needs 1..4096 actual source boundary contours*} $message]} {return -options $errorOptions $message}
-            set projectionData [dict create definitions {} policy orthogonal_full_surface editable_boundary unavailable reason $message]
-        } else {set projectionData [_native3DPlanarProfile $scene [dict get $projection profile_token] $unit projection]}
-        set projected [native3DGeometryCall $scene project $projectionRequest]
-        dict set projectionData surface_resource [native3DGeometryExportResource $scene [dict get $projected object_token] vtp $scale]
-        dict set projectionData diagnostics {depth discarded overlaps preserved_not_merged topology may_overlap_or_degenerate inverse unavailable}
-        if {$format eq "step"} {dict set projectionData tessellation [dict get $options tessellation]}
+        if {$mode in {both projection}} {
+            set projectionRequest $request
+            if {$format eq "step"} {
+                if {![dict exists $options tessellation]} {error {CAD reference projection requires an explicit tessellation policy: linear_deflection angular_deflection weld_tolerance max_triangles max_output_bytes}}
+                set mesh [native3DGeometryCall $scene mesh [dict merge [dict get $options tessellation] [dict create object_token [dict get $object object_token]]]]
+                dict set projectionRequest object_token [dict get $mesh object_token]
+            }
+            if {[catch {set projection [native3DGeometryCall $scene projection_profile $projectionRequest]} message errorOptions]} {
+                if {![string match {*Boundary projection needs 1..4096 actual source boundary contours*} $message]} {return -options $errorOptions $message}
+                set projectionData [dict create definitions {} policy orthogonal_full_surface editable_boundary unavailable reason $message]
+            } else {set projectionData [_native3DPlanarProfile $scene [dict get $projection profile_token] $unit projection]}
+            set projected [native3DGeometryCall $scene project $projectionRequest]
+            dict set projectionData surface_resource [native3DGeometryExportResource $scene [dict get $projected object_token] vtp $scale]
+            dict set projectionData diagnostics {depth discarded overlaps preserved_not_merged topology may_overlap_or_degenerate inverse unavailable}
+            if {$format eq "step"} {dict set projectionData tessellation [dict get $options tessellation]}
+        }
         set payload [dict create schema gxtxt.native3d.planar version 1 source_resource $source source_geometry $object source_name [file tail $sourcePath] color_array [datasetPublicationV2DictDefault $options color_array {}] working_unit $unit plane $normalized tolerance $tolerance section $sectionData projection $projectionData accepted {} presentation [dict create reference_opacity .45 reference_visible 1] provenance [dict create source_sha256 [dict get $source sha256] operation section_and_orthogonal_boundary_projection original_preserved 1 approximation piecewise_linear lost_depth 1 reverse_mapping new_planar_curve source_document $document]]
+        if {$mode ne {both}} {
+            dict set payload prepared_mode $mode
+            dict set payload provenance operation [expr {$mode eq {section} ? {section} : {orthogonal_boundary_projection}}]
+        }
         if {[dict exists $options origin_workspace]} {
             set origin [dict get $options origin_workspace]
             native3DPlanarOriginValidate $origin
@@ -108,8 +120,11 @@ proc ::GX::native3DPlanarShow {document {mode all}} {
     if {$mode ni {all source section projection accepted reference}} {error {Unknown planar presentation}}
     set payload [dict get [_native3DPlanarOwner $document] payload];set plane [dict get $payload plane]
     set module viewer.engine_3d;set provider engine_3d
-    set resources [dict create source [dict get $payload source_resource] section [dict get $payload section view_resource]]
-    if {[dict exists $payload projection view_resource]} {dict set resources projection [dict get $payload projection view_resource]}
+    set resources [dict create source [dict get $payload source_resource]]
+    foreach operation {section projection} {
+        if {[dict exists $payload $operation view_resource]} {dict set resources $operation [dict get $payload $operation view_resource]}
+    }
+    if {$mode in {section projection} && [datasetPublicationV2DictDefault [dict get $payload $mode] status {}] eq {not_requested}} {error "Planar $mode was not prepared; create a workflow for that operation"}
     if {$mode eq "projection"} {dict set resources projected_surface [dict get $payload projection surface_resource]}
     if {[dict get $payload accepted] ne {}} {dict set resources accepted [dict get $payload accepted view_resource]}
     foreach existing [viewerLayerIds $module $provider] {viewerLayerSet $module $provider $existing [dict merge [viewerLayerGet $module $provider $existing] {visible 0}]}
@@ -160,6 +175,7 @@ proc ::GX::native3DPlanarEditBegin {document mode} {
     variable ::GX::PlanarGeometry::edits;variable ::GX::PlanarGeometry::serial
     if {$mode ni {section projection}} {error {Choose section or projection}}
     set owner [_native3DPlanarOwner $document]
+    if {[datasetPublicationV2DictDefault [dict get $owner payload $mode] status {}] eq {not_requested}} {error "Planar $mode was not prepared; create a workflow for that operation"}
     if {[dict size [dict get $owner payload $mode definitions]]==0} {error {This projection has no editable source boundary; the complete projected surface remains available in the modern Viewer}}
     set token "planar-edit#[pid]-[incr serial]"
     if {[dict exists [dict get $owner payload] origin_workspace]} {native3DPlanarOriginValidate [dict get $owner payload origin_workspace]}

@@ -3,7 +3,8 @@
 namespace eval ::GX::ViewerDevelopmentWorkspace {variable debug;array set debug {request {} poll {} token {} sequence -1 generation 0 state IDLE frame 0 status {Debug admitted C++ source with real GDB/MI.} snapshot {} visible 1}}
 proc ::GX::ViewerDevelopmentWorkspace::debugMount {w} {
     variable debug
-    menu $w.menus.view -tearoff 0;$w.menus insert 2 cascade -label View -underline 0 -menu $w.menus.view
+    if {![winfo exists $w.menus.view]} {menu $w.menus.view -tearoff 0;$w.menus insert 2 cascade -label View -underline 0 -menu $w.menus.view}
+    if {[$w.menus.view index end] ne {none}} {$w.menus.view add separator}
     foreach {id label} {debug {Debugger toolbar} stack {Call Stack} variables Variables output {Build / runtime output} diagnostics Diagnostics} {
         set debug(show,$id) 1
         $w.menus.view add checkbutton -label $label -variable ::GX::ViewerDevelopmentWorkspace::debug(show,$id) -command [list ::GX::ViewerDevelopmentWorkspace::debugView $id]
@@ -30,6 +31,16 @@ proc ::GX::ViewerDevelopmentWorkspace::debugMount {w} {
         pack $w.bottom.$id.scroll -side right -fill y;pack $w.bottom.$id.tree -fill both -expand 1
         $w.bottom add $w.bottom.$id -text $title
     }
+    set vars $w.bottom.variables.tree
+    ttk::scrollbar $w.bottom.variables.horizontal -orient horizontal -command [list $vars xview]
+    $vars configure -xscrollcommand [list $w.bottom.variables.horizontal set]
+    pack $w.bottom.variables.horizontal -side bottom -fill x -before $vars
+    $vars configure -show {tree headings} -columns {type value}
+    $vars heading #0 -text Name;$vars column #0 -width 220 -minwidth 100 -stretch 1
+    $vars heading type -text Type;$vars heading value -text Value
+    bind $vars <<TreeviewOpen>> [list ::GX::ViewerDevelopmentWorkspace::debugVariableOpen $vars]
+    bind $vars <ButtonRelease-1> [list ::GX::ViewerDevelopmentWorkspace::debugVariableClick $vars %x %y]
+    bind $vars <space> {::GX::ViewerDevelopmentWorkspace::debugVariableToggle .gxViewerDevelopment.bottom.variables.tree [.gxViewerDevelopment.bottom.variables.tree focus];break}
     bind $w.bottom.stack.tree <<TreeviewSelect>> ::GX::ViewerDevelopmentWorkspace::debugFrame
     ttk::label $w.debugstatus -textvariable ::GX::ViewerDevelopmentWorkspace::debug(status) -anchor w -padding 4
     pack $w.debugstatus -after $w.debugbar -fill x
@@ -116,13 +127,94 @@ proc ::GX::ViewerDevelopmentWorkspace::debugRender {snapshot} {
         set level [dict get $frame level]
         $stack insert {} end -id frame$level -values [list $level [dict get $frame func] [file tail [::GX::datasetPublicationV2DictDefault $frame file {}]] [::GX::datasetPublicationV2DictDefault $frame line {}]]
     }
-    set vars .gxViewerDevelopment.bottom.variables.tree;$vars delete [$vars children {}]
-    foreach local [::GX::datasetPublicationV2DictDefault $snapshot locals {}] {$vars insert {} end -values [list [dict get $local name] [::GX::datasetPublicationV2DictDefault $local type {}] [::GX::datasetPublicationV2DictDefault $local value {not available}]]}
+    debugVariablesRender $snapshot
     # Rows arrive asynchronously after the empty inspector was constructed.
     # Reuse the common font-aware table owner once the actual values exist.
     ::GX::uiFieldInspectionColumnsSchedule $stack
-    ::GX::uiFieldInspectionColumnsSchedule $vars
+    ::GX::uiFieldInspectionColumnsSchedule .gxViewerDevelopment.bottom.variables.tree {recursive 1 fill {#0 value}}
     debugButtons
+}
+# Real GDB variable objects are opaque identities, never author expressions.
+# The owner renews inspection_id on every stop, frame change and continuation.
+proc ::GX::ViewerDevelopmentWorkspace::debugVariablesRender {snapshot} {
+    variable debug
+    set tree .gxViewerDevelopment.bottom.variables.tree
+    set inspection [::GX::datasetPublicationV2DictDefault $snapshot inspection_id -1]
+    set same [expr {[info exists debug(variableInspection)] && $debug(variableInspection) eq $inspection && $debug(state) eq {PAUSED}}]
+    set open {};set selection [$tree selection];set itemFocus [$tree focus];set view [$tree yview]
+    if {$same} {foreach id [debugVariableItems $tree {}] {if {[$tree item $id -open]} {lappend open $id}}}
+    $tree delete [$tree children {}]
+    set debug(variableInspection) $inspection
+    set debug(variableNodes) [::GX::datasetPublicationV2DictDefault $snapshot variable_nodes {}]
+    set ordinal 0
+    if {$debug(state) eq {PAUSED}} {
+        foreach local [::GX::datasetPublicationV2DictDefault $snapshot locals {}] {
+            if {[dict exists $local node_id]} {
+                debugVariableInsert $tree {} $local $debug(variableNodes) $open
+            } else {
+                $tree insert {} end -id unresolved[incr ordinal] -text [dict get $local name] -values [list [::GX::datasetPublicationV2DictDefault $local type {}] [::GX::datasetPublicationV2DictDefault $local value {not available}]]
+            }
+        }
+    }
+    foreach id $selection {if {[$tree exists $id]} {$tree selection add $id}}
+    if {$same && $itemFocus ne {}} {
+        if {![$tree exists $itemFocus] && [regexp {^page:(.+):[0-9]+$} $itemFocus -> parent] && [$tree exists $parent]} {
+            set itemFocus $parent
+            $tree selection set $parent
+        }
+        if {[$tree exists $itemFocus]} {$tree focus $itemFocus}
+    }
+    if {$same && [llength $view]} {$tree yview moveto [lindex $view 0]}
+}
+proc ::GX::ViewerDevelopmentWorkspace::debugVariableItems {tree parent} {
+    set items {}
+    foreach id [$tree children $parent] {lappend items $id {*}[debugVariableItems $tree $id]}
+    return $items
+}
+proc ::GX::ViewerDevelopmentWorkspace::debugVariableInsert {tree parent record nodes open} {
+    set id [dict get $record node_id]
+    set value [dict get $record value]
+    if {[dict exists $record children_error]} {append value " — [dict get $record children_error]"}
+    $tree insert $parent end -id $id -text [dict get $record name] -values [list [dict get $record type] $value] -open [expr {$id in $open}]
+    foreach child [dict get $record children] {
+        if {[dict exists $nodes $child]} {debugVariableInsert $tree $id [dict get $nodes $child] $nodes $open}
+    }
+    if {[dict get $record child_count]>[dict get $record loaded_count]} {
+        set offset [dict get $record loaded_count]
+        if {$offset==0} {
+            $tree insert $id end -id placeholder:$id -text {Expand to inspect actual members}
+        } else {
+            $tree insert $id end -id page:$id:$offset -text "Load next members… ($offset of [dict get $record child_count] retrieved)"
+        }
+    }
+}
+proc ::GX::ViewerDevelopmentWorkspace::debugVariableClick {tree x y} {
+    if {[string match *indicator* [$tree identify element $x $y]]} return
+    set id [$tree identify row $x $y]
+    if {$id ne {}} {debugVariableToggle $tree $id}
+}
+proc ::GX::ViewerDevelopmentWorkspace::debugVariableToggle {tree id} {
+    if {[string match page:* $id]} {debugVariableFetch [lindex [split $id :] 1];return}
+    if {$id eq {} || ![$tree exists $id] || ![llength [$tree children $id]]} return
+    set opening [expr {![$tree item $id -open]}]
+    $tree item $id -open $opening
+    if {$opening} {debugVariableFetch $id}
+}
+proc ::GX::ViewerDevelopmentWorkspace::debugVariableOpen {tree} {
+    set id [$tree focus]
+    if {$id ne {}} {debugVariableFetch $id}
+}
+proc ::GX::ViewerDevelopmentWorkspace::debugVariableFetch {id} {
+    variable debug;variable s
+    if {$debug(request) eq {} || $debug(state) ne {PAUSED} || ![dict exists $debug(variableNodes) $id]} return
+    set record [dict get $debug(variableNodes) $id]
+    if {[dict exists $record children_pending] || [dict exists $record children_error]} return
+    # A fetched node reopens from its retained children. Only the explicit page
+    # row asks for a further range; ordinary expand never dumps a large array.
+    if {[dict get $record loaded_count]>0 && ![string match page:* [.gxViewerDevelopment.bottom.variables.tree focus]]} return
+    if {$s(dirty)||[::GX::_viewerDevelopmentSnapshot $s(project)] ne $debug(snapshot)} {debugStop;error {Source changed; restart Debug}}
+    set json [format {{"operation":"children","source_sha256":"%s","node_id":%s,"inspection_id":%d,"offset":%d}} [dict get $debug(snapshot) source_sha256] [::GX::viewerDevelopmentJsonString $id] $debug(variableInspection) [dict get $record loaded_count]]
+    ::GX::viewerDevelopmentRequest debug_control $s(project) [list ::GX::ViewerDevelopmentWorkspace::debugControlled $debug(generation)] [dict create request_json $json debug_token $debug(token)]
 }
 proc ::GX::ViewerDevelopmentWorkspace::debugControl {operation {frame 0}} {
     variable debug;variable s

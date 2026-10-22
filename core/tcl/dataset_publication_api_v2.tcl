@@ -328,7 +328,7 @@ proc ::GX::datasetPublicationV2DeclareVariable {writer variableId spec} {
         if {[datasetPublicationV2DictDefault $spec axis_step 0] == 0.0} { error "axis_step must be non-zero" }
     }
     set normalized [dict create variable_id $variableId name [datasetPublicationV2DictDefault $spec name $variableId] canonical [datasetPublicationV2DictDefault $spec name $variableId] dtype $dtype rank $rank shape [join $shape {;}] maxshape [join $maxshape {;}] dimension_ids [join $dimensionIds {;}] coordinate_variable_ids [datasetPublicationV2DictDefault $spec coordinate_variable_ids ""] coordinate_role $coordinateRole axis_kind $axisKind axis_origin [datasetPublicationV2DictDefault $spec axis_origin ""] axis_step [datasetPublicationV2DictDefault $spec axis_step ""] axis_count [expr {$rank == 1 ? [lindex $shape 0] : ""}] component_ids [datasetPublicationV2DictDefault $spec component_ids ""] group_id [datasetPublicationV2DictDefault $spec group_id ""] unit [datasetPublicationV2DictDefault $spec unit ""] semantic_role [datasetPublicationV2DictDefault $spec semantic_role ""] value_kind [expr {$dtype eq "string" ? "text" : "number"}] chunks [datasetPublicationV2DictDefault $spec chunks ""]]
-    foreach field {display_label semantic_source value_format decimal_separator canonical_unit to_canonical from_canonical time_origin time_reference instrument_id instrument_channel} {
+    foreach field {display_label semantic_source semantic_reason value_format decimal_separator canonical_unit to_canonical from_canonical time_origin time_reference instrument_id instrument_channel} {
         set default ""
         if {$field eq "decimal_separator"} {set default .}
         if {$field eq "time_reference"} {set default elapsed}
@@ -337,7 +337,7 @@ proc ::GX::datasetPublicationV2DeclareVariable {writer variableId spec} {
     }
     if {[dict get $normalized decimal_separator] ni {. ,}} {error "Invalid decimal_separator for $variableId"}
     if {[dict get $normalized time_reference] ni {elapsed absolute}} {error "Invalid time_reference for $variableId"}
-    if {[dict get $normalized semantic_source] ni {user importer plugin inferred default}} {error "Invalid semantic_source for $variableId"}
+    if {[dict get $normalized semantic_source] ni {user importer plugin generator inferred default}} {error "Invalid semantic_source for $variableId"}
     if {[dict exists $spec value_kind]} {dict set normalized value_kind [dict get $spec value_kind]}
     if {[dict get $normalized value_kind] ni {number text elapsed_time}} {error "Invalid value_kind for $variableId"}
     if {$dtype eq "string" && [dict get $normalized value_kind] ne "text"} {error "String variable $variableId requires text value_kind"}
@@ -638,7 +638,7 @@ proc ::GX::datasetPublicationV2RegistryFields {writer sha integritySeconds} {
         lappend variables [dict get $variable name]; lappend units [dict get $variable unit]; lappend roles [dict get $variable semantic_role]
         set prefix "var${index}_"
         foreach {field value} [list variable_id $variableId enabled 1 source_column [expr {$provider eq "csv" ? $index : ""}] canonical_position $index original_header [dict get $variable name] canonical [dict get $variable name] unit [dict get $variable unit] semantic_role [dict get $variable semantic_role] value_kind [dict get $variable value_kind] dtype [dict get $variable dtype] rank [dict get $variable rank] shape [dict get $variable shape] dimension_ids [dict get $variable dimension_ids] coordinate_variable_ids [dict get $variable coordinate_variable_ids] coordinate_role [dict get $variable coordinate_role] axis_kind [dict get $variable axis_kind] axis_origin [dict get $variable axis_origin] axis_step [dict get $variable axis_step] axis_count [dict get $variable axis_count] component_ids [dict get $variable component_ids] group_id [dict get $variable group_id] storage_locator [dict get $variable storage_locator]] { lappend fields "${prefix}$field" $value }
-        foreach field {display_label semantic_source value_format decimal_separator canonical_unit to_canonical from_canonical time_origin time_reference instrument_id instrument_channel} {
+        foreach field {display_label semantic_source semantic_reason value_format decimal_separator canonical_unit to_canonical from_canonical time_origin time_reference instrument_id instrument_channel} {
             lappend fields "${prefix}$field" [dict get $variable $field]
         }
         set shape [datasetPublicationV2Shape [dict get $variable shape]]

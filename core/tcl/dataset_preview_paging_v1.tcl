@@ -56,14 +56,61 @@ proc ::GX::datasetPreviewTableSnapshot {session datasetId {maxRows ""} {maxColum
     }
     return [datasetPreviewPage $session $datasetId [dict create count [expr {min(1000,max(1,$maxRows))}] variable_ids $selected]]
 }
+proc ::GX::datasetPreviewTableCurrent {parent} {
+    variable datasetPreviewPageState
+    if {![info exists datasetPreviewPageState($parent)]} {return 0}
+    set state $datasetPreviewPageState($parent)
+    if {![catch {interactiveDocumentSessionToken} token] && [dict get $state session_token] eq $token} {return 1}
+    # Retain the accepted page as a previous-Session observation. In
+    # particular, a queued Go/Return must not read its old source after the
+    # active Session has changed.
+    $parent.status configure -text "Previous Session table ([file tail [dict get $state session]] / [dict get $state dataset_id]). Reopen the table from the active Session."
+    foreach control {previous next go row} {
+        if {[winfo exists $parent.nav.$control]} {$parent.nav.$control configure -state disabled}
+    }
+    return 0
+}
+proc ::GX::datasetPreviewTableCatalogChanged {parent receipt} {
+    if {[winfo exists $parent.tree]} {datasetPreviewTableCurrent $parent}
+}
+proc ::GX::datasetPreviewTableCopy {parent {section data}} {
+    variable datasetPreviewPageState
+    if {![info exists datasetPreviewPageState($parent)] || ![winfo exists $parent.tree]} {return 0}
+    if {![datasetPreviewTableCurrent $parent]} {return 0}
+    set state $datasetPreviewPageState($parent)
+    # Copy the retained observation only while its existing scientific source
+    # identity is current. Never silently copy a previous Session/schema/source.
+    if {![dict exists $state copy_source_identity] ||
+        [catch {datasetViewerScientificIdentity [dict get $state dataset_id]} identity] ||
+        $identity ne [dict get $state copy_source_identity]} {
+        $parent.status configure -text {Dataset source changed or is unavailable. Refresh or reopen the table before copying.}
+        return 0
+    }
+    set tree [expr {$section eq {schema} ? "$parent.schema.tree" : "$parent.tree"}]
+    if {![llength [$tree selection]]} {
+        $parent.status configure -text {Select one or more table rows to copy.}
+        return 0
+    }
+    if {[catch {uiFieldComponentTableCopy $tree} count]} {
+        $parent.status configure -text "Unable to copy selected rows: $count"
+        return 0
+    }
+    if {$count>0} {$parent.status configure -text "Copied $count selected data row(s)."}
+    return $count
+}
 proc ::GX::datasetPreviewTableRefresh {parent {delta 0}} {
     variable datasetPreviewPageState
+    if {![datasetPreviewTableCurrent $parent]} {return 0}
     set state $datasetPreviewPageState($parent)
     set start [expr {max(0,[dict get $state start]+$delta*[dict get $state count])}]
-    if {[catch {set page [datasetPreviewPage [dict get $state session] [dict get $state dataset_id] [dict create start $start count [dict get $state count] variable_ids [dict get $state variable_ids]]]} reason]} {
+    if {[catch {
+        set page [datasetPreviewPage [dict get $state session] [dict get $state dataset_id] [dict create start $start count [dict get $state count] variable_ids [dict get $state variable_ids]]]
+        set copyIdentity [datasetViewerScientificIdentity [dict get $state dataset_id]]
+    } reason]} {
         $parent.status configure -text $reason
         return 0
     }
+    if {![datasetPreviewTableCurrent $parent]} {return 0}
     if {![dict get $page available]} {$parent.status configure -text [dict get $page reason];return 0}
     $parent.tree delete [$parent.tree children {}]
     set ids {};foreach column [dict get $page columns] {lappend ids [dict get $column variable_id]}
@@ -103,11 +150,54 @@ proc ::GX::datasetPreviewTableRefresh {parent {delta 0}} {
     $parent.nav.next configure -state [expr {[dict get $page has_next] ? "normal" : "disabled"}]
     dict set state start $start
     dict set state header_signatures $headers
+    dict set state page $page
+    dict set state copy_source_identity $copyIdentity
     set datasetPreviewPageState($parent) $state
+    datasetPreviewTableSchemaRefresh $parent $page
     return 1
+}
+proc ::GX::datasetPreviewTableSchemaRefresh {parent page} {
+    set tree $parent.schema.tree
+    $tree delete [$tree children {}]
+    foreach column [dict get $page columns] {
+        set values {}
+        foreach key {variable_id label dtype value_kind unit semantic_role shape} {
+            set value [datasetPublicationV2DictDefault $column $key {}]
+            if {$value eq {}} {set value {(not declared)}}
+            lappend values $value
+        }
+        $tree insert {} end -id [dict get $column variable_id] -values $values
+    }
+    $parent.schema.caption configure -text "Declared variable schema: [dict get $page selected_variable_count] displayed columns of [dict get $page total_variable_count]. Empty metadata is shown as not declared."
+    uiFieldInspectionColumnsSchedule $tree
+}
+proc ::GX::datasetPreviewTableSchemaToggle {parent} {
+    if {[winfo manager $parent.schema] eq {}} {
+        grid $parent.schema -row 4 -column 0 -columnspan 2 -sticky nsew -pady 4
+        $parent.nav.schema configure -text {Hide column details}
+        uiFieldInspectionColumnsSchedule $parent.schema.tree
+    } else {
+        grid remove $parent.schema
+        $parent.nav.schema configure -text {Column details}
+    }
+}
+# The same bounded page and declared schema back both standalone and embedded
+# consultation. This is an observation, not a second schema/data authority.
+proc ::GX::datasetPreviewTableInspect {parent} {
+    variable datasetPreviewPageState
+    if {![info exists datasetPreviewPageState($parent)] || ![winfo exists $parent.tree]} {error {Unknown or closed table consultation}}
+    set state $datasetPreviewPageState($parent)
+    if {![dict exists $state page]} {return [dict create status unavailable read_only 1]}
+    if {![datasetPreviewTableCurrent $parent]} {
+        return [dict merge [dict get $state page] [dict create status unavailable read_only 1 current 0 reason {Previous Session table; reopen from the active Session} selected_source_rows {} schema_visible [expr {[winfo manager $parent.schema] ne {}}]]]
+    }
+    set selected {}
+    foreach item [$parent.tree selection] {lappend selected [$parent.tree item $item -text]}
+    return [dict merge [dict get $state page] [dict create status ready read_only 1 selected_source_rows $selected schema_visible [expr {[winfo manager $parent.schema] ne {}}]]]
 }
 proc ::GX::datasetPreviewTableGoto {parent} {
     variable datasetPreviewPageState;variable datasetPreviewGoto
+    if {![datasetPreviewTableCurrent $parent]} return
     if {![string is entier -strict $datasetPreviewGoto($parent)] || $datasetPreviewGoto($parent)<1} {$parent.status configure -text "Enter a positive source row number";return}
     set before $datasetPreviewPageState($parent)
     dict set datasetPreviewPageState($parent) start [expr {$datasetPreviewGoto($parent)-1}]
@@ -125,6 +215,8 @@ proc ::GX::datasetPreviewCreateTable {parent session datasetId {variableIds {}}}
     ttk::frame $parent
     ttk::label $parent.status -wraplength 650
     ttk::treeview $parent.tree -show {tree headings} -selectmode extended
+    bind $parent.tree <Control-c> "[list ::GX::datasetPreviewTableCopy $parent];break"
+    bind $parent.tree <Control-C> "[list ::GX::datasetPreviewTableCopy $parent];break"
     ttk::scrollbar $parent.vertical -orient vertical -command [list $parent.tree yview]
     ttk::scrollbar $parent.horizontal -orient horizontal -command [list $parent.tree xview]
     $parent.tree configure -yscrollcommand [list $parent.vertical set] -xscrollcommand [list $parent.horizontal set]
@@ -135,22 +227,45 @@ proc ::GX::datasetPreviewCreateTable {parent session datasetId {variableIds {}}}
     set datasetPreviewGoto($parent) 1
     ttk::entry $parent.nav.row -width 12 -textvariable ::GX::datasetPreviewGoto($parent)
     ttk::button $parent.nav.go -text "Go" -command [list ::GX::datasetPreviewTableGoto $parent]
+    ttk::button $parent.nav.schema -text {Column details} -command [list ::GX::datasetPreviewTableSchemaToggle $parent]
     bind $parent.nav.row <Return> [list ::GX::datasetPreviewTableGoto $parent]
-    pack $parent.nav.previous $parent.nav.next $parent.nav.label $parent.nav.row $parent.nav.go -side left -padx 5 -pady 5
+    pack $parent.nav.previous $parent.nav.next $parent.nav.label $parent.nav.row $parent.nav.go $parent.nav.schema -side left -padx 5 -pady 5
     bind $parent.nav <Configure> [list ::GX::uiFieldControlsLayout $parent.nav %w]
+    ttk::frame $parent.schema
+    ttk::label $parent.schema.caption -wraplength 650
+    ttk::treeview $parent.schema.tree -show headings -columns {variable_id label dtype value_kind unit semantic_role shape} -height 4 -selectmode browse
+    foreach {key title} {variable_id {Variable ID} label Label dtype Type value_kind {Value kind} unit Unit semantic_role {Semantic role} shape Shape} {
+        $parent.schema.tree heading $key -text $title
+        $parent.schema.tree column $key -width 140 -minwidth 90 -stretch 0
+    }
+    ttk::scrollbar $parent.schema.vertical -command [list $parent.schema.tree yview]
+    ttk::scrollbar $parent.schema.horizontal -orient horizontal -command [list $parent.schema.tree xview]
+    $parent.schema.tree configure -yscrollcommand [list $parent.schema.vertical set] -xscrollcommand [list $parent.schema.horizontal set]
+    bind $parent.schema.tree <Control-c> "[list ::GX::datasetPreviewTableCopy $parent schema];break"
+    bind $parent.schema.tree <Control-C> "[list ::GX::datasetPreviewTableCopy $parent schema];break"
+    grid $parent.schema.caption -row 0 -column 0 -columnspan 2 -sticky ew
+    grid $parent.schema.tree -row 1 -column 0 -sticky nsew
+    grid $parent.schema.vertical -row 1 -column 1 -sticky ns
+    grid $parent.schema.horizontal -row 2 -column 0 -sticky ew
+    grid columnconfigure $parent.schema 0 -weight 1
+    grid rowconfigure $parent.schema 1 -weight 1
     grid $parent.status -row 0 -column 0 -columnspan 2 -sticky ew -pady 6
     grid $parent.tree -row 1 -column 0 -sticky nsew
     grid $parent.vertical -row 1 -column 1 -sticky ns
     grid $parent.horizontal -row 2 -column 0 -sticky ew
     grid $parent.nav -row 3 -column 0 -columnspan 2 -sticky ew
     grid rowconfigure $parent 1 -weight 1;grid columnconfigure $parent 0 -weight 1
-    set datasetPreviewPageState($parent) [dict create session $session dataset_id $datasetId variable_ids $variableIds start 0 count 100]
+    set datasetPreviewPageState($parent) [dict create session $session session_token [interactiveDocumentSessionToken] dataset_id $datasetId variable_ids $variableIds start 0 count 100]
+    dict set datasetPreviewPageState($parent) subscription [datasetCatalogSubscribe [list ::GX::datasetPreviewTableCatalogChanged $parent]]
     bind $parent <Destroy> +[list ::GX::datasetPreviewTableCleanup $parent %W]
     datasetPreviewTableRefresh $parent
     return $parent
 }
 proc ::GX::datasetPreviewTableCleanup {parent widget} {
     if {$widget ne $parent} return
+    if {[info exists ::GX::datasetPreviewPageState($parent)] && [dict exists $::GX::datasetPreviewPageState($parent) subscription]} {
+        datasetCatalogUnsubscribe [dict get $::GX::datasetPreviewPageState($parent) subscription]
+    }
     catch {unset ::GX::datasetPreviewPageState($parent)}
     catch {unset ::GX::datasetPreviewGoto($parent)}
 }

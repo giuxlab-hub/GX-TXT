@@ -1,0 +1,95 @@
+{
+  "schema": "gxtxt.session_generator.compatibility.v1",
+  "api": "SESSION_GENERATOR_LIBRARY_API_v1",
+  "version": 1,
+  "source_owner_sha256": "33f3010c0366e5273135868fabd6498abf9a12d3f013d8aaa847c6bd75f4dae7",
+  "public_Tcl_argument_lists_unchanged": {
+    "sessionGeneratorRegistryLoad": "{}",
+    "sessionGeneratorLibraryIds": "{{enabledOnly 1}}",
+    "sessionGeneratorLibraryInfo": "{id}",
+    "sessionGeneratorListGenerators": "{libraryId}",
+    "sessionGeneratorGeneratorInfo": "{libraryId generatorId}",
+    "sessionGeneratorInstallLibrary": "{source}",
+    "sessionGeneratorExportLibrary": "{libraryId output}",
+    "sessionGeneratorCreateLibrary": "{name {description \"\"} {version \"1.0.0\"} {author \"\"} {libraryId \"\"}}",
+    "sessionGeneratorUpdateLibraryMetadata": "{libraryId name description version author}",
+    "sessionGeneratorRemoveLibrary": "{libraryId}",
+    "sessionGeneratorImportGenerator": "{source libraryId}",
+    "sessionGeneratorExportGenerator": "{libraryId generatorId output}",
+    "sessionGeneratorAddGeneratorToLibrary": "{sourceLibraryId generatorId destinationLibraryId}",
+    "sessionGeneratorRemoveGenerator": "{libraryId generatorId}",
+    "sessionGeneratorGenerate": "{libraryId generatorId sessionRoot sessionName}"
+  },
+  "backend_implementation": "Exact bytes preceding New Session generator browser section unchanged from e351332; checksum in referenced receipt.",
+  "bundled_generator_trees_unchanged": {
+    "session_generator_libraries": "d4cb56fa01f075335b0adcc7cbfcb2c74ea5a7dd",
+    "session_generator_packages": "add29a84b2244d60264244371055de3a86c2db68"
+  },
+  "shared_GUI_reuse": [
+    "uiFieldComponentCreate: section/panel/splitter/tabs/log/action/combobox/table/entry",
+    "uiFieldInspectionColumnsFit: native tree column recursive measurement/fill",
+    "uiFieldControlsLayout: actual-size action wrapping",
+    "uiFieldWindowFit: native screen fit"
+  ],
+  "local_presentation_state": "Existing New Session owner remembers stable registry specifications, selection/expansion/scroll/focus and separate mode sash ratios. No competing widget/layout service.",
+  "Viewer_registration_added": false,
+  "new_API_family_or_SDK_admission": false,
+  "scientific_backend_changed": false,
+  "Help_linkage": {
+    "indexed_API": "Help API references / SESSION_GENERATOR_LIBRARY_API_v1",
+    "link": "../session_generator_dev109/USER_GUIDE.md",
+    "renderer": "existing documentationBrowserFollow permits md/markdown/txt; existing manual PNG callback uses docs asset root",
+    "HTML": "offline normal-browser edition, not advertised as directly rendered by Help",
+    "native_link_review": {
+      "status": "PASS_BOUNDED_DOCUMENTATION_HELP_REVIEW_ONLY",
+      "checks_passed": 22,
+      "receipt": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/GUIDE_REVIEW02/REVIEW.json",
+      "sha256": "ac8bb4b09ad21299e03cd12f016c8608605ad5023166277d178713f0d6b86496",
+      "review_commit": "1774fe6d9db675d8f84630b68f24a5f9e8b00954",
+      "all_reviewed_source_docs_images_unchanged": true
+    }
+  },
+  "MAIN_family_acceptance": {
+    "authority": "MAIN",
+    "status": "MAIN_ACCEPTED_SEVEN_CRITERION_SESSION_GENERATOR_BROWSER_FAMILY",
+    "utc": "2026-10-21T04:15:45.787784+00:00",
+    "receipt": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/MAIN_FAMILY_ACCEPTANCE87.json",
+    "sha256": "69e24c09bb11406cb7f35028f563747192607981ba7876a3c056af6edad687e8",
+    "criteria": [
+      "SESSION-GEN-BROWSER-01",
+      "SESSION-GEN-BROWSER-02",
+      "SESSION-GEN-BROWSER-03",
+      "SESSION-GEN-BROWSER-04",
+      "SESSION-GEN-BROWSER-05",
+      "SESSION-GEN-BROWSER-06",
+      "SESSION-GEN-BROWSER-07"
+    ],
+    "source_owner_sha256": "33f3010c0366e5273135868fabd6498abf9a12d3f013d8aaa847c6bd75f4dae7",
+    "MAIN_integrated_commits": [
+      "b6a3c24",
+      "24dbbdd",
+      "facbe2e",
+      "52cc619",
+      "349a5ac",
+      "619b162",
+      "30c5b09"
+    ],
+    "scope": "Seven mandatory SESSION-GEN-BROWSER criteria only; full workstream6 and all15 release/deposition remain OPEN; no new generator/backend/Viewer registration or public ABI.",
+    "basis": {
+      "browser_independent_native_checks": 25,
+      "MAIN_own_native_and_genuine_generation": "/srv/gxtxt/checkpoints/dev109/session_generator_main53/GENERATION_MAIN_VERIFIED.json",
+      "scoped_root_signoff": "/srv/gxtxt/checkpoints/dev109/checkpoint48/SESSION_GENERATOR_SCOPED_ACCEPTANCE.json",
+      "native_Help_independent_checks": 22,
+      "MAIN_Help_seal_recheck": "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/GUIDE_REVIEW02/MAIN_RECHECK87.json",
+      "all13_reviewed_affected_source_doc_helper_image_pins_match_current_MAIN": true,
+      "MAIN_personally_viewed_actual_Help": "03_guide_top_browser.png"
+    },
+    "related_receipts": {
+      "/srv/gxtxt/checkpoints/dev109/core_specialist_session_generator01/GUIDE_REVIEW02/MAIN_RECHECK87.json": "f9c3dc5750afc44b7abd85c268f12ad0c3d5c5dfa136a3205409eed5fef80cdc",
+      "/srv/gxtxt/checkpoints/dev109/checkpoint48/SESSION_GENERATOR_SCOPED_ACCEPTANCE.json": "da3b5ed2a8cbb321c01cd68fe9e1d92826ac13ea913e0d77f178d7508c9db4a6"
+    },
+    "reconciliation": "Documentation status/provenance only. Existing native evidence and reviewed byte pins remain historical, unchanged receipts; no native checks rerun for these appended notes."
+  },
+  "whole_workstream6_accepted": false,
+  "full15_release_accepted": false
+}

@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Read-only consultation of canonical identities; no publication/write callback.
 namespace eval ::GX::DatasetViewer {variable serial 0;variable state;variable previewImage {};variable previewJob {}}
+proc ::GX::datasetViewerApiInfo {} {
+    return [dict create api_id DATASET_VIEWER_API_v1 api_version 1 host_only 1 operations {datasetViewerDescribe datasetViewerOpen datasetViewerOpenMolecule datasetMediaViewerOpenResource datasetMediaViewerInspect} host_arguments [dict create datasetViewerDescribe {datasetId} datasetViewerOpen {datasetId} datasetViewerOpenMolecule {datasetId} datasetMediaViewerOpenResource {reference {title {Managed Document PDF}}} datasetMediaViewerInspect {owner}] result_contract [dict create datasetViewerDescribe {Canonical Dataset contract, format, target, read_only and revision metadata; no publication.} datasetViewerOpen {Existing registered canonical Dataset viewer owner; geometry.sketch retains its editing viewer.} datasetViewerOpenMolecule {Existing enabled Molecule Viewer opened with the exact canonical molecular.structure Dataset ID; no source conversion or implicit publication. Its ordinary Open 3D structure action provides chemical representations and conformers.} datasetMediaViewerOpenResource {Opaque shared managed-PDF reader owner; validates current Document, generation, Session and PDF resource bytes. No Dataset is created.} datasetMediaViewerInspect {Read-only public PDF receipt; managed source identifies Document/resource without Dataset ID, child process IDs or native control coordinates.}] profiles [dict create molecular_structure [dict create contract molecular.structure module_id viewer.molecule_3d viewer_id molecule_3d implicit_publication 0] managed_document_pdf [dict create source_kind managed_resource format pdf title_default {Managed Document PDF} runtime_owner existing_dataset_media_reader implicit_publication 0]]]
+}
 proc ::GX::datasetViewerDescribe {datasetId} {
     set payload [sessionInspectionDatasetPayload $datasetId]
     set contract [datasetField $datasetId contract [datasetField $datasetId kind {}]]
@@ -29,6 +32,23 @@ proc ::GX::datasetViewerOpen {datasetId} {
         default {return [datasetConsultationOpen $datasetId $info]}
     }
 }
+proc ::GX::_datasetViewerMoleculeAvailable {id} {
+    if {[datasetField $id contract [datasetField $id kind {}]] ne {molecular.structure}} {return 0}
+    if {[moduleField viewer.molecule_3d descriptor {}] eq {}} {return 0}
+    if {[catch {set available [viewerProviderEnabled viewer.molecule_3d molecule_3d]}]} {return 0}
+    return $available
+}
+proc ::GX::datasetViewerOpenMolecule {id} {
+    set info [datasetViewerDescribe $id]
+    if {[dict get $info contract] ne {molecular.structure}} {error {Open in Molecule Viewer requires a canonical molecular.structure Dataset; numerical XYZ data use their scientific Preview.}}
+    if {![_datasetViewerMoleculeAvailable $id]} {error {Molecule Viewer is unavailable or disabled. Enable its installed Viewer provider to inspect this molecular Dataset.}}
+    return [viewerOpen viewer.molecule_3d molecule_3d [dict create dataset_id $id]]
+}
+proc ::GX::datasetPreviewOpenMoleculeCurrent {} {
+    lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] mode id
+    if {$mode ne {imported} || $id eq {}} {error {Activate an imported canonical molecular Dataset first.}}
+    return [datasetViewerOpenMolecule $id]
+}
 proc ::GX::datasetPreviewOpenCurrent {} {
     lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] mode id
     if {$mode ne "imported"||$id eq {}} {error {Activate an imported canonical Dataset. Pending sources support Preview only.}}
@@ -39,6 +59,15 @@ proc ::GX::datasetPreviewUpdateOpenButton {} {
     if {![winfo exists $w]} return
     lassign [datasetInspectionParseChoice $::GX::variableDatasetChoice] mode id
     $w state [expr {$mode eq "imported"&&$id ne {}?"!disabled":"disabled"}]
+    set molecule .top.nb.channels.browser.molecule
+    if {![winfo exists $molecule]} {
+        ttk::button $molecule -text {Open in Molecule Viewer} -command [list ::GX::datasetPageAction datasetPreviewOpenMoleculeCurrent]
+        native2DViewportTooltip $molecule {Open this same canonical molecular Dataset in Molecule Viewer, then use Open 3D structure for chemical styles and conformers.}
+    }
+    if {$mode eq {imported} && $id ne {} && [datasetField $id contract [datasetField $id kind {}]] eq {molecular.structure}} {
+        $molecule state [expr {[_datasetViewerMoleculeAvailable $id]?{!disabled}:{disabled}}]
+        pack $molecule -side top -fill x -padx 3 -pady 3 -before .top.nb.channels.browser.current
+    } else {pack forget $molecule}
 }
 proc ::GX::scientificDatasetAxes {id} {
     set numeric {};set axes {};set values {}
@@ -54,28 +83,7 @@ proc ::GX::scientificDatasetAxes {id} {
     }
     return [dict create numeric $numeric x $x y $y]
 }
-proc ::GX::scientificDatasetDisplayScene {display} {
-    native2DEnsure
-    set scene [::GX::Native2D::core scene]
-    try {
-        set points [dict get $display points]
-        if {![llength $points]} {error {No finite X/Y pairs in the selected source.}}
-        set object [::GX::Native2D::core [expr {[llength $points]==1?"point":"add"}] $scene $points]
-        if {[dict exists $display breaks]} {::GX::Native2D::core set_breaks $scene $object [dict get $display breaks]}
-        ::GX::Native2D::core object_style $scene $object {color {0.04 0.35 0.65 1} line_width 2 marker 0}
-        ::GX::Native2D::core background $scene {1 1 1 1}
-        ::GX::Native2D::core grid $scene {visible 1 enabled 1}
-        # Independent scientific dimensions must not inherit calibrated geometry.
-        ::GX::Native2D::core aspect $scene auto
-        if {[dict exists $display full_bounds]} {scientificDatasetFitBounds $scene [list $display]} else {::GX::Native2D::core fit $scene}
-        _scientificDatasetGrid $scene
-        return $scene
-    } on error {message options} {::GX::Native2D::core destroy $scene;return -options $options $message}
-}
-proc ::GX::_scientificDatasetGrid {scene} {
-    set plans [native2DAxisPlans $scene]
-    ::GX::Native2D::core grid $scene [dict create origin {0 0} spacing_x [dict get $plans x step] spacing_y [dict get $plans y step] major_interval 1]
-}
+
 proc ::GX::scientificDatasetPreview {datasetId xId yId output {member {}}} {
     set filters {}
     if {$member ne {}} {
@@ -88,15 +96,35 @@ proc ::GX::scientificDatasetPreview {datasetId xId yId output {member {}}} {
     return [dict merge [scientificDatasetPreviewFiltered $datasetId $xId $yId $output [list $filters]] [dict create dataset_id $datasetId x_variable_id $xId y_variable_id $yId]]
 }
 
+proc ::GX::datasetViewerMetadataIdentity {session id} {
+    # Public metadata is a map. Its writer may reorder keys while persisting
+    # framework preferences; retain exact values, including opaque list text.
+    set metadata [datasetMetadataRead $session $id]
+    set ordered {}
+    foreach key [lsort [dict keys $metadata]] {dict set ordered $key [dict get $metadata $key]}
+    return $ordered
+}
 proc ::GX::datasetViewerStamp {id path} {
     if {[datasetField $id storage_provider {}] eq "remote"} {return [list remote [datasetField $id remote_node_id] [datasetField $id remote_session_id] [datasetField $id remote_revision] [datasetVariableSchemaV3 $id]]}
     file stat $path stat
-    return [list [sessionInspectionDataset $id] [datasetVariableSchemaV3 $id] $stat(size) $stat(mtime) $stat(ctime) $stat(ino)]
+    # Coordinate and Preview preferences share the metadata resource, but only
+    # their framework bookkeeping may be acknowledged by an open host. Keep
+    # the public fields in the same source stamp so a provenance edit cannot
+    # leave the bound inspection snapshot silently current.
+    return [list [sessionInspectionDataset $id] [datasetVariableSchemaV3 $id] $stat(size) $stat(mtime) $stat(ctime) $stat(ino) [datasetMetadataRead $::GX::currentSession $id]]
 }
 proc ::GX::datasetViewerCheck {w} {
     variable ::GX::DatasetViewer::state
     if {![info exists state($w,identity)]} {error {Viewer is closed.}}
     if {$state($w,session) ne [interactiveDocumentSessionToken]} {error {Session changed; reopen this Dataset.}}
+    if {[info exists state($w,managedResource)]} {
+        # Retained Resource bytes can outlive deletion of their Document.
+        # A live preview still requires its original live Document owner.
+        set owner [interactiveDocumentRead $state($w,id)]
+        if {[dict get $owner generation] ne $state($w,managedOwnerGeneration)} {error {Document owner changed; reopen its PDF preview.}}
+        interactiveDocumentResourceInfo $state($w,managedResource)
+        return
+    }
     if {[info exists state($w,sourceCheck)]} {
         if {[uplevel #0 $state($w,sourceCheck)] ne $state($w,sourceKey)} {error {Native3D preview source/configuration changed; activate again.}}
     }
@@ -104,7 +132,18 @@ proc ::GX::datasetViewerCheck {w} {
     if {$current ne $state($w,stamp)} {
         # Scientific display policy may change without touching the source or
         # schema. Keep every other revision check, including filesystem identity.
-        if {![info exists state($w,coordinateContext)]||[scientificDatasetCoordinateSourceStamp $current] ne [scientificDatasetCoordinateSourceStamp $state($w,stamp)]} {error {Dataset revision changed; reopen it explicitly.}}
+        set verifiedProjection 0
+        if {[info exists state($w,sourceCheck)] && [info exists state($w,sourceScientificIdentity)]} {
+            # Prepared graph geometry need not have an XY coordinateContext.
+            # Its sourceCheck above and complete scientific identity must both
+            # remain exact before accepting bookkeeping-only metadata writes.
+            set verifiedProjection [expr {[datasetViewerScientificIdentity $state($w,id)] eq $state($w,sourceScientificIdentity)}]
+        }
+        # Filter controls persist framework preferences before the first Plot.
+        # The inspection host already binds the same canonical source then;
+        # its public metadata component above still rejects provenance edits.
+        set inspectedSource [info exists state($w,inspection)]
+        if {(![info exists state($w,coordinateContext)] && !$verifiedProjection && !$inspectedSource) || [scientificDatasetCoordinateSourceStamp $current] ne [scientificDatasetCoordinateSourceStamp $state($w,stamp)]} {error {Dataset revision changed; reopen it explicitly.}}
         set state($w,stamp) $current
     }
 }
@@ -113,14 +152,18 @@ proc ::GX::datasetViewerWatch {w} {
     if {![info exists state($w,id)]} return
     if {[info exists state($w,previewChoice)]&&$state($w,previewChoice) ne $::GX::variableDatasetChoice} {datasetViewerClose $w;return}
     if {[catch {datasetViewerCheck $w;scientificDatasetViewerCoordinateRefresh $w} reason]} {datasetViewerClose $w;setStatus $reason 100;return}
+    if {![info exists state($w,id)]} return
     set state($w,watch) [after 1000 [list ::GX::datasetViewerWatch $w]]
 }
 proc ::GX::datasetViewerClose {w} {
     variable ::GX::DatasetViewer::state
+    if {[info exists state($w,summaryTrace)]} {
+        foreach element {legend status} {trace remove variable state($w,$element) write $state($w,summaryTrace)}
+    }
     foreach timer {watch drawJob memberScan externalWatch prepareAfter} {if {[info exists state($w,$timer)]} {after cancel $state($w,$timer)}}
     if {[info exists state($w,job)]&&$state($w,job) ne {}} {catch {curveSourceCancel $state($w,job)}}
     if {[info exists state($w,source)]&&$state($w,source) ne {}} {curveSourceClose $state($w,source)}
-    if {[info exists state($w,scene)]&&$state($w,scene) ne {}} {::GX::Native2D::core destroy $state($w,scene)}
+    if {[info exists state($w,plotWidget)]&&$state($w,plotWidget) ne {}} {catch {::GX::PlotDatasetAPIv4::widgetDestroy $state($w,plotWidget)}}
     if {[info exists state($w,preparePipe)]} {
         fileevent $state($w,preparePipe) readable {};foreach pid [pid $state($w,preparePipe)] {
             if {[info exists state($w,prepareGroup)]} {catch {exec kill -TERM -- -$pid}} else {catch {exec kill -TERM -- $pid}}
@@ -158,37 +201,540 @@ proc ::GX::datasetViewerWindow {id title} {
     datasetViewerWatch $w
     return $w
 }
+# This is a read-only projection of the public authorities, not another schema
+# or metadata store. Keep their return strings intact for the advanced Raw view.
+# Structured projection only for the documented Object Origin v1 contract.
+# Values still come from public metadata; unknown records stay opaque in Raw.
+proc ::GX::scientificDatasetInspectionOriginProjection {origin} {
+    set rows {};set messages {};set limited 0;set visited 0
+    set queue [list [list [list {Dataset origin}] $origin 0]]
+    while {[llength $queue] && [llength $rows]<768} {
+        if {[incr visited]>2048} {set limited 1;break}
+        lassign [lindex $queue 0] path value depth
+        set queue [lrange $queue 1 end]
+        set relationship [join $path { / }]
+        if {[catch {dict get $value version} version] || $version ne {1} || $depth>64} {
+            lappend rows [list $relationship {Opaque origin record} $value]
+            lappend messages {Unrecognized or depth-limited origin records remain complete in Raw.}
+            continue
+        }
+        dict for {field item} $value {
+            if {$field in {parent events}} continue
+            if {[llength $rows]>=768} {set limited 1;break}
+            lappend rows [list $relationship $field $item]
+        }
+        if {[dict exists $value parent]} {
+            set parent [dict get $value parent]
+            if {[catch {dict size $parent}]} {
+                if {[llength $rows]<768} {lappend rows [list $relationship {Opaque parent} $parent]} else {set limited 1}
+                lappend messages {Malformed parent containers remain opaque; the complete value is available in Raw.}
+            } else {
+                dict for {key item} $parent {
+                    if {[llength $rows]>=768 || [llength $queue]>=768} {set limited 1;break}
+                    if {$key in {source_origin session_origin origin_snapshot}} {
+                        lappend queue [list [concat $path [list parent $key]] $item [expr {$depth+1}]]
+                    } elseif {$key eq {source_dataset_origins} && ![catch {dict size $item}]} {
+                        dict for {dataset child} $item {
+                            if {[llength $queue]>=768} {set limited 1;break}
+                            lappend queue [list [concat $path [list parent $key "Dataset: $dataset"]] $child [expr {$depth+1}]]
+                        }
+                    } else {
+                        lappend rows [list "$relationship / parent" $key $item]
+                        if {$key eq {source_dataset_origins}} {lappend messages {Malformed source-origin collections remain opaque in Raw.}}
+                    }
+                }
+            }
+        }
+        if {[dict exists $value events]} {
+            set events [dict get $value events]
+            if {[catch {llength $events}]} {
+                if {[llength $rows]<768} {lappend rows [list $relationship {Opaque events} $events]} else {set limited 1}
+                lappend messages {Malformed event containers remain opaque; the complete value is available in Raw.}
+            } else {
+                set index 0
+                foreach event $events {
+                    if {[incr visited]>2048} {set limited 1;break}
+                    incr index
+                    if {[llength $rows]>=768} {set limited 1;break}
+                    if {[catch {dict size $event}]} {lappend rows [list "$relationship / event $index" {Opaque event} $event];continue}
+                    dict for {key item} $event {
+                        if {[llength $rows]>=768} {set limited 1;break}
+                        lappend rows [list "$relationship / event $index" $key $item]
+                    }
+                }
+            }
+        }
+    }
+    if {[llength $queue] || $limited} {lappend messages {Structured inspection is limited to 768 rows and 2048 records; the complete published ancestry remains in Raw.}}
+    return [dict create rows $rows messages [lsort -unique $messages]]
+}
+proc ::GX::scientificDatasetInspectionSnapshot {id} {
+    set record [sessionInspectionDataset $id]
+    set variables [datasetVariableSchemaV3 $id]
+    set metadata [datasetMetadataRead $::GX::currentSession $id]
+    set notes [datasetUserNotes $id]
+    return [dict create record $record variables $variables metadata $metadata notes $notes]
+}
+proc ::GX::scientificDatasetInspectionSection {authority key} {
+    # Group only fields declared by the public record / origin / digitizer
+    # contracts. Arbitrary user keys are opaque, even if they sound scientific.
+    if {$authority eq {record}} {
+        if {$key in {source source_module producer_module producer_version source_dataset_ids source_variable_ids provenance source_raw source_header_rows source_delimiter}} {return {Sources and provenance}}
+        if {$key in {canonical_sha256 sha256 integrity_algorithm integrity_seconds publication_api_version canonical_access_api_version variable_schema_api_version created_at immutable structured_metadata_file structured_metadata_api_version structured_metadata_updated_at structured_metadata_revision}} {return {Integrity and publication}}
+        if {$key in {notes user_notes user_notes_file}} {return Notes}
+        if {$key in {variables columns units semantic_roles var_count} || [regexp {^var[0-9]+_} $key]} {return {Variable schema}}
+        if {$key in {id kind contract format storage_kind media_type path storage_provider storage_provider_version requested_storage_provider storage_selection_reason row_count sample_count display_name metadata_display_name}} {return {Identity and format}}
+    } else {
+        if {$key eq {origin.definition} || $key in {curve_digitizer.plugin_id curve_digitizer.plugin_version curve_digitizer.configuration_id curve_digitizer.configuration_document_id curve_digitizer.configuration_name curve_digitizer.source_dataset_id curve_digitizer.source_variable_id curve_digitizer.source_sha256}} {return {Sources and provenance}}
+        if {$key in {curve_digitizer.publication_timestamp curve_digitizer.publication_contract}} {return {Integrity and publication}}
+        if {$key in {curve_digitizer.manifest_version curve_digitizer.calibration_type curve_digitizer.calibration_id curve_digitizer.calibration_sha256 curve_digitizer.calibration_manifest curve_digitizer.calibration_measurements curve_digitizer.calibration_method curve_digitizer.measurement_count curve_digitizer.publication_measurement_id curve_digitizer.image_width curve_digitizer.image_height curve_digitizer.coordinate_origin curve_digitizer.y_direction curve_digitizer.physical_unit curve_digitizer.raster_geometry curve_digitizer.raster_geometry.source_to_calibration curve_digitizer.uncertainty curve_digitizer.uncertainty.pixel_sigma_px} || [regexp {^curve_digitizer\.(measurement\.[0-9]+\.(measurement_id|label|state|active|valid|calibration_id|calibration_sha256|calibration_type|corners_px|axes|scale_reference|transform\.(h[0-2][0-2]|[xy]_(minimum|maximum|scale|unit)))|transform\.(convention|raster_origin|pixel_reference|h[0-2][0-2]|scientific_h[0-2][0-2]|[xy]_(minimum|maximum|scale|unit))|calibration_method\.(type|point_selection|tick_reference|measurement_uncertainty)|scale_bar\.(pixel_length|physical_length|unit|display_unit|selection_method|start_[xy]|end_[xy]|edge_convention))$} $key]} {return Calibrations}
+        if {$key in {curve_digitizer.curve_schema_version curve_digitizer.family_unit curve_digitizer.family_label} || [string match {curve_digitizer.curve_column.*} $key]} {return {Variable schema}}
+    }
+    return {Other published fields}
+}
+proc ::GX::scientificDatasetInspectionCalibrationRows {manifest measurements} {
+    # Typed values from the existing public Calibration API only. Never parse
+    # the producer's JSON or reconstruct a map from names or image geometry.
+    set rows {};set authority {Calibration API v1}
+    foreach {key label} {dataset_id {Dataset ID} source_dataset_id {Source Dataset ID} source_sha256 {Recorded source SHA-256} configuration_id {Configuration ID} calibration_type Type calibration_id {Calibration ID} calibration_sha256 {Calibration SHA-256} image_width {Image width (pixels)} image_height {Image height (pixels)} coordinate_origin {Coordinate origin} y_direction {Y direction} physical_unit {Declared common physical unit} raster_pixel_mapping {Source pixel mapping}} {
+        if {[dict exists $manifest $key]} {lappend rows [list Calibrations $authority "Base calibration / $label" [dict get $manifest $key]]}
+    }
+    foreach axis {x y} {
+        foreach {key label} {minimum Minimum maximum Maximum scale Scale unit Unit} {
+            if {[dict exists $manifest transform ${axis}_axis $key]} {lappend rows [list Calibrations $authority "Scientific [string toupper $axis] / $label" [dict get $manifest transform ${axis}_axis $key]]}
+        }
+    }
+    foreach {key label} {convention Convention raster_origin {Raster origin} pixel_reference {Pixel reference} normalized_coordinates {Normalized coordinate convention} normalized_homography {Normalized homography} scientific_homography {Scientific homography}} {
+        if {[dict exists $manifest transform $key]} {lappend rows [list Calibrations $authority "Transform / $label" [dict get $manifest transform $key]]}
+    }
+    foreach {key label} {type Type point_selection {Point selection} tick_reference {Tick reference} measurement_uncertainty {Measurement uncertainty}} {
+        if {[dict exists $manifest calibration_method $key]} {lappend rows [list Calibrations $authority "Calibration method / $label" [dict get $manifest calibration_method $key]]}
+    }
+    foreach {key label} {pixel_length {Pixel length} physical_length {Physical length} unit Unit display_unit {Display unit} selection_method {Selection method} start_px {Start (pixels)} end_px {End (pixels)} edge_convention {Tick edge convention}} {
+        if {[dict exists $manifest scale_bar $key]} {lappend rows [list Calibrations $authority "Scale bar / $label" [dict get $manifest scale_bar $key]]}
+    }
+    set index 0
+    foreach measurement $measurements {
+        incr index
+        foreach {key label} {measurement_id ID label Label state State active Active valid Valid calibration_id {Calibration ID} calibration_sha256 {Calibration SHA-256} calibration_type Type} {
+            if {[dict exists $measurement $key]} {lappend rows [list Calibrations $authority "Measurement $index / $label" [dict get $measurement $key]]}
+        }
+    }
+    return $rows
+}
+proc ::GX::scientificDatasetInspectionRows {snapshot {calibration {}} {measurements {}}} {
+    set groups {}
+    if {$calibration ne {}} {
+        foreach row [scientificDatasetInspectionCalibrationRows $calibration $measurements] {dict lappend groups Calibrations $row}
+    }
+    foreach {source title} {record {Dataset record} metadata {Public metadata}} {
+        dict for {key value} [dict get $snapshot $source] {
+            set section [scientificDatasetInspectionSection $source $key]
+            dict lappend groups $section [list $section $title $key $value]
+        }
+    }
+    set rows {}
+    foreach section {{Identity and format} {Sources and provenance} {Variable schema} Calibrations {Integrity and publication} Notes {Other published fields}} {
+        if {[dict exists $groups $section]} {lappend rows {*}[dict get $groups $section]}
+    }
+    return $rows
+}
+proc ::GX::scientificDatasetInspectionText {widget text} {
+    if {![winfo exists $widget]} return
+    $widget configure -state normal
+    $widget delete 1.0 end
+    $widget insert 1.0 $text
+    $widget configure -state disabled
+}
+proc ::GX::scientificDatasetInspectionLog {parent text} {
+    uiFieldComponentCreate $parent.value log [dict create text $text height 7] {} {}
+    ttk::scrollbar $parent.scroll -command [list $parent.value yview]
+    $parent.value configure -yscrollcommand [list $parent.scroll set]
+    pack $parent.scroll -side right -fill y
+    pack $parent.value -fill both -expand 1
+}
+proc ::GX::scientificDatasetInspectionSelect {w kind tree} {
+    variable ::GX::DatasetViewer::state
+    if {![info exists state($w,inspection)] || ![winfo exists $tree]} return
+    if {[catch {datasetViewerCheck $w} message]} {set state($w,status) $message;return}
+    set selected [$tree selection]
+    if {![llength $selected]} return
+    set values [$tree item [lindex $selected 0] -values]
+    if {$kind eq {variables}} {
+        set variable [lindex [dict get $state($w,inspection) variables] [$tree index [lindex $selected 0]]]
+        set text {}
+        dict for {key value} $variable {append text "$key: $value\n"}
+    } elseif {$kind eq {ancestry}} {
+        lassign $values relationship field value
+        set text "$relationship\n$field\n\n$value"
+    } else {
+        lassign $values section authority field value
+        set text "$section\n$authority / $field\n\n$value"
+    }
+    scientificDatasetInspectionText $w.views.infoPage.$kind.detail.value $text
+}
+proc ::GX::scientificDatasetInspectionRaw {w} {
+    variable ::GX::DatasetViewer::state
+    if {![info exists state($w,inspection)] || ![winfo exists $w.views.infoPage.raw]} return
+    if {[catch {datasetViewerCheck $w} message]} {set state($w,status) $message;return}
+    set keys {record variables metadata notes}
+    set index [$w.views.infoPage.raw.source current]
+    if {$index<0} return
+    scientificDatasetInspectionText $w.views.infoPage.raw.content.value [dict get $state($w,inspection) [lindex $keys $index]]
+}
+proc ::GX::scientificDatasetInspectionBuild {w} {
+    variable ::GX::DatasetViewer::state
+    set state($w,inspection) [scientificDatasetInspectionSnapshot $state($w,id)]
+    set page $w.views.infoPage
+    uiFieldComponentCreate $page tabs {} {} {}
+    $w.views add $page -text {Schema and provenance}
+    foreach {name title} {variables Variables properties {Dataset and metadata} ancestry {Source ancestry} notes Notes raw {Raw (advanced)}} {
+        uiFieldComponentCreate $page.$name panel {} {} {}
+        $page add $page.$name -text $title
+    }
+    set v $page.variables
+    uiFieldComponentCreate $v.help label [dict create text {Canonical schema from the public API, including its defaults. Empty cells mean no value is supplied. Select a Variable for all fields; Ctrl+C copies selected rows.}] {} {}
+    pack $v.help -fill x -pady 4
+    uiFieldComponentCreate $v.table table [dict create columns {{Variable ID} Name dtype Unit {Semantic role} {Coordinate role} Rank Shape} scrollbars both] {} {}
+    set tree [uiFieldComponentTableWidget $v.table]
+    # Keep headings readable at narrow widths; the shared horizontal scrollbar
+    # exposes the remaining columns instead of shrinking each heading to 40px.
+    foreach column [$tree cget -columns] {
+        set width [expr {max(90,[font measure TkHeadingFont $column]+24)}]
+        $tree column $column -width $width -minwidth $width -stretch 0
+    }
+    $tree column Name -width 160 -minwidth 160 -stretch 1
+    foreach variable [dict get $state($w,inspection) variables] {
+        set values {}
+        foreach key {variable_id canonical dtype unit semantic_role coordinate_role rank shape} {
+            set value [datasetPublicationV2DictDefault $variable $key {}]
+            if {$key eq {canonical} && [datasetPublicationV2DictDefault $variable display_label {}] ne {}} {set value [dict get $variable display_label]}
+            lappend values $value
+        }
+        $tree insert {} end -values $values
+    }
+    pack $v.table -fill both -expand 1 -pady 4
+    uiFieldComponentCreate $v.detail section [dict create title {Selected Variable — all canonical fields}] {} {}
+    scientificDatasetInspectionLog $v.detail {Select a Variable above to inspect its complete canonical schema.}
+    pack $v.detail -fill both -expand 1
+    bind $tree <<TreeviewSelect>> [list ::GX::scientificDatasetInspectionSelect $w variables $tree]
+    set p $page.properties
+    set explanation {Published Dataset record and public metadata only. Field names are preserved; no provenance, calibration or integrity result is inferred. Select a row for its full wrapped value; Ctrl+C copies a single-line tabular row; copy complete multiline text from the detail below or Raw.}
+    set metadata [dict get $state($w,inspection) metadata];set calibration {};set measurements {}
+    if {[datasetPublicationV2DictDefault $metadata curve_digitizer.plugin_id {}] eq {viewer.curve_digitizer}} {
+        if {[catch {
+            modulePublicApiActivate viewer.curve_digitizer CURVE_DIGITIZER_CALIBRATION_API_v1
+            set calibration [::GX::CurveDigitizerCalibration::read $state($w,id)]
+        } reason]} {
+            append explanation "\nPublished calibration unavailable: $reason Exact metadata remains in Raw."
+        } else {
+            append explanation "\n" {Calibration rows use the validated public Calibration API v1 projection, including its documented defaults. Recorded identities and maps do not certify current source integrity, physical accuracy or quantified uncertainty. Original published JSON and all other fields remain complete in Raw.}
+            if {[catch {set measurements [::GX::CurveDigitizerCalibration::replicates $state($w,id)]} reason]} {append explanation "\nPublished calibration measurements unavailable: $reason"}
+        }
+    }
+    uiFieldComponentCreate $p.help label [dict create text $explanation] {} {}
+    pack $p.help -fill x -pady 4
+    uiFieldComponentCreate $p.table table [dict create columns {Section Authority Field Value} scrollbars both] {} {}
+    set tree [uiFieldComponentTableWidget $p.table]
+    $tree column Section -width 180 -stretch 0
+    $tree column Authority -width 120 -stretch 0
+    $tree column Field -width 230 -stretch 0
+    $tree column Value -width 400
+    foreach row [scientificDatasetInspectionRows $state($w,inspection) $calibration $measurements] {$tree insert {} end -values $row}
+    pack $p.table -fill both -expand 1 -pady 4
+    uiFieldComponentCreate $p.detail section [dict create title {Selected field — complete value}] {} {}
+    scientificDatasetInspectionLog $p.detail {Select a field above. Long paths, hashes and multiline values remain complete here and in Raw.}
+    pack $p.detail -fill both -expand 1
+    bind $tree <<TreeviewSelect>> [list ::GX::scientificDatasetInspectionSelect $w properties $tree]
+    set a $page.ancestry
+    set metadata [dict get $state($w,inspection) metadata]
+    set explanation {Recorded Object Origin v1 ancestry from the published snapshot. Creator, source and Session relationships describe declared lineage; they do not certify authorship or creation of physical measurements. Select a row for its complete value; exact original metadata remains in Raw.}
+    set rows {}
+    if {[dict exists $metadata origin.definition]} {
+        set projection [scientificDatasetInspectionOriginProjection [dict get $metadata origin.definition]]
+        set rows [dict get $projection rows]
+        foreach message [dict get $projection messages] {append explanation "\n$message"}
+    } else {append explanation {
+No origin.definition is published for this Dataset. No ancestry is inferred.}}
+    uiFieldComponentCreate $a.help label [dict create text $explanation] {} {}
+    pack $a.help -fill x -pady 4
+    uiFieldComponentCreate $a.table table [dict create columns {Relationship Field Value} scrollbars both] {} {}
+    set tree [uiFieldComponentTableWidget $a.table]
+    $tree column Relationship -width 300 -stretch 0
+    $tree column Field -width 180 -stretch 0
+    $tree column Value -width 350
+    foreach row $rows {$tree insert {} end -values $row}
+    pack $a.table -fill both -expand 1 -pady 4
+    uiFieldComponentCreate $a.detail section [dict create title {Selected ancestry field — complete value}] {} {}
+    scientificDatasetInspectionLog $a.detail {Select a recorded ancestry field above. Historical parent snapshots are displayed without reopening or replacing their sources.}
+    pack $a.detail -fill both -expand 1
+    bind $tree <<TreeviewSelect>> [list ::GX::scientificDatasetInspectionSelect $w ancestry $tree]
+    uiFieldComponentCreate $page.notes.help label [dict create text {Read-only user notes from the public Dataset notes API. Their original markup is preserved.}] {} {}
+    pack $page.notes.help -fill x -pady 4
+    ttk::frame $page.notes.content
+    scientificDatasetInspectionLog $page.notes.content [dict get $state($w,inspection) notes]
+    pack $page.notes.content -fill both -expand 1
+    set r $page.raw
+    uiFieldComponentCreate $r.help label [dict create text {Advanced: exact public API return values, not physical source-file bytes. Select a source, then select text and Ctrl+C to copy. No fields are rewritten or interpreted.}] {} {}
+    pack $r.help -fill x -pady 4
+    uiFieldComponentCreate $r.source combobox [dict create choices {{Dataset record — sessionInspectionDataset} {Variable schema — datasetVariableSchemaV3} {Public metadata — datasetMetadataRead} {User notes — datasetUserNotes}} width 38] ::GX::DatasetViewer::state($w,inspectionRaw) [list ::GX::scientificDatasetInspectionRaw $w]
+    pack $r.source -fill x -pady 4
+    ttk::frame $r.content
+    scientificDatasetInspectionLog $r.content {}
+    pack $r.content -fill both -expand 1
+    $r.source current 0
+    scientificDatasetInspectionRaw $w
+}
+proc ::GX::scientificDatasetViewerControlsLayout {w width} {
+    if {![winfo exists $w.views.plot.bar] || $width<2} return
+    set p $w.views.plot
+    set bar $p.bar
+    set available [expr {max(1,$width-16)}]
+    # Keep axis pairs and actions in separate semantic rows. Independent grid
+    # containers avoid one wide combo forcing every action into its own row.
+    set axesWidth 0
+    foreach child {xLabel x yLabel y} {pack forget $bar.$child;incr axesWidth [expr {[winfo reqwidth $bar.$child]+6}]}
+    set row 0;set column 0;set used 0
+    foreach axis {x y} {
+        set pair [expr {[winfo reqwidth $bar.${axis}Label]+[winfo reqwidth $bar.$axis]+12}]
+        if {$used && $used+$pair>$available} {incr row;set column 0;set used 0}
+        grid $bar.${axis}Label -in $bar.axes -row $row -column $column -sticky w -padx 3 -pady 2
+        incr column
+        grid $bar.$axis -in $bar.axes -row $row -column $column -sticky w -padx 3 -pady 2
+        incr column;incr used $pair
+    }
+    foreach row {0 1 2 3 4} {grid forget $bar.actions.row$row}
+    set actionsWidth 0;set row 0;set used 0
+    foreach child {plot fit cancel aspect details} {
+        pack forget $bar.$child
+        grid forget $bar.$child
+        set needed [expr {[winfo reqwidth $bar.$child]+6}]
+        incr actionsWidth $needed
+        if {$used && $used+$needed>$available} {incr row;set used 0}
+        # A later wide action must not widen an earlier row's grid columns.
+        # Each pre-created row owns only its actual requested button widths.
+        set master $bar.actions.row$row
+        grid $master -row $row -column 0 -sticky w
+        pack $bar.$child -in $master -side left -padx 3 -pady 2
+        incr used $needed
+    }
+    grid $bar.axes -row 0 -column 0 -sticky w
+    if {$axesWidth+$actionsWidth+12<=$available} {
+        grid $bar.actions -row 0 -column 1 -columnspan 1 -sticky w
+    } else {grid $bar.actions -row 1 -column 0 -columnspan 2 -sticky w}
+    $p.legend configure -wraplength [expr {max(120,$width-16)}]
+    $w.status configure -wraplength [expr {max(120,$width-16)}]
+    set series $p.series
+    foreach child {label variables filters} {pack forget $series.$child}
+    grid $series.label -row 0 -column 0 -sticky w -padx 4
+    grid $series.variables -row 1 -column 0 -sticky w -padx 4 -pady 3
+    if {$width>max([winfo reqwidth $series.variables],[winfo reqwidth $series.label])+max(420,[winfo reqwidth $series.filters])+32} {
+        grid $series.filters -row 0 -column 1 -rowspan 2 -columnspan 1 -sticky new -padx 8 -pady 4
+        grid columnconfigure $series 0 -weight 0
+        grid columnconfigure $series 1 -weight 1
+    } else {
+        grid $series.filters -row 2 -column 0 -rowspan 1 -columnspan 2 -sticky ew -padx 4 -pady 3
+        grid columnconfigure $series 0 -weight 1
+        grid columnconfigure $series 1 -weight 0
+    }
+}
+proc ::GX::scientificDatasetViewerAxisLabels {w {series @current} {context @current}} {
+    variable ::GX::DatasetViewer::state
+    if {![info exists state($w,plottedRequest)]} {return {}}
+    if {$series eq {@current}} {set series $state($w,series)}
+    if {$context eq {@current}} {set context [expr {[info exists state($w,coordinateContext)] ? $state($w,coordinateContext) : {}}]}
+    set ys [lindex $state($w,plottedRequest) 1]
+    if {[llength $series]} {set ys {};foreach item $series {set vid [dict get $item y];if {$vid ni $ys} {lappend ys $vid}}}
+    set ids [list [list [lindex $state($w,plottedRequest) 0]] $ys]
+    set labels {}
+    foreach axis {x y} variables $ids {
+        set names {};set unit {}
+        foreach vid $variables {
+            set variable [datasetVariableV3ById $state($w,id) $vid]
+            set name [datasetPublicationV2DictDefault $variable display_label {}]
+            if {$name eq {}} {set name [dict get $variable canonical]}
+            if {$name ni $names} {lappend names $name}
+            set unit [dict get $variable unit]
+            if {$context ne {}} {set unit [dict get [scientificDatasetCoordinateSettings $context $vid] display_unit]}
+        }
+        set label [join $names {, }]
+        if {$unit ne {}} {append label " ($unit)"}
+        dict set labels [format %s_label $axis] $label
+    }
+    return $labels
+}
+
+proc ::GX::scientificDatasetViewerSummary {w args} {
+    variable ::GX::DatasetViewer::state
+    if {![info exists state($w,id)] || ![winfo exists $w.views.plot.legend]} return
+    if {[catch {datasetViewerCheck $w} reason]} {
+        set state($w,axisSummary) {Source changed; reopen this Dataset.}
+        set state($w,compactStatus) $reason
+        return
+    }
+    set parts {}
+    foreach axis {x y} {
+        if {$state($w,$axis) eq {}} {lappend parts "[string toupper $axis]: choose a Variable";continue}
+        if {[catch {set v [datasetVariableV3ById $state($w,id) $state($w,$axis)]}]} continue
+        set label [datasetPublicationV2DictDefault $v display_label {}]
+        if {$label eq {}} {set label [dict get $v canonical]}
+        if {[dict get $v unit] ne {}} {append label " ([dict get $v unit])"}
+        lappend parts "[string toupper $axis]: $label"
+    }
+    set state($w,axisSummary) "Selected source variables — [join $parts {; }]"
+    set message $state($w,status)
+    if {[string first filter_variable_id $message]>=0} {
+        set message {Scientific point/series readout updated; open Selection details for complete values and predicates.}
+    } elseif {[string length $message]>180} {set message "[string range $message 0 176]…"}
+    set state($w,compactStatus) $message
+    if {[winfo exists $w.views.details] && [$w.views select] eq "$w.views.details"} {scientificDatasetViewerDetails $w 0}
+}
+proc ::GX::scientificDatasetViewerDetails {w {show 1}} {
+    variable ::GX::DatasetViewer::state
+    if {![info exists state($w,id)] || ![winfo exists $w.views.details]} return
+    if {[catch {datasetViewerCheck $w} message]} {set state($w,status) $message;return}
+    set text "Dataset: $state($w,id)\n\nCURRENT CONTROLS (select Plot to apply)\n"
+    foreach axis {x y} {append text "[string toupper $axis] Variable ID: $state($w,$axis)\n"}
+    append text "Additional Y Variable IDs: "
+    set overlays {};foreach index [$w.views.plot.series.variables curselection] {lappend overlays [lindex $state($w,numeric) $index]}
+    append text "$overlays\nGrouping Variable IDs: [datasetPublicationV2DictDefault $state($w,filters) @grouping {}]\nOrdering Variable ID: $state($w,ordering)\n\nCurrent row predicates (public filter contract):\n"
+    foreach predicate [scientificDatasetFilterSelectionPredicates $state($w,dimensions) $state($w,filters)] {
+        dict for {key value} $predicate {append text "  $key: $value\n"}
+        append text "\n"
+    }
+    if {[info exists state($w,plottedRequest)]} {
+        lassign $state($w,plottedRequest) x ys requests
+        append text "\nLAST PLOT REQUEST\nX Variable ID: $x\nY Variable IDs: $ys\n"
+        set index 0
+        foreach request $requests {
+            append text "\nSeries selection [incr index]:\n"
+            foreach predicate $request {dict for {key value} $predicate {append text "  $key: $value\n"};append text "\n"}
+        }
+    }
+    append text "\nCOMPLETE PLOT LEGEND\n$state($w,legend)\n\nCOMPLETE STATUS / POINT READOUT\n$state($w,status)"
+    scientificDatasetInspectionText $w.views.details.content.value $text
+    if {$show} {$w.views select $w.views.details}
+}
+
+# GUI adoption only. Interpretation and scientific controller ownership stay
+# with public Plot v4, never a parallel display-only Native2D scene.
+proc ::GX::scientificDatasetPlotRequire {} {
+    modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+    foreach operation {scientificModel widgetPointer widgetRetain} {
+        if {![llength [info commands ::GX::PlotDatasetAPIv4::$operation]]} {error "Installed Plot v4 lacks required scientific consultation operation $operation"}
+    }
+}
+proc ::GX::scientificDatasetViewerModel {w series context} {
+    variable ::GX::DatasetViewer::state
+    scientificDatasetPlotRequire
+    datasetViewerCheck $w
+    set records {};set index 0
+    foreach item $series {
+        set y [dict get $item y]
+        set variable [datasetVariableV3ById $state($w,id) $y]
+        set label [datasetPublicationV2DictDefault $variable display_label [dict get $variable canonical]]
+        if {$label eq {}} {set label [dict get $variable canonical]}
+        if {[dict get $item member] ne {}} {append label " · [dict get $item member]"}
+        lappend records [dict create id trace_$index y_variable_id $y label $label filters [dict get $item filters] source_descriptor [dict get $item source_descriptor] display [dict get $item display]]
+        incr index
+    }
+    set labels [scientificDatasetViewerAxisLabels $w $series $context]
+    set options [dict create title {} axis_labels [dict create x [dict get $labels x_label] y [dict get $labels y_label]] aspect $state($w,aspect) progress [list ::GX::scientificDatasetOpeningProgress $w $state($w,epoch)]]
+    return [::GX::PlotDatasetAPIv4::scientificModel $state($w,id) [lindex $state($w,plottedRequest) 0] $records $context $options]
+}
+proc ::GX::scientificDatasetViewerAdopt {w series context} {
+    variable ::GX::DatasetViewer::state
+    set epoch $state($w,epoch)
+    scientificDatasetViewerRetain $w {Previous render — preparing scientific model}
+    set state($w,opening) 1
+    try {
+        set model [scientificDatasetViewerModel $w $series $context]
+    } on error {message options} {
+        if {![info exists state($w,id)] || $state($w,epoch)!=$epoch} {return 0}
+        return -options $options $message
+    } finally {
+        if {[info exists state($w,id)] && $state($w,epoch)==$epoch} {set state($w,opening) 0}
+    }
+    if {![info exists state($w,id)] || $state($w,epoch)!=$epoch} {return 0}
+    datasetViewerCheck $w
+    set policy {prepared_model 1 retain_presentation 1}
+    ::GX::PlotDatasetAPIv4::widgetValidateSources $model $policy
+    set path $w.views.plot.canvas
+    if {$state($w,plotWidget) ne {}} {
+        ::GX::PlotDatasetAPIv4::widgetConfigure $path $model $policy
+    } else {
+        if {[winfo exists $path]} {destroy $path}
+        ::GX::PlotDatasetAPIv4::widgetCreate $path $model $policy
+        pack $path -fill both -expand 1
+        bind $path <ButtonPress-1> [list ::GX::scientificDatasetViewerPan $w start %x %y]
+        bind $path <B1-Motion> [list ::GX::scientificDatasetViewerPan $w move %x %y]
+        bind $path <Button-4> [list ::GX::scientificDatasetViewerZoom $w 1.25 %x %y]
+        bind $path <Button-5> [list ::GX::scientificDatasetViewerZoom $w 0.8 %x %y]
+        bind $path <Motion> [list ::GX::scientificDatasetViewerPoint $w %x %y]
+        set state($w,plotWidget) $path
+    }
+    set state($w,plotModel) $model
+    set state($w,plotCurrent) 1
+    return 1
+}
+proc ::GX::scientificDatasetViewerRetain {w reason} {
+    variable ::GX::DatasetViewer::state
+    if {![info exists state($w,id)]} return
+    set state($w,plotCurrent) 0
+    if {$state($w,plotWidget) eq {}} return
+    ::GX::PlotDatasetAPIv4::widgetRetain $state($w,plotWidget) $reason
+}
 proc ::GX::scientificDatasetViewerOpen {id} {
     variable ::GX::DatasetViewer::state
     set w [datasetViewerWindow $id {CORE Scientific Dataset Viewer}]
-    set state($w,scene) {};set state($w,source) {};set state($w,job) {};set state($w,start) 0;set state($w,epoch) 0
+    set state($w,plotWidget) {};set state($w,plotCurrent) 0;set state($w,source) {};set state($w,job) {};set state($w,opening) 0;set state($w,start) 0;set state($w,epoch) 0
     ttk::notebook $w.views;pack $w.views -fill both -expand 1
     ttk::frame $w.views.plot;$w.views add $w.views.plot -text Plot
     set p $w.views.plot
-    ttk::frame $p.bar;pack $p.bar -fill x
+    uiFieldComponentCreate $p.bar section [dict create title {Axes and rendering}] {} {}
+    # Layout masters precede their sibling controls in Tk's stacking order.
+    foreach group {axes actions} {
+        uiFieldComponentCreate $p.bar.$group panel {} {} {}
+        $p.bar.$group configure -padding 0
+    }
+    # Row masters precede the sibling controls in Tk's stacking order.
+    foreach row {0 1 2 3 4} {ttk::frame $p.bar.actions.row$row}
+    pack $p.bar -fill x -padx 5 -pady 3
     set axes [scientificDatasetAxes $id]
     foreach key {x y} {
         set state($w,$key) [dict get $axes $key]
-        ttk::label $p.bar.${key}Label -text [string toupper $key]
+        ttk::label $p.bar.${key}Label -text "[string toupper $key] Variable"
         ttk::combobox $p.bar.$key -values [dict get $axes numeric] -textvariable ::GX::DatasetViewer::state($w,$key) -state readonly -width 22
         pack $p.bar.${key}Label $p.bar.$key -side left -padx 5 -pady 6
+        uiFieldSelectorWithinViewer $p.bar.$key $w
+        bind $p.bar.$key <<ComboboxSelected>> [list ::GX::scientificDatasetViewerSummary $w]
     }
     foreach {name title action} {plot Plot scientificDatasetViewerPlot fit Fit scientificDatasetViewerFit cancel Cancel scientificDatasetViewerCancel} {
         ttk::button $p.bar.$name -text $title -command [list ::GX::$action $w];pack $p.bar.$name -side left -padx 5
     }
     scientificDatasetSeriesBuild $w [dict get $axes numeric]
+    $p.series.label configure -text {Additional Y variables (Ctrl selects):}
+    $p.series.filters.configure configure -text {Filters and grouping…}
+    grid columnconfigure $p.series.filters 0 -weight 1
+    foreach row [winfo children $p.series.filters] {
+        if {[regexp {^f[0-9]+$} [winfo name $row]]} {
+            grid configure $row -sticky ew
+            bind $row <Configure> [list ::GX::uiFieldControlsLayout $row %w]
+        }
+    }
     set state($w,aspect) auto
-    ttk::checkbutton $p.bar.aspect -text {Calibrated equal aspect} -variable ::GX::DatasetViewer::state($w,aspect) -onvalue xy_equal -offvalue auto -command [list ::GX::scientificDatasetViewerAspect $w]
+    ttk::checkbutton $p.bar.aspect -text {Equal numeric aspect} -variable ::GX::DatasetViewer::state($w,aspect) -onvalue xy_equal -offvalue auto -command [list ::GX::scientificDatasetViewerAspect $w]
     pack $p.bar.aspect -side left -padx 5
     set state($w,legend) {Select explicit X and Y variables, then Plot.}
-    ttk::label $p.legend -textvariable ::GX::DatasetViewer::state($w,legend);pack $p.legend -fill x -padx 8
-    canvas $p.canvas -background white -highlightthickness 0;pack $p.canvas -fill both -expand 1
-    bind $p.canvas <Configure> [list ::GX::scientificDatasetViewerDrawLater $w]
-    bind $p.canvas <ButtonPress-1> [list ::GX::scientificDatasetViewerPan $w start %x %y]
-    bind $p.canvas <B1-Motion> [list ::GX::scientificDatasetViewerPan $w move %x %y]
-    bind $p.canvas <Button-4> [list ::GX::scientificDatasetViewerZoom $w 1.25 %x %y]
-    bind $p.canvas <Button-5> [list ::GX::scientificDatasetViewerZoom $w 0.8 %x %y]
-    bind $p.canvas <Motion> [list ::GX::scientificDatasetViewerPoint $w %x %y]
+    ttk::label $p.legend -textvariable ::GX::DatasetViewer::state($w,axisSummary) -justify left
+    pack $p.legend -fill x -padx 8 -pady 3
+    $w.status configure -textvariable ::GX::DatasetViewer::state($w,compactStatus) -justify left
+    ttk::button $p.bar.details -text {Selection details…} -command [list ::GX::scientificDatasetViewerDetails $w]
+    pack $p.bar.details -side left
+    bind $p.bar <Configure> [list ::GX::scientificDatasetViewerControlsLayout $w %w]
+    # The public Plot owner creates its surface after canonical source/model
+    # admission. This empty frame is only the initial layout slot.
+    ttk::frame $p.canvas;pack $p.canvas -fill both -expand 1
     set tableVariables {};foreach v [datasetVariableSchemaV3 $id] {if {[dict get $v rank]==1} {lappend tableVariables [dict get $v variable_id]}}
     if {[llength $tableVariables]} {
         datasetPreviewCreateTable $w.views.table $::GX::currentSession $id
@@ -197,60 +743,40 @@ proc ::GX::scientificDatasetViewerOpen {id} {
     set arrays {}
     foreach v [datasetVariableSchemaV3 $id] {if {[dict get $v enabled]&&[dict get $v rank]>=2} {lappend arrays [dict get $v variable_id]}}
     if {[llength $arrays]} {scientificDatasetMatrixBuild $w $arrays}
-    ttk::frame $w.views.infoPage
-    text $w.views.info -wrap word -state normal -yscrollcommand [list $w.views.infoPage.scroll set]
-    ttk::scrollbar $w.views.infoPage.scroll -command [list $w.views.info yview]
-    pack $w.views.infoPage.scroll -side right -fill y
-    pack $w.views.info -in $w.views.infoPage -fill both -expand 1
-    $w.views add $w.views.infoPage -text {Schema and provenance}
-    $w.views.info insert end "[sessionInspectionDataset $id]\n\n"
-    foreach v [datasetVariableSchemaV3 $id] {$w.views.info insert end "$v\n\n"}
-    $w.views.info insert end [datasetMetadataRead $::GX::currentSession $id];$w.views.info configure -state disabled
+    scientificDatasetInspectionBuild $w
+    uiFieldComponentCreate $w.views.details panel {} {} {}
+    $w.views add $w.views.details -text {Selection details}
+    ttk::button $w.views.details.refresh -text {Refresh current selection and status} -command [list ::GX::scientificDatasetViewerDetails $w 0]
+    pack $w.views.details.refresh -anchor w -pady 4
+    ttk::frame $w.views.details.content
+    scientificDatasetInspectionLog $w.views.details.content {}
+    pack $w.views.details.content -fill both -expand 1
+    set state($w,summaryTrace) [list ::GX::scientificDatasetViewerSummary $w]
+    foreach element {legend status} {trace add variable state($w,$element) write $state($w,summaryTrace)}
+    scientificDatasetViewerSummary $w
     if {$state($w,x) ne {}&&$state($w,y) ne {}&&$state($w,memberVariable) eq {}} {after idle [list ::GX::scientificDatasetViewerPlot $w]}
     return $w
 }
 proc ::GX::scientificDatasetViewerCancel {w} {
     variable ::GX::DatasetViewer::state
     if {![info exists state($w,id)]} return
+    set pending [expr {$state($w,job) ne {} || $state($w,opening) || [info exists state($w,queue)] && $state($w,queue) ne {}}]
     incr state($w,epoch)
+    set state($w,opening) 0
     set state($w,queue) {}
     if {$state($w,job) ne {}} {curveSourceCancel $state($w,job);set state($w,job) {}}
+    if {$state($w,source) ne {}} {curveSourceClose $state($w,source);set state($w,source) {}}
+    if {$pending} {
+        set state($w,status) {Loading cancelled; select Plot to refresh.}
+        scientificDatasetViewerRetain $w {Previous render — loading cancelled; select Plot to refresh}
+    }
 }
-proc ::GX::scientificDatasetViewerPlot {w} {
-    variable ::GX::DatasetViewer::state
-    if {[catch {
-        datasetViewerCheck $w;scientificDatasetViewerCancel $w
-        if {$state($w,source) ne {}} {curveSourceClose $state($w,source);set state($w,source) {}}
-        if {$state($w,x) eq {}||$state($w,y) eq {}} {error {Choose explicit X and Y variables.}}
-        set state($w,source) [curveSourceOpen $::GX::currentSession [dict create dataset_id $state($w,id) x_variable_id $state($w,x) y_variable_id $state($w,y) display_budget 4096]]
-        set state($w,job) [curveSourceDisplayAsync $state($w,source) [list ::GX::scientificDatasetViewerReady $w] [list ::GX::scientificDatasetViewerProgress $w]]
-    } message]} {set state($w,status) $message}
-}
+
 proc ::GX::scientificDatasetViewerProgress {w receipt} {
     variable ::GX::DatasetViewer::state
     if {[info exists state($w,id)]} {set state($w,status) "Loading canonical rows: [dict get $receipt completed_rows] / [dict get $receipt total_rows]"}
 }
-proc ::GX::scientificDatasetViewerReady {w receipt} {
-    variable ::GX::DatasetViewer::state
-    if {![info exists state($w,id)]} return
-    set state($w,job) {}
-    if {[dict get $receipt status] ne "ok"} {set state($w,status) [datasetPublicationV2DictDefault $receipt message {Loading cancelled}];return}
-    if {[catch {
-        datasetViewerCheck $w
-        set display [dict get $receipt display]
-        set scene [scientificDatasetDisplayScene $display]
-        if {$state($w,scene) ne {}} {::GX::Native2D::core destroy $state($w,scene)}
-        set state($w,scene) $scene;set state($w,display) $display
-        set labels {}
-        foreach key {x y} {
-            set v [datasetVariableV3ById $state($w,id) $state($w,$key)]
-            lappend labels "[dict get $v canonical] ([dict get $v unit]) — $state($w,$key)"
-        }
-        set state($w,legend) "X: [lindex $labels 0]     Y: [lindex $labels 1]"
-        set state($w,status) "[dict get $display row_count] canonical rows; [llength [dict get $display points]] displayed points. Gaps retained; display reduction: [dict get $display reduced]. Drag to Pan; wheel zooms."
-        scientificDatasetViewerDraw $w
-    } message]} {set state($w,status) $message}
-}
+
 proc ::GX::scientificDatasetViewerDrawLater {w} {
     variable ::GX::DatasetViewer::state
     if {![info exists state($w,id)]} return
@@ -259,55 +785,53 @@ proc ::GX::scientificDatasetViewerDrawLater {w} {
 }
 proc ::GX::scientificDatasetViewerDraw {w} {
     variable ::GX::DatasetViewer::state
-    if {![info exists state($w,scene)]||$state($w,scene) eq {}} return
-    set s $state($w,scene);set c $w.views.plot.canvas
-    set width [winfo width $c];set height [winfo height $c]
-    if {$width<120||$height<100} return
-    set view [::GX::Native2D::core view_requested $s];lset view 0 $width;lset view 1 $height;lset view 2 85;lset view 3 20;lset view 4 25;lset view 5 50
-    ::GX::Native2D::core view $s $view
-    lset view 2 [expr {min($width/3.0,max(85,[native2DAxisLabelMargin $s]))}]
-    ::GX::Native2D::core view $s $view
-    _scientificDatasetGrid $s
-    native2DCanvasSnapshot $c [native2DPresentationSnapshot $s]
+    if {![info exists state($w,plotWidget)] || $state($w,plotWidget) eq {} || !$state($w,plotCurrent)} return
+    if {[catch {datasetViewerCheck $w;::GX::PlotDatasetAPIv4::widgetDraw $state($w,plotWidget)} reason]} {set state($w,status) $reason}
 }
+
 proc ::GX::scientificDatasetViewerFit {w} {
     variable ::GX::DatasetViewer::state
     if {![info exists state($w,id)]} return
     if {[catch {set selection [scientificDatasetViewerSelection $w]} reason]} {set state($w,status) $reason;return}
     if {![info exists state($w,plottedRequest)] || $state($w,plottedRequest) ne $selection} {scientificDatasetViewerPlot $w;return}
-    if {$state($w,job) ne {}} return
-    if {$state($w,scene) ne {}} {
-        scientificDatasetFitBounds $state($w,scene) [lmap series $state($w,series) {dict get $series display}]
-        if {[llength $state($w,series)]} {
-            set presentation [scientificDatasetCoordinateView $state($w,scene) [dict get [lindex $state($w,series) 0] display coordinate_presentation]]
-            set state($w,status) [scientificDatasetCoordinateNotice $presentation]
-        }
-        scientificDatasetViewerDraw $w
-    }
+    if {$state($w,opening) || $state($w,job) ne {} || $state($w,queue) ne {} || ![llength $state($w,series)] || !$state($w,plotCurrent)} return
+    if {[catch {
+        datasetViewerCheck $w
+        ::GX::PlotDatasetAPIv4::widgetPointer $state($w,plotWidget) fit 0 0
+        # A newly configured plot may not have a painted receipt yet. Read
+        # coordinate status from the same public painter's completed draw.
+        set receipt [::GX::PlotDatasetAPIv4::widgetDraw $state($w,plotWidget)]
+        set state($w,status) [scientificDatasetCoordinateNotice [dict get $receipt coordinate_presentation]]
+    } reason]} {set state($w,status) $reason}
 }
+
 proc ::GX::scientificDatasetViewerAspect {w} {
     variable ::GX::DatasetViewer::state
-    if {$state($w,scene) ne {}} {::GX::Native2D::core aspect $state($w,scene) $state($w,aspect);scientificDatasetViewerDraw $w}
+    if {![info exists state($w,id)] || $state($w,opening) || $state($w,job) ne {} || $state($w,queue) ne {} || ![llength $state($w,series)] || !$state($w,plotCurrent)} return
+    set epoch $state($w,epoch)
+    try {
+        datasetViewerCheck $w
+        set axes [dict get [::GX::PlotDatasetAPIv4::widgetReceipt $state($w,plotWidget)] axes]
+        if {![scientificDatasetViewerAdopt $w $state($w,series) $state($w,coordinateContext)]} return
+        ::GX::PlotDatasetAPIv4::widgetView $state($w,plotWidget) restore $axes
+    } on error {reason options} {
+        if {[info exists state($w,id)] && $state($w,epoch)==$epoch} {set state($w,status) $reason}
+    }
 }
+
 proc ::GX::scientificDatasetViewerPan {w phase x y} {
     variable ::GX::DatasetViewer::state
-    if {$phase eq "move"&&[info exists state($w,drag)]&&$state($w,scene) ne {}} {lassign $state($w,drag) px py;::GX::Native2D::core pan $state($w,scene) [expr {$x-$px}] [expr {$y-$py}];scientificDatasetViewerDraw $w}
-    set state($w,drag) [list $x $y]
+    if {![info exists state($w,plotCurrent)] || !$state($w,plotCurrent)} return
+    set operation [expr {$phase eq {start} ? {pan_start} : {pan}}]
+    if {[catch {datasetViewerCheck $w;::GX::PlotDatasetAPIv4::widgetPointer $state($w,plotWidget) $operation $x $y} reason]} {set state($w,status) $reason}
 }
-proc ::GX::scientificDatasetViewerZoom {w factor x y} {variable ::GX::DatasetViewer::state;if {$state($w,scene) ne {}} {::GX::Native2D::core zoom $state($w,scene) $factor [list $x $y];scientificDatasetViewerDraw $w}}
-proc ::GX::scientificDatasetViewerPoint {w x y} {
+
+proc ::GX::scientificDatasetViewerZoom {w factor x y} {
     variable ::GX::DatasetViewer::state
-    if {$state($w,scene) eq {}} return
-    set s $state($w,scene);set nearest -1;set distance 100
-    set i 0
-    foreach p [dict get $state($w,display) points] {
-        lassign [::GX::Native2D::core device $s $p] px py
-        set d [expr {hypot($px-$x,$py-$y)}]
-        if {$d<$distance} {set distance $d;set nearest $i}
-        incr i
-    }
-    if {$nearest>=0&&$distance<12} {set state($w,status) "Canonical source row (1-based): [expr {1+[lindex [dict get $state($w,display) source_rows] $nearest]}]    X/Y: [lindex [dict get $state($w,display) points] $nearest]"}
+    if {![info exists state($w,plotCurrent)] || !$state($w,plotCurrent)} return
+    if {[catch {datasetViewerCheck $w;::GX::PlotDatasetAPIv4::widgetPointer $state($w,plotWidget) zoom $x $y $factor} reason]} {set state($w,status) $reason}
 }
+
 proc ::GX::scientificDatasetMatrixBuild {w arrays} {
     variable ::GX::DatasetViewer::state
     set p $w.views.matrix;ttk::frame $p;$w.views add $p -text {Array plane}
@@ -488,22 +1012,112 @@ proc ::GX::datasetMediaViewerOpen {id kind} {
     set w [datasetViewerWindow $id {CORE media lifecycle}];wm withdraw $w
     set path $state($w,path)
     if {$kind eq "pdf"} {set script pdf_dataset_viewer.py;set args [list $path $id]} else {set script media_dataset_viewer.py;set args [list $path $id $kind]}
+    if {$kind eq {pdf}} {
+        lappend args --owner-receipts
+        set state($w,mediaKind) pdf
+        set state($w,mediaSourceSha) [dict get [sessionInspectionDatasetPayload $id] sha256]
+        set state($w,externalBuffer) {}
+        set state($w,mediaReceipt) [dict create state starting dataset_id $id source_sha256 $state($w,mediaSourceSha)]
+    }
     if {$kind eq "audio"} {
         set metadata [datasetMetadataRead $::GX::currentSession $id]
         foreach key {audio.raw_input_format audio.raw_sample_rate_hz audio.raw_channels audio.selected_stream_index} {lappend args [datasetPublicationV2DictDefault $metadata $key {}]}
     }
-    set state($w,externalPipe) [open [concat [list | [runtimeToolRequired python] -B [file join $::GX::scriptDir core python $script]] $args [list 2>@stderr]] r]
-    fconfigure $state($w,externalPipe) -blocking 0 -buffering none
-    set state($w,externalPids) [pid $state($w,externalPipe)]
-    fileevent $state($w,externalPipe) readable [list ::GX::datasetMediaViewerWatch $w]
+    _datasetMediaViewerLaunch $w $script $args
+    return $w
+}
+proc ::GX::_datasetMediaViewerLaunch {w script arguments} {
+    variable ::GX::DatasetViewer::state
+    # Both Dataset and managed Document PDF sources use this identical reader,
+    # pipe observation and lifecycle owner, never a second PDF implementation.
+    try {
+        set state($w,externalPipe) [open [concat [list | [runtimeToolRequired python] -B [file join $::GX::scriptDir core python $script]] $arguments [list 2>@stderr]] r]
+        fconfigure $state($w,externalPipe) -blocking 0 -buffering none
+        set state($w,externalPids) [pid $state($w,externalPipe)]
+        fileevent $state($w,externalPipe) readable [list ::GX::datasetMediaViewerWatch $w]
+    } on error {message options} {datasetViewerClose $w;return -options $options $message}
+}
+proc ::GX::datasetMediaViewerOpenResource {reference {title {Managed Document PDF}}} {
+    variable ::GX::DatasetViewer::state;variable ::GX::DatasetViewer::serial
+    interactiveDocumentResourceInfo $reference
+    if {[datasetPublicationV2DictDefault [dict get $reference metadata] format {}] ne {pdf}} {error {Managed PDF preview requires a PDF Document resource}}
+    set document [dict get $reference document_id]
+    set owner [interactiveDocumentRead $document]
+    set w .datasetViewer[incr serial]
+    set state($w,id) $document
+    set state($w,identity) [dict create source_kind managed_resource document_id $document source_sha256 [dict get $reference sha256]]
+    set state($w,managedResource) $reference
+    set state($w,managedOwnerGeneration) [dict get $owner generation]
+    set state($w,session) [interactiveDocumentSessionToken]
+    set state($w,path) [_documentResourceIdentity $reference]
+    set state($w,mediaKind) pdf
+    set state($w,mediaSourceSha) [dict get $reference sha256]
+    set state($w,externalBuffer) {}
+    set state($w,mediaReceipt) [dict create state starting source_kind managed_resource document_id $document source_sha256 [dict get $reference sha256]]
+    toplevel $w;wm withdraw $w
+    wm protocol $w WM_DELETE_WINDOW [list ::GX::datasetViewerClose $w]
+    datasetViewerWatch $w
+    _datasetMediaViewerLaunch $w pdf_dataset_viewer.py [list $state($w,path) $document --owner-receipts --managed-resource --title $title]
     return $w
 }
 proc ::GX::datasetMediaViewerWatch {w} {
     variable ::GX::DatasetViewer::state
     if {![info exists state($w,externalPipe)]} return
     set channel $state($w,externalPipe)
-    catch {read $channel 4096}
+    if {[catch {set bytes [read $channel 65536]} reason]} {datasetViewerClose $w;return}
+    if {[info exists state($w,mediaKind)] && $state($w,mediaKind) eq {pdf}} {
+        append state($w,externalBuffer) $bytes
+        if {[string length $state($w,externalBuffer)]>131072} {datasetViewerClose $w;return}
+        while {[set newline [string first \n $state($w,externalBuffer)]]>=0} {
+            set line [string range $state($w,externalBuffer) 0 [expr {$newline-1}]]
+            set state($w,externalBuffer) [string range $state($w,externalBuffer) [expr {$newline+1}] end]
+            if {[catch {_datasetMediaViewerAcceptReceipt $w $line} reason]} {
+                set state($w,mediaReceipt) [dict create state unavailable dataset_id $state($w,id) source_sha256 $state($w,mediaSourceSha) status "PDF reader inspection unavailable: $reason"]
+            }
+        }
+    }
     if {[eof $channel]} {fileevent $channel readable {};catch {close $channel};unset state($w,externalPipe) state($w,externalPids);datasetViewerClose $w}
+}
+proc ::GX::_datasetMediaViewerAcceptReceipt {w line} {
+    variable ::GX::DatasetViewer::state
+    if {[string length $line]>32768 || ![string match {GXPDF1 *} $line]} {error {Unexpected bounded PDF reader frame}}
+    set receipt [encoding convertfrom utf-8 [binary decode base64 -strict [string range $line 7 end]]]
+    foreach field {schema pid dataset_id source_sha256 state page pages zoom_percent page_size_points rendered_sha256 rendered_pixels window_id frame_id geometry mapped status canvas controls} {
+        if {![dict exists $receipt $field]} {error "PDF reader frame lacks $field"}
+    }
+    if {[dict get $receipt schema] ne {gxtxt.pdf_reader_receipt.v1} || [dict get $receipt pid] ni $state($w,externalPids) || [dict get $receipt dataset_id] ne $state($w,id) || [dict get $receipt source_sha256] ne $state($w,mediaSourceSha) || [dict get $receipt state] ni {starting rendering ready unavailable closed}} {error {PDF reader frame does not match its launched source owner}}
+    set kind [expr {[info exists state($w,managedResource)] ? {managed_resource} : {dataset}}]
+    if {[datasetPublicationV2DictDefault $receipt source_kind dataset] ne $kind} {error {PDF reader source kind differs from its owner}}
+    foreach field {window_id frame_id} {if {![regexp {^(0x[0-9a-fA-F]+|[0-9]+)$} [dict get $receipt $field]]} {error {Invalid owned native window identity}}}
+    foreach field {page pages} {if {![string is integer -strict [dict get $receipt $field]] || [dict get $receipt $field]<0} {error {Invalid PDF page receipt}}}
+    if {![string is double -strict [dict get $receipt zoom_percent]] || [dict get $receipt zoom_percent]<10 || [dict get $receipt zoom_percent]>400} {error {Invalid PDF zoom receipt}}
+    if {[lsort [dict keys [dict get $receipt controls]]] ne [lsort {previous next zoom_out zoom_in fit_page fit_width}]} {error {Unexpected PDF reader controls}}
+    foreach control [concat [dict values [dict get $receipt controls]] [list [dict get $receipt canvas]]] {
+        if {![string is integer -strict [dict get $control native_id]] || [llength [dict get $control rectangle]]!=4} {error {Invalid owned PDF control geometry}}
+        foreach value [dict get $control rectangle] {if {![string is integer -strict $value]} {error {Invalid PDF control pixel value}}}
+    }
+    set state($w,mediaReceipt) $receipt
+}
+proc ::GX::datasetMediaViewerInspect {w} {
+    variable ::GX::DatasetViewer::state
+    datasetViewerCheck $w
+    if {![info exists state($w,mediaKind)] || $state($w,mediaKind) ne {pdf}} {error {This media owner is not a PDF reader}}
+    set receipt $state($w,mediaReceipt)
+    # Native identities/coordinates belong only to the trusted GUI-test owner.
+    set public [dict remove $receipt pid window_id frame_id controls canvas]
+    if {[dict exists $receipt canvas]} {
+        dict set public canvas [dict remove [dict get $receipt canvas] native_id rectangle]
+        dict for {name control} [dict get $receipt controls] {dict set public controls $name [dict create mapped [dict get $control mapped] enabled [dict get $control enabled]]}
+    }
+    dict set public session $state($w,session)
+    if {[info exists state($w,managedResource)]} {
+        set public [dict remove $public dataset_id]
+        dict set public source_kind managed_resource
+        dict set public document_id $state($w,id)
+        dict set public resource $state($w,managedResource)
+    }
+    dict set public read_only 1
+    return $public
 }
 
 rename ::GX::openSessionPath ::GX::openSessionPath_before_dataset_edit_guard
@@ -515,11 +1129,29 @@ source [file join [file dirname [info script]] dataset_digitizer_preview_v1.tcl]
 
 # Render dependencies exclude user Preview controls, retaining scientific source,
 # schema, calibration and public metadata. Host-side retained presentation only.
+proc ::GX::datasetViewerLinkedSourceIdentity {session id} {
+    if {[catch {set record [sessionInspectionDataset $id $session]} reason]} {return [dict create dataset_id $id status missing reason $reason]}
+    set identity [dict create dataset_id $id registry $record metadata [datasetMetadataRead $session $id]]
+    set reason {Canonical linked source has no resource path}
+    if {[dict exists $record path] && ![catch {set actual [sessionInspectionResolveResource [dict get $record path] $session]} reason]} {
+        dict set identity status resolved
+        dict set identity resource $actual
+    } else {
+        dict set identity status unverified
+        dict set identity reason $reason
+    }
+    return $identity
+}
 proc ::GX::datasetViewerScientificIdentity {id} {
     set storage [datasetProviderFor $id];set location {}
     if {$storage eq "remote"} {set location [list [datasetField $id remote_node_id] [datasetField $id remote_session_id] [datasetField $id remote_revision]]} else {
         set path [datasetResolvePath $::GX::currentSession $id]
         if {[file isfile $path]} {file stat $path st;set location [list $st(size) $st(mtime) $st(ctime) $st(ino)]}
     }
-    return [list $id [datasetField $id canonical_sha256 [datasetField $id sha256]] [datasetVariableSchemaV3 $id] [datasetMetadataRead $::GX::currentSession $id] [_datasetCoordinateStored $::GX::currentSession $id] $location]
+    set metadata [datasetViewerMetadataIdentity $::GX::currentSession $id]
+    set identity [list $id [datasetField $id canonical_sha256 [datasetField $id sha256]] [datasetVariableSchemaV3 $id] $metadata [_datasetCoordinateStored $::GX::currentSession $id] $location]
+    if {[dict exists $metadata curve_digitizer.source_dataset_id] && [dict get $metadata curve_digitizer.source_dataset_id] ne {}} {
+        lappend identity linked_source [datasetViewerLinkedSourceIdentity $::GX::currentSession [dict get $metadata curve_digitizer.source_dataset_id]]
+    }
+    return $identity
 }

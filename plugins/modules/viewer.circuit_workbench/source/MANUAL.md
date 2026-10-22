@@ -1,3 +1,95 @@
+# Circuit Workbench 1.9.9
+
+Open Circuit Workbench from **Viewers → Simulation & Modeling → Circuit Workbench** in an open Session. The circuit icon identifies this scientific Viewer. A new circuit starts empty; placement, edits and results are explicit actions. The existing 203 controls, scientific workflow, eighteen schematic tool icons and C++ handlers are retained. Version 1.9.9 aligns this current guide with MAIN’s independently verified dev109 functional acceptance. The source, controls and scientific behavior retain their existing scope; the evidence below was obtained in its stated earlier versions and corrected shared-owner snapshots. This documentation update adds no circuit simulation or native GUI campaign.
+
+## Tools, editing and electrical values
+
+Choose a component tool, then click once in the schematic to place it. Select moves existing symbols. Wire, Junction, Label, Pan and Probe are persistent modes; Fit, Properties, Rotate and Delete act once. The selected tool button agrees with the actual viewport mode, including Escape and keyboard changes. A selected component has a heavier stroke and dashed frame. A live drag follows the pointer before release; a valid release commits the canonical document and History. Escape cancels the pending drag or wire. Use Undo/Redo for committed edits. Hover, selection and navigation do not create scientific results.
+
+In electrical symbol Properties, enter finite decimal/scientific notation or an engineering suffix in the field's SI unit: `1k` = 1000, `4.7k` = 4700, `470n` = 4.7e-7, `1u` = 1e-6, `10u` = 1e-5 and `1meg` = 1e6. Suffixes are case insensitive: both `m` and `M` mean milli; use `meg` for mega. Supported suffixes are t, g, meg, k, m, u (also µ or μ), n, p and f. Do not append unit words such as `Ohm` or `F`; the field declares its unit. This electrical notation does not change other Numeric fields.
+
+Values are stored in SI with the field's bounds. Invalid, nonfinite or underflowed values are rejected before the document or History changes. Engineering display is used only when it round trips to the identical stored value; otherwise full precision is shown. Apply commits the draft and reports “Properties committed to the canonical document.” Close dismisses an unapplied draft. Reopen Properties to inspect retained values. A stale editing dialog must not overwrite a source changed through History; normal navigation may safely retire that old dialog.
+
+## Waveforms, wire attachments and net labels
+
+A voltage source's canonical `waveform` selects a DC, sine or pulse symbol without changing its identity, pins or polarity. AC amplitude is a separate small-signal parameter; setting it does not select a transient sine waveform. Set the source value, initial value, delay, rise, width, period or frequency as applicable before Prepare. The current pulse provider uses the declared rise for both rise and fall. A symbol mark is not a simulation.
+
+Wire can start or finish on an actual pin, existing junction or wire segment. Visible circles and the hover target identify real attachment points. Click empty space for bends and the intended attachment to finish. Attaching to a segment commits the canonical junction and wire split together. Mere crossings remain disconnected unless an explicit attachment or Junction action joins them. Repeating an existing Junction must not make a redundant edit or discard Redo. A net label uses the same real pin/junction/segment hit path and names the existing canonical net; choosing a wire for a label does not split it. Check actual provider net mapping and the prepared deck rather than inferring a connection from proximity.
+
+A committed source edit invalidates older preparation. Prepare deliberately again before a new simulation. A preview, mode change or retained old Plot does not establish a result for a changed circuit.
+
+## Voltage Probe after genuine publication
+
+1. Complete the circuit and select the intended analysis and execution destination. Use Prepare, Submit and the real Jobs controls to monitor its actual terminal state. Publish the completed result explicitly as a canonical Dataset.
+2. Keep that completed Job/case and its published Dataset selected. In Tools choose **Schematic probe = voltage**, choose **Probe**, then click an actual connected pin, junction or wire segment. Different locations on the same connected wire resolve the same electrical node.
+3. Open **Waveforms** to inspect the actual selection. For a resolved non-AC Probe, prior manual **Discover variables is unnecessary**. The provider declares the independent coordinate; the bridge selects it and the node's real voltage Variable from the current canonical Dataset. It verifies numeric types, one-dimensional aligned rows and units before the native Plot accepts the binding. The ordinary choice controls then show those actual IDs. Do not guess `v_net_N` from component order, names or pixels.
+
+A valid Probe changes presentation and records one ordinary History entry. It does not run a solver, resubmit or reconnect a Job, calculate Numeric output, create a Dataset or edit the circuit. Manual Discover/Bind remains available for deliberate waveform selection. A source-row cursor on the plotted curve is a separate observation: use an actual computed point for its canonical row and units.
+
+The source generation/revision/SHA, selected Job/provider/parameters and publication provenance must agree. Before publication, an unavailable Probe must explain the missing result. After a source change, choose the matching genuinely updated result; a delivered click or old retained frame is not evidence for the rejected target. Complex AC output uses its actual split-complex Variables and requires an explicit Numeric projection; it is not silently converted to a transient voltage curve.
+
+## Current limits, ground and rejected targets
+
+In **current** mode, select a supported device terminal with an actual published branch-current Variable. The current circuit provider exposes the independent voltage-source branch current in amperes. Its sign is the original provider/ngspice sign; selecting the other terminal does not justify reversing it. Current through an arbitrary ideal-wire location is unavailable: the wire has no independent branch-current observable. A resistor, capacitor, inductor or other device current must not be invented when the completed output contains no such Variable.
+
+Ground is the electrical reference. The current output has no computed ground-voltage Variable, so probing it reports that limitation rather than fabricating a zero trace. Missing/foreign/stale results, unsupported currents and incompatible Variables must report a useful visible reason while retaining the previous valid Plot and scientific identities. Correct the selection or mode deliberately. Do not treat the retained frame as a new result of the rejected Probe.
+
+## Save, reopen and smaller windows
+
+Use the ordinary Workspace Save control to preserve the actual canonical source binding, History, Plot specification and scientific Job/Dataset references. Open that saved Workspace in its real Session after a fresh process start. Restore is not a new solve. Original completed Jobs and published payloads must remain the same; reconnect only when the existing Job controls require it. A saved source cursor is presentation context and must not masquerade as a newly observed source row.
+
+The inspector scrolls to reach lower controls. Narrow-window checks retained the circuit, readable waveform axes/units, tool selection, hover and disabled states. Fit and resizing preserve electrical values and topology. Larger diagrams can still require deliberate pan/zoom and scrolling; a successful narrow check does not prove every possible layout.
+
+## Actual scoped evidence and remaining acceptance
+
+The corrected dev109 installed 1.9.6 author campaign used the genuinely GUI-authored RLC source with R1=1000 Ω, L1=10 mH, C1=470 nF and R2=4700 Ω, pulse 0→1 V with 1 µs rise/fall, width 5 ms and period 10 ms. Exactly two native GUI ngspice Jobs at 1 µs and 0.5 µs steps through 4 ms produced genuine publications with 4018 and 8017 adaptive rows. Independent finite-ramp analytical, refinement, units, raw-to-canonical parity, provenance and public Numeric checks passed their precommitted scoped gates. This tests the rising/settling interval before the 5 ms falling edge, not falling-edge or periodic accuracy. The steady voltage is about 0.82456 V for this loaded circuit, not an ideal unloaded 1 V.
+
+With the refined publication selected, three first-click native wire Probes without Discover selected the same real time/v_vout pair, 8017 aligned rows and s/V units. A real native Plot v4 showed the resulting curve and actual Job/Dataset identity. Supported voltage-source current carried A; ideal-wire current and ground-voltage refusals retained the valid Plot. Normal/narrow selection, checked/hover/disabled states and Escape were checked. The independent fresh-process normal Session/official Workspace reopen restored exact source, complete saved History, PlotSpec and selected refined context, both unchanged payloads and two completed Jobs, then accepted one real wire Probe. MAIN separately confirmed a first-click Select→R1 action. Normal Save/close and full closed-process/argument reviews found zero runtime C++ compilation and zero additional scientific execution in those focused correction/reopen runs.
+
+Those results belong to their preserved source/candidate and corrected shared-owner snapshots. Original failed engineering/tool presentation/Probe actions, the abnormal earlier root loss, callback/readiness and capture errors, and the independent hidden-Canvas predicate error remain preserved and qualified. The engineering, source-waveform, live-drag and topology campaigns retain their own earlier scoped evidence; none is silently relabelled by this documentation update. Official development Validate/Build/Test/Export verify admission and typed plans, not a new scientific or native GUI campaign. Subsequent normal Plugin Manager installation and cold activation of 1.9.7 were verified with its distributed compiled binary. Independent current GUI checks cover twenty immediate tool/Canvas pairs, normal and narrow catalog, palette and Properties presentation, waveform changes, held component movement and cancellation, and complete validation messages with full Apply/Close controls. A separate genuinely GUI-authored RLC example produced one 4018-row publication whose original source, Job, Dataset, Plot and History survived normal saving, fresh reopening and Session A→B→A. These later checks supplement the earlier 1.9.6 evidence without relabelling its two scientific runs. MAIN’s final independent review accepted all 33 Circuit Workbench functional scopes: CW01–CW10, P0A–P0E and the eighteen-step workflow criteria. That decision reconciles the preserved author, independent installed GUI, scientific, persistence, topology, public API and closed-process evidence; it does not claim that every earlier version or every possible circuit was tested. The current module manual status is aligned here. MAIN still owns normal installation and focused independent F1 verification of this newer package, the final coherent Circuit package/manual acceptance decision, completion of all fifteen integrated workstreams, and final manuals/tutorial ZIPs/archive/restore/deposit acceptance. Those integrated release and deposition gates remain OPEN under the agreed release register. This guide does not claim whole-release PASS or remove a TODO item.
+
+The complete older 1.9.5 and 1.9.3 guides and their original genuine figures follow as historical records. Their version-specific instructions that reject electrical suffixes or restrict wires/labels/probes to pins and junctions are superseded by the current sections above. Their simulations and figures retain their original scopes and are not new 1.9.9 tests.
+
+---
+
+# Circuit Workbench 1.9.5
+
+Circuit Workbench retains its canonical electrical schematic, SPICE analyses, local/authenticated remote Jobs, physical sweeps, Numeric checks and Plot Dataset v4 waveforms. Its module/provider identities remain viewer.circuit_workbench / circuit_workbench. The catalog declaration places it in Simulation & Modeling with an original circuit schematic icon. The schematic palette uses separate Select, Wire, device, navigation and edit icons with readable text.
+
+## Moving and selecting schematic components
+
+Choose Select, then click a component stroke. The selected component has a thicker contrasting stroke and a dashed frame, so selection is distinguishable by shape and weight as well as color. Hovering another object does not replace the retained selection. Clicking empty space clears it. The bottom viewport status identifies the actual current tool and selected stable component ID.
+
+Press on the selected component and drag. The component, its label and attached wire geometry follow the pointer before release. This is a temporary native presentation: the canonical source and History change only when the final valid placement is committed on release. Press Escape while dragging to cancel; releasing afterward does not commit the cancelled move. Undo and Redo restore committed coordinates and the same electrical component/pin identities.
+
+The following genuine native capture shows the synthetic R1 component DURING a drag, before release, with its connected wire following. It is an editing fixture, not a simulated or measured circuit result.
+
+![Synthetic schematic during a real native drag before release; selected resistor follows the pointer with a dashed selection frame](../images/live-drag-preview.png)
+
+## Connecting actual terminals
+
+Choose Wire or press W while the schematic has focus. Small circles expose actual catalog terminals and explicit junctions. Approaching a valid terminal shows a larger crosshair target. Click an actual terminal to start, optionally click empty grid locations for route bends, then click the intended terminal or junction to finish. A near-target click attaches through the native pin picker to that real terminal identity. Crossings and bend locations do not create implicit electrical joins.
+
+The pending orange route is temporary. Backspace removes a pending bend; Escape or changing tool cancels the route without adding a wire. A completed connection is retained through the existing canonical diagram and History owners. Select and Properties continue to edit an existing wire's actual endpoints and ordered route.
+
+![Actual electrical pin circles and a target crosshair at R1.p while an orange route is pending from C2.n](../images/wire-target-feedback.png)
+
+## Navigation and smaller windows
+
+Use the mouse wheel over the schematic to change zoom. Choose Pan or press P and drag to change the view. F fits retained geometry. Escape returns to Select and cancels pending editing. These view operations preserve scientific component values and electrical topology. At smaller window sizes the inspector retains its existing scrolling; use it to reach explanatory text and lower controls. The icon palette, selection frame, pin circles and target crosshair remain available at the demonstrated 820 by 600 client size.
+
+![Synthetic schematic in an actual narrow native window after wheel zoom, with selected resistor, actual terminal markers and target crosshair](../images/narrow-selection-and-pins.png)
+
+## Source, History and saved Workspaces
+
+A committed schematic edit advances the canonical diagram source revision and invalidates an older prepared scientific context. Re-prepare deliberately before a new simulation. A drag preview, hover, selection, zoom or pending wire is not a new simulation or Dataset. Save through the ordinary Workspace control, close, and reopen that saved Workspace to retain actual component attributes, terminal identities, wires and History. Existing completed Jobs and published waveforms remain separate scientific records.
+
+The installed candidate author verified these interaction corrections through the official source-identical GUI-test facility in a fresh Debian application, including two in-drag positions, real pin connectivity, Undo/Redo, held-Escape cancellation, normal/narrow windows, wheel zoom, pan and saved Workspace restoration. Three figures above are unaltered captures from that clearly labelled synthetic fixture, with original source/capture provenance. This targeted author evidence does not replace independent GUI QA, MAIN verification or release-wide scientific acceptance. Original failed evidence remains in the integration ledger.
+
+## Retained scientific workflow guide and historical evidence
+
+The following deposited 1.9.3 guide is preserved in full. Version-specific scientific examples and older figures retain their original test scope and provenance; they are not relabelled as new simulations of this synthetic interaction fixture.
+
 # Circuit Workbench 1.9.3
 
 Circuit Workbench is a restricted C++ Viewer authored through Interface Builder and Development Workspace. Existing public GX-TXT owners provide documents, Native2D, History, Workspace, Scientific Execution, Script Jobs, Parallel execution, canonical Datasets, Plot and every calculation. No private solver launcher, scheduler, renderer, Dataset store or numerical implementation is included.

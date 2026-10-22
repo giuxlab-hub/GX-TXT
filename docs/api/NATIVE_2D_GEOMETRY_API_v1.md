@@ -20,6 +20,11 @@ metrics/comparison. Nominal unit symbols alone cannot override source formulas.
 
 ## Shared host grid and export presentation
 
+See the complete [presentation snapshot reference](NATIVE2D_PRESENTATION_SNAPSHOT_v1.md)
+and [installed PNG/SVG adapter](NATIVE2D_EXPORT_API_v1.md) for their actual host
+signatures, display schema, resource bounds and language exposure. Those owners
+do not materialize canonical scientific data.
+
 The Tcl host helper `native2DGridForm window scene changed ?parent? ?presentation?`
 accepts an optional captured axis presentation. Existing callers retain Native
 coordinates. Each `x`/`y` entry supplies finite nonzero `scale`, `inverse_scale`,
@@ -90,13 +95,13 @@ Native2D affine convention `{a,b,c,d,tx,ty}`:
 | Operation | Request fields | Result |
 | --- | --- | --- |
 | `api_info` | No arguments | Public operation inventory, page limit and ownership/publication policy |
-| `sketch` | `definition`; optional `display_samples=257,working_unit` | Retained primitive descriptor, exact definition and scientific metrics |
+| `sketch` | `definition`; optional `display_samples=257,working_unit,coordinate_units,coordinate_relations` | Retained primitive descriptor and exact definition; pair-aware metadata preserves the coordinate frame, without granting physical metrics for an incompatible frame |
 | `sketch_update` | `object_token,definition`; optional `display_samples=257` | Same object identity; invalid/locked/constraint-failing changes roll back |
 | `sketch_evaluate` | `object_token,parameter` | Exact world point and derivative with respect to normalized parameter |
 | `sketch_sample` | `object_token,total,start,count`; optional `first=0,last=1` | Complete chosen parameter grid, bounded Nx2 page; total ≤1,000,000, page ≤65,536 |
 | `sketch_materialize` | `object_token,first,last,total` | Independent Native geometry from the complete chosen finite parameter grid, total ≤1,000,000 |
 | `sketch_explode` | `object_token,samples` | New independent generic point curve; retained original stays unchanged |
-| `curve` | `points` N×2; optional `kind=curve`, `pointset`, or `point` | Object descriptor; direct input limited to 65536 points |
+| `curve` | `points` N×2; optional `kind=curve` (`pointset` or `point`), `working_unit`, `coordinate_units`, `coordinate_relations` | Object descriptor with captured frame metadata; direct input limited to65536 points |
 | `from_source` | Execution-owned `source_token` from `CURVE_SOURCE_API_v1` | Complete finite Native geometry, frozen Source descriptor, exact original uint64 row-map resource and gap resource |
 | `describe` | `object_token` | Kind, complete bounds, Native style, metadata, point count; curves also have full length/span/signed-area metrics |
 | `metrics` | `object_token`; optional `output_units` pair | Native geometric metrics after compatible X/Y normalization; explicit unit and recorded coordinate frame |
@@ -228,9 +233,13 @@ fail explicitly rather than reporting a display-chord measurement.
 
 A construction line is infinite: evaluation accepts any finite parameter,
 `finite_bounds=false`, empty bounds and no finite metric. It renders clipped to
-the current viewport and cannot masquerade as a finite curve for endpoint bridges
-or ordinary Dataset publication. Explicit finite sampling through `sketch_sample`
-creates the requested materialization range. Other families use parameter [0,1].
+the current viewport and cannot masquerade as a finite whole curve for endpoint
+bridges or Dataset publication. Explicit finite sampling through `sketch_sample`
+or the host `native2DPrimitivePublish` helper's `first,last,total` policy
+materializes only the requested finite parameter range. The latter publishes
+that finite sample set and retains its policy and exact definition; it does not
+publish an infinite array. Workbench publication additionally applies its
+geometry-role policy. Other families use parameter [0,1].
 
 Exported resources retain `metadata.sketch_definition` and their complete chosen
 sampling cache. Restore verifies the owned resource through the normal resource
@@ -336,8 +345,13 @@ Native definitions govern retained primitive metrics, derivatives and sampled
 interval arc lengths. Unsupported nearest-boundary pairs reject explicitly;
 exact object distances support complete linear segments and full similarity
 circles. General ellipse/Bezier boundary projection is not supplied by this
-operation. Known mixed units reject; undeclared units remain undeclared.
-Measurement reads create neither geometry nor Datasets.
+operation. Axis-only `horizontal_distance`/`bounding_width` use X's declared
+unit, and `vertical_distance`/`bounding_height` use Y's declared unit, including
+unlike X/Y frames. Other plane measurements require the same exact X/Y unit
+symbol and a compatible common physical frame. Any nondefault frozen Variable
+relation requires explicit Dataset Transform normalization before measurement.
+Undeclared units remain undeclared. Measurement reads create neither geometry
+nor Datasets.
 
 ### Sketch identities and parent-linked fragments
 
@@ -457,7 +471,7 @@ Existing scene/object/constraint opaque tokens, Session/document generation/revi
 | reference_point_index | reference → legacy point_index only for true supported endpoints |
 | control_definition | reference, point → inverse-affine candidate, no mutation |
 | control_edit | reference, point → atomic edit validated against active constraints |
-| constraint_options | references (1..3) → compatible_constraints with existing definitions/defaults; general_solver0 |
+| constraint_options | references (1..3) → compatible_constraints with existing definitions/defaults; general_solver1 for the existing bounded retained-component solver, not unrestricted nonlinear solving |
 | constraint_apply | definition, optional constraint_token → direct drive/update and constraint receipt; atomic other-rule validation |
 | constraint_location | owned constraint_token → Native witness point for marker placement |
 
@@ -491,7 +505,7 @@ Bounds/limits and supported mathematical families are documented in [Native2D im
 
 ## semantic construction
 
-`construct_attached`, `placement_points`, `placement_preview`, `reference_connected` use the existing execution-owned scene/object/constraint tokens. Placement dictionaries have `point: [x,y]`, `reference: defining_control_receipt`, or `earlier: zero_based_prior_placement`; reference and earlier are exclusive. Declare `working_unit` consistently with referenced geometry. Native owns validation and exact reference resolution. Preview has no history/persistence side effect. Creation takes `family`, `placements`, optional `display_samples` (default257) and `closure_references`, returning the ordinary object receipt plus `definition`, `constraints`, `tail_reference`, `closed`, `periodic:false`. Constraints are ordinary persistent Coincident relationships. Editing connected controls uses the existing solver, checkpoint, Document and recovery contracts. Foreign/stale references or incompatible projected controls reject atomically. Numeric coordinate equality alone is not semantic connectivity.
+`construct_attached`, `placement_points`, `placement_preview`, `reference_connected` use the existing execution-owned scene/object/constraint tokens. Placement dictionaries have `point: [x,y]`, `reference: defining_control_receipt`, or `earlier: zero_based_prior_placement`; reference and earlier are exclusive. Construction accepts optional ordered `coordinate_units` and frozen `coordinate_relations`; absent pair defaults to two copies of `working_unit` (default empty). A placement reference must have the same complete normalized frame. Native owns placement validation and exact reference resolution. Preview has no history/persistence side effect. Creation takes `family`, `placements`, optional `display_samples` (default257) and `closure_references`, returning the ordinary object receipt plus `definition`, `constraints`, `tail_reference`, `closed`, `periodic:false`. Constraints are ordinary persistent Coincident relationships. Editing connected controls uses the existing solver, checkpoint, Document and recovery contracts. Numeric coordinate equality alone is not semantic connectivity. See the pair-aware contract below for the actual closure-reference and error boundaries.
 
 Portable C APIs: `gx2d_construction_resolve`, `gx2d_construction_preview`, `gx2d_sketch_create_attached`, `gx2d_references_connected`; checked output capacity and failure semantics are documented in gx2d.h. `gx2d_construction_pick` is intentionally host-only: device coordinates and pixel tolerance depend on the effective viewport. No Workbench dependency is required.
 
@@ -515,7 +529,7 @@ Octave cell arguments. Existing `view_state` remains the sole portable authority
 | image_calibrate | object_token, pixel point_a/point_b, distance, optional distance_unit | uniform calibrated state |
 | image_map | object_token, point, optional inverse bool | world or raster-local XY |
 | symmetry_preview | owned axis reference, retained definition | renderer-neutral reflected definition |
-| symmetry_construct | same plus working_unit, optional display_samples | two objects and persistent Symmetry constraint |
+| symmetry_construct | axis reference, retained definition; explicit coordinate_units plus optional coordinate_relations, or legacy working_unit; optional display_samples=257 | two objects in the checked axis frame and persistent Symmetry constraint |
 | canvas_preview | current or fit mode, bounded options | managed PNG receipt |
 
 Spline state adds dense optional `tangents` records `[flags, incomingXY, outgoingXY]`,
@@ -584,7 +598,7 @@ retained display samples into defining points.
 | `selection_set_restore` | Saved `members`, optional existing `selection_set_token` | Exact valid saved membership, including currently hidden entities; recovery does not silently drop valid hidden selection |
 | `path_vertices` | `object_token`, optional `repeat_endpoint=false` | Exact ordered world vertices; shared junctions once, explicit closed endpoint repetition |
 | `path_split` | `object_token`, interior `vertex` ordinal | Two retained paths, original preserved; closed input includes the closing edge in the two open results |
-| `path_join` | `a`, `b` object tokens; optional `reverse_a=false`, `reverse_b=false`, world `tolerance=0` | One new retained path; endpoint deduplicated, originals preserved, matching working units required |
+| `path_join` | `a`, `b` object tokens; optional `reverse_a=false`, `reverse_b=false`, world `tolerance=0` | One new retained path; endpoint deduplicated, originals preserved, same complete normalized coordinate frame required |
 | `primitive_publish` | `object_token`, new `dataset_id`, `sampling` | Create-only Canonical Dataset Publication in the owning Session, preserving source/conversion provenance |
 | `dataset_promote` | `dataset_id`, `x_variable_id`, `y_variable_id`; optional `options` filters/order | New owned retained geometry; trustworthy original GX-TXT publication is checked against all rows and reconstructed exactly, otherwise explicit interpolating spline |
 
@@ -613,14 +627,18 @@ Publication accepts at most 65536 vertices, including any repeated closure.
 Other primitive publication retains explicit `first`, `last`, `total` uniform
 parameter sampling. Original Datasets are never overwritten.
 
-Arbitrary promotion requires common declared length units, 2–65536 authoritative
-finite knots and one continuous span. It retains exact source row order/filter
-request, Dataset/variable/unit identity, descriptor hash, Native Catmull-Rom kernel,
-parameterization and maximum interpolation error at knots. Between-knot values
-are derived interpolation, not exact Dataset geometry. Missing spans or reduced
-inputs are rejected rather than silently bridged. Exact provenance reconstruction
-validates producer, original canonical receipt, variables, units, every XY value,
-global ordering schema/values and closure/direction policy before adoption.
+Arbitrary promotion preserves ordered X/Y units and frozen Variable relations;
+it requires authoritative knots in one continuous span, rejects reduced inputs
+above65536 knots, and delegates valid spline minimum/finite geometry to Native.
+It retains source row order/filter request, Dataset/Variable/unit identity,
+descriptor, Native Catmull-Rom kernel, parameterization and maximum numeric knot
+error. A mixed/custom frame reports scope
+`numeric_plane_interpolation_at_authoritative_knots`, with no common physical
+error unit inferred. Between-knot values are derived interpolation, not exact
+Dataset geometry. Missing spans are rejected rather than silently bridged.
+Exact provenance reconstruction separately validates producer, original canonical
+receipt, coordinate schema, every XY row, global ordering and retained sampling
+before adoption; full details follow below.
 
 ## Exact heterogeneous composition
 
@@ -775,7 +793,11 @@ receive typed records and can use the public report/validation/publication APIs.
 Coordinate units come from the actual owned geometry or stable source-variable
 bindings. Positive affine conversions on corresponding axes are resolved through
 Unit Registry; path/geometry additionally require compatible X/Y dimensions and
-one common output unit. No implicit geometric fallback is used for invalid X.
+one common proportional output unit. Their labelled axes use the existing Unit
+Registry homogeneous-coordinate plan: equal opaque symbols or absolute affine
+units do not establish a valid physical norm. Explicitly normalize such source
+coordinates through Dataset Transform before physical comparison or metrics.
+No implicit geometric fallback is used for invalid X.
 Undeclared-unit legacy geometry stays inspectable with unavailable physical
 statistical quantities. Existing raw receipt keys remain compatible.
 
@@ -789,8 +811,10 @@ existing reductions. Display rows are never reduced again as scientific data.
 evaluation frame. X matching defaults to the reference X/Y units; path/geometry
 default to the reference X unit on both axes. Unlike axes remain valid only for X
 matching. Nonlinear or nonpositive conversions are rejected with an explicit
-Dataset Transform normalization requirement. Matching identity undeclared units
+Dataset Transform normalization requirement. Wholly undeclared identity frames
 retain legacy numeric inspection with unavailable physical statistical quantities.
+This does not grant physical meaning to an opaque label. X-wise matching retains
+its independent-axis affine conversion contract.
 
 Every receipt adds `coordinate_frame`: `schema_version=1`, `method`, ordered
 `reference_units`, `target_units`, `output_units`, and `reference_matrix` /
@@ -848,7 +872,65 @@ returns `status cancelled` without a canonical mutation or Tk background error;
 other errors retain their existing diagnostics. Native pointer/dialog editing
 uses the same model/History authority and validated source receipts.
 
+The diagram viewport presents a dragged component or label through the same
+validated `preview` payload and `native2DGeometryDiagramProject document
+?preview_receipt?`. An optional receipt must match the current Document identity,
+generation, revision and SHA; its complete candidate payload is revalidated.
+The transient scene is disposed after drawing and does not update the Document,
+allocate canonical IDs or create History steps. Release performs the normal
+guarded commit; Escape/tool changes discard the gesture. Selection uses a thicker
+stroke and a dashed outline. Wire/label/probe tools expose actual catalog pins
+and junctions; the approached valid terminal gains a larger crosshair marker,
+and a pending wire snaps its presentation to that exact endpoint. Topological
+attachment still requires the existing validated terminal click.
+
 ## Existing wire route and endpoint edits (dev108; GAP039)
+
+### Electrical values, source symbols and segment attachments (dev109)
+
+Symbol and net-label Properties drafts retain the Document ID, generation,
+revision and SHA shown when opened. Apply rejects a draft after another edit or
+History navigation before preparing a History branch. A successful Apply advances
+only that draft's source guard; repeated valid edits remain available. This
+matches the existing wire Properties policy. Native stale-dialog/Redo acceptance
+remains a separate dev109 GUI gate.
+
+The existing `electrical.basic` catalog normalizes its declared numeric
+attributes using engineering suffixes: t=1e12, g=1e9, meg=1e6, k=1e3,
+m=1e-3, u/µ/μ=1e-6, n=1e-9, p=1e-12, f=1e-15. Suffix comparison is
+case insensitive: `M` means milli, and mega requires `meg`. Thus1k=1000,
+4.7k=4700,470n=4.7e-7,1u=1e-6,10u=1e-5 and1meg=1e6 in the catalog
+attribute's SI unit. Plain decimals/scientific notation remain valid. The
+owner parses a combined decimal exponent once, rejects nonfinite/underflow and
+existing field-bound violations before mutation, and stores numeric SI values.
+Suffix strings never become canonical physical values. Generic Numeric/UI
+number contracts retain their existing behavior. Properties and schematic
+labels use engineering text only when it parses back to the identical double;
+otherwise they retain a full precision SI representation.
+
+A catalog symbol may declare `variants {attribute CHOICE_ATTRIBUTE marks
+{CHOICE PATHS ...}}`, bounded to16 declared choices/32 paths per choice/128
+vertices per path. These marks extend its existing paths in the same renderer.
+The voltage symbol selects DC polarity, sine or pulse marks from its canonical
+`waveform`; nonzero small-signal `ac` amplitude does not select a sine waveform.
+Pins, stable identities, polarity and scientific netlist semantics are retained.
+
+For `wire start/end`, `junction target`, and `label endpoint`, the existing
+edit owner additionally accepts a transient `{kind wire wire_id ID point
+{x y}}`. The point must lie on that actual current wire within1e-7 diagram
+world units. Existing Native2D C segment projection validates it. Wire/junction
+edits split targeted segments atomically, reuse existing endpoints/cuts, preserve
+the original wire ID on its first piece, retain bends and allocate remaining
+canonical IDs without collisions even for imported low-counter payloads.
+Both targets of one wire are resolved against the same original payload.
+Label resolves the existing canonical net endpoint without a topology mutation.
+
+`junction targets {TARGET ...}` intentionally connects1..1024 coincident
+targets. Newly created cut junctions coalesce; existing component/junction IDs
+remain. Distinct existing nodes at one position use an explicit canonical
+joining wire, reused on repeated joining. Merely crossing drawn wires never
+joins them. Exact guarded preview/commit and Interactive Document persistence
+remain authoritative; generated ngspice nodes come from the existing provider.
 
 The existing `route` operation accepts the exact allowed keys `id`, `route`,
 `start`, `end`. `id` identifies an existing wire and at least one other key is
@@ -866,3 +948,326 @@ reconnects that wire and replaces its bends in one canonical commit.
 `native2DGeometryApiInfo` exposes `diagram_route_fields` and
 `diagram_route_semantics`. This extends an existing operation; it introduces no
 API family, raw Document access or new restricted C++ Host method.
+
+## Pair-aware retained frames and canonical reconstruction
+
+This is an additive contract of this existing API, not a new Script or C++
+family. It also documents the existing reusable host publication helpers. The
+`NATIVE2D_PRIMITIVE_PUBLICATION_v1` identifier below is a provenance schema ID;
+it is not a newly registered invocation endpoint. Internal `_native2D*` helpers
+remain CORE implementation details.
+
+### Frame identity, adoption and physical quantities
+
+`coordinate_units` is an ordered two-element list `{X_UNIT Y_UNIT}`; each symbol
+is at most256 characters without CR/LF and is resolved through Unit Registry.
+Optional `coordinate_relations` is an axis dictionary containing only `x,y`;
+each axis accepts only `canonical_unit`, `to_canonical`, `from_canonical`.
+The owner merges nominal registry fields with the supplied relation, requires
+a canonical unit for formulas, and checks the declared conversion plan. It
+stores only axis relations that differ from nominal registry definitions.
+No numeric values are converted by merely recording this metadata.
+
+The normalized frame contains `coordinate_units`, `coordinate_relations`, and
+`working_unit`. The common `working_unit` is the exact symbol only when X and Y
+symbols are identical; otherwise it is empty. Empty common working_unit does
+not erase the pair or infer dimensionless physical geometry. A nominal symbol
+also cannot erase nondefault frozen Variable calibration formulas.
+
+`sketch` and `curve` accept the explicit pair plus optional relations and adopt
+that frame. Without a pair they retain their existing working_unit behavior.
+`from_source` keeps the frozen source descriptor; the geometry owner derives
+the selected stable X/Y Variable units and nondefault relation fields from it.
+Resource export/restore carries geometry metadata. Later source disposal does
+not authorize rereading unrelated mutable Variable metadata to replace a frozen
+frame. Explicit scene rescaling records coordinate_conversions and clears the
+old variable-specific relation metadata according to its existing contract.
+
+Combining objects for composition/path joining or constraints requires the
+same complete normalized frame. Current equality is the actual Tcl value
+comparison of the complete frame dictionary, not a fresh numeric conversion
+or a units-only compatibility test. Different symbols, frozen relations or
+unequal normalized dictionary values can reject. Explicit Dataset Transform
+normalization owns scientific conversion; do not bypass the check by relabeling.
+
+Metrics/comparison reject nonempty variable-specific relations until explicit
+normalization. Plane measurements additionally require common compatible units;
+axis-only horizontal_distance/bounding_width use X and
+vertical_distance/bounding_height use Y. Existing checked affine comparison
+frames still govern x-wise versus Euclidean/path/geometry comparisons. Retaining,
+editing, displaying or canonically publishing a pair does not by itself establish
+a common physical distance, angle, tolerance, uncertainty or metrological claim.
+Here `metrics` means the explicit public operation with its checked coordinate
+frame. The ordinary `describe` receipt also embeds raw Native `metrics` for finite
+curves; that embedded field is a numeric native-plane diagnostic, without the
+explicit operation's checked physical frame/unit receipt. Do not treat it as an
+independent proof of physical validity for unlike/calibrated axes.
+
+### Publication calls and sampling
+
+| Exact public host signature | Context / result |
+|---|---|
+| `::GX::native2DPrimitivePublish session requested definition unit sampling logicalId ?name={Retained primitive}? ?moduleId=core.native2d?` |Explicit Session and new requested Dataset ID; returns the ordinary Canonical Dataset Publication v2 receipt. Actual active publication context overrides the caller's moduleId with its module owner |
+| `::GX::native2DPrimitiveReconstruct session datasetId xId yId` |Checks existing canonical rows and retained publication provenance; returns an inert exact definition/frame receipt, without adopting an opaque object or modifying the Dataset |
+| `::GX::native2DDatasetPromote session dataset x y ?options={}?` |Exact reconstruction when trusted provenance exists and no filters/order override is supplied; otherwise explicit spline interpolation receipt |
+
+For Python/Octave the existing admitted geometry operations are
+`primitive_publish(scene, request)` and `dataset_promote(scene, request)` through
+`gxtxt_api_call`, using their normal two-element argument array/list/cell.
+The schema descriptions here name the authoritative Tcl fields. The existing
+binding decodes coordinate_units as a Python list / Octave cell array, and
+coordinate_relations and original_source_variable_schema as nested axis
+dictionaries / structs. Unit and formula fields retain literal strings; the
+transport does not evaluate their scientific relations. It also decodes sampling
+traversal_contract and curved_samples as integer wire scalars, and constituents
+as a list / cell array of typed dictionaries / structs, including part_id,
+ordinal and nested direction fields. Python receives integer scalars as int;
+the existing Octave client preserves small integer scalars as exact doubles and
+uses native integers for larger identity values according to its wire contract.
+Operation admission, consumer ownership and typed C++ exposure remain their
+separate existing contracts; no private decoder or generic invoke is needed.
+`primitive_publish` requires `object_token,dataset_id,sampling`; optional
+`name` defaults to `Retained curve`. It gets the retained definition, actual
+direction marker and complete source frame/provenance from the owned object;
+these authoritative fields override conflicting sampling fields. Publication
+uses the currently owned Session and real calling module. It does not checkpoint
+the Interactive Document automatically.
+The metadata owner attributes an exact core.native2d publication with matching
+canonical producer_module to its existing System actor; installed module
+publication retains its actual module actor. This does not rename the canonical
+producer/provenance or admit arbitrary unknown module identities.
+
+The direct host publication helper selects pair-aware mode **when the
+`sampling.coordinate_units` key exists**. It uses that ordered pair and optional
+`sampling.coordinate_relations` (default empty), replaces the legacy `unit`
+argument with the derived common unit, and publishes x/y Variable descriptors
+with their actual per-axis units and nondefault relations. A direct legacy call
+with no pair rejects a coordinate_relations key, requires declared length-
+compatible `unit`, and retains historical common-unit provenance. Missing pair
+does not silently reinterpret legacy data as an arbitrary scientific plane.
+
+Retained straight paths publish exact authoritative vertices. Optional
+`repeat_endpoint=false` controls explicit closure repetition;
+`index_variable_id=index` supplies global zero-based order (empty omits it).
+The ID must match `[A-Za-z][A-Za-z0-9_]*` and differ from x/y; generated ordering
+Variable is int64 with empty unit, index_start0/index_step1, meaning
+`global_curve_point_order`. Maximum materialization is65536 ordered points.
+
+An ordered composite Path samples straight leaves exactly (line2, polyline real
+controls, rectangle5 including closure) and curved leaves with
+`curved_samples=257`, integer2–65536 per curved leaf. It requires a continuous
+chosen traversal, orders/reverses constituents using actual direction states,
+deduplicates equal shared junctions, and applies explicit root closure policy.
+Total remains at most65536. Its policy records `method=ordered_constituents`,
+`traversal_contract=2`, actual constituents, curved_samples, and
+`reversal_anchor=constituent_boundary`. Compound has no global traversal and
+rejects; review separate constituent outputs rather than inventing one order.
+
+Other retained families require `sampling.first,last,total` and use Native
+uniform-parameter sampling. `forward` defaults true for a direct host call;
+reversed direction swaps first/last before recording the policy. Sampling
+first/last must be finite, within0–1 except for retained construction lines;
+total must be an integer1–65536 because this helper materializes one Native
+page. The general paged sampler's larger total limit does not extend this
+single-output publication limit. Retained geometry validity and publication
+schema are delegated to Native/Canonical Publication; the finite sample set does
+not replace the exact retained definition or establish continuous interpolation
+accuracy.
+
+The structured `native2d.primitive_publication` metadata equals the canonical
+receipt's provenance and contains schema ID/version, operation
+`retained_primitive_to_dataset`, framework_version, exact normalized definition,
+working_unit, sampling, source_logical_identity, x/y Variable IDs, producer
+`core.native2d`, actual publishing_module, source_dataset_ids and
+conversion_provenance. Pair-aware publications additionally capture
+`coordinate_units`, normalized `coordinate_relations`, and
+`original_source_variable_schema.x/y`, each with exactly the scientific fields
+unit/canonical_unit/to_canonical/from_canonical. Geometry authority and
+approximation-policy text are explicit companion structured metadata. Display
+LOD and point_budget are not canonical sampling authorities.
+
+### Exact reconstruction checks and returned contract
+
+Reconstruction first requires the structured publication record, matching
+canonical producer_module/publishing_module and exact canonical provenance,
+supported schema/version/producer/operation, and the original selected X/Y IDs.
+For pair-aware records it normalizes the retained pair/relations and checks:
+
+1. Recorded working_unit equals the frame's derived common symbol.
+2. Each captured unit equals its axis's recorded unit.
+3. Current canonical Variable scientific fields unit, canonical_unit,
+   to_canonical and from_canonical exactly match the captured normalized schema.
+4. Captured schema exactly equals that implied by the recorded frame/relation.
+
+Absent coordinate_units selects legacy reconstruction: both Variables must
+still have the recorded common unit and its nominal normalized relation; that
+unit must remain declared length-compatible. Pair-aware support does not weaken
+the legacy check. These checks concern the listed scientific schema fields;
+they do not claim equality of every display-name or optional Variable field.
+
+Only `uniform_parameter`, `authoritative_path_vertices` and
+`ordered_constituents` policies with total at most65536 are supported. The owner
+recreates a temporary Native retained object and replays recorded sampling.
+An ordered-constituent record without traversal_contract uses the existing
+historical replay path; current records retain contract2 behavior. A declared
+ordering Variable must still be int64/unit-empty with index_start0/index_step1.
+
+Canonical Table Stream reads X/Y and optional order in chunks of4096. Every
+order value must be an integer equal to the global row ordinal. Row count must
+equal the replayed sample count. Each XY value must parse as a strict double
+and satisfy `abs(actual-expected) <= 1e-12*max(1,abs(expected))`; malformed numeric
+evaluation fails rather than authorizing an unchecked result. This is the actual
+recorded-sampling comparison tolerance, not an uncertainty or physical accuracy
+estimate. Current Variable relation/schema changes, row edits/order changes,
+unsupported sampling or mismatched canonical provenance reject reconstruction;
+use a reviewed scientific fit/interpolation workflow for arbitrary data.
+
+Success returns `definition`, the complete normalized frame,
+`method=exact_provenance_reconstruction`, source_dataset_id, full provenance,
+direction.forward, `materialization_verified=1`, and
+`original_dataset_modified=0`. The temporary Native scene and stream are closed
+on success/failure. No geometry token is adopted by this helper itself.
+
+`dataset_promote` requires `dataset_id,x_variable_id,y_variable_id`, optional
+`options` (copies `filters,order_variable_id` only). With provenance and neither
+option present, reconstruction failure is an error, not a silent fallback.
+Otherwise Curve Source supplies up to65536 unreduced authoritative knots in
+one span; Native constructs an interpolating Catmull-Rom spline in source order.
+Receipt records original descriptor/request/source rows, frame, kernel and
+uniform-source-order parameterization. `quality.maximum_knot_error` is the
+largest numeric hypot error at authoritative knots. Its scope is
+`numeric_plane_interpolation_at_authoritative_knots` for mixed/custom frames;
+only common-symbol/no-custom-relation frames use
+`interpolation_at_authoritative_knots` with that common unit. The owner does not
+infer a common physical norm for unlike axes or validate between-knot accuracy.
+`quality.maximum_knot_error_by_axis` gives the separate maximum absolute knot
+differences as `x` and `y`; `quality.coordinate_units` retains the ordered native
+X/Y units. The Workbench review labels each component with its own unit and
+identifies the combined mixed/custom-frame result as a numeric plane norm.
+Promotion review and bridge-settings forms capture the source coordinate
+context; Apply rejects a changed context before modifying retained geometry or
+composition parameters. Bridge derivative tolerance names both native axes.
+
+The opaque `dataset_promote` operation explicitly creates/adopts a new retained
+object with the returned pair/relations, restores direction when present, and
+stores the conversion receipt. It returns the ordinary object receipt plus
+`conversion` and `original_dataset_modified=0`. Original canonical Dataset is
+preserved; caller owns Document checkpoint/history under existing contracts.
+
+### Pair-aware construction and symmetry
+
+`construct_attached`, `placement_points`, `placement_preview` accept optional
+coordinate_units/coordinate_relations. Without a pair they use two copies of
+working_unit (default empty). Every placement reference is mapped through the
+owned scene and checked against the complete normalized requested frame before
+Native placement resolution. `placement_points` returns points;
+`placement_preview` returns definition; neither adopts persistent geometry.
+Creation adopts the exact frame and returns the ordinary object receipt plus
+definition, tail_reference, constraints, closed and periodic=false. If post-
+creation adoption fails, its owned map is restored and the created object removed.
+
+The Tcl wrapper checks closure_references through the same complete-frame and
+owned-reference helper as placement references, before calling Native
+construction_create. Different X/Y pairs and same symbols with different frozen
+relations reject before construction can add an object or relationship. Native
+still owns actual closure geometry/connectivity semantics; passing a frame check
+alone does not prove that a candidate is geometrically closed.
+`reference_connected` only queries existing reference connectivity and takes no
+new construction frame.
+
+`symmetry_preview` requires an owned axis reference and retained definition and
+returns Native's renderer-neutral preview definition. It does not adopt objects
+or validate an optional requested pair. `symmetry_construct` takes the same
+axis/definition and optional display_samples=257. An explicit coordinate_units
+pair with optional relations defines its frame; otherwise its required legacy
+working_unit must be length-convertible and is duplicated. The axis object's
+complete frame must equal that frame. Both source/mirror objects are adopted
+with it; the result contains two ordinary object receipts in `objects` and the
+persistent relationship receipt in `constraints`. Post-creation adoption error
+restores the prior owned map and deletes created source/mirror objects. Native
+retained solver/constraint support remains authoritative; publication or frame
+identity does not add a new physical-symmetry/angle guarantee for unlike units.
+
+### Source-backed use and exposure limits
+
+The host may publish an already validated retained definition in unlike units
+with explicit pair metadata; no relation means each axis uses its registry
+nominal definition. This example is illustrative and unexecuted here, requires
+an explicitly owned Session and new Dataset ID, and creates canonical data:
+
+```tcl
+set sampling [dict create first 0 last 1 total 101 \
+    coordinate_units {s V} coordinate_relations {}]
+set receipt [::GX::native2DPrimitivePublish $session $newDatasetId \
+    $retainedDefinition {} $sampling $logicalIdentity]
+```
+
+Use only a definition/sample policy appropriate to its retained family (Path
+uses its authoritative-vertex policy). Actual Dataset Publication owns schema,
+writer, create-only identity, persistence and errors. Python/Octave use the
+existing owned geometry operations rather than invoking these host helpers or
+private `_native2D*` functions. Current C++ typed Host methods remain their actual
+declared component methods; no generic geometry invoke, primitive-publish,
+reconstruction or arbitrary Tcl dispatch is created by this reference.
+
+
+## Retained image annotations (dev109, Tcl owning host)
+
+These scoped operations extend the existing Native2D image identity owner.
+They are currently Tcl host operations, not registered Script Bridge operations
+or arbitrary C++ geometry calls. The Builder anchored annotation editor remains
+a separate unfinished integration gate.
+
+Call the existing scoped service:
+
+```tcl
+::GX::native2DGeometryCall $scene raster_annotation_get [dict create object_token $image]
+```
+
+`scene` is an already admitted Native2D scene token. `object_token` is an existing reference image in that same scene. The existing Document, Session, canonical Dataset identity/schema/content and retained Resource checks apply. No source filename, pointer, Dataset substitution or alternate annotation store is accepted.
+
+| Operation | Request fields | Result |
+| --- | --- | --- |
+| `raster_annotation_get` | `object_token` | Current collection dictionary. |
+| `raster_annotation_set` | `object_token`, `annotation_id`, `expected_revision`, `definition` | Updated collection; semantically equal canonical definition returns the unchanged collection/revision. |
+| `raster_annotation_remove` | `object_token`, `annotation_id`, `expected_revision` | Updated collection; absent ID is an error. |
+| `raster_annotation_project` | `object_token` | Dictionary with `annotations` **list** of definition dictionaries augmented with `id`, collection `revision`, and `source_resource_id`. Returned `point` uses current Native2D world coordinates. |
+
+The collection has `format=gxtxt.native2d.image_annotations.v1`, `source_resource_id`, nonnegative integer `revision`, `annotations` (ID→definition dictionary), and `generations` (ID→positive integer identity generation). IDs match `[A-Za-z][A-Za-z0-9_.-]{0,63}`. A new ID gets the next collection revision as its generation; edits retain its generation; delete/recreate gets a new generation. `expected_revision` must equal the current collection revision, including for a no-op. An expired revision fails without overwriting the retained collection.
+
+Definition fields:
+
+| Field | Contract/default |
+| --- | --- |
+| `point` | Required pair of finite numbers in **retained source-image pixels**. The operation does not impose an inside-image clipping constraint. Native `image_map` owns conversion to world coordinates; `world_to_device` owns device mapping. |
+| `text` | Required text, at most 256 UTF-8 bytes, no NUL. This is annotation text; it is not a physical unit declaration or numerical measurement. |
+| `anchor` | `n/ne/e/se/s/sw/w/nw/center`; default `sw`. |
+| `font_family` | Default `Sans`; trimmed nonempty name, at most128 UTF-8 bytes; no NUL/CR/LF. |
+| `font_size` | Finite 6..96 **device pixels**, default14. It is independent of image/world scale. |
+| `color` | Existing UIField color contract; default `#233746`. Returned color uses its canonical RGB/alpha representation. |
+
+Unknown definition fields fail. Normalization canonicalizes field order, finite numeric values and UIField color before no-op comparison. A reordered equivalent dictionary or an unchanged returned normalized definition does not create a revision.
+
+Both limits apply: at most512 annotations **and at most16,384 UTF-8 bytes for the entire serialized retained collection**, including IDs, definitions, generation records and envelope fields. This is the existing Native2D identity-attribute capacity; it does not promise that512 maximum-length texts fit. Oversize updates fail before native write and retain the previous collection. The separate131,072-byte presentation-input limit does not expand persistent annotation capacity.
+
+Mutation respects existing image/layer locks and the source/Resource guards. Stale collection revisions, missing IDs on remove, invalid/nonfinite fields, expired scenes, replaced canonical sources and capacity violations return errors. Get/project perform the same existing scientific identity admission; they are not a bypass for expired sources.
+
+For an already owned image, an exact source-backed Tcl example is:
+
+```tcl
+set old [::GX::native2DGeometryCall $scene raster_annotation_get [dict create object_token $image]]
+set request [dict create object_token $image annotation_id note_1 \
+    expected_revision [dict get $old revision] \
+    definition [dict create point {12 10} text {Source note} font_size 18]]
+set current [::GX::native2DGeometryCall $scene raster_annotation_set $request]
+```
+
+The example edits only the retained native image. It does not create a Dataset or implicitly checkpoint the Document. Ordinary native Resource export/save/restore carries `gx.image.annotations`; canonical Document/History adoption remains the existing explicit owning workflow.
+
+The existing Tcl viewport panel target may use `kind annotation`, `scene_token`, `object_token`, `annotation_id`, optional `annotation_generation`, and optional two-device-distance `offset` (each finite, absolute value≤1024). It captures current generation if omitted, rejects an expired generation, and follows current native source→world→device mapping. Hidden image/layer presentation hides the anchor. This is host substrate, not a generic script GUI callback or completed Builder editor.
+
+
+Independent execution verified 17 focused owner/presentation/lifetime checks,
+including reordered no-op updates, the real 16,384-byte capacity boundary,
+unchanged state after rejection, generation replacement and a real native
+`scene_bounds` live/closed transition. This is not installed GUI acceptance.

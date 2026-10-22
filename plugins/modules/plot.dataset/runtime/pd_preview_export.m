@@ -1,4 +1,4 @@
-function pd_preview_export(fig,ax,P,groups,point_order,cfg,graph,out,labels,lw,ms,axis_labels)
+function pd_preview_export(fig,ax,P,groups,point_order,cfg,graph,out,labels,lw,ms,axis_labels,prepared)
 % Read-only projection of the SAME prepared graph after its normal presentation.
 % Never prints/replaces the static graph, publishes data or creates a Document.
   mkdir(out);limits=[];scales={};directions={};units={};
@@ -30,6 +30,7 @@ function pd_preview_export(fig,ax,P,groups,point_order,cfg,graph,out,labels,lw,m
   if(!isnumeric(meta.background)||numel(meta.background)!=3),error('Native3D preview: transparent backgrounds require a CORE alpha-background API; static graph preserved');endif
   cb=findobj(fig,'tag','colorbar');meta.colorbar_visible=!isempty(cb);meta.colorbar_label='';
   if(!isempty(cb)),meta.colorbar_label=get(get(cb(1),'ylabel'),'string');endif
+  if(nargin>=13),meta.prepared_presentation=prepared_presentation(fig,ax,prepared);endif
   levels=str2double(gxtxt_ini_get(cfg,['plot.' graph '.contour_levels'],'12'));
   if(numel(groups)>16),error('Native3D preview: at most 16 prepared series');endif
   total_points=0;
@@ -54,10 +55,61 @@ function pd_preview_export(fig,ax,P,groups,point_order,cfg,graph,out,labels,lw,m
       cell_rgb=rgb(polys(:,1)+1,:);color_array='display_rgb_cell';
     elseif(strcmp(primitive,'surface')&&isnumeric(color_mode)&&numel(color_mode)==3)
       cell_rgb=repmat(color_mode(:)',rows(polys),1);color_array='display_rgb_cell';
+    elseif(strcmp(P.plot_type,'mesh')&&ischar(color_mode)&&strcmp(color_mode,'flat')&&!isempty(rgb))
+      starts=cellfun(@(edge) edge(1)+1,lines);
+      cell_rgb=rgb(starts,:);color_array='display_rgb_cell';
+    elseif(strcmp(P.plot_type,'mesh')&&isnumeric(color_mode)&&numel(color_mode)==3)
+      cell_rgb=repmat(color_mode(:)',numel(lines),1);color_array='display_rgb_cell';
     endif
     pd_scene_write_vtp(fullfile(out,path),xyz,scalar,verts,lines,polys,rgb,cell_rgb);
     meta.layers{end+1}=struct('path',path,'primitive',primitive,'color',groups{i}.color,'scalar',!isempty(scalar),'color_array',color_array,'color_mode',color_mode);
   endfor
   f=fopen(fullfile(out,'presentation.json'),'w');
   unwind_protect;fputs(f,jsonencode(meta));unwind_protect_cleanup;fclose(f);end_unwind_protect
+endfunction
+
+function result=prepared_presentation(fig,ax,prepared)
+  % All coordinates/fonts below describe effective normal graphics objects.
+  % Reading normalized properties does not modify the objects or their units.
+  if(!strcmp(get(fig,'units'),'pixels')||!strcmp(get(fig,'paperunits'),'inches')||!strcmp(get(ax,'units'),'normalized'))
+    error('Native3D preview: prepared presentation needs normalized axes and pixel/inch figure units');
+  endif
+  fp=get(fig,'position');paper=get(fig,'paperposition');dpi=fp(3)/paper(3);
+  if(!isfinite(dpi)||dpi<=0),error('Native3D preview: invalid prepared output DPI');endif
+  result=struct('version',1,'layout_auto',prepared.layout_auto,'axes_position',get(ax,'position'), ...
+    'legend',struct('visible',false,'position_explicit',prepared.legend_position_explicit));
+  h=prepared.legend_handle;
+  if(isempty(h)||!ishandle(h)||!strcmp(get(h,'visible'),'on')),return;endif
+  if(!strcmp(get(h,'units'),'normalized')),error('Native3D preview: legend position is not normalized');endif
+  box=get(h,'position');
+  if(numel(box)!=4||any(!isfinite(box))||any(box(3:4)<=0)),error('Native3D preview: invalid effective legend box');endif
+  entries=struct('text',{},'position',{},'font_px',{},'alignment',{});
+  texts=findobj(h,'type','text');
+  for i=1:numel(texts)
+    t=texts(i);value=get(t,'string');if(isempty(value)),continue;endif
+    if(iscell(value)),value=strjoin(value,'\n');endif
+    if(!ischar(value)),error('Native3D preview: unsupported legend text');endif
+    if(!strcmp(get(t,'fontunits'),'points')),error('Native3D preview: unsupported prepared legend font units');endif
+    pos=get(t,'position');u=get(t,'units');
+    if(strcmp(u,'data'))
+      xl=get(h,'xlim');yl=get(h,'ylim');pos(1)=(pos(1)-xl(1))/diff(xl);pos(2)=(pos(2)-yl(1))/diff(yl);
+    elseif(!strcmp(u,'normalized')),error('Native3D preview: unsupported legend text coordinates');endif
+    entries(end+1)=struct('text',value,'position',pos(1:2),'font_px',get(t,'fontsize')*dpi/72,'alignment',get(t,'horizontalalignment'));
+  endfor
+  if(isempty(entries)),return;endif
+  % Graphics child order is not display order. Preserve actual rows/columns.
+  coordinates=vertcat(entries.position);[~,order]=sortrows([-coordinates(:,2),coordinates(:,1)],[1 2]);entries=entries(order);
+  edge=get(h,'color');background=isnumeric(edge)&&numel(edge)==3;
+  border=false;border_color=[0.5 0.5 0.5];lines=findobj(h,'type','line');
+  for i=1:numel(lines)
+    xx=get(lines(i),'xdata');yy=get(lines(i),'ydata');
+    if(numel(xx)==2&&numel(yy)==2&&(all(xx<0.03)||all(xx>0.97))&&abs(diff(yy))>0.9)
+      border=true;border_color=get(lines(i),'color');break;
+    endif
+  endfor
+  if(!background),edge=[1 1 1];endif
+  % A native legend may use its own box rather than the GNUplot frame lines.
+  if(isprop(h,'box')&&strcmp(get(h,'box'),'on')),border=true;if(isprop(h,'edgecolor')),border_color=get(h,'edgecolor');endif;endif
+  result.legend=struct('visible',true,'position_explicit',prepared.legend_position_explicit, ...
+    'box',box,'entries',{entries},'background',background,'background_rgb',edge,'border',border,'border_rgb',border_color);
 endfunction

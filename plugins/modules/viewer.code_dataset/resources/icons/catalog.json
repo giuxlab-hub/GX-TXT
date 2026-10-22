@@ -1,0 +1,16 @@
+{
+  "schema": "gxtxt.viewer_icon_resources.v1",
+  "icons": {
+    "code_document": {
+      "title": "Code document",
+      "category": "Documents",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "1507fc861f40524a2cee9777812cdb9eb647ff2987774a5621001694f805c39f",
+      "png_sha256": "bbf0a27117d76695b134f3e7e7773913455e6c91a83fe0cc26360cdb6505a1bf",
+      "width": "64",
+      "height": "64",
+      "alpha": "1"
+    }
+  }
+}

@@ -176,6 +176,22 @@ proc ::GX::acquisitionHandlerInspect {moduleId sourcePath {previewDir ""}} {
     return $result
 }
 
+proc ::GX::_acquisitionHandlerUnrecognizedReason {moduleId inspection} {
+    set diagnostics {}
+    if {[dict exists $inspection preview_metadata Diagnostic]} {
+        set diagnostic [string trim [dict get $inspection preview_metadata Diagnostic]]
+        if {$diagnostic ne {}} {lappend diagnostics $diagnostic}
+    }
+    foreach warning [dict get $inspection warnings] {
+        set warning [string trim $warning]
+        if {$warning ne {} && $warning ni $diagnostics} {lappend diagnostics $warning}
+    }
+    set reason "$moduleId: acquisition handler did not recognize the selected source group."
+    if {[llength $diagnostics]} {append reason "\n\n[join $diagnostics \n]"}
+    append reason "\n\nThe source row is retained. Use Preview for the inspection details, or correct the source and import again."
+    return $reason
+}
+
 proc ::GX::acquisitionHandlerSeedVariables {inspection} {
     variable sourceVar
     variable sourceVarCount
@@ -1065,7 +1081,11 @@ proc ::GX::genericCsvBatchRender {} {
         ttk::combobox $p.kind$i -textvariable ::GX::genericCsvBatch($i,contract_choice) -values [contractRegistryChoices] -state readonly -width 22
         ttk::entry $p.other$i -textvariable ::GX::genericCsvBatch($i,custom_contract) -width 24
         set rowId [string trim $genericCsvBatch($i,dataset_id)]
-        ttk::label $p.status$i -text [genericCsvBatchRowStatus $i]
+        if {[genericCsvBatchRowStatus $i] eq {Failed}} {
+            ttk::button $p.status$i -text {Failed: details...} -command [list ::GX::acquisitionHandlerBatchRowDiagnostic $i]
+        } else {
+            ttk::label $p.status$i -text [genericCsvBatchRowStatus $i]
+        }
         ttk::button $p.prev$i -text "Preview" -command [list ::GX::datasetInspectionSelectPendingPreview $i]
         ttk::button $p.vars$i -text "Variables" -command [list ::GX::datasetInspectionSelectPendingVariables $i]
         ttk::button $p.rm$i -text "Remove" -command [list ::GX::genericCsvBatchRemove $i]
@@ -1413,7 +1433,7 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
     }
     set outputDir [file join $session datasets]; file mkdir $outputDir
     set inspect [acquisitionHandlerInspectSources $moduleId $norm]
-    if {[dict exists $inspect recognized] && ![dict get $inspect recognized]} { error "$moduleId: acquisition handler did not recognize the selected source group." }
+    if {[dict exists $inspect recognized] && ![dict get $inspect recognized]} { error [_acquisitionHandlerUnrecognizedReason $moduleId $inspect] }
     set pf [acquisitionHandlerPreflight $moduleId $norm]
     if {![dict get $pf ok] || [llength [dict get $pf errors]]} { error "$moduleId: acquisition preflight failed: [join [dict get $pf errors] {; }]" }
     set cfgDict [dict create]; foreach key [moduleConfigKeys $moduleId] { if {[info exists moduleCfg($moduleId,$key)]} { dict set cfgDict $key $moduleCfg($moduleId,$key) } }
@@ -1665,6 +1685,13 @@ proc ::GX::genericCsvBatchRecord {row status {message ""}} {
     set genericCsvBatchResult($row,message) $message
     set genericCsvBatch($row,acquisition_status) $status
     set genericCsvBatch($row,acquisition_message) $message
+}
+
+proc ::GX::acquisitionHandlerBatchRowDiagnostic {row} {
+    variable genericCsvBatchResult
+    if {![info exists genericCsvBatchResult($row,status)] || $genericCsvBatchResult($row,status) ne {Failed}} return
+    set parent [expr {[winfo exists .top] ? {.top} : {.}}]
+    tk_messageBox -parent $parent -icon error -title {Import source details} -message "Source row $row\n\n$genericCsvBatchResult($row,message)"
 }
 
 proc ::GX::genericCsvBatchRowStatus_before_import_queue {row} {
@@ -2319,7 +2346,7 @@ proc ::GX::acquisitionHandlerImportSourcesToSession {moduleId session sourcePath
     # Inspection and handler preflight are read-only and precede all session writes.
     set inspect [acquisitionHandlerInspectSources $moduleId $norm]
     if {[dict exists $inspect recognized] && ![dict get $inspect recognized]} {
-        error "$moduleId: acquisition handler did not recognize the selected source group."
+        error [_acquisitionHandlerUnrecognizedReason $moduleId $inspect]
     }
     set pf [acquisitionHandlerPreflight $moduleId $norm]
     if {![dict get $pf ok] || [llength [dict get $pf errors]]} {

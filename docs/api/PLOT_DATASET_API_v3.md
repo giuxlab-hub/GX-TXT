@@ -1,4 +1,10 @@
-# Plot Dataset API v3 — current public facade
+# Plot Dataset API v3 — DEPRECATED
+
+**DEPRECATED — historical compatibility only. Use
+[Plot Dataset API v4](PLOT_DATASET_API_v4.md) for every new or rebuilt Viewer
+scientific 2D and 3D plot.** Existing v3 consumers and persisted documents retain
+their original behavior. Restricted C++ Viewer projects must not declare or
+invoke v3; installed public API discovery does not grant SDK admission.
 
 The dev096 Builder adapter adds host-only
 `renderTransientIndependentCurves2D series label destination`: each of 1..64
@@ -10,9 +16,10 @@ gain a filesystem destination operation. Optional PlotSpec v2 series fields
 display and explicit gaps; old specs and the default continuity policy retain
 their previous behavior. Full source values remain canonical and immutable.
 
-GX-TXT 0.9.8.10-dev hosts this API in `plot.dataset` 3.12.6. Activate only
-`::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3` for a new
-consumer. The namespace is `::GX::PlotDatasetAPIv3`. It loads its stable v1/v2
+GX-TXT retains this API in `plot.dataset` for historical compatibility.
+Existing consumers may activate
+`::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_API_v3`.
+The namespace is `::GX::PlotDatasetAPIv3`. It loads its stable v1/v2
 dependencies as needed; callers do not activate v2 separately.
 
 API version and persisted data schema are separate. Normal declarative plots

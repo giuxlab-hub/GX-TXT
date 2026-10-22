@@ -2,9 +2,9 @@
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
-`filePublicationPublishBundle artifacts ?create_only|replace?` publishes explicit
+`filePublicationPublishBundle artifacts ?create_only|replace? ?options?` publishes explicit
 exports and their sidecars. Each artifact is `{id destination writer}`; IDs and
-destinations must be distinct and the bundle contains 1–64 artifacts. A writer
+destinations must be distinct and the bundle contains 1–4096 artifacts. A writer
 callback receives an owned output channel and a context with `completed`
 receipts for preceding artifacts. Receipts expose the requested destination,
 SHA-256 and byte count, allowing metadata to describe an already staged model
@@ -17,6 +17,14 @@ bundle if a later artifact fails. Destination changes during preparation fail
 without overwriting the other writer. Symlink and non-file destinations fail
 preflight. An unexpected concurrent replacement during rollback is reported as
 a recovery error, with its backup preserved.
+
+Optional `options {create_parents 1}` permits explicitly requested nested export
+directories, such as a TeX project's linked figures and bibliography. Default0
+retains the existing requirement that destination directories already exist.
+Preflight validates the complete bundle before creating any directories. On
+failure, newly created empty directories are removed; existing directories or
+directories containing published/other files remain. This extends the same
+complete-file transaction; it is not an alternative project exporter.
 
 Curve Fit exports and Workbench exporters use this common authority. Large
 Curve Fit model JSON is streamed in bounded chunks beside the CSV; its metadata

@@ -1,5 +1,22 @@
 # Graph Workflow API v1
 
+## dev109 read-only scientific 3D resolution
+
+`::GX::graphWorkflowScientific3DSource reference` separates the exact
+`original_reference`, any verified `representation_reference`, owning exporter
+and `source_info`. Producer-backed preparations also carry `prepared_source`
+and a fingerprint. Compact Plots preview uses this resolver for eligibility,
+activation, retained-source checks and preparation. Captions and exported
+provenance preserve the selected graph's identity.
+
+Resolution uses the selected producer output's explicit public bridge and
+declared geometry contract. It never creates/reconciles a Plot Variant, edits
+bindings, reruns a module or infers a mesh from PNG pixels. Missing registration
+alone is not a geometry rejection. Canonical Dataset identity, stable Variable
+IDs, units, coordinate revision and effective presentation must match the
+retained preparation. The existing exporter worker verifies actual MAT geometry.
+Positive and negative installed GUI acceptance remains open.
+
 ## Scope
 
 Graph Workflow API v1 provides three CORE services around the stable graph
@@ -9,11 +26,42 @@ graph. The API does not create another graph, axis, or variant registry.
 ## Deterministic public API activation
 
     ::GX::modulePublicApiIds module_id
+    ::GX::modulePublicApiDocumentation module_id api_id
     ::GX::modulePublicApiActivate module_id api_id
 
 A descriptor declares public APIs in [public_apis] and their entrypoints in
 [public_api.<id>]. Activation resolves the entrypoint inside the module
 directory, sources it once, and caches only successful activation.
+
+`modulePublicApiDocumentation` reads optional provider-owned `public_contract`
+data in the existing `[public_api.<id>]` descriptor section. It returns the
+validated dictionary or an empty value when the provider has not declared one.
+It does not activate source, execute operations, require a Session or change
+Script Bridge/restricted C++ authorization.
+
+The schema is `gxtxt.public_api_documentation.v1`, with nonempty `purpose`, an
+`operations` dictionary and optional overall `context`. Each logical operation
+declares a literal qualified `command`, exact Tcl formal `arguments` (including
+optional default pairs), `parameters` keyed by those formal names, a `result`
+and its actual `context`. Each parameter has a meaningful `type` and
+`description`; result has the same two fields. An optional `example` is trusted
+host documentation only. Callbacks and standalone entrypoints must retain their
+actual different contexts. This is explicit public-owner metadata, not a scan of
+implementation procedures or a new callable registry.
+
+The normal Development API catalogue carries these contracts and the shared
+Octave/Python/C++ Browser displays signatures, parameter/result types and context
+in its own reference pane. It labels them trusted host documentation; only the
+existing Script registration or finite SDK policy establishes those languages'
+callability. Missing/invalid documentation is reported without inventing a
+signature or invoking the provider. API manuals resolve through the existing
+Documentation service to the actual common/provider path.
+
+When writing `public_contract` through an INI descriptor, use the existing
+`putKV`/`iniEscape` owner. A nested Tcl dictionary may contain backslashes and
+default values; writing an unescaped Tcl serialization changes it when the
+normal `parseIni` reader unescapes it. The ordinary dictionary and INI roundtrip
+must both preserve the declared contract.
 
 Before Series Editor extension lookup, CORE activates each declared public API
 whose capabilities contain series_editor_extension. Activation is

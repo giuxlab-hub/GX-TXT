@@ -24,10 +24,25 @@ def gui_test(project, payload):
         'workspace_review': {'workspace_id'},
         'workspace_upgrade': {'review_id'},
         'click': {'component'}, 'choice': {'component', 'value'},
+        'list_select': {'component', 'index'},
+        'table_select': {'component', 'index'},
+        'table_scroll': {'component', 'axis', 'direction'},
+        'table_copy': {'component'},
+        'table_page': {'component', 'command'},
         'text': {'component', 'value'}, 'tab': {'component'},
+        'source_text': {'component', 'value'},
+        'source_replace': {'component', 'query', 'replacement', 'scope'},
         'pointer': {'component', 'x', 'y', 'phase'},
         'plot_pointer': {'component', 'x', 'y'},
         'key': {'component', 'key'},
+        'document_find': {'component', 'value', 'direction'},
+        'document_pointer': {'component', 'x', 'y', 'phase'},
+        'document_zoom': {'component', 'value'},
+        'pdf_control': {'component', 'command'},
+        'pdf_pointer': {'component', 'x', 'y', 'phase'},
+        'pdf_key': {'component', 'key'},
+        'pdf_resize': {'component', 'width', 'height'},
+        'pdf_close': {'component'},
         'property': {'component', 'field', 'value'},
         'wire_route': {'component', 'command'},
         'properties_commit': {'component'}, 'properties_close': {'component'},
@@ -43,6 +58,8 @@ def gui_test(project, payload):
         shapes['plot_pointer'] = {'component', 'x', 'y', 'phase'}
     if isinstance(payload, dict) and payload.get('operation') == 'wire_route' and payload.get('command') == 'select':
         shapes['wire_route'] = {'component', 'command', 'index'}
+    if isinstance(payload, dict) and payload.get('operation') == 'table_page' and payload.get('command') == 'goto':
+        shapes['table_page'] = {'component', 'command', 'row'}
     if not isinstance(payload, dict) or payload.get('operation') not in shapes or set(payload) != {'operation'} | shapes[payload['operation']]:
         raise DevelopmentError('Use an enumerated typed GUI test action', 'GUI_TEST_REQUEST')
     for key, value in payload.items():
@@ -51,8 +68,9 @@ def gui_test(project, payload):
             if type(value) is not int or not minimum <= value <= maximum:
                 raise DevelopmentError('Native Viewer size must be640..1880 by480..1100 integer client pixels', 'GUI_TEST_REQUEST')
         elif key == 'index':
-            if type(value) is not int or not 0 <= value < 128:
-                raise DevelopmentError('Wire bend index must be0..127', 'GUI_TEST_REQUEST')
+            limit = 1000 if payload['operation'] in {'list_select', 'table_select'} else 128
+            if type(value) is not int or not 0 <= value < limit:
+                raise DevelopmentError(f'Native row index must be0..{limit-1}', 'GUI_TEST_REQUEST')
         elif key in {'x', 'y'}:
             if type(value) not in (int, float) or not -1000000 <= value <= 1000000:
                 raise DevelopmentError('Pointer world coordinates are outside bounds', 'GUI_TEST_REQUEST')
@@ -62,21 +80,41 @@ def gui_test(project, payload):
         raise DevelopmentError('Use a declared logical component identity', 'GUI_TEST_REQUEST')
     if payload['operation'] == 'wire_route' and payload['command'] not in {'select', 'add', 'replace', 'remove', 'up', 'down'}:
         raise DevelopmentError('Unknown typed wire bend action', 'GUI_TEST_REQUEST')
+    if payload['operation'] == 'table_scroll' and (payload['axis'] not in {'x', 'y'} or payload['direction'] not in {'backward', 'forward'}):
+        raise DevelopmentError('Table scroll uses axis x|y and direction backward|forward', 'GUI_TEST_REQUEST')
+    if payload['operation'] == 'table_page':
+        if payload['command'] not in {'previous', 'next', 'first', 'last', 'goto', 'schema'}:
+            raise DevelopmentError('Table paging command must be previous, next, first, last, goto or schema', 'GUI_TEST_REQUEST')
+        if payload['command'] == 'goto' and (len(payload['row']) > 32 or not re.fullmatch(r'[+-]?[0-9]+', payload['row'])):
+            raise DevelopmentError('Enter a bounded integer source-row literal', 'GUI_TEST_REQUEST')
     if 'workspace_id' in payload and (len(payload['workspace_id']) > 128 or not re.fullmatch(r'idoc_[0-9]{4,}', payload['workspace_id'])):
         raise DevelopmentError('Use a canonical current-Session Workspace identity', 'GUI_TEST_REQUEST')
     if 'capture_id' in payload and not re.fullmatch(r'[0-9a-f]{32}', payload['capture_id']):
         raise DevelopmentError('Use an exact native capture identity', 'GUI_TEST_REQUEST')
     if 'review_id' in payload and not re.fullmatch(r'review-[0-9a-f]+-[0-9a-f]+', payload['review_id']):
         raise DevelopmentError('Use an exact live Workspace review identity', 'GUI_TEST_REQUEST')
-    if 'dialog' in payload and payload['dialog'] not in {'net_label', 'properties'}:
-        raise DevelopmentError('Choose an existing owned net_label or properties dialog', 'GUI_TEST_REQUEST')
+    if 'dialog' in payload and payload['dialog'] not in {'net_label', 'properties', 'pdf_reader'}:
+        raise DevelopmentError('Choose an existing owned net_label, properties or pdf_reader window', 'GUI_TEST_REQUEST')
     phases = {'click', 'double', 'press', 'move', 'release'}
-    if payload['operation'] == 'plot_pointer':
+    if payload['operation'] in {'pointer', 'plot_pointer', 'document_pointer', 'pdf_pointer'}:
         phases |= {'wheel_up', 'wheel_down'}
     if payload.get('phase', 'click') not in phases:
         raise DevelopmentError('Unknown bounded pointer phase', 'GUI_TEST_REQUEST')
-    if payload.get('key', 'Escape') not in {'Escape', 'Delete', 'BackSpace', 'r', 'w', 'j', 'p', 'f', 'ctrl+z', 'ctrl+y'}:
-        raise DevelopmentError('Key is outside the native schematic test contract', 'GUI_TEST_REQUEST')
+    if payload.get('key', 'Escape') not in {'Escape', 'Delete', 'BackSpace', 'Return', 'r', 'w', 'j', 'p', 'f', 'ctrl+z', 'ctrl+y', 'ctrl+h', 'ctrl+f', 'F3', 'shift+F3', 'ctrl+a', 'ctrl+c', 'ctrl+plus', 'ctrl+equal', 'ctrl+minus', 'ctrl+0', 'Home', 'End', 'ctrl+Home', 'ctrl+End', 'Page_Up', 'Page_Down', 'PageUp', 'PageDown', 'Up', 'Down', 'Left', 'Right', 'Tab', 'shift+Tab'}:
+        raise DevelopmentError('Key is outside the declared native input contracts', 'GUI_TEST_REQUEST')
+    if payload['operation']=='document_find' and payload['direction'] not in {'forward','backward'}:
+        raise DevelopmentError('Document find direction must be forward or backward','GUI_TEST_REQUEST')
+    if payload['operation']=='document_find' and any(ord(c)<32 or ord(c)==127 for c in payload['value']):
+        raise DevelopmentError('Native Find accepts a single-line literal query without control characters','GUI_TEST_REQUEST')
+    if payload['operation']=='source_replace':
+        if payload['scope'] not in {'current','all'} or not payload['query'] or any(ord(c)<32 or ord(c)==127 for key in ('query','replacement') for c in payload[key]):
+            raise DevelopmentError('Native Replace requires a nonempty single-line query, literal single-line replacement and scope current|all','GUI_TEST_REQUEST')
+    if payload['operation']=='document_zoom' and payload['value'] not in {'in','out','reset'}:
+        raise DevelopmentError('Document zoom must be in, out or reset','GUI_TEST_REQUEST')
+    if payload['operation']=='pdf_control' and payload['command'] not in {'previous','next','zoom_out','zoom_in','fit_page','fit_width'}:
+        raise DevelopmentError('Choose an enumerated native PDF reader control','GUI_TEST_REQUEST')
+    if payload['operation']=='pdf_key' and payload['key'] not in {'Left','Right','Up','Down','Tab','shift+Tab'}:
+        raise DevelopmentError('PDF keys scroll or change focus only','GUI_TEST_REQUEST')
     folder = project / 'derived' / 'gui-test'
     for path in (project / 'derived', folder):
         if not path.is_dir() or path.is_symlink():

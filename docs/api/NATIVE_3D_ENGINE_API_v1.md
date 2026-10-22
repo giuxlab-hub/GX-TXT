@@ -342,3 +342,33 @@ rebuild viewport presentation actors but never reimports scientific data. Camera
 renders retain imported geometry. Direct-color binding now accepts validated cell RGB/
 RGBA, preserving flat source cells without changing point scalars. Cell color combined
 with a point-opacity role is currently UNSUPPORTED; point-colored glyphs are unchanged.
+
+### dev109: clip-independent surface picking
+
+The existing cell picker admits a radius of 0.75 viewport pixels measured at
+the scientific camera focal plane. For perspective cameras the VTK tolerance
+is scaled by focal distance divided by the midpoint clipping distance; an
+orthographic view uses the pixel fraction directly. This preserves the public
+ABI, original geometry, camera, projection and rendered pixels. It prevents a
+distant far clip from admitting intersections on triangle-plane extensions
+outside the retained source mesh. VTK9.3 measures its fractional tolerance at
+the clipping-ray midpoint; see the primary implementations
+[VTK Picker](https://github.com/Kitware/VTK/blob/v9.3.0/Rendering/Core/vtkPicker.cxx)
+and [Cell Picker](https://github.com/Kitware/VTK/blob/v9.3.0/Rendering/Core/vtkCellPicker.cxx).
+
+The focused native contract uses the unchanged GUI-authored box/cylinder STL
+artifacts, their actual camera and three far-clip distances (100, 10000,
+1000000). Independent source-facet checks qualify all nine retained/new
+positive receipts; three background negatives remain misses. Original frame
+pixels are unchanged. The original second target was in fact an occluded box
+surface: its failed cylinder expectation is retained with an explicit QA
+erratum. This native contract is separate from installed GUI acceptance.
+
+Manipulator picking uses the same focal-plane conversion with a 3-pixel
+radius, retaining the existing translation-before-rotation priority only at
+actual handle overlaps. The old fixed `0.006` fraction could select X on an
+isolated Z arrow, or even in the background, with distant clipping planes.
+An exact captured 527×633 scene/pivot native comparison reproduces that
+failure and verifies X/Y/Z/background admission at automatic clipping and
+far distances 100, 10000 and 1000000, with byte-identical rendered PNGs.
+Installed pointer/drag acceptance remains a separate requirement.
