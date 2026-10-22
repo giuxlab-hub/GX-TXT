@@ -1,0 +1,23 @@
+{
+  "schema": "gxtxt.synthetic_calibrated_family.reference.v1",
+  "generator_id": "calibrated_curve_family",
+  "synthetic": true,
+  "provenance": "Original deterministic analytical source definitions; not measured data, image-extracted observations, or scientific-module results",
+  "randomness": "none",
+  "counts": {"source_curves": 50, "calibrations": 5, "points_per_curve": 300, "unique_raster_points": 15000, "calibrated_rows": 75000, "curve_calibration_groups": 250},
+  "family_key": "synthetic-affine-family-v1",
+  "index_ranges": {"curve_index": [0, 49], "calibration_index": [0, 4], "point_order": [0, 299]},
+  "identities": {"curve_key": "curve-{c:03d}", "calibration_key": "calibration-{k:02d}", "point_id": "curve-{c:03d}.point-{i:03d}", "realization_id": "curve-{c:03d}.point-{i:03d}.calibration-{k:02d}"},
+  "row_order": {"raw": ["curve_index", "point_order"], "calibrated": ["curve_index", "calibration_index", "point_order"]},
+  "raster": {"width": 1201, "height": 1001, "coordinate_convention": "Zero-based pixel-center index coordinates; first pixel center is (0,0), SVG positions add 0.5", "rasterization": "Nearest integer pixel-center paths joined by Bresenham; presentation derivative only, subpixel analytical coordinates remain authoritative"},
+  "equations": {"t": "i/299", "raster_x": "100+1000*t", "raster_y": "900-14*c-8*(2*t-1)^2", "x_s": "10*(1+k/1000)*t+k/100", "y_V": "(14*c+8*(2*t-1)^2)*(1-k/2000)/100-k/200"},
+  "units": {"raster_x": "px", "raster_y": "px", "x_s": "s", "y_V": "V", "family_parameter": "1"},
+  "shared_calibration": "Each calibration matrix acts on all 15000 source points. Rows sharing a calibration_key share its exact declared mapping. Five transforms do not constitute five independent acquisitions or an uncertainty estimate.",
+  "independent_exact_anchors": [
+    {"c": 0, "k": 0, "i": 0, "raster_x": [100, 1], "raster_y": [892, 1], "x_s": [0, 1], "y_V": [2, 25]},
+    {"c": 0, "k": 1, "i": 299, "raster_x": [1100, 1], "raster_y": [892, 1], "x_s": [501, 50], "y_V": [937, 12500]},
+    {"c": 49, "k": 4, "i": 299, "raster_x": [1100, 1], "raster_y": [206, 1], "x_s": [252, 25], "y_V": [172653, 25000]}
+  ],
+  "reference_policy": "Verify using an independent exact-rational reconstruction from integer c,k,i, not a generator import or this file as computed results. Canonical CSV is float64 with .17g round-trip text; numerical roundoff is not measurement uncertainty.",
+  "limitations": ["No stochastic uncertainty or covariance is estimated", "Image rasterization does not define physical calibration uncertainty", "Calibration-specific Y can be zero or negative, so log-Y is not universally eligible", "Generic Preview calibration/overlay interoperability requires the accepted CORE contract; this generator never impersonates Curve Digitizer"]
+}

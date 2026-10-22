@@ -101,7 +101,10 @@ proc ::GX::openSessionPath_before_project_api_v1 {path} {
     set currentSession $d
     set mf [file join $d metadata manifest.ini]
     if {[file isfile $mf]} {
-        if {[catch {loadManifest $mf} err]} {
+        if {[catch {loadManifest $mf} err opts]} {
+            if {[info exists ::GX::sessionCreationOpenTarget] && $::GX::sessionCreationOpenTarget eq $d} {
+                return -options $opts $err
+            }
             guiLog "Session opened but manifest was not loaded: $err"
         } else {
             guiLog "Session manifest loaded: $mf"
@@ -131,87 +134,76 @@ proc ::GX::chooseSession_v087_before_workspace_profiles {} {
     }
 }
 
-proc ::GX::createNewSession {name {projectId ""}} {
+proc ::GX::createNewSession {name {projectId ""} {copyDocumentation 1}} {
     variable cfg
     variable currentSession
+    if {![string is boolean -strict $copyDocumentation]} {error {Copy documentation must be a boolean.}}
+    _experimentDocumentsBeforeCreation
     set normalRoot [string trim $cfg(output_root)]
     set root $normalRoot
-    if {$projectId ne ""} { set root [projectSessionsRoot $projectId] }
-    if {$root eq ""} { error "Set Session root or load a Workspace profile before creating a session." }
+    if {$projectId ne ""} {set root [projectSessionsRoot $projectId]}
+    if {$root eq ""} {error {Set Session root or load a Workspace profile before creating a session.}}
     set root [file normalize $root]
-    file mkdir $root
-
     set requested [string trim $name]
-    if {$requested eq ""} { error "Enter a session name." }
+    if {$requested eq ""} {error {Enter a session name.}}
     set safe [sanitize $requested]
-    set target [file normalize [file join $root $safe]]
-    if {[file exists $target]} { error "A session named '$safe' already exists in:
-$root" }
-
-    # Use the established makeSession lifecycle so CORE extensions that augment
-    # session creation remain active. The explicit pre-check keeps New Session
-    # from silently selecting a different directory on name collisions.
-    set oldName $cfg(session_name)
-    set oldSession $currentSession
-    set oldExperiment [list $cfg(experiment_id) $cfg(experiment_project_id) $cfg(experiment_project) $cfg(experiment_project_legacy) $cfg(experiment_name)]
-    set cfg(session_name) $safe
-    set cfg(output_root) $root
-    set newExperimentId [experimentGenerateId]
-    set cfg(experiment_id) $newExperimentId
-    set cfg(experiment_project_id) $projectId
-    set cfg(experiment_project) [expr {$projectId ne "" ? [projectField $projectId name] : ""}]
-    set cfg(experiment_project_legacy) ""
-    set cfg(experiment_name) $requested
-    if {[catch {set session [makeSession]} err opts]} {
-        set cfg(session_name) $oldName
+    set saved [_sessionCreationSavedState]
+    set documentation [_experimentDocumentsSnapshot]
+    file mkdir $root
+    set record {}
+    try {
+        set record [_sessionCreationReserve $root $safe]
+        foreach {key filename} [experimentNoteSpecs] {set cfg($key) [expr {$copyDocumentation ? [dict get $documentation $key] : ""}]}
+        set cfg(session_name) $safe
+        set cfg(output_root) [dict get $record stage_parent]
+        set cfg(experiment_id) [experimentGenerateId]
+        set cfg(experiment_project_id) $projectId
+        set cfg(experiment_project) [expr {$projectId ne "" ? [projectField $projectId name] : ""}]
+        set cfg(experiment_project_legacy) ""
+        set cfg(experiment_name) $requested
+        set session [file normalize [makeSession]]
+        set record [_sessionCreationClaim $record $session]
+        set eid $cfg(experiment_id)
+        defaults
+        loadModuleCatalog
         set cfg(output_root) $normalRoot
-        lassign $oldExperiment cfg(experiment_id) cfg(experiment_project_id) cfg(experiment_project) cfg(experiment_project_legacy) cfg(experiment_name)
-        set currentSession $oldSession
-        return -options $opts $err
+        set cfg(session_name) $safe
+        set cfg(experiment_id) $eid
+        set cfg(experiment_project_id) $projectId
+        set cfg(experiment_project) [expr {$projectId ne "" ? [projectField $projectId name] : ""}]
+        set cfg(experiment_project_legacy) ""
+        set cfg(experiment_name) $requested
+        set currentSession $session
+        experimentDocumentsLoad $session
+        set cfg(session_origin) [_originCreate session_experiment]
+        loadDatasetRegistry $session
+        if {[llength [info commands ::GX::datasetSelectionLoadRegistry]]} {datasetSelectionLoadRegistry $session}
+        writeManifest [file join $session metadata manifest.ini]
+        set record [_sessionCreationPromote $record]
+        set session [dict get $record target]
+        set currentSession $session
+        writeManifest [file join $session metadata manifest.ini]
+        _sessionCreationOpen $record
+        updateSessionUi
+        guiLog "New session created: $session"
+        setStatus "Session created: [file tail $session]"
+        return $session
+    } on error {message options} {
+        _sessionCreationFailure $message $options $record $saved $root
     }
-    set session [file normalize $session]
-    if {$session ne $target} {
-        set cfg(session_name) $oldName
-        error "The requested Session target changed while it was being created: $session"
-    }
-
-    # A new directory is a new Session boundary.  The complete defaults chain
-    # owns module, binding, source, graph, variant, selection, graphics and
-    # other Session registries; reinitialize it before the first Manifest.
-    # The user Configuration and installed module catalog are loaded again by
-    # their normal application-level paths, not copied from the old Session.
-    defaults
-    loadModuleCatalog
-    set cfg(output_root) $normalRoot
-    set cfg(session_name) $safe
-    set cfg(experiment_id) $newExperimentId
-    set cfg(experiment_project_id) $projectId
-    set cfg(experiment_project) [expr {$projectId ne "" ? [projectField $projectId name] : ""}]
-    set cfg(experiment_project_legacy) ""
-    set cfg(experiment_name) $requested
-    set currentSession $session
-    set cfg(session_origin) [_originCreate session_experiment]
-    if {$projectId eq {}} {set projectId [projectEnsureDefault];set cfg(experiment_project_id) $projectId}
-    catch {loadDatasetRegistry $session}
-    if {[llength [info commands ::GX::datasetSelectionLoadRegistry]]} { catch {datasetSelectionLoadRegistry $session} }
-    writeManifest [file join $session metadata manifest.ini]
-    if {$projectId ne ""} {
-        projectAssociateExperiment $projectId $cfg(experiment_id) $session $cfg(experiment_name)
-    }
-    updateSessionUi
-    catch {refreshResults}
-    catch {refreshAnalysisStatus}
-    catch {refreshGraphs}
-    catch {sessionFileExplorerPopulate}
-    guiLog "New session created: $session"
-    setStatus "Session created: [file tail $session]"
-    return $session
 }
 
 proc ::GX::newSessionDialogCommit {w} {
     variable ui
     set projectId [expr {[info exists ui(newSessionProjectIds)] && [dict exists $ui(newSessionProjectIds) $ui(newSessionProject)] ? [dict get $ui(newSessionProjectIds) $ui(newSessionProject)] : ""}]
-    if {[catch {set session [createNewSession $ui(newSessionName) $projectId]} err]} {
+    set copyDocumentation [expr {[info exists ui(newSessionCopyDocumentation)] ? $ui(newSessionCopyDocumentation) : 1}]
+    if {[catch {
+        if {$copyDocumentation && [info exists ui(newSessionDocumentationSource)] && $ui(newSessionDocumentationSource) ne $::GX::currentSession} {
+            error {The source Session changed. Reopen New Session to choose its documentation.}
+        }
+        set session [createNewSession $ui(newSessionName) $projectId $copyDocumentation]
+    } err opts]} {
+        if {[dict exists $opts -errorcode] && [dict get $opts -errorcode] eq {GXTXT SESSION CANCELLED}} {return}
         tk_messageBox -parent $w -icon error -title "New Session" -message $err
         return
     }

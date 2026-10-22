@@ -25,6 +25,13 @@ proc ::GX::pluginRuntimeNoteLoaded {moduleId} {
 
 proc ::GX::pluginRuntimeModuleLoaded {moduleId} {
     if {[dict exists $::GX::pluginRuntimeLoaded $moduleId]} {return 1}
+    if {[array exists ::GX::acquisitionHandlerRegistry]} {
+        foreach handler [array names ::GX::acquisitionHandlerRegistry] {
+            set registration $::GX::acquisitionHandlerRegistry($handler)
+            if {[dict exists $registration kind] && [dict get $registration kind] eq "plugin" &&
+                [dict exists $registration module_id] && [dict get $registration module_id] eq $moduleId} {return 1}
+        }
+    }
     if {[array exists ::GX::modulePublicApiActivated] && [llength [array names ::GX::modulePublicApiActivated "$moduleId,*"]]} {return 1}
     foreach provider [viewerProviderList] {
         if {[dict get $provider module_id] eq $moduleId && [info exists ::GX::viewerBackend([dict get $provider backend])]} {return 1}
@@ -34,6 +41,9 @@ proc ::GX::pluginRuntimeModuleLoaded {moduleId} {
 
 proc ::GX::pluginRuntimeCheckQuiescent {target} {
     if {[info exists ::GX::analysisPipe] && $::GX::analysisPipe ne {}} {error {A scientific Analysis calculation is active; finish or cancel it before updating plugins.}}
+    if {[info exists ::GX::acquisitionHandlerAsyncActive] && $::GX::acquisitionHandlerAsyncActive} {
+        error {An Acquisition is active; finish or cancel it before updating plugins.}
+    }
     if {[file isfile [file join [scriptJobRoot] jobs.sqlite]]} {
         # This public projection includes the full active lifecycle, independent
         # of presentation pagination or hidden terminal Jobs.

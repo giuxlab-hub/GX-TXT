@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 720" role="img" aria-labelledby="title description">
+<title id="title">Scale-bar tick references describe different distances</title>
+<desc id="description">Three repetitions of the same stylized scale bar illustrate center-to-center, inner-edge and outer-edge distances. Tick thickness is exaggerated. The choice must follow the source producer's convention; the drawing is not microscope data or an actual measurement.</desc>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original GX210-GUIDE conceptual artwork. -->
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#b65c00"/></marker><style>text{font-family:system-ui,sans-serif;fill:#172d47}.title{font-size:27px;font-weight:700}.heading{font-size:22px;font-weight:700}.body{font-size:18px}.small{font-size:17px;fill:#496079}.measure{stroke:#b65c00;stroke-width:2.5;marker-start:url(#arrow);marker-end:url(#arrow)}.project{stroke:#547da9;stroke-width:1.5;stroke-dasharray:5 5}</style></defs>
+<rect width="1000" height="720" rx="16" fill="#f3f7fc"/>
+<text x="34" y="46" class="title">The tick-reference convention changes the measured distance</text>
+<text x="34" y="78" class="small">Original schematic · repeated bar, exaggerated ticks · no microscope measurement</text>
+<g><text x="42" y="158" class="heading">1 · Tick centers</text><text x="42" y="188" class="body">Compare the tick midlines.</text><path d="M440 170H800" stroke="#172d47" stroke-width="14"/><rect x="420" y="135" width="40" height="70" fill="#172d47"/><rect x="780" y="135" width="40" height="70" fill="#172d47"/><path d="M440 125V242M800 125V242" class="project"/><line x1="440" y1="230" x2="800" y2="230" class="measure"/></g>
+<g><text x="42" y="338" class="heading">2 · Inner edges</text><text x="42" y="368" class="body">Compare the facing edges.</text><path d="M440 350H800" stroke="#172d47" stroke-width="14"/><rect x="420" y="315" width="40" height="70" fill="#172d47"/><rect x="780" y="315" width="40" height="70" fill="#172d47"/><path d="M460 305V422M780 305V422" class="project"/><line x1="460" y1="410" x2="780" y2="410" class="measure"/></g>
+<g><text x="42" y="518" class="heading">3 · Outer edges</text><text x="42" y="548" class="body">Compare the outside edges.</text><path d="M440 530H800" stroke="#172d47" stroke-width="14"/><rect x="420" y="495" width="40" height="70" fill="#172d47"/><rect x="780" y="495" width="40" height="70" fill="#172d47"/><path d="M420 485V602M820 485V602" class="project"/><line x1="420" y1="590" x2="820" y2="590" class="measure"/></g>
+<rect x="34" y="640" width="932" height="58" rx="10" fill="#fff0cc"/>
+<text x="54" y="677" class="body">Use the image producer's stated convention; a default does not establish metrological accuracy.</text>
+</svg>

@@ -46,6 +46,17 @@ Only Markdown documents under the session `notes/` tree are editable through thi
 
 The Experiment pages **Notes**, **Objective**, **Procedure / setup** and **Observations** use the same GX-Markup source/preview engine. Their text is persisted as the four `.md` files under `notes/experiment/` and mirrored in Manifest Format 2 for backward compatibility.
 
+`experimentDocumentSave key markup ?session?` retains the existing two-argument
+current-Session behavior. An explicit Session keeps a deferred save attached to its
+original owner; saving another Session does not change the open Session's notebook
+values. A missing original Session does not redirect the save. Pending notebook
+saves retain their captured text and owner when flushed before Session creation or
+switching. These changes use the existing notebook files and persistence service.
+Captured pending text stays in the existing notebook owner's transient state until
+the atomic write succeeds, independently of whether its debounce timer has already
+expired. A write failure aborts the switch and remains retryable on the next flush.
+A missing captured Session never redirects a pending write into the open Session.
+
 ## GX-Markup v1
 
 GX-Markup v1 is a small deterministic Markdown-like subset stored in `.md` files:

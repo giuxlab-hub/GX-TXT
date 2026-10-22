@@ -37,6 +37,17 @@ match that display; canonical `dataset_row` identities remain exact integers.
 Canonical and displayed coordinates are separate. A presentation buffer is not
 a new Dataset or an independent scientific authority.
 
+Scientific consultations admit up to512 traces and100000 displayed points in
+aggregate, while retaining the existing4096-point limit per trace. These bounds
+affect presentation only. Source hashes/schema are validated for every descriptor,
+including later descriptors naming an already watched Dataset; only watch
+subscriptions are de-duplicated. An explicit source descriptor must identify at
+least one canonical source. No caller-provided trust flag bypasses validation.
+The consultation envelope is rechecked at final prepared-model admission,
+including `widgetValidateSources`, widget creation/configuration and `renderModel`;
+copying or expanding a prepared consultation cannot bypass these bounds. Unrelated
+generic Plot/comparison/transient model classes keep their existing contracts.
+
 Options are `title`, `axis_labels {x caption y caption}`, `aspect auto|xy_equal`,
 the existing `native_presentation`, and an optional `progress` callback prefix.
 Fit uses full finite source bounds. Nonlinear coordinate bounds use the existing

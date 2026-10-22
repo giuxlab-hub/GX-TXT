@@ -2,10 +2,24 @@
 proc ::GX::buildModulesPage {} {
     variable ui
     set f .top.nb.modules
-    ttk::label $f.title -text {Modules} -font TkHeadingFont -anchor w
-    ttk::label $f.note -text {Activate modules for this Session. Help opens each module's manual. Always available services have a locked switch.} -anchor w -wraplength 900
+    ttk::label $f.title -text {Analysis Modules} -font TkHeadingFont -anchor w
+    ttk::label $f.note -text {Select enabled Analysis modules for the next Run. Enable or disable modules in Configuration > Modules. Help opens each module's manual.} -anchor w -wraplength 900
     pack $f.title -anchor w -padx 12 -pady {10 3}
     pack $f.note -fill x -padx 12 -pady {0 8}
+    ttk::frame $f.search
+    ttk::label $f.search.label -text {Module name:}
+    ttk::entry $f.search.query -textvariable ::GX::moduleSearch -width 32
+    bind $f.search.query <KeyRelease> ::GX::refreshModuleCatalog
+    pack $f.search.label $f.search.query -side left -padx 4
+    pack $f.search -fill x -padx 8 -pady {0 6}
+    # Use the active theme's selection colors, including dark/high-contrast
+    # themes. Frame, labels and checkbox share the same selected box state.
+    set selectedBackground [ttk::style lookup Treeview -background selected #d9ead3]
+    set selectedForeground [ttk::style lookup Treeview -foreground selected #18351c]
+    foreach type {TFrame TLabel TCheckbutton} {
+        ttk::style map GXModuleRun.$type -background [list selected $selectedBackground]
+        if {$type ne {TFrame}} {ttk::style map GXModuleRun.$type -foreground [list selected $selectedForeground]}
+    }
     ttk::frame $f.tools
     ttk::button $f.tools.builder -text {Script Module Builder…} -command ::GX::scriptModuleBuilderOpen
     ttk::button $f.tools.reset -text {Reset selected module runtime…} -command ::GX::resourceLifecycleModuleResetSelected
@@ -19,7 +33,7 @@ proc ::GX::buildModulesPage {} {
     set ui(moduleFeedback) {}
     ttk::label $f.feedback -textvariable ::GX::ui(moduleFeedback) -anchor w -justify left
     set ui(moduleCards) [uiFieldScrollableCreate $f.cards 900]
-    set ui(moduleCardsSignature) {};set ui(moduleSelected) {}
+    set ui(moduleCardsSignature) __unbuilt__;set ui(moduleSelected) {}
     pack $f.cards -fill both -expand 1 -padx 8 -pady {0 8}
     bind $ui(moduleCards) <Configure> +[list ::GX::modulesCardsLayout %W %w]
     bind $ui(moduleCards) <Map> +[list ::GX::modulesCardsMapped %W]
@@ -109,44 +123,12 @@ proc ::GX::moduleCardSelect {id} {
 }
 proc ::GX::moduleCardToggle {id} {
     moduleCardSelect $id
-    set requested $::GX::ui(moduleQuick,$id)
-    # The switch is a projection, including while a confirmation is open.
-    refreshModuleCatalog
-    set before [moduleCardsEnabledSnapshot]
-    set cancelled 0
-    if {[catch {
-        if {[moduleIsAlwaysAvailable $id]} {error {This service is always available.}}
-        set related [moduleCardsRelatedChanges $id $requested]
-        if {[llength $related]} {
-            set action [expr {$requested?{enable}:{disable}}]
-            set message "[moduleField $id name $id]: $action?\n\nRelated modules may also change:\n[join $related \n]\n\nGX-TXT applies the registered dependency rules."
-            if {[tk_messageBox -parent . -type okcancel -default cancel -icon question -title {Module dependencies} -message $message] ne {ok}} {
-                set cancelled 1
-            }
-        }
-        if {!$cancelled} {moduleSetEnabled $id $requested}
-    } reason options]} {
-        refreshModuleCatalog
-        moduleCardsFeedbackSet "Activation failed. [moduleField $id name $id]: [moduleOperationalState $id]. $reason"
-        tk_messageBox -parent . -icon error -title {Module activation} -message $::GX::ui(moduleFeedback)
-        return
-    }
-    if {$cancelled} {
-        moduleCardsFeedbackSet "Cancelled. [moduleField $id name $id]: [moduleOperationalState $id]."
-        refreshModuleCatalog
-        return
-    }
-    refreshModuleCatalog
-    moduleCardsFeedbackSet [moduleCardsChangeSummary $id $before]
-    if {[catch {
-        rebuildNativeAnalysisGui
-        refreshAnalysisStatus
-        refreshManifestPreview
-    } reason options]} {
-        # A display refresh failure must not pretend that activation rolled back.
-        moduleCardsFeedbackSet "$::GX::ui(moduleFeedback) Display refresh failed: $reason"
-        tk_messageBox -parent . -icon error -title {Module display refresh} -message $::GX::ui(moduleFeedback)
-    }
+    if {![moduleAnalysisEligible $id] || ![moduleIsEnabled $id]} {return}
+    # The checkbox binds the existing canonical Run variable directly. Never
+    # mutate Configuration enablement or dependency activation from this page.
+    moduleSetRunSelected $id [moduleRunIsSelected $id]
+    refreshAnalysisStatus
+    refreshManifestPreview
     refreshModuleCatalog
 }
 proc ::GX::moduleCardHelp {id} {

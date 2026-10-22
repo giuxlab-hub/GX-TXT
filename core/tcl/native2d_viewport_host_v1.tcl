@@ -626,9 +626,16 @@ proc ::GX::native2DViewportToolState {widget active} {
     if {$spacing ne {}} {set base $spacing.$base}
     set style GXSelected.$base
     # Inherit the real icon-spacing/theme layout, font and outside padding.
-    ttk::style map $style -background [concat {selected #aecbea} [ttk::style map $base -background]] -relief [concat {selected sunken} [ttk::style map $base -relief]]
+    # Read the complete current map: preserve other option mappings and react
+    # to real base/theme changes without rewriting global styles every frame.
+    set current [ttk::style map $style]
+    set desired [dict replace $current \
+        -background [concat {selected #aecbea} [ttk::style map $base -background]] \
+        -relief [concat {selected sunken} [ttk::style map $base -relief]]]
+    if {$current ne $desired} {ttk::style map $style {*}$desired}
     if {[$widget cget -style] ne $style} {$widget configure -style $style}
-    $widget state [expr {$active?"selected":"!selected"}]
+    set state [expr {$active?"selected":"!selected"}]
+    if {![$widget instate $state]} {$widget state $state}
 }
 
 source [file join [file dirname [info script]] native2d_viewport_curve_source.tcl]

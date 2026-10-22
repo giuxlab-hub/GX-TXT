@@ -6,6 +6,9 @@ namespace eval ::GX::ConfigurationModules {
     variable records {}
     variable selected ""
     variable catalog {}
+    variable exportQuery {}
+    variable exportRecords {}
+    variable exportSelected {}
 }
 proc ::GX::configurationInstalledPlugins {} {
     set result {}
@@ -32,22 +35,33 @@ proc ::GX::configurationInstalledPlugins {} {
 }
 proc ::GX::configurationModulesBuild {parent row} {
     ttk::notebook $parent.kinds
-    ttk::frame $parent.kinds.services;ttk::frame $parent.kinds.viewers
+    ttk::frame $parent.kinds.services;ttk::frame $parent.kinds.exports;ttk::frame $parent.kinds.viewers
     $parent.kinds add $parent.kinds.services -text {Analysis, Acquisition & Services}
+    $parent.kinds add $parent.kinds.exports -text Export
     $parent.kinds add $parent.kinds.viewers -text Viewers
     grid $parent.kinds -row $row -column 0 -columnspan 4 -sticky nsew
-    set w $parent.kinds.services.browser
+    grid rowconfigure $parent $row -weight 1
+    configurationModulesBrowserBuild $parent.kinds.services services
+    configurationModulesBrowserBuild $parent.kinds.exports exports
+    configurationSubscribe ::GX::configurationEditorChanged
+    configurationModulesReload
+    viewerManagerBuild $parent.kinds.viewers
+}
+# Both category browsers consume the same installed registry and Configuration
+# editor. Their query/selection variables are presentation drafts only.
+proc ::GX::configurationModulesBrowserBuild {parent category} {
+    set w $parent.browser
     ttk::frame $w
     pack $w -fill both -expand 1 -padx 8 -pady 8
-    grid rowconfigure $parent $row -weight 1
     grid columnconfigure $w 0 -weight 1
     ttk::frame $w.search
     ttk::label $w.search.label -text "Installed plugins"
-    ttk::entry $w.search.query -textvariable ::GX::ConfigurationModules::query -width 32
+    set queryVariable [expr {$category eq {exports} ? {::GX::ConfigurationModules::exportQuery} : {::GX::ConfigurationModules::query}}]
+    ttk::entry $w.search.query -textvariable $queryVariable -width 32
     ttk::button $w.search.refresh -text Refresh -command ::GX::configurationModulesReload
     pack $w.search.label $w.search.query $w.search.refresh -side left -padx 4
     pack $w.search -fill x -pady 4
-    bind $w.search.query <KeyRelease> ::GX::configurationModulesRefresh
+    bind $w.search.query <KeyRelease> [list ::GX::configurationModulesRefresh $category]
     ttk::panedwindow $w.split -orient horizontal
     ttk::frame $w.split.list
     ttk::frame $w.split.detail
@@ -68,7 +82,7 @@ proc ::GX::configurationModulesBuild {parent row} {
     grid $w.split.list.y -row 0 -column 1 -sticky ns
     grid $w.split.list.x -row 1 -column 0 -sticky ew
     grid columnconfigure $w.split.list 0 -weight 1;grid rowconfigure $w.split.list 0 -weight 1
-    bind $w.split.list.tree <<TreeviewSelect>> ::GX::configurationModulesSelect
+    bind $w.split.list.tree <<TreeviewSelect>> [list ::GX::configurationModulesSelect $category]
     canvas $w.split.detail.viewport -highlightthickness 0 -width 360
     ttk::scrollbar $w.split.detail.y -orient vertical -command [list $w.split.detail.viewport yview]
     $w.split.detail.viewport configure -yscrollcommand [list $w.split.detail.y set]
@@ -80,23 +94,35 @@ proc ::GX::configurationModulesBuild {parent row} {
     pack $w.split.detail.viewport -fill both -expand 1
     ttk::frame $w.actions
     ttk::button $w.actions.manage -text "Plugin Manager…" -command ::GX::pluginManagerDialog
-    ttk::button $w.actions.docs -text Documentation -command ::GX::configurationModulesDocumentation
+    ttk::button $w.actions.docs -text Documentation -command [list ::GX::configurationModulesDocumentation $category]
     pack $w.actions.manage $w.actions.docs -side left -padx 4
     pack $w.actions -fill x -pady 6
-    configurationSubscribe ::GX::configurationEditorChanged
-    configurationModulesReload
-    viewerManagerBuild $parent.kinds.viewers
 }
 proc ::GX::configurationModulesReload {} {
     set ::GX::ConfigurationModules::catalog {}
     configurationModulesRefresh
 }
-proc ::GX::configurationModulesRefresh {} {
-    variable ::GX::ConfigurationModules::records
-    variable ::GX::ConfigurationModules::query
-    variable ::GX::ConfigurationModules::selected
+proc ::GX::configurationModulesCategoryMatches {record category} {
+    set kind {}
+    if {[dict get $record type] eq {module}} {set kind [moduleField [dict get $record id] kind {}]}
+    switch -- $category {
+        exports {return [expr {$kind eq {export}}]}
+        services {return [expr {$kind ni {viewer export preview}}]}
+        default {error "Unknown module configuration category '$category'"}
+    }
+}
+proc ::GX::configurationModulesRefresh {{category all}} {
+    if {$category eq {all}} {
+        foreach kind {services exports} {configurationModulesRefresh $kind}
+        return
+    }
+    if {$category eq {services}} {
+        upvar #0 ::GX::ConfigurationModules::records records ::GX::ConfigurationModules::query query ::GX::ConfigurationModules::selected selected
+    } else {
+        upvar #0 ::GX::ConfigurationModules::exportRecords records ::GX::ConfigurationModules::exportQuery query ::GX::ConfigurationModules::exportSelected selected
+    }
     variable ::GX::ConfigurationModules::catalog
-    set tree .top.nb.configuration.sections.modules.kinds.services.browser.split.list.tree
+    set tree .top.nb.configuration.sections.modules.kinds.$category.browser.split.list.tree
     if {![winfo exists $tree]} return
     set records [dict create]
     $tree delete [$tree children {}]
@@ -104,7 +130,7 @@ proc ::GX::configurationModulesRefresh {} {
     set ordinal 0;set restore "";set first ""
     if {$catalog eq {}} {set catalog [configurationInstalledPlugins]}
     foreach record $catalog {
-        if {[dict get $record type] eq "module" && [moduleField [dict get $record id] kind {}] eq "viewer"} continue
+        if {![configurationModulesCategoryMatches $record $category]} continue
         if {$match ne "" && [string first $match [string tolower "[dict get $record id] [dict get $record name] [dict get $record type] [dict get $record state] [dict get $record health]"]]<0} continue
         set iid plugin[incr ordinal]
         dict set records $iid $record
@@ -114,12 +140,15 @@ proc ::GX::configurationModulesRefresh {} {
     }
     if {$restore eq ""} {set restore $first}
     if {$restore ne ""} {$tree selection set $restore;$tree see $restore}
-    configurationModulesSelect
+    configurationModulesSelect $category
 }
-proc ::GX::configurationModulesSelect {} {
-    variable ::GX::ConfigurationModules::records
-    variable ::GX::ConfigurationModules::selected
-    set base .top.nb.configuration.sections.modules.kinds.services.browser
+proc ::GX::configurationModulesSelect {{category services}} {
+    if {$category eq {exports}} {
+        upvar #0 ::GX::ConfigurationModules::exportRecords records ::GX::ConfigurationModules::exportSelected selected
+    } else {
+        upvar #0 ::GX::ConfigurationModules::records records ::GX::ConfigurationModules::selected selected
+    }
+    set base .top.nb.configuration.sections.modules.kinds.$category.browser
     set tree $base.split.list.tree
     set parent $base.split.detail.viewport.content
     foreach child [winfo children $parent] {
@@ -143,8 +172,8 @@ proc ::GX::configurationModulesSelect {} {
     pack $parent.identity -fill x -pady 4
     bind $parent <Configure> [list ::GX::configurationModulesResize $parent %w %h]
     if {$type eq "module"} {
-        if {[moduleOperationalClass $id] eq "SELECTABLE_PROVIDER"} {
-            ttk::button $parent.activation -text [expr {[moduleIsEnabled $id] ? "Disable provider" : "Enable provider"}] \
+        if {![moduleIsAlwaysAvailable $id]} {
+            ttk::button $parent.activation -text [expr {[moduleIsEnabled $id] ? "Disable module" : "Enable module"}] \
                 -command [list ::GX::configurationModuleProviderToggle $id]
             pack $parent.activation -anchor w -pady 4
         }
@@ -158,17 +187,35 @@ proc ::GX::configurationModulesSelect {} {
         pack $parent.none -fill x
     }
 }
-proc ::GX::configurationModulesDocumentation {} {
-    variable ::GX::ConfigurationModules::selected
+proc ::GX::configurationModulesDocumentation {{category services}} {
+    if {$category eq {exports}} {upvar #0 ::GX::ConfigurationModules::exportSelected selected} else {upvar #0 ::GX::ConfigurationModules::selected selected}
     if {[string match module:* $selected]} {documentationBrowserOpenModule [string range $selected 7 end]} else {.top.nb select .top.nb.help;documentationBrowserPopulate}
 }
 proc ::GX::configurationModuleProviderToggle {id} {
-    if {[moduleOperationalClass $id] ne "SELECTABLE_PROVIDER"} {error "Provider activation is not applicable to '$id'"}
-    moduleSetEnabled $id [expr {![moduleIsEnabled $id]}]
+    if {[moduleIsAlwaysAvailable $id]} {error "Module '$id' is always available"}
+    set requested [expr {![moduleIsEnabled $id]}]
+    set related [moduleCardsRelatedChanges $id $requested]
+    if {[llength $related]} {
+        set action [expr {$requested ? {enable} : {disable}}]
+        set message "[moduleField $id name $id]: $action?\n\nRelated modules may also change:\n[join $related \n]\n\nGX-TXT applies the registered dependency rules."
+        if {[tk_messageBox -parent . -type okcancel -default cancel -icon question -title {Module dependencies} -message $message] ne {ok}} {return}
+    }
+    if {[catch {moduleSetEnabled $id $requested} reason]} {
+        configurationModulesReload
+        tk_messageBox -parent . -icon error -title {Module activation} -message $reason
+        return
+    }
     configurationModulesReload
     refreshModuleCatalog
-    refreshAnalysisStatus
-    refreshManifestPreview
+    if {[catch {
+        rebuildNativeAnalysisGui
+        refreshAnalysisStatus
+        refreshManifestPreview
+    } reason]} {
+        # Activation already succeeded; report a display failure truthfully
+        # rather than implying that the canonical enablement was rolled back.
+        tk_messageBox -parent . -icon error -title {Module display refresh} -message "[moduleField $id name $id]: [moduleOperationalState $id]. Display refresh failed: $reason"
+    }
 }
 
 proc ::GX::configurationModulesResize {parent width {height {}}} {

@@ -1,12 +1,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Independent read-only hosts share the existing descriptor index and renderer.
 # This state contains widgets/navigation only, never a second document store.
-namespace eval ::GX::DocumentationManual {variable state;array set state {}}
+namespace eval ::GX::DocumentationManual {variable state;array set state {};variable htmlSerial;if {![info exists htmlSerial]} {set htmlSerial 0};variable generatorSerial;if {![info exists generatorSerial]} {set generatorSerial 0}}
 proc ::GX::documentationBrowserModuleManual {module} {
     set descriptor [moduleField $module descriptor {}]
     if {$descriptor eq {}} {error "Module '$module' is not installed; its manual is unavailable."}
     documentationBrowserRefresh
-    foreach kind {manual guide quick_start} {
+    foreach kind {html_manual manual guide quick_start} {
         set id module:$module:$kind
         if {[dict exists $::GX::documentationBrowserEntries $id]} {
             set entry [dict get $::GX::documentationBrowserEntries $id]
@@ -20,7 +20,7 @@ proc ::GX::documentationBrowserManualPathAllowed {module path} {
     if {$descriptor eq {}} {error {The manual's module is no longer installed.}}
     set path [file normalize $path];set root [file normalize [file dirname $descriptor]]
     if {[file exists $path] && [file type $path] eq {link}} {error {Linked documentation files are unsupported.}}
-    if {![file isfile $path] || [string tolower [file extension $path]] ni {.md .markdown .txt}} {error {The requested rendered document is missing or has an unsupported format.}}
+    if {![file isfile $path] || [string tolower [file extension $path]] ni {.md .markdown .txt .html .htm}} {error {The requested rendered document is missing or has an unsupported format.}}
     if {[string first "$root/" "$path/"]==0} {return $path}
     # Public framework documentation is the same installed documentation tree
     # used by the main browser; links never reach arbitrary installation files.
@@ -49,7 +49,7 @@ proc ::GX::documentationBrowserOpenModuleWindow {module {parent {}}} {
     toplevel $w;wm title $w "[moduleField $module name $module] — User Manual"
     uiFieldWindowFit $w 900 700;wm minsize $w 420 300
     # A manual survives its Viewer closing; it is deliberately not transient.
-    set state($w,module) $module;set state($w,path) {};set state($w,back) {};set state($w,forward) {};set state($w,search) {};set state($w,status) {}
+    set state($w,pending_anchor) {};set state($w,html_handle) {};set state($w,html_mode) 0;set state($w,tutorial_handle) {};set state($w,tutorial_ids) {};set state($w,tutorial_current) {};set state($w,tutorial_choice) {};set state($w,tutorial_status) {};set state($w,module) $module;set state($w,path) {};set state($w,back) {};set state($w,forward) {};set state($w,search) {};set state($w,status) {}
     ttk::frame $w.navigation
     foreach {key label command} [list back Back [list documentationBrowserManualHistory $w back] forward Forward [list documentationBrowserManualHistory $w forward] home {User Manual} [list documentationBrowserManualReload $w] close Close [list destroy $w]] {
         set callback [expr {[lindex $command 0] eq "destroy"?"destroy":"::GX::[lindex $command 0]"}]
@@ -66,7 +66,21 @@ proc ::GX::documentationBrowserOpenModuleWindow {module {parent {}}} {
     pack $w.search -side top -fill x -padx 6
     ttk::label $w.status -textvariable ::GX::DocumentationManual::state($w,status) -anchor w -wraplength 820
     pack $w.status -side bottom -fill x -padx 6 -pady 5
-    ttk::frame $w.body;pack $w.body -fill both -expand 1 -padx 6 -pady 5
+    ttk::notebook $w.tabs
+    ttk::frame $w.tabs.manual
+    ttk::frame $w.tabs.tutorial
+    $w.tabs add $w.tabs.manual -text Manual
+    $w.tabs add $w.tabs.tutorial -text {Interactive Tutorial}
+    pack $w.tabs -fill both -expand 1 -padx 6 -pady 5
+    ttk::frame $w.body;pack $w.body -in $w.tabs.manual -fill both -expand 1
+    ttk::combobox $w.tabs.tutorial.choice -state readonly -textvariable ::GX::DocumentationManual::state($w,tutorial_choice)
+    ttk::label $w.tabs.tutorial.status -textvariable ::GX::DocumentationManual::state($w,tutorial_status) -anchor w -wraplength 800
+    ttk::frame $w.tabs.tutorial.host
+    pack $w.tabs.tutorial.choice -side top -fill x -padx 5 -pady 5
+    pack $w.tabs.tutorial.status -side bottom -fill x -padx 5 -pady 5
+    pack $w.tabs.tutorial.host -fill both -expand 1
+    bind $w.tabs.tutorial.choice <<ComboboxSelected>> [list ::GX::documentationBrowserTutorialSelected $w]
+    bind $w.tabs <<NotebookTabChanged>> [list ::GX::documentationBrowserTutorialActivated $w]
     text $w.body.text -wrap word -state disabled -font TkDefaultFont -yscrollcommand [list $w.body.scroll set]
     ttk::scrollbar $w.body.scroll -command [list $w.body.text yview]
     pack $w.body.scroll -side right -fill y;pack $w.body.text -fill both -expand 1
@@ -77,10 +91,13 @@ proc ::GX::documentationBrowserOpenModuleWindow {module {parent {}}} {
     bind $w <Destroy> [list ::GX::documentationBrowserManualDestroyed $w %W]
     bind $w <Configure> [list ::GX::documentationBrowserManualResize $w %W %w]
     documentationBrowserManualReload $w
+    documentationBrowserTutorialRefresh $w
     return $w
 }
 proc ::GX::documentationBrowserManualDestroyed {w actual} {
     if {$w ne $actual} return
+    documentationBrowserHtmlClose $w html_handle
+    documentationBrowserHtmlClose $w tutorial_handle
     documentationBrowserManualImagesClear $w
     array unset ::GX::DocumentationManual::state "$w,*"
 }
@@ -162,6 +179,10 @@ proc ::GX::documentationBrowserManualImageClosed {w photo actual} {
     if {$w eq $actual} {catch {image delete $photo}}
 }
 proc ::GX::documentationBrowserManualUnavailable {w message} {
+    documentationBrowserHtmlClose $w html_handle
+    catch {destroy $w.body.html}
+    set ::GX::DocumentationManual::state($w,html_mode) 0
+    pack $w.body.scroll -side right -fill y;pack $w.body.text -fill both -expand 1
     set ::GX::DocumentationManual::state($w,status) $message
     markupRenderStringToWidget $w.body.text "# User manual unavailable\n\n$message"
     documentationBrowserManualEnable $w
@@ -169,6 +190,7 @@ proc ::GX::documentationBrowserManualUnavailable {w message} {
 proc ::GX::documentationBrowserManualReload {w} {
     variable ::GX::DocumentationManual::state
     if {![winfo exists $w]} return
+    if {[winfo exists $w.tabs]} {$w.tabs select $w.tabs.manual}
     if {[catch {set entry [documentationBrowserModuleManual $state($w,module)];documentationBrowserManualShow $w [dict get $entry path]} message]} {documentationBrowserManualUnavailable $w $message}
 }
 proc ::GX::documentationBrowserManualShow {w path {anchor {}} {record 1}} {
@@ -183,6 +205,22 @@ proc ::GX::documentationBrowserManualShow {w path {anchor {}} {record 1}} {
     set source [documentationBrowserRead $id]
     if {$record && $state($w,path) ne {} && $state($w,path) ne $path} {lappend state($w,back) $state($w,path);set state($w,forward) {}}
     set state($w,path) $path;set state($w,status) "[moduleField $state($w,module) name $state($w,module)] — [file tail $path]"
+    if {[string tolower [file extension $path]] in {.html .htm}} {
+        set state($w,html_mode) 1
+        pack forget $w.body.text $w.body.scroll
+        documentationBrowserHtmlClose $w html_handle
+        catch {destroy $w.body.html}
+        ttk::frame $w.body.html;pack $w.body.html -fill both -expand 1
+        documentationBrowserHtmlOpen $w html_handle $w.body.html $id
+        set state($w,pending_anchor) $anchor
+        documentationBrowserManualEnable $w
+        return
+    }
+    set state($w,html_mode) 0
+    set state($w,pending_anchor) {}
+    documentationBrowserHtmlClose $w html_handle
+    catch {destroy $w.body.html}
+    pack $w.body.scroll -side right -fill y;pack $w.body.text -fill both -expand 1
     set text $w.body.text
     foreach tag [$text tag names] {if {[string match gx_manual_* $tag]} {$text tag delete $tag}}
     documentationBrowserManualImagesClear $w
@@ -210,10 +248,26 @@ proc ::GX::documentationBrowserManualShow {w path {anchor {}} {record 1}} {
 }
 proc ::GX::documentationBrowserManualEnable {w} {
     variable ::GX::DocumentationManual::state
-    foreach key {back forward} {$w.navigation.$key state [expr {[llength $state($w,$key)]?"!disabled":"disabled"}]}
+    set native {};set tutorial [expr {[winfo exists $w.tabs] && [$w.tabs select] eq "$w.tabs.tutorial"}]
+    set handle [expr {$tutorial?$state($w,tutorial_handle):$state($w,html_handle)}]
+    if {$handle ne {}} {catch {set native [::GX::HTMLViewer::inspect $handle]}}
+    foreach key {back forward} {
+        set enabled [expr {!$tutorial && [llength $state($w,$key)]>0}]
+        if {$native ne {} && [dict get $native can_$key]} {set enabled 1}
+        $w.navigation.$key state [expr {$enabled?{!disabled}:{disabled}}]
+    }
 }
 proc ::GX::documentationBrowserManualHistory {w direction} {
     variable ::GX::DocumentationManual::state
+    if {[winfo exists $w.tabs] && [$w.tabs select] eq "$w.tabs.tutorial"} {
+        if {$state($w,tutorial_handle) ne {}} {catch {::GX::HTMLViewer::navigate $state($w,tutorial_handle) [dict create action $direction]}}
+        return
+    }
+    if {[info exists state($w,html_handle)] && $state($w,html_handle) ne {}} {
+        if {![catch {set native [::GX::HTMLViewer::inspect $state($w,html_handle)]}] && [dict get $native can_$direction]} {
+            catch {::GX::HTMLViewer::navigate $state($w,html_handle) [dict create action $direction]};return
+        }
+    }
     if {![llength $state($w,$direction)]} return
     set path [lindex $state($w,$direction) end]
     set other [expr {$direction eq "back"?"forward":"back"}]
@@ -235,6 +289,8 @@ proc ::GX::documentationBrowserManualFollow {w target} {
     if {[catch {documentationBrowserManualShow $w [file join [file dirname $state($w,path)] $relative] $anchor} message]} {set state($w,status) $message}
 }
 proc ::GX::documentationBrowserManualAnchor {w anchor} {
+    variable ::GX::DocumentationManual::state
+    if {[info exists state($w,html_handle)] && $state($w,html_handle) ne {}} {catch {::GX::HTMLViewer::navigate $state($w,html_handle) [dict create action relative target #$anchor]};return}
     set text $w.body.text
     foreach tag {gx_h1 gx_h2 gx_h3} {
         foreach {first last} [$text tag ranges $tag] {
@@ -251,7 +307,13 @@ proc ::GX::documentationBrowserManualAnchor {w anchor} {
 }
 proc ::GX::documentationBrowserManualSearch {w} {
     variable ::GX::DocumentationManual::state
-    set text $w.body.text;set query $state($w,search)
+    set query $state($w,search)
+    set handle {}
+    if {[winfo exists $w.tabs] && [$w.tabs select] eq "$w.tabs.tutorial"} {set handle $state($w,tutorial_handle)
+    } elseif {[info exists state($w,html_mode)] && $state($w,html_mode)} {set handle $state($w,html_handle)}
+    if {$handle ne {}} {catch {::GX::HTMLViewer::navigate $handle [dict create action find text $query]};return}
+    if {[info exists state($w,html_mode)] && $state($w,html_mode)} return
+    set text $w.body.text
     $text tag remove gx_manual_find 1.0 end
     if {$query eq {}} return
     set start [expr {[lsearch -exact [$text mark names] gxManualFind]>=0?[$text index gxManualFind]:"1.0"}]
@@ -358,4 +420,272 @@ proc ::GX::documentationBrowserAboutModule {module viewer parent} {
     set apis [descriptorValue $data documentation api_refs [descriptorValue $data public_apis ids {}]]
     if {$apis ne {}} {append text "\nPublic APIs: [join [splitList $apis] {, }]"}
     tk_messageBox -parent $parent -title {About Module} -icon info -message $text
+}
+
+# HTML consumes the single CORE presentation service, never a second renderer.
+proc ::GX::documentationBrowserHtmlClose {w key} {
+    variable ::GX::DocumentationManual::state
+    if {[info exists state($w,$key,generator)]} {
+        set context $state($w,$key,generator)
+        foreach field {button notice} {
+            set widget [dict get $context $field]
+            if {[winfo exists $widget] && [winfo id $widget] eq [dict get $context ${field}_id]} {destroy $widget}
+        }
+    }
+    foreach field {generator generator_busy generator_status} {unset -nocomplain state($w,$key,$field)}
+    if {[info exists state($w,$key)] && $state($w,$key) ne {}} {
+        catch {::GX::HTMLViewer::detach $state($w,$key)}
+        set state($w,$key) {}
+    }
+    if {[info exists state($w,$key,surface)]} {
+        set surface $state($w,$key,surface);unset state($w,$key,surface)
+        if {[winfo exists $surface]} {destroy $surface}
+    }
+}
+proc ::GX::documentationBrowserHtmlSurfaceName {parent} {
+    variable ::GX::DocumentationManual::htmlSerial
+    return $parent.gxhtml[incr htmlSerial]
+}
+proc ::GX::documentationBrowserHtmlOpen {w key parent document} {
+    variable ::GX::DocumentationManual::state
+    documentationBrowserHtmlClose $w $key
+    foreach name {unavailable markdown} {if {[winfo exists $parent.$name]} {destroy $parent.$name}}
+    if {[catch {
+        set entry [documentationBrowserResolve $document]
+        if {![llength [info commands ::GX::HTMLViewer::attach]]} {error {Shared HTML service is unavailable.}}
+        # A closing renderer retains its old native parent until group drain.
+        # Every selection owns a fresh child, never the surviving host Frame.
+        set surface [documentationBrowserHtmlSurfaceName $parent]
+        ttk::frame $surface;pack $surface -fill both -expand 1
+        set state($w,$key,surface) $surface
+        set attached [::GX::HTMLViewer::attach $surface [dict create purpose documentation]]
+        set state($w,$key) [dict get $attached handle]
+        _documentationGeneratorCreate $w $key $parent $surface $entry
+        bind $surface <<GXHTMLChanged>> [list ::GX::documentationBrowserHtmlChanged $w $key]
+        ::GX::HTMLViewer::load $state($w,$key) [dict create kind documentation document_id $document]
+    } message]} {
+        documentationBrowserHtmlClose $w $key
+        set unavailable {Interactive HTML is unavailable in this installation.}
+        if {[info exists entry]} {
+            set guidance [_documentationGeneratorGuidance $entry $state($w,module)]
+            if {$guidance ne {}} {append unavailable "\n$guidance"}
+        }
+        ttk::label $parent.unavailable -text $unavailable -wraplength 650
+        pack $parent.unavailable -anchor center -padx 12 -pady 18
+        if {$key eq {html_handle}} {
+            ttk::button $parent.markdown -text {Open preserved Markdown manual} -command [list ::GX::documentationBrowserLegacyManual $w]
+            pack $parent.markdown -anchor center -padx 12 -pady 6
+        } else {set state($w,tutorial_status) {This lesson requires the shared interactive HTML runtime.}}
+    }
+}
+proc ::GX::documentationBrowserHtmlChanged {w key} {
+    variable ::GX::DocumentationManual::state
+    if {![winfo exists $w] || ![info exists state($w,$key)] || $state($w,$key) eq {}} return
+    if {![catch {set receipt [::GX::HTMLViewer::inspect $state($w,$key)]}]} {
+        if {$key eq {html_handle}} {
+            if {[dict get $receipt state] eq {ready} && $state($w,pending_anchor) ne {}} {
+                set anchor $state($w,pending_anchor);set state($w,pending_anchor) {}
+                catch {::GX::HTMLViewer::navigate $state($w,$key) [dict create action relative target #$anchor]}
+            }
+            set state($w,status) [dict get $receipt status];documentationBrowserManualEnable $w
+        } else {set state($w,tutorial_status) [dict get $receipt status]}
+    }
+    _documentationGeneratorRefresh $w $key
+}
+proc ::GX::documentationBrowserLegacyManual {w} {
+    variable ::GX::DocumentationManual::state
+    if {![winfo exists $w]} return
+    foreach kind {manual guide quick_start} {
+        set id module:$state($w,module):$kind
+        if {[dict exists $::GX::documentationBrowserEntries $id]} {
+            set entry [dict get $::GX::documentationBrowserEntries $id]
+            if {[string tolower [file extension [dict get $entry path]]] in {.md .markdown .txt}} {documentationBrowserManualShow $w [dict get $entry path];return}
+        }
+    }
+    set state($w,status) {No preserved Markdown manual is installed for this module.}
+}
+proc ::GX::documentationBrowserTutorialRefresh {w} {
+    variable ::GX::DocumentationManual::state
+    if {![winfo exists $w.tabs.tutorial.choice]} return
+    set ids {};set labels {}
+    foreach entry [documentationBrowserModuleTutorials $state($w,module)] {
+        if {[string tolower [file extension [dict get $entry path]]] ni {.html .htm}} continue
+        lappend ids [dict get $entry id];lappend labels [dict get $entry title]
+    }
+    set state($w,tutorial_ids) $ids
+    $w.tabs.tutorial.choice configure -values $labels
+    set current [lsearch -exact $ids $state($w,tutorial_current)]
+    if {$current<0} {documentationBrowserHtmlClose $w tutorial_handle;set state($w,tutorial_current) {}}
+    if {[llength $ids]} {
+        $w.tabs.tutorial.choice current [expr {$current<0?0:$current}]
+        set state($w,tutorial_status) {Select the Interactive Tutorial tab to open the registered lesson.}
+    } else {
+        set state($w,tutorial_choice) {}
+        set state($w,tutorial_status) {No interactive tutorial package is installed for this module.}
+    }
+}
+proc ::GX::documentationBrowserTutorialActivated {w} {
+    variable ::GX::DocumentationManual::state
+    if {![winfo exists $w] || ![info exists state($w,tutorial_handle)]} return
+    if {[winfo exists $w.tabs] && [$w.tabs select] eq "$w.tabs.tutorial" && $state($w,tutorial_handle) eq {}} {documentationBrowserTutorialSelected $w}
+    documentationBrowserManualEnable $w
+    foreach key {html_handle tutorial_handle} {_documentationGeneratorRefresh $w $key}
+}
+proc ::GX::documentationBrowserTutorialSelected {w} {
+    variable ::GX::DocumentationManual::state
+    if {![winfo exists $w]} return
+    set index [$w.tabs.tutorial.choice current]
+    if {$index<0 || $index>=[llength $state($w,tutorial_ids)]} return
+    documentationBrowserHtmlClose $w tutorial_handle
+    set parent $w.tabs.tutorial.host
+    foreach child [winfo children $parent] {destroy $child}
+    set id [lindex $state($w,tutorial_ids) $index]
+    set state($w,tutorial_current) $id
+    if {[catch {set entry [documentationBrowserResolve $id]}]} {set state($w,tutorial_status) {This registered lesson is no longer available.};return}
+    documentationBrowserHtmlOpen $w tutorial_handle $parent $id
+}
+
+# Native host button only. Page URLs/scripts receive no generator capability.
+# The pure projections below share the exact UI predicate with bounded headless
+# checks; they confer no widget, HTML, Generator or scientific authority.
+proc ::GX::_documentationGeneratorEntry {entry module} {
+    foreach field {id owner source_sha256 manifest_sha256 generator_library_id generator_id} {
+        if {![dict exists $entry $field] || [dict get $entry $field] eq {}} {return {}}
+    }
+    if {[dict get $entry owner] ne $module} {return {}}
+    foreach field {source_sha256 manifest_sha256} {
+        if {![regexp {^[0-9a-f]{64}$} [dict get $entry $field]]} {return {}}
+    }
+    foreach field {generator_library_id generator_id} {
+        if {![regexp {^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$} [dict get $entry $field]]} {return {}}
+    }
+    set result {}
+    foreach field {id owner source_sha256 manifest_sha256 generator_library_id generator_id} {dict set result $field [dict get $entry $field]}
+    return $result
+}
+proc ::GX::_documentationGeneratorGuidance {entry module} {
+    set binding [_documentationGeneratorEntry $entry $module]
+    if {$binding eq {}} {return {}}
+    return "Session Generator: [dict get $binding generator_library_id] / [dict get $binding generator_id]. Open Generate Session normally."
+}
+proc ::GX::_documentationGeneratorMatch {expected current receipt entry} {
+    foreach field {serial window_id surface surface_id tab handle} {
+        if {![dict exists $current $field] || [dict get $current $field] ne [dict get $expected $field]} {return 0}
+    }
+    if {[dict get $current selected_tab] ne [dict get $expected tab]} {return 0}
+    if {[_documentationGeneratorEntry $entry [dict get $expected owner]] ne [dict get $expected entry]} {return 0}
+    foreach field {handle state generation source} {if {![dict exists $receipt $field]} {return 0}}
+    if {[dict get $receipt handle] ne [dict get $expected handle] || [dict get $receipt state] ne {ready}} {return 0}
+    if {![string is integer -strict [dict get $receipt generation]] || [dict get $receipt generation]<1} {return 0}
+    if {[dict get $expected generation] ne {} && [dict get $receipt generation] ne [dict get $expected generation]} {return 0}
+    set source [dict get $receipt source]
+    foreach field {kind document_id source_sha256} {if {![dict exists $source $field]} {return 0}}
+    return [expr {[dict get $source kind] eq {documentation} &&
+        [dict get $source document_id] eq [dict get $expected entry id] &&
+        [dict get $source source_sha256] eq [dict get $expected entry source_sha256]}]
+}
+proc ::GX::_documentationGeneratorResult {result library generator} {
+    set unavailable [dict create status unavailable reason owner_result_invalid]
+    if {[catch {dict size $result}] || [lsort [dict keys $result]] ne [lsort {status window library_id generator_id reason}]} {return $unavailable}
+    if {[dict get $result library_id] ne $library || [dict get $result generator_id] ne $generator ||
+        [dict get $result status] ni {opened unavailable busy} || [string bytelength [dict get $result reason]]>128 ||
+        [string bytelength [dict get $result window]]>256} {return $unavailable}
+    if {[dict get $result status] eq {opened} && ([dict get $result window] eq {} || [dict get $result reason] ne {})} {return $unavailable}
+    return [dict create status [dict get $result status] reason [dict get $result reason]]
+}
+proc ::GX::_documentationGeneratorCreate {w key parent surface entry} {
+    variable ::GX::DocumentationManual::state
+    variable ::GX::DocumentationManual::generatorSerial
+    set binding [_documentationGeneratorEntry $entry $state($w,module)]
+    if {$binding eq {}} return
+    set tab [expr {$key eq {html_handle}?"$w.tabs.manual":"$w.tabs.tutorial"}]
+    set serial [incr generatorSerial]
+    set button $parent.generator;set notice $parent.generatorStatus
+    set state($w,$key,generator_status) {Loading registered documentation; generator selection is unavailable.}
+    ttk::button $button -text {Open Generate Session…} -state disabled -command [list ::GX::_documentationGeneratorOpen $w $key $serial]
+    ttk::label $notice -textvariable ::GX::DocumentationManual::state($w,$key,generator_status) -wraplength 650
+    pack $notice -side bottom -fill x -padx 5 -pady 3
+    pack $button -side bottom -anchor w -padx 5 -pady 3
+    set state($w,$key,generator) [dict create serial $serial window_id [winfo id $w] surface $surface surface_id [winfo id $surface] tab $tab handle $state($w,$key) generation {} owner $state($w,module) entry $binding button $button button_id [winfo id $button] notice $notice notice_id [winfo id $notice]]
+    set state($w,$key,generator_busy) 0
+}
+proc ::GX::_documentationGeneratorOwned {w key context} {
+    variable ::GX::DocumentationManual::state
+    if {![info exists state($w,$key,generator)] || $state($w,$key,generator) ne $context ||
+        ![info exists state($w,$key)] || $state($w,$key) ne [dict get $context handle]} {return 0}
+    foreach {widgetField idField} {surface surface_id button button_id notice notice_id} {
+        set widget [dict get $context $widgetField]
+        if {![winfo exists $widget] || [winfo id $widget] ne [dict get $context $idField]} {return 0}
+    }
+    return [expr {[winfo exists $w] && [winfo id $w] eq [dict get $context window_id]}]
+}
+proc ::GX::_documentationGeneratorCurrent {w key context} {
+    variable ::GX::DocumentationManual::state
+    if {![_documentationGeneratorOwned $w $key $context] || ![winfo exists $w.tabs]} {return {}}
+    if {[catch {
+        set current [dict create serial [dict get $state($w,$key,generator) serial] window_id [winfo id $w] surface [dict get $state($w,$key,generator) surface] surface_id [winfo id [dict get $context surface]] tab [dict get $context tab] handle $state($w,$key) selected_tab [$w.tabs select]]
+        set receipt [::GX::HTMLViewer::inspect [dict get $context handle]]
+        set entry [documentationBrowserResolve [dict get $context entry id]]
+        if {![_documentationGeneratorMatch $context $current $receipt $entry]} {error {Documentation selection changed}}
+    }]} {return {}}
+    return $receipt
+}
+proc ::GX::_documentationGeneratorRefresh {w key} {
+    variable ::GX::DocumentationManual::state
+    if {![info exists state($w,$key,generator)]} return
+    set context $state($w,$key,generator)
+    if {![_documentationGeneratorOwned $w $key $context]} return
+    set button [dict get $context button]
+    $button state disabled
+    if {$state($w,$key,generator_busy)} return
+    set pair "[dict get $context entry generator_library_id] / [dict get $context entry generator_id]"
+    if {![llength [info commands ::GX::sessionGeneratorOpenSelection]]} {
+        set state($w,$key,generator_status) "Session Generator: $pair. Native selection is unavailable; open Generate Session normally."
+        return
+    }
+    set receipt [_documentationGeneratorCurrent $w $key $context]
+    if {$receipt eq {}} {
+        set state($w,$key,generator_status) "Session Generator: $pair. Select this tab and load its current registered document before opening the generator."
+        return
+    }
+    if {[dict get $context generation] eq {}} {
+        dict set context generation [dict get $receipt generation]
+        set state($w,$key,generator) $context
+    }
+    set state($w,$key,generator_status) "Session Generator: $pair. Opens the ordinary selection dialog; generation remains your choice."
+    $button state !disabled
+}
+proc ::GX::_documentationGeneratorOpen {w key serial} {
+    variable ::GX::DocumentationManual::state
+    if {![info exists state($w,$key,generator)]} return
+    set context $state($w,$key,generator)
+    if {[dict get $context serial] ne $serial || ![_documentationGeneratorOwned $w $key $context] || $state($w,$key,generator_busy)} return
+    if {[dict get $context generation] eq {} || ![llength [info commands ::GX::sessionGeneratorOpenSelection]] || [_documentationGeneratorCurrent $w $key $context] eq {}} {
+        _documentationGeneratorRefresh $w $key
+        return
+    }
+    set state($w,$key,generator_busy) 1
+    [dict get $context button] state disabled
+    set library [dict get $context entry generator_library_id];set generator [dict get $context entry generator_id]
+    set result [dict create status unavailable reason owner_unavailable]
+    try {
+        set result [_documentationGeneratorResult [::GX::sessionGeneratorOpenSelection $library $generator] $library $generator]
+    } on error {message options} {
+        set result [dict create status unavailable reason owner_unavailable]
+    } finally {
+        # Owner may service idle layout work. Clear only our surviving context's
+        # busy flag, including if its tab became hidden; never mutate replacement.
+        if {[_documentationGeneratorOwned $w $key $context]} {set state($w,$key,generator_busy) 0}
+    }
+    if {[_documentationGeneratorCurrent $w $key $context] eq {}} return
+    _documentationGeneratorRefresh $w $key
+    switch -- [dict get $result status] {
+        opened {set text {The ordinary Generate Session dialog is open with this registered generator selected.}}
+        busy {set text {Another dialog is active. Finish it, then select Open Generate Session again.}}
+        default {
+            set reasons [dict create library_missing {The registered generator library is not installed.} library_disabled {The registered generator library is disabled.} generator_missing {The registered generator is not available in that library.} session_root_missing {Configure a Session output location before opening Generate Session.} session_root_invalid {The Session output location is unavailable.}]
+            set text [expr {[dict exists $reasons [dict get $result reason]]?[dict get $reasons [dict get $result reason]]:{The registered generator selection is unavailable. Open Generate Session normally or reload this document.}}]
+        }
+    }
+    set state($w,$key,generator_status) $text
 }

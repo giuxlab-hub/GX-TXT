@@ -1451,3 +1451,46 @@ With explicitly enabled uncertainty, CORE Numeric is authoritative. The Digitali
 The published `covariance_xy` variable carries the physical product unit X*Y in Variable Schema v3 and matching Dataset metadata. Atomic units use product notation (e.g., `V*mA`); compound axis expressions are parenthesized to avoid changing their meaning. A parenthesized or custom unit symbol can be opaque to the Unit Registry: do not assume a conversion without a CORE-approved conversion plan.
 
 The public Numeric API validates exact zero localization and shared calibration factors. Fitter GLS/ODR consumers apply their independent covariance eligibility checks.
+
+## Assisted trace shape and exclusion tools (version 2.0.5)
+From Curves > Assisted tracing, select Smooth curve prior: Off (legacy/default), Gentle or Strong. The option is a *preference during candidate-path search*, not a post-publication filter. The local curve can still bend or change concavity. Excessively strong smoothing can suppress real sharp corners; choose Off for genuinely discontinuous profiles.
+
+Create a competing-trace exclusion via New path in "Exclusion paths (red X)". Left click to place red X nodes in original raster coordinates; click an existing X to drag. Use Path # to choose among up to 16 paths for the selected scientific curve. Delete X removes the last node, Remove path removes the chosen path, and Undo X/Redo X navigate exclusion geometry edits. The shape-preserving spline connects X nodes and defines a soft exclusion band, shown over the raster, with adjustable Width px (1..40). The band adds a penalty to the assisted candidate search, not a hard ban; actual paths may cross excluded lines at a legitimate intersection. The source image and accepted scientific data remain unchanged. Exclusions are kept in the Session Interactive Document with the source SHA and series identity. If the source changes, stale exclusions are not applied. Re-run Propose after changing shape/exclusion settings to inspect the result before Accept.
+
+On the Calibration tab, the corners are marked TL/TR/BL/BR with active measurement number M1/M2/etc. The calibration/verification panels explicitly identify the active measurement label, state and abbreviated immutable ID. Merely selecting another row does not change the calibration used by Verify calibration; select Activate to change it.
+
+Limits: per-curve exclusions are bounded to 16 paths and 200 nodes per path. Smoothness is distinct from metrological uncertainty and cannot assign a standard deviation to raster-point locations. Manual inspection of ambiguous intersections remains necessary.
+
+If a configuration is rebound to a different source raster, the old red-X paths are not applied. Use Clear all paths to discard previous source-bound exclusion geometry explicitly before beginning new paths. This operation does not delete accepted curve points or published Datasets.
+
+## Version 2.0.6: Assisted tracing panel and path visibility
+
+The top row of Assisted tracing has Trace settings (left) and Proposal (right). Exclusion paths occupy the second full-width row. The left half holds New path, Edit X, Delete X, Remove path, Clear all paths, the global Enable exclusions control and Exclusion width (px). On the right, a scrollable table shows On, Path and X nodes.
+
+Click the path row to select the path to edit. Click its On checkbox to independently enable or disable that path. Selection does NOT enable or disable an exclusion. A disabled path retains its red-X control nodes as a muted overlay and does not contribute to the tracing exclusion cost. The global Enable exclusions setting temporarily disables all path penalties without discarding individual path flags.
+
+Edit → Undo and Edit → Redo (Ctrl+Z / Ctrl+Y) operate on the unified chronological history, including path creation, red-X insertion, drag, deletion, whole-path removal, Clear all paths, enable/disable, exclusion width changes and proposal corrections. A red-X drag is one history event regardless of the number of mouse motion updates. Selecting a path, panning or zooming never creates a history entry. Undo then edit clears the redo branch.
+
+Edits that change an enabled exclusion or the smoothing choice make any existing proposal stale. Generate a new Proposal before acceptance; accepted scientific points are never modified merely because an exclusion changes. The original Session Dataset and the baseline Curve Digitalizer capabilities remain unchanged.
+
+## Per-curve stroke width measurement (2.0.8)
+
+The line thickness in an original source image is NOT the same as Corridor (px), Snap to dark Radius, or Exclusion width (px). Stroke width is a descriptive measurement in original image pixels, transverse to a digitized curve.
+
+In Curves, first select a curve, then click Stroke width... immediately left of Show/Hide. A compact editor appears directly below the curve buttons. The editor is CLOSED by default, and all curves have measurement OFF by default.
+
+1. Enable Measure this curve to opt into this curve only. Other curves remain independently enabled or disabled.
+2. Automatic: select automatic and click Auto detect. Requires at least three accepted scientific points. The view samples the ORIGINAL raster along normals to the accepted point sequence. It estimates half-contrast full width from suitable cross-sections. Low contrast, overlapping lines, edge effects and multiple nearby strokes cause rejection. The result includes median width, range, interquartile range and accepted/rejected probe counts. Probe radius controls search distance, NOT the measured stroke width.
+3. Manual: select manual and choose Boundary A. Select Edit boundary and click along one visible edge of the ink line, placing at least two square handles. Choose Boundary B and draw the opposite edge. Both handles support mouse dragging; spline interpolation joins each boundary smoothly. Unlike red exclusion X and orange tracing guides, the boundary handles are cyan or lime squares. Measure two boundaries estimates separation between corresponding positions along both paths. Choose matching extent and direction; misaligned boundaries do NOT justify high accuracy.
+4. Delete last node, Clear boundaries and Reset measurement are reversible through Edit / Undo/Redo. Use Reset measurement when changing to an unrelated source raster. Click Stroke width... again to collapse the panel.
+
+Calibration displays Raster stroke width — selected curve, with current status and an Edit curve width button. The Uncertainty dialog lists each curve as inactive, active measured, unavailable, or stale and explains the scientific limit.
+
+A measured ink width is not automatically the standard uncertainty of its centerline, and the view does NOT populate pixel_scale, Numeric covariance or Fitter GLS/ODR weights. A rectangular distribution or any other statistical model must be explicitly justified, and further CORE integration may be necessary. In particular, digitalization repeats of the same raster do not represent independent physical MOSFET measurements.
+
+Per-curve geometry, measured widths, methods and source identities are persisted in the Session configuration. After publication, metadata contains a versioned per-curve diagnostic summary available via CURVE_DIGITIZER_STROKE_WIDTH_API_v1. These are observation/provenance fields, never instrument-error estimates.
+
+Existing Smooth curve prior, per-path red-X Exclusion paths and unified Edit Undo/Redo controls, calibration measurements and quality diagnostics are unchanged by this feature. The prior manual sections continue to apply.
+
+### 2.0.9 selection and status correction
+The stroke-width panel always follows the currently selected curve. Changing selection updates the `Measure this curve` checkbox, Automatic/Manual selection, probe radius, measured-width status and the Calibration tab's summary without transferring a previous curve's options. The panel remains collapsed on opening a new configuration; its saved values are retained per curve. The two manual boundaries still belong only to their source-bound curve. This diagnostic remains separate from the Uncertainty declaration and cannot automatically add a nonzero pixel sigma.

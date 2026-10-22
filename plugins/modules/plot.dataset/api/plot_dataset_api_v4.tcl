@@ -530,6 +530,9 @@ proc ::GX::PlotDatasetAPIv4::_modelChecks {model {context {}}} {
     _comparisonValidate $model
     if {[dict exists $model scientific_consultation]} {
         set consultation [dict get $model scientific_consultation]
+        set scientificSeries {}
+        foreach panel [dict get $model panels] {lappend scientificSeries {*}[dict get $panel series]}
+        _scientificAdmissionBudget $scientificSeries
         if {[::GX::datasetCoordinateRead $::GX::currentSession [dict get $consultation dataset_id]] ne [dict get $consultation coordinate_context]} {
             error {Scientific coordinate context changed; prepare the selected source again}
         }
@@ -541,9 +544,14 @@ proc ::GX::PlotDatasetAPIv4::_modelChecks {model {context {}}} {
             error {Scientific trace belongs to a different Dataset or coordinate context}
         }
         set descriptors [_get $series source_descriptors {}];if {[dict exists $series source_descriptor]} {lappend descriptors [dict get $series source_descriptor]}
-        foreach descriptor $descriptors {foreach identity [dict get $descriptor source_identities] {set id [dict get $identity dataset_id];if {$id in $seen} continue;lappend seen $id
+        foreach descriptor $descriptors {
+            # De-duplicate watch subscriptions only after checking this exact
+            # descriptor. A repeated Dataset ID may carry a conflicting expected
+            # hash/schema and must not inherit an earlier descriptor's validity.
+            if {![llength [dict get $descriptor source_identities]]} {error {Prepared native Plot source has no canonical source identities}}
             set validation [::GX::curveSourceValidateSnapshot $::GX::currentSession $descriptor]
             if {![dict get $validation valid]} {error "Prepared native Plot source is [dict get $validation status]; rebuild from its canonical source explicitly"}
+            foreach identity [dict get $descriptor source_identities] {set id [dict get $identity dataset_id];if {$id in $seen} continue;lappend seen $id
             set stamp [list [::GX::datasetViewerStamp $id [::GX::datasetResolvePath $::GX::currentSession $id]] [::GX::datasetRevisionToken $id]]
             set watches {}
             foreach path [list [::GX::datasetResolvePath $::GX::currentSession $id] [::GX::datasetRegistryPath $::GX::currentSession] [lindex [::GX::_datasetMetadataPath $::GX::currentSession $id] 1]] {lappend watches [list $path [_fileStamp $path]]}
@@ -553,7 +561,8 @@ proc ::GX::PlotDatasetAPIv4::_modelChecks {model {context {}}} {
             }
             if {[_get $context retain_presentation 0]} {dict set check representation_source [::GX::datasetViewerScientificIdentity $id]}
             lappend checks $check
-        }}
+            }
+        }
     }}
     return $checks
 }

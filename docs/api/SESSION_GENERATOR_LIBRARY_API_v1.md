@@ -131,9 +131,86 @@ sessionGeneratorAddGeneratorToLibrary
 sessionGeneratorRemoveGenerator
 
 sessionGeneratorGenerate
+sessionGeneratorOpenSelection
 ```
 
 The Library Manager is a GUI client of these operations; scientific formulas do not belong in CORE.
+
+### Host-only installed generator selection
+
+`::GX::sessionGeneratorOpenSelection libraryId generatorId` opens/selects the
+existing ordinary Generate Session browser. It returns before the user closes
+the dialog; it does not call Generate or create a Session. This is a trusted host
+GUI operation, with no ordinary Script/SDK grant or URI bridge. An intentional
+native documentation action can call this owner after its own source/lifetime
+admission; documentation must not manipulate the generator widgets or registry.
+
+The exact result is:
+
+```tcl
+{status opened|unavailable|busy window WINDOW_OR_EMPTY library_id ID generator_id ID reason CODE}
+```
+
+`opened` means the actual `[generator libraryId generatorId]` row is selected and
+the normal description/Generate availability has been synchronized; `reason` is
+empty. Other results do not promise a selected generator. No fallback to another
+library or similarly named generator occurs. Invalid IDs use the existing owner
+error contract: canonicalized IDs match `^[A-Za-z0-9][A-Za-z0-9._-]*$`, are
+case-sensitive and have no new global128-character limit. IDs retain the owner's
+existing surrounding-whitespace trimming. The directory name/display name is
+not a library identity.
+
+The operation requires the application's GUI, a configured valid Session-root
+path and the actual installed, enabled, exact catalog pair. A configured root
+that does not yet exist is permitted, as in ordinary New Session; this operation
+does not create it. Availability uses the installed registry without bundled
+initialization. Its dialog remains installed-only through every later browser
+refresh and manager-hide transition. The normal menu's default initialization
+policy and modal `newSessionDialog ?preferredProjectId?` behavior are unchanged.
+Explicit user Import/Enable/Generate actions retain their existing owners.
+
+An existing owned `.gxNewSession` is reused without resetting its name (including
+an intentionally empty name), Project or documentation-copy fields. A different
+active grab returns busy without taking it; a foreign window at the same path is
+also refused. Each invocation captures its owned native window ID. If idle layout
+destroys/recreates that path, it returns `unavailable/dialog_replaced` without
+fitting, focusing, selecting, restoring the old name, grabbing or cleaning up the
+replacement. Newly opened forms keep the normal selected generator's suggested
+name policy. A reused empty name is retained through the queued selection event;
+a different ordinary tree selection restores normal suggestions. Closing the
+originating manual does not close the user's generator form. Application/window
+destruction retains ordinary Tk ownership; this operation adds no callback, timer,
+worker or independent lifetime manager.
+
+Bounded reason codes are `gui_unavailable`, `session_root_missing`,
+`session_root_invalid`, `other_modal`, `dialog_not_owned`, `registry_unavailable`,
+`library_missing`, `library_disabled`, `library_unavailable`, `generator_missing`,
+`selection_unavailable`, `dialog_replaced` and `ui_unavailable`. A newly created
+incomplete form is closed on refusal when no other modal owner has acquired a grab; an existing
+user's form is retained. Cleanup applies only to that invocation's captured
+native window incarnation, never a replacement at the same path. Ordinary tree
+selection
+may persist the existing last-library preference through the same registry
+writer. This is the normal configuration side effect; no library install/enable,
+output-root creation, generator execution or scientific write is performed.
+
+### Optional previous Experiment documentation
+
+`sessionGeneratorGenerate libraryId generatorId sessionRoot sessionName ?copyDocumentation?`
+accepts an optional boolean. Its default is `0`, preserving existing four-argument
+callers. When explicitly enabled with a Session open, the four previous Experiment
+notebook documents (Notes, Objective, Procedure and Observations) are copied through
+the existing notebook owner. Scientific Datasets, graphs, Workspaces and module
+state are not inherited. With the option off, the generator's own documentation
+remains intact.
+
+The normal New Session dialog exposes **Copy previous Experiment documentation**
+for both Create and Generate Session. It is selected initially when a source
+Session exists and disabled otherwise. Reopen the dialog if its source Session
+changes. The existing `createNewSession name ?projectId? ?copyDocumentation?`
+entry point defaults to `1`, preserving its previous notebook-copy behavior.
+Invalid booleans fail before creation. Failed creation retains the existing
+transaction and recovery path.
 
 ## Portable packages
 

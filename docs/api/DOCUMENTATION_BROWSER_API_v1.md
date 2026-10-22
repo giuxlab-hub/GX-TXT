@@ -168,3 +168,87 @@ No scientific units apply to IDs, query text or UTF-8 manuals. Limits are byte
 and image/presentation limits; scientific precision and the completeness of
 each manual remain their actual public owner's responsibility. Discovery/read
 success is not proof of all-functions documentation or release acceptance.
+
+## TASK210 HTML manuals and installed tutorial packages
+
+The existing index also admits declared `.html`/`.htm` documents. HTML selection
+opens the same module Guides window using the shared `HTML_VIEWER_API_v1`
+interactive host; HTML is never passed to GX-Markup. Markdown/text keep their
+existing renderer and original source bytes. An installed valid HTML manual is
+preferred through `module:MODULE:html_manual`, followed by the existing manual,
+guide and quick-start order. `module:MODULE:guide` remains unchanged for old
+public/Script reads. Missing native capabilities show explicit HTML
+unavailability and offer the preserved Markdown manual when installed.
+
+The module window retains its invocation and repeated-open identity, now with
+Manual and Interactive Tutorial tabs. Tutorial selection uses the same descriptor
+index, with independent native handles/lifetimes for the two presentations. Main
+Help HTML selection delegates to this shared host. Curve Digitizer remains ASIS.
+This batch does not claim its existing Help/F1/HELP_OPEN route is connected. Any compatibility must reside in a
+legitimate existing CORE owner without altering or monkey-patching the vendor
+implementation.
+
+Installed packages are discovered at fixed versioned-framework paths:
+`docs/guides/*/*/documentation-package.ini` and
+`docs/tutorials/*/*/documentation-package.ini`. They do not introduce a registry
+or a package installer. MAIN stages separately distributable packages through
+normal framework delivery; no user-facing documentation ZIP installer is implied.
+Each manifest has the single section `[documentation_package]`:
+
+| Field | Contract |
+| --- | --- |
+| `api_version` | Exactly `1` |
+| `id`, `module_id` | Stable safe IDs; module must be installed |
+| `kind` | `manual` or `tutorial` |
+| `version`, `title`, `license` | Required bounded content version/display/provenance text |
+| `entrypoint` | Ordinary relative HTML/HTM file within this package |
+| `entry_sha256` | Required lowercase SHA256 of the actual entrypoint bytes |
+| `tested_module_version` | Optional descriptive provenance |
+| `generator_library_id`, `generator_id` | Optional paired exact registered identities; no implicit library |
+| `tested_generator_version` | Optional descriptive provenance |
+
+Unknown keys, missing fields, invalid hashes, paths/symlinks outside the package,
+uninstalled owners, duplicate IDs and conflicting manuals are unavailable with
+catalog diagnostics. Version1 limits are16KiB manifest,2MiB entrypoint and1024
+installed manifests. Registration IDs are `content:CONTENT_ID`; a manual also
+gets its module selection alias. Three independently packaged tutorials therefore
+appear as three ordinary same-catalog entries, without a new tutorial registry.
+The normal public List result retains its original seven fields; host-only asset
+root/manifest metadata never enters the Script list projection. Public Read
+returns the original UTF-8 source, including HTML, under its existing2MiB limit.
+
+Host-only `documentationBrowserResolve id` validates current manifest/source
+identity and supplies the confined root to the shared browser;
+`documentationBrowserModuleTutorials module_id` selects tutorial entries by
+installed owner. Every native source switch rechecks admission. Relative assets
+stay inside the package; a changed manifest/source requires catalog refresh and
+reopening. Resource type and byte budgets remain browser presentation limits.
+Generator metadata provides a native **Open Generate Session…** button beside
+an admitted HTML manual/tutorial when its paired library/generator IDs are
+declared. This host button calls the accepted `sessionGeneratorOpenSelection`
+owner with that exact pair. It never installs, enables or runs a generator.
+The existing dialog preserves the user's normal name/Location/Project and
+documentation options; its ordinary Generate control remains the user's action.
+
+The button is disabled while loading/unavailable or on another tab. Its action
+captures the current indexed source and manifest SHA, module owner, pair,
+selection serial, HTML handle/generation and actual window/child incarnations.
+A click re-resolves and compares that identity; metadata-only pair changes,
+source replacement, stale Session/window or retired handles require explicit
+reload/reselection. A busy dialog produces bounded retry guidance without modal
+theft or automatic retry. Completion updates only the surviving original context;
+the Generator dialog keeps its own lifetime if the manual closes. Missing host
+operation or HTML support retains plain normal-selection guidance. No URI,
+page-script, Script Bridge or restricted SDK capability is introduced.
+
+Bounded headless consumer checks cover actual catalog/manifest resolution and
+pure context/result predicates, including the actual Generator owner's truthful
+headless unavailable result. Native button interaction, dialog selection and
+reentrant UI/renderer behavior still require MAIN-coordinated actual GUI checks.
+Generator metadata does not grant automatic generation; no Generate action or
+Session creation is triggered. The native button uses the accepted host selection
+operation; URI dispatch remains unavailable.
+
+These changes have source-only catalog/read/codec coverage. Actual tab layout,
+HTML rendering and unchanged Digitizer Help/F1 flow require MAIN-coordinated GUI
+acceptance; no graphical, scientific or media PASS follows from catalog checks.

@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="650" viewBox="0 0 1000 650" role="img" aria-labelledby="title desc">
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original GUIDE conceptual artwork. -->
+<title id="title">Shared calibration correlates two scalar values</title>
+<desc id="desc">Independent local errors l1 and l2 each have standard uncertainty 0.3 volts. A common additive error c has standard uncertainty 0.4 volts and contributes to both values. Each marginal variance is 0.25 volts squared, and cross-point covariance is 0.16 volts squared. This is an illustrative model, not a product result.</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="#465d79"/></marker></defs>
+<rect width="1000" height="650" rx="18" fill="#f5f8fc"/>
+<g font-family="sans-serif" fill="#172b47">
+<text x="42" y="48" font-size="27" font-weight="700">One shared contribution reaches both points</text>
+<text x="42" y="82" font-size="18">Illustrative scalar model · stated independence assumptions · no product measurement</text>
+<rect x="315" y="119" width="370" height="98" rx="12" fill="#fff0ca" stroke="#926b13" stroke-width="2"/>
+<text x="500" y="157" text-anchor="middle" font-size="23" font-weight="700">Common calibration term c</text>
+<text x="500" y="190" text-anchor="middle" font-size="21">standard uncertainty: 0.4 V</text>
+<rect x="45" y="265" width="280" height="98" rx="12" fill="#e3efff" stroke="#31639b" stroke-width="2"/>
+<text x="185" y="304" text-anchor="middle" font-size="23" font-weight="700">Local term l₁</text>
+<text x="185" y="337" text-anchor="middle" font-size="21">standard uncertainty: 0.3 V</text>
+<rect x="675" y="265" width="280" height="98" rx="12" fill="#e3efff" stroke="#31639b" stroke-width="2"/>
+<text x="815" y="304" text-anchor="middle" font-size="23" font-weight="700">Local term l₂</text>
+<text x="815" y="337" text-anchor="middle" font-size="21">standard uncertainty: 0.3 V</text>
+<g fill="none" stroke="#465d79" stroke-width="3" marker-end="url(#arrow)"><path d="M410 217L350 393"/><path d="M590 217L650 393"/><path d="M185 363L250 393"/><path d="M815 363L750 393"/></g>
+<rect x="115" y="405" width="335" height="109" rx="12" fill="#e3f3e9" stroke="#307452" stroke-width="2"/>
+<text x="282" y="443" text-anchor="middle" font-size="24" font-weight="700">Point 1 error: l₁ + c</text>
+<text x="282" y="479" text-anchor="middle" font-size="22">variance = 0.25 V²</text>
+<rect x="550" y="405" width="335" height="109" rx="12" fill="#e3f3e9" stroke="#307452" stroke-width="2"/>
+<text x="717" y="443" text-anchor="middle" font-size="24" font-weight="700">Point 2 error: l₂ + c</text>
+<text x="717" y="479" text-anchor="middle" font-size="22">variance = 0.25 V²</text>
+<text x="500" y="557" text-anchor="middle" font-size="24" font-weight="700">Cross-point covariance = 0.16 V²</text>
+<text x="500" y="590" text-anchor="middle" font-size="20">Marginal standard uncertainties alone do not describe this shared effect.</text>
+<text x="42" y="627" font-size="16">GX210-GUIDE · GPL-3.0-or-later · conceptual artwork; not the full implemented homography model</text>
+</g></svg>

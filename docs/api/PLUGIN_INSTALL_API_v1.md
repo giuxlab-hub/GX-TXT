@@ -198,12 +198,20 @@ certified lifecycle remains active and requires a framework restart; another
 entrypoint cannot silently mix the newly installed code with the old runtime.
 Its previous package is retained outside descriptor discovery while pending.
 
-An active Analysis computation, any durable active Script Job, a loaded native
+An active Analysis computation, a cooperative Acquisition, any durable active Script Job, a loaded native
 library from the affected plugin, or a live framework child worker prevents
 replacement. The operation reports failure and explains what must finish or be
 closed. No native library is hot-unloaded and no worker or scientific Job is
 cancelled by an update. The durable Job owner's complete active lifecycle is
 used, independently of table pagination or hidden terminal entries.
+
+Descriptor-declared Acquisition adapters use the same loaded-version and
+pending-restart lifecycle. The complete loaded callback/capability registration
+remains together during catalog refresh; new descriptors do not rewrite the old
+registration. A pending update rejects subsequent Acquisition loader/inspect/import
+entrypoints until restart. Partial Tcl source failures are conservatively counted
+as loaded code. A fresh process loads the installed adapter normally; CORE does
+not blanket-source a replacement adapter in the old interpreter.
 
 A pure Tcl provider can opt into its own certified process-local lifecycle while
 its public API is activated under CORE's existing module context:

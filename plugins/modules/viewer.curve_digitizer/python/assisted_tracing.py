@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 import math
 import numpy as np
 from PIL import Image
+from assisted_constraints import exclusion_penalty, second_order_indices
 
 Point = tuple[float, float]
 
@@ -85,7 +86,8 @@ def _normal_contrast(gray,px,py,normals):
     return np.clip(np.maximum((side1+side2)*.5-center,center-(side1+side2)*.5)*2.0,0,1)
 
 
-def _segment(image_features, a:Point, b:Point, reference, radius:int, match_strength:float):
+def _segment(image_features, a:Point, b:Point, reference, radius:int, match_strength:float,
+             smoothness='Off', avoid_cost=None):
     """Bounded dynamic programming with colour, oriented line and grid costs.
 
     One full guide interval is optimized at once; fixed endpoints are guaranteed.
@@ -125,9 +127,19 @@ def _segment(image_features, a:Point, b:Point, reference, radius:int, match_stre
     # forbidden, because the correct curve may legitimately cross it.
     unary=(.45*gray_diff+.40*rgb_diff+.55*(1.-ridge)+.65*grid_penalty)*match_strength
     unary+=.20*(offsets[None,:]/max(1,radius))**2
+    if avoid_cost is not None:
+        unary+=2.4*avoid_cost[py,px]
     unary[~valid]=np.inf
     unary[0,:]=np.inf;unary[0,radius]=0.
     unary[-1,:]=np.inf;unary[-1,radius]=0.
+    if smoothness != 'Off':
+        indices=second_order_indices(unary,radius,smoothness)
+        if indices is None:
+            return [tuple(map(float,p)) for p in ref],float('nan'),True
+        path=[(float(coords[i,k,0]),float(coords[i,k,1])) for i,k in enumerate(indices)]
+        path[0]=a;path[-1]=b
+        mean=float(np.mean([unary[i,k] for i,k in enumerate(indices)]))
+        return path,mean,bool(mean>0.65)
     costs=np.full((n,nstates),np.inf,dtype=np.float64)
     prev=np.full((n,nstates),-1,dtype=np.int16)
     costs[0,radius]=0.
@@ -161,7 +173,8 @@ def compose_segments(segments):
     return [p for i,segment in enumerate(segments) for p in (segment if i==0 else segment[1:])]
 
 
-def propose(image, guides, *, radius=8, step=2.0, snap_strength=1.0, reference=None):
+def propose(image, guides, *, radius=8, step=2.0, snap_strength=1.0, reference=None,
+            smoothness='Off', exclusions=(), exclusion_width=6):
     if not 2<=len(guides)<=500:raise ValueError('Provide between 2 and 500 guide points.')
     if not 1<=radius<=40 or not .5<=step<=10:raise ValueError('Invalid tracing radius/step.')
     points=[(float(x),float(y)) for x,y in guides]
@@ -176,6 +189,7 @@ def propose(image, guides, *, radius=8, step=2.0, snap_strength=1.0, reference=N
         if len(candidate)==len(linear) and all(0<=x<w and 0<=y<h for x,y in candidate):
             fitted=candidate
     features=_feature_maps(image)
+    avoid=exclusion_penalty(image.size,exclusions,exclusion_width)
     segments=[];costs=[];ambiguous=[]
     pos=0
     for i,(a,b) in enumerate(zip(points,points[1:])):
@@ -188,7 +202,8 @@ def propose(image, guides, *, radius=8, step=2.0, snap_strength=1.0, reference=N
             if max(math.dist(x,y) for x,y in zip(segment_ref,curve_ref))<=max(4*radius,60):
                 segment_ref=curve_ref.copy()
                 segment_ref[0],segment_ref[-1]=a,b
-        path,cost,ambiguity=_segment(features,a,b,segment_ref,radius,snap_strength)
+        path,cost,ambiguity=_segment(features,a,b,segment_ref,radius,snap_strength,
+                                      smoothness=smoothness,avoid_cost=avoid)
         segments.append(path);costs.append(cost)
         if ambiguity or not math.isfinite(cost):ambiguous.append(i)
         pos+=count
@@ -199,14 +214,17 @@ def propose(image, guides, *, radius=8, step=2.0, snap_strength=1.0, reference=N
                          segments,costs,ambiguous)
 
 
-def repair(proposal, image, guides, changed_segment, *, radius=8,step=2.0):
+def repair(proposal, image, guides, changed_segment, *, radius=8,step=2.0,
+           smoothness='Off', exclusions=(), exclusion_width=6):
     """Recalculate only a changed guide interval; other segments remain exact."""
     if not 0<=changed_segment<len(guides)-1:raise ValueError('Invalid guide interval.')
     old=proposal.segments
     if len(old)!=len(guides)-1:raise ValueError('Proposal/guide topology mismatch.')
     a,b=guides[changed_segment:changed_segment+2]
     ref=samples_from_guides([a,b],step=step)
-    path,cost,ambiguous=_segment(_feature_maps(image),a,b,ref,radius,1.0)
+    path,cost,ambiguous=_segment(_feature_maps(image),a,b,ref,radius,1.0,
+                                  smoothness=smoothness,
+                                  avoid_cost=exclusion_penalty(image.size,exclusions,exclusion_width))
     segments=[list(s) for s in old];segments[changed_segment]=path
     costs=list(proposal.segment_costs);costs[changed_segment]=cost
     ambiguity=[i for i in proposal.ambiguous_segments if i!=changed_segment]
@@ -217,7 +235,8 @@ def repair(proposal, image, guides, changed_segment, *, radius=8,step=2.0):
     return TraceProposal(merged,len(segments),'local_recalculation',float(np.mean(vals)) if vals else float('nan'),segments,costs,sorted(ambiguity))
 
 
-def insert_correction(proposal,image,guides,segment_index, point_index,point,*,radius=8,step=2.0):
+def insert_correction(proposal,image,guides,segment_index, point_index,point,*,radius=8,step=2.0,
+                      smoothness='Off', exclusions=(), exclusion_width=6):
     """Insert a locked operator guide; only the split interval is searched again."""
     if not 0<=segment_index<len(proposal.segments):raise ValueError('Invalid proposal segment.')
     curve=proposal.segments[segment_index]
@@ -230,9 +249,11 @@ def insert_correction(proposal,image,guides,segment_index, point_index,point,*,r
     guides=list(guides);guides.insert(segment_index+1,tuple(map(float,point)))
     a,b,c=guides[segment_index:segment_index+3]
     feats=_feature_maps(image)
+    avoid=exclusion_penalty(image.size,exclusions,exclusion_width)
     paths=[];costs=[];amb=[]
     for s,(u,v) in enumerate([(a,b),(b,c)]):
-        path,cost,flag=_segment(feats,u,v,samples_from_guides([u,v],step=step),radius,1.)
+        path,cost,flag=_segment(feats,u,v,samples_from_guides([u,v],step=step),radius,1.,
+                                smoothness=smoothness,avoid_cost=avoid)
         paths.append(path);costs.append(cost)
         if flag:amb.append(segment_index+s)
     segs=proposal.segments[:segment_index]+paths+proposal.segments[segment_index+1:]
@@ -243,7 +264,8 @@ def insert_correction(proposal,image,guides,segment_index, point_index,point,*,r
     return guides,out
 
 
-def remove_guide(proposal,image,guides,guide_index,*,radius=8,step=2.0):
+def remove_guide(proposal,image,guides,guide_index,*,radius=8,step=2.0,
+                 smoothness='Off', exclusions=(), exclusion_width=6):
     """Remove an interior guide and re-optimize ONLY its merged interval.
 
     Raster geometry and all unaffected proposal intervals are preserved. This
@@ -254,7 +276,8 @@ def remove_guide(proposal,image,guides,guide_index,*,radius=8,step=2.0):
     if len(proposal.segments)!=len(guides)-1:
         raise ValueError('Proposal and guide count do not agree.')
     new_guides=guides[:guide_index]+guides[guide_index+1:]
-    merged=propose(image,[guides[guide_index-1],guides[guide_index+1]],radius=radius,step=step)
+    merged=propose(image,[guides[guide_index-1],guides[guide_index+1]],radius=radius,step=step,
+                   smoothness=smoothness,exclusions=exclusions,exclusion_width=exclusion_width)
     segs=proposal.segments[:guide_index-1]+merged.segments+proposal.segments[guide_index+1:]
     costs=proposal.segment_costs[:guide_index-1]+merged.segment_costs+proposal.segment_costs[guide_index+1:]
     ambiguous=[i if i<guide_index-1 else i-1 for i in proposal.ambiguous_segments

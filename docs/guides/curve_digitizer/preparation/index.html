@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original GUIDE preparation index. -->
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Curve Digitizer — explanatory manuscript index (preparation)</title><link rel="stylesheet" href="concepts.css"></head>
+<body><main>
+<p class="label">Author review · preparation manuscript</p>
+<h1>Curve Digitizer: understand the scientific workflow</h1>
+<p class="lead">Seven explanatory chapters connect raster positions, calibration, accepted curves, image processing and published scientific meaning. Use this index to review and reuse the material before the actual release rebaseline.</p>
+<p>This is an authoring entry point, not the completed manual, an installed Help entry or a tutorial package. Formal dev111/tutorial production still requires the actual official dev110 deposit. No installed GUI, canonical output, Dataset Preview, scientific accuracy or performance acceptance is supplied here.</p>
+<nav aria-label="On this page"><ul><li><a href="#read">Read the chapters</a></li><li><a href="#basis">Source and evidence</a></li><li><a href="#terms">Terms to keep distinct</a></li><li><a href="#tutorials">Exactly three tutorials</a></li></ul></nav>
+<section id="read"><h2>Read the explanatory chapters</h2>
+<table><caption>Manuscript reading map</caption><thead><tr><th scope="col">Chapter</th><th scope="col">What it explains</th><th scope="col">Source basis</th></tr></thead><tbody>
+<tr><td><a href="concepts.html">Coordinates and evidence</a></td><td>Raster versus scientific positions, source identity, curve/calibration grouping and a local analytical reference illustration.</td><td>Deposited dev109; final rebaseline pending.</td></tr>
+<tr><td><a href="calibration-concepts.html">Calibration and scale references</a></td><td>Pixel-center spans, axis mappings, scale-bar conventions and independent verification.</td><td>Deposited dev109; final rebaseline pending.</td></tr>
+<tr><td><a href="tracing-concepts.html">Tracing intent and point order</a></td><td>Ambiguous routes, proposals versus accepted points and deliberate traversal.</td><td>Deposited dev109; final rebaseline pending.</td></tr>
+<tr><td><a href="processing-concepts.html">Processing and source authority</a></td><td>Original versus decoded/derived images, ordered recipes, comparison and separate image/curve publication.</td><td>Deposited dev109; final rebaseline pending.</td></tr>
+<tr><td><a href="stroke-width-concepts.html">Interpreting stroke width</a></td><td>Per-curve diagnostic geometry, probe/boundary limits, source identity and publication snapshots; no implicit uncertainty.</td><td>Unchanged vendor 2.0.9 development-source intake; runtime/GUI unverified.</td></tr>
+<tr><td><a href="uncertainty-concepts.html">Interpreting uncertainty</a></td><td>Declared distributions, interval widths, shared calibration covariance and supported consumer limits.</td><td>Deposited dev109; includes historical Numeric patch wording requiring source-intake reconciliation.</td></tr>
+<tr><td><a href="publication-concepts.html">Publication identity and recovery</a></td><td>Saved configuration versus published output, accepted/selected calibrations, grouping and per-output recovery.</td><td>Deposited dev109; final rebaseline pending.</td></tr>
+</tbody></table>
+<p>Each chapter is explanatory. Original SVG diagrams and the coordinate card are teaching material, not real GUI captures or application-produced scientific results. Preserve those labels and the stated assumptions when reusing them.</p>
+</section>
+<section id="basis"><h2>Keep source knowledge separate from executed evidence</h2>
+<p>MAIN's supplied source decision identifies complete unchanged vendor <strong>2.0.9</strong>, archive SHA-256 <code>dbd271bd70b4d13d6fbe4889750f73aef97825b6ef4bc4dce89d7510a278b84a</code>. That decision establishes the development-source payload boundary. It does not establish an official dev110 deposit, installed runtime compatibility or a successful GUI workflow.</p>
+<p>The earlier dev109 fragments remain useful historical preparation. They need explicit reconciliation with actual 2.0.9 source and the eventual released baseline. In particular, the vendor's current uncertainty documentation describes integrated Numeric zero-localization support instead of the old separate patch references. GUIDE has not verified installed Numeric or Fitter execution.</p>
+<p>The vendor manual also retains historical 2.0.5 exclusion-control instructions alongside the 2.0.6 replacement layout/history instructions. Final current instructions must follow the actual unchanged GUI; the historical controls must not be combined into an invented interface.</p>
+<p><strong>Source integrity qualification:</strong> under MAIN's supplied decision, direct unchanged-vendor Quality fields do not establish current-byte verification. CORE's separate host source observation has its own owner, method, preparation time and reason. A registry comparison or previous-render receipt must not be presented as a fresh byte measurement or continuous verification.</p>
+<p>Public installable Preview ABI/Builder adoption, Library Steps 4–7 and measured incremental Workbench changes remain authorized dev111 work under the documented allocation. An intermediate dev110 foundation does not imply those later capabilities are complete. Actual manual examples will use the accepted capabilities and honest limitations of their real version.</p>
+</section>
+<section id="terms"><h2>Terms that carry different scientific meanings</h2>
+<dl>
+<dt><strong>Original raster position</strong></dt><dd>A point in the source image coordinate system. Display zoom, pan or opacity does not redefine it.</dd>
+<dt><strong>Scientific coordinate</strong></dt><dd>A calibrated value with axis meaning, units and a specific mapping. A different accepted calibration can map the same raster point differently.</dd>
+<dt><strong>Proposal and accepted points</strong></dt><dd>A tracing proposal awaits deliberate review and acceptance. A visually plausible route does not establish the intended scientific curve.</dd>
+<dt><strong>Active, accepted and selected calibration</strong></dt><dd>Distinct roles for the current working mapping, reviewed measurement state and requested publication set. Keep the actual identities and roles explicit.</dd>
+<dt><strong>Curve identity and display name</strong></dt><dd>A stable identity groups scientific points. An editable label is presentation and must not replace that grouping identity.</dd>
+<dt><strong>Canonical Dataset and Preview</strong></dt><dd>The Dataset is the published scientific resource. Preview is its supported consultation, with its own representation/status; a visible frame does not replace canonical data or their provenance.</dd>
+<dt><strong>Quality diagnostic and measurement uncertainty</strong></dt><dd>A structural or image observation describes evidence and limitations. A standard uncertainty needs a justified statistical model and the supported scientific contract.</dd>
+<dt><strong>Stroke width and localization uncertainty</strong></dt><dd>Ink thickness in original pixels is descriptive geometry. It does not automatically supply a standard deviation for the centerline.</dd>
+<dt><strong>Source claim and owner observation</strong></dt><dd>A provider field must retain its actual meaning. An independent host receipt applies to its observed source identity and preparation time, with explicit unsupported or unverified states.</dd>
+</dl>
+</section>
+<section id="tutorials"><h2>Exactly three independent tutorial identities</h2>
+<p>MAIN accepted these content-design identities. They do not define runtime registration fields or prove installation. No final ZIP has been authored, and this index creates no additional tutorial identity.</p>
+<table><caption>Provisional complementary tutorial roles, subject to actual-release inspection</caption><thead><tr><th scope="col">Accepted content identity</th><th scope="col">Provisional learning role</th><th scope="col">Completion evidence still required</th></tr></thead><tbody>
+<tr><td><code>curve_digitizer.tutorial.01.en</code></td><td>A complete first calibrated curve workflow, deliberate manual point editing and publication/reopen.</td><td>Actual registered generation, GUI actions, canonical output and Dataset Preview; final review.</td></tr>
+<tr><td><code>curve_digitizer.tutorial.02.en</code></td><td>Curve families, repeated calibrations and assisted tracing with supported grouping/order.</td><td>Actual scientific identities/parameters, source-specific advanced controls, publication and Preview; final review.</td></tr>
+<tr><td><code>curve_digitizer.tutorial.03.en</code></td><td>Image/physical-scale interpretation, processing, source lineage and qualified diagnostics/uncertainty.</td><td>Actual source provenance and scale conventions, genuine outputs/limitations, Preview and final review.</td></tr>
+</tbody></table>
+<p>Each final tutorial must be complete and independently usable in its own ZIP. Together they must cover the actual significant Digitizer controls/workflows. Final content requires TUTORIAL1 scientific, visual and organizational review and MAIN release acceptance. The full manual content identity remains <code>curve_digitizer.manual.en</code>.</p>
+<p>Actual generator selection and intentional Session creation must use the accepted existing public catalog/normal flow. This preparation entry point contains no guessed generator link, synthetic Session, installation shortcut or runtime registration.</p>
+</section>
+<footer><p>GX210-GUIDE · original English prose and artwork, GPL-3.0-or-later. Local asset/source hashes and document-specific provenance are retained in provenance.json. Vendor source/GUI/package/MANUAL and public owner boundaries remain unchanged. Preparation only; final manual and exactly three tutorial ZIPs remain unfinished.</p></footer>
+</main></body></html>

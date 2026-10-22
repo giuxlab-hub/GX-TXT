@@ -1,5 +1,81 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Additive organization/provenance, using existing Project, Manifest, Portable and Lifecycle authorities.
+source [file join $::GX::scriptDir core tcl session_creation_transaction_v1.tcl]
+proc ::GX::_sessionCreationPending {session} {
+    if {![string match .gxtxt-create-* [file tail [file dirname $session]]]} {return 0}
+    set state [_sessionCreationProbe [file normalize $session]]
+    if {![dict get $state pending]} {return 0}
+    if {![dict get $state owner_alive] || [dict get $state state] ni {reserved claimed}} {
+        error "Incomplete Session creation requires explicit recovery: $session"
+    }
+    return 1
+}
+proc ::GX::_sessionCreationSavedState {} {
+    set manifest {}
+    if {$::GX::currentSession ne {}} {set manifest [sessionExperimentSnapshot]}
+    return [dict create session $::GX::currentSession cfg [array get ::GX::cfg] module_cfg [array get ::GX::moduleCfg] manifest $manifest]
+}
+proc ::GX::_sessionCreationOpen {record} {
+    variable sessionCreationOpenTarget
+    set existed [info exists sessionCreationOpenTarget]
+    if {$existed} {set previous $sessionCreationOpenTarget}
+    set target [file normalize [dict get $record target]]
+    set sessionCreationOpenTarget $target
+    try {set opened [openSessionPath $target]} finally {
+        if {$existed} {set sessionCreationOpenTarget $previous} else {unset -nocomplain sessionCreationOpenTarget}
+    }
+    if {$opened eq {} || $::GX::currentSession eq {} ||
+        [file normalize $opened] ne $target || [file normalize $::GX::currentSession] ne $target ||
+        [dict get [_sessionCreationInspect $record] state] ne {promoted}} {
+        error "Session output is preserved but final activation was not verified: $target"
+    }
+    return $target
+}
+proc ::GX::_sessionCreationRestore {saved root} {
+    set previous [dict get $saved session]
+    set authoritative {}
+    if {$previous ne {}} {
+        if {![file isfile [file join $previous metadata manifest.ini]]} {error "Previous Session is unavailable: $previous"}
+        set ::GX::currentSession {}
+        openSessionPath $previous
+        if {[file normalize $::GX::currentSession] ne [file normalize $previous]} {error {Previous Session identity was not restored}}
+        foreach key {experiment_id experiment_project_id experiment_project experiment_project_legacy experiment_name session_origin} {
+            if {[info exists ::GX::cfg($key)]} {dict set authoritative $key $::GX::cfg($key)}
+        }
+    } else {defaults;loadModuleCatalog;set ::GX::currentSession {}}
+    # Restore unsaved configuration through the established Manifest loader,
+    # never by rolling back a possibly concurrently updated Project registry.
+    if {[dict get $saved manifest] ne {}} {
+        set fd [file tempfile snapshot [file join $root .gxtxt-creation-restore-]]
+        try {
+            fconfigure $fd -encoding utf-8 -translation lf
+            puts -nonewline $fd [dict get $saved manifest]
+            close $fd;set fd {}
+            loadManifest $snapshot
+        } finally {
+            if {$fd ne {}} {close $fd}
+            file delete -- $snapshot
+        }
+    }
+    array unset ::GX::cfg *;array set ::GX::cfg [dict get $saved cfg]
+    array unset ::GX::moduleCfg *;array set ::GX::moduleCfg [dict get $saved module_cfg]
+    dict for {key value} $authoritative {set ::GX::cfg($key) $value}
+    set ::GX::currentSession $previous
+    updateSessionUi
+    if {[llength [info commands winfo]] && [winfo exists .top.nb.exp]} {rebuildNativeExperimentGui}
+    projectRefreshExperimentUi
+}
+proc ::GX::_sessionCreationFailure {message options record saved root} {
+    if {$record ne {}} {
+        if {[catch {set cleanup [_sessionCreationAbort $record]} issue]} {
+            append message "\nCreation paths retained for recovery: [dict get $record stage] / [dict get $record target]\n$issue"
+        } elseif {[dict get $cleanup state] in {aborted_retained promoted_retained}} {
+            append message "\nPreserved Session output: [dict get $cleanup stage] / [dict get $cleanup target]"
+        }
+    }
+    if {[catch {_sessionCreationRestore $saved $root} issue]} {append message "\nPrevious Session restoration failed: $issue"}
+    return -options $options $message
+}
 namespace eval ::GX {variable projectTransactionDepth 0}
 proc ::GX::_projectJournal {} {return [file join [file dirname [projectRegistryPath]] project_transaction.json]}
 proc ::GX::_projectTransactionHost {action args} {
@@ -294,37 +370,46 @@ proc ::GX::projectAssociateCurrentExperiment {projectId} {
     return $projectId
 }
 proc ::GX::_projectEncounterSession {session} {
-    set manifest [file join $session metadata manifest.ini];set data [parseIni $manifest]
-    set project [datasetPublicationV2DictDefault $data project_link.project_id {}]
-    set eid [datasetPublicationV2DictDefault $data project_link.experiment_id {}]
-    if {$project ne {} && ![projectExists $project]} {
-        # Foreign/missing Project link is kept as provenance and assigned to Default locally.
-        set prior $project;set project {}
-    } else {set prior {}}
-    if {$eid eq {}} {set eid [experimentGenerateId]}
-    set recorded [projectMembershipField $eid session_path {}]
-    if {$recorded ne {} && [file normalize $recorded] ne [file normalize $session] && [file exists $recorded]} {error {Experiment ID collision: use Portable Import to create an independent organizational identity.}}
-    if {$project eq {}} {
-        set project [projectEnsureDefault]
-        _projectAtomic [list $manifest] {
-            dict set data project_link.api_version 1;dict set data project_link.project_id $project;dict set data project_link.experiment_id $eid
-            if {[datasetPublicationV2DictDefault $data project_link.legacy_project {}] eq {}} {dict set data project_link.legacy_project [datasetPublicationV2DictDefault $data experiment.project {}]}
-            if {$prior ne {}} {dict set data project_link.previous_project_id $prior}
-            # Preserve legacy experiment.project text on encounter; identity is additive.
-            _projectIniWrite $manifest $data
-            projectAssociateExperiment $project $eid $session [datasetPublicationV2DictDefault $data experiment.name [file tail $session]]
+    if {[_sessionCreationPending $session]} {return {}}
+    set manifest [file join $session metadata manifest.ini]
+    set identity [_projectAtomic [list $manifest] {
+        # Every encounter, including reopen/restoration, uses fresh registry
+        # state while holding the existing short writer transaction.
+        projectLoadRegistry
+        set data [parseIni $manifest]
+        set project [datasetPublicationV2DictDefault $data project_link.project_id {}]
+        set eid [datasetPublicationV2DictDefault $data project_link.experiment_id {}]
+        if {$project ne {} && ![projectExists $project]} {set prior $project;set project {}} else {set prior {}}
+        if {$eid eq {}} {set eid [experimentGenerateId]}
+        set recorded [projectMembershipField $eid session_path {}]
+        if {$recorded ne {} && [file normalize $recorded] ne [file normalize $session] && [file exists $recorded]} {
+            error {Experiment ID collision: use Portable Import to create an independent organizational identity.}
         }
-    } else {
-        _projectAtomic {} {projectAssociateExperiment $project $eid $session [datasetPublicationV2DictDefault $data experiment.name [file tail $session]]}
-    }
+        if {$project eq {}} {set project [projectEnsureDefault]}
+        set updated $data
+        dict set updated project_link.api_version 1
+        dict set updated project_link.project_id $project
+        dict set updated project_link.experiment_id $eid
+        if {[datasetPublicationV2DictDefault $updated project_link.legacy_project {}] eq {}} {
+            dict set updated project_link.legacy_project [datasetPublicationV2DictDefault $data experiment.project {}]
+        }
+        if {$prior ne {}} {dict set updated project_link.previous_project_id $prior}
+        if {$updated ne $data} {_projectIniWrite $manifest $updated}
+        set name [datasetPublicationV2DictDefault $updated experiment.name [file tail $session]]
+        projectAssociateExperiment $project $eid $session $name
+        dict create eid $eid project $project name $name legacy [datasetPublicationV2DictDefault $updated project_link.legacy_project {}]
+    }]
     if {$::GX::currentSession eq $session} {
-        set ::GX::cfg(experiment_id) $eid;set ::GX::cfg(experiment_project_id) $project
-        set ::GX::cfg(experiment_name) [datasetPublicationV2DictDefault $data experiment.name [file tail $session]]
-        set ::GX::cfg(experiment_project_legacy) [datasetPublicationV2DictDefault $data project_link.legacy_project {}]
-        projectRefreshExperimentUi;updateSessionUi
+        set ::GX::cfg(experiment_id) [dict get $identity eid]
+        set ::GX::cfg(experiment_project_id) [dict get $identity project]
+        set ::GX::cfg(experiment_name) [dict get $identity name]
+        set ::GX::cfg(experiment_project_legacy) [dict get $identity legacy]
+        projectRefreshExperimentUi
+        updateSessionUi
     }
-    return $eid
+    return [dict get $identity eid]
 }
+
 # The synchronization callback is used inside legacy opening. Propagate through
 # our outer controller below so errors are never silently swallowed by that chain.
 proc ::GX::projectSynchronizeCurrentExperiment {} {projectRefreshExperimentUi}
@@ -378,8 +463,13 @@ proc ::GX::makeSession {} {
 # Current Manifest persistence keeps membership in the same recoverable transaction.
 rename ::GX::writeManifest ::GX::writeManifest_before_projects083
 proc ::GX::writeManifest {path} {
+    if {$::GX::currentSession ne {} && [_sessionCreationPending $::GX::currentSession]} {
+        resourceLifecycleWriteBytes $path [encoding convertto utf-8 [manifestString]]
+        return {}
+    }
     if {$::GX::currentSession ne {} && [file normalize $path] eq [file join $::GX::currentSession metadata manifest.ini]} {
         return [_projectAtomic [list $path] {
+            projectLoadRegistry
             if {[projectCurrentId] eq {}} {set ::GX::cfg(experiment_project_id) [projectEnsureDefault]}
             projectAssociateExperiment [projectCurrentId] [projectEnsureCurrentExperimentId] $::GX::currentSession $::GX::cfg(experiment_name)
             set state [manifestString]
@@ -498,6 +588,7 @@ proc ::GX::projectUpdate {id fields} {
 }
 rename ::GX::projectAssociateExperiment ::GX::projectAssociateExperiment_before_projects083
 proc ::GX::projectAssociateExperiment {projectId experimentId sessionPath experimentName} {
+    if {[_sessionCreationPending $sessionPath]} {return $experimentId}
     if {![projectExists $projectId]} {error "Unknown Project '$projectId'."}
     if {$::GX::projectTransactionDepth} {return [projectAssociateExperiment_before_projects083 $projectId $experimentId $sessionPath $experimentName]}
     set manifest [file join $sessionPath metadata manifest.ini]
@@ -522,28 +613,10 @@ proc ::GX::projectSessionsRoot {id} {
     return [projectSessionsRoot_before_projects083 $id]
 }
 rename ::GX::createNewSession ::GX::createNewSession_before_projects083
-proc ::GX::createNewSession {name {projectId {}}} {
-    set priorSession $::GX::currentSession
-    set root $::GX::cfg(output_root)
-    if {$projectId ne {}} {set root [projectSessionsRoot $projectId]}
-    set target [file normalize [file join $root [sanitize [string trim $name]]]]
-    if {[file exists $target]} {error {New Session destination already exists.}}
-    set savedArrays {};set savedScalars {}
-    foreach variable [info vars ::GX::*] {
-        if {[array exists $variable]} {dict set savedArrays $variable [array get $variable]} elseif {$variable ni {::GX::projectTransactionDepth} && [info exists $variable]} {dict set savedScalars $variable [set $variable]}
-    }
-    try {
-        return [_projectAtomic [list [file join $target metadata manifest.ini]] {createNewSession_before_projects083 $name $projectId}]
-    } on error {message options} {
-        # Only the new reserved Session is ours to remove on creation failure.
-        if {[file exists $target]} {file delete -force -- $target}
-        dict for {variable values} $savedArrays {array unset $variable *;array set $variable $values}
-        dict for {variable value} $savedScalars {set $variable $value}
-        set ::GX::currentSession $priorSession
-        catch {updateSessionUi};catch {projectRefreshExperimentUi}
-        return -options $options $message
-    }
+proc ::GX::createNewSession {name {projectId {}} {copyDocumentation 1}} {
+    tailcall ::GX::createNewSession_before_projects083 $name $projectId $copyDocumentation
 }
+
 rename ::GX::loadManifest ::GX::loadManifest_before_projects083
 proc ::GX::loadManifest {path} {
     set current [file join $::GX::currentSession metadata manifest.ini]

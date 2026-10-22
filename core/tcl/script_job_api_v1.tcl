@@ -2,7 +2,7 @@
 # CORE local durable Job API. UI callbacks use nonblocking fileevents only.
 namespace eval ::GX {variable scriptJobRequests {};variable scriptJobCounter 0;variable scriptJobShutdownHook 0}
 proc ::GX::scriptJobApiInfo {} {
-    return [dict create api_name SCRIPT_JOB_API_v1 api_version 1 scope {local remote_references} authority core operations {submit wait list describe inspect log_read inspect_run run_log_read run_summaries cancel recover configure debug_submit debug_read debug_control debug_capabilities stream_read stream_publish view_list history_hide history_restore history_candidates workspace_save workspace_open workspace_rename workspace_delete view_remember} persistence durable gui_lifetime independent presentation_scope user_configuration auxiliary_operations {scriptJobAsync scriptJobRequestCancel scriptJobRequestExchange} auxiliary_limits {timeout_ms max_bytes process_group ui_lifetime label duplex} auxiliary_exchange_timeout_ms {default 12000 min 1 max 120000}]
+    return [dict create api_name SCRIPT_JOB_API_v1 api_version 1 scope {local remote_references} authority core operations {submit wait list describe inspect log_read inspect_run run_log_read run_summaries cancel recover configure debug_submit debug_read debug_control debug_capabilities stream_read stream_publish view_list history_hide history_restore history_candidates workspace_save workspace_open workspace_rename workspace_delete view_remember} persistence durable gui_lifetime independent presentation_scope user_configuration auxiliary_operations {scriptJobAsync scriptJobRequestCancel scriptJobRequestExchange scriptJobRequestSend scriptJobRequestDrain} auxiliary_limits {timeout_ms max_bytes process_group ui_lifetime label duplex} auxiliary_exchange_timeout_ms {default 12000 min 1 max 120000} auxiliary_send_pending_bytes 65536 auxiliary_drain_maximum {default 16 min 1 max 16}]
 }
 proc ::GX::scriptJobRoot {} {
     if {[info exists ::env(GXTXT_JOB_ROOT)]} {return [file normalize $::env(GXTXT_JOB_ROOT)]}
@@ -45,7 +45,18 @@ proc ::GX::scriptJobReadable {request} {
     variable scriptJobRequests
     if {![dict exists $scriptJobRequests $request]} return
     set entry [dict get $scriptJobRequests $request];set pipe [dict get $entry pipe]
-    dict append entry data [read $pipe 65536]
+    set ended [dict exists $entry eof]
+    if {!$ended} {
+        if {[catch {read $pipe 65536} chunk]} {
+            # A failed/closed channel must still use the existing cancellation,
+            # escalation and terminal callback owner, even without another EOF.
+            catch {fileevent $pipe readable {}}
+            scriptJobRequestCancel $request read_error
+            dict set scriptJobRequests $request eof 1
+            set entry [dict get $scriptJobRequests $request]
+            set ended 1
+        } else {dict append entry data $chunk}
+    }
     set maximum [dict get $entry options max_bytes]
     if {[dict get $entry options duplex]} {
         if {[dict get $entry cancelled] ne {}} {
@@ -74,7 +85,7 @@ proc ::GX::scriptJobReadable {request} {
         set entry [dict get $scriptJobRequests $request]
     }
     dict set scriptJobRequests $request $entry
-    if {![eof $pipe]} return
+    if {!$ended && ![eof $pipe]} return
     if {[dict get $entry options duplex] && [dict get $entry cancelled] eq {}} {
         # A persistent native leader can crash after fork while a descendant
         # redirects stdout. Retain ownership until the whole group is reaped.
@@ -84,11 +95,11 @@ proc ::GX::scriptJobReadable {request} {
     # A worker can exit before a descendant that redirected its stdout. Keep
     # the group identity until the escalation has run, even after pipe EOF.
     if {[dict get $entry cancelled] ne {} && ![dict exists $entry escalated]} {
-        fileevent $pipe readable {}
+        catch {fileevent $pipe readable {}}
         dict set scriptJobRequests $request eof 1
         return
     }
-    fileevent $pipe readable {};catch {close $pipe}
+    catch {fileevent $pipe readable {}};catch {close $pipe}
     foreach key {timer kill_timer} {if {[dict get $entry $key] ne {}} {after cancel [dict get $entry $key]}}
     dict unset scriptJobRequests $request
     set response [string trim [dict get $entry data]]
@@ -117,6 +128,57 @@ proc ::GX::scriptJobRequestExchange {request payload {timeout_ms 12000}} {
     }
     error {Compiled Viewer worker ended before responding}
 }
+proc ::GX::scriptJobRequestSend {request payload} {
+    variable scriptJobRequests
+    if {![dict exists $scriptJobRequests $request] || ![dict get $scriptJobRequests $request options duplex] || [dict get $scriptJobRequests $request cancelled] ne {}} {
+        return -code error -errorcode {GXTXT SCRIPT_JOB INACTIVE} {Managed duplex request is no longer active}
+    }
+    if {[string first \x00 $payload]>=0 || [string first \r $payload]>=0 || [string first \n $payload]>=0} {
+        return -code error -errorcode {GXTXT SCRIPT_JOB FRAME} {Managed duplex payload must not contain NUL, CR or LF}
+    }
+    # Count the actual Tcl channel encoding, including the single appended LF.
+    # No write/flush is attempted until the entire pending-output budget fits.
+    set bytes [string length [encoding convertto utf-8 $payload]]
+    set pipe [dict get $scriptJobRequests $request pipe]
+    if {[catch {chan pending output $pipe} pending]} {
+        scriptJobRequestCancel $request write_error
+        return -code error -errorcode {GXTXT SCRIPT_JOB WRITE_FAILED} {Managed duplex request write failed}
+    }
+    if {$bytes+1+$pending>65536} {
+        return -code error -errorcode {GXTXT SCRIPT_JOB BUSY} {Managed duplex pending-output budget exceeded}
+    }
+    if {[catch {puts $pipe $payload;flush $pipe}]} {
+        # A partly written frame is never retried. The same owner retains the
+        # pipe and child/group through its ordinary terminal escalation.
+        scriptJobRequestCancel $request write_error
+        return -code error -errorcode {GXTXT SCRIPT_JOB WRITE_FAILED} {Managed duplex request write failed}
+    }
+    return [dict create request_id $request accepted 1 payload_bytes $bytes]
+}
+proc ::GX::scriptJobRequestDrain {request {maximum 16}} {
+    variable scriptJobRequests
+    if {![string is integer -strict $maximum] || $maximum<1 || $maximum>16} {
+        return -code error -errorcode {GXTXT SCRIPT_JOB MAXIMUM} {Managed duplex drain maximum is outside1..16}
+    }
+    set inactive [dict create request_id $request active 0 cancelled {} messages {}]
+    if {![dict exists $scriptJobRequests $request]} {return $inactive}
+    if {![dict get $scriptJobRequests $request options duplex]} {
+        return -code error -errorcode {GXTXT SCRIPT_JOB INACTIVE} {Managed duplex request is no longer active}
+    }
+    scriptJobReadable $request
+    # Readable can terminalize and invoke arbitrary trusted host cleanup. Only
+    # the actual surviving entry may supply messages or receive the residuals.
+    if {![dict exists $scriptJobRequests $request]} {return $inactive}
+    set entry [dict get $scriptJobRequests $request]
+    set cancelled [dict get $entry cancelled]
+    set messages {}
+    if {$cancelled eq {}} {
+        set queued [datasetPublicationV2DictDefault $entry messages {}]
+        set messages [lrange $queued 0 [expr {$maximum-1}]]
+        dict set scriptJobRequests $request messages [lrange $queued $maximum end]
+    }
+    return [dict create request_id $request active 1 cancelled $cancelled messages $messages]
+}
 proc ::GX::_scriptJobRequestSignal {request signal} {
     if {![dict exists $::GX::scriptJobRequests $request]} return
     set entry [dict get $::GX::scriptJobRequests $request]
@@ -132,7 +194,7 @@ proc ::GX::_scriptJobRequestSignal {request signal} {
 }
 proc ::GX::scriptJobRequestCancel {request {reason cancelled}} {
     variable scriptJobRequests
-    if {$reason ni {cancelled timeout output_limit closed}} {error {Unknown managed request cancellation reason.}}
+    if {$reason ni {cancelled timeout output_limit closed read_error write_error}} {error {Unknown managed request cancellation reason.}}
     if {![dict exists $scriptJobRequests $request] || [dict get $scriptJobRequests $request cancelled] ne {}} {return 0}
     dict set scriptJobRequests $request cancelled $reason
     _scriptJobRequestSignal $request TERM

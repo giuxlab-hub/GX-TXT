@@ -9,6 +9,7 @@ proc ::GX::_datasetScientificProfileDimensions {id} {
         if {$role in {member_identity family_identity group_identity} && [dict get $v dtype] eq "string"} {set type curve
         } elseif {$role in {member_identity family family_identity group_identity} && [dict get $v dtype] ne "string"} {set type family
         } elseif {$role in {trace_identity trace_index sweep_identity}} {set type trace
+        } elseif {$role eq "calibration_identity"} {set type calibration
         } elseif {$role in {replicate_identity replicate_index}} {set type replicate
         } elseif {$role in {category classification source_category}} {set type kind}
         lappend ids $vid
@@ -49,6 +50,18 @@ proc ::GX::_datasetScientificProfileScan {id rowBudget valueBudget {manualFamily
     }
     return $result
 }
+proc ::GX::_datasetScientificProfileNativeAvailable {} {
+    variable profileNativeLoadAttempted
+    if {![llength [info commands ::GX::PreviewCategories::native]]} {
+        if {[info exists profileNativeLoadAttempted]} {return 0}
+        set profileNativeLoadAttempted 1
+        set library [file join $::GX::scriptDir core native2d bin gx2dtcl[info sharedlibextension]]
+        if {![file isfile $library] || [catch {load $library Gx2dtcl}]} {return 0}
+    }
+    if {[catch {set info [::GX::PreviewCategories::native api_info]}]} {return 0}
+    if {[catch {expr {[dict exists $info abi_version] && [dict get $info abi_version]==1}} available]} {return 0}
+    return $available
+}
 proc ::GX::_datasetScientificProfileScanGroup {id dimensions rowBudget valueBudget bytesName} {
     upvar 1 $bytesName retainedBytes
     set ids [lmap d $dimensions {dict get $d variable_id}]
@@ -62,8 +75,18 @@ proc ::GX::_datasetScientificProfileScanGroup {id dimensions rowBudget valueBudg
         set total [lindex $shape 0]
         if {![string is integer -strict $total] || $total<0} {datasetAccessClose $access;error {Categorical variable has no bounded rank-one shape.}}
     }
-    set unique {};set scanned 0;set done 0
+    set unique {};set scanned 0;set done 0;set native {}
     try {
+        # Only the repeated collection loop changes ownership. The existing
+        # canonical reader, Graph Series numeric validator and discovery limits
+        # remain authoritative; unsupported private argument shapes fall back.
+        if {[llength $ids]<=32 && [string is wideinteger -strict $rowBudget] && $rowBudget>=0 &&
+            [string is wideinteger -strict $valueBudget] && [string is wideinteger -strict $retainedBytes] &&
+            $retainedBytes>=0 && $retainedBytes<=2097152 && [_datasetScientificProfileNativeAvailable]} {
+            set specifications {}
+            foreach vid $ids {lappend specifications [dict create variable_id $vid dtype [dict get [datasetVariableV3ById $id $vid] dtype]]}
+            set native [::GX::PreviewCategories::native begin $specifications $valueBudget $retainedBytes]
+        }
         while {!$done} {
             if {$stream ne {}} {set chunk [tableStreamNext $stream]} else {
                 set count [expr {min(2048,$rowBudget-$scanned,$total-$scanned)}]
@@ -74,6 +97,9 @@ proc ::GX::_datasetScientificProfileScanGroup {id dimensions rowBudget valueBudg
             set columns [dict get $chunk columns]
             set n [llength [dict get [lindex $columns 0] values]]
             set take [expr {min($n,$rowBudget-$scanned)}]
+            if {$native ne {}} {
+                set retainedBytes [::GX::PreviewCategories::native push $native $columns $take]
+            } else {
             foreach column $columns vid $ids {
                 set dtype [dict get [datasetVariableV3ById $id $vid] dtype]
                 foreach value [lrange [dict get $column values] 0 [expr {$take-1}]] {
@@ -87,11 +113,16 @@ proc ::GX::_datasetScientificProfileScanGroup {id dimensions rowBudget valueBudg
                     dict set unique $vid $value 1
                 }
             }
+            }
             incr scanned $take
             set done [expr {[dict get $chunk eof] || $scanned>=$rowBudget}]
             if {$n>$take || ![dict get $chunk eof] && $done} {dict set unique @rows_truncated 1}
         }
-    } finally {if {$stream ne {}} {tableStreamClose $stream};if {$access ne {}} {datasetAccessClose $access}}
+        if {$native ne {}} {set unique [dict merge [::GX::PreviewCategories::native finish $native] $unique]}
+    } finally {
+        if {$native ne {}} {catch {::GX::PreviewCategories::native destroy $native}}
+        if {$stream ne {}} {tableStreamClose $stream};if {$access ne {}} {datasetAccessClose $access}
+    }
     set result {}
     foreach d $dimensions {
         set vid [dict get $d variable_id]
@@ -177,14 +208,26 @@ proc ::GX::scientificDatasetPreviewFiltered {id x y output requests {options {}}
     scientificDatasetPlotRequire
     set context [datasetCoordinateRead $::GX::currentSession $id]
     set rows 0;set reduced 0;set traces {};set displayed 0;set prepared {}
-    foreach filters $requests {
-        set request [dict create dataset_id $id x_variable_id $x y_variable_id $y display_budget 4096 filters $filters]
-        set config [datasetPreviewConfigurationRead $id]
-        set ordering [datasetPublicationV2DictDefault $options ordering [datasetPublicationV2DictDefault $config ordering {}]]
-        if {$ordering eq {} && ![catch {set manifest [datasetPreviewCurveManifest $id]}] && $manifest ne {}} {set ordering [dict get $manifest columns point_order]}
+    set ordering [datasetPublicationV2DictDefault [dict merge [_datasetPreviewConfiguredOptions $id] $options] ordering {}]
+    set sources {}
+    if {[dict exists $options batch_plan]} {
+        set plan [dict get $options batch_plan]
+        if {[dict get $plan dataset_id] ne $id} {error {Preview grouping plan belongs to another Dataset}}
+        set request [dict create dataset_id $id x_variable_id $x y_variable_id $y display_budget 4096 filters [dict get $plan filters]]
         if {$ordering ne {}} {dict set request order_variable_id $ordering}
-        set source [curveSourceOpen $::GX::currentSession $request]
-        try {set display [curveSourceDisplayResponsive $source];set descriptor [curveSourceDescribe $source]} finally {curveSourceClose $source}
+        set batch [curveSourceDisplayBatch $::GX::currentSession $request [dict create group_variable_ids [dict get $plan group_variable_ids]]]
+        set sources [dict get $batch series]
+    } else {
+        foreach filters $requests {
+            set request [dict create dataset_id $id x_variable_id $x y_variable_id $y display_budget 4096 filters $filters]
+            if {$ordering ne {}} {dict set request order_variable_id $ordering}
+            set source [curveSourceOpen $::GX::currentSession $request]
+            try {set display [curveSourceDisplayResponsive $source];set descriptor [curveSourceDescribe $source]} finally {curveSourceClose $source}
+            lappend sources [dict create filters $filters display $display source_descriptor $descriptor]
+        }
+    }
+    foreach source $sources {
+        set filters [dict get $source filters];set display [dict get $source display];set descriptor [dict get $source source_descriptor]
         foreach identity [dict get $descriptor source_identities] {
             if {[dict get $identity dataset_id] eq $id && [dict get $identity sha256] ne [dict get $context source_sha256]} {error {Preview coordinate context belongs to changed source bytes}}
         }
@@ -213,7 +256,7 @@ proc ::GX::scientificDatasetPreviewFiltered {id x y output requests {options {}}
     set receipt [::GX::PlotDatasetAPIv4::renderModel $model $output 960 580]
     set bounds [scientificDatasetPlotReceiptBounds $receipt]
     set presentation [dict get $receipt coordinate_presentation]
-    return [dict merge [lindex $traces 0] [dict create row_count $rows reduced $reduced trace_count [llength $requests] traces $traces displayed_points $displayed view_bounds $bounds axis_aspect auto coordinate_presentation $presentation native_model $model]]
+    return [dict merge [lindex $traces 0] [dict create row_count $rows reduced $reduced trace_count [llength $sources] traces $traces displayed_points $displayed view_bounds $bounds axis_aspect auto coordinate_presentation $presentation native_model $model]]
 }
 
 source [file join [file dirname [info script]] scientific_dataset_filter_configuration_v1.tcl]

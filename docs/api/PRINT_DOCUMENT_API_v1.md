@@ -37,9 +37,11 @@ Captions switch controls Grid artwork captions.
    The new object appears on the paper and in Document. A source thumbnail is a
    browsing aid; final preparation uses the original accepted content.
 3. For a table, select its Document row. Enter comma-separated **Table Variable
-   IDs**, a zero-based **First source row** and an explicit row count, then choose
+   IDs** and an optional zero-based **First source row** and row count, then choose
    **Apply item columns / range**. The limits are 64 selected columns and
-   1–10000 requested rows. Select a range that fits the poster frame legibly.
+   1–10000 requested rows. A blank first row means 0; a blank count retains the
+   established default of at most 200 source rows. Existing explicit ranges are
+   retained until edited. Select a range that fits the poster frame legibly.
 4. For an image/photo, use a genuine image Dataset already registered in the
    Session, choose **image**, then add it. Print / PDF does not provide a separate
    file-import button. Use the normal Session image-import workflow first.
@@ -97,6 +99,17 @@ Choose **Object properties…**, double-click the object, or use Document's
 | Font size / weight / paragraph alignment | Authored text layout; size is in points |
 | Text / separator color, object background | RGB colors such as `#142334` |
 | Border color / width, padding | Border width in points; inner padding in millimetres |
+
+Table objects also offer **Table first source row** and **Table row count** in
+Object properties. Their addressing and optional defaults match the Document
+dock. Applying either editor changes only this document object's presentation.
+The small Content Preview shows a bounded sample of the selected table's actual
+display range and chosen variables, using the shared CORE Dataset Preview. It
+shows up to the first 12 rows with scrollbars and a status identifying the
+zero-based source start and requested count. Its sample row labels are relative
+to that sample; the prepared PDF retains actual zero-based source row identities.
+Use **Update Preview** and **Review PDF** to inspect exact pagination and frame
+overflow; the small table sample does not establish that the complete range fits.
 
 The authored paragraph field is available for text and annotation objects.
 Scroll inside the properties form to reach border, padding, weight, alignment

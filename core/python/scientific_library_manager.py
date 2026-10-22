@@ -614,20 +614,458 @@ def remove(library_id):
         return public_info(tombstone)
 
 
-def verify(library_id):
-    root = managed_root()
-    record = require_managed(require_installed(load_registry(root), library_id), "verifyLibrary")
+def _verify_managed_record(root, record, provider=None):
+    """One integrity owner for legacy verification and internal content reads."""
     payload = storage_path(root, record)
     package = storage_path(root, dict(storage_ref=record["package_ref"]))
     if digest(payload.read_bytes()) != record["payload_sha256"]:
         fail("installed scientific library payload checksum mismatch")
     if digest(package.read_bytes()) != record["package_sha256"]:
         fail("installed scientific library package checksum mismatch")
-    provider = select_provider(record["library_type"], record["provider_id"])
+    if provider is None:
+        provider = select_provider(record["library_type"], record["provider_id"])
     checked = provider["module"].validate(payload, record, FRAMEWORK)
     if checked["entry_ids"] != record["entry_ids"]:
         fail("installed scientific library entry index changed")
+
+
+def verify(library_id):
+    root = managed_root()
+    record = require_managed(require_installed(load_registry(root), library_id), "verifyLibrary")
+    _verify_managed_record(root, record)
     return dict(public_info(record), verified_at=now())
+
+
+# Step3 normalized content owner. Only the finite public content adapter below
+# dispatches here. Ordinary Script Bridge exposure belongs to ordered Step4.
+_CONTENT_OPERATIONS = frozenset((
+    'list_entries', 'entry_info', 'search_entries', 'read_entry',
+    'export_entry', 'add_entry', 'remove_entry',
+))
+_CONTENT_ERRORS = frozenset((
+    'unsupported_operation', 'library_not_found', 'entry_not_found', 'read_only',
+    'authentication_required', 'credentials_locked', 'authentication_failed',
+    'rate_limited', 'temporarily_unavailable', 'provider_unavailable',
+    'invalid_provider_configuration', 'integrity_failure', 'policy_restricted',
+    'provider_failure', 'invalid_request', 'invalid_provider_response',
+))
+_CONTENT_RESPONSE_LIMIT = 16 * 1024 * 1024
+
+
+class _ContentError(ValueError):
+    def __init__(self, code, message, **details):
+        super().__init__(message)
+        self.code = code
+        self.details = details
+
+
+def _content_error(code, message, **details):
+    raise _ContentError(code, message, **details)
+
+
+def _content_value(value, code, *, limit, depth=0, budget=None):
+    """Copy bounded JSON-like data without repr coercion or numeric conversion."""
+    if budget is None:
+        budget = [100000]
+    budget[0] -= 1
+    if depth > 32 or budget[0] < 0:
+        _content_error(code, 'Library content nesting or item count exceeds bounds.')
+    if value is None or type(value) in (bool, int):
+        result = value
+    elif type(value) is float:
+        import math
+        if not math.isfinite(value):
+            _content_error(code, 'Library content contains a nonfinite number.')
+        result = value
+    elif isinstance(value, str):
+        if len(value) > limit:
+            _content_error(code, 'Library content string exceeds bounds.')
+        result = value
+    elif isinstance(value, (list, tuple)):
+        result = [_content_value(item, code, limit=limit, depth=depth + 1, budget=budget) for item in value]
+    elif isinstance(value, dict):
+        if any(not isinstance(key, str) or len(key) > 4096 for key in value):
+            _content_error(code, 'Library content requires bounded string keys.')
+        result = {key: _content_value(item, code, limit=limit, depth=depth + 1, budget=budget)
+                  for key, item in value.items()}
+    else:
+        _content_error(code, 'Library content contains an unsupported value type.')
+    if depth == 0:
+        try:
+            size = len(json.dumps(result, ensure_ascii=False, allow_nan=False).encode('utf-8'))
+        except (ValueError, UnicodeError, RecursionError):
+            _content_error(code, 'Library content cannot be represented safely.')
+        if size > limit:
+            _content_error(code, 'Library content exceeds the transport bound.')
+    return result
+
+
+def _content_identifier(value, code):
+    # Provider entry IDs and continuation tokens are opaque, not paths or CORE
+    # library IDs. Preserve punctuation/Unicode and reject only unsafe bounds.
+    if not isinstance(value, str) or not value or '\0' in value or len(value) > 4096:
+        _content_error(code, 'Library content requires a bounded opaque identifier.')
+    return value
+
+
+def _content_parameters(operation, parameters):
+    if not isinstance(operation, str) or operation not in _CONTENT_OPERATIONS:
+        _content_error('unsupported_operation', 'Unsupported internal Library content operation.')
+    if not isinstance(parameters, dict):
+        _content_error('invalid_request', 'Library content parameters must be a dictionary.')
+    fields = dict(list_entries={'limit', 'continuation', 'options'},
+                  search_entries={'query', 'limit', 'continuation', 'options'},
+                  entry_info={'entry_id', 'options'}, read_entry={'entry_id', 'options'},
+                  export_entry={'entry_id', 'format', 'options'},
+                  add_entry={'entry', 'options'}, remove_entry={'entry_id', 'options'})
+    if set(parameters) - fields[operation]:
+        _content_error('invalid_request', 'Unknown Library content parameter.')
+    out = _content_value(parameters, 'invalid_request', limit=1024 * 1024)
+    if 'options' in out and not isinstance(out['options'], dict):
+        _content_error('invalid_request', 'Provider options must be a dictionary.')
+    if operation in {'list_entries', 'search_entries'}:
+        limit = out.setdefault('limit', 100)
+        if type(limit) is not int or not 1 <= limit <= 200:
+            _content_error('invalid_request', 'Library entry page limit must be 1-200.')
+        if 'continuation' in out:
+            _content_identifier(out['continuation'], 'invalid_request')
+    if operation == 'search_entries' and 'query' not in out:
+        _content_error('invalid_request', 'Library entry search requires a provider-owned query.')
+    if operation in {'entry_info', 'read_entry', 'export_entry', 'remove_entry'}:
+        _content_identifier(out.get('entry_id'), 'invalid_request')
+    if operation == 'add_entry' and not isinstance(out.get('entry'), dict):
+        _content_error('invalid_request', 'Library entry creation requires a provider-owned record.')
+    if operation == 'export_entry':
+        _content_identifier(out.get('format'), 'invalid_request')
+    return out
+
+
+def _content_provider_call(function, *args):
+    try:
+        result = function(*args)
+    except Exception:
+        # Unknown provider exceptions may contain URLs/tokens. The provisional
+        # explicit error result below is the sole provider diagnostic contract.
+        _content_error('provider_failure', 'Library provider operation failed.')
+    result = _content_value(result, 'invalid_provider_response', limit=_CONTENT_RESPONSE_LIMIT)
+    if isinstance(result, dict) and 'error' in result:
+        error = result['error']
+        if set(result) != {'error'} or not isinstance(error, dict) or set(error) - {
+                'code', 'message', 'retry_after_seconds', 'provider_code'}:
+            _content_error('invalid_provider_response', 'Invalid normalized provider error.')
+        code = error.get('code')
+        message = error.get('message')
+        if not isinstance(code, str) or code not in _CONTENT_ERRORS or not isinstance(message, str) or not message or len(message) > 4096:
+            _content_error('invalid_provider_response', 'Invalid normalized provider error.')
+        detail = {}
+        if 'retry_after_seconds' in error:
+            retry = error['retry_after_seconds']
+            if type(retry) not in (int, float) or retry < 0:
+                _content_error('invalid_provider_response', 'Invalid provider retry interval.')
+            detail['retry_after_seconds'] = retry
+        if 'provider_code' in error:
+            if not isinstance(error['provider_code'], str) or len(error['provider_code']) > 256:
+                _content_error('invalid_provider_response', 'Invalid provider error identifier.')
+            detail['provider_code'] = error['provider_code']
+        _content_error(code, message, **detail)
+    return result
+
+
+def _content_resolve(root, library_id):
+    try:
+        safe_id(library_id)
+    except (TypeError, ValueError):
+        _content_error('invalid_request', 'Invalid Library identity.')
+    try:
+        registry, fingerprint = registry_snapshot(root)
+    except (ValueError, OSError, TypeError, AttributeError):
+        _content_error('integrity_failure', 'Library registry cannot be read safely.')
+    record = registry['libraries'].get(library_id)
+    if record is None:
+        _content_error('library_not_found', 'Library is absent or its saved reference was removed.')
+    if not isinstance(record, dict) or record.get('library_id') != library_id or any(
+            not isinstance(record.get(key), str) for key in ('library_type', 'provider_id', 'state')) or not isinstance(record.get('mode', 'managed'), str) or not isinstance(record.get('provider_config', {}), dict):
+        _content_error('integrity_failure', 'Library registration identity/configuration is invalid.')
+    try:
+        # An empty saved provider ID must not activate select_provider's legacy
+        # optional-ID fallback and silently bind a different installed owner.
+        safe_id(record['library_type'])
+        safe_id(record['provider_id'])
+    except ValueError:
+        _content_error('integrity_failure', 'Saved Library type/provider identity is invalid.')
+    if record['state'] != 'installed':
+        _content_error('library_not_found', 'Library is absent or its saved reference was removed.')
+    try:
+        provider = select_provider(record['library_type'], record['provider_id'])
+    except Exception:
+        _content_error('provider_unavailable', 'The registered Library provider is unavailable.')
+    return record, provider, fingerprint
+
+
+def _content_flag(value):
+    if type(value) is bool:
+        return str(int(value))
+    if type(value) is int and value in (0, 1):
+        return str(value)
+    if isinstance(value, str) and value in ('0', '1', 'unknown'):
+        return value
+    _content_error('invalid_provider_response', 'Invalid normalized provider status flag.')
+
+
+def _content_record_copy(record):
+    return _content_value(record, 'integrity_failure', limit=_CONTENT_RESPONSE_LIMIT)
+
+
+def _content_gate(record, provider, operation, parameters):
+    module = provider['module']
+    try:
+        capabilities = provider_capabilities(provider)
+    except Exception:
+        _content_error('invalid_provider_configuration', 'Library provider capabilities are invalid.')
+    if record.get('mode', 'managed') not in capabilities['supported_modes'].split() or not capabilities['capability.' + operation]:
+        _content_error('unsupported_operation', 'Library provider does not support this content operation.')
+    hook = getattr(module, operation, None)
+    if not callable(hook):
+        _content_error('unsupported_operation', 'Library content hook is unavailable.')
+    # Obtain raw observed fields once. The existing capability view deliberately
+    # merges registration defaults; mutation needs an explicit observed grant.
+    status_hook = getattr(module, 'library_status', None)
+    observed = _content_provider_call(status_hook, _content_record_copy(record), FRAMEWORK) if callable(status_hook) else {}
+    if not isinstance(observed, dict) or set(observed) - {
+            'availability', 'read_only', 'authentication_required', 'authentication_status', 'entry_count', 'reason'}:
+        _content_error('invalid_provider_response', 'Invalid provider Library status.')
+    availability = observed.get('availability', record.get('availability', 'unknown'))
+    if not isinstance(availability, str) or availability not in {'available', 'unavailable', 'unknown', 'temporarily_unavailable'}:
+        _content_error('invalid_provider_response', 'Invalid provider availability.')
+    if availability != 'available':
+        _content_error('temporarily_unavailable', 'Library source availability is ' + availability + '.')
+    required = observed.get('authentication_required', record.get('authentication_required', 'unknown'))
+    # Legacy external/remote registration auth defaults are not observations.
+    if record.get('mode', 'managed') != 'managed' and 'authentication_required' not in observed:
+        required = capabilities['capability.authentication_required'] if 'authentication_required' in getattr(module, 'LIBRARY_CAPABILITIES', {}) else 'unknown'
+    required = _content_flag(required)
+    auth = observed.get('authentication_status', record.get('authentication_status', 'unknown'))
+    if not isinstance(auth, str):
+        _content_error('invalid_provider_response', 'Invalid provider authentication status.')
+    if 'read_only' in observed:
+        observed['read_only'] = _content_flag(observed['read_only'])
+    if required == 'unknown' or (required == '1' and auth not in {'unlocked', 'authenticated'}):
+        code = {'locked': 'credentials_locked', 'failed': 'authentication_failed',
+                'authentication_failed': 'authentication_failed'}.get(auth, 'authentication_required')
+        _content_error(code, 'Library provider authentication is not ready.')
+    if operation in {'add_entry', 'remove_entry'}:
+        if record.get('mode', 'managed') == 'managed' or str(record.get('read_only', '1')) != '0' or not capabilities['capability.mutable'] or capabilities['capability.read_only'] or observed.get('read_only') != '0':
+            _content_error('read_only', 'Library entry mutation is forbidden by an immutable or read-only owner.')
+    policy_hook = getattr(module, 'library_content_policy', None)
+    if not callable(policy_hook):
+        _content_error('policy_restricted', 'Provider has not supplied an explicit content policy.')
+    policy = _content_provider_call(policy_hook, _content_record_copy(record), operation,
+                                    _content_value(parameters, 'invalid_request', limit=1024 * 1024), FRAMEWORK)
+    if not isinstance(policy, dict) or set(policy) - {'allowed', 'reason', 'policy_reference'} or type(policy.get('allowed')) is not bool:
+        _content_error('invalid_provider_response', 'Provider content policy requires an explicit boolean decision.')
+    for key in ('reason', 'policy_reference'):
+        if key in policy and (not isinstance(policy[key], str) or len(policy[key]) > 4096):
+            _content_error('invalid_provider_response', 'Provider content policy metadata is invalid.')
+    if not policy['allowed']:
+        _content_error('policy_restricted', policy.get('reason') or 'Provider policy forbids this content operation.')
+    return hook, policy
+
+
+def _content_result(record, provider, operation, parameters, result, policy):
+    code = 'invalid_provider_response'
+    if not isinstance(result, dict):
+        _content_error(code, 'Library content hook must return a normalized record.')
+    common = {'metadata', 'provenance'}
+    fields = dict(list_entries={'records', 'continuation', 'total'},
+                  search_entries={'records', 'continuation', 'total'},
+                  entry_info=common | {'entry_id', 'content_contract'},
+                  read_entry=common | {'entry_id', 'payload'},
+                  export_entry={'entry_id', 'media_type', 'encoding', 'data', 'provenance'},
+                  add_entry={'entry_id', 'action', 'revision', 'transaction_id', 'provenance'},
+                  remove_entry={'entry_id', 'action', 'revision', 'transaction_id', 'provenance'})
+    if set(result) - fields[operation]:
+        _content_error(code, 'Unknown normalized Library content result field.')
+    for key in common:
+        if key in result and not isinstance(result[key], dict):
+            _content_error(code, 'Library content metadata/provenance must be a dictionary.')
+    context = dict(library_id=record['library_id'], library_type=record['library_type'],
+                   provider_id=provider['provider_id'], provider_version=provider['provider_version'])
+    def check_provenance(item):
+        provenance = item.get('provenance', {})
+        if any(key in provenance and provenance[key] != value for key, value in context.items()):
+            _content_error(code, 'Provider provenance conflicts with authoritative Library identity.')
+    check_provenance(result)
+    for key in ('content_contract', 'revision', 'transaction_id'):
+        if key in result and (not isinstance(result[key], str) or len(result[key]) > 4096):
+            _content_error(code, 'Library content contract/revision identifier is invalid.')
+    if operation in {'list_entries', 'search_entries'}:
+        rows = result.get('records')
+        if not isinstance(rows, list) or len(rows) > parameters['limit']:
+            _content_error(code, 'Provider entry page exceeds the requested bounds.')
+        identifiers = set()
+        for row in rows:
+            if not isinstance(row, dict) or set(row) - common - {'entry_id'}:
+                _content_error(code, 'Invalid compact Library entry record.')
+            entry_id = _content_identifier(row.get('entry_id'), code)
+            if entry_id in identifiers:
+                _content_error(code, 'Provider entry page contains duplicate stable identifiers.')
+            identifiers.add(entry_id)
+            if any(key in row and not isinstance(row[key], dict) for key in common):
+                _content_error(code, 'Invalid compact Library entry metadata.')
+            check_provenance(row)
+        if 'continuation' in result:
+            _content_identifier(result['continuation'], code)
+        if 'total' in result and (type(result['total']) is not int or result['total'] < len(rows)):
+            _content_error(code, 'Invalid provider entry total.')
+        result['count'] = len(rows)
+        kind = 'entry_page'
+    else:
+        entry_id = _content_identifier(result.get('entry_id'), code)
+        if 'entry_id' in parameters and entry_id != parameters['entry_id']:
+            _content_error(code, 'Provider returned a different stable entry identity.')
+        kind = {'entry_info': 'entry_info', 'read_entry': 'entry', 'export_entry': 'entry_export',
+                'add_entry': 'entry_mutation', 'remove_entry': 'entry_mutation'}[operation]
+        if operation == 'read_entry' and 'payload' not in result:
+            _content_error(code, 'Provider read result has no scientific payload.')
+        if operation == 'export_entry':
+            media_type = result.get('media_type')
+            if not isinstance(media_type, str) or not media_type or len(media_type) > 256 or '\n' in media_type or '\r' in media_type or not isinstance(result.get('data'), str) or not isinstance(result.get('encoding'), str) or result['encoding'] not in {'utf-8', 'base64'}:
+                _content_error(code, 'Provider export requires explicit data-return encoding/media type.')
+            if result['encoding'] == 'base64':
+                try:
+                    base64.b64decode(result['data'], validate=True)
+                except (ValueError, UnicodeError):
+                    _content_error(code, 'Provider export contains invalid base64 data.')
+        if operation in {'add_entry', 'remove_entry'} and result.get('action') != ('added' if operation == 'add_entry' else 'removed'):
+            _content_error(code, 'Provider mutation receipt has the wrong action.')
+    result.update(schema='gxtxt.library_' + kind + '.v1', library_id=record['library_id'],
+                  library_type=record['library_type'], provider_id=provider['provider_id'],
+                  provider_version=provider['provider_version'], mode=record.get('mode', 'managed'),
+                  retrieved_at=now())
+    if 'policy_reference' in policy:
+        result['policy_reference'] = policy['policy_reference']
+    return _content_value(result, code, limit=_CONTENT_RESPONSE_LIMIT)
+
+
+def _library_content(library_id, operation, parameters):
+    """Provisional internal content dispatch; no public command routes here."""
+    parameters = _content_parameters(operation, parameters)
+    root = managed_root()
+    initial, _, _ = _content_resolve(root, library_id)
+    # Managed-local content serializes with normal install/update/remove. Remote
+    # requests never hold the registry lock across provider/network calls.
+    with locked(root) if initial.get('mode', 'managed') == 'managed' else contextlib.nullcontext():
+        record, provider, fingerprint = _content_resolve(root, library_id)
+        if record.get('mode', 'managed') != initial.get('mode', 'managed'):
+            _content_error('temporarily_unavailable', 'Library storage mode changed during the request.')
+        hook, policy = _content_gate(record, provider, operation, parameters)
+        managed = record.get('mode', 'managed') == 'managed'
+        if managed:
+            try:
+                _verify_managed_record(root, record, provider)
+            except Exception:
+                _content_error('integrity_failure', 'Managed Library content failed integrity verification.')
+        provider_record = _content_record_copy(record)
+        provider_parameters = _content_value(parameters, 'invalid_request', limit=1024 * 1024)
+        try:
+            result = _content_provider_call(hook, provider_record, provider_parameters, FRAMEWORK)
+            normalized = _content_result(record, provider, operation, parameters, result, policy)
+            if managed:
+                try:
+                    _verify_managed_record(root, record, provider)
+                except Exception:
+                    _content_error('integrity_failure', 'Managed Library changed while content was read.')
+            try:
+                current_registry, current_fingerprint = registry_snapshot(root)
+            except (ValueError, OSError, TypeError, AttributeError):
+                _content_error('integrity_failure', 'Library registry cannot be read after the content operation.')
+            current = current_registry['libraries'].get(library_id)
+            if current != record or (managed and current_fingerprint != fingerprint):
+                _content_error('temporarily_unavailable', 'Library registration changed; a mutation may already have committed.')
+            return normalized
+        except _ContentError as exc:
+            if operation in {'add_entry', 'remove_entry'}:
+                # Every failure after dispatch may follow a provider commit,
+                # including a later registry read/identity failure. Do not infer
+                # rollback even from a typed provider error without such proof.
+                exc.details['mutation_outcome'] = 'unknown'
+            raise
+
+
+def _library_content_response(library_id, operation, parameters):
+    """Normalized content response shared by synchronous and managed requests."""
+    response = dict(schema='gxtxt.library_content_response.v1')
+    # Do not echo arbitrary caller objects (cycles, huge strings or unsupported
+    # types) into the supposedly bounded/serializable error envelope.
+    if isinstance(operation, str) and len(operation) <= 64 and operation in _CONTENT_OPERATIONS:
+        response['operation'] = operation
+    try:
+        response.update(ok=True, result=_library_content(library_id, operation, parameters))
+    except _ContentError as exc:
+        response.update(ok=False, error=dict(code=exc.code, message=str(exc), **exc.details))
+    return response
+
+
+def _content_arguments_response(arguments):
+    """Decode only finite Tcl fields; provider-owned values are explicit JSON."""
+    operation = arguments[1] if len(arguments) == 3 else None
+    try:
+        if len(arguments) != 3:
+            _content_error('invalid_request', 'Content request requires library, operation and parameters.')
+        import tkinter
+        parts = tkinter.Tcl().splitlist(arguments[2])
+        if len(parts) % 2 or len(parts) > 16 or len(set(parts[::2])) != len(parts[::2]):
+            _content_error('invalid_request', 'Invalid Library content parameter dictionary.')
+        supplied = dict(zip(parts[::2], parts[1::2]))
+        if set(supplied) - {'entry_id', 'format', 'limit', 'continuation', 'query_json', 'entry_json', 'options_json'}:
+            _content_error('invalid_request', 'Unknown Library content wire parameter.')
+        parameters = {}
+        for key, value in supplied.items():
+            if key.endswith('_json'):
+                try:
+                    parameters[key[:-5]] = json.loads(value)
+                except (ValueError, RecursionError):
+                    _content_error('invalid_request', 'Provider-owned content input must be valid JSON text.')
+            elif key == 'limit':
+                if not value.isascii() or not value.isdecimal() or len(value) > 3:
+                    _content_error('invalid_request', 'Library entry page limit must be a bounded decimal integer.')
+                parameters[key] = int(value)
+            else:
+                parameters[key] = value
+        return _library_content_response(arguments[0], operation, parameters)
+    except _ContentError as exc:
+        response = dict(schema='gxtxt.library_content_response.v1', ok=False,
+                        error=dict(code=exc.code, message=str(exc), **exc.details))
+    except Exception:
+        response = dict(schema='gxtxt.library_content_response.v1', ok=False,
+                        error=dict(code='invalid_request', message='Malformed Library content request.'))
+    if isinstance(operation, str) and len(operation) <= 64 and operation in _CONTENT_OPERATIONS:
+        response['operation'] = operation
+    return response
+
+
+def _content_wire(response):
+    # Existing recursive Tcl serializer, never Python repr or an eval protocol.
+    from gxtxt_job_supervisor import tcl_result
+    wire_response = dict(response)
+    if response['ok']:
+        result = dict(response['result'])
+        # Tcl values are strings: JSON is authoritative for null, bool, numeric
+        # and nested type distinctions, with exact integer text preserved.
+        result['result_json'] = json.dumps(response['result'], ensure_ascii=False, allow_nan=False)
+        wire_response['result'] = result
+    wire = 'C\t' + b64(tcl_result(wire_response))
+    # Bound FINAL base64 wire, including the lossless sidecar duplication. The
+    # existing managed request cap is32MiB; reserve room for its outer envelope.
+    if len(wire.encode('ascii')) > 24 * 1024 * 1024:
+        error = dict(code='invalid_provider_response', message='Library content exceeds the final serialized response bound.')
+        if response.get('operation') in {'add_entry', 'remove_entry'}:
+            error['mutation_outcome'] = 'unknown'
+        wire_response = dict(schema='gxtxt.library_content_response.v1', ok=False, error=error)
+        if 'operation' in response:
+            wire_response['operation'] = response['operation']
+        wire = 'C\t' + b64(tcl_result(wire_response))
+    return wire, bool(wire_response['ok'])
 
 
 def b64(value):
@@ -649,7 +1087,24 @@ def main(argv):
         fail("missing Scientific Library Manager operation")
     action, *args = argv
     root = managed_root()
-    if action == "types" and not args:
+    if action == 'content':
+        if not args:
+            import tkinter
+            text = sys.stdin.read(1048577)
+            if len(text) > 1048576:
+                response = _content_arguments_response([])
+            else:
+                try:
+                    args = tkinter.Tcl().splitlist(text)
+                except Exception:
+                    args = []
+                response = _content_arguments_response(args)
+        else:
+            response = _content_arguments_response(args)
+        wire, success = _content_wire(response)
+        print(wire)
+        return success
+    elif action == "types" and not args:
         emit_list(providers().keys())
     elif action == "root" and not args:
         print(root)
@@ -718,28 +1173,38 @@ def main(argv):
 
 if __name__ == "__main__":
     try:
-        if sys.argv[1:]==['--request']:
-            # Same public manager, same F/L wire; the common Script Job owner
-            # supplies asynchronous lifetime/cancellation for GUI consumers.
+        if sys.argv[1:] in (['--request'], ['--request-sync']):
+            # Same existing finite manager request for sync and managed async.
+            # No caller-controlled argument is placed in Tcl exec's argv, where
+            # Tcl would parse redirection/pipeline words independently of lists.
             import tkinter
             from gxtxt_job_supervisor import tcl_result, request_process_group
-            request_process_group()
-            interpreter=tkinter.Tcl();parts=interpreter.splitlist(sys.stdin.read(1048576))
-            if len(parts)!=6:fail('Library request requires operation, arguments and current provider descriptors')
-            request=dict(zip(parts[::2],parts[1::2]))
-            if set(request)!={'operation','arguments','provider_descriptors'}:fail('Invalid Library request fields')
-            os.environ['GXTXT_LIBRARY_PROVIDER_DESCRIPTORS']=os.pathsep.join(interpreter.splitlist(request['provider_descriptors']))
-            allowed={'catalog_page','library_capabilities','provider_capabilities','library_action','info','entries','verify','install','update','remove','register','unregister','provider','types','open'}
-            if request['operation'] not in allowed:fail('Unsupported asynchronous Library operation')
+            # Sync callers keep their existing managed/Job/wrapper group so its
+            # cancel/drain authority includes this helper and provider work.
+            # Only the established async ScriptJob request owns a new group.
+            if sys.argv[1:] == ['--request']:
+                request_process_group()
             try:
+                text=sys.stdin.read(1048577)
+                if len(text.encode('utf-8'))>1048576:fail('Library request exceeds the 1 MiB input bound')
+                interpreter=tkinter.Tcl();parts=interpreter.splitlist(text)
+                if len(parts)!=6:fail('Library request requires operation, arguments and current provider descriptors')
+                request=dict(zip(parts[::2],parts[1::2]))
+                if set(request)!={'operation','arguments','provider_descriptors'}:fail('Invalid Library request fields')
+                allowed={'catalog_page','library_capabilities','provider_capabilities','library_action','info','entries','verify','install','update','remove','register','unregister','provider','types','open','content','root','list','registered','compatible','spectrum'}
+                if request['operation'] not in allowed:fail('Unsupported Library request operation')
+                os.environ['GXTXT_LIBRARY_PROVIDER_DESCRIPTORS']=os.pathsep.join(interpreter.splitlist(request['provider_descriptors']))
                 captured=io.StringIO()
+                # Content's normalized C error is an ordinary inner wire result;
+                # preserve it for the existing Tcl error decoder (no retyping).
                 with contextlib.redirect_stdout(captured):main([request['operation'],*interpreter.splitlist(request['arguments'])])
                 print(tcl_result(dict(ok=1,result=dict(wire=captured.getvalue()))))
             except Exception as exc:
                 print(tcl_result(dict(ok=0,error=str(exc),category='scientific_library_manager')))
                 raise SystemExit(1)
         else:
-            main(sys.argv[1:])
+            if main(sys.argv[1:]) is False:
+                raise SystemExit(1)
     except (ValueError, OSError, KeyError, zipfile.BadZipFile) as exc:
         print(f"GX-TXT Scientific Library Manager: {exc}", file=sys.stderr)
         raise SystemExit(1)

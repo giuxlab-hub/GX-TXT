@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original GUIDE explanatory manuscript. -->
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Curve Digitizer — calibration meaning and scale references (preparation)</title><link rel="stylesheet" href="concepts.css"></head>
+<body><main>
+<p class="label">Preparation manuscript · calibration concepts</p>
+<h1>Choose a calibration that matches the source</h1>
+<p class="lead">Pixel coordinates, plotted scientific axes and a physical scale bar express different information. A calibration connects them only under stated geometric and scientific assumptions.</p>
+<p>This explanation follows the deposited dev109 manual and is preparatory material. Final controls, limitations and examples must match the actual unchanged vendor version accepted in dev110. The diagram and arithmetic example below are illustrative; neither is an application measurement or actual Dataset Preview.</p>
+<nav aria-label="On this page"><ul><li><a href="concepts.html">Coordinate reference</a></li><li><a href="#modes">Choose the mapping</a></li><li><a href="#centers">Pixel centers</a></li><li><a href="#scale">Physical scale bar</a></li><li><a href="#verification">Verify independently</a></li></ul></nav>
+<section id="modes"><h2>Distinguish three calibration tasks</h2>
+<table><caption>What each source tells you</caption><thead><tr><th scope="col">Source/task</th><th scope="col">Information supplied</th><th scope="col">Important limit</th></tr></thead><tbody>
+<tr><td>Full-image pixel calibration</td><td>The original raster's pixel-center coordinates and an explicit Y direction.</td><td>Pixels alone do not establish a physical length or a plotted scientific axis.</td></tr>
+<tr><td>Four-point plot calibration</td><td>A mapping from a chosen image quadrilateral to declared axis values, units and scales.</td><td>A projective mapping does not correct arbitrary lens, scanning or non-planar distortion.</td></tr>
+<tr><td>Physical scale-bar calibration</td><td>A known physical length associated with deliberately selected raster endpoints.</td><td>Uniform physical scaling assumes compatible raster geometry; it does not establish isotropy or perspective correctness from the bar alone.</td></tr>
+</tbody></table>
+<p>Keep the source image identity and exact bytes with the calibration. Changing the raster can invalidate a previously meaningful mapping even if the filename or visible label remains familiar.</p>
+<p>For plotted axes, preserve labels, units, semantic meaning, limits and scale choices explicitly. A logarithmic scientific axis requires a positive domain; a negative or zero limit cannot be made valid by changing its displayed label. The projective image mapping and the logarithmic scientific-axis mapping have different roles.</p>
+</section>
+<section id="centers"><h2>Pixel-center coordinates use W−1 and H−1 spans</h2>
+<p>For the documented full-image convention, a raster with width <em>W</em> and height <em>H</em> has corner pixel centers at coordinates 0 through <em>W</em>−1 and 0 through <em>H</em>−1. The distance between first and last centers is therefore <em>W</em>−1 or <em>H</em>−1 pixel intervals.</p>
+<p>This is a center-to-center coordinate span. It is distinct from the full extent of <em>W</em> pixel cells. Preserve the convention used by the actual calibration rather than silently changing between those interpretations.</p>
+<p>Choose image-downward or Cartesian-upward Y according to the intended coordinate interpretation. Zoom and pan affect presentation; they do not change original raster positions or make a new physical scale. The independent <a href="concepts.html#mapping">reference-coordinate illustration</a> shows why a downward image movement can correspond to a decreasing scientific value.</p>
+</section>
+<section id="scale"><h2>Use a scale bar deliberately</h2>
+<p>If a known physical length <em>L</em> spans an endpoint distance <em>d</em> in original raster pixels, the uniform scale factor is <em>L</em>/<em>d</em> physical units per pixel. The documented endpoint distance is Euclidean; a rotated bar is not measured by its horizontal projection alone.</p>
+<p>Inspect the actual detected or manually selected endpoints before applying a scale. A high-contrast line may be an annotation or the wrong segment. Detection success does not establish that the intended physical reference has been identified.</p>
+<figure class="wide-figure"><img src="figures/scale-bar-conventions.svg" width="1000" height="720" alt="The same stylized bar is repeated with center-to-center, inner-edge and outer-edge measurement arrows; these conventions describe different distances."><figcaption>Original schematic. Tick thickness is exaggerated so the three conventions are visible. Follow the source producer's stated convention. <a href="figures/scale-bar-conventions.svg">Open the diagram at full size.</a></figcaption></figure>
+<p>A center-to-center default is a geometric choice, not a guarantee about an instrument's exported annotation. Inner-to-inner and outer-to-outer references have different lengths. Preserve the convention actually selected and keep an unspecified historical convention unknown.</p>
+<p><strong>Illustrative arithmetic:</strong> for a declared 10 µm reference spanning 152 original pixels in a 720 × 560 raster, the factor is 10/152 µm per pixel. The corner-center spans become 719 × 10/152 ≈ 47.3026 µm and 559 × 10/152 ≈ 36.7763 µm. These numbers follow the stated example assumptions; they are not measured specimen dimensions or GX-TXT execution results.</p>
+<p>A single uniform scale assumes equal physical scale along the relevant image directions. It does not compensate for distorted or non-square source pixels, perspective effects, a wrong physical annotation or instrument calibration error. Scale-bar length and endpoint localization also need their own appropriate uncertainty interpretation; they are not interchangeable with generic homography-corner uncertainties.</p>
+</section>
+<section id="verification"><h2>A fitted corner is different from an independent check</h2>
+<p>Four calibration corners constrain a projective mapping. Very small residuals at exactly those fitted points can coexist with a wrong axis assignment, a mistaken corner location or a distorted source. They do not independently establish physical accuracy.</p>
+<p>Inspect a known coordinate elsewhere in the image when a trustworthy reference is available. Retain the reference source, calculated values, units and the residual convention used by the actual tool. Verification is diagnostic; it must not silently change the calibration.</p>
+<p>A small verification residual at one location does not describe uncertainty everywhere. A repeated manual calibration can reveal variability in the procedure while sharing source and systematic effects. Keep independent reference evidence, descriptive calibration spread and explicitly justified measurement uncertainty distinct.</p>
+<p>Before publication, identify the active mapping, which measurements are accepted and which are selected for output. The <a href="publication-concepts.html#selection">publication explanation</a> describes those separate roles. Final tutorials will show the real unchanged vendor GUI, actual source/calibration identities and the resulting canonical Dataset/Preview workflow.</p>
+</section>
+<footer><p>Preparation author: GX210-GUIDE. Source: deposited dev109 Curve Digitalizer MANUAL.md, calibration, published provenance, scale-bar geometry and verification sections. Original artwork: GPL-3.0-or-later. No vendor code, GUI/package content, registry or scientific Dataset is modified; no GUI parity or final tutorial acceptance is claimed.</p></footer>
+</main></body></html>

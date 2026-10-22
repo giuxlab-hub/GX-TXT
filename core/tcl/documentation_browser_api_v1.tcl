@@ -5,10 +5,11 @@
 namespace eval ::GX {
     variable documentationBrowserEntries [dict create]
     variable documentationBrowserOrder {}
+    variable documentationBrowserPackageIssues {}
 }
 
 proc ::GX::documentationBrowserApiInfo {} {
-    return [dict create api_name DOCUMENTATION_BROWSER_API_v1 api_version 1 source descriptor_index host_operations {documentationBrowserOpenModuleWindow documentationBrowserAttachViewerHelp documentationBrowserOpenApi}]
+    return [dict create api_name DOCUMENTATION_BROWSER_API_v1 api_version 1 source descriptor_index host_operations {documentationBrowserOpenModuleWindow documentationBrowserAttachViewerHelp documentationBrowserOpenApi documentationBrowserResolve documentationBrowserModuleTutorials}]
 }
 
 proc ::GX::documentationBrowserAdd {id category title type path {owner ""} {version ""}} {
@@ -17,11 +18,126 @@ proc ::GX::documentationBrowserAdd {id category title type path {owner ""} {vers
     if {$path ne ""} {
         set path [file normalize $path]
         if {![file isfile $path]} return
-        if {[string tolower [file extension $path]] ni {.md .markdown .txt} && $type ne "license"} return
+        if {[string tolower [file extension $path]] ni {.md .markdown .txt .html .htm} && $type ne "license"} return
     }
     dict set documentationBrowserEntries $id [dict create id $id category $category title $title \
         type $type path $path owner $owner version $version]
     lappend documentationBrowserOrder $id
+}
+
+# Fixed installed package discovery extends this same descriptor-backed index.
+# It does not install archives or maintain another registry.
+proc ::GX::documentationBrowserContainedFile {root relative {maximum 2097152}} {
+    set root [file normalize $root]
+    if {[file pathtype $relative] ne {relative} || [string first \\ $relative]>=0 || [string first % $relative]>=0 || [string first \x00 $relative]>=0} {error {Documentation asset path must be an ordinary package-relative path.}}
+    set path $root
+    foreach part [file split $relative] {
+        if {$part in {{} . ..}} {error {Documentation asset traversal is unsupported.}}
+        set path [file join $path $part]
+        if {[file exists $path] && [file type $path] eq {link}} {error {Linked documentation assets are unsupported.}}
+    }
+    set path [file normalize $path]
+    if {[string first "$root/" "$path/"]!=0 || ![file isfile $path] || [file type $path] ne {file} || [file size $path]>$maximum} {error {Documentation asset is missing, outside its package or oversized.}}
+    return $path
+}
+proc ::GX::documentationBrowserPackageRead {manifest} {
+    set docs [file normalize [file join $::GX::scriptDir docs]]
+    if {[string first "$docs/" "$manifest/"]!=0} {error {Documentation package is outside installed framework documentation.}}
+    set relative [string range $manifest [expr {[string length $docs]+1}] end]
+    set manifest [documentationBrowserContainedFile $docs $relative 16384]
+    set root [file normalize [file dirname $manifest]]
+    if {[string first "$docs/guides/" "$root/"]!=0 && [string first "$docs/tutorials/" "$root/"]!=0} {error {Documentation package is outside supported installed roots.}}
+    set d [parseIni $manifest]
+    set required {api_version id module_id kind version title entrypoint entry_sha256 license}
+    set optional {tested_module_version generator_library_id generator_id tested_generator_version}
+    foreach key [dict keys $d] {
+        if {![string match documentation_package.* $key] || [string range $key 22 end] ni [concat $required $optional]} {error {Unknown version-1 documentation package field.}}
+    }
+    foreach key $required {if {![dict exists $d documentation_package.$key] || [dict get $d documentation_package.$key] eq {}} {error "Missing documentation package field '$key'."}}
+    foreach key [concat $required $optional] {dict set values $key [descriptorValue $d documentation_package $key {}]}
+    if {[dict get $values api_version] ne {1}} {error {Unsupported documentation package manifest version.}}
+    foreach key {id module_id} {if {![regexp {^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$} [dict get $values $key]]} {error {Invalid documentation content/module identity.}}}
+    if {[dict get $values kind] ni {manual tutorial}} {error {Documentation package kind must be manual or tutorial.}}
+    if {![regexp {^[A-Za-z0-9][A-Za-z0-9.+_-]{0,63}$} [dict get $values version]]} {error {Invalid documentation content version.}}
+    foreach key {title license tested_module_version tested_generator_version} {
+        set value [dict get $values $key]
+        if {[string bytelength $value]>256 || [regexp {[\x00\r\n]} $value]} {error {Documentation display/provenance text is invalid or oversized.}}
+    }
+    set module [dict get $values module_id]
+    if {[moduleField $module descriptor {}] eq {}} {error {Documentation package owner module is not installed.}}
+    set relative [dict get $values entrypoint]
+    if {[string tolower [file extension $relative]] ni {.html .htm}} {error {Documentation package entrypoint must be HTML.}}
+    set path [documentationBrowserContainedFile $root $relative]
+    set sha [dict get $values entry_sha256]
+    if {![regexp {^[0-9a-f]{64}$} $sha] || [sha256File $path] ne $sha} {error {Documentation package entrypoint hash mismatch.}}
+    set library [dict get $values generator_library_id];set generator [dict get $values generator_id]
+    if {($library eq {}) != ($generator eq {})} {error {Generator library and generator IDs must be declared together.}}
+    foreach value [list $library $generator] {if {$value ne {} && ![regexp {^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$} $value]} {error {Invalid declared generator identity.}}}
+    return [dict merge $values [dict create path $path asset_root $root manifest_path $manifest manifest_sha256 [sha256File $manifest]]]
+}
+proc ::GX::documentationBrowserPackagesRefresh {} {
+    variable documentationBrowserEntries;variable documentationBrowserPackageIssues
+    set documentationBrowserPackageIssues {};set candidates {};set manualOwners {}
+    set docs [file normalize [file join $::GX::scriptDir docs]]
+    set paths [concat [glob -nocomplain [file join $docs guides * * documentation-package.ini]] [glob -nocomplain [file join $docs tutorials * * documentation-package.ini]]]
+    if {[llength $paths]>1024} {dict set documentationBrowserPackageIssues catalog {Installed documentation package count exceeds1024.};return}
+    foreach manifest [lsort -dictionary $paths] {
+        if {[catch {set package [documentationBrowserPackageRead $manifest]} reason]} {dict set documentationBrowserPackageIssues $manifest $reason;continue}
+        set id [dict get $package id]
+        dict lappend candidates $id $package
+        if {[dict get $package kind] eq {manual}} {dict lappend manualOwners [dict get $package module_id] $id}
+    }
+    dict for {id packages} $candidates {
+        if {[llength $packages]!=1} {dict set documentationBrowserPackageIssues $id {Conflicting installed content ID; no version was guessed.};continue}
+        set package [lindex $packages 0];set module [dict get $package module_id];set kind [dict get $package kind]
+        if {$kind eq {manual} && [llength [lsort -unique [dict get $manualOwners $module]]]!=1} {dict set documentationBrowserPackageIssues $id {Conflicting installed manuals for this module.};continue}
+        set key content:$id
+        set category [expr {$kind eq {manual}?{Plugin manuals}:{Tutorials / DEMOs}}]
+        documentationBrowserAdd $key $category [dict get $package title] $kind [dict get $package path] $module [dict get $package version]
+        set entry [dict get $documentationBrowserEntries $key]
+        dict set entry format html
+        foreach field {asset_root manifest_path manifest_sha256 entry_sha256 generator_library_id generator_id tested_generator_version tested_module_version license} {dict set entry $field [dict get $package $field]}
+        dict set entry content_id $id
+        dict set documentationBrowserEntries $key $entry
+        # Selection alias does not replace or modify module:MODULE:guide reads.
+        if {$kind eq {manual}} {dict set entry id module:$module:html_manual;dict set documentationBrowserEntries module:$module:html_manual $entry}
+    }
+}
+proc ::GX::documentationBrowserResolve {id} {
+    variable documentationBrowserEntries
+    if {![dict exists $documentationBrowserEntries $id]} {error "Unknown documentation ID '$id'."}
+    set entry [dict get $documentationBrowserEntries $id]
+    set path [dict get $entry path]
+    if {$path eq {}} {error {This documentation entry has no renderable source file.}}
+    if {[dict exists $entry asset_root]} {
+        if {[moduleField [dict get $entry owner] descriptor {}] eq {}} {error {Documentation package owner module is no longer installed.}}
+        set root [dict get $entry asset_root]
+        set relative [string range $path [expr {[string length $root]+1}] end]
+        set path [documentationBrowserContainedFile $root $relative]
+        set manifest [dict get $entry manifest_path]
+        if {![file isfile $manifest] || [file type $manifest] eq {link} || [sha256File $manifest] ne [dict get $entry manifest_sha256]} {error {Documentation package manifest changed; refresh the catalog.}}
+        if {[sha256File $path] ne [dict get $entry entry_sha256]} {error {Documentation package source changed; refresh the catalog.}}
+    } else {
+        set module [dict get $entry owner];set descriptor [moduleField $module descriptor {}]
+        set root [file dirname $path]
+        if {$descriptor ne {}} {
+            set moduleRoot [file normalize [file dirname $descriptor]]
+            if {[string first "$moduleRoot/" "$path/"]==0} {set root $moduleRoot}
+        }
+        set relative [string range $path [expr {[string length $root]+1}] end]
+        set path [documentationBrowserContainedFile $root $relative]
+    }
+    dict set entry path $path;dict set entry asset_root $root;dict set entry source_sha256 [sha256File $path]
+    set extension [string tolower [file extension $path]]
+    dict set entry format [expr {$extension in {.html .htm}?{html}:($extension in {.md .markdown}?{markdown}:{text})}]
+    return $entry
+}
+proc ::GX::documentationBrowserModuleTutorials {module} {
+    set rows {}
+    foreach entry [documentationBrowserList] {
+        if {[dict get $entry owner] eq $module && [dict get $entry type] eq {tutorial}} {lappend rows $entry}
+    }
+    return $rows
 }
 
 proc ::GX::documentationBrowserRefresh {} {
@@ -96,6 +212,7 @@ proc ::GX::documentationBrowserRefresh {} {
         }
         }
     }
+    documentationBrowserPackagesRefresh
     return $documentationBrowserOrder
 }
 
@@ -108,7 +225,11 @@ proc ::GX::documentationBrowserList {{query ""}} {
         set entry [dict get $documentationBrowserEntries $id]
         if {$query ne "" && [string first $query [string tolower \
             "$id [dict get $entry category] [dict get $entry title] [dict get $entry owner]"]] < 0} continue
-        lappend out $entry
+        # Keep the original public projection. Script Bridge strips only path;
+        # host-only asset/manifest metadata must not acquire Script exposure.
+        set public {}
+        foreach key {id category title type path owner version} {dict set public $key [dict get $entry $key]}
+        lappend out $public
     }
     return $out
 }
@@ -117,6 +238,7 @@ proc ::GX::documentationBrowserRead {id} {
     variable documentationBrowserEntries
     if {![dict exists $documentationBrowserEntries $id]} { error "Unknown documentation ID '$id'." }
     set entry [dict get $documentationBrowserEntries $id]
+    if {[dict exists $entry entry_sha256]} {set entry [documentationBrowserResolve $id]}
     if {[dict get $entry type] eq "about"} {
         return "# About GX-TXT\n\nVersion: $::GX::version\n\nGX-TXT is a Session-centered scientific acquisition, analysis and visualization framework.\n\nLicense: GPL-3.0-or-later. See the License page for the full text.\n\nProject: giux-lab.it\n"
     }

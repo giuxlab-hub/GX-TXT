@@ -43,6 +43,12 @@ proc ::GX::printStudioPosterProperties {} {
     set id [lindex [$::GX::ui(printQueue) selection] 0];set item [printStudioPosterItem $id]
     set fields [dict create page {type integer min 1 max 200 label {Paper page}} x_mm {type number label {X from left (mm)}} y_mm {type number label {Y from top (mm)}} width_mm {type number label {Width (mm)}} height_mm {type number label {Height (mm)}} caption {type string label {Caption / source attribution}} font_size {type number min 6 max 96 label {Font size (pt)}} foreground {type color label {Text / separator color}} background {type color label {Object background}} border {type color label {Border color}} border_pt {type number min 0 max 12 label {Border width (pt)}} padding_mm {type number min 0 max 30 label {Padding (mm)}} weight {type choice values {normal bold} label {Font weight}} align {type choice values {left center right} label {Paragraph alignment}}]
     set initial [dict merge {font_size 10 foreground #142334 background #ffffff border #406080 border_pt 0 padding_mm 2 weight normal align left} [datasetPublicationV2DictDefault $item style {}] [dict get $item frame] [dict create caption [dict get $item caption]]]
+    if {[dict get $item presentation] eq {table}} {
+        dict set fields table_start {type string label {Table first source row (zero-based; blank = 0)}}
+        dict set fields table_count {type string label {Table row count (1–10000; blank = default 200)}}
+        dict set initial table_start [datasetPublicationV2DictDefault [dict get $item options] start {}]
+        dict set initial table_count [datasetPublicationV2DictDefault [dict get $item options] count {}]
+    }
     set state(posterPropertyItem) $item;set state(posterPropertyToken) [interactiveDocumentSessionToken]
     set form .gxPrintObjectProperties
     uiFieldFormCreate $form {Poster object — physical layout and content} $fields $initial [list ::GX::printStudioPosterPropertiesApply $id] .
@@ -63,9 +69,11 @@ proc ::GX::printStudioPosterPropertiesApply {id values} {
     foreach key {page x_mm y_mm width_mm height_mm} {dict set frame $key [dict get $values $key]}
     foreach key {font_size foreground background border border_pt padding_mm weight align} {dict set style $key [dict get $values $key]}
     dict set item frame $frame;dict set item style $style;dict set item caption [dict get $values caption]
+    if {[dict get $item presentation] eq {table}} {dict set item options [printStudioTableRangeOptions [dict get $item options] [dict get $values table_start] [dict get $values table_count]]}
     if {[winfo exists .gxPrintObjectProperties.viewport.content.authored]} {dict set item text [.gxPrintObjectProperties.viewport.content.authored get 1.0 end-1c]}
     printStudioPosterReplace $id $item {Poster object properties changed}
     set state(posterPropertyItem) $item
+    if {[dict get $item presentation] eq {table}} {printStudioItemSelected}
 }
 proc ::GX::printStudioPosterReplace {id replacement description} {
     variable ::GX::PrintStudio::state

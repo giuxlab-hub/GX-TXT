@@ -167,7 +167,7 @@ proc ::GX::CurveDigitizerCompanion::publishCovariance {dataset target axis} {
         [dict create dtype float64 dimension_ids {source_row;source_column} unit $squared] resource $resource]]
     set published [::GX::datasetPublicationV2PublishManagedVariables $::GX::currentSession \
         viewer.curve_digitizer [dict create dataset_id $target contract table.generic \
-        storage hdf5 producer_version 2.0.3 source_dataset_ids [list $dataset] \
+        storage hdf5 producer_version 2.0.9 source_dataset_ids [list $dataset] \
         provenance {Original point order; public Numeric response-only covariance. Predictor uncertainty is excluded}] \
         [dict create source_row $n source_column $n] $variables]
     set binding [dict create schema gxtxt.digitizer_covariance_binding.v1 \

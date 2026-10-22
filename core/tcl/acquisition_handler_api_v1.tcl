@@ -93,13 +93,25 @@ proc ::GX::acquisitionHandlerLoadModule_v089 {moduleId} {
     }
     set handlerId [moduleRunnerHandler $moduleId]
     if {$handlerId eq ""} { error "$moduleId: \[runner\].handler is required." }
+    # Never return an old adapter against a pending new descriptor, including
+    # an update that changes its declared handler. Ordinary legacy loads have
+    # no pending update and retain their existing behavior.
+    pluginRuntimeGuardNewLoad $moduleId
     if {[acquisitionHandlerRegistered $handlerId] &&
         ([acquisitionHandlerField $handlerId kind ""] ne "legacy" ||
-         ![acquisitionHandlerHasPluginDescriptor $moduleId])} { return $handlerId }
+         ![acquisitionHandlerHasPluginDescriptor $moduleId])} {
+        if {[acquisitionHandlerField $handlerId kind ""] eq "plugin"} {
+            pluginRuntimeNoteLoaded $moduleId
+        }
+        return $handlerId
+    }
     if {![acquisitionHandlerHasPluginDescriptor $moduleId]} { return "" }
     set api [acquisitionHandlerSectionField $moduleId api_version ""]
     if {$api ne "$acquisitionHandlerApiVersion"} { error "$moduleId: unsupported Acquisition Handler Plugin API version '$api'." }
     set script [acquisitionHandlerResolveScript $moduleId [acquisitionHandlerSectionField $moduleId script ""]]
+    # Source can fail after defining procedures. Conservatively retain the
+    # implementation's first version even when registration does not complete.
+    pluginRuntimeNoteLoaded $moduleId
     uplevel #0 [list source $script]
     set inspectProc [string trim [acquisitionHandlerSectionField $moduleId inspect_proc ""]]
     set importProc [string trim [acquisitionHandlerSectionField $moduleId import_proc ""]]
@@ -1239,7 +1251,16 @@ proc ::GX::acquisitionHandlerModuleSupportsBatch {moduleId} {
 # safety checks and mandatory inspect/import callbacks.
 proc ::GX::acquisitionHandlerLoadModule {moduleId} {
     variable acquisitionHandlerRegistry
+    set previous [moduleRunnerHandler $moduleId]
+    set cached [expr {[acquisitionHandlerRegistered $previous] &&
+        [acquisitionHandlerField $previous kind ""] eq "plugin" &&
+        [acquisitionHandlerField $previous module_id ""] eq $moduleId &&
+        [acquisitionHandlerField $previous _extensions_validated 0] eq "1"}]
     set handlerId [::GX::acquisitionHandlerLoadModule_v089 $moduleId]
+    # Discovery refresh precedes update activation. Keep the complete loaded
+    # callback/capability registration together during that transaction window;
+    # never combine old Tcl procedures with the newly installed descriptor.
+    if {$cached} { return $handlerId }
     if {$handlerId eq "" || ![acquisitionHandlerRegistered $handlerId]} { return $handlerId }
     if {[acquisitionHandlerField $handlerId kind ""] ne "plugin"} { return $handlerId }
     set d $acquisitionHandlerRegistry($handlerId)
@@ -1256,6 +1277,7 @@ proc ::GX::acquisitionHandlerLoadModule {moduleId} {
     dict set d variable_mapping [acquisitionHandlerVariableMappingMode $moduleId]
     set acquisitionHandlerRegistry($handlerId) $d
     acquisitionFormatRegistryRefresh
+    dict set acquisitionHandlerRegistry($handlerId) _extensions_validated 1
     return $handlerId
 }
 

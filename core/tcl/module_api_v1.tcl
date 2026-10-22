@@ -4239,7 +4239,7 @@ proc ::GX::rebuildNativeAnalysisGui_v084_single_source {} {
     if {$row == 0} {
         ttk::frame $host.empty
         ttk::label $host.empty.title -text "No analysis modules are active in this experiment." -font TkHeadingFont
-        ttk::label $host.empty.help -text "Open the Modules tab and activate the analysis modules you want to use. Only active modules are shown here." -wraplength 800 -justify left
+        ttk::label $host.empty.help -text "Enable Analysis modules in Configuration > Modules, then select them for Run in Modules." -wraplength 800 -justify left
         grid $host.empty.title -row 0 -column 0 -sticky w -pady {0 5}
         grid $host.empty.help -row 1 -column 0 -sticky w
         grid $host.empty -row 0 -column 0 -sticky nw -padx 12 -pady 12
@@ -6329,7 +6329,7 @@ proc ::GX::rebuildNativeAnalysisGui_before_core_script_surface {} {
     if {$row == 0} {
         ttk::frame $host.empty
         ttk::label $host.empty.title -text "No analysis modules are active in this experiment." -font TkHeadingFont
-        ttk::label $host.empty.help -text "Open the Modules tab and activate the analysis modules you want to use. Only active modules are shown here." -wraplength 800 -justify left
+        ttk::label $host.empty.help -text "Enable Analysis modules in Configuration > Modules, then select them for Run in Modules." -wraplength 800 -justify left
         grid $host.empty.title -row 0 -column 0 -sticky w -pady {0 5}
         grid $host.empty.help -row 1 -column 0 -sticky w
         grid $host.empty -row 0 -column 0 -sticky nw -padx 12 -pady 12

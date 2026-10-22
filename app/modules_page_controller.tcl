@@ -56,14 +56,26 @@ proc ::GX::moduleCardsChangeSummary {id before} {
     return $message
 }
 proc ::GX::moduleCardStateText {id} {
-    set state [moduleOperationalState $id]
-    if {$state eq {ALWAYS}} {set state {Always available}}
+    set state [expr {[moduleRunIsSelected $id] ? {Selected for Run} : {Not selected}}]
     # Package runtime status is separate from the Session enable flag.
     set runtime [pluginRuntimeInfo $id]
     if {[dict get $runtime status] eq {Updated — restart required}} {
         append state "\nRestart required"
     }
     return $state
+}
+
+# Filtering is a read-only projection of Configuration eligibility. Do not
+# retain another module/Run registry or change flags when a name is hidden.
+proc ::GX::moduleCardsVisibleIds {} {
+    set result {}
+    set query [string tolower [string trim $::GX::moduleSearch]]
+    foreach id $::GX::moduleOrder {
+        if {![moduleAnalysisEligible $id] || ![moduleIsEnabled $id]} continue
+        if {$query ne {} && [string first $query [string tolower [moduleField $id name $id]]]<0} continue
+        lappend result $id
+    }
+    return $result
 }
 
 proc ::GX::refreshModuleCatalog {} {
@@ -76,7 +88,7 @@ proc ::GX::refreshModuleCatalog {} {
         set ui(moduleCardsStateSignature) $stateSignature
     }
     set signature {};set groups {}
-    foreach id $moduleOrder {
+    foreach id [moduleCardsVisibleIds] {
         set group [string trim [moduleField $id group General]]
         if {$group eq {}} {set group General}
         dict lappend groups $group $id
@@ -99,12 +111,13 @@ proc ::GX::refreshModuleCatalog {} {
             set row 0
             foreach id [dict get $groups $group] {
                 set item $box.module$row
-                ttk::frame $item -padding {2 5}
-                ttk::checkbutton $item.toggle -variable ::GX::ui(moduleQuick,$id) -command [list ::GX::moduleCardToggle $id] -takefocus 1
-                ttk::label $item.name -text [moduleField $id name $id] -wraplength 230 -justify left
-                ttk::label $item.state -width 14 -anchor w -justify left
+                ttk::frame $item -padding {2 5} -style GXModuleRun.TFrame
+                set runKey [moduleField $id run_key {}]
+                set runVariable [expr {$runKey eq {} ? "::GX::moduleRun($id)" : "::GX::cfg($runKey)"}]
+                ttk::checkbutton $item.toggle -variable $runVariable -command [list ::GX::moduleCardToggle $id] -takefocus 1 -style GXModuleRun.TCheckbutton
+                ttk::label $item.name -text [moduleField $id name $id] -wraplength 230 -justify left -style GXModuleRun.TLabel
+                ttk::label $item.state -width 17 -anchor w -justify left -style GXModuleRun.TLabel
                 ttk::button $item.help -text Help -command [list ::GX::moduleCardHelp $id] -width 5
-                if {[moduleIsAlwaysAvailable $id]} {$item.toggle state disabled}
                 grid $item.toggle -row 0 -column 0 -padx {0 5} -sticky w
                 grid $item.name -row 0 -column 1 -sticky ew -padx {0 8}
                 grid $item.state -row 0 -column 2 -sticky w -padx {0 5}
@@ -118,17 +131,20 @@ proc ::GX::refreshModuleCatalog {} {
                 incr row
             }
         }
+        if {![dict size $groups]} {
+            ttk::label $ui(moduleCards).empty -text {No enabled Analysis modules match. Enable modules in Configuration > Modules or clear the name filter.} -wraplength 650 -justify left
+            grid $ui(moduleCards).empty -row 1 -column 0 -columnspan 2 -sticky w -padx 12 -pady 12
+        }
         set ui(moduleCardsSignature) $signature
         unset -nocomplain ui(moduleCardsColumns) ui(moduleCardsWidth)
         modulesCardsLayout $ui(moduleCards) [winfo width $ui(moduleCards)]
     }
     dict for {id widget} $ui(moduleStateWidgets) {
-        set enabled [moduleIsEnabled $id]
-        set ui(moduleQuick,$id) $enabled
-        set toggle [winfo parent $widget].toggle
-        $toggle state [expr {[moduleIsAlwaysAvailable $id]?{disabled}:{!disabled}}]
+        set selected [moduleRunIsSelected $id]
+        set row [winfo parent $widget]
+        foreach child [list $row $row.name $row.state] {$child state [expr {$selected?{selected}:{!selected}}]}
         set state [moduleCardStateText $id]
-        $widget configure -text $state -foreground [expr {$enabled?{#25633a}:{#666666}}]
+        $widget configure -text $state
     }
 }
 
@@ -153,10 +169,11 @@ proc ::GX::setSelectedModuleState_v078_workspace {state} {
     set id [selectedModuleFromTree]
     if {$id eq ""} return
     if {![moduleAnalysisEligible $id]} {
-        tk_messageBox -icon info -title "Module activation" -message "Provider availability is managed in Configuration → Modules. Import prerequisites are checked when invoked."
+        tk_messageBox -icon info -title "Analysis selection" -message "Module availability is managed in Configuration > Modules."
         return
     }
-    moduleSetEnabled $id $state
+    if {![moduleIsEnabled $id]} return
+    moduleSetRunSelected $id $state
     refreshModuleCatalog
     refreshAnalysisStatus
     refreshManifestPreview
@@ -166,7 +183,8 @@ proc ::GX::toggleSelectedModule_v078_workspace {} {
     set id [selectedModuleFromTree]
     if {$id eq ""} return
     if {![moduleAnalysisEligible $id]} return
-    moduleSetEnabled $id [expr {![moduleIsEnabled $id]}]
+    if {![moduleIsEnabled $id]} return
+    moduleSetRunSelected $id [expr {![moduleRunIsSelected $id]}]
     refreshModuleCatalog
     refreshAnalysisStatus
     refreshManifestPreview
@@ -234,9 +252,8 @@ proc ::GX::resourceLifecycleModuleResetSelected {} {
 
 # Quick controls use the existing selection/lifecycle authority.
 proc ::GX::moduleQuickSet {id} {
-    if {![moduleAnalysisEligible $id]} {error "Module '$id' is not an analysis selection"}
-    moduleSetEnabled $id $::GX::ui(moduleQuick,$id)
-    rebuildNativeAnalysisGui
+    if {![moduleAnalysisEligible $id] || ![moduleIsEnabled $id]} {error "Module '$id' is not an enabled analysis selection"}
+    moduleSetRunSelected $id $::GX::ui(moduleQuick,$id)
     refreshModuleCatalog
     refreshAnalysisStatus
     refreshManifestPreview

@@ -1,7 +1,3 @@
-## 2.0.4
-
-Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
-
 ## 2.0.2 — zero localization and public Numeric execution
 
 - Allow explicitly declared zero pixel-localization uncertainty, independently of nonnegative declared calibration uncertainty; never replace zero by an artificial epsilon or infer uncertainty from resolution.
@@ -420,3 +416,39 @@ All notable changes to `viewer.curve_digitizer` are documented here.
 - `covariance_xy` now declares an X-times-Y physical product unit in Dataset Variable Schema v3 and its matching metadata. Companion API readback validates both.
 - No changes to calibration, SEM, manual editing, tracing, Quality API v2, Session workflows or ordinary no-uncertainty publication.
 - No dev097 source change. Numeric zero-localization CORE patch and end-to-end GLS/ODR acceptance remain separate.
+
+## 2.0.5 — Guided smoothness, red-X exclusion splines and calibration identities
+- Add explicit Assisted tracing "Smooth curve prior": Off (unchanged legacy first-order path), Gentle, Strong. Guided second-order dynamic programming penalizes oscillating deviations from a continuous reference. The user must explicitly select the prior; no interpolation is inferred from the image's subject.
+- Add curve-scoped, editable "Exclusion paths" drawn by red X control nodes with a shape-preserving 2D spline. Width is measured in original image pixels. Soft image penalties discourage tracing competing curves and grids without an opaque image mutation or forbidden crossings.
+- Exclusion edit supports new path, drag control X nodes, delete last X, remove path, undo/redo geometry; Session configuration holds the original raster coordinates and image SHA. Propose, repair, insertion and removal paths use the same priors. A proposed trace always requires explicit Accept.
+- Mark active calibration identity beside TL/TR/BL/BR and state which active measurement the verifier uses. Selected-but-inactive rows are not silently used for verification.
+- Existing point acquisition, raster processing, calibrations, Curve/Quality/Uncertainty APIs, Dataset publication, Numeric/Fitter semantics and default Off behavior are unchanged. No framework CORE files modified.
+
+The exclusion editor includes a deliberate Clear all paths control for re-binding a configuration to another Image Dataset without accidentally reusing old raster-space exclusions.
+
+## 2.0.6 — Two-row assisted tracing layout and chronological Undo/Redo
+- Place Trace settings and Proposal in the first row; place full-width Exclusion paths beneath them with controls on the left and a scrollable per-path table on the right.
+- Each exclusion path has a stable ID, exact red-X nodes and its own enabled flag. Checking the table's On column enables/disables a single path without changing the selection, and disabled paths remain visible as subdued overlays.
+- Remove the separate Undo X and Redo X buttons and the Path # spinner. Edit → Undo/Redo and Ctrl+Z/Ctrl+Y are now the chronological history for accepted scientific edits, red-X path edits, and transient proposal corrections.
+- An exclusion-node drag is recorded once on release. Opening a different Session/configuration drops the previous history. Undo followed by a new edit invalidates Redo.
+- 2.0.5 list-only path records are normalized into stable path IDs on load, and per-path enabled states persist in the current Session configuration.
+- No changes to CORE, scientific Dataset APIs, Numeric uncertainty, raster data, or calibration transformations.
+
+## 2.0.7 â€” Restore original Curve Digitalizer icon
+- Restored original upstream icons/curve_digitizer.png and icons/curve_digitizer.svg from the official GX-TXT GitHub repository, with byte-for-byte Git blob SHA-1 verification.
+- Registered icon=icons/curve_digitizer.png in [viewer.curve_digitizer] to avoid the host generic placeholder icon.
+- Kept semantic_group=images and group_title=Imaging & Documents.
+- No changes to assisted tracing, exclusion path workflows, undo/redo, calibration logic or public scientific APIs.
+## 2.0.8 — Per-curve raster stroke width and public API
+- Optional, collapsed-by-default Stroke width panel for the selected curve (left of Show/Hide), with per-curve activation and automatic cross-sectional raster width estimation or two manual editable boundary splines.
+- Raster boundaries are edited by click and drag, with Edit menu Undo/Redo, separately from orange guides and red exclusion X markers.
+- Calibration shows the active curve diagnostic and offers a link to its editor; the Uncertainty dialog lists per-curve active/inactive/stale states and explicitly disclaims automatic uncertainty propagation.
+- Source and, for automatic measurements, accepted trace SHA identity guard against stale results. State is persisted within the Session Interactive Document. Published Dataset metadata includes a versioned per-curve diagnostic report.
+- New public module API CURVE_DIGITIZER_STROKE_WIDTH_API_v1 reads configuration and published results through public GX-TXT CORE services.
+- No implicit sigma, CORE Numeric/covariance or Fitter weighting. All previous UI, preview, imaging category and restored original icons retained.
+
+## 2.0.9 — Per-curve UI selection synchronization and API validation
+- Preserve all 2.0.8 stroke-width acquisition controls, Tcl public API v1, scientific limitations, Curve family metadata, and restored original icon.
+- Fix the Curves selection handler: selecting another curve immediately updates the optional stroke-width panel checkbox, detection method, radius, diagnostic status, and matching Calibration summary. A previous curve's controls are never left on the new selection.
+- Add two headless regression tests for switching/reselecting curve and a numerical synthetic-raster fixture for automatic and manual stroke-width measurements.
+- Confirm the public API Tcl facade can return per-curve and published reports using public CORE boundaries in an isolated Tcl 8.6 stub test; this does not replace GX-TXT host acceptance.

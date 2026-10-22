@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 690" role="img" aria-labelledby="title description">
+<title id="title">Source raster, calibration and presentation have different roles</title>
+<desc id="description">An original source raster identifies the image bytes. Accepted raster points and a chosen calibration produce scientific coordinates in a published Dataset. Image processing produces a traceable derivative. Pan, zoom and opacity affect presentation only. This is an original conceptual diagram.</desc>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original GX210-GUIDE artwork. -->
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#426589"/></marker>
+<style>text{font-family:system-ui,sans-serif;fill:#172d47}.title{font-size:27px;font-weight:700}.subtitle{font-size:17px;fill:#496079}.heading{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:17px;fill:#405b76}.box{fill:#fff;stroke:#91a9c3;stroke-width:2}.line{fill:none;stroke:#426589;stroke-width:2.5;marker-end:url(#arrow)}</style>
+</defs>
+<rect width="1000" height="690" rx="16" fill="#f3f7fc"/>
+<text x="34" y="45" class="title">Keep the source and the mapping traceable</text>
+<text x="34" y="75" class="subtitle">Conceptual illustration · no application result or GUI capture</text>
+<rect x="34" y="112" width="432" height="125" rx="12" class="box"/>
+<text x="56" y="145" class="heading">1 · Original source raster</text>
+<text x="56" y="177" class="body">Registered image Dataset + exact bytes</text>
+<text x="56" y="206" class="small">Source ID, SHA-256, dimensions and metadata</text>
+<rect x="546" y="112" width="420" height="125" rx="12" class="box"/>
+<text x="568" y="145" class="heading">Optional processed image</text>
+<text x="568" y="177" class="body">A derived image with recorded lineage</text>
+<text x="568" y="206" class="small">Verify its coordinate relationship to the source</text>
+<path d="M466 175H538" class="line"/>
+<path d="M250 237V282" class="line"/>
+<rect x="34" y="290" width="432" height="125" rx="12" class="box"/>
+<text x="56" y="323" class="heading">2 · Accepted raster points</text>
+<text x="56" y="355" class="body">Curve identity, point identity and order</text>
+<text x="56" y="384" class="small">Locations remain in original pixel coordinates</text>
+<rect x="546" y="290" width="420" height="125" rx="12" class="box"/>
+<text x="568" y="323" class="heading">3 · Selected calibration</text>
+<text x="568" y="355" class="body">Axes, units and coordinate mapping</text>
+<text x="568" y="384" class="small">Measurement ID and transform fingerprint</text>
+<path d="M250 415V455H500V478" class="line"/>
+<path d="M756 415V455H500" fill="none" stroke="#426589" stroke-width="2.5"/>
+<rect x="256" y="486" width="488" height="119" rx="12" fill="#e7f3eb" stroke="#619377" stroke-width="2"/>
+<text x="278" y="519" class="heading">4 · Published scientific Dataset</text>
+<text x="278" y="551" class="body">Scientific X/Y, identities and provenance</text>
+<text x="278" y="580" class="small">Inspect through the real Dataset tools and Preview</text>
+<rect x="34" y="632" width="932" height="38" rx="8" fill="#fff0cc"/>
+<text x="54" y="658" class="body">Display-only zoom, pan and opacity change the view; they do not relocate original raster points.</text>
+</svg>

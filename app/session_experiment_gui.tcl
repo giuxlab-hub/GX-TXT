@@ -60,14 +60,7 @@ proc ::GX::openSessionPath {path} {
     if {![info exists ::GX::experimentCloneSwitch] && $::GX::currentSession ne "" && [file normalize $path] ne [file normalize $::GX::currentSession]} {
         if {![sessionExperimentResolveNoteEdits]} {return $::GX::currentSession}
     }
-    foreach key [array names ::GX::experimentNoteSaveAfter] {
-        set timer $::GX::experimentNoteSaveAfter($key)
-        if {$timer ne "" && ![catch {after info $timer}]} {
-            after cancel $timer
-            experimentDocumentSave $key $::GX::cfg($key)
-        }
-        unset ::GX::experimentNoteSaveAfter($key)
-    }
+    _experimentDocumentsFlushPending
     set result [openSessionPath_before_experiment077 $path]
     experimentDocumentsLoad $result
     if {[llength [info commands winfo]] && [winfo exists .top.nb.exp]} {

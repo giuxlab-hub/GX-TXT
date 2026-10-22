@@ -18,9 +18,11 @@ namespace eval ::GX {
     variable markupPreviewBySource
     variable markupChangeCommand
     variable experimentNoteSaveAfter
+    variable experimentNotePending
     array set markupPreviewBySource {}
     array set markupChangeCommand {}
     array set experimentNoteSaveAfter {}
+    array set experimentNotePending {}
 }
 
 # -----------------------------------------------------------------------------
@@ -206,16 +208,51 @@ proc ::GX::experimentDocumentsLoad {{session ""}} {
     }
 }
 
-proc ::GX::experimentDocumentSave {key markup} {
+proc ::GX::experimentDocumentSave {key markup {session ""}} {
     variable currentSession
     variable cfg
-    set cfg($key) $markup
-    if {$currentSession eq "" || ![file isdirectory $currentSession]} { return "" }
-    ensureSessionNoteDirectories $currentSession
-    set p [experimentNotePath $key $currentSession]
+    if {$session eq ""} {set session $currentSession}
+    # A deferred editor save retains its original Session owner. Never redirect
+    # that save into the Session which happens to be open when the timer runs.
+    if {$session eq ""} {set cfg($key) $markup;return ""}
+    if {![file isdirectory $session]} {error "Experiment document Session is unavailable: $session"}
+    ensureSessionNoteDirectories $session
+    set p [experimentNotePath $key $session]
     noteWriteUtf8 $p $markup
+    # The editor may clear its dirty state only after persistence succeeds.
+    if {$currentSession ne "" && [file normalize $session] eq [file normalize $currentSession]} {
+        set cfg($key) $markup
+    }
     catch {sessionFileExplorerPopulate}
     return $p
+}
+
+# Existing note files are authoritative; cfg is only a legacy missing-file
+# fallback. Resolve native editor drafts before reading this snapshot, even
+# when the next Session explicitly does not copy documentation.
+proc ::GX::_experimentDocumentsBeforeCreation {} {
+    if {[llength [info commands ::GX::sessionExperimentResolveNoteEdits]] &&
+        ![sessionExperimentResolveNoteEdits]} {
+        return -code error -errorcode {GXTXT SESSION CANCELLED} {Session creation cancelled.}
+    }
+    _experimentDocumentsFlushPending
+}
+proc ::GX::_experimentDocumentsSnapshot {{session ""}} {
+    variable currentSession
+    variable cfg
+    if {$session eq ""} {set session $currentSession}
+    set result {}
+    if {$session ne "" && ![file isdirectory $session]} {error "Experiment document Session is unavailable: $session"}
+    foreach {key filename} [experimentNoteSpecs] {
+        set path [expr {$session eq "" ? "" : [experimentNotePath $key $session]}]
+        if {$path ne "" && ([file exists $path] || ![catch {file lstat $path stat}])} {
+            if {![file isfile $path]} {error "Experiment document is not a regular file: $path"}
+            dict set result $key [noteReadUtf8 $path]
+        } else {
+            dict set result $key [expr {[info exists cfg($key)] ? $cfg($key) : ""}]
+        }
+    }
+    return $result
 }
 
 proc ::GX::experimentDocumentsSaveAll {} {
@@ -230,13 +267,70 @@ proc ::GX::experimentDocumentsSaveAll {} {
 proc ::GX::experimentMarkupChanged_impl {source key} {
     variable cfg
     variable experimentNoteSaveAfter
+    variable experimentNotePending
     if {![winfo exists $source]} return
+    if {[info exists experimentNotePending($key)] &&
+        [lindex $experimentNotePending($key) 3] ne $::GX::currentSession} {
+        _experimentDocumentsFlushPending
+    }
     set cfg($key) [string trimright [$source get 1.0 end] "\n"]
     if {[info exists experimentNoteSaveAfter($key)] && $experimentNoteSaveAfter($key) ne ""} {
         catch {after cancel $experimentNoteSaveAfter($key)}
     }
+    # Before the first Session exists, notebook edits remain cfg-only drafts.
+    if {$::GX::currentSession eq ""} {return}
     # Debounced disk persistence keeps notebook .md files current while typing.
-    set experimentNoteSaveAfter($key) [after 350 [list ::GX::experimentDocumentSave $key $cfg($key)]]
+    set experimentNotePending($key) [list ::GX::_experimentDocumentPendingSave $key $cfg($key) $::GX::currentSession]
+    set experimentNoteSaveAfter($key) [after 350 $experimentNotePending($key)]
+}
+
+proc ::GX::_experimentDocumentPendingSave {key markup session} {
+    variable experimentNotePending
+    variable experimentNoteSaveAfter
+    if {$session eq ""} {return ""}
+    set command [list ::GX::_experimentDocumentPendingSave $key $markup $session]
+    if {![info exists experimentNotePending($key)]} {set experimentNotePending($key) $command}
+    # Keep owner/text independently of the timer: automatic callbacks have
+    # already expired when a disk error is reported. A later flush must retry.
+    set result [experimentDocumentSave $key $markup $session]
+    if {$result ne "" && [info exists experimentNotePending($key)] && $experimentNotePending($key) eq $command} {
+        if {[info exists experimentNoteSaveAfter($key)]} {after cancel $experimentNoteSaveAfter($key)}
+        unset -nocomplain experimentNoteSaveAfter($key) experimentNotePending($key)
+    }
+    return $result
+}
+
+proc ::GX::_experimentDocumentsFlushPending {} {
+    variable experimentNoteSaveAfter
+    variable experimentNotePending
+    foreach key [array names experimentNoteSaveAfter] {
+        set timer $experimentNoteSaveAfter($key)
+        if {$timer ne "" && ![catch {after info $timer} info]} {
+            set command [lindex $info 0]
+            # Only callbacks belonging to this existing note owner may be
+            # flushed. Preserve captured text, rather than a later cfg value.
+            if {[llength $command] == 4 && [lindex $command 0] eq "::GX::_experimentDocumentPendingSave"} {
+                if {[lindex $command 1] ne $key} {error "Mismatched pending Experiment documentation key."}
+                if {![info exists experimentNotePending($key)]} {set experimentNotePending($key) $command}
+                after cancel $timer
+            } elseif {[llength $command] == 3 && [lindex $command 0] eq "::GX::experimentDocumentSave"} {
+                if {[lindex $command 1] ne $key} {error "Mismatched pending Experiment documentation key."}
+                if {![info exists experimentNotePending($key)]} {
+                    set experimentNotePending($key) [list ::GX::_experimentDocumentPendingSave $key [lindex $command 2] $::GX::currentSession]
+                }
+                after cancel $timer
+            } else {
+                error "Unexpected pending Experiment documentation callback."
+            }
+        } elseif {![info exists experimentNotePending($key)]} {
+            error "Pending Experiment documentation capture is unavailable."
+        }
+    }
+    foreach key [array names experimentNotePending] {
+        if {[{*}$experimentNotePending($key)] eq ""} {
+            error "Pending Experiment documentation Session is unavailable."
+        }
+    }
 }
 
 # -----------------------------------------------------------------------------

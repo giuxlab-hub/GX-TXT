@@ -5,19 +5,71 @@ proc ::GX::scientificDatasetCoordinateDisplay {context x y display} {
     if {[dict exists $display canonical_points]} {set points [dict get $display canonical_points]} else {set points [dict get $display points]}
     if {[llength $points]>4096} {error {Scientific coordinate display is bounded to4096 points per trace}}
     set converted {};set units {};set factors {};set pivots {}
-    foreach axis {0 1} vid [list $x $y] {
-        set values [lmap point $points {lindex $point $axis}]
-        set settings [scientificDatasetCoordinateSettings $context $vid]
-        if {[dict exists $context variables $vid]} {
-            set source [dict get $settings source]
-            if {[dict get $source value_kind] eq "elapsed_time"&&[dict get $source value_format] eq "hms"} {set values [elapsedTimeConvert $values [dict get $source unit]]}
+    set nativeReady 0
+    if {[llength [info commands ::gx::native2d::_preview_coordinates]]} {
+        # Any unsupported/failed preparation repeats the complete original path
+        # below, including its public first-error order.
+        catch {
+            set plans {};set settingsList {}
+            foreach vid [list $x $y] {
+                if {![dict exists $context variables $vid]} break
+                set settings [scientificDatasetCoordinateSettings $context $vid]
+                set source [dict get $settings source]
+                if {[dict get $source value_kind] eq "elapsed_time"&&[dict get $source value_format] eq "hms"} break
+                # The public coordinate owner classifies/composes the relation.
+                # View magnification and stored numerical calibration are excluded.
+                set plan [datasetCoordinateSnapshotAffinePlan $context $vid [dict get $source unit] {mode canonical}]
+                if {![dict get $plan affine]} break
+                # Affine classification alone does not preserve intermediate
+                # floating-point behavior. Admit only exact identity or the
+                # owner's explicit identity -> single ratio -> identity path.
+                # Multioperation/custom formulas retain pointwise evaluation.
+                set expectedScale 1.0
+                if {[dict get $source unit] ne [dict get $settings display_unit]} {
+                    set relation [unitRegistryConversionPlan [dict get $source unit] [dict get $settings display_unit] [_datasetCoordinateOverride $source]]
+                    if {[dict get $relation source_to_canonical] ne "x" || [dict get $relation target_from_canonical] ne "x"} break
+                    set expectedScale [dict get $relation base_scale_ratio]
+                }
+                if {[dict get $plan scale]!=$expectedScale || [dict get $plan offset]!=0} break
+                lappend plans $plan;lappend settingsList $settings
+            }
+            if {[llength $plans]==2} {
+                set native [::gx::native2d::_preview_coordinates $points {*}$plans]
+                set inputBounds [dict get $native input_bounds]
+                # Owner-classified affine expressions attain intermediate extrema
+                # at interval endpoints. Validate the ACTUAL input interval through
+                # the original pointwise authority before admitting condensed math.
+                # Any failure repeats the original route to preserve its first error.
+                foreach lo {0 1} hi {2 3} vid [list $x $y] {
+                    set ends [expr {$inputBounds eq {}?{}:[list [lindex $inputBounds $lo] [lindex $inputBounds $hi]]}]
+                    datasetCoordinateSnapshotValues $context $vid $ends {mode canonical}
+                }
+                set shown [dict get $native points]
+                foreach settings $settingsList plan $plans {
+                    lappend units [dict get $plan output_unit]
+                    lappend factors [dict get $settings view_factor]
+                    lappend pivots [dict get $settings view_pivot]
+                }
+                set nativeReady 1
+            }
         }
-        if {[dict exists $context variables $vid]} {set result [datasetCoordinateSnapshotValues $context $vid $values {mode canonical}]} else {set result [dict create values $values unit [dict get $settings display_unit]]}
-        lappend converted [dict get $result values];lappend units [dict get $result unit]
-        lappend factors [dict get $settings view_factor]
-        lappend pivots [dict get $settings view_pivot]
+        if {!$nativeReady} {set units {};set factors {};set pivots {}}
     }
-    set shown {};foreach a [lindex $converted 0] b [lindex $converted 1] {lappend shown [list $a $b]}
+    if {!$nativeReady} {
+        foreach axis {0 1} vid [list $x $y] {
+            set values [lmap point $points {lindex $point $axis}]
+            set settings [scientificDatasetCoordinateSettings $context $vid]
+            if {[dict exists $context variables $vid]} {
+                set source [dict get $settings source]
+                if {[dict get $source value_kind] eq "elapsed_time"&&[dict get $source value_format] eq "hms"} {set values [elapsedTimeConvert $values [dict get $source unit]]}
+            }
+            if {[dict exists $context variables $vid]} {set result [datasetCoordinateSnapshotValues $context $vid $values {mode canonical}]} else {set result [dict create values $values unit [dict get $settings display_unit]]}
+            lappend converted [dict get $result values];lappend units [dict get $result unit]
+            lappend factors [dict get $settings view_factor]
+            lappend pivots [dict get $settings view_pivot]
+        }
+        set shown {};foreach a [lindex $converted 0] b [lindex $converted 1] {lappend shown [list $a $b]}
+    }
     dict set display canonical_points $points;dict set display points $shown
     if {[dict exists $display full_bounds]} {
         set exact [datasetPublicationV2DictDefault $display canonical_full_bounds [dict get $display full_bounds]]

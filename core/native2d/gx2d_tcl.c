@@ -1,6 +1,12 @@
 /* Small Tcl adapter for the public Native 2D C API. No geometry lives here. */
 #include "gx2d.h"
 #include "gx2d_surface.h"
+#include "gx2d_csv_provider_v1.h"
+#include "gx2d_preview_categories_v1.h"
+#include "gx2d_preview_plane_v1.h"
+#include "gx2d_preview_batch_v1.h"
+#include "gx2d_preview_overlay_v1.h"
+#include "gx2d_preview_coordinates_v1.h"
 #ifdef GXTXT_NATIVE_PLOT_V4
 #include "gx2d_plot_v4.h"
 #endif
@@ -1519,6 +1525,12 @@ int Gx2dtcl_Init(Tcl_Interp *ip) {
     Tcl_CreateNamespace(ip, "::GX::Native2D", NULL, NULL);
     Tcl_CreateObjCommand(ip, "::GX::Native2D::core", command, b, free_bridge);
     if(gx2d_surface_init(ip)!=TCL_OK)return TCL_ERROR;
+    if(gx2d_csv_provider_v1_init(ip)!=TCL_OK)return TCL_ERROR;
+    if(gx2d_preview_categories_v1_init(ip)!=TCL_OK)return TCL_ERROR;
+    if(gx2d_preview_plane_v1_init(ip)!=TCL_OK)return TCL_ERROR;
+    if(gx2d_preview_batch_v1_init(ip)!=TCL_OK)return TCL_ERROR;
+    if(gx2d_preview_overlay_v1_init(ip)!=TCL_OK)return TCL_ERROR;
+    if(gx2d_preview_coordinates_v1_init(ip)!=TCL_OK)return TCL_ERROR;
 #ifdef GXTXT_NATIVE_PLOT_V4
     if(gx2d_plot_v4_init(ip)!=TCL_OK)return TCL_ERROR;
 #endif

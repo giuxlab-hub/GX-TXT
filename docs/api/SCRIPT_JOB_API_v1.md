@@ -13,7 +13,10 @@ Jobs retain the independent supervisor lifecycle described below.
 
 Cancellation retains the owned group identity through escalation even if its
 leader closes stdout early, preventing detached descendants from surviving.
-Responses distinguish timeout, cancelled, closed and output_limit. This
+Responses distinguish timeout, cancelled, closed, output_limit, read_error and
+write_error. Transport errors cancel only the existing tracked request through
+the same TERM/KILL owner; read failures also retire the failed channel after
+escalation, without requiring another readable event. This
 transport does not add a scientific scheduler or make a GUI request a durable Job.
 
 With `duplex=1`, the existing pipe retains its write side for a managed compiled
@@ -35,6 +38,45 @@ Normal duplex EOF also requests existing TERM/KILL group cancellation and retain
 the request identity through escalation, so a fork descendant that redirected
 stdout remains owned after its native leader exits. Viewer close cancels its
 duplex request; application shutdown uses the same UI-lifetime group owner.
+
+For nonblocking host consumers, `scriptJobRequestSend request payload` queues one
+inert UTF-8 frame on that same duplex pipe. The request must exist, be duplex and
+not be cancelled. NUL, CR and LF inside the payload are refused before writing;
+exactly one LF is appended. An empty payload sends an actual empty frame, unlike
+Exchange's receive-only empty argument. Admission counts the byte length of
+`encoding convertto utf-8 $payload`, plus one LF and the channel's existing
+`chan pending output`, against65536 bytes. This uses Tcl's actual UTF-8 channel
+encoding, including its supplementary-character representation. Oversized or
+busy admission errors before puts/flush with `{GXTXT SCRIPT_JOB BUSY}`, leaving
+the request and queued output unchanged. Accepted means queued, not delivered or
+executed: the result is `{request_id ID accepted 1 payload_bytes N}`, where N
+excludes the appended LF. Send never waits, spins or enters an event loop. A
+channel/write/flush failure cancels the same tracked request with `write_error`
+and raises `{GXTXT SCRIPT_JOB WRITE_FAILED}`; a possibly partial frame is never
+retried. Inactive/nonduplex/cancelled requests raise `{GXTXT SCRIPT_JOB INACTIVE}`;
+invalid payload framing raises `{GXTXT SCRIPT_JOB FRAME}`.
+
+`scriptJobRequestDrain request ?maximum=16?` validates an integer from1 through16
+(`{GXTXT SCRIPT_JOB MAXIMUM}` on refusal), performs at most one existing
+nonblocking readable pass, and returns
+`{request_id ID active BOOLEAN cancelled REASON messages LIST}`. Unknown or ended
+requests return active0 and no messages. An existing nonduplex request is refused
+with `{GXTXT SCRIPT_JOB INACTIVE}`. A surviving cancelled request returns its
+reason and no messages. An active uncancelled request returns at most maximum
+frames in FIFO order, preserving residual order. Empty frames remain empty list
+elements. No response means an empty messages list; Drain does not wait or change
+the request timeout. It rereads the actual owner state after readable/terminal
+callbacks and never recreates a retired request.
+
+Send/Drain are trusted host auxiliary operations, with no Script/SDK grant or
+durable Job identity. One logical consumer owns a duplex reply stream: never mix
+Exchange and Drain as competing readers. Consumers correlate their own request
+IDs and source generations. The existing16-frame receive cap and `max_bytes`
+semantics remain: a burst exceeding the cap cancels with output_limit, even when
+a later Drain could have consumed it. EOF can terminalize before queued final
+frames are consumed; the terminal callback remains authoritative and final-frame
+replay is not promised. Existing callback, timeout, UI lifetime and group
+escalation semantics remain owned by ScriptJob.
 
 SPDX-License-Identifier: GPL-3.0-or-later
 

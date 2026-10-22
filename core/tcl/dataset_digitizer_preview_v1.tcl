@@ -200,6 +200,58 @@ proc ::GX::datasetDigitizerPreviewAttachNative {id w model {parent {}}} {
     }
     return 0
 }
+# The canonical reader/predicate/sort owners remain authoritative. This private
+# seam supplies bounded chunks to precompiled CORE; old runtimes retain the loop.
+proc ::GX::_datasetDigitizerPreviewCollect {session id ids columns raster filters} {
+    if {[llength [info commands ::gx::native2d::_preview_overlay]]} {
+        set identity [curveSourceDatasetIdentity $session $id]
+        set collector [::gx::native2d::_preview_overlay begin $columns $raster $filters]
+        set stream {}
+        try {
+            set stream [tableStreamOpenDataset $session $id $ids 2048 {numeric_transport values}]
+            while 1 {
+                set chunk [tableStreamNext $stream]
+                ::gx::native2d::_preview_overlay push $collector [dict get $chunk values] [dict get $chunk row_count]
+                if {[dict get $chunk eof]} break
+            }
+            set result [::gx::native2d::_preview_overlay finish $collector]
+            if {[curveSourceDatasetIdentity $session $id] ne $identity} {error {Source changed during raster overlay preparation}}
+            return $result
+        } finally {
+            try {if {$stream ne {}} {tableStreamClose $stream}} finally {::gx::native2d::_preview_overlay destroy $collector}
+        }
+    }
+    set stream [tableStreamOpenDataset $session $id $ids 2048 {numeric_transport values}]
+    set curves {};set seen {};set count 0
+    try {
+        while 1 {
+            set chunk [tableStreamNext $stream];set values [dict get $chunk values]
+            for {set i 0} {$i<[dict get $chunk row_count]} {incr i} {
+                set accepted 1
+                foreach filter $filters {if {![::GX::GraphSelectionAPIv1::_matchesFilter [lindex [dict get $values [dict get $filter filter_variable_id]] $i] $filter]} {set accepted 0;break}}
+                if {!$accepted} continue
+                set row {};dict for {role vid} $columns {dict set row $role [lindex [dict get $values $vid] $i]}
+                set curve [dict get $row curve_key];set order [dict get $row point_order]
+                if {![string is entier -strict $order]} {error {Invalid published within-curve point identity}}
+                if {![dict exists $curves $curve]} {dict set curves $curve [dict create label [dict get $row curve_name] points {} unique_points 0]}
+                set identity [list $curve $order];set point [list $order]
+                if {$raster} {
+                    lappend point [dict get $row raster_x] [dict get $row raster_y]
+                    foreach value [lrange $point 1 end] {if {![string is double -strict $value] || ![expr {abs($value)<Inf}]} {error {Nonfinite source raster coordinate}}}
+                }
+                if {[dict exists $seen $identity]} {if {[dict get $seen $identity] ne $point} {error {Calibration realizations disagree on source raster identity}};continue}
+                if {[incr count]>65536} {error {Source overlay exceeds 65536 unique points; canonical data remain complete}}
+                dict set seen $identity $point
+                set data [dict get $curves $curve];dict incr data unique_points
+                if {$raster} {dict lappend data points $point}
+                dict set curves $curve $data
+            }
+            if {[dict get $chunk eof]} break
+        }
+    } finally {tableStreamClose $stream}
+    dict for {curve data} $curves {dict set data points [lsort -integer -index 0 [dict get $data points]];dict set curves $curve $data}
+    return [dict create curves $curves unique_point_count $count]
+}
 proc ::GX::datasetDigitizerPreviewPrepare {id selections dimensions directory {processedSelection {}}} {
     set manifest [datasetPreviewCurveManifest $id]
     if {$manifest eq {}} {return {}}
@@ -209,10 +261,66 @@ proc ::GX::datasetDigitizerPreviewPrepare {id selections dimensions directory {p
     set result [dict create dataset_id $id metadata $md curve_variable [dict get $columns curve_key] curves {} images {} raster_available $raster]
     set source [datasetPublicationV2DictDefault $md curve_digitizer.source_dataset_id {}]
     set expected [datasetPublicationV2DictDefault $md curve_digitizer.source_sha256 {}]
-    if {$source ne {} && $expected ne {}} {
+    # This host receipt is independent of the installed provider's Quality
+    # dictionary. Registry SHA fields retain their recorded canonical meaning.
+    set verification [dict create schema gxtxt.preview.source_verification.v1 \
+        dataset_id $source published_expected_sha256 $expected registered_expected_sha256 {} \
+        observed_sha256 {} status unverified method {} checked_at_utc {} \
+        reason {Source Dataset or a valid publication SHA-256 was not supplied.}]
+    set payload {};set registered {};set validExpected [regexp {^[0-9a-fA-F]{64}$} $expected]
+    if {$source ne {} && $validExpected} {
+        if {[catch {set registered [sessionInspectionDataset $source $::GX::currentSession]} message]} {
+            dict set verification status unavailable
+            dict set verification reason $message
+        } elseif {[datasetPublicationV2DictDefault $registered storage_provider {}] eq {remote}} {
+            dict set verification registered_expected_sha256 [datasetPublicationV2DictDefault $registered canonical_sha256 {}]
+            dict set verification status unsupported_remote
+            dict set verification reason {This local-raster Preview does not provide a current remote-byte verification receipt.}
+        } else {
+            dict set verification registered_expected_sha256 [datasetPublicationV2DictDefault $registered canonical_sha256 {}]
+            dict set verification method SESSION_INSPECTION_API_v1.datasetPayload
+            if {[catch {set payload [sessionInspectionDatasetPayload $source $::GX::currentSession]} message]} {
+                dict set verification status unavailable
+                dict set verification reason $message
+                # Only a failed canonical-payload check takes this recovery
+                # observation path. Successful sources are not hashed twice.
+                if {![catch {set linked [datasetViewerLinkedSourceIdentity $::GX::currentSession $source]}] && [dict exists $linked resource sha256]} {
+                    set observed [dict get $linked resource sha256]
+                    dict set verification observed_sha256 $observed
+                    dict set verification method SESSION_INSPECTION_API_v1.resolveResource_after_payload_failure
+                    set canonical [dict get $verification registered_expected_sha256]
+                    if {![string equal -nocase $observed $expected] || ([regexp {^[0-9a-fA-F]{64}$} $canonical] && ![string equal -nocase $observed $canonical])} {
+                        dict set verification status changed
+                    } else {
+                        # A later resource read cannot waive the original
+                        # canonical-owner refusal or silently repair identity.
+                        dict set verification status unverified
+                    }
+                }
+            } else {
+                set observed [dict get $payload sha256]
+                dict set verification observed_sha256 $observed
+                set canonical [dict get $verification registered_expected_sha256]
+                if {![regexp {^[0-9a-fA-F]{64}$} $canonical]} {
+                    dict set verification status unverified
+                    dict set verification reason {The registered source has no valid canonical SHA-256 identity; current-byte verification cannot establish a registered match.}
+                } elseif {![regexp {^[0-9a-fA-F]{64}$} $observed]} {
+                    dict set verification status unverified
+                    dict set verification reason {The payload owner returned no valid observed SHA-256; current-byte verification is unavailable.}
+                } elseif {[string equal -nocase $observed $expected] && [string equal -nocase $observed $canonical]} {
+                    dict set verification status verified
+                    dict set verification reason {The current payload passed the canonical owner check and matches the publication source SHA-256.}
+                } else {
+                    dict set verification status changed
+                    dict set verification reason {Current canonical source differs from the publication source; aligned overlay refused.}
+                }
+            }
+            if {[dict get $verification observed_sha256] ne {}} {dict set verification checked_at_utc [clock format [clock seconds] -gmt 1 -format {%Y-%m-%dT%H:%M:%SZ}]}
+        }
+    }
+    dict set result host_source_verification $verification
+    if {[dict get $verification status] eq {verified}} {
         if {[catch {
-            set payload [sessionInspectionDatasetPayload $source $::GX::currentSession]
-            if {[dict get $payload sha256] ne $expected} {error {Source image changed; aligned overlay refused}}
             set sizes [_native2DRasterHelper info [dict get $payload path]]
             set artifact [datasetPreviewImageArtifact [dict get $payload path] $directory 1]
             set target [file join $directory raster.png]
@@ -220,6 +328,8 @@ proc ::GX::datasetDigitizerPreviewPrepare {id selections dimensions directory {p
             dict set result images $source [dict create path $target size $sizes sha256 $expected]
             dict set result main_image $source;dict set result original_image $source
         } message]} {dict set result image_message $message}
+    } elseif {$source ne {}} {
+        dict set result image_message [dict get $verification reason]
     }
     dict set result processed_candidates {}
     if {[dict exists $result original_image]} {
@@ -255,35 +365,8 @@ proc ::GX::datasetDigitizerPreviewPrepare {id selections dimensions directory {p
     }
     set filters [graphSeriesNormalizeFilters $id $filters]
     foreach filter $filters {set vid [dict get $filter filter_variable_id];if {$vid ni $ids} {lappend ids $vid}}
-    set stream [tableStreamOpenDataset $::GX::currentSession $id $ids 2048 {numeric_transport values}]
-    set curves {};set seen {};set count 0
-    try {
-        while 1 {
-            set chunk [tableStreamNext $stream];set values [dict get $chunk values]
-            for {set i 0} {$i<[dict get $chunk row_count]} {incr i} {
-                set accepted 1
-                foreach filter $filters {if {![::GX::GraphSelectionAPIv1::_matchesFilter [lindex [dict get $values [dict get $filter filter_variable_id]] $i] $filter]} {set accepted 0;break}}
-                if {!$accepted} continue
-                set row {};dict for {role vid} $columns {dict set row $role [lindex [dict get $values $vid] $i]}
-                set curve [dict get $row curve_key];set order [dict get $row point_order]
-                if {![string is entier -strict $order]} {error {Invalid published within-curve point identity}}
-                if {![dict exists $curves $curve]} {dict set curves $curve [dict create label [dict get $row curve_name] points {} unique_points 0]}
-                set identity [list $curve $order];set point [list $order]
-                if {$raster} {
-                    lappend point [dict get $row raster_x] [dict get $row raster_y]
-                    foreach value [lrange $point 1 end] {if {![string is double -strict $value] || ![expr {abs($value)<Inf}]} {error {Nonfinite source raster coordinate}}}
-                }
-                if {[dict exists $seen $identity]} {if {[dict get $seen $identity] ne $point} {error {Calibration realizations disagree on source raster identity}};continue}
-                if {[incr count]>65536} {error {Source overlay exceeds 65536 unique points; canonical data remain complete}}
-                dict set seen $identity $point
-                set data [dict get $curves $curve];dict incr data unique_points
-                if {$raster} {dict lappend data points $point}
-                dict set curves $curve $data
-            }
-            if {[dict get $chunk eof]} break
-        }
-    } finally {tableStreamClose $stream}
-    dict for {curve data} $curves {dict set data points [lsort -integer -index 0 [dict get $data points]];dict set curves $curve $data}
+    set collected [_datasetDigitizerPreviewCollect $::GX::currentSession $id $ids $columns $raster $filters]
+    set curves [dict get $collected curves];set count [dict get $collected unique_point_count]
     dict set result curves $curves;dict set result unique_point_count $count
     modulePublicApiActivate viewer.curve_digitizer CURVE_DIGITIZER_QUALITY_API_v2
     if {[::GX::CurveDigitizerQuality::hasReport $id]} {

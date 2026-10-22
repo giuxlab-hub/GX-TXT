@@ -34,6 +34,30 @@ proc ::GX::datasetPreviewConfigurationRead {id} {
     if {[catch {dict get $saved version} v] || $v!=1} {return {}}
     return $saved
 }
+proc ::GX::_datasetPreviewConfiguredOptions {id} {
+    # One existing metadata owner supplies defaults to the GUI, cache key and
+    # renderer. Explicit options (including empty order) override these defaults.
+    if {[datasetProviderFor $id] eq {remote}} {return {}}
+    set defaults {}
+    set saved [datasetPreviewConfigurationRead $id]
+    foreach key {x y z selections ordering processed_image} {if {[dict exists $saved $key]} {dict set defaults $key [dict get $saved $key]}}
+    if {![dict exists $defaults ordering]} {
+        set ordering {}
+        if {![catch {set manifest [datasetPreviewCurveManifest $id]}] && $manifest ne {}} {
+            set ordering [dict get $manifest columns point_order]
+        } else {
+            set candidates {}
+            foreach dimension [_datasetScientificProfileDimensions $id] {
+                set variable [datasetVariableV3ById $id [dict get $dimension variable_id]]
+                if {[dict get $variable semantic_role] eq {point_order} && [dict get $variable dtype] ne {string}} {lappend candidates [dict get $variable variable_id]}
+            }
+            # Ambiguous role declarations require an explicit user choice.
+            if {[llength $candidates]==1} {set ordering [lindex $candidates 0]}
+        }
+        dict set defaults ordering $ordering
+    }
+    return $defaults
+}
 proc ::GX::scientificDatasetFilterPersist {arrayName prefix} {
     upvar #0 $arrayName state
     set filters [dict remove $state($prefix,filters) @hidden_filters]
@@ -62,8 +86,7 @@ proc ::GX::scientificDatasetFilterControls {parent id arrayName prefix {reset 0}
             set groups {}
             foreach d $dims {if {[dict get $d type] in {family curve calibration trace replicate}} {lappend groups [dict get $d variable_id]}}
             set state($prefix,filters) [dict create @grouping $groups @predicates {} @single_series 0]
-            set state($prefix,ordering) {}
-            if {![catch {set manifest [datasetPreviewCurveManifest $id]}] && $manifest ne {}} {set state($prefix,ordering) [dict get $manifest columns point_order]}
+            set state($prefix,ordering) [dict get [_datasetPreviewConfiguredOptions $id] ordering]
         }
     }
     set state($prefix,separate) 1
@@ -285,7 +308,7 @@ proc ::GX::scientificDatasetFilterSelectionPredicates {dimensions selections} {
     }
     return $filters
 }
-proc ::GX::scientificDatasetFilterRequests {dimensions selections separate} {
+proc ::GX::_scientificDatasetFilterPlan {dimensions selections separate} {
     set filters [scientificDatasetFilterSelectionPredicates $dimensions $selections]
     set id [expr {[llength $dimensions]?[dict get [lindex $dimensions 0] dataset_id]:{}}]
     set groups [datasetPublicationV2DictDefault $selections @grouping {}]
@@ -300,8 +323,13 @@ proc ::GX::scientificDatasetFilterRequests {dimensions selections separate} {
         set uncertain 0
         foreach d $dimensions {if {[dict get $d dtype] eq "string"} {set uncertain 1}}
         if {$uncertain && ![datasetPublicationV2DictDefault $selections @single_series 0]} {error {Curve membership is ambiguous. Configure independent grouping variables or explicitly confirm a single scientific series.}}
-        return [list $filters]
     }
+    return [dict create dataset_id $id filters $filters group_variable_ids $groups]
+}
+proc ::GX::scientificDatasetFilterRequests {dimensions selections separate} {
+    set plan [_scientificDatasetFilterPlan $dimensions $selections $separate]
+    set id [dict get $plan dataset_id];set filters [dict get $plan filters];set groups [dict get $plan group_variable_ids]
+    if {$groups eq {}} {return [list $filters]}
     set filters [graphSeriesNormalizeFilters $id $filters]
     set ids $groups
     foreach f $filters {set vid [dict get $f filter_variable_id];if {$vid ni $ids} {lappend ids $vid}}

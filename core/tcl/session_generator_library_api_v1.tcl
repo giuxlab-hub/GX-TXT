@@ -633,81 +633,60 @@ proc ::GX::sessionGeneratorVerifySession {session} {
     return 1
 }
 
-proc ::GX::sessionGeneratorGenerate {libraryId generatorId sessionRoot sessionName} {
+proc ::GX::sessionGeneratorGenerate {libraryId generatorId sessionRoot sessionName {copyDocumentation 0}} {
     variable cfg
     variable currentSession
+    if {![string is boolean -strict $copyDocumentation]} {error {Copy documentation must be a boolean.}}
     set libraryInfo [sessionGeneratorLibraryInfo $libraryId]
     set generatorInfo [sessionGeneratorGeneratorInfo $libraryId $generatorId]
+    _experimentDocumentsBeforeCreation
     set root [string trim $sessionRoot]
-    if {$root eq ""} { error "Session root is required." }
+    if {$root eq ""} {error {Session root is required.}}
     set root [file normalize $root]
-    file mkdir $root
     set requested [string trim $sessionName]
-    if {$requested eq ""} { error "Enter a session name." }
+    if {$requested eq ""} {error {Enter a session name.}}
     set safe [sanitize $requested]
-    set target [file normalize [file join $root $safe]]
-    if {[file exists $target]} { error "A session named '$safe' already exists in:\n$root" }
-
-    set oldRoot $cfg(output_root)
-    set oldName $cfg(session_name)
-    set oldSession $currentSession
-    set stagingName "gxtxt_generation_[pid]_[clock clicks]"
-    set staging ""
-    set finalizedTarget 0
-    set success 0
+    set saved [_sessionCreationSavedState]
+    set documentation {}
+    if {$copyDocumentation && $currentSession ne ""} {set documentation [_experimentDocumentsSnapshot]}
+    file mkdir $root
+    set record {}
     try {
-        # Generation creates a new Session.  The fallback Manifest must not
-        # inherit Experiment, module or source state from the prior Session.
+        set record [_sessionCreationReserve $root $safe]
         defaults
         loadModuleCatalog
-        set cfg(output_root) $root
-        set cfg(session_name) $stagingName
+        set cfg(output_root) [dict get $record stage_parent]
+        set cfg(session_name) $safe
         set staging [file normalize [makeSession]]
-        if {[file dirname $staging] ne $root} { error "Session generation staging area escaped the selected Session root." }
+        set record [_sessionCreationClaim $record $staging]
+        set cfg(output_root) $root
         set type [dict get $generatorInfo generator_type]
-        if {$type in {template hybrid}} {
-            sessionGeneratorCopyTemplate [dict get $generatorInfo template_path] $staging
-        }
+        if {$type in {template hybrid}} {sessionGeneratorCopyTemplate [dict get $generatorInfo template_path] $staging}
         if {$type in {python hybrid}} {
-            # A public-API producer must be able to open its genuine staging
-            # Session before producing science; CORE owns its initial Manifest.
             set initialManifest [file join $staging metadata manifest.ini]
             if {![file isfile $initialManifest]} {writeManifest $initialManifest}
             sessionGeneratorRunPython $generatorInfo $staging
         }
-        # Generators own scientific content; CORE owns the Session Manifest.
-        # Retain an intentional generator Manifest and let normal open validate it.
+        dict for {key text} $documentation {experimentDocumentSave $key $text $staging}
         set manifest [file join $staging metadata manifest.ini]
-        if {![file isfile $manifest]} {
-            set cfg(session_name) $safe
-            writeManifest $manifest
-        }
+        if {![file isfile $manifest]} {writeManifest $manifest}
         sessionGeneratorWriteProvenance $staging $libraryInfo $generatorInfo
         sessionGeneratorVerifySession $staging
-        file rename -- $staging $target
-        set staging ""
-        set finalizedTarget 1
+        set record [_sessionCreationPromote $record]
+        set target [dict get $record target]
+        # No global Project lock spans the producer or public callbacks. Reload
+        # fresh membership only inside this short existing-owner finalization.
+        _projectAtomic [list [file join $target metadata manifest.ini]] {
+            projectLoadRegistry
+            _projectEncounterSession $target
+        }
         set cfg(output_root) $root
         set cfg(session_name) $safe
         set currentSession ""
-        openSessionPath $target
-        set success 1
+        _sessionCreationOpen $record
         return $target
-    } finally {
-        if {!$success} {
-            if {$staging ne "" && [file exists $staging]} { catch {file delete -force -- $staging} }
-            if {$finalizedTarget && [file exists $target]} { catch {file delete -force -- $target} }
-            if {$oldSession ne "" && [file isfile [file join $oldSession metadata manifest.ini]]} {
-                catch {openSessionPath $oldSession}
-            } else {
-                set currentSession $oldSession
-            }
-            catch {updateSessionUi}
-        }
-        if {!$success} {
-            set cfg(output_root) $oldRoot
-            set cfg(session_name) $oldName
-        }
+    } on error {message options} {
+        _sessionCreationFailure $message $options $record $saved $root
     }
 }
 
@@ -731,7 +710,12 @@ proc ::GX::sessionGeneratorInfoText {libraryInfo generatorInfo} {
 # -----------------------------------------------------------------------------
 proc ::GX::sessionGeneratorBrowserPopulate {w} {
     variable sessionGeneratorGui
-    sessionGeneratorRegistryLoad
+    # An explicit installed-only open must keep that policy through all later
+    # browser/manager refreshes. The ordinary New Session path keeps its legacy
+    # bundled-library initialization at this same owner seam.
+    if {[info exists sessionGeneratorGui($w,installed_only)] && $sessionGeneratorGui($w,installed_only)} {
+        sessionGeneratorRegistryLoadRaw
+    } else {sessionGeneratorRegistryLoad}
     set tree $w.generator.split.navigation.table
     # Snapshot by actual registry identity, never by a row's display name/index.
     set selected {};set expanded {};set focused {};set y [$tree yview];set x [$tree xview]
@@ -802,6 +786,9 @@ Choose a generator to enable Generate Session."
     set sel [$tree selection]
     if {[llength $sel] == 1 && [info exists sessionGeneratorGui($w,node,[lindex $sel 0])]} {
         set spec $sessionGeneratorGui($w,node,[lindex $sel 0])
+        if {[info exists sessionGeneratorGui($w,preserve_name_for)] && $sessionGeneratorGui($w,preserve_name_for) ne $spec} {
+            unset sessionGeneratorGui($w,preserve_name_for)
+        }
         lassign $spec kind libraryId identity
         if {[catch {
             set lib [sessionGeneratorLibraryInfo $libraryId]
@@ -823,7 +810,8 @@ Select a generator in this category to read its description and generate a Sessi
                     set sessionGeneratorGui($w,selected_library) $libraryId
                     set sessionGeneratorGui($w,selected_generator) $identity
                     $w.generator.actions.generate state !disabled
-                    if {[string trim $ui(newSessionName)] eq "" && [dict get $gen suggested_session_name] ne ""} {
+                    if {![info exists sessionGeneratorGui($w,preserve_name_for)] &&
+                        [string trim $ui(newSessionName)] eq "" && [dict get $gen suggested_session_name] ne ""} {
                         set ui(newSessionName) [dict get $gen suggested_session_name]
                     }
                     variable sessionGeneratorRegistryLastSelected
@@ -858,8 +846,12 @@ proc ::GX::sessionGeneratorBrowserGenerate {w} {
     set generatorId $sessionGeneratorGui($w,selected_generator)
     set projectId [expr {[info exists ui(newSessionProjectIds)] && [dict exists $ui(newSessionProjectIds) $ui(newSessionProject)] ? [dict get $ui(newSessionProjectIds) $ui(newSessionProject)] : ""}]
     set root [expr {$projectId ne "" ? [projectSessionsRoot $projectId] : $cfg(output_root)}]
+    set copyDocumentation [expr {[info exists ui(newSessionCopyDocumentation)] ? $ui(newSessionCopyDocumentation) : 0}]
     if {[catch {
-        set session [sessionGeneratorGenerate $libraryId $generatorId $root $ui(newSessionName)]
+        if {$copyDocumentation && [info exists ui(newSessionDocumentationSource)] && $ui(newSessionDocumentationSource) ne $::GX::currentSession} {
+            error {The source Session changed. Reopen New Session to choose its documentation.}
+        }
+        set session [sessionGeneratorGenerate $libraryId $generatorId $root $ui(newSessionName) $copyDocumentation]
         if {$projectId ne ""} {
             set cfg(experiment_project_id) $projectId
             set cfg(experiment_project) [projectField $projectId name]
@@ -868,7 +860,9 @@ proc ::GX::sessionGeneratorBrowserGenerate {w} {
             projectAssociateExperiment $projectId $eid $session $cfg(experiment_name)
             writeManifest [file join $session metadata manifest.ini]
         }
-    } err]} {
+    } err opts]} {
+        if {[dict exists $opts -errorcode] && [dict get $opts -errorcode] eq {GXTXT SESSION CANCELLED}} {return}
+        if {[info exists session]} {append err "\nGenerated Session preserved: $session"}
         tk_messageBox -parent $w -icon error -title "Generate Session" -message $err
         return
     }
@@ -876,15 +870,17 @@ proc ::GX::sessionGeneratorBrowserGenerate {w} {
     tk_messageBox -icon info -title "Generate Session" -message "Session generated:\n$session"
 }
 
-proc ::GX::sessionGeneratorBrowserShow {w} {
+proc ::GX::sessionGeneratorBrowserShow {w {windowId {}}} {
     variable sessionGeneratorGui
-    if {$sessionGeneratorGui($w,manager_visible)} {sessionGeneratorManagerHide $w;return}
+    if {$windowId ne {} && ![_sessionGeneratorDialogOwned $w $windowId]} return
+    if {$sessionGeneratorGui($w,manager_visible)} {sessionGeneratorManagerHide $w $windowId;return}
     if {$sessionGeneratorGui($w,browser_visible)} {focus $w.generator.split.navigation.table;return}
     set sessionGeneratorGui($w,browser_visible) 1
-    grid $w.generator -row 4 -column 0 -columnspan 2 -sticky nsew -padx 6 -pady {0 6}
-    grid rowconfigure $w 4 -weight 1
+    grid $w.generator -row 5 -column 0 -columnspan 2 -sticky nsew -padx 6 -pady {0 6}
+    grid rowconfigure $w 5 -weight 1
     sessionGeneratorBrowserPopulate $w
-    sessionGeneratorFitDialog $w
+    sessionGeneratorFitDialog $w $windowId
+    if {$windowId ne {} && ![_sessionGeneratorDialogOwned $w $windowId]} return
     focus $w.generator.split.navigation.table
 }
 
@@ -1104,31 +1100,41 @@ proc ::GX::sessionGeneratorPaneRestore {w} {
     $split sashpos 0 [expr {int($ratio*[winfo width $split])}]
 }
 
-proc ::GX::sessionGeneratorManagerHide {w} {
+proc ::GX::sessionGeneratorManagerHide {w {windowId {}}} {
     variable sessionGeneratorGui
+    if {$windowId ne {} && ![_sessionGeneratorDialogOwned $w $windowId]} return
     sessionGeneratorPaneRemember $w manager
     grid remove $w.manager
-    grid $w.generator -row 4 -column 0 -columnspan 2 -sticky nsew -padx 6 -pady {0 6}
+    grid $w.generator -row 5 -column 0 -columnspan 2 -sticky nsew -padx 6 -pady {0 6}
     set sessionGeneratorGui($w,browser_visible) 1
     set sessionGeneratorGui($w,manager_visible) 0
     sessionGeneratorBrowserPopulate $w
-    sessionGeneratorFitDialog $w
+    sessionGeneratorFitDialog $w $windowId
+    if {$windowId ne {} && ![_sessionGeneratorDialogOwned $w $windowId]} return
     focus $w.generator.split.navigation.table
 }
 
-proc ::GX::sessionGeneratorFitDialog {w} {
+proc ::GX::sessionGeneratorFitDialog {w {windowId {}}} {
     variable sessionGeneratorGui
+    # Only the host selection path supplies an invocation identity. Preserve
+    # ordinary menu/manager behavior while refusing post-idle replacement work.
+    if {$windowId ne {} && ![_sessionGeneratorDialogOwned $w $windowId]} return
     update idletasks
+    if {$windowId ne {} && ![_sessionGeneratorDialogOwned $w $windowId]} return
     # Fit once on entering extended mode; subsequent transitions retain the
     # actual user window size/position and native splitter allocations.
     if {($sessionGeneratorGui($w,browser_visible) || $sessionGeneratorGui($w,manager_visible)) &&
         ![info exists sessionGeneratorGui($w,extended_geometry)]} {
         set sessionGeneratorGui($w,extended_geometry) 1
-        uiFieldWindowFit $w 1040 680
+        # Release the compact dialog's explicit size before adding the browser.
+        # Let the existing grid request its completed content size, rather than
+        # racing a second explicit size against the first native configure.
+        wm geometry $w {}
     } elseif {![winfo ismapped $w]} {
         uiFieldWindowFit $w [winfo reqwidth $w] [winfo reqheight $w]
     } else {uiFieldWindowFit $w}
     update idletasks
+    if {$windowId ne {} && ![_sessionGeneratorDialogOwned $w $windowId]} return
     sessionGeneratorPaneRestore $w
 }
 
@@ -1137,7 +1143,7 @@ proc ::GX::sessionGeneratorManagerShow {w} {
     if {![winfo exists $w.manager] || $sessionGeneratorGui($w,manager_visible)} return
     sessionGeneratorPaneRemember $w browser
     grid remove $w.generator
-    grid $w.manager -row 4 -column 0 -columnspan 2 -sticky nsew -padx 6 -pady {0 6}
+    grid $w.manager -row 5 -column 0 -columnspan 2 -sticky nsew -padx 6 -pady {0 6}
     set sessionGeneratorGui($w,manager_visible) 1
     if {![info exists sessionGeneratorGui($w,manager_library)] && [info exists sessionGeneratorGui($w,selected_library)]} {
         set sessionGeneratorGui($w,manager_library) $sessionGeneratorGui($w,selected_library)
@@ -1225,23 +1231,24 @@ proc ::GX::sessionGeneratorBuildManager {w} {
     grid $a -row 0 -column 0 -sticky new
 }
 
-# Keep the established manual New Session path untouched and replace only the
-# dialog composition so generator mode remains optional.
-proc ::GX::newSessionDialog {{preferredProjectId ""}} {
+# One existing composition serves both the ordinary modal menu and host-only
+# installed selection. The caller owns focus/grab/wait after construction.
+proc ::GX::_sessionGeneratorDialogCreate {{preferredProjectId ""} {installedOnly 0} {replaceExisting 1}} {
     variable cfg
     variable ui
     variable sessionGeneratorGui
-    if {[string trim $cfg(output_root)] eq ""} {
-        tk_messageBox -icon info -title "New Session" -message "Set Session root or load a Workspace profile before creating a session."
-        return
-    }
+    set w .gxNewSession
+    if {!$replaceExisting && [winfo exists $w]} {error {The New Session dialog already exists.}}
     set root [file normalize $cfg(output_root)]
     set ui(newSessionName) ""
+    set ui(newSessionDocumentationSource) $::GX::currentSession
+    set ui(newSessionCopyDocumentation) [expr {$::GX::currentSession ne "" && [file isdirectory $::GX::currentSession]}]
     set projectChoices [newSessionProjectChoices $preferredProjectId]
-    set w .gxNewSession
-    catch {destroy $w}
+    if {$replaceExisting} {catch {destroy $w}}
     array unset sessionGeneratorGui "$w,*"
+    set sessionGeneratorGui($w,installed_only) $installedOnly
     toplevel $w
+    set sessionGeneratorGui($w,window_id) [winfo id $w]
     wm title $w "New Session"
     wm transient $w .
     grid columnconfigure $w 1 -weight 1
@@ -1252,6 +1259,8 @@ proc ::GX::newSessionDialog {{preferredProjectId ""}} {
     ttk::label $w.projectLabel -text "Location:"
     uiFieldComponentCreate $w.project combobox [dict create choices $projectChoices width 30] ::GX::ui(newSessionProject) {}
     ttk::frame $w.buttons
+    ttk::checkbutton $w.copyDocumentation -text {Copy previous Experiment documentation} -variable ::GX::ui(newSessionCopyDocumentation)
+    if {!$ui(newSessionCopyDocumentation)} {$w.copyDocumentation state disabled}
     ttk::button $w.buttons.create -text "Create" -command [list ::GX::newSessionDialogCommit $w]
     ttk::button $w.buttons.generate -text "Generate Session..." -command [list ::GX::sessionGeneratorBrowserShow $w]
     ttk::button $w.buttons.cancel -text "Cancel" -command [list destroy $w]
@@ -1262,7 +1271,8 @@ proc ::GX::newSessionDialog {{preferredProjectId ""}} {
     grid $w.projectLabel -row 2 -column 0 -sticky e -padx 6 -pady 6
     grid $w.project -row 2 -column 1 -sticky ew -padx 6 -pady 6
     pack $w.buttons.create $w.buttons.generate $w.buttons.cancel -side left -padx 4
-    grid $w.buttons -row 3 -column 0 -columnspan 2 -pady 8
+    grid $w.copyDocumentation -row 3 -column 0 -columnspan 2 -sticky w -padx 6 -pady 4
+    grid $w.buttons -row 4 -column 0 -columnspan 2 -pady 8
 
     uiFieldComponentCreate $w.generator section {title {Browse Session Generators}} {} {}
     grid columnconfigure $w.generator 0 -weight 1
@@ -1296,8 +1306,148 @@ proc ::GX::newSessionDialog {{preferredProjectId ""}} {
 
     bind $w.name <Return> [list ::GX::newSessionDialogCommit $w]
     bind $w <Escape> [list destroy $w]
+    return $w
+}
+
+# Preserve the ordinary menu's initial values, default library initialization,
+# focus, local grab and modal wait. Opening the browser remains optional.
+proc ::GX::newSessionDialog {{preferredProjectId ""}} {
+    variable cfg
+    if {[string trim $cfg(output_root)] eq ""} {
+        tk_messageBox -icon info -title "New Session" -message "Set Session root or load a Workspace profile before creating a session."
+        return
+    }
+    set w [_sessionGeneratorDialogCreate $preferredProjectId]
     sessionGeneratorFitDialog $w
     focus $w.name
     grab $w
     tkwait window $w
+}
+
+proc ::GX::_sessionGeneratorDialogOwned {w {windowId {}}} {
+    variable sessionGeneratorGui
+    return [expr {[winfo exists $w] && [info exists sessionGeneratorGui($w,window_id)] &&
+        [winfo id $w] eq $sessionGeneratorGui($w,window_id) &&
+        ($windowId eq {} || [winfo id $w] eq $windowId)}]
+}
+
+proc ::GX::_sessionGeneratorSelectionUnavailable {libraryId generatorId} {
+    # Resolve only the actual installed registry. Never install/enable bundles
+    # or look up a similarly named generator in a different library.
+    if {[catch {sessionGeneratorRegistryLoadRaw}]} {return registry_unavailable}
+    if {$libraryId ni [sessionGeneratorLibraryIds 0]} {return library_missing}
+    if {$libraryId ni [sessionGeneratorLibraryIds]} {return library_disabled}
+    if {[catch {set library [sessionGeneratorLibraryInfo $libraryId]}]} {return library_unavailable}
+    foreach generator [dict get $library generators] {
+        if {[dict get $generator generator_id] eq $generatorId} {return {}}
+    }
+    return generator_missing
+}
+
+# Trusted host GUI operation only: select an installed exact pair without
+# executing it. No Script/SDK grant or URL dispatch is implied by this helper.
+proc ::GX::sessionGeneratorOpenSelection {libraryId generatorId} {
+    variable cfg
+    variable ui
+    variable sessionGeneratorGui
+    set libraryId [sessionGeneratorSafeId $libraryId "library ID"]
+    set generatorId [sessionGeneratorSafeId $generatorId "generator ID"]
+    set result [dict create status unavailable window {} library_id $libraryId generator_id $generatorId reason gui_unavailable]
+    foreach command {::winfo ::grab ::toplevel ::ttk::frame ::wm} {
+        if {![llength [info commands $command]]} {return $result}
+    }
+    if {![winfo exists .]} {return $result}
+    if {![info exists cfg(output_root)] || [string trim $cfg(output_root)] eq ""} {
+        dict set result reason session_root_missing;return $result
+    }
+    if {[catch {file normalize $cfg(output_root)} root] ||
+        ([file exists $root] && ![file isdirectory $root])} {
+        dict set result reason session_root_invalid;return $result
+    }
+    set w .gxNewSession
+    set existing [_sessionGeneratorDialogOwned $w]
+    # Capture this invocation's native incarnation, not merely the mutable
+    # current-owner slot which a legitimate replacement constructor updates.
+    set windowId {}
+    if {$existing} {set windowId [winfo id $w]}
+    set currentGrab [grab current .]
+    if {$currentGrab ne {} && $currentGrab ne $w} {
+        dict set result status busy;dict set result reason other_modal
+        if {$existing} {dict set result window $w}
+        return $result
+    }
+    if {[winfo exists $w] && !$existing} {
+        dict set result status busy;dict set result reason dialog_not_owned;return $result
+    }
+    set reason [_sessionGeneratorSelectionUnavailable $libraryId $generatorId]
+    if {$reason ne {}} {dict set result reason $reason;return $result}
+    set created 0
+    set savedName {};set hadName [expr {$existing && [info exists ui(newSessionName)]}]
+    if {$hadName} {set savedName $ui(newSessionName)}
+    try {
+        if {!$existing} {
+            set created 1
+            set w [_sessionGeneratorDialogCreate {} 1 0]
+            set windowId [winfo id $w]
+        }
+        set sessionGeneratorGui($w,installed_only) 1
+        if {$sessionGeneratorGui($w,browser_visible) && !$sessionGeneratorGui($w,manager_visible)} {
+            sessionGeneratorBrowserPopulate $w
+        } else {sessionGeneratorBrowserShow $w $windowId}
+        if {![_sessionGeneratorDialogOwned $w $windowId]} {
+            dict set result reason dialog_replaced;return $result
+        }
+        # Fit/show may service idle layout work. Recheck both availability and
+        # the modal owner before claiming selection or acquiring a local grab.
+        set reason [_sessionGeneratorSelectionUnavailable $libraryId $generatorId]
+        if {$reason ne {}} {dict set result reason $reason;return $result}
+        set currentGrab [grab current .]
+        if {$currentGrab ne {} && $currentGrab ne $w} {
+            dict set result status busy;dict set result window $w;dict set result reason other_modal;return $result
+        }
+        set tree $w.generator.split.navigation.table
+        set wanted [list generator $libraryId $generatorId]
+        set row {}
+        foreach key [array names sessionGeneratorGui "$w,node,*"] {
+            if {$sessionGeneratorGui($key) ne $wanted} continue
+            set node [string range $key [string length "$w,node,"] end]
+            if {[$tree exists $node]} {set row $node;break}
+        }
+        if {$row eq {}} {dict set result reason selection_unavailable;return $result}
+        for {set ancestor [$tree parent $row]} {$ancestor ne {}} {set ancestor [$tree parent $ancestor]} {
+            $tree item $ancestor -open 1
+        }
+        # TreeviewSelect is queued as well as resolved synchronously below.
+        # Keep a deliberately empty reused name through that queued event; a
+        # later different user selection restores ordinary name suggestions.
+        if {$hadName && $savedName eq {}} {set sessionGeneratorGui($w,preserve_name_for) $wanted}
+        $tree selection set $row
+        $tree focus $row
+        $tree see $row
+        sessionGeneratorBrowserSelection $w
+        if {![info exists sessionGeneratorGui($w,selected_library)] ||
+            ![info exists sessionGeneratorGui($w,selected_generator)] ||
+            $sessionGeneratorGui($w,selected_library) ne $libraryId ||
+            $sessionGeneratorGui($w,selected_generator) ne $generatorId} {
+            dict set result reason selection_unavailable;return $result
+        }
+        raise $w
+        focus $tree
+        if {$currentGrab eq {}} {grab $w}
+        dict set result status opened;dict set result window $w;dict set result reason {}
+        return $result
+    } on error {message context} {
+        dict set result status unavailable;dict set result window {};dict set result reason ui_unavailable
+        return $result
+    } finally {
+        # Preserve even an intentionally empty existing name. A newly created
+        # form retains the ordinary selected generator's suggested-name policy.
+        if {$windowId ne {} && $hadName && [_sessionGeneratorDialogOwned $w $windowId]} {set ui(newSessionName) $savedName}
+        if {$windowId ne {} && $created && [dict get $result status] ne {opened} && [_sessionGeneratorDialogOwned $w $windowId]} {
+            # Never destroy a newly acquired modal descendant as a side effect
+            # of cleaning up our form after an idle layout callback.
+            set held [grab current .]
+            if {$held eq {} || $held eq $w} {catch {destroy $w}}
+        }
+    }
 }

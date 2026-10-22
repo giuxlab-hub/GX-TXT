@@ -226,3 +226,42 @@ claim those later operations have already happened. An exact filtered exclusion
 set is the complement of input row IDs in the original identity range when that
 range is known; Transform-view identities retain their distinct source namespace.
 No source data are altered.
+
+## Grouped display from one canonical projection
+
+`curveSourceDisplayBatch session request ?options? ?progress?` prepares bounded
+series through one canonical Table Stream and the existing Native2D display
+accumulator. `request` admits dataset_id, x_variable_id, y_variable_id, filters,
+start, count, display_budget and optional order_variable_id. `options` admits
+`group_variable_ids` (up to16 distinct rank-one Variables), `max_series` (1–512,
+default512), and `total_display_points` (6–100000, default100000). The maximum
+per-series display budget is4096. All selected groups must fit the aggregate
+budget; no nonempty group is silently dropped. Start/count address each group's
+filtered, ordered window as in the existing individual source operation.
+
+The result identifies this existing API and operation `batch_display`, returning
+shared source identities, `series` and diagnostics. Each series contains its
+normalized group_key, filters, source_descriptor and canonical display. The
+Curve Source owner issues the descriptor with `source_kind dataset_batch` and
+exact original Dataset row identities. It describes a prepared snapshot without
+claiming an open Transform view. Its request can be reopened through the existing
+`curveSourceOpen` for exact access. Snapshot validation also checks the batch's
+Session origin and declared continuity context; payload/schema/source and Session
+lifetime are checked before committing the batch and after cooperative yields.
+Coordinate presentation remains with the existing coordinate owner.
+
+Native C++ owns grouping, stable numeric ordering, full bounds and reduction.
+The existing Graph Series and Graph Selection authorities validate distinct
+identity/predicate values through a bounded2MiB cache; this deliberately retains
+those semantics rather than introducing another validator. CSV lexemes and typed
+integer identities remain exact. HDF5 keeps its canonical storage worker.
+Diagnostics report actual provider reads, one canonical stream and native batch
+counts. These facts do not imply zero Python storage work or a performance result.
+
+The current batch supports rank-one numeric X/Y and numeric ordering, up to
+2million selected rows and4096bytes per grouping tuple. It explicitly rejects
+Selection/Transform manifests, string ordering and unsupported continuity rather
+than approximating them; existing individual-source operations remain available
+for those cases. Failed/cancelled/stale batches publish no partial series and
+release canonical streams and native instances. This method alone does not
+establish scientific or GUI acceptance.

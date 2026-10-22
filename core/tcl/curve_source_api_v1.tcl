@@ -2,7 +2,7 @@
 # Backend-neutral Dataset curve identity, exact access and bounded display.
 namespace eval ::GX::CurveSource {variable serial 0;variable records;array set records {}}
 proc ::GX::curveSourceApiInfo {} {
-    return [dict create api_id CURVE_SOURCE_API_v1 api_version 1 operations {open describe dataset_identity validate_snapshot validate_point_mask display display_cache_store display_cache_restore page locate_rows open_stream close_stream close} chunk_rows_max 65536 display_budget_max 65536 display_policy ordered_xy_extrema_per_source_row_bucket scientific_authority canonical_dataset display_is_scientific_data 0 continuity_policies {source_row_adjacency}]
+    return [dict create api_id CURVE_SOURCE_API_v1 api_version 1 operations {open describe dataset_identity validate_snapshot validate_point_mask display display_batch display_cache_store display_cache_restore page locate_rows open_stream close_stream close} chunk_rows_max 65536 display_budget_max 65536 display_policy ordered_xy_extrema_per_source_row_bucket scientific_authority canonical_dataset display_is_scientific_data 0 continuity_policies {source_row_adjacency}]
 }
 proc ::GX::curveSourceDatasetIdentity {session dataset} {
     if {[file normalize $session] ne [file normalize [sessionInspectionCurrentSession]]} {error {Curve Source identity belongs to another active Session}}
@@ -18,8 +18,22 @@ proc ::GX::curveSourceValidateSnapshot {session descriptor} {
         set changed 0;foreach key {dataset_id sha256 schema_identity} {if {![dict exists $identity $key]||[dict get $actual $key] ne [dict get $identity $key]} {set changed 1}}
         if {$changed} {lappend stale $id}
     }
+    # Additive batch snapshots bind origin/continuity as well as payload/schema.
+    # Old descriptors retain their established validation contract.
+    if {[dict exists $descriptor batch_context]} {
+        set id [dict get $descriptor request dataset_id]
+        if {[catch {set context [_curveSourceBatchContext $session $id]} message]} {
+            if {$id ni $missing} {lappend missing $id};lappend reasons "$id: $message"
+        } elseif {$context ne [dict get $descriptor batch_context]} {
+            if {$id ni $stale} {lappend stale $id};lappend reasons "$id: Session origin or declared continuity changed"
+        }
+    }
     set status [expr {$missing ne {} ? "missing" : $stale ne {} ? "stale" : "current"}]
     return [dict create status $status valid [expr {$status eq "current"}] missing_dataset_ids $missing stale_dataset_ids $stale source_identities $current reasons $reasons]
+}
+proc ::GX::_curveSourceBatchContext {session id {metadata @read}} {
+    if {$metadata eq "@read"} {set metadata [datasetMetadataRead $session $id]}
+    return [dict create session_origin [sessionOriginRead $session] continuity_policy [datasetPublicationV2DictDefault $metadata curve_source.continuity_policy {}] continuity_variable_id [datasetPublicationV2DictDefault $metadata curve_source.continuity_variable_id {}]]
 }
 proc ::GX::_curveSourceIdentity {session dataset} {
     set scientific {}
@@ -495,3 +509,114 @@ proc ::GX::curveSourceWithNumericInput {token consumer {pointMask {}} {progress 
 
 source [file join [file dirname [info script]] curve_source_continuity_v1.tcl]
 source [file join [file dirname [info script]] curve_source_display_cache.tcl]
+
+# One canonical projection, with truthful per-group snapshots issued by the
+# Curve Source owner. Unsupported view/Selection modes keep their existing
+# single-source route; they are never silently approximated by this operation.
+proc ::GX::curveSourceDisplayBatch {session request {options {}} {progress {}}} {
+    set session [file normalize $session]
+    if {$session ne [file normalize [sessionInspectionCurrentSession]]} {error {Curve Source batch belongs to another active Session}}
+    foreach key [dict keys $request] {
+        if {$key ni {dataset_id x_variable_id y_variable_id filters start count display_budget order_variable_id}} {error "Unsupported Curve Source batch field '$key'; use the existing explicit source operation"}
+    }
+    foreach key {dataset_id x_variable_id y_variable_id} {
+        if {![dict exists $request $key]} {error "Curve Source batch needs $key"}
+        datasetPublicationV2ValidateId [expr {$key eq "dataset_id"?"dataset":"variable"}] [dict get $request $key]
+    }
+    foreach key [dict keys $options] {if {$key ni {group_variable_ids max_series total_display_points}} {error "Unknown Curve Source batch option '$key'"}}
+    foreach {key default minimum maximum} {start 0 0 2000000 count -1 -1 2000000 display_budget 4096 6 4096} {
+        set value [datasetPublicationV2DictDefault $request $key $default]
+        if {![string is entier -strict $value] || $value<$minimum || $value>$maximum} {error "Invalid Curve Source batch $key"}
+        dict set request $key $value
+    }
+    set id [dict get $request dataset_id]
+    set lifetime [interactiveDocumentSessionToken];set identity [_curveSourceIdentity $session $id]
+    set x [dict get $request x_variable_id];set y [dict get $request y_variable_id]
+    if {$x eq $y} {error {Curve Source X/Y Variable IDs must be distinct}}
+    foreach vid [list $x $y] {
+        set v [datasetVariableV3ById $id $vid]
+        if {![dict get $v enabled] || [dict get $v rank]!=1 || [dict get $v dtype] eq "string"} {error {Curve Source batch needs enabled rank-one numeric X/Y Variables}}
+    }
+    set filters [graphSeriesNormalizeFilters $id [datasetPublicationV2DictDefault $request filters {}]]
+    dict set request filters $filters
+    set groupIds [datasetPublicationV2DictDefault $options group_variable_ids {}]
+    if {[llength $groupIds]>16 || [llength [lsort -unique $groupIds]]!=[llength $groupIds]} {error {Curve Source batch needs at most16 distinct grouping Variables}}
+    set specs {};set projection [list $x $y];set scalarIds {}
+    foreach vid $groupIds {
+        datasetPublicationV2ValidateId variable $vid
+        set v [datasetVariableV3ById $id $vid]
+        if {![dict get $v enabled] || [dict get $v rank]!=1} {error {Grouping requires enabled rank-one Variables}}
+        lappend specs [dict create variable_id $vid dtype [dict get $v dtype]]
+        if {$vid ni $projection} {lappend projection $vid}
+        if {$vid ni $scalarIds} {lappend scalarIds $vid}
+    }
+    foreach filter $filters {
+        set vid [dict get $filter filter_variable_id]
+        if {$vid ni $projection} {lappend projection $vid}
+        if {$vid ni $scalarIds} {lappend scalarIds $vid}
+    }
+    set order {};set ordering [datasetPublicationV2DictDefault $request order_variable_id {}]
+    if {$ordering ne {}} {
+        set v [datasetVariableV3ById $id $ordering]
+        if {![dict get $v enabled] || [dict get $v rank]!=1 || [dict get $v dtype] eq "string"} {error {Native Curve Source batch currently supports rank-one numeric ordering; use the existing source operation for other keys}}
+        set order [dict create variable_id $ordering dtype [dict get $v dtype]]
+        if {$ordering ni $projection} {lappend projection $ordering}
+        if {$ordering ni $scalarIds} {lappend scalarIds $ordering}
+    }
+    set continuity {};set metadata [datasetMetadataRead $session $id]
+    set policy [datasetPublicationV2DictDefault $metadata curve_source.continuity_policy {}]
+    if {$policy ne {}} {
+        if {$policy ne "source_row_adjacency"} {error {Unsupported declared Curve Source continuity policy}}
+        set vid [dict get $metadata curve_source.continuity_variable_id]
+        set v [datasetVariableV3ById $id $vid]
+        if {[dict get $v rank]!=1 || [dict get $v dtype] ni {int8 uint8 int16 uint16 int32 uint32 int64 uint64}} {error {Scientific continuity requires a rank-one integer row-identity Variable}}
+        set continuity [dict create variable_id $vid dtype [dict get $v dtype]]
+        if {$vid ni $projection} {lappend projection $vid}
+        if {$vid ni $scalarIds} {lappend scalarIds $vid}
+    }
+    set config [dict create x_variable_id $x y_variable_id $y groups $specs filters $filters order $order continuity $continuity start [dict get $request start] count [dict get $request count] display_budget [dict get $request display_budget] max_series [datasetPublicationV2DictDefault $options max_series 512] total_display_points [datasetPublicationV2DictDefault $options total_display_points 100000]]
+    native2DEnsure
+    if {![llength [info commands ::gx::native2d::_preview_batch]]} {error {The shared Native2D adapter lacks Curve Source batch support}}
+    set batchContext [_curveSourceBatchContext $session $id $metadata]
+    if {[interactiveDocumentSessionToken] ne $lifetime || [_curveSourceIdentity $session $id] ne $identity || [_curveSourceBatchContext $session $id] ne $batchContext} {error {Curve Source batch changed during request admission}}
+    set stream {};set native {};set position 0
+    try {
+        set native [::gx::native2d::_preview_batch begin $config]
+        # Integer scalar identities stay tagged/exact when the native adapter
+        # decodes canonical typed blocks; CSV retains its existing lexemes.
+        set stream [tableStreamOpenDataset $session $id $projection 4096 {numeric_transport auto}]
+        while 1 {
+            set chunk [tableStreamNext $stream];set columns {}
+            foreach column [dict get $chunk columns] vid $projection {dict set columns $vid [_curveSourceNativeColumn $column]}
+            ::gx::native2d::_preview_batch push $native $columns
+            incr position [dict get $chunk row_count]
+            if {$progress ne {}} {
+                curveSourceCooperativeBoundary $progress [dict create stage batch_display completed_rows $position total_rows [dict get [tableStreamMetadata $stream] row_count]]
+                if {[interactiveDocumentSessionToken] ne $lifetime || [_curveSourceIdentity $session $id] ne $identity} {error {Curve Source batch cancelled by source or Session change}}
+            }
+            if {[dict get $chunk eof]} break
+        }
+        set diagnostics [tableStreamDiagnostics $stream]
+        set closing $stream;set stream {};tableStreamClose $closing
+        set nativeSeries [::gx::native2d::_preview_batch finish $native]
+        dict set diagnostics native_batch [::gx::native2d::_preview_batch inspect $native]
+        dict set diagnostics canonical_streams 1
+        set output {}
+        foreach item $nativeSeries {
+            set selectedFilters $filters
+            foreach vid $groupIds value [dict get $item group_key] {lappend selectedFilters [dict create filter_variable_id $vid predicate exact_equal value $value]}
+            set selectedRequest [dict replace $request filters $selectedFilters count [dict get $item row_count] display_budget [dict get $item display_budget]]
+            set sourceId "curve-source:[datasetStorageSha256Text $session [list [list $identity] [dict remove $selectedRequest display_budget] $batchContext]]"
+            set descriptor [dict create api_id CURVE_SOURCE_API_v1 api_version 1 source_id $sourceId source_kind dataset_batch row_identity_kind dataset_row batch_context $batchContext request $selectedRequest row_count [dict get $item row_count] variables [list [datasetVariableV3ById $id $x] [datasetVariableV3ById $id $y]] source_identities [list $identity] display_budget [dict get $item display_budget] display_is_scientific_data 0]
+            set display [dict merge [dict remove $item group_key display_budget] [dict create source_id $sourceId reduced [expr {[dict get $item display_rows]<[dict get $item finite_rows]}] display_is_scientific_data 0 diagnostics $diagnostics]]
+            if {$policy ne {}} {dict set display continuity_policy $policy}
+            lappend output [dict create group_key [dict get $item group_key] filters $selectedFilters source_descriptor $descriptor display $display]
+        }
+        if {[interactiveDocumentSessionToken] ne $lifetime || [_curveSourceIdentity $session $id] ne $identity || [_curveSourceBatchContext $session $id] ne $batchContext} {error {Curve Source batch source, Session or continuity changed before commit}}
+        return [dict create api_id CURVE_SOURCE_API_v1 api_version 1 operation batch_display source_identities [list $identity] series $output diagnostics $diagnostics]
+    } finally {
+        try {if {$stream ne {}} {tableStreamClose $stream}} finally {
+            if {$native ne {}} {::gx::native2d::_preview_batch destroy $native}
+        }
+    }
+}

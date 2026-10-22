@@ -1,0 +1,232 @@
+{
+  "schema_version": 1,
+  "module_id": "acq.aia_andi_chromatography",
+  "version": "1.0.2",
+  "status": "OWNED_SOURCE_CANDIDATE; PUBLIC_DEVELOPER_IMPORT_ROLLBACK_REOPEN_VERIFIED; INSTALLED_GUI_AND_VENDOR_PENDING",
+  "date_utc": "2026-10-22T15:38:46.506886+00:00",
+  "upstream": {
+    "module_version": "1.0.0",
+    "archive": "[PRIVATE_UPSTREAM_ARCHIVE_PATH_REDACTED_SHA256_47dca48f10b4]",
+    "archive_sha256": "105bd6bdc74a9df8cbb95bb676f697386a8308f7510cbd510c3b6e3e4159a189",
+    "archive_bytes": 18470,
+    "selection": "Only AIA package present in source folder at recheck; newest appropriate package then available",
+    "original_preserved": true,
+    "members": [
+      {
+        "path": "CHANGELOG.md",
+        "bytes": 584,
+        "sha256": "481568f91c553d1e3d291da67872e16384a13e636292b1f0456579ec2180a10f"
+      },
+      {
+        "path": "README.md",
+        "bytes": 5728,
+        "sha256": "1db410b642727d812f5b5c168578e7f926190b009f9fa02b89c8a4059add94a1"
+      },
+      {
+        "path": "VALIDATION.md",
+        "bytes": 2214,
+        "sha256": "8fc516b36079bb805c9724cac7fa20ac0f91269fb8880a52bd22b2119204a790"
+      },
+      {
+        "path": "module.ini",
+        "bytes": 2518,
+        "sha256": "f1cce9e49bf394366287159edd6c92b935218033a7d2547e6f1a1073a48329d1"
+      },
+      {
+        "path": "plugin-package.ini",
+        "bytes": 155,
+        "sha256": "5a9d659b065543022efabe88bf8ae76fdf6c40d3b1c1aea7a3b2ecebd27e9fed"
+      },
+      {
+        "path": "runtime/acquisition_handler.tcl",
+        "bytes": 9340,
+        "sha256": "b451453d06c9cc68f62399bac4c1e4df84feb94bab75ea18fd8f842929d40225"
+      },
+      {
+        "path": "runtime/andi_chromatography.py",
+        "bytes": 21427,
+        "sha256": "fae08616b382c79578a16d7f27d4b7cda4fcf55f014cee74d3092f24272e1406"
+      },
+      {
+        "path": "tests/check_acquisition.tcl",
+        "bytes": 1718,
+        "sha256": "1aab40b9875efc5d0df28691974c29063a954a3387453410652b741e5b2e21a0"
+      },
+      {
+        "path": "tests/test_reader.py",
+        "bytes": 6970,
+        "sha256": "3a1c77cc826ecef33e7023886fdd14b51da6ad1f589b73a52fae263959fe2287"
+      }
+    ],
+    "historical_validation": "Upstream claims seven Metrohm CDF exports compared with SciPy and CHW; private CDF fixtures unavailable here and claims not re-executed"
+  },
+  "framework_baseline": {
+    "official_root": "/srv/gxtxt/releases/GXTXT/framework/expanded/gxtxt_pipeline_v09810dev_109",
+    "version": "0.9.8.10-dev-109",
+    "git_baseline": "6537f5e2612c9d71aff5dbb2fafa4c11d01c4685",
+    "integration_target": "dev110",
+    "new_core_api_or_data_path": false
+  },
+  "changes": [
+    "Reject nonfinite computed retention-time coordinates during inspection and import",
+    "Reject nonempty variable payload offsets before parsed CDF header end",
+    "Targeted CDF1/CDF2 regression tests; independent source/API integration documentation and provenance",
+    "Module/package version1.0.1; full root GPL license included",
+    "Reject finite computed-second axis ordering loss from large-delay rounding or subnormal time-unit conversion; preserve negative increasing coordinates and use common checked preview/import iterator",
+    "Final adapter catch-only error reason extraction and actual-CORE callback smoke test; no valid-path numerical change"
+  ],
+  "license": {
+    "spdx": "GPL-3.0-or-later",
+    "file": "LICENSE",
+    "source": "Git baseline root LICENSE",
+    "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+  },
+  "scope_unchanged": [
+    "CDF1/CDF2 classic chromatography",
+    "public Acquisition Handler API v1 returned descriptors",
+    "trace_only / trace_and_peaks / complete profiles",
+    "reported vendor peak results only; no integration or baseline recalculation",
+    "runtime stdlib Python plus minimal Tcl; no runtime compilation"
+  ],
+  "evidence": [
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2-SUB2/staged_verification01/unittest.log",
+      "sha256": "2008a79a135ae435813701c7679f69136bc18c4ca7e57735546925614e4f8919",
+      "scope": "actual staged source unittest:11 cases,10 PASS,1 optional vendor SKIP",
+      "canonical_or_gui_acceptance": false,
+      "source_version": "1.0.1"
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2-SUB2/staged_verification01/fixtures/receipt.json",
+      "sha256": "ea74c59ce63937a35ebb832615243b53b7faffa6b74d7084c93e6f19a26b61d9",
+      "scope": "actual staged runtime:8/8 fixed/record/malformed direct+CLI fixture cases PASS",
+      "canonical_or_gui_acceptance": false,
+      "source_version": "1.0.1"
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2-SUB2/review_verify01/receipt.json",
+      "sha256": "d916fe5954af46998c84d3c1b241341a1a395c098b3bf32ee9cf3507c2b715fa",
+      "scope": "prior exact proposed runtime:8/8 direct+CLI cases PASS",
+      "canonical_or_gui_acceptance": false,
+      "source_version": "1.0.1"
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2-SUB2/callback_review01/receipt.json",
+      "sha256": "a34d2db47c2d75c25197472660e69c411033be581fa47d32a7433dffbee8274f",
+      "scope": "prior exact adapter/reader review:8 callback cases+10 numeric/hash postchecks PASS using released CORE runtime discovery",
+      "canonical_or_gui_acceptance": false,
+      "source_version": "1.0.1"
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2-SUB2/coordination/AIA_1.0.1_PROPOSAL02.diff",
+      "sha256": "a48eec2970faf1365ded452ffcdb2133a44d34bb3190bfa57af236018f20b24b",
+      "scope": "exact accepted review proposal prior to application",
+      "canonical_or_gui_acceptance": false,
+      "source_version": "1.0.1"
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2-SUB2/axis_before01/receipt.json",
+      "sha256": "fae3c4e0308b2b2fa6e04f8991a7ce01746f554dfd08c0851a57d1fdec94cf6b",
+      "scope": "Exactly two finite-axis failures reproduced against1.0.1; accepted duplicate seconds before repair",
+      "source_version": "1.0.1",
+      "canonical_or_gui_acceptance": false
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2-SUB2/staged_verification02/unittest.log",
+      "sha256": "5b49b727af33a9dc83e3e237ec3935e72b32fe9dd91ebdc01443bd8784685b63",
+      "scope": "Actual staged1.0.2 source full suite:13cases12PASS1optionalvendorSKIP, including both new CDF1/2 precision regressions and negative-axis positive controls",
+      "source_version": "1.0.2",
+      "canonical_or_gui_acceptance": false
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2-SUB3/public-importers-003/RESULT.json",
+      "sha256": "4115d0b2ebe5c6b9f0f198106a4800dbfa3cc6cbd88eb88fd99cf33288107e49",
+      "scope": "Public canonical baseline CHW0.3.0+AIA1.0.1; AIA decoder pin omission retained",
+      "installed_gui_acceptance": false
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2-SUB3/public-aia102-001/RESULT.json",
+      "sha256": "ee2825f272e8a4d6150b657d7399ce098af2fe9334234ec72efa558629834c1f",
+      "scope": "AIA1.0.2 actual worker pinned;2valid canonical imports/reopen and2precision rejection public rollback; before final error-format-only adapter change",
+      "installed_gui_acceptance": false
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2/aia-callback-final01/RECEIPT.json",
+      "sha256": "421cfd6c5de7397e171e3c37c46be60610a7a8450f83a87d4dcc099d1b1a986a",
+      "scope": "Final actual adapter3valid profiles+2negative inspect/import; actual CORE discovery; callback-only",
+      "installed_gui_acceptance": false
+    }
+  ],
+  "remaining": [
+    "MAIN normal installed package/GUI and profile/batch/duplicate-ID checks",
+    "Independent vendor comparison where approved CDF fixtures become available"
+  ],
+  "source_members": [
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 1662,
+      "sha256": "3fa230335bc82cbb63a8caec2b6cc691a0db27679e337ae34fa00012d074eba2",
+      "upstream_sha256": "481568f91c553d1e3d291da67872e16384a13e636292b1f0456579ec2180a10f"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 35149,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "upstream_sha256": null
+    },
+    {
+      "path": "README.md",
+      "bytes": 7640,
+      "sha256": "6ab4b1ea16767d0777e7dae29f8da4c89faf9edd74017d2951aae881fd527a34",
+      "upstream_sha256": "1db410b642727d812f5b5c168578e7f926190b009f9fa02b89c8a4059add94a1"
+    },
+    {
+      "path": "VALIDATION.md",
+      "bytes": 7306,
+      "sha256": "f8e135c15c6cc01505ce5a7362f4be4fd4b3f9ee41886f5ca5070806ac03f4c9",
+      "upstream_sha256": "8fc516b36079bb805c9724cac7fa20ac0f91269fb8880a52bd22b2119204a790"
+    },
+    {
+      "path": "module.ini",
+      "bytes": 2518,
+      "sha256": "b2b294a0864f79534066670c0a8470bb85be30e4668c1cb88a9286fb204c10c8",
+      "upstream_sha256": "f1cce9e49bf394366287159edd6c92b935218033a7d2547e6f1a1073a48329d1"
+    },
+    {
+      "path": "plugin-package.ini",
+      "bytes": 155,
+      "sha256": "e737698cda9d59eb38c633cbc81309b711c731031852711256f97a166be0855c",
+      "upstream_sha256": "5a9d659b065543022efabe88bf8ae76fdf6c40d3b1c1aea7a3b2ecebd27e9fed"
+    },
+    {
+      "path": "runtime/acquisition_handler.tcl",
+      "bytes": 9588,
+      "sha256": "b43ea108983665d43690083fb15774b91e528abc8ec64a33e0e87cb40b232142",
+      "upstream_sha256": "b451453d06c9cc68f62399bac4c1e4df84feb94bab75ea18fd8f842929d40225"
+    },
+    {
+      "path": "runtime/andi_chromatography.py",
+      "bytes": 21818,
+      "sha256": "c78b5f0aebd785f1d667b4db1f08226bcd6a8a92642a0e068add5ca9107f68c5",
+      "upstream_sha256": "fae08616b382c79578a16d7f27d4b7cda4fcf55f014cee74d3092f24272e1406"
+    },
+    {
+      "path": "tests/check_acquisition.tcl",
+      "bytes": 3270,
+      "sha256": "d81632d3231b281643327a2c448b4ad2afd18c122edfa3e256d6ecc69fbf958c",
+      "upstream_sha256": "1aab40b9875efc5d0df28691974c29063a954a3387453410652b741e5b2e21a0"
+    },
+    {
+      "path": "tests/test_reader.py",
+      "bytes": 12382,
+      "sha256": "ba94c559e55ef212f2e77165c21da2689632522ad9526318f6767063919bf5e8",
+      "upstream_sha256": "3a1c77cc826ecef33e7023886fdd14b51da6ad1f589b73a52fae263959fe2287"
+    }
+  ],
+  "source_predecessor": {
+    "version": "1.0.1",
+    "commit": "9854fd6356ed051d2c11a7f6ad1bcfd3f087cd3e",
+    "runtime_sha256": "236eda0ba7258f4fb81aaaf5181d79f7c99093594d2459dfd5d076764b9a5427",
+    "provenance_sha256": "2d4ac99396b9c14342d0e05710a5f0ad2b348e9a429aa7139b7c49dc75b9a74d"
+  }
+}

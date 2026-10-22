@@ -109,7 +109,7 @@
 # Full release history: CHANGELOG.md
 
 namespace eval ::GX {
-    variable version "0.9.8.10-dev-109"
+    variable version "0.9.8.10-dev-110"
     variable scriptDir [file dirname [file normalize [info script]]]
     variable cfg
     variable ch
@@ -324,6 +324,7 @@ proc ::GX::main {} {
 }
 
 source [file join $::GX::scriptDir core tcl document_source_api_v1.tcl]
+source [file join $::GX::scriptDir core tcl html_viewer_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl source_surface_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl python_environment_api_v1.tcl]
 source [file join $::GX::scriptDir app script_debug_surface.tcl]

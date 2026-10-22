@@ -50,7 +50,7 @@ proc ::GX::buildAnalysisPage {} {
     ttk::label $a.run.buttons.note -text "Clearing a module does NOT delete existing results or plots."
     pack $a.run.buttons.all $a.run.buttons.none $a.run.buttons.note -side left -padx 4
     grid $a.run.buttons -row $rr -column 0 -columnspan 4 -sticky w -padx 4 -pady 5
-    ttk::label $a.info -text "These checkboxes only select which modules will rerun in the next PHASE 2. Use the Modules tab to add or remove modules from the experiment." -wraplength 900 -justify left
+    ttk::label $a.info -text "These checkboxes select modules for the next Run. The Modules tab lists enabled Analysis modules and their Run selections. Enable or disable modules in Configuration > Modules." -wraplength 900 -justify left
     grid $a.info -row 1 -column 0 -columnspan 3 -sticky ew -padx 6 -pady 6
     set row 2
     foreach {label key} {

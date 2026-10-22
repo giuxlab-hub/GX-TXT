@@ -373,3 +373,17 @@ intentionally outside this plugin task. See `NUMERIC_CORE_INTEGRATION.md`.
 
 ### Version 2.0.3
 Scientific consistency: the entire preflight local/shared uncertainty factor representation must agree with retained public CORE Numeric factors, not merely the marginal standard deviations and XY covariance. The Dataset Variable Schema v3 unit for `covariance_xy` is now an explicit X*Y product and must match published metadata. No change is made to the declared-uncertainty default (`none`), existing viewers, calibrations or tracing controls.
+
+## 2.0.5 opt-in assisted tracing
+Smooth curve prior (Off/Gentle/Strong) adds a path curvature cost to guided tracing. A red-X exclusion spline editor supplies soft competing-trace bands on a per-curve, source-bound Session basis. The old algorithm is retained when smoothness is Off and no exclusions are enabled. Calibration corner and verification labels now show active measurement identity. See MANUAL.md for operation; no framework API or CORE modification is required.
+
+### Version 2.0.6
+The Assisted tracing UI now separates Trace settings and Proposal on row 1, with a two-column Exclusion paths editor and per-path enabled selection list on row 2. Edits to paths and transient proposals join the existing Edit menu's Undo/Redo history. Historical 2.0.5 exclusion paths load as stable-ID records. See MANUAL.md for details.
+
+### Version 2.0.7: original icon restored
+This package includes the original GX-TXT Curve Digitalizer icon assets in the real icons/ directory, referenced by [viewer.curve_digitizer] as icons/curve_digitizer.png. The Imaging & Documents viewer category and all previous scientific functionality are unchanged.
+### 2.0.8 — Stroke width and public read API
+The selected Curve now has an optional, collapsed-by-default Stroke width panel (automatic detector or manually edited A/B boundary splines). Calibration and Uncertainty show active/inactive and stale states. The new CURVE_DIGITIZER_STROKE_WIDTH_API_v1 exposes live Session settings and published Dataset metadata, without modifying existing CORE or inventing measurement sigma. See STROKE_WIDTH_API_v1.md and MANUAL.md.
+
+### Version 2.0.9
+A focused forward-only fix of version 2.0.8. Selecting a different curve refreshes the optional stroke-width editor immediately. Public API `CURVE_DIGITIZER_STROKE_WIDTH_API_v1` and original Imaging & Documents category/PNG icon are retained. Scientific propagation and uncertainty models are unchanged.

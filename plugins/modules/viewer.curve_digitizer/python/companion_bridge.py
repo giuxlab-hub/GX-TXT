@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import hashlib
 import sys
 import uuid
 from pathlib import Path
@@ -55,6 +56,13 @@ def command_context(args: argparse.Namespace) -> int:
         raise ValueError(f"Curve ID {args.curve_id!r} does not exist in the selected configuration.")
 
     source = cfg.get("source", {})
+    stroke=cfg.get("stroke_width") or {}
+    if not isinstance(stroke,dict):stroke={}
+    stroke_by_curve=stroke.get("by_curve") or {}
+    if not isinstance(stroke_by_curve,dict):stroke_by_curve={}
+    stroke_source_matches=(bool(stroke.get("source_sha256")) and
+        stroke.get("source_sha256")==source.get("sha256"))
+    print("STROKE_WIDTH_JSON\t"+_b64(json.dumps(stroke,ensure_ascii=False,separators=(",",":"))))
     print("CONFIGURATION_ID\t" + _b64(str(cfg.get("configuration_id", ""))))
     print("CONFIGURATION_NAME\t" + _b64(str(cfg.get("name", ""))))
     print("SOURCE_DATASET_ID\t" + _b64(str(source.get("dataset_id", ""))))
@@ -68,6 +76,22 @@ def command_context(args: argparse.Namespace) -> int:
         print("CURVE_NAME\t" + _b64(curve.name))
         print("CURVE_POINT_COUNT\t" + str(len(curve.points)))
         print("CURVE_JSON\t" + _b64(json.dumps(curve_dict, ensure_ascii=False, separators=(",", ":"))))
+        width=stroke_by_curve.get(args.curve_id) or {}
+        if not isinstance(width,dict):width={}
+        enabled=bool(width.get("enabled",False))
+        result=width.get("result") or {}
+        if not isinstance(result,dict):result={}
+        fresh=(bool(result) and stroke_source_matches and
+               width.get('source_sha256','')==source.get('sha256',''))
+        if fresh and width.get("method")=="automatic":
+            coords=[[p.id,round(p.pixel_x,6),round(p.pixel_y,6)] for p in curve.points]
+            curve_hash=hashlib.sha256(json.dumps(coords,separators=(",",":")).encode()).hexdigest()
+            fresh=(result.get("trace_sha256")==curve_hash)
+        status="inactive" if not enabled else "measured" if fresh else "unavailable"
+        print("STROKE_WIDTH_STATUS\t"+_b64(status))
+        print("STROKE_WIDTH_METHOD\t"+_b64(width.get("method","none") if enabled else "none"))
+        print("STROKE_WIDTH_PX\t"+_b64(str(result.get("width_px","")) if (fresh and enabled) else ""))
+        print("STROKE_WIDTH_CURVE_JSON\t"+_b64(json.dumps(width,ensure_ascii=False,separators=(",",":"))))
     return 0
 
 

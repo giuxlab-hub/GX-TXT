@@ -13,6 +13,7 @@ proc ::GX::printStudioCatalogChanged {receipt} {
     variable ::GX::PrintStudio::state
     if {[dict get $receipt change_kind] eq {session}} {
         printStudioSourceCancel
+        if {[info exists ::GX::ui(printSourceCanvas)] && [winfo exists $::GX::ui(printSourceCanvas)]} {printStudioSourceClear}
         set state(selectedSource) {};set state(sourceDescriptor) {};set state(representation) {}
         set state(sourceStatus) {Session changed. Select a source in the current Session.}
     }
@@ -291,8 +292,10 @@ proc ::GX::printStudioSourceSelect {} {
     if {[dict exists $descriptor variables]} {foreach variable [dict get $descriptor variables] {$text insert end "[dict get $variable variable_id] · [dict get $variable unit]\n"}}
     if {[dict get $descriptor reason] ne {}} {$text insert end "[dict get $descriptor reason]\n"}
     $text configure -state disabled
-    $ui(printSourceCanvas) delete all
-    if {[dict get $state(selectedSource) kind] eq {dataset}} {
+    printStudioSourceClear
+    if {[dict get $state(selectedSource) kind] eq {dataset} && $state(representation) eq {table}} {
+        printStudioSourceTable [dict get $state(selectedSource) id] [dict create variables [lrange [dict get $descriptor table_variables] 0 63]]
+    } elseif {[dict get $state(selectedSource) kind] eq {dataset}} {
         set state(sourceStatus) {Preparing a bounded source Preview…}
         set state(previewWatch) [datasetPreviewCacheSubscribe [dict get $state(selectedSource) id] {} [list ::GX::printStudioSourcePrepared $state(sourceGeneration) [dict get $state(selectedSource) id]]]
     } else {
@@ -318,11 +321,64 @@ proc ::GX::printStudioSourcePrepared {generation id response} {
     set state(sourceStatus) "Source Preview · cache [expr {$hit ? {HIT} : {MISS → prepared}}]. Print uses the original scientific source."
     if {[dict exists $cached description]} {append state(sourceStatus) " [dict get $cached description]"}
     if {$state(printUnsupported) ne {}} {append state(sourceStatus) " $state(printUnsupported)"}
-    if {[dict exists $cached table_page]} {set text $ui(printSourceSummary);$text configure -state normal;datasetPreviewRenderTableSnapshot $text [dict get $cached table_page];$text configure -state disabled}
+    if {[dict exists $cached table_page]} {printStudioSourceTableSnapshot [dict get $cached table_page]}
+}
+proc ::GX::printStudioSourceClear {} {
+    unset -nocomplain ::GX::PrintStudio::state(sourceTableKey)
+    set canvas $::GX::ui(printSourceCanvas)
+    $canvas delete all
+    foreach child [winfo children $canvas] {destroy $child}
+}
+proc ::GX::printStudioSourceTableSnapshot {snapshot} {
+    variable ui
+    printStudioSourceClear
+    set canvas $ui(printSourceCanvas);set frame $canvas.table
+    ttk::frame $frame
+    text $frame.text -height 8 -width 30 -wrap none -font TkFixedFont -borderwidth 0
+    ttk::scrollbar $frame.y -command [list $frame.text yview]
+    ttk::scrollbar $frame.x -orient horizontal -command [list $frame.text xview]
+    $frame.text configure -yscrollcommand [list $frame.y set] -xscrollcommand [list $frame.x set]
+    grid $frame.text -row 0 -column 0 -sticky nsew
+    grid $frame.y -row 0 -column 1 -sticky ns
+    grid $frame.x -row 1 -column 0 -sticky ew
+    grid columnconfigure $frame 0 -weight 1;grid rowconfigure $frame 0 -weight 1
+    datasetPreviewRenderTableSnapshot $frame.text $snapshot
+    $frame.text configure -state disabled
+    $canvas create window 0 0 -anchor nw -window $frame -tags table_preview -width [winfo width $canvas] -height [winfo height $canvas]
+    bind $canvas <Configure> [list $canvas itemconfigure table_preview -width %w -height %h]
+}
+proc ::GX::printStudioSourceTable {id options {expected {}}} {
+    variable ::GX::PrintStudio::state
+    try {
+        set token [interactiveDocumentSessionToken]
+        set signature [printRecipeSourceSignature dataset $id]
+        if {$expected ne {} && $signature ne $expected} {error {Table source changed; update the composition source before previewing.}}
+        set key [list $token $id $signature $options]
+        if {[info exists state(sourceTableKey)] && $state(sourceTableKey) eq $key && [winfo exists $::GX::ui(printSourceCanvas).table]} {return}
+        printStudioSourceClear
+        set start [datasetPublicationV2DictDefault $options start 0]
+        set count [datasetPublicationV2DictDefault $options count 200]
+        set page [datasetPreviewPage $::GX::currentSession $id [dict create start $start count [expr {min(12,$count)}] variable_ids [datasetPublicationV2DictDefault $options variables {}]]]
+        if {$token ne [interactiveDocumentSessionToken] || $signature ne [printRecipeSourceSignature dataset $id]} {error {Table source or Session changed during Preview.}}
+        if {![dict get $page available]} {error [dict get $page reason]}
+        printStudioSourceTableSnapshot $page
+        set state(sourceTableKey) $key
+        set state(sourceStatus) "Table $id · first [dict get $page count] row(s) of the display range; zero-based start $start, requested count $count. Preview row labels are relative to this sample. Source data are unchanged."
+    } on error {message errorOptions} {printStudioSourceClear;set state(sourceStatus) "Table Preview unavailable: $message"}
+}
+proc ::GX::printStudioTableRangeOptions {options start count} {
+    # Empty fields omit the existing optional keys. Materialization retains
+    # the established first-200-row default; no new Dataset range semantics.
+    foreach key {start count} value [list $start $count] {
+        set value [string trim $value]
+        dict unset options $key
+        if {$value ne {}} {dict set options $key $value}
+    }
+    return $options
 }
 proc ::GX::printStudioSourceImage {path} {
     variable ::GX::PrintStudio::state;variable ui
-    set canvas $ui(printSourceCanvas);$canvas delete all
+    set canvas $ui(printSourceCanvas);printStudioSourceClear
     if {[info exists state(sourcePhoto)]} {catch {image delete $state(sourcePhoto)}}
     if {[catch {set master [image create photo -file $path]} message]} {set state(sourceStatus) "Inline source Preview unavailable: $message";return}
     set factor [expr {max(1,int(ceil(max([image width $master]/double(max(100,[winfo width $canvas]-10)),[image height $master]/double(max(100,[winfo height $canvas]-10))))))}]
@@ -379,8 +435,12 @@ proc ::GX::printStudioItemSelected {} {
         if {[dict get $item id] ne $id} continue
         set options [dict get $item options]
         set state(item_columns) [join [datasetPublicationV2DictDefault $options variables {}] ,]
-        set state(item_start) [datasetPublicationV2DictDefault $options start 0]
-        set state(item_count) [datasetPublicationV2DictDefault $options count 200]
+        set state(item_start) [datasetPublicationV2DictDefault $options start {}]
+        set state(item_count) [datasetPublicationV2DictDefault $options count {}]
+        if {[dict get $item presentation] eq {table}} {
+            printStudioSourceCancel
+            printStudioSourceTable [dict get $item source_id] $options [dict get $item source_signature]
+        }
     }
     if {[printStudioIsPoster]} {printStudioPosterDraw}
 }
@@ -390,8 +450,9 @@ proc ::GX::printStudioItemApply {} {
         set selected [$::GX::ui(printQueue) selection];set items {}
         foreach item [dict get $state(recipe) items] {
             if {[dict get $item id] in $selected && [dict get $item presentation] eq {table}} {
-                set variables {};foreach value [split $state(item_columns) ,] {lappend variables [string trim $value]}
-                dict set item options [dict create variables $variables start $state(item_start) count $state(item_count)]
+                set variables {};foreach value [split $state(item_columns) ,] {set value [string trim $value];if {$value ne {}} {lappend variables $value}}
+                if {$variables eq {}} {error {Choose at least one table Variable ID.}}
+                dict set item options [printStudioTableRangeOptions [dict create variables $variables] $state(item_start) $state(item_count)]
             }
             lappend items $item
         }

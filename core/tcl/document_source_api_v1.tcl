@@ -190,3 +190,37 @@ proc ::GX::datasetDocumentSourceOpen {id {expectedToken {}}} {
     return $w
 }
 proc ::GX::datasetDocumentSourceAction {id token} {if {[catch {datasetDocumentSourceOpen $id $token} reason]} {tk_messageBox -icon error -type ok -title {Source unavailable} -message $reason}}
+
+# Interactive HTML receives an owner-created presentation derivative containing
+# only the canonical HTML file. A Session/Dataset directory is never an asset
+# root: no existing Dataset contract declares authority over sibling files.
+proc ::GX::documentInteractiveDatasetSnapshot {id} {
+    if {[datasetDocumentKind $id] ne {html}} {error {Select a canonical HTML Dataset.}}
+    set payload [sessionInspectionDatasetPayload $id]
+    set path [dict get $payload path]
+    if {![file isfile $path] || [file size $path]>4194304} {error {Interactive HTML requires a complete source no larger than4MiB.}}
+    set sha [dict get $payload sha256]
+    if {[sha256File $path] ne $sha} {error {Canonical HTML source integrity changed.}}
+    return [dict create dataset_id $id path $path source_sha256 $sha session [interactiveDocumentSessionToken] stamp [datasetViewerStamp $id $path]]
+}
+proc ::GX::documentInteractiveDatasetSource {id} {
+    set before [documentInteractiveDatasetSnapshot $id]
+    set allocation [resourceManagementAllocate html_presentation [dict create category temporary lifetime viewer retention_seconds 0]]
+    try {
+        set root [dict get $allocation path]
+        set target [file join $root index.html]
+        file copy -- [dict get $before path] $target
+        if {[sha256File $target] ne [dict get $before source_sha256] || [documentInteractiveDatasetSnapshot $id] ne $before} {error {Canonical HTML changed during presentation preparation.}}
+        return [dict create source [dict create kind dataset dataset_id $id source_sha256 [dict get $before source_sha256]] snapshot $before asset_root $root relative index.html allocation $allocation asset_scope canonical_html_only]
+    } on error {message options} {
+        catch {documentInteractiveAllocationRelease $allocation}
+        return -options $options $message
+    }
+}
+proc ::GX::documentInteractiveAllocationRelease {allocation} {
+    if {$allocation eq {}} return
+    set id [dict get $allocation id]
+    resourceManagementRelease $id verified_orphan 0
+    # Only this authority-created allocation is eligible; never source paths.
+    resourceManagementCleanup [list $id]
+}

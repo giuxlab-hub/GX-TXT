@@ -113,6 +113,24 @@ After a successful canonical catalog commit, CORE schedules standard Preview pre
 
 Entries live only under `Session/cache/dataset_previews/SHA256`. Keys bind canonical identity/content/schema, coordinate/calibration metadata, source revision, rendering code and exact render options. Representation and derived artifacts carry SHA checks. Symlink entries are refused. Missing, stale or damaged entries are regenerated; an explicitly restored stale custom view is visibly labelled previous render. Configurable preparation policy and a default 64 MiB Session budget apply. Clearing/eviction never deletes canonical payloads, Graphs, Workspaces or original images. This subtree is hidden from ordinary Session Files and omitted from portable exports.
 
+Fresh generic curve defaults keep declared `calibration_identity` Variables as
+independent calibration grouping dimensions alongside family/curve/trace/replicate
+identities. A single enabled compatible numeric rank-one `point_order` Variable
+supplies within-series order; multiple such roles require an explicit choice.
+Existing genuine Digitizer schema defaults retain their own authority. Variable
+IDs, producer names and ad hoc `source_grouping_variables`/`source_order_variable`
+metadata do not establish a separate binding contract. Manual grouping remains
+available through the existing controls and Graph Series validation.
+
+Saved Preview axes, selections, order and processed-image choice supply omitted
+render options. Processed images retain their existing source/lineage checks. Explicit
+options take precedence, including `ordering {}` for original acquisition order.
+The controls, renderer and cache use the same metadata defaults; the cache binds
+their current values before lookup/task coalescing and again before publication.
+A changed saved default invalidates an older derivative even when a caller still
+holds its resolved options. These are presentation choices; canonical values,
+row identities, calibration roles and source images remain unchanged.
+
 Sessions → Preview Cache shows Dataset, representation, generation date, source/render key, size, status and errors and offers refresh, regenerate, clear selected/all and policy. Standard automated previews and explicit custom Render have separate keys. Successful custom Render persists its exact options and cache key through Dataset Preview Configuration. Controls restore on reopen; changing axes, filters, grouping, calibration or ordering keeps the previous successful frame until explicit Render. Failed/cancelled preparation preserves that frame. Source changes are labelled stale rather than current.
 
 Before any successful render exists, the Plot placeholder and Source pane show
@@ -123,11 +141,17 @@ status changes preserve its frame and source contents. This is presentation of
 the existing lifecycle receipt; it neither validates an unavailable source nor
 starts another preparation.
 
-The Digitalizer chart is a resizable retained Plot Dataset native viewport. Visibility changes affect existing XY objects and raster overlay primitives, retain camera/zoom/pan, and start no reader or Job. Visibility preferences are saved after a short idle period. Expensive scientific reads, raster decoding and Quality preparation run in managed Jobs. Session lifetime, generation and source guards reject stale completions; asynchronous status polling does not block Tk. Processed-image choices require verified identity-preserving raster lineage and retain the original source alongside the chosen derivative.
+The Digitalizer chart is a resizable retained Plot Dataset native viewport. Visibility changes affect existing XY objects and raster overlay primitives, retain camera/zoom/pan, and start no reader or Job. Visibility preferences are saved after a short idle period. Expensive scientific reads, raster decoding and Quality preparation run through the existing managed execution owner. Session lifetime, generation and source guards reject stale completions; asynchronous status polling does not block Tk. Processed-image choices require verified identity-preserving raster lineage and retain the original source alongside the chosen derivative.
 
 Array-only Datasets use a bounded exact storage plane (at most 128×128 original
-cells, with earlier dimensions fixed at zero). Its nearest-cell PNG retains the
-original finite value range; gray denotes nonfinite values. It is an overview,
+cells, with earlier dimensions fixed at zero). Canonical Dataset Access remains
+its sole reader; typed binary hyperslabs are preferred when the provider supports
+them, with the existing values transport retained otherwise. The shared Native2D
+C++ adapter computes the finite range and nearest-cell palette without Tcl cell
+loops. Signed/unsigned 64-bit range labels remain exact, including values above
+2^53; adjacent integers remain distinct in the display normalization. Gray denotes
+missing or nonfinite values. PNG encoding uses the configured codec and a temporary
+PPM beside the requested output, removed on success or failure. It is an overview,
 not a coordinate interpolation or replacement Dataset. Image, PDF and audio
 preparation uses the existing configured codecs. Supported mesh formats use the
 same Native3D layer contract and installed read-only renderer as live consultation;
@@ -141,3 +165,94 @@ state and checks its existing source/configuration contract. A source or mapping
 change remains explicitly stale. Exiting XYZ restores the retained 2D status;
 this transition does not apply pending 2D options, acknowledge a revision or
 request a new scientific Job. An explicit 2D Render keeps its existing meaning.
+
+When the matching shared native adapter is installed, standard 2D cache
+preparation resolves the existing grouping policy into a Curve Source batch plan.
+It avoids the separate Tcl row-wise combinations scan and per-series Transform
+reads. The existing individual request planner remains available to its other
+consumers and to older native runtimes. Canonical filters, explicit single-series
+confirmation and mandatory grouping roles retain their existing authority.
+Transient plans are not persisted as render options: cache identity retains the
+actual user selections/order and the renderer implementation. Native source
+preparation alone does not establish installed GUI/scientific/performance results.
+
+
+Preview cache subscriptions use the existing Script Job managed-request owner
+with a fixed trusted Tcl worker on supported hosts. Requests have bounded stdin,
+timeout/output limits, an owned process group, cancellation and UI lifetime;
+there is no additional worker pool. Preparing/terminal receipts disclose
+`execution_kind=managed_request`, their actual `request_id` and an empty `job_id`.
+A request token is never presented as a durable Job. A cached hit requires no new
+execution. Default direct `datasetPreviewCacheRequest` calls retain the existing
+durable CORE service Job route, including its real Job identity and persisted
+record (CORE services remain excluded from ordinary user Job lists). Platforms
+without the required process-group/Tcl tools retain that route.
+
+Subscribers/direct callers joining an existing preparation receive its actual
+execution kind. Unsubscribing the final UI consumer cancels only a UI-owned
+preparation with no legacy consumer, including consumers waiting on a queued
+retry. Cancelled work drains through its existing owner before retrying; malformed
+worker responses become terminal errors. The fixed worker validates framework,
+Session, request schema, source key and resulting cache entry without evaluating
+request data. Normal framework messages are bounded diagnostics, separate from
+its control dictionary. It removes the Preview Python launcher from that managed
+route; canonical HDF5, remote and Resource Management owners retain their existing
+runtime boundaries. No zero-Python or performance claim follows from this change.
+# Published raster overlay collection
+
+The existing Digitizer Preview host can use the precompiled CORE overlay
+collector when registered in Native2D. It consumes the same canonical projected
+Table Stream value chunks (2048 rows), retains exact curve/point lexemes and
+first labels, and rejects conflicting repeated raster identities. Graph
+Selection remains the predicate authority; Tcl's existing integer admission and
+integer sort retain historical behavior. No canonical values, calibration,
+source image, public descriptor or vendor Viewer is rewritten.
+
+The existing65536 unique-point limit remains. Retained token payload is bounded
+to64MiB and distinct-value validation cache payload to2MiB; these counters exclude
+Tcl/allocator bookkeeping. Collection and final sorting execute synchronously in
+the caller, normally the existing managed Preview worker. This is not a promised
+event-loop latency or total-RSS bound. Missing native support keeps the existing
+collector; failed native preparation cannot publish a partial overlay. Canonical
+source identity is checked before and after collection, and the outer Preview
+cache owns Session/source lifetime. Visibility still uses the retained host.
+## Published Quality versus independent host source verification
+
+The installed Curve Digitizer Quality dictionary remains provider-owned and is
+retained unchanged. Its reported integrity/digest fields are labeled as provider
+results: a provider may measure current bytes or may compare only recorded
+registry metadata. In unchanged vendor2.0.9 these fields do not establish live
+source-byte verification. CORE does not replace registry SHA meanings or modify
+the vendor API to disguise that limitation.
+
+The existing Digitizer Preview representation additionally carries the internal
+`host_source_verification` receipt: source Dataset ID, published expected SHA256,
+registered canonical expected SHA256, observed SHA256, status, owner/method,
+observation UTC time and reason. The ordinary successful local path reuses
+`SESSION_INSPECTION_API_v1`'s verified Dataset Payload receipt already needed for
+the source raster; it adds no second routine source hash pass. `verified` requires
+a valid publication SHA, registered canonical identity and successful owner
+verification matching both expected identities. A publication mismatch is
+`changed`; the original aligned-overlay refusal remains in force. Published
+curve data, point ordering, diagnostics and uncertainty are not rewritten.
+An absent or malformed registered canonical identity or observed digest is
+`unverified`, with an explicit reason; it is not evidence that source bytes
+changed. The ordinary payload owner already refuses invalid registered digests,
+and the successful-receipt branch retains this defensive distinction.
+
+Only after a failed payload check may the existing linked-source/resource owner
+measure current bytes for explanation. A measured mismatch is `changed`; a later
+matching observation cannot waive the earlier canonical-owner refusal and stays
+`unverified`. Missing/rejected sources retain the actual owner reason. This local
+raster route reports `unsupported_remote` rather than asserting a remote source
+was checked locally. Missing/invalid publication identity is `unverified`.
+
+The Quality host shows this CORE receipt separately from provider fields. Old
+numeric Quality row selectors remain unchanged; added rows use stable semantic
+IDs (`host_source_status`, `host_source_digest`, `host_source_expected`,
+`host_source_registered`, `host_source_method`, `host_source_checked_at`,
+`host_source_reason`). Source/cache invalidation qualifies both the provider's
+old report and the host's old observation as previous-render data. A receipt is
+evidence at its preparation epoch, not continuous verification. Source/Session
+lifetime, linked identity and Preview cache remain owned by existing services.
+This is an internal representation extension, not another public data pipeline.

@@ -323,3 +323,174 @@ scientific Job or an additional canonical log store.
 Registration uses ordinary UI Field forms and provider-declared non-secret
 configuration fields; unsupported operational modes are labeled registration-only.
 Opening delegates to the registered domain Viewer through the same manager.
+
+## Step3 normalized content operations (dev110 candidate)
+
+This additive v1 contract extends the existing Python/Tcl manager. MAIN's
+independent proposal review accepted the bounded content/provider design; actual
+release/milestone acceptance remains separate. Ordinary scripts remain excluded:
+`apiInfo` continues `script_exposure host_module_only`. No Step4 binding,
+credential facility, provider registry or scientific store is added.
+
+### Exact public host signatures
+
+All methods belong to `::GX::ScientificLibraryManagerAPIv1`. `options` defaults
+to an empty Tcl dict. Provider-owned structured input is **explicit JSON text**;
+CORE never guesses whether a Tcl string is a dict, number, boolean or null.
+
+| Tcl signature | Result |
+| --- | --- |
+| `libraryEntriesPage libraryId ?options?` | Normalized entry page with provider ordering/stable IDs and optional continuation/known total. |
+| `getLibraryEntryInfo libraryId entryId ?options?` | Compact entry information/metadata/provenance. |
+| `searchLibraryEntries libraryId queryJson ?options?` | Provider-defined search query expressed as JSON; normalized entry page. |
+| `readLibraryEntry libraryId entryId ?options?` | Provider scientific payload/contract, metadata and provenance. |
+| `exportLibraryEntry libraryId entryId format ?options?` | Explicit data-return export: media type, utf-8/base64 encoding and data. No destination path. |
+| `addLibraryEntry libraryId entryJson ?options?` | Add to an existing mutable library; provider-assigned/validated stable ID and mutation receipt. |
+| `removeLibraryEntry libraryId entryId ?options?` | Remove one entry from an existing mutable library; not containing-library administration. |
+
+Every method accepts `provider_json` in options, containing a JSON object of
+provider-owned options. Pages/search additionally accept `limit` (default100,
+1–200 decimal integer) and `continuation` (bounded opaque provider token).
+Unknown common options reject. Query JSON may be a string or another provider-
+accepted JSON value; add-entry JSON must decode to an object. For example a Tcl
+JSON string query is `{"benzene"}`; a provider option object in a Tcl options dict
+requires its literal braces, e.g. `{provider_json {{"mode":"exact"}}}`.
+
+Existing discovery remains authoritative: `listRegisteredLibraries` returns all
+active public records, `queryCompatibleLibraries` filters by type, and
+`libraryCatalogPage` supplies bounded mode/text-filtered public records. Those
+results, entry pages and search results are already structured data-return
+exports; callers persist permitted derivatives through existing public artifact/
+publication/export APIs. No duplicate library-discovery service or unrestricted
+filesystem writer is introduced.
+
+### Result shapes and lossless JSON typing
+
+Common result fields are schema, actual library_id/library_type/provider_id/
+provider_version/mode and observed `retrieved_at`. Scientific source timestamps,
+remote revision/ETag/hash/license and upstream source identity are preserved only
+when supplied in provenance, never fabricated from the registry. Provider
+provenance cannot conflict with authoritative CORE identity fields.
+
+Schemas are `gxtxt.library_entry_page.v1` (records/count, optional continuation/
+total), `gxtxt.library_entry_info.v1` (entry_id, compact metadata/provenance,
+optional content_contract), `gxtxt.library_entry.v1` (entry_id/payload plus optional
+metadata/provenance), `gxtxt.library_entry_export.v1` (entry_id/media_type/encoding/
+data/provenance), and `gxtxt.library_entry_mutation.v1` (entry_id/action, optional
+revision/transaction_id/provenance). Unknown totals/revisions stay absent.
+Entry IDs/tokens preserve Unicode and punctuation; they are not filesystem paths
+and do not use the CORE library-ID grammar. Records are library source content,
+not already published canonical Session Datasets.
+
+Every public result additionally includes `result_json`: JSON text of the full
+normalized result **excluding the sidecar itself**. It is authoritative for JSON
+null versus empty string, boolean versus integer, nested container types and
+exact integer text. Convenience Tcl dict/list fields use the existing recursive
+`tcl_result` conversion, where None appears empty and boolean appears0/1; callers
+needing typed interpretation use result_json with their normal JSON reader.
+The sidecar is response metadata, not another storage or authority path. No new
+serializer is introduced; standard-library JSON plus existing tcl_result are
+used deliberately.
+
+Limits:1MiB parameters/full host request envelope; pages at most200 records;
+opaque IDs/tokens at most4096characters; internal normalized content at most16MiB,
+100000nodes/depth32. The **final serialized/base64 C wire**, including the sidecar,
+is capped at24MiB so the existing32MiB managed-response envelope remains bounded.
+A result may hit the final wire bound before the normalized-content bound.
+Oversized data rejects with a clear error; it is never silently truncated.
+
+### Provider contract, policy and integrity
+
+The installed trusted provider implements fixed named hooks
+`list_entries`, `entry_info`, `search_entries`, `read_entry`, `export_entry`,
+`add_entry`, `remove_entry`, each `(record, parameters, framework_root)`. The
+existing capability vocabulary gates them, but a positive flag without a
+callable hook yields unsupported_operation. Provider owns scientific search,
+entry validation, ordering/paging, payload/units and atomic source transactions.
+Normalized return fields match the result shapes above; pages return compact
+records, read returns payload, export returns data rather than a file path.
+
+Required fixed hook
+`library_content_policy(record, operation, parameters, framework_root)` returns
+`{allowed: bool, reason?: str, policy_reference?: str}`. A literal positive
+boolean is required. Missing policy denies; malformed policy errors; operation-
+scoped denial is policy_restricted. CORE does not interpret free-text license or
+rights to grant access. Provider owns source/license terms, per-entry and exact-
+format permission. Consultation does not imply export/redistribution permission.
+No CORE cache/bulk mirror or automatic retry is added. This is not a DRM claim:
+authorized hosts remain bound by source terms when receiving consultation data.
+
+Mutation requires explicit registry read_only0, mutable/write capabilities,
+provider read_only=false, an actually observed writable status from existing
+library_status, and affirmative operation policy. Current managed versioned
+packages remain immutable regardless of provider flags. Saved provider/type IDs
+are validated before selection; a corrupt empty provider ID cannot rebind the
+current type provider via a legacy optional-ID fallback. Provider inputs are
+copied; a hook cannot mutate CORE's in-memory registration or requested identity.
+
+New managed content reads reuse existing package/payload SHA, provider scientific
+validation and exact stable-entry index verification inside the existing local
+registry lock, before and after the content hook. Detected postflight changes
+discard unreturned data. External/remote requests do not hold that lock across
+provider work. Hash/lock checks serialize ordinary manager actions; they do not
+claim cryptographic signatures or atomic defense against unrelated malicious
+replace-and-restore writes. Legacy list/spectrum/lifecycle semantics remain
+unchanged; dedicated IR/NMR providers and managers are not rewritten.
+
+### Errors and asynchronous use
+
+Normalized codes: unsupported_operation, library_not_found, entry_not_found,
+read_only, authentication_required, credentials_locked, authentication_failed,
+rate_limited, temporarily_unavailable, provider_unavailable,
+invalid_provider_configuration, integrity_failure, policy_restricted,
+provider_failure, invalid_request, invalid_provider_response. A failed search
+never returns a successful empty page. Explicit provider errors use the single
+`{error: {code, message, retry_after_seconds?, provider_code?}}` result; safe bounded
+messages/details are provider-author obligations. Unknown exceptions become a
+safe generic provider_failure rather than leaking raw exception text.
+
+Synchronous errors preserve Tcl catch with errorcode
+`{GXTXT SCIENTIFIC_LIBRARY_MANAGER CODE}` and custom `-library_error` structured
+detail. Asynchronous content errors retain common ok0/error/category and add
+error_code/error_details. Existing ScriptJob timeout/cancellation/process errors
+retain that owner's common error behavior. Any error after dispatching mutation,
+including a later registry failure, conservatively carries
+`mutation_outcome unknown`. Neither failure nor cancellation proves rollback;
+providers own commit disposition, and no automatic retry is performed.
+
+`libraryRequest content arguments callback` uses the existing managed request
+owner. `arguments` is a3-item Tcl list: libraryId, finite operation, parameter dict.
+Operations: list_entries, entry_info, search_entries, read_entry, export_entry,
+add_entry, remove_entry. Fixed parameter fields: entry_id, format, limit,
+continuation, query_json, entry_json, options_json. The *_json fields are explicit
+JSON text (options_json must be an object). They map to provider parameters query,
+entry and options. No arbitrary method/function name or eval input is accepted.
+Common example:
+
+```tcl
+set args [list $libraryId read_entry [dict create entry_id $entryId]]
+::GX::ScientificLibraryManagerAPIv1::libraryRequest content $args $callback
+```
+
+The helper's fixed CLI is `python3 -B scientific_library_manager.py content`,
+reading that same3-item Tcl list from stdin. Successful and failed content use a
+single C/base64 record containing the finite recursive Tcl response schema;
+CLI failure exits nonzero, while managed-worker transport carries the result to
+the facade's decoder. No provider payload is required in argv. All old F/L/M/P/D
+wire and old public method signatures remain unchanged. `listLibraryEntries`
+remains the accepted managed-only ID-list route; use libraryEntriesPage for the
+new normalized all-mode operation. Existing --request operations still decode
+through their old paths.
+
+### Developer evidence and remaining acceptance
+
+`validation/task210/library_step3/` records purpose/arguments/version/sideeffects
+in CATALOG_ADDITION.md for MAIN's operational catalog. It installs a real
+synthetic generic-science fixture through existing managed lifecycle, exercises
+actual external mutable/read-only and controlled remote dispatch, and runs the
+actual sync facade plus existing scriptJobAsync pipes/callbacks. Typed JSON
+roundtrip, normalized failures, pre/post integrity, mutation ambiguity, legacy
+wire and final response bounds are developer-checked. These checks do not prove
+production remote service, domain IR/NMR, GUI or ordinary Script Bridge support.
+MAIN retains integration and Step3 milestone acceptance. Steps4–7 remain ordered
+unfinished work; no Step4 exposure or credential mechanism is inferred here.

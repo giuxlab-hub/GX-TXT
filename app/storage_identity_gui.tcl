@@ -339,7 +339,7 @@ proc ::GX::launchGui {} {
     grid $w.reasonLabel -row 2 -column 0 -sticky w;grid $w.reason -row 3 -column 0 -sticky ew
     grid $w.rotate -row 4 -column 0 -sticky w -pady 6
     installationIdentityGuiRefresh
-    set order {acq preview channels analysis run results graphs sessionfiles projects print modules viewers configuration help}
+    set order {acq preview channels modules analysis run results graphs print sessionfiles projects viewers configuration help}
     # Installation Identity is appended here, after the base Configuration
     # builder. Append Appearance at this actual final owner to keep it rightmost.
     configurationAppearanceBuild

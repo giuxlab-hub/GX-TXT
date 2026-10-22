@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 630" role="img" aria-labelledby="title description">
+<title id="title">Guides express the intended route; a proposal still needs review</title>
+<desc id="description">Two abstract curves cross in each panel. The left panel shows an ambiguous crossing. The right panel has three labeled orange guide points along the intended blue curve and a dashed proposal to inspect. These are original illustrative paths, not measured data or a computed GX-TXT trace.</desc>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original GX210-GUIDE conceptual artwork. -->
+<defs><style>text{font-family:system-ui,sans-serif;fill:#172d47}.title{font-size:26px;font-weight:700}.heading{font-size:20px;font-weight:700}.body{font-size:18px}.small{font-size:17px;fill:#496079}.grid{fill:none;stroke:#e0e8f2;stroke-width:1.5}.target{fill:none;stroke:#2258a8;stroke-width:5}.other{fill:none;stroke:#6c7f8f;stroke-width:5}.guide{fill:#fff;stroke:#b65c00;stroke-width:4}.proposal{fill:none;stroke:#13899c;stroke-width:3;stroke-dasharray:9 7}</style></defs>
+<rect width="1000" height="630" rx="16" fill="#f3f7fc"/>
+<text x="34" y="43" class="title">Guides express an intended route; review the proposed trace</text>
+<text x="34" y="74" class="small">Original conceptual illustration · no measured raster or computed result</text>
+<rect x="34" y="112" width="442" height="360" rx="12" fill="#fff" stroke="#91a9c3" stroke-width="2"/>
+<rect x="524" y="112" width="442" height="360" rx="12" fill="#fff" stroke="#91a9c3" stroke-width="2"/>
+<text x="56" y="149" class="heading">A · A crossing leaves a route choice</text>
+<text x="546" y="149" class="heading">B · Use guides to choose a route</text>
+<g class="grid"><path d="M70 200H440M70 260H440M70 320H440M70 380H440M120 185V435M210 185V435M300 185V435M390 185V435"/><path d="M560 200H930M560 260H930M560 320H930M560 380H930M610 185V435M700 185V435M790 185V435M880 185V435"/></g>
+<path class="target" d="M75 405C145 385 160 305 255 300S355 260 435 195"/>
+<path class="other" d="M75 205C145 230 195 295 255 300S365 345 435 405"/>
+<circle cx="255" cy="300" r="26" fill="none" stroke="#b65c00" stroke-width="2.5"/>
+<text x="92" y="452" class="small">Pixels may not identify the branch.</text>
+<path class="target" d="M565 405C635 385 650 305 745 300S845 260 925 195"/>
+<path class="other" d="M565 205C635 230 685 295 745 300S855 345 925 405"/>
+<path class="proposal" d="M580 398C640 375 655 305 745 300S840 260 910 208"/>
+<g class="guide"><circle cx="580" cy="398" r="8"/><circle cx="695" cy="307" r="8"/><circle cx="910" cy="208" r="8"/></g>
+<text x="594" y="413" class="body">G1</text><text x="680" y="286" class="body">G2</text><text x="877" y="188" class="body">G3</text>
+<text x="546" y="452" class="small">Review the proposal before accepting.</text>
+<rect x="34" y="510" width="932" height="86" rx="12" fill="#fff0cc"/>
+<text x="56" y="545" class="heading">Guides express operator intent; they do not certify measurement accuracy.</text>
+<text x="56" y="577" class="body">Keep source identity, chosen traversal and accepted scientific points traceable.</text>
+</svg>

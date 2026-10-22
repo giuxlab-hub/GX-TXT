@@ -1,11 +1,29 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Canonical, asynchronously prepared Curve Source consultation uses the same
 # public Plot v4 model, renderer, source guards and widget controller as plots.
+proc ::GX::PlotDatasetAPIv4::_scientificAdmissionBudget {series {preparedTraces 0}} {
+    if {![llength $series] || [llength $series]>512} {
+        error {Scientific consultation requires one to 512 prepared traces}
+    }
+    set totalPoints 0
+    set fields [expr {$preparedTraces ? {display points} : {points}}]
+    foreach trace $series {
+        if {![dict exists $trace {*}$fields]} {error {Prepared scientific display is missing points}}
+        set count [llength [dict get $trace {*}$fields]]
+        if {$count>4096} {error {Prepared scientific points exceed the per-trace display budget}}
+        incr totalPoints $count
+        if {$totalPoints>100000} {error {Scientific consultation exceeds 100000 aggregate display points}}
+    }
+}
+
 proc ::GX::PlotDatasetAPIv4::scientificModel {datasetId xId series coordinateContext {options {}}} {
     _ready
-    if {$datasetId eq {} || $xId eq {} || ![llength $series] || [llength $series]>16} {
-        error {Scientific consultation requires a canonical Dataset, explicit X and one to sixteen prepared traces}
+    if {$datasetId eq {} || $xId eq {}} {
+        error {Scientific consultation requires a canonical Dataset and explicit X}
     }
+    # Admit the representative calibrated family without letting many individually
+    # bounded traces exceed the shared presentation memory envelope.
+    _scientificAdmissionBudget $series 1
     if {[dict get $coordinateContext dataset_id] ne $datasetId ||
         [::GX::datasetCoordinateRead $::GX::currentSession $datasetId] ne $coordinateContext} {
         error {Scientific coordinate context changed; prepare the selected source again}

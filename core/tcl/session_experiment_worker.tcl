@@ -161,11 +161,12 @@ proc runClone {} {
     dict set manifest origin.definition [::GX::_originCreate duplicate [dict create object_kind session_experiment experiment_id $sourceExperimentId creator_installation [dict get [::GX::sessionOriginRead $source] creator_installation] origin_snapshot [::GX::sessionOriginRead $source]]]
     dict set manifest experiment.name $name
     dict set manifest pipeline.application_version $::GX::version
-    set stage "$target.preparation.[pid].[clock clicks]"
-    set helper [file join $framework core python session_experiment_files.py]
-    set python [::GX::runtimeToolRequired python]
-    exec $python -B $helper reserve $stage $target 2>@1
+    file mkdir [file dirname $target]
+    set creation [::GX::_sessionCreationReserve [file dirname $target] [file tail $target]]
+    set stage [dict get $creation stage]
     try {
+        file mkdir $stage
+        set creation [::GX::_sessionCreationClaim $creation $stage]
         ::GX::ExperimentClone::copyTree $source $stage
         ::GX::_sessionStorageProfilesPrepareClone $source $stage
         ::GX::ExperimentClone::documentsCopy $stage
@@ -190,9 +191,13 @@ proc runClone {} {
         foreach entry $::GX::ExperimentClone::diagnostics {append report "[dict get $entry action] | [dict get $entry module_id]/[dict get $entry provider_id] | [dict get $entry object] | [dict get $entry reason]\n"}
         append report "Excluded unowned/scientific filesystem entries:\n[join $::GX::ExperimentClone::omitted \n]\n"
         ::GX::noteWriteUtf8 [file join $stage metadata experiment_preparation.txt] $report
-        exec $python -B $helper commit $stage $target 2>@1
+        set creation [::GX::_sessionCreationPromote $creation]
     } on error {message options} {
-        catch {exec $python -B $helper abort $stage $target 2>@1}
+        if {[catch {set cleanup [::GX::_sessionCreationAbort $creation]} issue]} {
+            append message "\nCreation paths preserved: $stage / $target\n$issue"
+        } elseif {[dict get $cleanup state] in {aborted_retained promoted_retained}} {
+            append message "\nPreserved Session output: $stage / $target"
+        }
         return -options $options $message
     }
 }

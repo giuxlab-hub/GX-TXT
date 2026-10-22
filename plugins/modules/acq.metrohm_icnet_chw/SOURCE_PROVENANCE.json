@@ -1,0 +1,190 @@
+{
+  "module_id": "acq.metrohm_icnet_chw",
+  "candidate_version": "0.3.0",
+  "upstream_archive": "[PRIVATE_UPSTREAM_ARCHIVE_PATH_REDACTED_SHA256_9635bfde2e4e]",
+  "upstream_sha256": "fb17aeacb919959cc679fb29e28de154a8938a4e6dc82f4084e867e7da2afda6",
+  "upstream_version": "0.2.2",
+  "upstream_members": {
+    "runtime/acquisition_handler.tcl": "4878e02433d54ffe3c58952b195cdb730b7a1baa1cc63937bab2c3f74b417ffb",
+    "runtime/chw_inspect.py": "23b2e5cbc826dcc25d06e18ad69617e0ad6ae4907f2e34e0d9a7a4adadde873f",
+    "tests/check_acquisition.tcl": "ce165efacc9020533675fe03ecf6036ccc96592b8c77e979469c68fdab7ef8b2",
+    "tests/test_chw.py": "8ce9f1136f24f138f1edb225328192132bb76f20028f6148277ea9dda4fb1d57",
+    "tests/test_bulk.py": "ba203a04eb057e14e8101c964c88d21e83cad8d2856bfda98a4d5c122fcbb225",
+    "CHANGELOG.md": "038ae913072c4e12e06ca94000da287c2a77756170e89c1fa9773fc12f85000d",
+    "plugin-package.ini": "8de2926a247d51b3a34b47f3e42c403c9c8c6a4262c2389708608caad440fbc2",
+    "README.md": "bbfac5629a78abdfb145fddf1edd6f06ecab3ee0c6abf73e30c28c8d0f9ecfdb",
+    "module.ini": "3c2fb08b69410b57d4afff3516c6789b7b400e176eb108aa03422f9b0b7c291d"
+  },
+  "license": "GPL-3.0-or-later; source SPDX inherited; complete GPL text supplied from framework LICENSE",
+  "science_scope": "source/native implementation parity; independent vendor reference NOT_VERIFIED",
+  "canonical_GUI_acceptance": "NOT_RUN",
+  "runtime": "prebuilt native C Linux x86_64; no Python or compilation on callbacks",
+  "source_change_status": "MAIN ownership preauthorized; actual C11 source and matching precompiled runtime in exclusive branch",
+  "timestamp_utc": "2026-10-22T15:33:50.967735+00:00",
+  "upstream_source_preserved": true,
+  "development_build": {
+    "scope": "DEVELOPMENT_PACKAGE_BUILD_NO_RUNTIME_COMPILATION_OR_ACTIVATION",
+    "source_root": "/srv/gxtxt/agents/worktrees/GX210-VIEWER2/plugins/modules/acq.metrohm_icnet_chw/native",
+    "source_sha256": {
+      "CMakeLists.txt": "77d107af790f657ce853a91ee6b67570dd93356c565869695d778c6065888a3e",
+      "chw_reader.h": "57aead6d2c21c81c21306a1676dca9ac8d9aa10bf75491236fde48227f687467",
+      "chw_reader.c": "08d0b32d4955cde5dbd6715ea28318f510fde37462126606f66ade0bae05dea1",
+      "chw_worker.c": "e55013d2716de9248901ca8dc7225606e4d1a7c433cd41776d92f98001d39efd"
+    },
+    "commands": [
+      {
+        "argv": [
+          "cmake",
+          "-S",
+          "/srv/gxtxt/agents/worktrees/GX210-VIEWER2/plugins/modules/acq.metrohm_icnet_chw/native",
+          "-B",
+          "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2/build/source02/cmake",
+          "-DCMAKE_BUILD_TYPE=Release",
+          "-DCMAKE_C_FLAGS=-Wall -Wextra -Wpedantic -Werror"
+        ],
+        "returncode": 0
+      },
+      {
+        "argv": [
+          "cmake",
+          "--build",
+          "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2/build/source02/cmake",
+          "--parallel",
+          "2"
+        ],
+        "returncode": 0
+      },
+      {
+        "argv": [
+          "readelf",
+          "-h",
+          "-d",
+          "--version-info",
+          "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2/build/source02/cmake/chw_worker"
+        ],
+        "returncode": 0
+      },
+      {
+        "argv": [
+          "cc",
+          "--version"
+        ],
+        "returncode": 0
+      }
+    ],
+    "compiler": "cc (Debian 14.2.0-19) 14.2.0",
+    "binary": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2/build/source02/cmake/chw_worker",
+    "binary_sha256": "33a6604230e76e28e49b86fda7a70a321a8b314a5b59a8b9b0f150deedfdf98c",
+    "staged": {
+      "path": "/srv/gxtxt/agents/worktrees/GX210-VIEWER2/plugins/modules/acq.metrohm_icnet_chw/runtime/bin/linux-x86_64/chw_worker",
+      "sha256": "33a6604230e76e28e49b86fda7a70a321a8b314a5b59a8b9b0f150deedfdf98c",
+      "mode": "0o755"
+    },
+    "installed_GUI_canonical_acceptance": "NOT_RUN"
+  },
+  "evidence": [
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2/source-native-parity01/report.json",
+      "sha256": "c888588ffef425b470e194d34e177050e96e00513c2c5fcfbccd32f5bfbd085d",
+      "scope": "actual source-built runtime:41/41 original+synthetic parser parity"
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2/source-native-io01/report.json",
+      "sha256": "b8bacbfef4eda6570b1a875b68c4c66a146e623cc2144cba439765022511c855",
+      "scope": "actual source-built runtime:13/13 I/O, bulk, cleanup checks"
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2/native-asan-parity01/report.json",
+      "sha256": "fb281f5c12645a58ca879c9de4285ca54c849cca9badda0c58a4ac9483e242b5",
+      "scope": "review source sanitizer build:41/41 parity, distinct build"
+    },
+    {
+      "path": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2/native-asan-io-bulk01/report.json",
+      "sha256": "77fade98c96bbf2e3dde057eb1fdef22b67546c9b2b215a0e40dd41e85c89d0f",
+      "scope": "review source sanitizer build:13/13 I/O, distinct build"
+    }
+  ],
+  "source_members": [
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 2288,
+      "sha256": "9ee655348b9cf9a5b8dbc5551b4db70e951458f2a8c0a8b1405bc5f252faba48"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 35149,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "path": "README.md",
+      "bytes": 8000,
+      "sha256": "b2f3f2f82164eb2543e88d02805733073558a1ed2bb3821fdec0bc826c4d648a"
+    },
+    {
+      "path": "module.ini",
+      "bytes": 2822,
+      "sha256": "5aa34fecd351178b71a3d69911991da0f192b7919a49e107bf90bb53c152cbdf"
+    },
+    {
+      "path": "native/CMakeLists.txt",
+      "bytes": 536,
+      "sha256": "77d107af790f657ce853a91ee6b67570dd93356c565869695d778c6065888a3e"
+    },
+    {
+      "path": "native/chw_reader.c",
+      "bytes": 32437,
+      "sha256": "08d0b32d4955cde5dbd6715ea28318f510fde37462126606f66ade0bae05dea1"
+    },
+    {
+      "path": "native/chw_reader.h",
+      "bytes": 3569,
+      "sha256": "57aead6d2c21c81c21306a1676dca9ac8d9aa10bf75491236fde48227f687467"
+    },
+    {
+      "path": "native/chw_worker.c",
+      "bytes": 11717,
+      "sha256": "e55013d2716de9248901ca8dc7225606e4d1a7c433cd41776d92f98001d39efd"
+    },
+    {
+      "path": "plugin-package.ini",
+      "bytes": 155,
+      "sha256": "881057c0957339140e66f5ff59ab4a2dc3c672f2db4463d5a61c3f39fe18bf7e"
+    },
+    {
+      "path": "runtime/acquisition_handler.tcl",
+      "bytes": 11531,
+      "sha256": "3abd4c2daf0ed6e6333bf822025ee8e7e1a4970676c04f3abb3dfe03fa4df1dd"
+    },
+    {
+      "path": "runtime/bin/linux-x86_64/chw_worker",
+      "bytes": 51160,
+      "sha256": "33a6604230e76e28e49b86fda7a70a321a8b314a5b59a8b9b0f150deedfdf98c"
+    },
+    {
+      "path": "runtime/chw_inspect.py",
+      "bytes": 13834,
+      "sha256": "23b2e5cbc826dcc25d06e18ad69617e0ad6ae4907f2e34e0d9a7a4adadde873f"
+    },
+    {
+      "path": "tests/check_acquisition.tcl",
+      "bytes": 2749,
+      "sha256": "a0a965b9091a76fde9b307e24657dffa069a49b156f4c82592a16dcf61ecb8cc"
+    },
+    {
+      "path": "tests/test_bulk.py",
+      "bytes": 3768,
+      "sha256": "ba203a04eb057e14e8101c964c88d21e83cad8d2856bfda98a4d5c122fcbb225"
+    },
+    {
+      "path": "tests/test_chw.py",
+      "bytes": 5314,
+      "sha256": "8ce9f1136f24f138f1edb225328192132bb76f20028f6148277ea9dda4fb1d57"
+    }
+  ],
+  "public_canonical_developer_acceptance": {
+    "status": "VERIFIED_CHW0.3.0; INSTALLED_GUI_NOT_RUN",
+    "receipt": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER2-SUB3/public-importers-003/RESULT.json",
+    "sha256": "4115d0b2ebe5c6b9f0f198106a4800dbfa3cc6cbd88eb88fd99cf33288107e49",
+    "scope": "seven original CHW source acquisitions, schema/metadata/source+payloadSHA,boundedcanonicalvalues,TableStream,SessionPersistenceCommit,freshprocessopen"
+  }
+}

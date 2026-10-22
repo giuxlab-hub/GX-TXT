@@ -30,6 +30,23 @@ proc ::GX::documentationBrowserShow {id} {
     set entry [dict get $documentationBrowserEntries $id]
     set documentationBrowserUi(current) $id
     set documentationBrowserUi(status) "[dict get $entry title] | [dict get $entry owner] [dict get $entry version]"
+    if {[string tolower [file extension [dict get $entry path]]] in {.html .htm}} {
+        set module [dict get $entry owner]
+        if {[moduleField $module descriptor {}] ne {}} {
+            set host [documentationBrowserOpenModuleWindow $module]
+            if {[dict get $entry type] eq {tutorial}} {
+                set at [lsearch -exact $::GX::DocumentationManual::state($host,tutorial_ids) $id]
+                if {$at>=0} {$host.tabs.tutorial.choice current $at;$host.tabs select $host.tabs.tutorial;documentationBrowserTutorialSelected $host}
+            } elseif {$::GX::DocumentationManual::state($host,path) ne [dict get $entry path]} {documentationBrowserManualShow $host [dict get $entry path]}
+            markupRenderStringToWidget $w {# HTML documentation
+
+Opened in the module Guides window.}
+        } else {markupRenderStringToWidget $w {# HTML documentation unavailable
+
+The owning module is not installed.}}
+        if {[$tree exists $id]} {$tree selection set $id;$tree see $id}
+        return
+    }
     if {[catch {set source [documentationBrowserRead $id]} reason]} {
         set source "# Documentation unavailable\n\n$reason"
     }
@@ -98,7 +115,7 @@ proc ::GX::documentationBrowserFollow {target} {
     set path [file normalize [file join [file dirname [dict get $current path]] $target]]
     set root [file normalize $scriptDir]
     if {[string first "$root/" "$path/"] != 0 || ![file isfile $path] ||
-        [string tolower [file extension $path]] ni {.md .markdown .txt}} {
+        [string tolower [file extension $path]] ni {.md .markdown .txt .html .htm}} {
         set documentationBrowserUi(status) "Internal document is unavailable: $target"
         return
     }

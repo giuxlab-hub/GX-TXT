@@ -29,6 +29,8 @@ from calibration_manifest import build_manifest, metadata_fields, encode_metadat
 from publication_planning import DEFAULT_TEMPLATE, PUBLICATION_LAYOUTS, plan_datasets, validate_template
 from assisted_sampling import sample_proposal_segments
 from assisted_tracing import propose, samples_from_guides, repair, insert_correction
+from assisted_exclusion_ui import ExclusionControls
+from stroke_width_ui import StrokeWidthUI
 from quality_diagnostics import inspect as inspect_quality
 from uncertainty_engine import checked_spec, propagate, compact_factors, review_fingerprint
 from uncertainty_dialog import UncertaintyDialog
@@ -43,7 +45,7 @@ STARTUP_TIMEOUT_SECONDS = 45.0
 RPC_TIMEOUT_SECONDS = 120.0
 CONFIG_FORMAT = "gxtxt.curve_digitizer.configuration"
 CONFIG_VERSION = "1.0"
-PLUGIN_VERSION = "2.0.3"
+PLUGIN_VERSION = "2.0.9"
 SERIES_COLORS = ("#d62728", "#1f77b4", "#2ca02c", "#9467bd", "#ff7f0e", "#17becf", "#e377c2", "#8c564b", "#bcbd22")
 CORNER_LABELS = {"bottom_left": "BL", "bottom_right": "BR", "top_left": "TL", "top_right": "TR"}
 EDGE_MODES = {
@@ -394,7 +396,7 @@ class SeriesDialog(tk.Toplevel):
         self.destroy()
 
 
-class CurveDigitizerApp:
+class CurveDigitizerApp(StrokeWidthUI, ExclusionControls):
     def __init__(self, root: tk.Tk, rpc: RpcClient, *, bootstrap_payload=None):
         self.root = root
         self.rpc = rpc
@@ -471,6 +473,13 @@ class CurveDigitizerApp:
         self.assist_radius = tk.IntVar(value=8)
         self.assist_step = tk.DoubleVar(value=2.0)
         self.assist_source = tk.StringVar(value="auto")  # original | processed | auto
+        self.assist_smoothness = tk.StringVar(value="Off")
+        self.exclusion_enabled = tk.BooleanVar(value=True)
+        self.exclusion_width = tk.IntVar(value=6)
+        self.exclusion_path_index = tk.IntVar(value=1)
+        self.exclusion_status = tk.StringVar(value="Red X marks an excluded competing trace.")
+        self.exclusion_setup()
+        self.stroke_setup()
         self.assist_segment = tk.IntVar(value=1)
         self.assist_output_points = tk.StringVar(value="0")  # 0 = native proposal count
         self.assist_accepted_point_ids = {}  # only points created by this live proposal
@@ -522,6 +531,8 @@ class CurveDigitizerApp:
         self.auto_y_direction = tk.StringVar(value="Upward (Cartesian)")
         self.selected_label = tk.StringVar(value="No point selected.")
         self.verify_result = tk.StringVar()
+        self.calibration_active_caption = tk.StringVar(value="Active calibration: none")
+        self.verification_measurement_caption = tk.StringVar(value="Verification uses active calibration")
         self.verify_point = None  # transient source-image pixel coordinate
         self.verify_panel_open = False
         self.hide_saved_scale_overlay = False  # view-only, does not reset calibration
@@ -661,6 +672,8 @@ class CurveDigitizerApp:
             "curves": [],
             "curve_ordering": {"monotonicity": "none", "source": "insertion"},
             "assisted_tracing": {"output_points": 0},
+            "tracing_constraints": {"smoothness":"Off", "enabled":True, "width":6,
+                                    "source_sha256":"", "paths_by_curve":{}}, 
             "uncertainty": {"mode": "none"},
             "family": {"enabled": False, "quantity_label": "Family parameter", "unit": "", "semantic_role": "family"},
             "display": {"show_point_numbers": False, "show_scale_overlay": True,
@@ -715,6 +728,8 @@ class CurveDigitizerApp:
         except (ValueError, tk.TclError):
             saved_density=int((cfg.get("assisted_tracing") or {}).get("output_points",0))
         cfg["assisted_tracing"] = {"output_points": saved_density}
+        cfg["tracing_constraints"] = self.exclusion_record()
+        cfg["stroke_width"] = self.stroke_serialize()
         cfg["family"] = {
             "enabled": bool(self.family_enabled.get()),
             "quantity_label": self.family_label.get().strip() or "Family parameter",
@@ -773,11 +788,45 @@ class CurveDigitizerApp:
             messagebox.showerror(APP_NAME, f"Unable to save the digitizer configuration in the Session:\n{exc}")
             return False
 
-    def snapshot(self):
-        if self.current_doc_id:
-            self.undo_stack.append(self.serialize_configuration())
-            self.undo_stack = self.undo_stack[-100:]
-            self.redo_stack.clear()
+    def _history_capture(self, configuration_override=None, proposal_override=None):
+        return {"_history206": 1,
+                "token": self.session_token, "document_id": self.current_doc_id,
+                "config": (copy.deepcopy(configuration_override) if configuration_override is not None
+                           else self.serialize_configuration()),
+                "proposal": (copy.deepcopy(proposal_override) if proposal_override is not None
+                             else self._proposal_state()),
+                "curve_id": self.active_series_id,
+                "exclusion_selected_id": getattr(self,"exclusion_selected_id",None),
+                "proposal_stale": bool(getattr(self,"_assist_proposal_stale",False))}
+
+    def snapshot(self, *, saved_config=False, exclusion_previous=None):
+        if not self.current_doc_id:return
+        prior=self._history_capture(configuration_override=self.config if saved_config else None)
+        if exclusion_previous is not None:
+            i,j,node=exclusion_previous
+            paths=prior["config"]["tracing_constraints"]["paths_by_curve"].get(self.active_series_id,[])
+            if i<len(paths) and j<len(paths[i]["nodes"]):
+                paths[i]["nodes"][j]=list(node)
+        self.undo_stack.append(prior)
+        self.undo_stack=self.undo_stack[-100:]
+        self.redo_stack.clear()
+
+    def _restore_history(self, entry, *, persist=True):
+        if not isinstance(entry,dict) or entry.get("_history206")!=1:
+            self.restore_snapshot(entry,persist=persist);return
+        if entry["token"]!=self.session_token or entry["document_id"]!=self.current_doc_id:
+            raise ValueError("History belongs to a different Session/configuration.")
+        self.restore_snapshot(entry["config"],persist=False)
+        curve=entry.get("curve_id")
+        if curve and self.project.find_series(curve) is not None:
+            self.active_series_id=curve
+            self.refresh_curve_tree()
+        self.exclusion_selected_id=entry.get("exclusion_selected_id")
+        self.exclusion_refresh_list()
+        self._restore_proposal_state(entry["proposal"])
+        self._assist_proposal_stale=bool(entry.get("proposal_stale",False))
+        self._proposal_history.clear();self._proposal_last_insert=None
+        if persist:self.persist()
 
     def restore_snapshot(self, cfg: dict, *, persist=True):
         # A restored Session snapshot may contain a different set of accepted
@@ -796,25 +845,32 @@ class CurveDigitizerApp:
         self.sync_controls_from_config(reload_source=False)
         self.refresh_measurements()
         self.refresh_curve_tree()
+        self.stroke_refresh()
         self.redraw()
         if persist:
             self.persist()
 
     def undo(self):
-        if not self.undo_stack:
-            return
-        current = self.serialize_configuration()
-        previous = self.undo_stack.pop()
+        if not self.undo_stack:return
+        previous=self.undo_stack[-1]
+        if isinstance(previous,dict) and previous.get("_history206")==1:
+            if previous["token"]!=self.session_token or previous["document_id"]!=self.current_doc_id:
+                self.undo_stack.clear();self.redo_stack.clear();return
+        current=self._history_capture()
+        previous=self.undo_stack.pop()
         self.redo_stack.append(current)
-        self.restore_snapshot(previous)
+        self._restore_history(previous)
 
     def redo(self):
-        if not self.redo_stack:
-            return
-        current = self.serialize_configuration()
-        nxt = self.redo_stack.pop()
+        if not self.redo_stack:return
+        next_state=self.redo_stack[-1]
+        if isinstance(next_state,dict) and next_state.get("_history206")==1:
+            if next_state["token"]!=self.session_token or next_state["document_id"]!=self.current_doc_id:
+                self.undo_stack.clear();self.redo_stack.clear();return
+        current=self._history_capture()
+        nxt=self.redo_stack.pop()
         self.undo_stack.append(current)
-        self.restore_snapshot(nxt)
+        self._restore_history(nxt)
 
     def _parse_shared_settings(self, payload):
         settings = dict(CORE_PREFS)
@@ -1657,8 +1713,10 @@ class CurveDigitizerApp:
             self.dragging = False
             self.drag_snapshot = None
             if previous is not None:
-                self.restore_snapshot(previous, persist=False)
+                self._restore_history(previous, persist=False)
         self._update_processing_view_layout()
+        if not self._is_curves_tab() and self.mode.get()=='stroke_edge':
+            self.mode.set('add')
         self.redraw()
 
     def _is_curves_tab(self):
@@ -2005,6 +2063,10 @@ class CurveDigitizerApp:
             row=3, column=0, columnspan=2, sticky="w", pady=(3, 0))
         verification = ttk.LabelFrame(calibration, text="Calibration verification", padding=4)
         verification.grid(row=0, column=1, sticky="nsew", padx=(3, 0))
+        ttk.Label(corners, textvariable=self.calibration_active_caption,
+                  wraplength=175, justify="left").grid(row=4, column=0,columnspan=2,sticky="w")
+        ttk.Label(verification, textvariable=self.verification_measurement_caption,
+                  wraplength=290, justify="left").pack(anchor="w",fill="x")
         ttk.Button(verification, text="Verify calibration...",
                    command=self.start_verification).pack(anchor="w", fill="x")
         self.verification_details = ttk.Frame(verification)
@@ -2039,6 +2101,11 @@ class CurveDigitizerApp:
                                ("Delete", self.delete_measurement)):
             ttk.Button(buttons, text=label, command=command).pack(side="left", padx=1)
         tab.rowconfigure(11, weight=1)
+        stroke=ttk.LabelFrame(tab,text="Raster stroke width — selected curve",padding=4)
+        stroke.grid(row=12,column=0,columnspan=3,sticky="ew",pady=(5,0))
+        ttk.Label(stroke,textvariable=self.stroke_cal_status,wraplength=460,
+                  justify="left").pack(side="left",fill="x",expand=True)
+        ttk.Button(stroke,text="Edit curve width...",command=self.stroke_open_from_calibration).pack(side="right")
         self.refresh_measurements()
 
 
@@ -2113,6 +2180,12 @@ class CurveDigitizerApp:
             tree.selection_set(selected)
         elif tree.exists(group["active_id"]):
             tree.selection_set(group["active_id"])
+        item=next((m for m in group['items'] if m['id']==group['active_id']),None)
+        if item:
+            short=item['id'][:11]
+            label=f"{item['label']} [{short}] ({item['state']})"
+            self.calibration_active_caption.set('Corner markers — ACTIVE: '+label)
+            self.verification_measurement_caption.set('Verification uses ACTIVE: '+label)
         self.refresh_publish_measurements()
 
     def on_measurement_selected(self, _event=None):
@@ -2304,9 +2377,13 @@ class CurveDigitizerApp:
                 if is_wide:
                     self.assist_trace_settings.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
                     self.assist_trace_actions.grid(row=0, column=1, sticky="nsew", padx=(6, 0))
+                    if hasattr(self,"exclusion_panel"):
+                        self.exclusion_panel.grid(row=1,column=0,columnspan=2,sticky="ew",pady=(7,0))
                 else:
                     self.assist_trace_settings.grid(row=0, column=0, sticky="ew")
                     self.assist_trace_actions.grid(row=1, column=0, sticky="ew", pady=(6, 0))
+                    if hasattr(self,"exclusion_panel"):
+                        self.exclusion_panel.grid(row=2,column=0,columnspan=2,sticky="ew",pady=(7,0))
         for label in getattr(self, "assist_help_labels", ()):
             label.configure(wraplength=max(225, event.width - 44))
         self._curves_scroll_region()
@@ -2454,10 +2531,43 @@ class CurveDigitizerApp:
             control.bind("<Button-5>", self._curve_tree_mousewheel)
         buttons = ttk.Frame(body)
         buttons.pack(fill="x")
+        self.stroke_buttons=buttons
         for text, command in (("New curve", self.new_series), ("Edit", self.edit_series),
-                              ("Delete", self.delete_series), ("Show/Hide", self.toggle_visible)):
+                              ("Delete", self.delete_series), ("Stroke width...", self.stroke_toggle_panel),
+                              ("Show/Hide", self.toggle_visible)):
             ttk.Button(buttons, text=text, command=command).pack(side="left", padx=(0, 4))
 
+        self.stroke_panel=ttk.LabelFrame(body,text="Stroke width — selected curve (raster diagnostic)",padding=6)
+        head=ttk.Frame(self.stroke_panel);head.pack(fill="x",pady=(0,3))
+        ttk.Checkbutton(head,text="Measure this curve",variable=self.stroke_enabled,
+                        command=self.stroke_preferences_changed).pack(side="left")
+        ttk.Label(head,text="Method").pack(side="left",padx=(8,3))
+        mode_combo=ttk.Combobox(head,textvariable=self.stroke_method,
+                      values=("automatic","manual"),width=12,state="readonly")
+        mode_combo.pack(side="left")
+        mode_combo.bind("<<ComboboxSelected>>",self.stroke_preferences_changed)
+        ttk.Label(head,text="Probe radius px").pack(side="left",padx=(8,3))
+        probe=ttk.Spinbox(head,from_=2,to=40,width=4,textvariable=self.stroke_probe,
+                          command=self.stroke_preferences_changed)
+        probe.pack(side="left")
+        probe.bind("<FocusOut>",self.stroke_preferences_changed)
+        buttons2=ttk.Frame(self.stroke_panel);buttons2.pack(fill="x",pady=2)
+        ttk.Button(buttons2,text="Auto detect",command=self.stroke_auto_measure).pack(side="left")
+        ttk.Label(buttons2,text="Boundary").pack(side="left",padx=(8,2))
+        for lab in ("A","B"):
+            ttk.Radiobutton(buttons2,text=lab,value=lab,variable=self.stroke_edge).pack(side="left")
+        ttk.Button(buttons2,text="Edit boundary",command=self.stroke_edit_mode).pack(side="left",padx=(6,0))
+        footer=ttk.Frame(self.stroke_panel);footer.pack(fill="x",pady=2)
+        ttk.Button(footer,text="Measure two boundaries",command=self.stroke_manual_measure).pack(side="left")
+        ttk.Button(footer,text="Delete last node",command=self.stroke_delete_node).pack(side="left")
+        ttk.Button(footer,text="Clear boundaries",command=self.stroke_clear_edges).pack(side="left")
+        ttk.Button(footer,text="Reset measurement",command=self.stroke_reset_curve).pack(side="left")
+        ttk.Label(self.stroke_panel,textvariable=self.stroke_status,wraplength=490,justify="left").pack(fill="x",pady=3)
+        ttk.Label(self.stroke_panel,wraplength=490,justify="left",text=(
+            "Thickness is a descriptive raster-width measurement. It does NOT introduce "
+            "uncertainty or change Numeric CORE/Fitter results unless a separate "
+            "reviewed scientific model is explicitly declared.")).pack(fill="x")
+        self.stroke_panel.pack_forget()
         modes = ttk.LabelFrame(body, text="Point interaction", padding=6)
         modes.pack(fill="x", pady=(8, 0))
         # Six modes, compact two rows. Delete is a click mode, not a separate
@@ -2499,6 +2609,11 @@ class CurveDigitizerApp:
         ttk.Label(row, text="Step (px)").pack(side="left")
         ttk.Spinbox(row, from_=.5, to=10, increment=.5, textvariable=self.assist_step,
                     width=5).pack(side="right")
+        ttk.Label(settings, text="Smooth curve prior").pack(anchor="w", pady=(7, 1))
+        smooth=ttk.Combobox(settings,textvariable=self.assist_smoothness,
+                            values=("Off","Gentle","Strong"),state="readonly",width=13)
+        smooth.pack(fill="x")
+        smooth.bind("<<ComboboxSelected>>",self.exclusion_config_changed)
         ttk.Label(settings, text="Trace image").pack(anchor="w", pady=(8, 2))
         ttk.Combobox(settings, textvariable=self.assist_source, state="readonly",
                      values=("auto", "original", "processed"), width=13).pack(fill="x")
@@ -2531,6 +2646,51 @@ class CurveDigitizerApp:
         self.assist_segment_spin.pack(side="right")
         ttk.Button(actions, text="Accept segment", command=self.accept_guided_segment).pack(fill="x")
         ttk.Button(actions, text="Resample accepted", command=self.resample_accepted_trace).pack(fill="x",pady=(3,0))
+
+        exclude=ttk.LabelFrame(layout,text="Exclusion paths (red X)")
+        exclude.grid(row=1,column=0,columnspan=2,sticky="ew",pady=(7,0))
+        self.exclusion_panel=exclude
+        exclude.columnconfigure(0,weight=1)
+        exclude.columnconfigure(1,weight=2)
+        controls=ttk.Frame(exclude)
+        controls.grid(row=0,column=0,sticky="nsew",padx=(2,8))
+        listing=ttk.Frame(exclude)
+        listing.grid(row=0,column=1,sticky="nsew",padx=(4,2))
+        listing.columnconfigure(0,weight=1)
+        listing.rowconfigure(1,weight=1)
+        bar=ttk.Frame(controls);bar.pack(fill="x")
+        ttk.Button(bar,text="New path",command=self.exclusion_new_path).pack(side="left")
+        ttk.Button(bar,text="Edit X",command=lambda:self.mode.set("exclude")).pack(side="left")
+        bar=ttk.Frame(controls);bar.pack(fill="x",pady=(4,0))
+        ttk.Checkbutton(bar,text="Enable exclusions",variable=self.exclusion_enabled,
+                        command=self.exclusion_config_changed).pack(side="left")
+        width_row=ttk.Frame(controls);width_row.pack(fill="x",pady=(4,0))
+        ttk.Label(width_row,text="Exclusion width (px)").pack(side="left")
+        width_spin=ttk.Spinbox(width_row,from_=1,to=40,width=4,textvariable=self.exclusion_width,
+                              command=self.exclusion_config_changed)
+        width_spin.pack(side="right")
+        width_spin.bind("<FocusOut>",self.exclusion_config_changed)
+        edits=ttk.Frame(controls);edits.pack(fill="x",pady=(5,0))
+        ttk.Button(edits,text="Delete X",command=self.exclusion_remove).pack(side="left")
+        ttk.Button(edits,text="Remove path",command=lambda:self.exclusion_remove(True)).pack(side="left")
+        ttk.Button(controls,text="Clear all paths",command=self.exclusion_clear_all).pack(anchor="w",pady=(4,0))
+        ttk.Label(listing,text="Paths: select to edit; click On to toggle",
+                  wraplength=260).grid(row=0,column=0,columnspan=2,sticky="w")
+        self.exclusion_list=ttk.Treeview(listing,columns=("enabled","name","nodes"),show="headings",
+                                         selectmode="browse",height=5)
+        for col,label,wide in (("enabled","On",38),("name","Path",95),("nodes","X nodes",70)):
+            self.exclusion_list.heading(col,text=label)
+            self.exclusion_list.column(col,width=wide,minwidth=35,stretch=(col=="name"))
+        self.exclusion_list.grid(row=1,column=0,sticky="nsew",pady=(3,0))
+        sb=ttk.Scrollbar(listing,orient="vertical",command=self.exclusion_list.yview)
+        sb.grid(row=1,column=1,sticky="ns",pady=(3,0))
+        self.exclusion_list.configure(yscrollcommand=sb.set)
+        self.exclusion_list.bind("<<TreeviewSelect>>",self.exclusion_select)
+        self.exclusion_list.bind("<Button-1>",self.exclusion_table_click)
+        ttk.Label(exclude,textvariable=self.exclusion_status,wraplength=430).grid(
+            row=1,column=0,columnspan=2,sticky="w",pady=(3,0))
+        self.exclusion_refresh_list()
+
 
         status = ttk.Label(assist, textvariable=self.assist_status, justify="left", wraplength=480)
         status.pack(fill="x", pady=(4, 0))
@@ -2793,6 +2953,10 @@ class CurveDigitizerApp:
         self.refresh_curve_tree()
 
     def open_document(self, doc_id: str):
+        # Each configuration starts with the optional per-curve panel collapsed.
+        if hasattr(self,"stroke_panel") and self.stroke_visible:
+            self.stroke_visible=False
+            self.stroke_panel.pack_forget()
         self._proposal_history.clear();self._proposal_last_insert=None;self._assist_move_target=None
         self.guide_points=[];self.assisted_proposal=None;self.assist_accepted_segments=set();self.assist_accepted_point_ids={};self._assist_sampling_spec=None
         cfg = copy.deepcopy(self.documents[doc_id])
@@ -2860,6 +3024,8 @@ class CurveDigitizerApp:
                 self.assist_output_points.set(value)
             except (TypeError,ValueError):
                 self.assist_output_points.set(0)
+            self.exclusion_load()
+            self.stroke_load()
             self.snap_enabled.set(bool(self.config.get("snap", {}).get("enabled", False)))
             self.snap_radius.set(max(0, int(self.config.get("snap", {}).get("radius", 3))))
             self.notes.delete("1.0", "end")
@@ -3543,7 +3709,7 @@ class CurveDigitizerApp:
         except CalibrationError as exc:
             # A failed action must not strand an undo entry or partial calibration.
             previous = self.undo_stack.pop()
-            self.restore_snapshot(previous, persist=False)
+            self._restore_history(previous, persist=False)
             messagebox.showerror(APP_NAME, f"Full-image calibration failed:\n{exc}")
             return
         self.config["scale_reference"] = None
@@ -3762,6 +3928,8 @@ class CurveDigitizerApp:
         if selected and self.curve_tree.exists(selected):
             if self.curve_tree.selection() != (selected,):
                 self.curve_tree.selection_set(selected)
+        if hasattr(self,"exclusion_list"):self.exclusion_refresh_list()
+        if hasattr(self,"stroke_panel"):self.stroke_refresh()
 
     def on_curve_selected(self, _event=None):
         selected = self.curve_tree.selection()
@@ -3775,6 +3943,7 @@ class CurveDigitizerApp:
                 self._assist_drag=None;self._assist_preview_cursor=None
             self.active_series_id = selected[0]
             self.selected_point_id = None
+            self.stroke_refresh()
             self.update_selected()
             self.redraw()
 
@@ -3845,7 +4014,7 @@ class CurveDigitizerApp:
         # Point edits are exclusively owned by the Curves tab. Other tabs cannot
         # accidentally insert, drag, or remove a scientific measurement.
         mode = self.mode.get()
-        if mode in ("add", "edit", "delete", "guide", "proposal_edit", "correction") and not self._is_curves_tab(): return
+        if mode in ("add", "edit", "delete", "guide", "proposal_edit", "correction", "exclude", "stroke_edge") and not self._is_curves_tab(): return
         if mode in ("scale_detect", "scale_manual", "calibrate", "verify") and not self._is_calibration_tab(): return
         if not self.require_working_source(): return
         if mode in ("scale_detect", "scale_manual"):
@@ -3865,7 +4034,12 @@ class CurveDigitizerApp:
             self.verify(x, y)
         elif mode == "add":
             self.add_point(x, y)
+        elif mode == "exclude":
+            self.exclusion_press(x,y)
+        elif mode == "stroke_edge":
+            self.stroke_edge_press(x,y)
         elif mode == "guide":
+            self.snapshot()
             if self.assisted_proposal is not None:
                 self._proposal_history.clear();self._proposal_last_insert=None
                 self.assisted_proposal=None;self.assist_accepted_segments=set();self.assist_accepted_point_ids={};self._assist_sampling_spec=None
@@ -3924,6 +4098,10 @@ class CurveDigitizerApp:
 
     def canvas_drag(self, x, y):
         if not self._is_curves_tab(): return
+        if self.mode.get() == "exclude":
+            self.exclusion_move(x,y);return
+        if self.mode.get() == "stroke_edge":
+            self.stroke_edge_drag(x,y);return
         if self.mode.get() in ("proposal_edit", "edit") and self._assist_drag is not None:
             self._assist_preview_cursor=(float(x),float(y))
             self.redraw();return
@@ -3941,6 +4119,10 @@ class CurveDigitizerApp:
 
     def canvas_release(self, _x, _y):
         if not self._is_curves_tab(): return
+        if self.mode.get() == "exclude":
+            self.exclusion_release(_x,_y);return
+        if self.mode.get() == "stroke_edge":
+            self.stroke_edge_release(_x,_y);return
         if self.mode.get() in ("proposal_edit", "edit") and self._assist_drag is not None:
             self._finish_proposal_edit(float(_x),float(_y));return
         if self.dragging and self.drag_snapshot is not None:
@@ -3958,7 +4140,12 @@ class CurveDigitizerApp:
         except CalibrationError as exc:
             messagebox.showerror(APP_NAME, str(exc))
             return
-        lines = [f"Pixel: {x:.3f}, {y:.3f}", f"Calculated X: {fmt(cx)} {self.project.x_axis.unit}", f"Calculated Y: {fmt(cy)} {self.project.y_axis.unit}"]
+        group=self._measurements()
+        active=next((m for m in group['items'] if m['id']==group['active_id']),None)
+        cal_label=(f"{active['label']} [{active['id'][:11]}] ({active['state']})" if active else 'unavailable')
+        lines = [f"Calibration: {cal_label}", f"Pixel: {x:.3f}, {y:.3f}",
+                 f"Calculated X: {fmt(cx)} {self.project.x_axis.unit}",
+                 f"Calculated Y: {fmt(cy)} {self.project.y_axis.unit}"]
         for label, text, value, unit in (("ΔX", self.exp_x.get().strip(), cx, self.project.x_axis.unit), ("ΔY", self.exp_y.get().strip(), cy, self.project.y_axis.unit)):
             if text:
                 try:
@@ -3971,12 +4158,16 @@ class CurveDigitizerApp:
             self.redraw()
 
     def clear_guides(self):
+        self.snapshot()
+        self._assist_proposal_stale=False
         self._proposal_history.clear();self._proposal_last_insert=None;self._assist_move_target=None
         self.guide_points=[];self.assisted_proposal=None;self.assist_accepted_segments=set();self.assist_accepted_point_ids={};self._assist_sampling_spec=None
         self.assist_status.set("Guide points cleared. No curve points changed.")
         self.redraw()
 
     def reject_guided_trace(self):
+        self.snapshot()
+        self._assist_proposal_stale=False
         self._proposal_history.clear();self._proposal_last_insert=None;self._assist_move_target=None
         self.assisted_proposal=None;self.assist_accepted_segments=set();self.assist_accepted_point_ids={};self._assist_sampling_spec=None
         self.assist_status.set("Proposal rejected. Guide points kept for refinement.")
@@ -4043,7 +4234,10 @@ class CurveDigitizerApp:
         try:
             use_image=self._trace_input_image()
             result=propose(use_image,self.guide_points,radius=int(self.assist_radius.get()),
-                           step=float(self.assist_step.get()),reference=reference)
+                           step=float(self.assist_step.get()),reference=reference,
+                           **self.exclusion_kwargs())
+            self.snapshot()
+            self._assist_proposal_stale=False
             self.assisted_proposal=result
             self._proposal_history.clear();self._proposal_last_insert=None
             self.assist_accepted_segments=set();self.assist_accepted_point_ids={};self._assist_sampling_spec=None
@@ -4172,19 +4366,17 @@ class CurveDigitizerApp:
         self.redraw()
 
     def _checkpoint_proposal(self,before,inserted=None):
+        if self.current_doc_id:
+            self.undo_stack.append(self._history_capture(proposal_override=before))
+            self.undo_stack=self.undo_stack[-100:]
+            self.redo_stack.clear()
         self._proposal_history.append((before,inserted))
         self._proposal_history=self._proposal_history[-100:]
         self._proposal_last_insert=inserted
 
     def undo_proposal_edit(self):
-        """Undo only a transient proposal edit, not persisted Session points."""
-        if not self._proposal_history:
-            self.assist_status.set("No proposal edit to undo.")
-            return
-        state,_inserted=self._proposal_history.pop()
-        self._restore_proposal_state(state)
-        self._proposal_last_insert=self._proposal_history[-1][1] if self._proposal_history else None
-        self.assist_status.set("Last proposal edit undone. Scientific points unchanged.")
+        """Use the chronological Edit menu history, including proposal corrections."""
+        self.undo()
 
     def _proposal_hit(self,x,y,threshold=12):
         """Select real raster guides or generated points in *screen pixels*.
@@ -4241,7 +4433,7 @@ class CurveDigitizerApp:
             menu.add_command(label="Delete point",command=lambda:self._delete_proposal_point(hit))
             if self._proposal_history:
                 menu.add_separator()
-                menu.add_command(label="Undo last proposal edit",command=self.undo_proposal_edit)
+                menu.add_command(label="Undo last edit",command=self.undo)
         elif scientific is not None:
             pid=scientific.id
             menu.add_command(label="Move scientific point",command=lambda:self._prepare_scientific_move(pid))
@@ -4299,7 +4491,7 @@ class CurveDigitizerApp:
                 from assisted_tracing import remove_guide
                 guides,result=remove_guide(self.assisted_proposal,self._trace_input_image(),
                    self.guide_points,index,radius=int(self.assist_radius.get()),
-                   step=float(self.assist_step.get()))
+                   step=float(self.assist_step.get()),**self.exclusion_kwargs())
                 self.guide_points,self.assisted_proposal=guides,result
                 self.assist_accepted_segments={j if j<index-1 else j-1 for j in self.assist_accepted_segments}
                 self.assist_accepted_point_ids={j if j<index-1 else j-1:ids for j,ids in self.assist_accepted_point_ids.items()}
@@ -4348,7 +4540,8 @@ class CurveDigitizerApp:
                    if len(curve)>2 else 0)
             before=self._proposal_state()
             guides,candidate=insert_correction(result,image,self.guide_points,seg,index,(x,y),
-                                radius=int(self.assist_radius.get()),step=float(self.assist_step.get()))
+                                radius=int(self.assist_radius.get()),step=float(self.assist_step.get()),
+                                **self.exclusion_kwargs())
             self._checkpoint_proposal(before, inserted=(seg+1,(float(x),float(y))))
             self.guide_points,self.assisted_proposal=guides,candidate
             self.assist_accepted_segments={i if i<seg else i+1 for i in self.assist_accepted_segments}
@@ -4424,7 +4617,7 @@ class CurveDigitizerApp:
                     for changed in (index-1,index):
                         if 0<=changed<len(self.guide_points)-1:
                             self.assisted_proposal=repair(self.assisted_proposal,image,self.guide_points,changed,
-                                                         radius=radius,step=step)
+                                                         radius=radius,step=step,**self.exclusion_kwargs())
                 except Exception:
                     # An error in the second interval must not leave half of a
                     # two-sided guide edit applied. This is one atomic proposal edit.
@@ -4447,7 +4640,8 @@ class CurveDigitizerApp:
                 if seg in self.assist_accepted_segments:
                     raise ValueError("The corrected position falls into an already accepted segment.")
                 guides, candidate = insert_correction(self.assisted_proposal,image,
-                    self.guide_points,seg,point,(x,y),radius=radius,step=step)
+                    self.guide_points,seg,point,(x,y),radius=radius,step=step,
+                    **self.exclusion_kwargs())
                 # Apply only after all validation and computation succeeds.
                 self.guide_points,self.assisted_proposal=guides,candidate
                 self._sync_assist_segment_control(seg+1)
@@ -4462,6 +4656,8 @@ class CurveDigitizerApp:
         self.redraw()
 
     def _accept_assisted_segments(self, indices):
+        if getattr(self,"_assist_proposal_stale",False):
+            self.assist_status.set("Constraints changed. Generate a fresh proposal before accepting.");return
         if not self._is_curves_tab() or not self.require_working_source():return
         series=self.active_series();proposal=self.assisted_proposal
         if series is None or proposal is None:return
@@ -4504,6 +4700,9 @@ class CurveDigitizerApp:
         self.refresh_curve_tree();self.redraw();self.persist()
 
     def resample_accepted_trace(self):
+        if getattr(self,"_assist_proposal_stale",False):
+            self.assist_status.set("Trace constraints changed; regenerate a proposal before resampling.")
+            return
         """Change the density of THIS proposal's accepted points, not prior work.
 
         Existing manually placed points and unrelated assisted batches are left
@@ -4649,7 +4848,7 @@ class CurveDigitizerApp:
                 best, best_distance = point, distance
         self.selected_point_id = best.id if best else None
         self.dragging = bool(best) and self.mode.get()=="edit"
-        self.drag_snapshot = self.serialize_configuration() if best else None
+        self.drag_snapshot = self._history_capture() if best else None
         self.update_selected(); self.redraw()
 
     def selected_point(self):
@@ -4735,8 +4934,15 @@ class CurveDigitizerApp:
             x, y = canvas.image_to_canvas(*point)
             radius = 6
             canvas.create_rectangle(x-radius, y-radius, x+radius, y+radius, outline="cyan", width=2, tags=("overlay",))
-            canvas.create_text(x+9, y-9, text=CORNER_LABELS[corner], fill="cyan", anchor="sw", tags=("overlay",))
+            group=self._measurements()
+            active=group.get('active_id','')
+            item=next((m for m in group.get('items',[]) if m.get('id')==active),{})
+            number=group.get('items',[]).index(item)+1 if item else '?'
+            canvas.create_text(x+9, y-9, text=f"{CORNER_LABELS[corner]} · M{number}",
+                               fill="cyan",anchor="sw",tags=("overlay",))
         if self._is_curves_tab() and canvas is self.canvas:
+            self.exclusion_draw(canvas)
+            self.stroke_draw(canvas)
             for index,(gx,gy) in enumerate(self.guide_points,1):
                 u,v=canvas.image_to_canvas(gx,gy)
                 canvas.create_oval(u-5,v-5,u+5,v+5,outline="#ffad31",width=2,tags=("overlay",))
@@ -5061,6 +5267,29 @@ class CurveDigitizerApp:
                 metadata["curve_digitizer.quality_segment_count"] = str(quality["publication"]["source_segment_count"])
                 metadata["curve_digitizer.quality_evidence_available"] = "1" if quality["image_evidence"]["available"] else "0"
                 metadata["curve_digitizer.quality_accuracy_assessed"] = "0"
+                # Descriptive per-curve stroke width is provenance, not sigma.
+                # Publish only reviewed/still-current raster measurements.
+                width_report={"schema":"gxtxt.curve_digitizer.stroke_width.v1",
+                    "source_dataset_id":source.get("dataset_id",""),
+                    "source_sha256":source.get("sha256",""),"curves":{}}
+                for stroke_series in self.project.series:
+                    entry=self.stroke_data.get(stroke_series.id) or {}
+                    enabled=bool(entry.get("enabled",False))
+                    valid=self.stroke_valid_result(stroke_series,entry) if enabled else False
+                    raw=entry.get("result") or {}
+                    summary={"curve_id":stroke_series.id,
+                             "curve_name":stroke_series.name,
+                             "status":"inactive" if not enabled else "measured" if valid else "unavailable",
+                             "method":entry.get("method","automatic") if enabled else "none",
+                             "units":"px","propagated_uncertainty":False}
+                    if valid:
+                        for key in ("width_px","min_px","max_px","iqr_px","accepted_samples",
+                                    "rejected_samples","total_samples"):
+                            if key in raw:summary[key]=raw[key]
+                    width_report["curves"][stroke_series.id]=summary
+                metadata["curve_digitizer.stroke_width_schema_version"]="1"
+                metadata["curve_digitizer.stroke_width_report_json"]=json.dumps(
+                    width_report,ensure_ascii=False,separators=(",",":"),allow_nan=False)
                 metadata["curve_digitizer.publication_calibration_mode"] = self.publish_layout.get()
                 metadata["curve_digitizer.publication_calibration_ids"] = json.dumps(job["measurement_ids"], separators=(",", ":"))
                 metadata["curve_digitizer.publication_measurement_id"] = job["primary_id"]

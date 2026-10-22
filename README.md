@@ -4,12 +4,22 @@ GX-TXT is a desktop scientific workbench for working with **experimental measure
 
 Within the same Session you can inspect and compare measurements, perform numerical, statistical and spectral analyses or curve fitting, run registered Python and GNU Octave scripts through the Script Bridge, and create scientific 2D/3D plots and interactive viewers. Derived results stay connected to their source Datasets, while independent modules extend the workflow through public CORE APIs.
 
-**Source version:** 0.9.8.10-dev-109  
+**Source version:** 0.9.8.10-dev-110  
 **License:** GNU GPL-3.0-or-later (see [LICENSE](LICENSE)). Third-party packages and assets retain their applicable licenses.
 
 **Project website:** [GX-TXT on GitHub Pages](https://giuxlab-hub.github.io/GX-TXT/) · [Italian version](https://giuxlab-hub.github.io/GX-TXT/it/).
 **Official developer website:** [Giux-Lab](https://giux-lab.it/).
 **Online documentation:** [GX-TXT handbook](https://gxtxt.giux-lab.it/).
+
+## Dev-110 intermediate development snapshot
+
+This dev-110 source snapshot integrates a subset of TASK210 improvements. The deposited source explicitly marks it as **intermediate**: integrated GUI/Octave qualification and several planned capabilities remain incomplete. Do not infer a complete installed release or scientific acceptance from the source version or from GitHub publication.
+
+Notable source additions include native Preview grouping and coordinate controls, the unchanged integrated Curve Digitizer 2.0.9, Metrohm IC Net CHW and AIA/ANDI chromatography readers, Session creation/promotion safeguards, bounded Print table ranges and additional ScriptJob/Scientific Library and documentation infrastructure. GUI parity, embedded native HTML media/teardown and other TASK210 milestones still require platform verification.
+
+The official dev-110 archive contains no new finalized plugin_packages/official_dev110 directory. Previously published official dev-109 ZIPs are retained; do not relabel them or claim a new dev-110 module distribution.
+
+Dev-108-only Viewer compilation hotfixes remain incompatible with dev-109 and dev-110 by policy. They are separate from all later core branches.
 
 ## Features
 

@@ -123,7 +123,7 @@ proc ::GX::buildPrintPage {} {
     ttk::frame $d.actions;pack $d.actions -fill x
     foreach {id title} {remove Remove up Up down Down duplicate Duplicate} {ttk::button $d.actions.$id -text $title -command [list ::GX::viewerCommandInvoke $f $id];pack $d.actions.$id -side left}
     ttk::button $d.properties -text {Selected object: layout, text, colors…} -command [list ::GX::viewerCommandInvoke $f properties];pack $d.properties -fill x -pady 4
-    foreach {key title} {item_columns {Table Variable IDs (comma-separated)} item_start {First source row (zero-based)} item_count {Explicit row count (maximum 10000)}} {ttk::label $d.l$key -text $title -anchor w;ttk::entry $d.$key -textvariable ::GX::PrintStudio::state($key);pack $d.l$key $d.$key -fill x -pady 2}
+    foreach {key title} {item_columns {Table Variable IDs (comma-separated)} item_start {First source row (zero-based; blank = 0)} item_count {Row count (1–10000; blank = default 200)}} {ttk::label $d.l$key -text $title -anchor w;ttk::entry $d.$key -textvariable ::GX::PrintStudio::state($key);pack $d.l$key $d.$key -fill x -pady 2}
     ttk::button $d.apply -text {Apply item columns / range} -command ::GX::printStudioItemApply;pack $d.apply -fill x -pady 4
     set s [uiFieldScrollableCreate $main.dock.setup.form 330];pack $main.dock.setup.form -fill both -expand 1
     ttk::label $s.layoutLabel -text {Layout mode};pack $s.layoutLabel -anchor w

@@ -5,7 +5,7 @@ namespace eval ::GX::ScientificLibraryManagerAPIv1 {}
 proc ::GX::ScientificLibraryManagerAPIv1::apiInfo {} {
     return [dict create api_name SCIENTIFIC_LIBRARY_MANAGER_API_v1 api_version 1 \
         registry_version 1 capability_schema gxtxt.library_capabilities.v1 \
-        operations {listLibraryTypes resolveLibraryProvider getLibraryInfo listInstalledLibraries queryCompatibleLibraries installLibrary updateLibrary removeLibrary verifyLibrary openLibrary listLibraryEntries openLibraryEntry readLibrarySpectrum libraryRoot listRegisteredLibraries registerLibrary unregisterLibrary getProviderCapabilities getLibraryCapabilities libraryCatalogPage openLibraryViewer invokeLibraryAction libraryRequest} \
+        operations {listLibraryTypes resolveLibraryProvider getLibraryInfo listInstalledLibraries queryCompatibleLibraries installLibrary updateLibrary removeLibrary verifyLibrary openLibrary listLibraryEntries openLibraryEntry readLibrarySpectrum libraryRoot listRegisteredLibraries registerLibrary unregisterLibrary getProviderCapabilities getLibraryCapabilities libraryCatalogPage openLibraryViewer invokeLibraryAction libraryRequest libraryEntriesPage getLibraryEntryInfo searchLibraryEntries readLibraryEntry exportLibraryEntry addLibraryEntry removeLibraryEntry} \
         script_exposure host_module_only]
 }
 proc ::GX::ScientificLibraryManagerAPIv1::_helper {} {
@@ -32,21 +32,49 @@ proc ::GX::ScientificLibraryManagerAPIv1::_run {operation args} {
             }
         }
     }
-    set hadCatalogEnv [info exists ::env(GXTXT_LIBRARY_PROVIDER_DESCRIPTORS)]
-    if {$hadCatalogEnv} {set priorCatalogEnv $::env(GXTXT_LIBRARY_PROVIDER_DESCRIPTORS)}
-    if {[info exists ::GX::moduleOrder]} {
-        set ::env(GXTXT_LIBRARY_PROVIDER_DESCRIPTORS) [join $descriptors [expr {$::tcl_platform(platform) eq "windows" ? ";" : ":"}]]
+    if {![info exists ::GX::moduleOrder]} {
+        if {[info exists ::env(GXTXT_LIBRARY_PROVIDER_DESCRIPTORS)]} {
+            set descriptors [split $::env(GXTXT_LIBRARY_PROVIDER_DESCRIPTORS) [expr {$::tcl_platform(platform) eq "windows" ? ";" : ":"}]]
+        } else {
+            # Preserve the old helper's direct-catalog fallback before a host
+            # module catalog exists, without changing the host environment.
+            set descriptors [glob -nocomplain -directory [file join $::GX::scriptDir plugins modules] */module.ini]
+        }
     }
-    set command [concat [list $python [_helper] $operation] $args]
-    set failed [catch {set result [exec {*}$command 2>@1]} reason options]
-    if {$hadCatalogEnv} {set ::env(GXTXT_LIBRARY_PROVIDER_DESCRIPTORS) $priorCatalogEnv
-    } else {unset -nocomplain ::env(GXTXT_LIBRARY_PROVIDER_DESCRIPTORS)}
+    # Tcl exec interprets redirection/pipeline words even in a proper argv list.
+    # All variable arguments therefore use the EXISTING managed request stdin
+    # envelope; only the configured runtime, fixed helper and --request-sync use argv.
+    set payload [dict create operation $operation arguments $args provider_descriptors $descriptors]
+    if {$operation eq {content}} {_contentCheckInput $payload
+    } elseif {[string bytelength $payload]>1048576} {error {Scientific Library Manager request exceeds the 1 MiB input bound}}
+    set command [list $python -B [_helper] --request-sync]
+    set failed [catch {set result [exec {*}$command << $payload 2>@1]} reason options]
+    if {$failed} {
+        set result $reason
+        # Tcl may append its own child-status line to a nonzero helper exit.
+        # The fixed request envelope itself ends with category/result fields.
+        if {[dict exists $options -errorcode] && [lindex [dict get $options -errorcode] 0] eq {CHILDSTATUS}} {
+            regsub {\nchild process exited abnormally$} $result {} result
+        }
+    }
+    # Reuse the existing recursive Tcl envelope, returning the exact old inner
+    # F/L/M/P/D or C wire to its established operation-specific decoder.
+    if {![catch {dict get $result ok} ok] && [string is boolean -strict $ok]} {
+        if {$ok && !$failed && [dict exists $result result wire]} {
+            return [string trimright [dict get $result result wire] "\n"]
+        }
+        if {!$ok && [dict exists $result error]} {
+            set detail [dict get $result error]
+            if {$failed} {return -options $options "Scientific Library Manager: $detail"}
+            error "Scientific Library Manager: $detail"
+        }
+    }
     if {$failed} {
         set detail [lindex [split $reason "\n"] 0]
         regsub {^GX-TXT Scientific Library Manager: } $detail {} detail
         return -options $options "Scientific Library Manager: $detail"
     }
-    return [string trimright $result "\n"]
+    error {Scientific Library Manager returned a malformed request response}
 }
 proc ::GX::ScientificLibraryManagerAPIv1::_decode {text} {
     return [encoding convertfrom utf-8 [binary decode base64 $text]]
@@ -197,7 +225,7 @@ proc ::GX::ScientificLibraryManagerAPIv1::invokeLibraryAction {libraryId actionI
     return [_info [_run library_action $libraryId $actionId {*}$arguments]]
 }
 proc ::GX::ScientificLibraryManagerAPIv1::libraryRequest {operation arguments callback} {
-    if {$operation ni {catalog_page library_capabilities provider_capabilities library_action info entries verify install update remove register unregister provider types open}} {error {Unsupported asynchronous Library operation}}
+    if {$operation ni {catalog_page library_capabilities provider_capabilities library_action info entries verify install update remove register unregister provider types open content}} {error {Unsupported asynchronous Library operation}}
     # The helper still discovers the current authoritative installed providers.
     set descriptors {}
     foreach id $::GX::moduleOrder {
@@ -206,16 +234,84 @@ proc ::GX::ScientificLibraryManagerAPIv1::libraryRequest {operation arguments ca
     set options [dict create timeout_ms 120000 max_bytes 33554432 process_group 1 ui_lifetime 1 label {Scientific Library Manager}]
     # Public provider descriptor paths are inert request data, applied only to
     # this helper process's installed-provider view. No global host env change.
-    return [::GX::scriptJobAsync [list [::GX::runtimeToolRequired python] -B [_helper] --request] [dict create operation $operation arguments $arguments provider_descriptors $descriptors] [list ::GX::ScientificLibraryManagerAPIv1::_requestDone $operation $callback] $options]
+    set payload [dict create operation $operation arguments $arguments provider_descriptors $descriptors]
+    if {$operation eq {content}} {_contentCheckInput $payload}
+    return [::GX::scriptJobAsync [list [::GX::runtimeToolRequired python] -B [_helper] --request] $payload [list ::GX::ScientificLibraryManagerAPIv1::_requestDone $operation $callback] $options]
 }
 proc ::GX::ScientificLibraryManagerAPIv1::_requestDone {operation callback response} {
     if {[dict get $response ok]} {
         if {[catch {
             set wire [string trimright [dict get $response result wire] \n]
-            if {$operation in {entries types}} {set value [_list $wire]} else {set value [_info $wire]}
+            if {$operation eq {content}} {set value [_contentDecode $wire]} elseif {$operation in {entries types}} {set value [_list $wire]} else {set value [_info $wire]}
             if {$operation eq {catalog_page}} {set value [_catalogPageDecode $value]}
             dict set response result $value
-        } message]} {set response [dict create ok 0 error $message category scientific_library_manager]}
+        } message options]} {
+            set response [dict create ok 0 error $message category scientific_library_manager]
+            if {[dict exists $options -errorcode] && [lrange [dict get $options -errorcode] 0 1] eq {GXTXT SCIENTIFIC_LIBRARY_MANAGER}} {
+                dict set response error_code [lindex [dict get $options -errorcode] 2]
+                if {[dict exists $options -library_error]} {dict set response error_details [dict get $options -library_error]}
+            }
+        }
     }
     uplevel #0 [list {*}$callback $response]
+}
+
+# Additive Step3 host/module-only content contract. Explicit JSON text preserves
+# provider-owned input types; no Tcl-string type guessing or Script Bridge grant.
+proc ::GX::ScientificLibraryManagerAPIv1::_contentOptions {options paging} {
+    set out {}
+    dict for {key value} $options {
+        if {$key eq {provider_json}} {dict set out options_json $value
+        } elseif {$paging && $key in {limit continuation}} {dict set out $key $value
+        } else {error {Unknown Library content option}}
+    }
+    return $out
+}
+proc ::GX::ScientificLibraryManagerAPIv1::_contentDecode {wire} {
+    if {[string length $wire]>25165824 || [llength [split $wire \n]]!=1} {error {Malformed or oversized Library content response}}
+    set parts [split $wire \t]
+    if {[llength $parts]!=2 || [lindex $parts 0] ne {C} || [regexp {[^A-Za-z0-9+/=]} [lindex $parts 1]]} {error {Malformed Library content wire}}
+    set response [_decode [lindex $parts 1]]
+    if {[dict get $response schema] ne {gxtxt.library_content_response.v1} || ![string is boolean -strict [dict get $response ok]]} {error {Unsupported Library content response schema}}
+    foreach key [dict keys $response] {if {$key ni {schema ok operation result error}} {error {Unknown Library content response field}}}
+    if {[dict exists $response operation] && [dict get $response operation] ni {list_entries entry_info search_entries read_entry export_entry add_entry remove_entry}} {error {Unsupported Library content operation response}}
+    if {![dict get $response ok]} {
+        set detail [dict get $response error];set code [dict get $detail code]
+        if {$code ni {unsupported_operation library_not_found entry_not_found read_only authentication_required credentials_locked authentication_failed rate_limited temporarily_unavailable provider_unavailable invalid_provider_configuration integrity_failure policy_restricted provider_failure invalid_request invalid_provider_response}} {error {Invalid Library content error code}}
+        return -options [dict create -code error -level 0 -errorcode [list GXTXT SCIENTIFIC_LIBRARY_MANAGER $code] -library_error $detail] [dict get $detail message]
+    }
+    set result [dict get $response result]
+    if {[dict get $result schema] ni {gxtxt.library_entry_page.v1 gxtxt.library_entry_info.v1 gxtxt.library_entry.v1 gxtxt.library_entry_export.v1 gxtxt.library_entry_mutation.v1} || ![dict exists $result result_json]} {error {Unsupported Library content result schema}}
+    return $result
+}
+proc ::GX::ScientificLibraryManagerAPIv1::_contentCall {libraryId operation parameters} {
+    _contentCheckInput [list $libraryId $operation $parameters]
+    return [_contentDecode [_run content $libraryId $operation $parameters]]
+}
+proc ::GX::ScientificLibraryManagerAPIv1::_contentCheckInput {payload} {
+    if {[string bytelength $payload]>1048576} {
+        set detail [dict create code invalid_request message {Library content request exceeds the 1 MiB input bound.}]
+        return -options [dict create -code error -level 0 -errorcode {GXTXT SCIENTIFIC_LIBRARY_MANAGER invalid_request} -library_error $detail] [dict get $detail message]
+    }
+}
+proc ::GX::ScientificLibraryManagerAPIv1::libraryEntriesPage {libraryId {options {}}} {
+    return [_contentCall $libraryId list_entries [_contentOptions $options 1]]
+}
+proc ::GX::ScientificLibraryManagerAPIv1::getLibraryEntryInfo {libraryId entryId {options {}}} {
+    return [_contentCall $libraryId entry_info [dict merge [_contentOptions $options 0] [dict create entry_id $entryId]]]
+}
+proc ::GX::ScientificLibraryManagerAPIv1::searchLibraryEntries {libraryId queryJson {options {}}} {
+    return [_contentCall $libraryId search_entries [dict merge [_contentOptions $options 1] [dict create query_json $queryJson]]]
+}
+proc ::GX::ScientificLibraryManagerAPIv1::readLibraryEntry {libraryId entryId {options {}}} {
+    return [_contentCall $libraryId read_entry [dict merge [_contentOptions $options 0] [dict create entry_id $entryId]]]
+}
+proc ::GX::ScientificLibraryManagerAPIv1::exportLibraryEntry {libraryId entryId format {options {}}} {
+    return [_contentCall $libraryId export_entry [dict merge [_contentOptions $options 0] [dict create entry_id $entryId format $format]]]
+}
+proc ::GX::ScientificLibraryManagerAPIv1::addLibraryEntry {libraryId entryJson {options {}}} {
+    return [_contentCall $libraryId add_entry [dict merge [_contentOptions $options 0] [dict create entry_json $entryJson]]]
+}
+proc ::GX::ScientificLibraryManagerAPIv1::removeLibraryEntry {libraryId entryId {options {}}} {
+    return [_contentCall $libraryId remove_entry [dict merge [_contentOptions $options 0] [dict create entry_id $entryId]]]
 }

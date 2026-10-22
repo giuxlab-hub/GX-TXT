@@ -26,6 +26,20 @@ if(TCL_FOUND)
   find_library(GXTXT_CAIRO_LIBRARY NAMES cairo libcairo.so.2 REQUIRED)
   find_package(X11 REQUIRED)
   add_library(gx2dtcl MODULE gx2d_tcl.c gx2d.c gx2d_surface.cpp)
+  target_sources(gx2dtcl PRIVATE
+    gx2d_csv_provider_v1.cpp
+    gx2d_preview_categories_v1.cpp
+    gx2d_preview_plane_v1.cpp
+    gx2d_preview_batch_v1.cpp
+    gx2d_preview_overlay_v1.cpp
+    gx2d_preview_coordinates_v1.cpp)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set_source_files_properties(gx2d_preview_coordinates_v1.cpp PROPERTIES
+      COMPILE_OPTIONS "-ffp-contract=off")
+  elseif(MSVC)
+    set_source_files_properties(gx2d_preview_coordinates_v1.cpp PROPERTIES
+      COMPILE_OPTIONS "/fp:strict")
+  endif()
   if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/gx2d_plot_v4.cpp")
     target_sources(gx2dtcl PRIVATE gx2d_plot_v4.cpp)
     target_compile_definitions(gx2dtcl PRIVATE GXTXT_NATIVE_PLOT_V4=1)

@@ -73,27 +73,33 @@ proc ::GX::scientificDatasetArrayPreview {id output} {
     set starts {};set counts {};set shape [datasetSchemaV3SplitIds [dict get $v shape]]
     for {set i 0} {$i<[llength $shape]} {incr i} {lappend starts 0;lappend counts [expr {$i<[llength $shape]-2?1:min(128,[lindex $shape $i])}]}
     if {0 in $counts} {error {Array is empty.}}
-    set handle [datasetAccessOpen $::GX::currentSession $id]
-    try {set values [dict get [datasetAccessReadHyperslab $handle [dict get $v variable_id] $starts $counts] values]} finally {datasetAccessClose $handle}
-    set lo Inf;set hi -Inf
-    foreach value $values {if {![catch {expr {abs($value)<Inf}} finite]&&$finite} {set lo [expr {min($lo,$value)}];set hi [expr {max($hi,$value)}]}}
-    if {$lo eq "Inf"} {error {Array plane has no finite values.}}
-    set nx [lindex $counts end];set ny [lindex $counts end-1]
-    # The same nearest-cell palette is encoded without Tk so managed Preview
-    # preparation can run on a compute node with no GUI interpreter.
-    set scale [expr {max(1,min(8,int(640.0/$nx),int(420.0/$ny)))}]
-    set pixels {};set row {};set column 0
-    foreach value $values {
-        set color b8b8b8
-        if {![catch {expr {abs($value)<Inf}} finite]&&$finite} {set t [expr {$hi==$lo?.5:double($value-$lo)/($hi-$lo)}];set color [format %02x%02x%02x [expr {int(255*$t)}] [expr {int(180*(1-abs(2*$t-1)))}] [expr {int(255*(1-$t))}]]}
-        append row [string repeat [binary decode hex $color] $scale]
-        if {[incr column]==$nx} {append pixels [string repeat $row $scale];set row {};set column 0}
+    native2DEnsure
+    if {![llength [info commands ::gx::native2d::_preview_plane]]} {
+        error {The shared Native2D adapter lacks native array Preview support}
     }
+    set nx [lindex $counts end];set ny [lindex $counts end-1]
+    set handle [datasetAccessOpen $::GX::currentSession $id]
+    try {
+        # Both transports use the existing canonical owner and C storage order.
+        # Prefer its typed block without serializing every numeric cell in Tcl.
+        if {[dict get [datasetAccessCapabilities $handle] typed_binary_read] &&
+            [dict get $v dtype] in [datasetBinaryTransportDtypes]} {
+            set chunk [datasetAccessReadHyperslabBinary $handle [dict get $v variable_id] $starts $counts]
+            set block [dict get $chunk binary_block]
+            datasetBinaryValidateBlock $block [expr {$nx*$ny}]
+            set column [dict create dtype [dict get $block dtype] endian [dict get $block endian] raw [binary decode base64 [dict get $block base64]]]
+        } else {
+            set chunk [datasetAccessReadHyperslab $handle [dict get $v variable_id] $starts $counts]
+            set column [dict create dtype [dict get $chunk dtype] values [dict get $chunk values]]
+        }
+        set plane [::gx::native2d::_preview_plane $column $nx $ny]
+    } finally {datasetAccessClose $handle}
+    set lo [dict get $plane minimum];set hi [dict get $plane maximum]
     set encoder [datasetPreviewTool magick]
     if {$encoder eq {}} {error {Configured PNG encoder is unavailable}}
-    set stream [file tempfile temporary];close $stream
+    set stream [file tempfile temporary [file join [file dirname [file normalize $output]] .array-preview-XXXXXX]];close $stream
     try {
-        resourceLifecycleWriteBytes $temporary [encoding convertto ascii "P6\n[expr {$nx*$scale}] [expr {$ny*$scale}]\n255\n"]$pixels
+        resourceLifecycleWriteBytes $temporary [dict get $plane ppm]
         exec $encoder $temporary PNG:$output
     } finally {file delete -force $temporary}
     return "[dict get $v canonical] ([dict get $v unit]); exact storage plane starts $starts, counts $counts. Range $lo to $hi. Gray = nonfinite; nearest-cell display, no interpolation. Coordinate IDs: [dict get $v coordinate_variable_ids]. Open Dataset for coordinate axes and explicit planes."

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 namespace eval ::GX::CurveDigitizer {
-    variable version 2.0.3
+    variable version 2.0.9
     variable moduleId viewer.curve_digitizer
     variable providerId curve_digitizer
     variable processChannel ""
@@ -538,7 +538,7 @@ proc ::GX::CurveDigitizer::_publish {args} {
     set metadata [dict create \
         dataset.display_name $displayName \
         curve_digitizer.plugin_id viewer.curve_digitizer \
-        curve_digitizer.plugin_version 2.0.3 \
+        curve_digitizer.plugin_version 2.0.9 \
         curve_digitizer.configuration_document_id $documentId \
         curve_digitizer.configuration_name $configName \
         curve_digitizer.source_dataset_id $sourceDataset \
@@ -610,7 +610,7 @@ proc ::GX::CurveDigitizer::_publish {args} {
         dict set metadata curve_digitizer.curve_column.sigma_y sigma_y
         dict set metadata curve_digitizer.curve_column.covariance_xy covariance_xy
     }
-    set definition [dict create dataset_id $datasetId contract $contract storage csv replace_owned 1 producer_version 2.0.3 source "Curve Digitalizer: $configName" provenance $provenance notes $displayName source_dataset_ids [list $sourceDataset] structured_metadata $metadata]
+    set definition [dict create dataset_id $datasetId contract $contract storage csv replace_owned 1 producer_version 2.0.9 source "Curve Digitalizer: $configName" provenance $provenance notes $displayName source_dataset_ids [list $sourceDataset] structured_metadata $metadata]
     set plan [::GX::datasetPublicationV2Prepare $session viewer.curve_digitizer $definition]
     set writer ""
     if {[catch {
@@ -982,7 +982,7 @@ proc ::GX::CurveDigitizer::_imagePublish {sessionToken documentId sourceDataset 
         set result [::GX::datasetFilePublicationPublish $session viewer.curve_digitizer [dict create \
             dataset_id [_cleanSingleLine $datasetId {Image Dataset ID}] contract image.raster \
             format png source_file $stage storage_kind binary media_type image/png \
-            producer_version 2.0.3 source_dataset_ids [list $sourceDataset] \
+            producer_version 2.0.9 source_dataset_ids [list $sourceDataset] \
             provenance "Curve Digitalizer non-geometric ImageMagick enhancement of $sourceDataset; configuration $documentId" \
             notes "Processed image: $display" structured_metadata $fields]]
         set receipt "[dict get $result dataset_id]\t[dict get $result sha256]"
@@ -1277,7 +1277,7 @@ proc ::GX::CurveDigitizer::_launch {} {
     set hostLogPath [file join $logDir curve_digitizer_host.log]
     set pythonLogPath [file join $logDir curve_digitizer_python.log]
     set diagnosticShown 0; set processReady 0; set processExitReported 0
-    _log "--- Curve Digitalizer 2.0.3; Tcl [info patchlevel]; platform=$::tcl_platform(platform) ---"
+    _log "--- Curve Digitalizer 2.0.9; Tcl [info patchlevel]; platform=$::tcl_platform(platform) ---"
     set python [_pythonExecutable]
     _log "Python command: $python"
     _pythonDependenciesCheck $python

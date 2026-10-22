@@ -694,6 +694,22 @@ proc ::GX::saveDatasetRegistry {session} {
 # CSV provider: complete compatibility reads, selected variables, ranges and
 # bounded chunks. It intentionally advertises random_access=0 because a range
 # starts by scanning the text prefix.
+proc ::GX::csvStorageNativeAvailable {} {
+    # Optional prebuilt acceleration of this same provider. No runtime compiler,
+    # alternate source reader or Preview-owned path is involved. Older/missing
+    # adapters keep the established values implementation available.
+    variable csvNativeLoadAttempted
+    if {![llength [info commands ::GX::DatasetCSV::native]]} {
+        if {[info exists csvNativeLoadAttempted]} {return 0}
+        set csvNativeLoadAttempted 1
+        set library [file join $::GX::scriptDir core native2d bin gx2dtcl[info sharedlibextension]]
+        if {![file isfile $library] || [catch {load $library Gx2dtcl}]} {return 0}
+    }
+    if {![llength [info commands ::GX::DatasetCSV::native]]} {return 0}
+    if {[catch {set info [::GX::DatasetCSV::native api_info]}]} {return 0}
+    if {[catch {expr {[dict exists $info abi_version] && [dict get $info abi_version]==1}} available]} {return 0}
+    return $available
+}
 proc ::GX::csvStorageProvider {operation token args} {
     variable csvProviderState
     variable csvProviderCounter
@@ -780,16 +796,30 @@ proc ::GX::csvStorageProviderReadRange {token variableIds start count} {
         dict set variables $variableId [dict create variable $variable column [expr {$position-1}]]
         set columnValues($variableId) {}
     }
+    # Multi-character historical separators retain their original Tcl policy.
+    # The native parser consumes the SAME provider-owned translated channel.
+    set native [expr {[string length $delimiter]==1 && [csvStorageNativeAvailable]}]
     set fd $csvProviderState($token,fd)
     if {$fd eq "" || $start < $csvProviderState($token,next_row)} {
         if {$fd ne ""} { close $fd }
         set fd [open $path r]; fconfigure $fd -encoding utf-8 -translation auto
-        gets $fd header
-        if {[string first {"} $header]>=0} {datasetSchemaCsvSplit $header $delimiter $fd}
         set csvProviderState($token,fd) $fd
         set csvProviderState($token,next_row) 0
+        if {$native} {
+            ::GX::DatasetCSV::native header $fd $delimiter
+        } else {
+            gets $fd header
+            if {[string first {"} $header]>=0} {datasetSchemaCsvSplit $header $delimiter $fd}
+        }
     }
     set row $csvProviderState($token,next_row);set taken 0;set skipped 0
+    if {$native} {
+        set prepared [::GX::DatasetCSV::native read $fd $delimiter $variables $row $start $count]
+        set row [dict get $prepared next_row]
+        set taken [dict get $prepared taken]
+        set skipped [dict get $prepared skipped]
+        foreach variableId $variableIds {set columnValues($variableId) [dict get $prepared values $variableId]}
+    } else {
     while {$row < $start && [gets $fd line] >= 0} {
         if {[string trim $line] eq ""} continue
         if {[string first {"} $line]>=0} {datasetSchemaCsvSplit $line $delimiter $fd}
@@ -816,6 +846,7 @@ proc ::GX::csvStorageProviderReadRange {token variableIds start count} {
             lappend columnValues($variableId) [csvStorageTypedValue [dict get $item variable] $raw]
         }
         incr row; incr taken
+    }
     }
     set csvProviderState($token,next_row) $row
     set csvProviderState($token,prefix_elements_scanned) [expr {$csvProviderState($token,prefix_elements_scanned)+$skipped}]

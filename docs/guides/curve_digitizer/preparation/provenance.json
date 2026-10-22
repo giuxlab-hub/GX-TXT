@@ -1,0 +1,225 @@
+{
+  "content_role": "Reusable English explanatory manuscript for future complete manual; preparation only",
+  "formal_phase2_started": false,
+  "installed_registration": false,
+  "content_design_ids_accepted_by_MAIN": [
+    "curve_digitizer.manual.en",
+    "curve_digitizer.tutorial.01.en",
+    "curve_digitizer.tutorial.02.en",
+    "curve_digitizer.tutorial.03.en"
+  ],
+  "extra_tutorial_identity_created": false,
+  "tutorial_archives_created": 0,
+  "author": "GX210-GUIDE",
+  "license": "GPL-3.0-or-later",
+  "language": "en",
+  "created_utc": "2026-10-22T15:01:09.160860+00:00",
+  "basis": "Deposited dev109 documentation and explicit analytical reference, subject to actual deposited dev110 rebaseline",
+  "source_references": [
+    {
+      "path": "plugins/modules/viewer.curve_digitizer/MANUAL.md",
+      "sha256": "72569629f486f32a2f28c642b400fd19e3768aee0b5fc74ff56b7cbcc6c641ee"
+    },
+    {
+      "path": "session_generator_packages/expanded/gxtxt_calibrated_digitizer_1.0.0/STUDENT_GUIDE.md",
+      "sha256": "c7bf0ce38c66ff555b2bc9c6f2ec534f100aaa74d935d29b2b4b0e81b73aed32"
+    },
+    {
+      "path": "session_generator_packages/expanded/gxtxt_calibrated_digitizer_1.0.0/generator.ini",
+      "sha256": "b6be4a722cdec6b280c25a9ec08db0faed8657e59bd38f7178106f6714415f7a"
+    },
+    {
+      "path": "plugins/modules/viewer.curve_digitizer/UNCERTAINTY_API_v1.md",
+      "sha256": "83cc58b8aaec9105fa979d7deee8b67f4ae9437fb9ee072299ccb6a1e4ed9522"
+    }
+  ],
+  "assets": [
+    {
+      "path": "README.md",
+      "sha256": "0d409755260aa1ccaa2c4dbdf6680b6b71a16a8ee462205c3474679cfeac5b8b",
+      "bytes": 4886,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "calibration-concepts.html",
+      "sha256": "a7156533c83c2597036316ff0815f2828b73a695a63c0f70d20206bdedd437af",
+      "bytes": 7858,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "concepts.css",
+      "sha256": "4c9d409bbe1753684b0b66c7b6d3c7ca917ec50db5ed97cf88cee70df75a2c31",
+      "bytes": 2093,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "concepts.html",
+      "sha256": "c5bf7ddc99a22d0780d9a9f2cfa2a8d43b7c839c85be29793ffdedd36320985c",
+      "bytes": 11628,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "coordinate-map.js",
+      "sha256": "68b7841d194050d15a9f840ccd2873868256594b7b31625a60c2aeb61e3aaa9b",
+      "bytes": 1283,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "figures/calibration-realizations.svg",
+      "sha256": "0898be2f757432c258f3b6163e652bb3d843224b5629a73435de2e032c3a55da",
+      "bytes": 3117,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "figures/processing-authority.svg",
+      "sha256": "8ccab7510dda56ea56df5fa245e7a168ba51ca4e9ab62054477b2913fcfea1a0",
+      "bytes": 3592,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "figures/publication-boundaries.svg",
+      "sha256": "819c6399de66f1a31358b20f5c89d1dbb69ab59ffea798900604dc31ecb85ec5",
+      "bytes": 2714,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "figures/scale-bar-conventions.svg",
+      "sha256": "cfad26a451f6d57b80caa7b655bb016fefc1443de0028dcb594272ee9f6c10ca",
+      "bytes": 2890,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "figures/shared-calibration.svg",
+      "sha256": "1bfa3902adb550c0caf4284d32b973065e51c984f334d6f7cf0bde4c89b8f177",
+      "bytes": 3209,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "figures/source-lineage.svg",
+      "sha256": "63d5e1ffef444129c7c84537022a9fc705668e4867e07012261a845c4d83b8d5",
+      "bytes": 3402,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "figures/tracing-ambiguity.svg",
+      "sha256": "24655bf466cf195e234148162a870893bdeb285ecffcd1c680be1ea573bd2865",
+      "bytes": 3151,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "index.html",
+      "sha256": "4d97387cd2b7713a315ed1feda00e640cfdd981008117e789f1b517aeecc1c40",
+      "bytes": 9999,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "processing-concepts.html",
+      "sha256": "7cee76d3b4c20b91eeda530441671fdd03678efbb1d5653c67cf857af199b323",
+      "bytes": 11268,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "publication-concepts.html",
+      "sha256": "f59e46bd9b85c405c6436ed3f3a132f84f4bea36121546edde9771225ff7da87",
+      "bytes": 10067,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "stroke-width-concepts.html",
+      "sha256": "da6615f71118b7341b332f26bda51e64df1787a43a3c5b37eb0b3ecdd3316e12",
+      "bytes": 9766,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "tracing-concepts.html",
+      "sha256": "6a333b8b4d94fd3b73ba3b9aac57a16a722006993205484596895aad1a9ab211",
+      "bytes": 7540,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "uncertainty-concepts.html",
+      "sha256": "968eb4298066743d238cb4a64a961493578e442b077eec5147517791e4cc514a",
+      "bytes": 11459,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    }
+  ],
+  "illustrations": [
+    {
+      "path": "concepts.html#mapping",
+      "meaning": "Authored reference-coordinate illustration; four blue crosses are generator reference positions; sliders evaluate the displayed formula locally",
+      "not_a_product_result": true
+    },
+    {
+      "path": "figures/source-lineage.svg",
+      "meaning": "Conceptual source identity / raster points / calibration / published Dataset roles",
+      "not_a_product_result": true
+    },
+    {
+      "path": "figures/calibration-realizations.svg",
+      "meaning": "Illustrative grouping: one curve, three unique raster points, two accepted mappings, six combined rows; symbolic identities",
+      "not_a_product_result": true
+    },
+    {
+      "path": "figures/publication-boundaries.svg",
+      "meaning": "Hypothetical separate-output commit/failure boundary, based on documented per-Dataset transaction semantics; not an observed incident",
+      "not_a_product_result": true
+    },
+    {
+      "path": "figures/tracing-ambiguity.svg",
+      "meaning": "Original abstract crossing and operator-guide illustration; paths and positions are explanatory, not a measured source raster or computed trace",
+      "not_a_product_result": true
+    },
+    {
+      "path": "figures/scale-bar-conventions.svg",
+      "meaning": "Original exaggerated schematic bar repeated to distinguish center/inner/outer tick references; not microscope data or an actual measurement",
+      "not_a_product_result": true
+    },
+    {
+      "path": "figures/shared-calibration.svg",
+      "meaning": "Original scalar common-additive/local error illustration with explicitly declared independent local0.3V/shared0.4V terms, not full homography or computed product output",
+      "not_a_product_result": true
+    },
+    {
+      "path": "figures/processing-authority.svg",
+      "meaning": "Original documented-role diagram separating geometry-preserved decodedRGB processing/newimagepublication from originalrasterpoint/calibration numericalcurvepublication",
+      "not_a_product_result": true
+    }
+  ],
+  "scientific_limits": [
+    "Reference values are analytical consequences of explicitly declared assumptions, not measured operator precision",
+    "No uncertainty is inferred from raster resolution, line contrast, width or repeated calibration alone",
+    "No screenshot, canonical Dataset, installed Preview, actual GUI operation or application performance result is supplied",
+    "Final feature and workflow descriptions require actual accepted dev110 source/version and genuine GUI evidence"
+  ],
+  "review": {
+    "author_source_review": "complete for preparation scope",
+    "TUTORIAL1_scientific_visual_review": "not yet submitted; required for final tutorial delivery",
+    "MAIN_release_acceptance": "not requested for preparation as final release"
+  },
+  "runtime_owner_boundary": "No descriptor fields, documentation registration, CORE API, private generator URI or module MANUAL modification",
+  "updated_utc": "2026-10-22T17:53:14.458912+00:00",
+  "source_only_vendor_intake": {
+    "control_id": "7ccf48f3-f1e4-5a31-b1b6-ecf3ffbbe553",
+    "version": "2.0.9",
+    "archive_sha256": "dbd271bd70b4d13d6fbe4889750f73aef97825b6ef4bc4dce89d7510a278b84a",
+    "status": "EXACT_ASIS_VENDOR_SOURCE_INTEGRATED_NOT_RELEASED",
+    "runtime_GUI_installed_deposit_acceptance": "NOT_ESTABLISHED",
+    "artifact_bindings": [
+      {
+        "artifact": "stroke-width-concepts.html",
+        "documents": [
+          {
+            "path": "/srv/gxtxt/main/task210/framework/plugins/modules/viewer.curve_digitizer/MANUAL.md",
+            "sha256": "22d04bea5ff2d011170bbad330a216251298355ec552064ef3af500985e8adeb"
+          },
+          {
+            "path": "/srv/gxtxt/main/task210/framework/plugins/modules/viewer.curve_digitizer/STROKE_WIDTH_API_v1.md",
+            "sha256": "07d901f9ed9bedf6bc25aa2392ae23b2985170f8b11d823a3569224e89c99d0a"
+          }
+        ]
+      }
+    ],
+    "prior_fragments": "Dev109 preparation basis retained; reconcile actual source-only intake and real deposited release before final use",
+    "provider_Quality_currentbyte_verification": "UNSUPPORTED per MAIN; host receipt separate and time-bound"
+  }
+}

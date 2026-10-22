@@ -27,19 +27,18 @@ proc ::GX::sessionExperimentClone {name {root ""}} {
         if {$executable eq {}} {error {Duplicate Experiment requires the Tcl runtime (tclsh).}}
         set cmd [lreplace $cmd 0 0 {*}$executable]
         exec {*}$cmd 2>@1
-        # Registry commit is the final step. Restore its exact prior bytes and
-        # in-memory membership if persistence fails after adding the new ID.
-        projectEnsureRegistryLoaded
-        set oldMembers [array get ::GX::projectMembership]
-        set registry [projectRegistryPath];set existed [file isfile $registry]
-        if {$existed} {set prior [open $registry rb];try {set bytes [read $prior]} finally {close $prior}}
+        # A validated promoted result is permanent even if organization fails.
+        # The existing transaction owner reloads fresh registry state and holds
+        # its short lock only for final association, never during the worker.
         try {
-            if {$pid ne "" && [projectExists $pid]} {projectAssociateExperiment $pid $eid $target $name}
+            _projectAtomic [list [file join $target metadata manifest.ini]] {
+                projectLoadRegistry
+                if {$pid eq ""} {set pid [projectEnsureDefault]}
+                if {![projectExists $pid]} {error {The receiving Project disappeared during duplication.}}
+                projectAssociateExperiment $pid $eid $target $name
+            }
         } on error {message options} {
-            array unset ::GX::projectMembership *;array set ::GX::projectMembership $oldMembers
-            if {$existed} {set prior [open $registry wb];try {puts -nonewline $prior $bytes} finally {close $prior}} elseif {[file exists $registry]} {file delete -- $registry}
-            file delete -force -- $target
-            return -options $options $message
+            return -options $options "$message\nDuplicated Session preserved: $target"
         }
     } finally {
         if {$channel ne {}} {close $channel}

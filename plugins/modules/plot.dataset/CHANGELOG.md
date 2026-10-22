@@ -1,3 +1,16 @@
+## 4.2.4 — TASK210 dev110 candidate
+
+Validate every scientific consultation source descriptor before deduplicating
+watch subscriptions, including conflicting hashes for the same Dataset. Reject
+empty explicit source identities. Share the512-trace/100000-point aggregate/4096
+per-trace budget across construction and final prepared-model admission, so a
+copied or multi-panel model cannot bypass the bound. Preserve generic Plot,
+comparison and transient contracts and existing native scientific owners.
+
+MAIN15 scoped public/native checks passed; independent source review retained.
+Actual large calibrated-family GUI responsiveness remains NOT_TESTED. Candidate
+version declaration is not official deposition or release acceptance.
+
 ## 4.2.3 — dev109
 
 Shared source-bound consultation, native equal numeric aspect and isolated finite-run visibility; derived comparison model/public owner guards. The native engine additions require dev109.

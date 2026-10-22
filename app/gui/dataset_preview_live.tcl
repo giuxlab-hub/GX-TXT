@@ -104,10 +104,10 @@ proc ::GX::datasetPreviewLiveCheck {{force 0}} {
         if {![datasetPublicationV2DictDefault $active stale_qualified 0]} {
             datasetDigitizerPreviewQualifyPrevious $id
             set parent .top.nb.preview.live.panes.quality
-            if {[winfo exists $parent.explanation]} {$parent.explanation configure -text {Previous-render published Quality report. Its recorded source verification describes that render; source identity has changed. Select Render to obtain current verification. Published diagnostics do not infer physical accuracy or uncertainty.}}
+            if {[winfo exists $parent.explanation]} {$parent.explanation configure -text {Previous-render published Quality report and CORE source receipt. Neither provider fields nor the old CORE observation describe current source bytes after this change. Select Render to verify again. Published diagnostics do not infer physical accuracy or uncertainty.}}
             set tree $parent.table.rows
             if {[winfo exists $tree]} {
-                foreach {row value} {quality2 {Previous render; refresh required} quality4 {Not revalidated for this render}} {
+                foreach {row value} {quality2 {Provider report from previous render} quality4 {Provider digest from previous render} host_source_status {Previous render; refresh required} host_source_digest {Not revalidated after source change} host_source_checked_at {Previous preparation; Render to refresh} host_source_reason {Source identity changed since this receipt. Render to verify.}} {
                     if {[$tree exists $row]} {set values [$tree item $row -values];lset values 0 $value;$tree item $row -values $values}
                 }
                 if {[winfo exists $parent.detail.value]} {datasetPreviewLiveQualityDetail $tree $parent.detail.value}
@@ -290,7 +290,7 @@ proc ::GX::datasetPreviewLiveQuality {id representation} {
         bind $parent.empty <Configure> [list $parent.empty configure -wraplength %w]
         return
     }
-    ttk::label $parent.explanation -text {Published Curve Digitizer Quality v2 · read-only. Image/spacing diagnostics are not physical accuracy or uncertainty. Source identity and actual declared uncertainty are shown below.} -wraplength 800 -justify left -padding 8
+    ttk::label $parent.explanation -text {Published Curve Digitizer Quality v2 · read-only. Provider fields are reported unchanged; the separate CORE receipt describes source-byte verification at preparation. Image/spacing diagnostics do not establish physical accuracy or uncertainty.} -wraplength 800 -justify left -padding 8
     pack $parent.explanation -fill x
     bind $parent.explanation <Configure> [list $parent.explanation configure -wraplength %w]
     ttk::frame $parent.table;pack $parent.table -fill both -expand 1 -padx 8
@@ -305,9 +305,9 @@ proc ::GX::datasetPreviewLiveQuality {id representation} {
     grid rowconfigure $parent.table 0 -weight 1;grid columnconfigure $parent.table 0 -weight 1
     foreach {field label unit meaning} {
         source_dataset_id {Source Dataset} {} {Canonical image identity recorded by the publication}
-        source_integrity {Source integrity} {} {Comparison of the published source SHA with the current canonical source}
+        source_integrity {Provider-reported source integrity} {} {Unchanged installed-provider result; this field alone is not independent CORE current-byte verification}
         source_sha256 {Published source SHA256} {} {Original image fingerprint; not a calibration measurement}
-        source_current_sha256 {Current source SHA256} {} {Actual currently resolved image fingerprint when available}
+        source_current_sha256 {Provider-reported source SHA256} {} {Digest reported by the installed provider; its implementation determines whether it was measured or read from recorded metadata}
         status {Published quality status} {} {Publisher's diagnostic status, not measured accuracy}
         issue_count {Reported issues} count {Published diagnostic count}
         unique_raster_point_count {Unique raster points} count {Source point identities; publication may contain multiple calibration realizations}
@@ -326,6 +326,23 @@ proc ::GX::datasetPreviewLiveQuality {id representation} {
     lappend rows {*}[datasetPublicationV2DictDefault [dict get $representation digitizer] quality_rows {}]
     set ordinal 0
     foreach row $rows {$tree insert {} end -id quality[incr ordinal] -text [dict get $row label] -values [list [dict get $row value] [dict get $row unit] [dict get $row meaning]]}
+    # Existing numeric Quality row IDs remain stable, including summary rows.
+    # New host observations have semantic IDs for stale-render qualification.
+    set verification [datasetPublicationV2DictDefault [dict get $representation digitizer] host_source_verification \
+        [dict create status unverified reason {This representation has no independent CORE source receipt. Render to verify.}]]
+    foreach {field row label meaning} {
+        status host_source_status {CORE source-byte verification} {Independent existing canonical/resource owner check for this preparation only}
+        observed_sha256 host_source_digest {CORE observed source SHA256} {Actual source bytes verified by the named owner, or observed only after a failed canonical check; status and reason remain authoritative}
+        published_expected_sha256 host_source_expected {Publication source SHA256} {Expected source identity retained by the publication; never replaced with newly observed bytes}
+        registered_expected_sha256 host_source_registered {Registered source SHA256 at preparation} {Recorded canonical identity; not itself a current-byte measurement}
+        method host_source_method {CORE verification owner} {Existing public owner used by the host; no provider output or registry meaning is changed}
+        checked_at_utc host_source_checked_at {CORE observation time (UTC)} {Preparation observation time; a stale render requires a new check}
+        reason host_source_reason {CORE verification details} {Missing, rejected or unsupported sources are not treated as verified}
+    } {
+        set value [datasetPublicationV2DictDefault $verification $field {}]
+        if {$value eq {}} {set value {Not observed}}
+        $tree insert {} end -id $row -text $label -values [list $value {} $meaning]
+    }
     ttk::labelframe $parent.detail -text {Selected diagnostic} -padding 6
     text $parent.detail.value -height 4 -width 1 -wrap word -font TkDefaultFont -relief flat -highlightthickness 0
     $parent.detail.value insert 1.0 {Select a row to read its complete value, unit and meaning.}

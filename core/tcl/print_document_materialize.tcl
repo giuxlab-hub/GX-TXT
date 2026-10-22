@@ -58,7 +58,13 @@ try {
                     set variables [dict get $options variables];set columns {}
                     foreach variable $variables {set schema [::GX::datasetVariableV3ById $id $variable];lappend columns [dict create variable_id $variable label [::GX::datasetPublicationV2DictDefault $schema label $variable] unit [dict get $schema unit]]}
                     if {$variables eq {}} {error {Choose at least one table Variable ID.}}
-                    set stream [::GX::tableStreamOpenDataset $session $id $variables 256 [dict create start [dict get $options start] count [dict get $options count] numeric_transport values]]
+                    set start [::GX::datasetPublicationV2DictDefault $options start 0]
+                    set count [::GX::datasetPublicationV2DictDefault $options count 200]
+                    if {![dict exists $options count]} {
+                        set total [::GX::datasetField $id row_count {}]
+                        if {[string is entier -strict $total] && $total>=0} {set count [expr {min(200,max(0,$total-$start))}]}
+                    }
+                    set stream [::GX::tableStreamOpenDataset $session $id $variables 256 [dict create start $start count $count numeric_transport values]]
                     set rows {};set sourceRows {}
                     try {
                         while {1} {
