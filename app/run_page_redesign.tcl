@@ -30,7 +30,8 @@ proc ::GX::runPlanEntries {} {
         set selected [moduleRunIsSelected $id]
         set runner [moduleField $id runner ""]
         set reason ""
-        if {!$selected} { set reason "Not selected for this run" }
+        if {![moduleAnalysisIsShown $id]} {set reason "Hidden from Analysis"}
+        if {$reason eq "" && !$selected} { set reason "Not selected for this run" }
         if {$reason eq "" && $runner ni {standard_octave script_execution script_module}} { set reason "No standard analysis runner" }
         if {$reason eq "" && ($currentSession eq "" || ![file isdirectory $currentSession])} { set reason "Open a Session" }
         if {$reason eq ""} { incr order }

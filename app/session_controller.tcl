@@ -99,6 +99,8 @@ proc ::GX::openSessionPath_before_project_api_v1 {path} {
     # saved Preview dependencies before switching owners or refreshing consumers.
     set selectionData [_modulePreviewOpenPreflight $d]
     _modulePreviewReset
+    # A channels-only Session has no Manifest to reset presentation state.
+    set ::GX::cfg(analysis_hidden_modules) {}
     # A preview image belongs to the Session that supplied its source PNG.
     # Clear it before loading the next Manifest or rebuilding graph discovery.
     catch {clearGraphPreview}

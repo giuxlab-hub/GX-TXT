@@ -25,6 +25,8 @@ proc ::GX::defaults_v052_api {} {
     ::GX::defaults_v048
     set cfg(acquisition_module) "acq.rigol_csv"
     set cfg(session_mode) "measurement"
+    # Session presentation preference; execution selections remain independent.
+    set cfg(analysis_hidden_modules) {}
     array unset moduleCfg *
     array unset moduleEnabled *
     array unset moduleRun *
@@ -434,12 +436,36 @@ proc ::GX::moduleSetRunSelected {id state} {
     if {$key ne ""} { set cfg($key) $v } else { set moduleRun($id) $v }
 }
 
-proc ::GX::selectedRunModuleIds {} {
+proc ::GX::moduleAnalysisIsShown {id} {
+    variable cfg
+    if {![moduleAnalysisEligible $id]} {return 0}
+    return [expr {![info exists cfg(analysis_hidden_modules)] || $id ni $cfg(analysis_hidden_modules)}]
+}
+
+proc ::GX::moduleSetAnalysisShown {id shown} {
+    variable cfg
+    if {![moduleAnalysisEligible $id] || ![moduleIsEnabled $id]} {return}
+    if {![info exists cfg(analysis_hidden_modules)]} {set cfg(analysis_hidden_modules) {}}
+    set index [lsearch -exact $cfg(analysis_hidden_modules) $id]
+    if {$shown && $index >= 0} {
+        set cfg(analysis_hidden_modules) [lreplace $cfg(analysis_hidden_modules) $index $index]
+    } elseif {!$shown && $index < 0} {
+        lappend cfg(analysis_hidden_modules) $id
+    }
+}
+
+# Whole-Run admission differs from the persisted execution preference. An
+# explicit targeted API invocation continues to use its existing admission.
+proc ::GX::moduleRunIsAdmitted {id} {
+    expr {[moduleIsEnabled $id] && [moduleAnalysisIsShown $id] && [moduleRunIsSelected $id]}
+}
+
+proc ::GX::selectedRunModuleIds {{admittedOnly 0}} {
     variable moduleOrder
     set out {}
     foreach id $moduleOrder {
         if {![moduleAnalysisEligible $id]} continue
-        if {[moduleIsEnabled $id] && [moduleRunIsSelected $id]} { lappend out $id }
+        if {[moduleIsEnabled $id] && [moduleRunIsSelected $id] && (!$admittedOnly || [moduleAnalysisIsShown $id])} { lappend out $id }
     }
     return $out
 }
@@ -2096,6 +2122,13 @@ proc ::GX::_moduleLoadManifestPreviewBody {path d} {
     } elseif {[dict get $::GX::modulePreviewLoadContext mode] eq {off}} {
         _modulePreviewReset
     }
+    # Missing in older Sessions means all eligible panes are shown. Reset on
+    # every load, including configuration imports, rather than inheriting the
+    # previous Session's visibility. Keep unknown IDs for reversible upgrades.
+    set ::GX::cfg(analysis_hidden_modules) {}
+    if {[dict exists $d module_state.analysis_hidden]} {
+        set ::GX::cfg(analysis_hidden_modules) [lsort -unique [splitList [dict get $d module_state.analysis_hidden]]]
+    }
     if {[dict exists $d pipeline.format] && [dict get $d pipeline.format] eq "2"} {
         loadManifestV2 $path
     } else {
@@ -2374,7 +2407,7 @@ proc ::GX::refreshAnalysisStatus {} {
         $w insert end "SESSION: $currentSession\n"
         $w insert end "Datasets: [join [datasetRegistryIds] {, }]\n"
         $w insert end "Enabled standard analysis modules: [join [selectedModuleIds] {, }]\n"
-        $w insert end "Run now: [join [selectedRunModuleIds] {, }]\n"
+        $w insert end "Run now: [join [selectedRunModuleIds 1] {, }]\n"
     }
     $w configure -state disabled
 }
@@ -3085,6 +3118,7 @@ proc ::GX::manifestStringV2_v062_legend_base {} {
         foreach k {enabled source_column source_channel original_header canonical unit semantic_role instrument_id instrument_channel} { appendKV out $k $sourceVar($i,$k) }
     }
     append out "\n\[module_state\]\n"; appendKV out enabled [join [selectedModuleIds] ,]; appendKV out run [join [selectedRunModuleIds] ,]
+    appendKV out analysis_hidden [join $cfg(analysis_hidden_modules) ,]
     foreach id $moduleOrder {
         set keys [moduleConfigKeys $id]
         if {[llength $keys]} {
@@ -4050,17 +4084,17 @@ proc ::GX::buildStandardAnalysisQueue_before_plot_variant {{target ""}} {
     foreach id $owners {
         if {[moduleField $id kind ""] ne "analysis"} continue
         if {[moduleField $id runner ""] eq "script_module"} {
-            if {$target eq "" && (![moduleIsEnabled $id] || ![moduleRunIsSelected $id])} continue
+            if {$target eq "" && ![moduleRunIsAdmitted $id]} continue
             lappend q [scriptModuleBuildQueueItem $id]
             continue
         }
         if {$id eq "analysis.python_script" && [moduleField $id runner ""] eq "script_execution"} {
-            if {$target eq "" && (![moduleIsEnabled $id] || ![moduleRunIsSelected $id])} continue
+            if {$target eq "" && ![moduleRunIsAdmitted $id]} continue
             lappend q [scriptAnalysisBuildQueueItem $id]
             continue
         }
         if {[moduleField $id runner ""] ne "standard_octave"} continue
-        if {$target eq "" && (![moduleIsEnabled $id] || ![moduleRunIsSelected $id])} continue
+        if {$target eq "" && ![moduleRunIsAdmitted $id]} continue
         if {[moduleField $id ui_replaced_by_core 0] && (![info exists ::GX::cliMode] || !$::GX::cliMode)} continue
         if {$id eq "analysis.octave_script" && $::GX::moduleCfg($id,source_mode) eq "registered_script"} {
             lappend q [scriptAnalysisBuildQueueItem $id]
@@ -6501,7 +6535,7 @@ proc ::GX::rebuildNativeAnalysisGui_before_core_script_surface {} {
 
     set row 0
     foreach id $moduleOrder {
-        if {[moduleField $id kind ""] ne "analysis"} continue
+        if {![moduleAnalysisEligible $id] || ![moduleAnalysisIsShown $id]} continue
         if {![moduleIsEnabled $id]} continue
         ensureModuleAnalysisSourceDefaults $id
 
@@ -6558,8 +6592,8 @@ proc ::GX::rebuildNativeAnalysisGui_before_core_script_surface {} {
 
     if {$row == 0} {
         ttk::frame $host.empty
-        ttk::label $host.empty.title -text "No analysis modules are active in this experiment." -font TkHeadingFont
-        ttk::label $host.empty.help -text "Enable Analysis modules in Configuration > Modules, then select them for Run in Modules." -wraplength 800 -justify left
+        ttk::label $host.empty.title -text "No analysis modules are shown in this experiment." -font TkHeadingFont
+        ttk::label $host.empty.help -text "Enable Analysis modules in Configuration > Modules, then show their panes in Modules. Select Run / recalculate now in Analysis to calculate." -wraplength 800 -justify left
         grid $host.empty.title -row 0 -column 0 -sticky w -pady {0 5}
         grid $host.empty.help -row 1 -column 0 -sticky w
         grid $host.empty -row 0 -column 0 -sticky nw -padx 12 -pady 12

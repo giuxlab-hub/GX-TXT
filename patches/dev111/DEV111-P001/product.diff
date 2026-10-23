@@ -1,0 +1,311 @@
+diff --git a/app/gui/modules_page.tcl b/app/gui/modules_page.tcl
+index a323ac9b..999a4200 100644
+--- a/app/gui/modules_page.tcl
++++ b/app/gui/modules_page.tcl
+@@ -3,7 +3,7 @@ proc ::GX::buildModulesPage {} {
+     variable ui
+     set f .top.nb.modules
+     ttk::label $f.title -text {Analysis Modules} -font TkHeadingFont -anchor w
+-    ttk::label $f.note -text {Select enabled Analysis modules for the next Run. Enable or disable modules in Configuration > Modules. Help opens each module's manual.} -anchor w -wraplength 900
++    ttk::label $f.note -text {Show or hide enabled module panes in Analysis. Use Run / recalculate now there to select calculations. Enable or disable modules in Configuration > Modules. Help opens each module's manual.} -anchor w -wraplength 900
+     pack $f.title -anchor w -padx 12 -pady {10 3}
+     pack $f.note -fill x -padx 12 -pady {0 8}
+     ttk::frame $f.search
+@@ -11,25 +11,16 @@ proc ::GX::buildModulesPage {} {
+     ttk::entry $f.search.query -textvariable ::GX::moduleSearch -width 32
+     bind $f.search.query <KeyRelease> ::GX::refreshModuleCatalog
+     pack $f.search.label $f.search.query -side left -padx 4
+-    pack $f.search -fill x -padx 8 -pady {0 6}
+-    # Use the active theme's selection colors, including dark/high-contrast
+-    # themes. Frame, labels and checkbox share the same selected box state.
+-    set selectedBackground [ttk::style lookup Treeview -background selected #d9ead3]
+-    set selectedForeground [ttk::style lookup Treeview -foreground selected #18351c]
+-    foreach type {TFrame TLabel TCheckbutton} {
+-        ttk::style map GXModuleRun.$type -background [list selected $selectedBackground]
+-        if {$type ne {TFrame}} {ttk::style map GXModuleRun.$type -foreground [list selected $selectedForeground]}
+-    }
++    # Native check indicators show visibility; rows keep neutral theme styling.
+     ttk::frame $f.tools
+     ttk::button $f.tools.builder -text {Script Module Builder…} -command ::GX::scriptModuleBuilderOpen
+     ttk::button $f.tools.reset -text {Reset selected module runtime…} -command ::GX::resourceLifecycleModuleResetSelected
+     ttk::label $f.tools.selected -textvariable ::GX::ui(moduleSelectedName)
+     set ui(moduleSelectedName) {Select a module for runtime tools.}
+-    grid $f.tools.builder -row 0 -column 0 -sticky w -padx 4
+-    grid $f.tools.reset -row 0 -column 1 -sticky w -padx 4
+-    grid $f.tools.selected -row 0 -column 2 -sticky ew -padx 8
+-    grid columnconfigure $f.tools 2 -weight 1
++    foreach row {0 1 2 3} {ttk::frame $f.tools.line$row}
+     pack $f.tools -fill x -padx 8 -pady {0 6}
++    raise $f.search $f.tools
++    foreach w [list $f.tools.builder $f.tools.reset $f.tools.selected] {raise $w}
+     set ui(moduleFeedback) {}
+     ttk::label $f.feedback -textvariable ::GX::ui(moduleFeedback) -anchor w -justify left
+     set ui(moduleCards) [uiFieldScrollableCreate $f.cards 900]
+@@ -57,21 +48,35 @@ proc ::GX::modulesPageFit {actual width} {
+     if {$actual ne {.top.nb.modules}} return
+     .top.nb.modules.note configure -wraplength [expr {max(160,$width-30)}]
+     .top.nb.modules.feedback configure -wraplength [expr {max(160,$width-30)}]
+-    set tools .top.nb.modules.tools
+-    set buttons [expr {[winfo reqwidth $tools.builder]+[winfo reqwidth $tools.reset]+24}]
+-    if {$width<$buttons} {
+-        grid configure $tools.reset -row 1 -column 0 -columnspan 2
+-        grid configure $tools.selected -row 2 -column 0 -columnspan 3
+-        $tools.selected configure -wraplength [expr {max(160,$width-40)}]
+-    } else {
+-        grid configure $tools.reset -row 0 -column 1 -columnspan 1
+-        if {$width<$buttons+[font measure TkDefaultFont {Selected module details}]+30} {
+-            grid configure $tools.selected -row 1 -column 0 -columnspan 3
+-            $tools.selected configure -wraplength [expr {max(160,$width-40)}]
++    set f .top.nb.modules
++    set tools $f.tools
++    set available [expr {max(160,$width-32)}]
++    set signature $available
++    if {[info exists ::GX::ui(moduleToolbarLayout)] && $::GX::ui(moduleToolbarLayout) eq $signature} return
++    set ::GX::ui(moduleToolbarLayout) $signature
++    # Keep the original controls and commands in reading/focus order. Each
++    # existing control moves to the next line only when its measured width
++    # cannot fit; the final status wraps instead of being clipped.
++    foreach w [list $f.search $tools.builder $tools.reset $tools.selected] {pack forget $w}
++    foreach row {0 1 2 3} {pack forget $tools.line$row}
++    set row 0;set used 0
++    pack $tools.line$row -fill x -anchor w
++    foreach w [list $f.search $tools.builder $tools.reset $tools.selected] {
++        set needed [expr {[winfo reqwidth $w]+8}]
++        if {$w eq "$tools.selected"} {
++            set needed [expr {[font measure TkDefaultFont {Select a module for runtime tools.}]+16}]
++        }
++        if {$used && $used+$needed>$available} {
++            incr row;set used 0
++            pack $tools.line$row -fill x -anchor w
++        }
++        if {$w eq "$tools.selected"} {
++            $w configure -wraplength [expr {max(80,$available-$used-16)}] -justify left
++            pack $w -in $tools.line$row -side left -fill x -expand 1 -padx 4
+         } else {
+-            grid configure $tools.selected -row 0 -column 2 -columnspan 1
+-            $tools.selected configure -wraplength [expr {max(80,$width-$buttons-40)}]
++            pack $w -in $tools.line$row -side left -padx 4 -pady 2
+         }
++        incr used $needed
+     }
+ }
+ proc ::GX::modulesCardsMapped {actual} {
+@@ -124,9 +129,8 @@ proc ::GX::moduleCardSelect {id} {
+ proc ::GX::moduleCardToggle {id} {
+     moduleCardSelect $id
+     if {![moduleAnalysisEligible $id] || ![moduleIsEnabled $id]} {return}
+-    # The checkbox binds the existing canonical Run variable directly. Never
+-    # mutate Configuration enablement or dependency activation from this page.
+-    moduleSetRunSelected $id [moduleRunIsSelected $id]
++    moduleSetAnalysisShown $id $::GX::ui(moduleShown,$id)
++    rebuildNativeAnalysisGui
+     refreshAnalysisStatus
+     refreshManifestPreview
+     refreshModuleCatalog
+diff --git a/app/modules_page_controller.tcl b/app/modules_page_controller.tcl
+index 7059e792..e963589f 100644
+--- a/app/modules_page_controller.tcl
++++ b/app/modules_page_controller.tcl
+@@ -56,7 +56,7 @@ proc ::GX::moduleCardsChangeSummary {id before} {
+     return $message
+ }
+ proc ::GX::moduleCardStateText {id} {
+-    set state [expr {[moduleRunIsSelected $id] ? {Selected for Run} : {Not selected}}]
++    set state [expr {[moduleAnalysisIsShown $id] ? {Shown in Analysis} : {Hidden from Analysis}}]
+     # Package runtime status is separate from the Session enable flag.
+     set runtime [pluginRuntimeInfo $id]
+     if {[dict get $runtime status] eq {Updated — restart required}} {
+@@ -111,12 +111,10 @@ proc ::GX::refreshModuleCatalog {} {
+             set row 0
+             foreach id [dict get $groups $group] {
+                 set item $box.module$row
+-                ttk::frame $item -padding {2 5} -style GXModuleRun.TFrame
+-                set runKey [moduleField $id run_key {}]
+-                set runVariable [expr {$runKey eq {} ? "::GX::moduleRun($id)" : "::GX::cfg($runKey)"}]
+-                ttk::checkbutton $item.toggle -variable $runVariable -command [list ::GX::moduleCardToggle $id] -takefocus 1 -style GXModuleRun.TCheckbutton
+-                ttk::label $item.name -text [moduleField $id name $id] -wraplength 230 -justify left -style GXModuleRun.TLabel
+-                ttk::label $item.state -width 17 -anchor w -justify left -style GXModuleRun.TLabel
++                ttk::frame $item -padding {2 5}
++                ttk::checkbutton $item.toggle -variable ::GX::ui(moduleShown,$id) -command [list ::GX::moduleCardToggle $id] -takefocus 1
++                ttk::label $item.name -text [moduleField $id name $id] -wraplength 230 -justify left
++                ttk::label $item.state -width 19 -anchor w -justify left
+                 ttk::button $item.help -text Help -command [list ::GX::moduleCardHelp $id] -width 5
+                 grid $item.toggle -row 0 -column 0 -padx {0 5} -sticky w
+                 grid $item.name -row 0 -column 1 -sticky ew -padx {0 8}
+@@ -140,9 +138,9 @@ proc ::GX::refreshModuleCatalog {} {
+         modulesCardsLayout $ui(moduleCards) [winfo width $ui(moduleCards)]
+     }
+     dict for {id widget} $ui(moduleStateWidgets) {
+-        set selected [moduleRunIsSelected $id]
+-        set row [winfo parent $widget]
+-        foreach child [list $row $row.name $row.state] {$child state [expr {$selected?{selected}:{!selected}}]}
++        # Presentation only: the native indicator follows Session visibility,
++        # independently of Run flags and the runtime-tools context selection.
++        set ui(moduleShown,$id) [moduleAnalysisIsShown $id]
+         set state [moduleCardStateText $id]
+         $widget configure -text $state
+     }
+diff --git a/app/run_page_redesign.tcl b/app/run_page_redesign.tcl
+index 1986f55f..6ca25ee8 100644
+--- a/app/run_page_redesign.tcl
++++ b/app/run_page_redesign.tcl
+@@ -30,7 +30,8 @@ proc ::GX::runPlanEntries {} {
+         set selected [moduleRunIsSelected $id]
+         set runner [moduleField $id runner ""]
+         set reason ""
+-        if {!$selected} { set reason "Not selected for this run" }
++        if {![moduleAnalysisIsShown $id]} {set reason "Hidden from Analysis"}
++        if {$reason eq "" && !$selected} { set reason "Not selected for this run" }
+         if {$reason eq "" && $runner ni {standard_octave script_execution script_module}} { set reason "No standard analysis runner" }
+         if {$reason eq "" && ($currentSession eq "" || ![file isdirectory $currentSession])} { set reason "Open a Session" }
+         if {$reason eq ""} { incr order }
+diff --git a/app/session_controller.tcl b/app/session_controller.tcl
+index 76613fde..e928b56d 100644
+--- a/app/session_controller.tcl
++++ b/app/session_controller.tcl
+@@ -99,6 +99,8 @@ proc ::GX::openSessionPath_before_project_api_v1 {path} {
+     # saved Preview dependencies before switching owners or refreshing consumers.
+     set selectionData [_modulePreviewOpenPreflight $d]
+     _modulePreviewReset
++    # A channels-only Session has no Manifest to reset presentation state.
++    set ::GX::cfg(analysis_hidden_modules) {}
+     # A preview image belongs to the Session that supplied its source PNG.
+     # Clear it before loading the next Manifest or rebuilding graph discovery.
+     catch {clearGraphPreview}
+diff --git a/core/tcl/module_api_v1.tcl b/core/tcl/module_api_v1.tcl
+index fed2bcba..b2f44d71 100644
+--- a/core/tcl/module_api_v1.tcl
++++ b/core/tcl/module_api_v1.tcl
+@@ -25,6 +25,8 @@ proc ::GX::defaults_v052_api {} {
+     ::GX::defaults_v048
+     set cfg(acquisition_module) "acq.rigol_csv"
+     set cfg(session_mode) "measurement"
++    # Session presentation preference; execution selections remain independent.
++    set cfg(analysis_hidden_modules) {}
+     array unset moduleCfg *
+     array unset moduleEnabled *
+     array unset moduleRun *
+@@ -434,12 +436,36 @@ proc ::GX::moduleSetRunSelected {id state} {
+     if {$key ne ""} { set cfg($key) $v } else { set moduleRun($id) $v }
+ }
+ 
+-proc ::GX::selectedRunModuleIds {} {
++proc ::GX::moduleAnalysisIsShown {id} {
++    variable cfg
++    if {![moduleAnalysisEligible $id]} {return 0}
++    return [expr {![info exists cfg(analysis_hidden_modules)] || $id ni $cfg(analysis_hidden_modules)}]
++}
++
++proc ::GX::moduleSetAnalysisShown {id shown} {
++    variable cfg
++    if {![moduleAnalysisEligible $id] || ![moduleIsEnabled $id]} {return}
++    if {![info exists cfg(analysis_hidden_modules)]} {set cfg(analysis_hidden_modules) {}}
++    set index [lsearch -exact $cfg(analysis_hidden_modules) $id]
++    if {$shown && $index >= 0} {
++        set cfg(analysis_hidden_modules) [lreplace $cfg(analysis_hidden_modules) $index $index]
++    } elseif {!$shown && $index < 0} {
++        lappend cfg(analysis_hidden_modules) $id
++    }
++}
++
++# Whole-Run admission differs from the persisted execution preference. An
++# explicit targeted API invocation continues to use its existing admission.
++proc ::GX::moduleRunIsAdmitted {id} {
++    expr {[moduleIsEnabled $id] && [moduleAnalysisIsShown $id] && [moduleRunIsSelected $id]}
++}
++
++proc ::GX::selectedRunModuleIds {{admittedOnly 0}} {
+     variable moduleOrder
+     set out {}
+     foreach id $moduleOrder {
+         if {![moduleAnalysisEligible $id]} continue
+-        if {[moduleIsEnabled $id] && [moduleRunIsSelected $id]} { lappend out $id }
++        if {[moduleIsEnabled $id] && [moduleRunIsSelected $id] && (!$admittedOnly || [moduleAnalysisIsShown $id])} { lappend out $id }
+     }
+     return $out
+ }
+@@ -2096,6 +2122,13 @@ proc ::GX::_moduleLoadManifestPreviewBody {path d} {
+     } elseif {[dict get $::GX::modulePreviewLoadContext mode] eq {off}} {
+         _modulePreviewReset
+     }
++    # Missing in older Sessions means all eligible panes are shown. Reset on
++    # every load, including configuration imports, rather than inheriting the
++    # previous Session's visibility. Keep unknown IDs for reversible upgrades.
++    set ::GX::cfg(analysis_hidden_modules) {}
++    if {[dict exists $d module_state.analysis_hidden]} {
++        set ::GX::cfg(analysis_hidden_modules) [lsort -unique [splitList [dict get $d module_state.analysis_hidden]]]
++    }
+     if {[dict exists $d pipeline.format] && [dict get $d pipeline.format] eq "2"} {
+         loadManifestV2 $path
+     } else {
+@@ -2374,7 +2407,7 @@ proc ::GX::refreshAnalysisStatus {} {
+         $w insert end "SESSION: $currentSession\n"
+         $w insert end "Datasets: [join [datasetRegistryIds] {, }]\n"
+         $w insert end "Enabled standard analysis modules: [join [selectedModuleIds] {, }]\n"
+-        $w insert end "Run now: [join [selectedRunModuleIds] {, }]\n"
++        $w insert end "Run now: [join [selectedRunModuleIds 1] {, }]\n"
+     }
+     $w configure -state disabled
+ }
+@@ -3085,6 +3118,7 @@ proc ::GX::manifestStringV2_v062_legend_base {} {
+         foreach k {enabled source_column source_channel original_header canonical unit semantic_role instrument_id instrument_channel} { appendKV out $k $sourceVar($i,$k) }
+     }
+     append out "\n\[module_state\]\n"; appendKV out enabled [join [selectedModuleIds] ,]; appendKV out run [join [selectedRunModuleIds] ,]
++    appendKV out analysis_hidden [join $cfg(analysis_hidden_modules) ,]
+     foreach id $moduleOrder {
+         set keys [moduleConfigKeys $id]
+         if {[llength $keys]} {
+@@ -4050,17 +4084,17 @@ proc ::GX::buildStandardAnalysisQueue_before_plot_variant {{target ""}} {
+     foreach id $owners {
+         if {[moduleField $id kind ""] ne "analysis"} continue
+         if {[moduleField $id runner ""] eq "script_module"} {
+-            if {$target eq "" && (![moduleIsEnabled $id] || ![moduleRunIsSelected $id])} continue
++            if {$target eq "" && ![moduleRunIsAdmitted $id]} continue
+             lappend q [scriptModuleBuildQueueItem $id]
+             continue
+         }
+         if {$id eq "analysis.python_script" && [moduleField $id runner ""] eq "script_execution"} {
+-            if {$target eq "" && (![moduleIsEnabled $id] || ![moduleRunIsSelected $id])} continue
++            if {$target eq "" && ![moduleRunIsAdmitted $id]} continue
+             lappend q [scriptAnalysisBuildQueueItem $id]
+             continue
+         }
+         if {[moduleField $id runner ""] ne "standard_octave"} continue
+-        if {$target eq "" && (![moduleIsEnabled $id] || ![moduleRunIsSelected $id])} continue
++        if {$target eq "" && ![moduleRunIsAdmitted $id]} continue
+         if {[moduleField $id ui_replaced_by_core 0] && (![info exists ::GX::cliMode] || !$::GX::cliMode)} continue
+         if {$id eq "analysis.octave_script" && $::GX::moduleCfg($id,source_mode) eq "registered_script"} {
+             lappend q [scriptAnalysisBuildQueueItem $id]
+@@ -6501,7 +6535,7 @@ proc ::GX::rebuildNativeAnalysisGui_before_core_script_surface {} {
+ 
+     set row 0
+     foreach id $moduleOrder {
+-        if {[moduleField $id kind ""] ne "analysis"} continue
++        if {![moduleAnalysisEligible $id] || ![moduleAnalysisIsShown $id]} continue
+         if {![moduleIsEnabled $id]} continue
+         ensureModuleAnalysisSourceDefaults $id
+ 
+@@ -6558,8 +6592,8 @@ proc ::GX::rebuildNativeAnalysisGui_before_core_script_surface {} {
+ 
+     if {$row == 0} {
+         ttk::frame $host.empty
+-        ttk::label $host.empty.title -text "No analysis modules are active in this experiment." -font TkHeadingFont
+-        ttk::label $host.empty.help -text "Enable Analysis modules in Configuration > Modules, then select them for Run in Modules." -wraplength 800 -justify left
++        ttk::label $host.empty.title -text "No analysis modules are shown in this experiment." -font TkHeadingFont
++        ttk::label $host.empty.help -text "Enable Analysis modules in Configuration > Modules, then show their panes in Modules. Select Run / recalculate now in Analysis to calculate." -wraplength 800 -justify left
+         grid $host.empty.title -row 0 -column 0 -sticky w -pady {0 5}
+         grid $host.empty.help -row 1 -column 0 -sticky w
+         grid $host.empty -row 0 -column 0 -sticky nw -padx 12 -pady 12
+diff --git a/core/tcl/plot_module_variants.tcl b/core/tcl/plot_module_variants.tcl
+index ca77f42c..86cba3bf 100644
+--- a/core/tcl/plot_module_variants.tcl
++++ b/core/tcl/plot_module_variants.tcl
+@@ -788,7 +788,7 @@ proc ::GX::plotVariantCommand {moduleId graphId variantId operation} {
+ proc ::GX::buildStandardAnalysisQueue {} {
+     set q [::GX::buildStandardAnalysisQueue_before_plot_variant]
+     foreach mid $::GX::moduleOrder {
+-        if {![moduleIsEnabled $mid] || ![moduleRunIsSelected $mid]} continue
++        if {![moduleRunIsAdmitted $mid]} continue
+         if {[moduleField $mid runner ""] ne "standard_octave"} continue
+         foreach gid [moduleGraphIds $mid] {
+             foreach vid [plotVariantIds $mid $gid] {

@@ -56,7 +56,7 @@ proc ::GX::moduleCardsChangeSummary {id before} {
     return $message
 }
 proc ::GX::moduleCardStateText {id} {
-    set state [expr {[moduleRunIsSelected $id] ? {Selected for Run} : {Not selected}}]
+    set state [expr {[moduleAnalysisIsShown $id] ? {Shown in Analysis} : {Hidden from Analysis}}]
     # Package runtime status is separate from the Session enable flag.
     set runtime [pluginRuntimeInfo $id]
     if {[dict get $runtime status] eq {Updated — restart required}} {
@@ -111,12 +111,10 @@ proc ::GX::refreshModuleCatalog {} {
             set row 0
             foreach id [dict get $groups $group] {
                 set item $box.module$row
-                ttk::frame $item -padding {2 5} -style GXModuleRun.TFrame
-                set runKey [moduleField $id run_key {}]
-                set runVariable [expr {$runKey eq {} ? "::GX::moduleRun($id)" : "::GX::cfg($runKey)"}]
-                ttk::checkbutton $item.toggle -variable $runVariable -command [list ::GX::moduleCardToggle $id] -takefocus 1 -style GXModuleRun.TCheckbutton
-                ttk::label $item.name -text [moduleField $id name $id] -wraplength 230 -justify left -style GXModuleRun.TLabel
-                ttk::label $item.state -width 17 -anchor w -justify left -style GXModuleRun.TLabel
+                ttk::frame $item -padding {2 5}
+                ttk::checkbutton $item.toggle -variable ::GX::ui(moduleShown,$id) -command [list ::GX::moduleCardToggle $id] -takefocus 1
+                ttk::label $item.name -text [moduleField $id name $id] -wraplength 230 -justify left
+                ttk::label $item.state -width 19 -anchor w -justify left
                 ttk::button $item.help -text Help -command [list ::GX::moduleCardHelp $id] -width 5
                 grid $item.toggle -row 0 -column 0 -padx {0 5} -sticky w
                 grid $item.name -row 0 -column 1 -sticky ew -padx {0 8}
@@ -140,9 +138,9 @@ proc ::GX::refreshModuleCatalog {} {
         modulesCardsLayout $ui(moduleCards) [winfo width $ui(moduleCards)]
     }
     dict for {id widget} $ui(moduleStateWidgets) {
-        set selected [moduleRunIsSelected $id]
-        set row [winfo parent $widget]
-        foreach child [list $row $row.name $row.state] {$child state [expr {$selected?{selected}:{!selected}}]}
+        # Presentation only: the native indicator follows Session visibility,
+        # independently of Run flags and the runtime-tools context selection.
+        set ui(moduleShown,$id) [moduleAnalysisIsShown $id]
         set state [moduleCardStateText $id]
         $widget configure -text $state
     }
