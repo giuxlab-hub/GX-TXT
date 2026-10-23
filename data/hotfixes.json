@@ -15,61 +15,29 @@
       "asset_sha256": "34944a5a945b7c3dc1ab3b8fd71614e1df322f69e59cc1ca8264650385371814",
       "asset_bytes": 284633,
       "rollback_url": "https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P002/APPLY.md",
-      "original_package_sha256": "65a4d7d33ec4d2defbd8c81a2240aecdc89dc4bd2f710a5954e4b4f437ad6cfe",
       "required_predecessor_patch": 1,
       "exclusive_compatibility": true,
-      "owner_verification": "VERIFIED_APPROVED",
-      "status": "VERIFIED_AND_APPROVED_BY_PROJECT_OWNER",
-      "published_date": "2026-10-23",
       "en": {
-        "label": "DEV111-P002 — Verified and approved by the project owner",
-        "title": "Preview Configuration and native scientific providers",
-        "lead": "The project-owner verified second sequential dev-111-r3 patch adds Acquisition and Preview Components to Configuration and managed native Preview presentations.",
-        "problem": "The original Configuration did not expose the new dedicated Acquisition/Preview Components presentation and bounded registered native Preview extension workflow.",
-        "behavior": [
-          "Add dedicated Acquisition and Preview Components tabs to the existing Configuration interface while preserving existing exporter, Viewer, and module management.",
-          "Present registered provider results as metadata, tables, scientific curves, bounded native planes, and raster overlays under canonical Dataset, Session and Preview controls.",
-          "Retain the existing scientific source identity, provider activation, cache invalidation, fallback behavior, and a fixed C-gated native worker without uncontrolled GUI authority.",
-          "The original P002 patch provides 18 science/source payload files, with 15 exact original-file preimages for rollback and three controlled new files."
+        "label": "DEV111-P002 — Preview Configuration",
+        "title": "Preview Configuration",
+        "intro": "DEV111-P002 is available for GX-TXT dev-111 r3.",
+        "changes": [
+          "Adds Acquisition and Preview Components tabs to Configuration.",
+          "Adds scientific previews for metadata, tables, curves, native planes and raster overlays.",
+          "Includes cache management and fallback handling."
         ],
-        "caution": [
-          "Only GX-TXT dev-111 revision r3, with DEV111-P001 applied first. This is the second sequential patch, not a replacement for P001 and not a patch for later framework versions.",
-          "The installer verifies all six previous P001 postimages, unchanged original native engine and the exact 18 P002 file conditions. Any mismatch stops the operation.",
-          "The native addon is Linux x86_64 and Tcl 8.6 specific; other operating systems or incompatible ABIs are not supported.",
-          "The public distribution excludes private test captures and machine paths. Its scientific payload, original installer, manifest and rollback preimages are byte-identical to the verified deposit."
-        ],
-        "statusText": "Verified and approved",
-        "testText": "Project owner functional verification completed",
-        "install": "Close GX-TXT, extract the distribution ZIP and follow APPLY.md. Run bash apply.sh /path/to/gxtxt after P001 is present. Use bash apply.sh --rollback /path/to/gxtxt to restore the post-P001 state. Never bypass version or SHA-256 guards.",
-        "guide": "Apply and rollback procedure",
-        "contract": "Exact compatibility manifest",
-        "sourceNote": "All six post-P001 hashes, native dependency and 18 P002 file constraints match the public maintenance branch. Owner validation is complete, and the public package retains the original functional payload.",
-        "source": "Maintained scientific source"
+        "requirement": "Requires DEV111-P001 first. Native component: Linux x86_64 / Tcl 8.6."
       },
       "it": {
-        "label": "DEV111-P002 — Verificata e approvata dal responsabile del progetto",
-        "title": "Configurazione Preview e provider scientifici nativi",
-        "lead": "Seconda patch sequenziale della dev-111-r3, verificata dal responsabile del progetto, per Acquisition, Preview Components e nuove rappresentazioni native gestite.",
-        "problem": "La Configuration originale non esponeva le nuove schede dedicate Acquisition e Preview Components né il flusso controllato dei componenti Preview nativi.",
-        "behavior": [
-          "Introduce le schede Acquisition e Preview Components nella Configuration conservando le funzioni esistenti di Export, Viewer e gestione moduli.",
-          "Visualizza risultati dei provider registrati come metadati, tabelle, curve scientifiche, piani nativi e overlay raster, con autorità ai servizi CORE Dataset, Session e Preview.",
-          "Mantiene identità dei sorgenti, attivazione dei provider, invalidazione delle cache e fallback, con un worker nativo a capacità limitate e senza autorità diretta della GUI.",
-          "La patch comprende 18 file di payload scientifico; i 15 file originali modificati sono conservati per il rollback, insieme a tre nuovi file controllati."
+        "label": "DEV111-P002 — Configurazione Preview",
+        "title": "Configurazione Preview",
+        "intro": "È disponibile DEV111-P002 per GX-TXT dev-111 r3.",
+        "changes": [
+          "Aggiunge le schede Acquisition e Preview Components in Configuration.",
+          "Aggiunge anteprime scientifiche per metadati, tabelle, curve, piani nativi e overlay raster.",
+          "Include la gestione delle cache e dei fallback."
         ],
-        "caution": [
-          "Solo GX-TXT dev-111 revisione r3, dopo l’applicazione della DEV111-P001. È una patch cumulativa in sequenza, non sostituisce P001 e non vale per altre versioni.",
-          "L’installatore verifica i sei hash successivi alla P001, il motore nativo originale e tutte le 18 condizioni della P002; qualsiasi discordanza blocca l’operazione.",
-          "L’addon è destinato esclusivamente a Linux x86_64 con Tcl 8.6; piattaforme e ABI differenti non sono supportate.",
-          "Il pacchetto pubblico esclude schermate, log privati e percorsi locali. Il payload, il manifest, l’installatore e i preimage del rollback mantengono i byte originali verificati."
-        ],
-        "statusText": "Verificata e approvata",
-        "testText": "Collaudo funzionale del responsabile completato",
-        "install": "Chiudere GX-TXT ed estrarre il pacchetto; dopo P001 eseguire bash apply.sh /path/to/gxtxt. Per il ripristino eseguire bash apply.sh --rollback /path/to/gxtxt. Non aggirare mai i controlli su versione e checksum.",
-        "guide": "Procedura di applicazione e ripristino",
-        "contract": "Manifest di compatibilità",
-        "sourceNote": "I sei hash risultanti dalla P001, la dipendenza nativa e tutti i 18 vincoli P002 coincidono con il branch pubblico. Il responsabile ha completato il collaudo e il pacchetto conserva il payload funzionale originale.",
-        "source": "Sorgenti scientifici della manutenzione"
+        "requirement": "Richiede prima DEV111-P001. Componente nativa: Linux x86_64 / Tcl 8.6."
       }
     },
     {
@@ -77,7 +45,6 @@
       "framework": "0.9.8.10-dev-111",
       "target_release_id": "111",
       "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
-      "debian_author_commit": "83b391de4b81a87e4e76f477491371b58cdc3a40",
       "original_release_archive_sha256": "c31721b84e8f66cd385c1df4d82fae76e32ca816f2bec7f74c434ac720d26cfe",
       "hotfix_branch": "maintenance/dev111",
       "hotfix_commit": "5c9d72b4a30e3d464bd263fbf3a3a072c651bbe0",
@@ -94,64 +61,30 @@
       "required_predecessor_patch": 0,
       "exclusive_compatibility": true,
       "incompatible_from": "0.9.8.10-dev-112",
-      "status": "VERIFIED_AND_APPROVED_BY_PROJECT_OWNER",
-      "installation_status": "NOT_INSTALLED",
-      "scoped_original_test_receipts": 8,
-      "full_scientific_gui_regression": "NOT RUN",
       "original_installer_mode_octal": "0664",
       "typical_git_checkout_mode_octal": "0644",
-      "published_date": "2026-10-23",
       "en": {
-        "label": "DEV111-P001 — Verified and approved by the project owner",
-        "title": "Modules visibility independent of Analysis Run",
-        "lead": "A strictly source-pinned six-file maintenance patch for showing or hiding enabled module panes in Analysis, preserving independent Run choices and original toolbar controls.",
-        "problem": "In the original dev-111 Modules page, checkbox state was tied to Run selection instead of controlling whether enabled module panes were shown in Analysis.",
-        "behavior": [
-          "Checkbox toggles the module pane in Analysis without changing its separate Run selection, enabled state, registered API capability or module descriptors.",
-          "The original Script Module Builder, Reset selected module runtime and selected-module label remain functional and are repositioned beside Modules search, wrapping at narrower widths.",
-          "Session Save Config preserves the additive visibility preference; older Sessions without the new key retain the existing visible panes.",
-          "Patch and rollback each contain exactly six Tcl files, and an isolated Git diff reproduces the original patch byte for byte."
+        "label": "DEV111-P001 — Modules and Analysis visibility",
+        "title": "Modules and Analysis visibility",
+        "intro": "DEV111-P001 is available for GX-TXT dev-111 r3.",
+        "changes": [
+          "The Modules checkbox shows or hides module panes in Analysis without changing Run selection.",
+          "The Module Builder and Reset commands have been repositioned alongside search.",
+          "Visibility preferences are saved in the Session configuration."
         ],
-        "caution": [
-          "Only original GX-TXT dev-111 revision r3, exact public source baseline commit 4daf135e49378eff1f413310bc17cf32f1928c44. No predecessor patch is required; future revisions are not automatically compatible.",
-          "All eight baseline source SHA-256 checks match the public commit. The original Debian author Git SHA differs only in repository history, not in the pinned source content.",
-          "The original apply procedure requires Unix mode 0664 (decimal 436). An ordinary Git checkout typically has mode 0644 and will be refused. Do not bypass mode or checksum guards.",
-          "For installation, check exact dev-111 r3 source hashes and the Unix 0664 permissions required by the supplied installer; follow the original rollback procedure."
-        ],
-        "statusText": "Verified and approved",
-        "testText": "Project owner functional verification completed",
-        "install": "The project owner has verified and approved this patch. For deployment, close GX-TXT, check the source hashes and apply the supplied installer only in a compatible original r3 environment (required Unix 0664). Keep the original backup and rollback.",
-        "guide": "Installation and rollback instructions",
-        "contract": "Exact public compatibility manifest",
-        "sourceNote": "Verified by the project owner. Independent publication integrity checks matched eight baseline hashes and all six patched source files against the GitHub revision and the sealed ZIP.",
-        "source": "Review maintenance source"
+        "requirement": "For dev-111 r3."
       },
       "it": {
-        "label": "DEV111-P001 — Verificata e approvata dal responsabile del progetto",
-        "title": "Visibilità Modules separata dalla selezione Run di Analysis",
-        "lead": "Patch di manutenzione su sei file, vincolata esattamente ai sorgenti dev-111 r3, per mostrare o nascondere pannelli Analysis senza alterare le scelte Run.",
-        "problem": "Nella dev-111 originale la checkbox Modules era associata alla selezione Run, invece che alla visibilità del pannello del modulo abilitato in Analysis.",
-        "behavior": [
-          "La checkbox mostra o nasconde il pannello del modulo senza alterarne Run, abilitazione, API registrate e descrittori.",
-          "I comandi originali Script Module Builder e Reset selected module runtime e il nome del modulo selezionato restano attivi e vengono disposti accanto alla ricerca, con ritorno a capo su finestre strette.",
-          "La configurazione della Session conserva la nuova preferenza aggiuntiva; le vecchie Session senza la chiave continuano a mostrare i pannelli.",
-          "Patch e rollback includono esattamente sei file Tcl; il diff applicato a un checkout isolato produce gli stessi byte dello ZIP originale."
+        "label": "DEV111-P001 — Visibilità Modules e Analysis",
+        "title": "Visibilità Modules e Analysis",
+        "intro": "È disponibile DEV111-P001 per GX-TXT dev-111 r3.",
+        "changes": [
+          "La checkbox Modules mostra o nasconde i pannelli in Analysis senza modificare la selezione Run.",
+          "Module Builder e Reset sono stati riposizionati accanto alla ricerca.",
+          "Le preferenze di visibilità vengono salvate nella configurazione della Session."
         ],
-        "caution": [
-          "Esclusivamente GX-TXT dev-111 r3 originale, commit sorgente pubblico 4daf135e49378eff1f413310bc17cf32f1928c44. Nessuna patch precedente richiesta; le revisioni successive non sono automaticamente compatibili.",
-          "Tutti gli otto hash SHA-256 dei sorgenti coincidono con GitHub. Il commit dell’autore Debian appartiene a un’altra cronologia Git, ma i file rilevanti hanno contenuto identico.",
-          "L’installatore originale richiede permessi Unix 0664 (decimale 436); un clone Git normale ha generalmente 0644 e viene rifiutato. Non aggirare i controlli.",
-          "Per l’installazione controllare gli hash esatti dei sorgenti dev-111 r3 e i permessi Unix 0664 richiesti dall’installatore originale; conservare il rollback."
-        ],
-        "statusText": "Verificata e approvata",
-        "testText": "Collaudo funzionale del responsabile completato",
-        "install": "La patch è stata verificata e approvata dal responsabile del progetto. Per applicarla, chiudere GX-TXT, verificare gli hash e utilizzare l’installatore esclusivamente sulla dev-111 r3 compatibile (permessi Unix 0664). Conservare backup e rollback.",
-        "guide": "Istruzioni di installazione e ripristino",
-        "contract": "Manifest pubblico di compatibilità",
-        "sourceNote": "Verificata dal responsabile del progetto. I controlli di integrità della pubblicazione hanno confermato gli otto hash di origine e tutti i sei file finali rispetto a GitHub e allo ZIP depositato.",
-        "source": "Consulta i sorgenti della manutenzione"
-      },
-      "owner_verification": "VERIFIED_APPROVED"
+        "requirement": "Per dev-111 r3."
+      }
     },
     {
       "id": "dev108-viewer-cache-popup-v3",
