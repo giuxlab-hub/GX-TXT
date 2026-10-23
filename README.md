@@ -106,3 +106,9 @@ These 15 selected original Tcl cases are copied byte-for-byte from the official 
 The deposited dev-110 source is explicitly an intermediate TASK210 snapshot, not a final all-feature acceptance. Seven selected original Tcl/Python scientific-source cases are copied byte-identically into validation/official_dev110/, with exact SHA-256 and original archive paths in source-manifest-dev110.json. These cover bounded acquisition lifecycle, Print syntax, source-quality inspection, ScriptJob duplex and Session creation control contracts.
 
 **Not executed:** this public branch does not assert Debian GUI/Clang/Octave runtime acceptance; no official_dev110 package ZIP series exists in the deposited source, and historical dev-108 hotfixes are incompatible by policy. The existing dev-102 controlled CLI runner remains unchanged.
+
+## GX-TXT dev-111 (r3) — selected original validation sources
+
+Seven source-only Tcl/Python cases copied byte-for-byte from the official deposited r3 revision. They concern document source capture, the shared icon catalog, paired-source readback, scientific video error handling, typed Script Bridge values and managed Job worker behavior. Exact original file paths and SHA-256 hashes are in source-manifest-dev111.json.
+
+**No new tests were run by GitHub source publication.** Controlled scientific and native GUI fixtures remain necessary; case inclusion is not full Linux/Windows acceptance. Neither the historically version-bound dev-108 hotfix nor private user Sessions or confidential test generators are included.

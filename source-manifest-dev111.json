@@ -1,0 +1,61 @@
+{
+  "schema": "gxtxt.public-validation-sources/9",
+  "referenceFramework": "0.9.8.10-dev-111",
+  "sourceRevision": "r3",
+  "referenceMainCommit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+  "officialArchiveSha256": "c31721b84e8f66cd385c1df4d82fae76e32ca816f2bec7f74c434ac720d26cfe",
+  "selectedCount": 7,
+  "sourceOnly": true,
+  "runnerStatus": "NOT RUN",
+  "files": [
+    {
+      "path": "validation/official_dev111/task210/document_source_capture/contracts.tcl",
+      "sourcePath": "validation/task210/document_source_capture/contracts.tcl",
+      "bytes": 7978,
+      "sha256": "9a2869d8781dd37f481bed9e08e8c7bceb3a222bbc9f385421752068944db27c",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111/task210/icon_stock/production111/public_catalog_admission.tcl",
+      "sourcePath": "validation/task210/icon_stock/production111/public_catalog_admission.tcl",
+      "bytes": 5901,
+      "sha256": "98f91deeee88e0a9ba53741458299e4c1919284c2cdca0492c1b3bd9005c21b5",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111/task210/pcb_canonical_readback/readback.tcl",
+      "sourcePath": "validation/task210/pcb_canonical_readback/readback.tcl",
+      "bytes": 11212,
+      "sha256": "54fdd52c6cd7a63c75a2275fde8e42324d74d48f209430f5be7a02fabf7897ed",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111/task210/scientific_video/fault_entry.tcl",
+      "sourcePath": "validation/task210/scientific_video/fault_entry.tcl",
+      "bytes": 2743,
+      "sha256": "480cd07a1cc647e87fe283e5e1e082121daf347524a3f867671fa8faeb704189",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111/task210/script_bridge_null/codecs.py",
+      "sourcePath": "validation/task210/script_bridge_null/codecs.py",
+      "bytes": 3292,
+      "sha256": "1d5e2c44b4d3ad04ac2b47f18fd8cdd5db311cce91b1703544f96d446a58ed34",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111/task210/script_bridge_null/registered.tcl",
+      "sourcePath": "validation/task210/script_bridge_null/registered.tcl",
+      "bytes": 13170,
+      "sha256": "b1e968a34e07b9fef387a5fc993f5a546955791b0520b9cfed5ac42bd32ecfc1",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111/task210/scriptjob_drain/worker.py",
+      "sourcePath": "validation/task210/scriptjob_drain/worker.py",
+      "bytes": 3427,
+      "sha256": "a89fe786ac8f22e4f2b3a7084d36b4449c23ba569a9849b9259f4fecebc7bba8",
+      "execution": "SOURCE_ONLY_NOT_RERUN"
+    }
+  ]
+}

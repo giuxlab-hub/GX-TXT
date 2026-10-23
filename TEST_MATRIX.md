@@ -195,3 +195,19 @@ Reference: source commit ccde3a0f62020941c6ed3756c4de3c135a4772e4. These seven o
 | validation/task210_session_creation/tcl_contract.tcl | validation/official_dev110/task210_session_creation/tcl_contract.tcl | Byte-identical, NOT RUN |
 
 The original source snapshot leaves integrated GUI/Octave acceptance incomplete; no new PASS results are inferred.
+
+## Dev-111 r3 source-only cases — no execution
+
+Verified original source bytes are copied only for independent controlled reproduction, referenced against public main 4daf135e49378eff1f413310bc17cf32f1928c44.
+
+| Original source file | Published copy | Result |
+| --- | --- | --- |
+| validation/task210/document_source_capture/contracts.tcl | validation/official_dev111/task210/document_source_capture/contracts.tcl | SHA256 identity PASS; execution NOT RUN |
+| validation/task210/icon_stock/production111/public_catalog_admission.tcl | validation/official_dev111/task210/icon_stock/production111/public_catalog_admission.tcl | SHA256 identity PASS; execution NOT RUN |
+| validation/task210/pcb_canonical_readback/readback.tcl | validation/official_dev111/task210/pcb_canonical_readback/readback.tcl | SHA256 identity PASS; execution NOT RUN |
+| validation/task210/scientific_video/fault_entry.tcl | validation/official_dev111/task210/scientific_video/fault_entry.tcl | SHA256 identity PASS; execution NOT RUN |
+| validation/task210/script_bridge_null/codecs.py | validation/official_dev111/task210/script_bridge_null/codecs.py | SHA256 identity PASS; execution NOT RUN |
+| validation/task210/script_bridge_null/registered.tcl | validation/official_dev111/task210/script_bridge_null/registered.tcl | SHA256 identity PASS; execution NOT RUN |
+| validation/task210/scriptjob_drain/worker.py | validation/official_dev111/task210/scriptjob_drain/worker.py | SHA256 identity PASS; execution NOT RUN |
+
+No Debian GUI, Clang/Octave or scientific runtime PASS is asserted by this source-only publication.
