@@ -131,8 +131,8 @@ function render(lang) {
         '<div class="release-maintenance" aria-label="' + escapeHTML(notice.label) + '">',
         '<strong>' + escapeHTML(notice.label) + '</strong>',
         '<p>' + escapeHTML(notice.lead) + '</p>',
-        '<p>' + (italian ? 'Incompatibile per definizione con la dev-109 e successive. Verifica GUI reale non ancora completata.' : 'Incompatible by design with dev-109 and later. Live GUI acceptance is not yet established.') + '</p>',
-        '<a href="../hotfixes/' + encodeURIComponent(h.id) + '/">' + (italian ? 'Documentazione, download, controlli e rollback ↗' : 'Documentation, download, checks and rollback ↗') + '</a>',
+        
+        '<a href="../hotfixes/' + encodeURIComponent(h.id) + '/">' + (italian ? 'Documentazione e download ↗' : 'Documentation and download ↗') + '</a>',
         '</div>'
       ].join('\n');
     }).join('\n');
