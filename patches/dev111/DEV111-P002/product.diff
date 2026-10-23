@@ -1,0 +1,1339 @@
+diff --git a/app/gui/configuration_module_editor.tcl b/app/gui/configuration_module_editor.tcl
+index 6cc502e5..d90efb8f 100644
+--- a/app/gui/configuration_module_editor.tcl
++++ b/app/gui/configuration_module_editor.tcl
+@@ -197,14 +197,14 @@ proc ::GX::configurationEditorRefresh {} {
+ }
+ proc ::GX::configurationModulesPending {} {
+     set result {}
+-    foreach category {services exports} {
++    foreach category {services exports acquisition} {
+         set parent .top.nb.configuration.sections.modules.kinds.$category.browser.split.detail.viewport.content.editor
+         lappend result {*}[configurationModuleEditorPending $parent user]
+     }
+     return $result
+ }
+ proc ::GX::configurationModulesSaved {} {
+-    foreach category {services exports} {
++    foreach category {services exports acquisition} {
+         configurationModuleEditorAccept .top.nb.configuration.sections.modules.kinds.$category.browser.split.detail.viewport.content.editor user
+     }
+     configurationEditorChanged {}
+diff --git a/app/gui/configuration_modules.tcl b/app/gui/configuration_modules.tcl
+index 3193a2c0..d2e21588 100644
+--- a/app/gui/configuration_modules.tcl
++++ b/app/gui/configuration_modules.tcl
+@@ -9,6 +9,9 @@ namespace eval ::GX::ConfigurationModules {
+     variable exportQuery {}
+     variable exportRecords {}
+     variable exportSelected {}
++    variable acquisitionQuery {}
++    variable acquisitionRecords {}
++    variable acquisitionSelected {}
+ }
+ proc ::GX::configurationInstalledPlugins {} {
+     set result {}
+@@ -36,16 +39,22 @@ proc ::GX::configurationInstalledPlugins {} {
+ proc ::GX::configurationModulesBuild {parent row} {
+     ttk::notebook $parent.kinds
+     ttk::frame $parent.kinds.services;ttk::frame $parent.kinds.exports;ttk::frame $parent.kinds.viewers
+-    $parent.kinds add $parent.kinds.services -text {Analysis, Acquisition & Services}
++    $parent.kinds add $parent.kinds.services -text {Analysis & Services}
+     $parent.kinds add $parent.kinds.exports -text Export
+     $parent.kinds add $parent.kinds.viewers -text Viewers
++    ttk::frame $parent.kinds.acquisition
++    ttk::frame $parent.kinds.preview
++    $parent.kinds add $parent.kinds.acquisition -text Acquisition
++    $parent.kinds add $parent.kinds.preview -text {Preview Components}
+     grid $parent.kinds -row $row -column 0 -columnspan 4 -sticky nsew
+     grid rowconfigure $parent $row -weight 1
+     configurationModulesBrowserBuild $parent.kinds.services services
+     configurationModulesBrowserBuild $parent.kinds.exports exports
++    configurationModulesBrowserBuild $parent.kinds.acquisition acquisition
+     configurationSubscribe ::GX::configurationEditorChanged
+     configurationModulesReload
+     viewerManagerBuild $parent.kinds.viewers
++    configurationPreviewComponentsBuild $parent.kinds.preview
+ }
+ # Both category browsers consume the same installed registry and Configuration
+ # editor. Their query/selection variables are presentation drafts only.
+@@ -57,6 +66,7 @@ proc ::GX::configurationModulesBrowserBuild {parent category} {
+     ttk::frame $w.search
+     ttk::label $w.search.label -text "Installed plugins"
+     set queryVariable [expr {$category eq {exports} ? {::GX::ConfigurationModules::exportQuery} : {::GX::ConfigurationModules::query}}]
++    if {$category eq {acquisition}} {set queryVariable ::GX::ConfigurationModules::acquisitionQuery}
+     ttk::entry $w.search.query -textvariable $queryVariable -width 32
+     ttk::button $w.search.refresh -text Refresh -command ::GX::configurationModulesReload
+     pack $w.search.label $w.search.query $w.search.refresh -side left -padx 4
+@@ -101,23 +111,27 @@ proc ::GX::configurationModulesBrowserBuild {parent category} {
+ proc ::GX::configurationModulesReload {} {
+     set ::GX::ConfigurationModules::catalog {}
+     configurationModulesRefresh
++    configurationPreviewComponentsRefresh
+ }
+ proc ::GX::configurationModulesCategoryMatches {record category} {
+     set kind {}
+     if {[dict get $record type] eq {module}} {set kind [moduleField [dict get $record id] kind {}]}
+     switch -- $category {
+         exports {return [expr {$kind eq {export}}]}
+-        services {return [expr {$kind ni {viewer export preview}}]}
++        acquisition {return [expr {$kind eq {acquisition}}]}
++        services {return [expr {$kind ni {viewer export preview acquisition}}]}
+         default {error "Unknown module configuration category '$category'"}
+     }
+ }
+ proc ::GX::configurationModulesRefresh {{category all}} {
+     if {$category eq {all}} {
+-        foreach kind {services exports} {configurationModulesRefresh $kind}
++        foreach kind {services exports acquisition} {configurationModulesRefresh $kind}
+         return
+     }
+     if {$category eq {services}} {
+         upvar #0 ::GX::ConfigurationModules::records records ::GX::ConfigurationModules::query query ::GX::ConfigurationModules::selected selected
++    } elseif {$category eq {acquisition}} {
++        upvar #0 ::GX::ConfigurationModules::acquisitionRecords records ::GX::ConfigurationModules::acquisitionQuery query ::GX::ConfigurationModules::acquisitionSelected selected
+     } else {
+         upvar #0 ::GX::ConfigurationModules::exportRecords records ::GX::ConfigurationModules::exportQuery query ::GX::ConfigurationModules::exportSelected selected
+     }
+@@ -145,6 +159,8 @@ proc ::GX::configurationModulesRefresh {{category all}} {
+ proc ::GX::configurationModulesSelect {{category services}} {
+     if {$category eq {exports}} {
+         upvar #0 ::GX::ConfigurationModules::exportRecords records ::GX::ConfigurationModules::exportSelected selected
++    } elseif {$category eq {acquisition}} {
++        upvar #0 ::GX::ConfigurationModules::acquisitionRecords records ::GX::ConfigurationModules::acquisitionSelected selected
+     } else {
+         upvar #0 ::GX::ConfigurationModules::records records ::GX::ConfigurationModules::selected selected
+     }
+@@ -188,7 +204,11 @@ proc ::GX::configurationModulesSelect {{category services}} {
+     }
+ }
+ proc ::GX::configurationModulesDocumentation {{category services}} {
++    if {$category eq {acquisition}} {
++        upvar #0 ::GX::ConfigurationModules::acquisitionSelected selected
++    } else {
+     if {$category eq {exports}} {upvar #0 ::GX::ConfigurationModules::exportSelected selected} else {upvar #0 ::GX::ConfigurationModules::selected selected}
++    }
+     if {[string match module:* $selected]} {documentationBrowserOpenModule [string range $selected 7 end]} else {.top.nb select .top.nb.help;documentationBrowserPopulate}
+ }
+ proc ::GX::configurationModuleProviderToggle {id} {
+@@ -228,4 +248,5 @@ proc ::GX::configurationModulesResize {parent width {height {}}} {
+     }
+ }
+ 
++source [file join [file dirname [info script]] configuration_preview_components.tcl]
+ source [file join [file dirname [info script]] configuration_module_editor.tcl]
+diff --git a/app/gui/configuration_preview_components.tcl b/app/gui/configuration_preview_components.tcl
+index 3ae17708..574022f8 100644
+--- a/app/gui/configuration_preview_components.tcl
++++ b/app/gui/configuration_preview_components.tcl
+@@ -1,5 +1,5 @@
+ # SPDX-License-Identifier: GPL-3.0-or-later
+-# Unwired TASK210 development factory. MAIN owns loader/notebook/lifecycle hooks.
++# Existing Module/Plugin owners supply activation, discovery and lifecycle.
+ # Installed metadata and operational state stay with their existing public owners.
+ namespace eval ::GX::ConfigurationPreviewComponents {
+     variable views; if {![info exists views]} {set views {}}
+@@ -27,8 +27,8 @@ proc ::GX::ConfigurationPreviewComponents::_List {value} {
+ proc ::GX::ConfigurationPreviewComponents::_Project {information operational} {
+     if {[catch {dict size $information}]} {set information {}}
+     if {[catch {dict size $operational}]} {set operational {}}
+-    set row [dict create component_id {} name {} installed_version {} active_version {} pending_version {} enabled 0 descriptor_valid 0 native_abi {} native_platform {} native_layout_id {} native_build_id {} dataset_contracts {} capabilities {} verified_capabilities {} gui_design_sha256 {} compatibility_status unknown load_status not_checked available 0 reason {Package admission is unavailable} admission_fingerprint {}]
+-    foreach key {component_id name installed_version active_version pending_version native_abi native_platform native_layout_id native_build_id gui_design_sha256 admission_fingerprint} {dict set row $key [_Text [_Default $information $key [dict get $row $key]] 256]}
++    set row [dict create profile native component_id {} name {} installed_version {} active_version {} pending_version {} enabled 0 descriptor_valid 0 native_abi {} native_platform {} native_layout_id {} native_build_id {} dataset_contracts {} capabilities {} verified_capabilities {} gui_design_sha256 {} compatibility_status unknown load_status not_checked available 0 reason {Package admission is unavailable} admission_fingerprint {}]
++    foreach key {profile component_id name installed_version active_version pending_version native_abi native_platform native_layout_id native_build_id gui_design_sha256 admission_fingerprint} {dict set row $key [_Text [_Default $information $key [dict get $row $key]] 256]}
+     dict set row reason [_Text [_Default $information reason [dict get $row reason]] 512]
+     foreach key {dataset_contracts capabilities verified_capabilities} {dict set row $key [_List [_Default $information $key {}]]}
+     dict set row descriptor_valid [_Bool [_Default $information descriptor_valid 0]]
+@@ -49,6 +49,10 @@ proc ::GX::ConfigurationPreviewComponents::_Project {information operational} {
+     set fingerprint [dict get $row admission_fingerprint]
+     if {$fingerprint ne {} && ![regexp {^[0-9a-f]{64}$} $fingerprint]} {set fingerprint {};dict set row admission_fingerprint {}}
+     set ready [expr {$operationalKnown && $enabled && $reportedEnabled && [dict get $row descriptor_valid] && $compatibility eq {compatible} && $load eq {verified} && [_Bool [_Default $information available 0]] && $fingerprint ne {} && [dict get $row pending_version] eq {}}]
++    if {[dict get $row profile] eq {presentation}} {
++        set ready [expr {$operationalKnown && $enabled && $reportedEnabled && [dict get $row descriptor_valid] && $compatibility eq {compatible} && [_Bool [_Default $information available 0]] && [dict get $row pending_version] eq {}}]
++        dict set row verified_capabilities {}
++    }
+     dict set row available $ready
+     if {!$ready} {dict set row verified_capabilities {}}
+     if {!$operationalKnown} {
+@@ -61,6 +65,8 @@ proc ::GX::ConfigurationPreviewComponents::_Project {information operational} {
+         dict set row readiness {Activation pending}
+     } elseif {$compatibility eq {incompatible}} {
+         dict set row readiness Incompatible
++    } elseif {$ready && [dict get $row profile] eq {presentation}} {
++        dict set row readiness {Ready on selection}
+     } elseif {$ready} {
+         dict set row readiness {Ready (admitted)}
+     } elseif {$load eq {failed}} {
+@@ -79,6 +85,9 @@ proc ::GX::ConfigurationPreviewComponents::_Matches {row query} {
+ }
+ proc ::GX::ConfigurationPreviewComponents::_Display {value {empty {Not reported}}} {if {$value eq {}} {return $empty};return $value}
+ proc ::GX::ConfigurationPreviewComponents::_Details {row} {
++    if {[dict get $row profile] eq {presentation}} {
++        return [join [list "[dict get $row name] ([dict get $row component_id])" "Installed: [_Display [dict get $row installed_version]]    Active: [_Display [dict get $row active_version]]    Pending: [_Display [dict get $row pending_version] None]" "Module state: [dict get $row operational_state]    Readiness: [dict get $row readiness]" "Dataset contracts: [_Display [join [dict get $row dataset_contracts] {, }] {None declared}]" {Contributes available Dataset tabs alongside the standard Preview.} [dict get $row reason]] \n]
++    }
+     set lines [list "[dict get $row name] ([dict get $row component_id])" "Installed: [_Display [dict get $row installed_version]]    Activation version: [_Display [dict get $row active_version]]    Pending: [_Display [dict get $row pending_version] {None reported}]" "Module state: [dict get $row operational_state]    Readiness: [dict get $row readiness]" "Declared capabilities: [_Display [join [dict get $row capabilities] {, }] {None declared}]" "Current verified capabilities: [_Display [join [dict get $row verified_capabilities] {, }] {None verified}]" "Dataset contracts: [_Display [join [dict get $row dataset_contracts] {, }] {None declared}]" "Compatibility: [dict get $row compatibility_status]    Admission: [dict get $row load_status]" "Declared native ABI: [_Display [dict get $row native_abi]]    Platform: [_Display [dict get $row native_platform]]" "Declared layout: [_Display [dict get $row native_layout_id]]    Build: [_Display [dict get $row native_build_id]]" "Declared GUI design SHA: [_Display [dict get $row gui_design_sha256]]" "Admission fingerprint: [_Display [dict get $row admission_fingerprint]]" "[dict get $row reason]"]
+     return [join $lines \n]
+ }
+@@ -191,7 +200,7 @@ proc ::GX::configurationPreviewComponentsBuild {parent} {
+     bind $root <Destroy> [list ::GX::ConfigurationPreviewComponents::_Forget $parent $instance %W]
+     try {
+         ttk::label $root.title -text {Installed Preview components} -font TkHeadingFont
+-        ttk::label $root.note -text {Declared capabilities remain unverified until current admission checks succeed. Activation follows normal Module dependency rules.} -wraplength 650
++        ttk::label $root.note -text {Components add available Dataset views to the standard Preview. Presentation tabs load on selection; native processing requires compatible admitted code. Activation follows normal Module dependency rules.} -wraplength 650
+         ttk::frame $root.search
+         ttk::label $root.search.label -text Filter
+         ttk::entry $root.search.query -textvariable ::GX::ConfigurationPreviewComponents::query($instance)
+diff --git a/app/gui/dataset_preview_live.tcl b/app/gui/dataset_preview_live.tcl
+index 9549e4db..7a3aadf8 100644
+--- a/app/gui/dataset_preview_live.tcl
++++ b/app/gui/dataset_preview_live.tcl
+@@ -3,7 +3,13 @@
+ # scheduler, numerical engine or persistent selection authority lives here.
+ namespace eval ::GX::PreviewLive {variable active {};variable epoch 0}
+ proc ::GX::datasetPreviewLiveEligible {id} {
+-    expr {[datasetField $id format] in {csv hdf5 h5} && [datasetField $id contract [datasetField $id kind]] ni {geometry.sketch}}
++    if {[datasetField $id format] in {csv hdf5 h5} && [datasetField $id contract [datasetField $id kind]] ni {geometry.sketch}} {return 1}
++    # Other data retain their original fallback unless a compatible installed
++    # component can contribute to the existing prepared Preview notebook.
++    foreach provider [datasetPreviewProviders $id] {
++        if {[dict get $provider available] && [datasetPublicationV2DictDefault $provider profile native] eq {presentation}} {return 1}
++    }
++    return 0
+ }
+ proc ::GX::datasetPreviewLiveShell {} {
+     set f .top.nb.preview;set w $f.txt
+@@ -71,7 +77,7 @@ proc ::GX::datasetPreviewLiveOptions {id} {
+ }
+ proc ::GX::datasetPreviewLiveWatchStamp {} {
+     variable ::GX::PreviewLive::active
+-    set id [dict get $active id];set ids [list $id]
++    set id [dict get $active id];set ids [concat [list $id] [datasetPublicationV2DictDefault $active extension_dependency_ids {}]]
+     set md [datasetMetadataRead $::GX::currentSession $id]
+     if {[dict exists $md curve_digitizer.source_dataset_id]} {lappend ids [dict get $md curve_digitizer.source_dataset_id]}
+     if {[dict exists $active rendered_options processed_image dataset_id]} {lappend ids [dict get $active rendered_options processed_image dataset_id]}
+@@ -85,6 +91,7 @@ proc ::GX::datasetPreviewLiveWatchStamp {} {
+         }
+         lappend stamp $dependency $state
+     }
++    lappend stamp components [datasetPreviewProviderIdentity $id]
+     return $stamp
+ }
+ proc ::GX::datasetPreviewLiveCheck {{force 0}} {
+@@ -99,6 +106,13 @@ proc ::GX::datasetPreviewLiveCheck {{force 0}} {
+     if {!$force && !$failed && [dict exists $active watch_stamp] && $stamp eq [dict get $active watch_stamp]} return
+     if {!$failed} {dict set active watch_stamp $stamp}
+     set id [dict get $active id]
++    if {[dict exists $active representation]} {
++        set notebook .top.nb.preview.live.panes
++        set windowId [winfo id $notebook]
++        set owner [list [dict get $active id] [dict get $active token] $::GX::PreviewLive::epoch $reason]
++        datasetPreviewLiveExtensionTabs $id [dict get $active representation]
++        if {![datasetPreviewLiveExtensionCurrent $notebook $windowId $owner]} return
++    }
+     if {[catch {set current [datasetPreviewCacheKey $id [dict get $active rendered_options]]}] || $current ne [dict get $active rendered_key]} {
+         datasetPreviewLiveSetStatus {Previous render — scientific source or linked image changed. Select Render to refresh.}
+         if {![datasetPublicationV2DictDefault $active stale_qualified 0]} {
+@@ -202,6 +216,7 @@ proc ::GX::_datasetPreviewLiveReady {id token generation explicit response} {
+         datasetPreviewLiveSetStatus "Preview unavailable: $reason Select Render to retry."
+         return
+     }
++    if {$generation!=$epoch || ![dict exists $active id] || [dict get $active id] ne $id || [dict get $active token] ne $token} return
+     if {[datasetPublicationV2DictDefault $result current 1]} {
+         if {[catch {_datasetPreviewLivePersistReceipt $id $token $result} persisted] || !$persisted} {
+             datasetPreviewLiveSetStatus {The prepared view is retained; its saved render receipt was not updated. Select Render to refresh.}
+@@ -272,6 +287,11 @@ proc ::GX::datasetPreviewLiveAdopt {id result cacheHit} {
+     $w configure -state disabled
+     raise $w
+     datasetPreviewLiveQuality $id $result
++    set notebook $f.live.panes
++    set windowId [winfo id $notebook]
++    set owner [list [datasetPublicationV2DictDefault $active id {}] [datasetPublicationV2DictDefault $active token {}] $::GX::PreviewLive::epoch [interactiveDocumentSessionToken]]
++    datasetPreviewLiveExtensionTabs $id $result
++    if {![datasetPreviewLiveExtensionCurrent $notebook $windowId $owner]} return
+     dict set active key [dict get $result key];dict set active source [dict get $result source]
+     dict set active rendered_key [dict get $result key];dict set active rendered_options [dict get $result options]
+     dict set active stale_qualified 0
+@@ -390,8 +410,13 @@ proc ::GX::datasetPreviewLiveQualityDetail {tree label} {
+ }
+ proc ::GX::datasetPreviewLiveView {operation} {
+     set path .top.nb.preview.live.panes.plot.retainedXY
++    set notebook .top.nb.preview.live.panes
++    if {[winfo exists $notebook]} {
++        set selected [$notebook select]
++        if {[info exists ::GX::ui(previewExtensionTabs)] && [dict exists $::GX::ui(previewExtensionTabs) $selected] && [winfo exists $selected.plot]} {set path $selected.plot}
++    }
+     if {![winfo exists $path]} return
+-    .top.nb.preview.live.panes select .top.nb.preview.live.panes.plot
++    $notebook select [winfo parent $path]
+     if {[catch {
+         switch $operation {
+             fit {::GX::PlotDatasetAPIv4::widgetView $path fit}
+@@ -442,3 +467,68 @@ proc ::GX::datasetPreviewLiveRefreshStatus {} {
+     if {$xyz ne {}} {set text $xyz}
+     $label configure -text $text
+ }
++
++# Compose module-owned descriptor data through the standard Preview renderers.
++# These widgets are transient presentation, not another provider/module registry.
++proc ::GX::datasetPreviewLiveExtensionCurrent {notebook windowId owner} {
++    variable ::GX::PreviewLive::active;variable ::GX::PreviewLive::epoch
++    if {![winfo exists $notebook] || [winfo id $notebook] ne $windowId || [catch {interactiveDocumentSessionToken} session]} {return 0}
++    expr {$owner eq [list [datasetPublicationV2DictDefault $active id {}] [datasetPublicationV2DictDefault $active token {}] $epoch $session]}
++}
++proc ::GX::datasetPreviewLiveExtensionTabs {id representation} {
++    variable ::GX::PreviewLive::active;variable ::GX::PreviewLive::epoch
++    set notebook .top.nb.preview.live.panes
++    if {![winfo exists $notebook] || [catch {interactiveDocumentSessionToken} session]} return
++    set windowId [winfo id $notebook]
++    set owner [list [datasetPublicationV2DictDefault $active id {}] [datasetPublicationV2DictDefault $active token {}] $epoch $session]
++    set previous {};set priorPanes {}
++    if {[info exists ::GX::ui(previewExtensionTabs)]} {
++        set selected [$notebook select]
++        if {[dict exists $::GX::ui(previewExtensionTabs) $selected]} {set previous [dict get $::GX::ui(previewExtensionTabs) $selected]}
++        set priorPanes [dict keys $::GX::ui(previewExtensionTabs)]
++    }
++    set contributions [datasetPreviewProviderTabs $id $representation]
++    # Module activation/callbacks can service Tk. An obsolete composition must
++    # never remove or populate the replacement Dataset's notebook.
++    if {![datasetPreviewLiveExtensionCurrent $notebook $windowId $owner]} return
++    foreach pane $priorPanes {if {[winfo exists $pane]} {destroy $pane}}
++    set ::GX::ui(previewExtensionTabs) {}
++    set diagnostics [dict get $contributions diagnostics]
++    set ordinal 0;set dependencies {}
++    foreach tab [dict get $contributions tabs] {
++        set pane $notebook.extension[incr ordinal]
++        ttk::frame $pane
++        set paneId [winfo id $pane]
++        set failed [catch {set rendered [previewDescriptorTabRender $pane $tab $representation]} reason]
++        if {![datasetPreviewLiveExtensionCurrent $notebook $windowId $owner]} {
++            if {[winfo exists $pane] && [winfo id $pane] eq $paneId} {destroy $pane}
++            return
++        }
++        if {$failed} {
++            lappend diagnostics "[dict get $tab component_id]: $reason"
++            destroy $pane;continue
++        }
++        if {!$rendered} {destroy $pane;continue}
++        if {[dict get $tab kind] eq {table}} {lappend dependencies [dict get $tab dataset_id]}
++        $notebook add $pane -text [dict get $tab label]
++        set identity [list [dict get $tab component_id] [dict get $tab id]]
++        dict set ::GX::ui(previewExtensionTabs) $pane $identity
++        if {$identity eq $previous} {$notebook select $pane}
++    }
++    if {![datasetPreviewLiveExtensionCurrent $notebook $windowId $owner]} return
++    dict set active extension_dependency_ids [lsort -unique $dependencies]
++    dict set active representation $representation
++    dict set active extensions_identity [datasetPreviewProviderIdentity $id]
++    dict set active extension_diagnostics $diagnostics
++    if {[llength $diagnostics]} {
++        # Errors never replace or suppress the working standard Preview.
++        set pane $notebook.extensionDiagnostics
++        if {[winfo exists $pane]} {destroy $pane}
++        ttk::frame $pane
++        ttk::label $pane.message -text [join $diagnostics \n] -justify left -wraplength 650 -padding 12
++        pack $pane.message -fill x -anchor nw
++        bind $pane.message <Configure> [list $pane.message configure -wraplength %w]
++        $notebook add $pane -text {Component status}
++        dict set ::GX::ui(previewExtensionTabs) $pane status
++    }
++}
+diff --git a/core/native2d/bin/gxpreviewprovider.so b/core/native2d/bin/gxpreviewprovider.so
+new file mode 100755
+index 00000000..14921c0f
+Binary files /dev/null and b/core/native2d/bin/gxpreviewprovider.so differ
+diff --git a/core/native2d/gx2d_preview_provider_loader.cpp b/core/native2d/gx2d_preview_provider_loader.cpp
+new file mode 100644
+index 00000000..1b3612d3
+--- /dev/null
++++ b/core/native2d/gx2d_preview_provider_loader.cpp
+@@ -0,0 +1,35 @@
++/* SPDX-License-Identifier: GPL-3.0-or-later
++ * Fixed Linux worker bootstrap for the existing Preview provider bridge.
++ * No Tcl command, render flag or provider declaration opens native authority.
++ */
++#include <tcl.h>
++#include <cstdlib>
++#include <fstream>
++#include <iterator>
++#include <string>
++extern "C" int gx2d_preview_provider_v1_init(Tcl_Interp *);
++extern "C" int gx2d_preview_provider_v1_enable_host_authority(Tcl_Interp *);
++namespace {
++bool fixed_worker(Tcl_Interp *ip) {
++    if(Tcl_FindCommand(ip,"::tk",nullptr,TCL_GLOBAL_ONLY)) return false;
++    const char *marker=Tcl_GetVar2(ip,"env","GXTXT_PREVIEW_WORKER",TCL_GLOBAL_ONLY);
++    const char *root=Tcl_GetVar(ip,"::GX::scriptDir",TCL_GLOBAL_ONLY);
++    const char *entry=Tcl_GetVar(ip,"argv0",TCL_GLOBAL_ONLY);
++    if(!marker||std::string(marker)!="1"||!root||!entry||std::string(entry)!="__gxtxt_preview_worker__") return false;
++    std::ifstream stream("/proc/self/cmdline",std::ios::binary);
++    std::string bytes{std::istreambuf_iterator<char>(stream),std::istreambuf_iterator<char>()};
++    auto first=bytes.find('\0');if(first==std::string::npos) return false;
++    auto last=bytes.find('\0',first+1);if(last==std::string::npos) return false;
++    std::string arg=bytes.substr(first+1,last-first-1);
++    std::string expected=std::string(root)+"/core/tcl/dataset_preview_worker_v1.tcl";
++    char *actual=realpath(arg.c_str(),nullptr),*wanted=realpath(expected.c_str(),nullptr);
++    bool matches=actual&&wanted&&std::string(actual)==wanted;
++    std::free(actual);std::free(wanted);
++    return matches;
++}
++}
++extern "C" int Gxpreviewprovider_Init(Tcl_Interp *ip) {
++    if(gx2d_preview_provider_v1_init(ip)!=TCL_OK) return TCL_ERROR;
++    if(fixed_worker(ip)&&gx2d_preview_provider_v1_enable_host_authority(ip)!=TCL_OK) return TCL_ERROR;
++    return Tcl_PkgProvide(ip,"gxpreviewprovider","1.0");
++}
+diff --git a/core/tcl/curve_source_api_v1.tcl b/core/tcl/curve_source_api_v1.tcl
+index bb1253c8..aa9e16a8 100644
+--- a/core/tcl/curve_source_api_v1.tcl
++++ b/core/tcl/curve_source_api_v1.tcl
+@@ -523,7 +523,7 @@ proc ::GX::curveSourceDisplayBatch {session request {options {}} {progress {}}}
+         if {![dict exists $request $key]} {error "Curve Source batch needs $key"}
+         datasetPublicationV2ValidateId [expr {$key eq "dataset_id"?"dataset":"variable"}] [dict get $request $key]
+     }
+-    foreach key [dict keys $options] {if {$key ni {group_variable_ids max_series total_display_points}} {error "Unknown Curve Source batch option '$key'"}}
++    foreach key [dict keys $options] {if {$key ni {group_variable_ids max_series total_display_points preview_provider}} {error "Unknown Curve Source batch option '$key'"}}
+     foreach {key default minimum maximum} {start 0 0 2000000 count -1 -1 2000000 display_budget 4096 6 4096} {
+         set value [datasetPublicationV2DictDefault $request $key $default]
+         if {![string is entier -strict $value] || $value<$minimum || $value>$maximum} {error "Invalid Curve Source batch $key"}
+@@ -580,15 +580,30 @@ proc ::GX::curveSourceDisplayBatch {session request {options {}} {progress {}}}
+     set batchContext [_curveSourceBatchContext $session $id $metadata]
+     if {[interactiveDocumentSessionToken] ne $lifetime || [_curveSourceIdentity $session $id] ne $identity || [_curveSourceBatchContext $session $id] ne $batchContext} {error {Curve Source batch changed during request admission}}
+     set stream {};set native {};set position 0
++    set nativeCommand ::gx::native2d::_preview_batch
++    set beginArguments [list $config]
++    if {[dict exists $options preview_provider] && [llength [info commands ::GX::datasetPreviewNativeBatch]]} {
++        set nativeCommand ::GX::datasetPreviewNativeBatch
++        set nativeOptions [dict get $options preview_provider]
++        set overlay [datasetPreviewNativeOverlayPlan $id]
++        if {$overlay ne {}} {
++            dict set nativeOptions overlay $overlay
++            foreach vid [dict values [dict get $overlay columns]] {if {$vid ni $projection} {lappend projection $vid}}
++        }
++        lappend beginArguments $id $nativeOptions
++    }
++    set nativeOverlay {}
+     try {
+-        set native [::gx::native2d::_preview_batch begin $config]
++        set native [$nativeCommand begin {*}$beginArguments]
+         # Integer scalar identities stay tagged/exact when the native adapter
+         # decodes canonical typed blocks; CSV retains its existing lexemes.
+-        set stream [tableStreamOpenDataset $session $id $projection 4096 {numeric_transport auto}]
++        set transport auto
++        if {[info exists overlay] && $overlay ne {}} {set transport values}
++        set stream [tableStreamOpenDataset $session $id $projection 4096 [dict create numeric_transport $transport]]
+         while 1 {
+             set chunk [tableStreamNext $stream];set columns {}
+             foreach column [dict get $chunk columns] vid $projection {dict set columns $vid [_curveSourceNativeColumn $column]}
+-            ::gx::native2d::_preview_batch push $native $columns
++            $nativeCommand push $native $columns
+             incr position [dict get $chunk row_count]
+             if {$progress ne {}} {
+                 curveSourceCooperativeBoundary $progress [dict create stage batch_display completed_rows $position total_rows [dict get [tableStreamMetadata $stream] row_count]]
+@@ -598,8 +613,13 @@ proc ::GX::curveSourceDisplayBatch {session request {options {}} {progress {}}}
+         }
+         set diagnostics [tableStreamDiagnostics $stream]
+         set closing $stream;set stream {};tableStreamClose $closing
+-        set nativeSeries [::gx::native2d::_preview_batch finish $native]
+-        dict set diagnostics native_batch [::gx::native2d::_preview_batch inspect $native]
++        if {$nativeCommand eq {::GX::datasetPreviewNativeBatch} && [info exists overlay] && $overlay ne {}} {
++            set bundle [$nativeCommand finish_overlay $native]
++            set nativeSeries [dict get $bundle series];set nativeOverlay [dict get $bundle overlay]
++        } else {set nativeSeries [$nativeCommand finish $native]}
++        set nativeDiagnostics [$nativeCommand inspect $native]
++        dict set diagnostics native_batch $nativeDiagnostics
++        if {[dict exists $nativeDiagnostics backend]} {dict set diagnostics native_provider $nativeDiagnostics}
+         dict set diagnostics canonical_streams 1
+         set output {}
+         foreach item $nativeSeries {
+@@ -613,10 +633,28 @@ proc ::GX::curveSourceDisplayBatch {session request {options {}} {progress {}}}
+             lappend output [dict create group_key [dict get $item group_key] filters $selectedFilters source_descriptor $descriptor display $display]
+         }
+         if {[interactiveDocumentSessionToken] ne $lifetime || [_curveSourceIdentity $session $id] ne $identity || [_curveSourceBatchContext $session $id] ne $batchContext} {error {Curve Source batch source, Session or continuity changed before commit}}
+-        return [dict create api_id CURVE_SOURCE_API_v1 api_version 1 operation batch_display source_identities [list $identity] series $output diagnostics $diagnostics]
++        set response [dict create api_id CURVE_SOURCE_API_v1 api_version 1 operation batch_display source_identities [list $identity] series $output diagnostics $diagnostics]
++        if {$nativeOverlay ne {}} {dict set response native_overlay $nativeOverlay}
++        return $response
++    } on error {reason errorOptions} {
++        # A compatible extension can decline/fail during actual processing. The
++        # ordinary owner retries its own reader once, only for an unchanged
++        # source/Session/context. It never adopts partial provider results.
++        if {$nativeCommand eq {::GX::datasetPreviewNativeBatch} && $native ne {} &&
++            [dict get $native backend] eq {native} &&
++            [interactiveDocumentSessionToken] eq $lifetime &&
++            [_curveSourceIdentity $session $id] eq $identity &&
++            [_curveSourceBatchContext $session $id] eq $batchContext} {
++            if {$stream ne {}} {set closing $stream;set stream {};tableStreamClose $closing}
++            set closing $native;set native {}; $nativeCommand destroy $closing
++            set fallback [curveSourceDisplayBatch $session $request [dict remove $options preview_provider] $progress]
++            dict set fallback diagnostics native_provider [dict create backend core status fallback fallback_reason $reason]
++            return $fallback
++        }
++        return -options $errorOptions $reason
+     } finally {
+         try {if {$stream ne {}} {tableStreamClose $stream}} finally {
+-            if {$native ne {}} {::gx::native2d::_preview_batch destroy $native}
++            if {$native ne {}} {$nativeCommand destroy $native}
+         }
+     }
+ }
+diff --git a/core/tcl/dataset_digitizer_preview_v1.tcl b/core/tcl/dataset_digitizer_preview_v1.tcl
+index 2532818c..21039d92 100644
+--- a/core/tcl/dataset_digitizer_preview_v1.tcl
++++ b/core/tcl/dataset_digitizer_preview_v1.tcl
+@@ -366,7 +366,7 @@ proc ::GX::_datasetDigitizerPreviewCollect {session id ids columns raster filter
+     dict for {curve data} $curves {dict set data points [lsort -integer -index 0 [dict get $data points]];dict set curves $curve $data}
+     return [dict create curves $curves unique_point_count $count]
+ }
+-proc ::GX::datasetDigitizerPreviewPrepare {id selections dimensions directory {processedSelection {}}} {
++proc ::GX::datasetDigitizerPreviewPrepare {id selections dimensions directory {processedSelection {}} {nativeOverlay {}}} {
+     set manifest [datasetPreviewCurveManifest $id]
+     if {$manifest eq {}} {return {}}
+     set md [datasetMetadataRead $::GX::currentSession $id]
+@@ -479,7 +479,20 @@ proc ::GX::datasetDigitizerPreviewPrepare {id selections dimensions directory {p
+     }
+     set filters [graphSeriesNormalizeFilters $id $filters]
+     foreach filter $filters {set vid [dict get $filter filter_variable_id];if {$vid ni $ids} {lappend ids $vid}}
+-    set collected [_datasetDigitizerPreviewCollect $::GX::currentSession $id $ids $columns $raster $filters]
++    set collected {}
++    # Reuse the actual native common-owner result only when all of this
++    # publication's semantic roles and predicates still match. Image/source
++    # verification above remains the sole authority for aligned presentation.
++    if {$nativeOverlay ne {} && ![catch {
++        if {[dict get $nativeOverlay dataset_id] ne $id || [dict get $nativeOverlay columns] ne $columns ||
++            [dict get $nativeOverlay raster]!=$raster || [dict get $nativeOverlay filters] ne $filters ||
++            ![datasetPreviewNativeReceiptCurrent $id [dict get $nativeOverlay native_provider]]} {error {Native overlay identity changed}}
++        set collected [dict get $nativeOverlay result]
++        dict get $collected curves;dict get $collected unique_point_count
++    }]} {dict set result overlay_preparation native} else {
++        set collected [_datasetDigitizerPreviewCollect $::GX::currentSession $id $ids $columns $raster $filters]
++        dict set result overlay_preparation core
++    }
+     set curves [dict get $collected curves];set count [dict get $collected unique_point_count]
+     dict set result curves $curves;dict set result unique_point_count $count
+     modulePublicApiActivate viewer.curve_digitizer CURVE_DIGITIZER_QUALITY_API_v2
+diff --git a/core/tcl/dataset_preview_cache.tcl b/core/tcl/dataset_preview_cache.tcl
+index 896183f7..ae9e2768 100644
+--- a/core/tcl/dataset_preview_cache.tcl
++++ b/core/tcl/dataset_preview_cache.tcl
+@@ -40,6 +40,7 @@ proc ::GX::datasetPreviewCacheKey {id {options {}}} {
+             core/tcl/dataset_preview_cache.tcl core/tcl/dataset_preview_worker_v1.tcl core/tcl/scientific_dataset_filters_v1.tcl
+             core/tcl/dataset_digitizer_preview_v1.tcl core/python/dataset_digitizer_quality_summary_v1.py
+             core/tcl/dataset_preview_api_v1.tcl core/tcl/scientific_dataset_preview_v1.tcl
++            core/tcl/dataset_preview_provider_v1.tcl core/tcl/dataset_preview_native_v1.tcl core/tcl/preview_descriptor_api_v1.tcl
+             core/tcl/scientific_dataset_filter_configuration_v1.tcl core/tcl/dataset_viewer_api_v1.tcl
+             core/tcl/curve_source_api_v1.tcl core/tcl/dataset_coordinate_context_v1.tcl
+             core/tcl/scientific_dataset_coordinates_v1.tcl
+@@ -63,7 +64,7 @@ proc ::GX::datasetPreviewCacheKey {id {options {}}} {
+     # Keep values intact, including scientifically meaningful grouping lists.
+     set orderedOptions {}
+     foreach name [lsort [dict keys $options]] {dict set orderedOptions $name [dict get $options $name]}
+-    return [datasetStorageSha256Text $::GX::currentSession [list [sessionOriginRead $::GX::currentSession] [datasetPreviewCacheSource $id] $orderedOptions $linked $renderer $settings $configured]]
++    return [datasetStorageSha256Text $::GX::currentSession [list [sessionOriginRead $::GX::currentSession] [datasetPreviewCacheSource $id] $orderedOptions $linked $renderer $settings $configured [datasetPreviewProviderIdentity $id]]]
+ }
+ proc ::GX::datasetPreviewCachePath {session key} {
+     if {![regexp {^[0-9a-f]{64}$} $key]} {error {Invalid Preview cache key}}
+@@ -203,16 +204,20 @@ proc ::GX::_datasetPreviewCachePrepare {id options key source dir} {
+                 set receipt [scientificDatasetPreviewFiltered $id [dict get $axes x] [dict get $axes y] [file join $dir standard.png] $requests $renderOptions]
+                 dict set result kind native2d
+                 foreach field {native_model row_count displayed_points} {dict set result $field [dict get $receipt $field]}
++                if {[dict exists $receipt native_provider]} {dict set result native_provider [dict get $receipt native_provider]}
+                 dict set result selections $selections
+                 dict set result dimensions $dimensions
+                 if {[dict exists $options ordering]} {dict set result ordering [dict get $options ordering]}
+-                if {![catch {set digitizer [datasetDigitizerPreviewPrepare $id $selections $dimensions $dir [datasetPublicationV2DictDefault $options processed_image {}]]} message]} {dict set result digitizer $digitizer} else {dict set result description "Source raster/Quality unavailable: $message"}
++                set nativeOverlay [datasetPublicationV2DictDefault $receipt native_overlay {}]
++                if {$nativeOverlay ne {} && ([catch {dict get $nativeOverlay native_provider receipt source_receipt cache_key} overlayKey] || $overlayKey ne $key)} {set nativeOverlay {}}
++                if {![catch {set digitizer [datasetDigitizerPreviewPrepare $id $selections $dimensions $dir [datasetPublicationV2DictDefault $options processed_image {}] $nativeOverlay]} message]} {dict set result digitizer $digitizer} else {dict set result description "Source raster/Quality unavailable: $message"}
+             } else {
+                 if {!$mesh && ![dict exists $result media_artifact]} {
+                     set arrayPath [file join $dir array-standard.png]
+-                    if {![catch {set arrayDescription [scientificDatasetArrayPreview $id $arrayPath]}] && $arrayDescription ne {}} {
++                    if {![catch {set arrayDescription [scientificDatasetArrayPreview $id $arrayPath nativeReceipt]}] && $arrayDescription ne {}} {
+                         dict set result media_artifact [dict create path $arrayPath media_type image/png label {Bounded original array cells}]
+                         dict set result kind array;dict set result description $arrayDescription
++                        if {$nativeReceipt ne {}} {dict set result native_provider $nativeReceipt}
+                     }
+                 }
+                 if {![dict exists $result media_artifact] && ![dict exists $result description]} {dict set result description "Dataset $id: [datasetField $id kind]. Use Open Dataset for supported media, geometry or explicit multidimensional selection."}
+diff --git a/core/tcl/dataset_preview_native_v1.tcl b/core/tcl/dataset_preview_native_v1.tcl
+new file mode 100644
+index 00000000..bd103322
+--- /dev/null
++++ b/core/tcl/dataset_preview_native_v1.tcl
+@@ -0,0 +1,233 @@
++# SPDX-License-Identifier: GPL-3.0-or-later
++# Optional native backend of the existing Preview/Curve Source owners. Ordinary
++# Module catalog/lifecycle remain authoritative; no installed provider registry.
++proc ::GX::datasetPreviewNativeEnsure {} {
++    if {[llength [info commands ::gx::native2d::_preview_provider]]} {return 1}
++    if {$::tcl_platform(os) ne {Linux} || $::tcl_platform(machine) ni {x86_64 amd64}} {return 0}
++    set library [file join $::GX::scriptDir core native2d bin gxpreviewprovider.so]
++    if {![file isfile $library]} {return 0}
++    native2DEnsure
++    load $library Gxpreviewprovider
++    return 1
++}
++proc ::GX::_datasetPreviewNativeWorker {} {
++    expr {[info exists ::env(GXTXT_PREVIEW_WORKER)] && $::env(GXTXT_PREVIEW_WORKER) eq {1} &&
++        [info exists ::argv0] && $::argv0 eq {__gxtxt_preview_worker__} &&
++        [llength [info commands ::GXPreviewWorker::originalPuts]] &&
++        ![llength [info commands ::tk]]}
++}
++proc ::GX::_datasetPreviewNativeAssets {id} {
++    set declaration [_datasetPreviewProviderDescriptor $id]
++    set descriptor [moduleField $id descriptor {}]
++    if {[parseIni $descriptor] ne [moduleField $id dict {}]} {error {Preview descriptor changed since Module discovery}}
++    set root [file normalize [file dirname $descriptor]]
++    foreach key {native_library gui_design} digest {native_sha256 gui_design_sha256} {
++        set current $root
++        foreach component [split [dict get $declaration $key] /] {
++            set current [file join $current $component]
++            file lstat $current entry
++            if {$entry(type) eq {link}} {error {Preview provider assets must not be symlinks}}
++        }
++        if {![file isfile $current] || ![file readable $current] || [sha256File $current] ne [dict get $declaration $digest]} {error "Preview provider $key bytes differ from its installed declaration"}
++        dict set declaration ${key}_path $current
++    }
++    viewerGuiDesignRead [dict get $declaration gui_design_path]
++    set generation [scan [string range [sha256File $descriptor] 0 14] %x]
++    dict set declaration generation $generation
++    dict set declaration version [moduleField $id version {}]
++    return $declaration
++}
++proc ::GX::datasetPreviewNativeIdentity {datasetId} {
++    set identity {}
++    set library [file join $::GX::scriptDir core native2d bin gxpreviewprovider.so]
++    if {[file isfile $library]} {lappend identity bridge [sha256File $library]}
++    set actual [datasetField $datasetId contract [datasetField $datasetId kind]]
++    foreach id $::GX::moduleOrder {
++        if {[moduleField $id kind {}] ne {preview} || ![moduleIsEnabled $id]} continue
++        if {[catch {set declaration [_datasetPreviewProviderDescriptor $id]}] ||
++            [dict exists $declaration profile] && [dict get $declaration profile] eq {presentation}} continue
++        if {![contractSatisfiesAny $actual [dict get $declaration dataset_contracts]]} continue
++        set bytes invalid
++        catch {set bytes [_datasetPreviewNativeAssets $id]}
++        lappend identity $id $declaration $bytes [dict exists $::GX::pluginRuntimePending $id]
++    }
++    return $identity
++}
++proc ::GX::_pluginPreviewProviderState {id} {
++    set version [moduleField $id version {}]
++    set active [datasetPublicationV2DictDefault $::GX::pluginRuntimeLoaded $id {}]
++    set pending [datasetPublicationV2DictDefault $::GX::pluginRuntimePending $id {}]
++    if {$pending ne {}} {set pending [dict get $pending version]}
++    set generation 0;catch {set generation [dict get [_datasetPreviewNativeAssets $id] generation]}
++    return [dict create schema gxtxt.preview_package_state.v1 component_id $id installed_version $version enabled [moduleIsEnabled $id] generation $generation active_version $active pending_version $pending admission {}]
++}
++proc ::GX::_datasetPreviewNativeBinding {id} {
++    pluginRuntimeGuardNewLoad $id
++    if {![moduleIsEnabled $id]} {error {Preview component is disabled}}
++    set declaration [_datasetPreviewNativeAssets $id]
++    if {![datasetPreviewNativeEnsure]} {error {Native Preview provider adapter is unavailable}}
++    set host [::gx::native2d::_preview_provider info]
++    foreach key {native_abi native_platform native_layout_id} {
++        if {[dict get $declaration $key] ne [dict get $host $key]} {error {Native Preview provider ABI/platform/layout mismatch}}
++    }
++    set binding [dict create component_id $id version [dict get $declaration version] generation [dict get $declaration generation] host_build_id [dict get $host native_build_id]]
++    foreach key {native_abi native_platform native_layout_id native_build_id native_sha256 gui_design_sha256} {dict set binding $key [dict get $declaration $key]}
++    return $binding
++}
++proc ::GX::_pluginPreviewProviderAdmit {binding} {
++    if {![_datasetPreviewNativeWorker]} {error {Native Preview admission requires the fixed managed worker}}
++    set id [dict get $binding component_id]
++    if {[_datasetPreviewNativeBinding $id] ne [dict remove $binding requested_capability]} {error {Preview package changed before admission}}
++    set declaration [_datasetPreviewNativeAssets $id]
++    set capabilities [dict get $binding requested_capability]
++    if {![llength $capabilities] || [llength [lsort -unique $capabilities]]!=[llength $capabilities]} {error {Invalid Preview invocation capabilities}}
++    foreach capability $capabilities {
++        if {$capability ni {grouped_curves bounded_array_plane raster_overlay} || $capability ni [dict get $declaration capabilities]} {error {Undeclared Preview invocation capability}}
++    }
++    if {{raster_overlay} in $capabilities && {grouped_curves} ni $capabilities} {error {Raster overlay requires the grouped-curve owner plan}}
++    set fingerprint [datasetStorageSha256Text $::GX::currentSession [list $binding [dict get $declaration capabilities]]]
++    set lease [dict merge $binding [dict create schema gxtxt.preview_native_lease.v1 native_path [dict get $declaration native_library_path] lease_id "preview-[pid]-[clock clicks]" fingerprint $fingerprint verified_capabilities $capabilities]]
++    # Reuse the existing transient lifecycle receipt rather than another package
++    # registry. Active native leases conservatively retain normal restart rules.
++    if {![dict exists $::GX::pluginRuntimeReceipts $id]} {dict set ::GX::pluginRuntimeReceipts $id [pluginRuntimeInfo $id]}
++    dict set ::GX::pluginRuntimeReceipts $id preview_leases [dict get $lease lease_id] $lease
++    return $lease
++}
++proc ::GX::_pluginPreviewProviderNoteLoaded {lease} {
++    set id [dict get $lease component_id];set token [dict get $lease lease_id]
++    if {![dict exists $::GX::pluginRuntimeReceipts $id preview_leases $token] ||
++        [dict get $::GX::pluginRuntimeReceipts $id preview_leases $token] ne $lease} {error {Unknown Preview native lease}}
++    pluginRuntimeNoteLoaded $id
++}
++proc ::GX::_pluginPreviewProviderRetire {lease reason} {
++    set id [dict get $lease component_id];set token [dict get $lease lease_id]
++    if {![dict exists $::GX::pluginRuntimeReceipts $id preview_leases $token] ||
++        [dict get $::GX::pluginRuntimeReceipts $id preview_leases $token] ne $lease} {error {Unknown Preview retirement lease}}
++    dict unset ::GX::pluginRuntimeReceipts $id preview_leases $token
++}
++proc ::GX::_datasetPreviewNativeSource {id key} {
++    return [dict create session $::GX::currentSession session_origin [sessionOriginRead $::GX::currentSession] session_token [interactiveDocumentSessionToken] source [_curveSourceIdentity $::GX::currentSession $id] coordinate_context [datasetCoordinateRead $::GX::currentSession $id] cache_key $key]
++}
++proc ::GX::_datasetPreviewNativeCandidate {id capability} {
++    foreach provider [datasetPreviewProviders $id] {
++        if {![dict get $provider descriptor_valid] || ![dict get $provider enabled] || [dict get $provider pending_version] ne {} || [dict get $provider compatibility_status] eq {incompatible}} continue
++        if {[dict exists $provider profile] && [dict get $provider profile] eq {presentation}} continue
++        set compatible 1
++        foreach requested $capability {if {$requested ni [dict get $provider capabilities]} {set compatible 0;break}}
++        if {$compatible} {return [dict get $provider component_id]}
++    }
++    return {}
++}
++proc ::GX::datasetPreviewNativeOverlayPlan {id} {
++    if {![_datasetPreviewNativeWorker]} {return {}}
++    if {[catch {
++        set manifest [datasetPreviewCurveManifest $id]
++        if {$manifest eq {} || ![dict get $manifest raster_points_available]} {return {}}
++        set candidate [_datasetPreviewNativeCandidate $id {grouped_curves raster_overlay}]
++        if {$candidate eq {}} {return {}}
++        _datasetPreviewNativeBinding $candidate
++        set columns [dict get $manifest columns]
++        foreach role {curve_key curve_name point_order raster_x raster_y} {dict get $columns $role}
++    }]} {return {}}
++    return [dict create candidate $candidate columns $columns raster 1]
++}
++proc ::GX::datasetPreviewNativeBatch {operation args} {
++    if {$operation eq {begin}} {
++        lassign $args config id options
++        set failure {}
++        if {[_datasetPreviewNativeWorker]} {
++            if {[catch {set candidate [_datasetPreviewNativeCandidate $id [expr {[dict exists $options overlay] ? {grouped_curves raster_overlay} : {grouped_curves}}]]} failure]} {set candidate {}}
++            if {$candidate ne {}} {
++                set token {}
++                if {![catch {
++                    set binding [_datasetPreviewNativeBinding $candidate]
++                    dict set binding requested_capability [expr {[dict exists $options overlay] ? {grouped_curves raster_overlay} : {grouped_curves}}]
++                    set key [datasetPublicationV2DictDefault $options cache_key {}]
++                    set source [_datasetPreviewNativeSource $id $key]
++                    set limits [dict create max_native_bytes 0 max_input_rows 9223372036854775807 max_text_bytes 67108864 max_chunk_rows 4096 max_selected_rows 2000000 max_retained_row_capacity 4000000]
++                    set context [dict create schema gxtxt.preview_native_invocation.v1 mode grouped_curves dataset_id $id source_receipt $source provider_binding $binding contracts [list [datasetField $id contract [datasetField $id kind]]] dataset_kind [datasetField $id kind] limits $limits batch_config $config coordinate_context [dict get $source coordinate_context]]
++                    if {[dict exists $options overlay]} {
++                        set overlay [dict get $options overlay]
++                        dict set context overlay [dict create enabled 1 columns [dict get $overlay columns] raster 1 filters [dict get $config filters]]
++                        dict set context limits max_unique_raster_points 65536
++                    }
++                    set token [::gx::native2d::_preview_provider open $context]
++                    ::gx::native2d::_preview_provider admit $token $binding
++                } failure]} {return [dict create backend native token $token id $id binding $binding source $source overlay [datasetPublicationV2DictDefault $options overlay {}] filters [dict get $config filters]]}
++                if {$token ne {}} {::gx::native2d::_preview_provider close $token}
++            }
++        }
++        return [dict create backend core token [::gx::native2d::_preview_batch begin $config] diagnostic $failure]
++    }
++    lassign $args handle columns
++    set token [dict get $handle token]
++    if {[dict get $handle backend] eq {core}} {
++        switch -- $operation {
++            push {return [::gx::native2d::_preview_batch push $token $columns]}
++            finish {return [::gx::native2d::_preview_batch finish $token]}
++            finish_overlay {return [dict create series [::gx::native2d::_preview_batch finish $token] overlay {}]}
++            inspect {return [dict merge [::gx::native2d::_preview_batch inspect $token] [dict create backend core fallback_reason [dict get $handle diagnostic]]]}
++            destroy {return [::gx::native2d::_preview_batch destroy $token]}
++        }
++    } else {
++        switch -- $operation {
++            push {return [::gx::native2d::_preview_provider push $token $columns]}
++            finish - finish_overlay {
++                ::gx::native2d::_preview_provider seal $token
++                set result [::gx::native2d::_preview_provider result $token]
++                if {[_datasetPreviewNativeSource [dict get $handle id] [dict get $handle source cache_key]] ne [dict get $handle source] ||
++                    [_datasetPreviewNativeBinding [dict get $handle binding component_id]] ne [dict remove [dict get $handle binding] requested_capability]} {error {Preview source, Session, coordinates or provider changed before result admission}}
++                if {$operation eq {finish_overlay}} {
++                    set receipt [datasetPreviewNativeBatch inspect $handle]
++                    set overlay [dict create dataset_id [dict get $handle id] columns [dict get $handle overlay columns] raster 1 filters [dict get $handle filters] result [dict get $result overlay] native_provider $receipt]
++                    return [dict create series [dict get $result native_series] overlay $overlay]
++                }
++                return [dict get $result native_series]
++            }
++            inspect {return [dict create status prepared backend native component_id [dict get $handle binding component_id] binding [dict get $handle binding] receipt [::gx::native2d::_preview_provider inspect $token]]}
++            destroy {return [::gx::native2d::_preview_provider close $token]}
++        }
++    }
++    error {Unknown Preview native batch operation}
++}
++proc ::GX::datasetPreviewNativeReceiptCurrent {id receipt} {
++    if {[catch {
++        if {[dict get $receipt status] ne {prepared}} {error stale}
++        set binding [dict get $receipt binding]
++        if {[dict remove $binding requested_capability] ne [_datasetPreviewNativeBinding [dict get $receipt component_id]]} {error stale}
++        set observed [dict get $receipt receipt]
++        if {![dict get $observed admitted] || ![dict get $observed sealed] || [dict get $observed failed]} {error stale}
++        set source [dict get $observed source_receipt]
++        if {[dict remove $source session_token] ne [dict remove [_datasetPreviewNativeSource $id [dict get $source cache_key]] session_token]} {error stale}
++    }]} {return 0}
++    return 1
++}
++proc ::GX::datasetPreviewNativePlane {id variable starts counts column nx ny output} {
++    if {![_datasetPreviewNativeWorker]} {return [::gx::native2d::_preview_plane $column $nx $ny]}
++    if {[catch {set candidate [_datasetPreviewNativeCandidate $id bounded_array_plane]}]} {set candidate {}}
++    if {$candidate eq {}} {return [::gx::native2d::_preview_plane $column $nx $ny]}
++    set token {};set result {};set nativeReceipt {}
++    try {
++        if {[catch {
++            set binding [_datasetPreviewNativeBinding $candidate]
++            dict set binding requested_capability bounded_array_plane
++            set source [_datasetPreviewNativeSource $id [file tail [file dirname $output]]]
++            set limits [dict create max_native_bytes 0 max_input_rows 16384 max_text_bytes 67108864 max_rgb_bytes 806400]
++            set plan [dict create variable_id [dict get $variable variable_id] starts $starts counts $counts storage_order last_dimension_fastest max_output_width 640 max_output_height 420]
++            set context [dict create schema gxtxt.preview_native_invocation.v1 mode bounded_array_plane dataset_id $id source_receipt $source provider_binding $binding contracts [list [datasetField $id contract [datasetField $id kind]]] dataset_kind [datasetField $id kind] limits $limits plane $plan]
++            set token [::gx::native2d::_preview_provider open $context]
++            ::gx::native2d::_preview_provider admit $token $binding
++            ::gx::native2d::_preview_provider push $token [dict create [dict get $variable variable_id] $column]
++            ::gx::native2d::_preview_provider seal $token
++            set result [::gx::native2d::_preview_provider result $token]
++            if {[_datasetPreviewNativeSource $id [dict get $source cache_key]] ne $source || [_datasetPreviewNativeBinding $candidate] ne [dict remove $binding requested_capability]} {error {Preview plane source, Session, coordinates or provider changed}}
++            set nativeReceipt [dict create status prepared backend native component_id $candidate binding $binding receipt [::gx::native2d::_preview_provider inspect $token]]
++        } message]} {
++            # Existing plane owner remains the generic fallback; no new decoder,
++            # interpolation, numeric comparison or renderer is introduced.
++            set result {}
++        }
++    } finally {if {$token ne {}} {::gx::native2d::_preview_provider close $token}}
++    if {$result eq {}} {return [::gx::native2d::_preview_plane $column $nx $ny]}
++    return [dict merge [dict get $result plane] [dict create native_provider $nativeReceipt]]
++}
+diff --git a/core/tcl/dataset_preview_provider_v1.tcl b/core/tcl/dataset_preview_provider_v1.tcl
+index a62490cb..a2921131 100644
+--- a/core/tcl/dataset_preview_provider_v1.tcl
++++ b/core/tcl/dataset_preview_provider_v1.tcl
+@@ -1,7 +1,7 @@
+ # SPDX-License-Identifier: GPL-3.0-or-later
+-# Conditional TASK210 development only. MAIN has not wired this candidate into
+-# startup or adopted its public routes/descriptor. Module/Package/GUI owners
+-# retain activation, byte admission, lifecycle and Builder authority.
++# Standard Module-owned Preview contributions. Presentation components use the
++# existing public API loader; native components retain their strict ABI/package
++# admission. Module/Package/GUI owners retain lifecycle and rendering authority.
+ namespace eval ::GX::PreviewProvider {
+     variable descriptorKeys {api_version native_abi native_library native_sha256 native_platform native_layout_id native_build_id dataset_contracts capabilities gui_design gui_design_sha256 gui_contract gui_public_api gui_handler_factory}
+     variable capabilities {grouped_curves bounded_array_plane raster_overlay}
+@@ -16,11 +16,27 @@ proc ::GX::_datasetPreviewProviderDescriptor {id} {
+     set data [moduleField $id dict {}]
+     if {[moduleField $id kind {}] ne {preview} || [descriptorValue $data meta id {}] ne $id || [moduleField $id runner {}] ne {service} || ![moduleField $id selectable 1]} {error {Expected an ordinary selectable Preview service module}}
+     if {[moduleField $id enabled_key {}] ne {} || [moduleField $id run_key {}] ne {}} {error {Preview components require ordinary per-module activation without legacy Configuration aliases}}
++    set profile [descriptorValue $data preview_provider profile native]
++    if {$profile ni {native presentation}} {error {Unsupported Preview provider profile}}
++    set allowed [linsert $::GX::PreviewProvider::descriptorKeys 0 profile]
++    if {$profile eq {presentation}} {set allowed {profile api_version dataset_contracts gui_public_api}}
+     set prefix preview_provider.
+     foreach key [dict keys $data ${prefix}*] {
+-        if {[string range $key [string length $prefix] end] ni $::GX::PreviewProvider::descriptorKeys} {error {Unknown Preview provider descriptor field}}
++        if {[string range $key [string length $prefix] end] ni $allowed} {error {Unknown Preview provider descriptor field for its profile}}
++    }
++    set out [dict create component_id $id profile $profile]
++    if {$profile eq {presentation}} {
++        foreach key {api_version dataset_contracts gui_public_api} {
++            set value [descriptorValue $data preview_provider $key {}]
++            if {$value eq {} || [string bytelength $value]>4096 || [regexp {[\x00\r\n]} $value]} {error "Missing or invalid Preview presentation field: $key"}
++            dict set out $key $value
++        }
++        if {[dict get $out api_version] ne {1}} {error {Unsupported Preview presentation API version}}
++        dict set out dataset_contracts [_datasetPreviewProviderContracts [dict get $out dataset_contracts]]
++        dict set out capabilities {tabs}
++        _datasetPreviewProviderPublicApi $data [dict get $out gui_public_api]
++        return $out
+     }
+-    set out [dict create component_id $id]
+     foreach key $::GX::PreviewProvider::descriptorKeys {
+         set value [descriptorValue $data preview_provider $key {}]
+         if {$value eq {} || [string bytelength $value]>4096 || [regexp {[\x00\r\n]} $value]} {error "Missing or invalid Preview provider field: $key"}
+@@ -40,16 +56,26 @@ proc ::GX::_datasetPreviewProviderDescriptor {id} {
+     }
+     # An explicit ordinary public-API activation declaration is mandatory for
+     # Builder-generated handlers. Context never supplies an arbitrary command.
+-    set gui [dict get $out gui_public_api]
+-    if {$gui ne {PREVIEW_COMPONENT_GUI_API_v1} || [dict get $out gui_handler_factory] ne {handlers} || $gui ni [splitList [descriptorValue $data public_apis ids {}]]} {error {Preview controlled GUI factory is not declared}}
++    if {[dict get $out gui_handler_factory] ne {handlers}} {error {Preview controlled GUI factory is not declared}}
++    _datasetPreviewProviderPublicApi $data [dict get $out gui_public_api]
++    return $out
++}
++proc ::GX::_datasetPreviewProviderContracts {raw} {
++    set values [splitList $raw]
++    if {![llength $values] || [llength $values]>32 || [llength [lsort -unique $values]]!=[llength $values]} {error {Invalid Preview Dataset contracts}}
++    foreach value $values {if {![regexp {^[A-Za-z0-9][A-Za-z0-9_.:-]*$} $value]} {error {Invalid canonical Dataset contract ID}}}
++    return $values
++}
++proc ::GX::_datasetPreviewProviderPublicApi {data gui} {
++    if {$gui ne {PREVIEW_COMPONENT_GUI_API_v1} || $gui ni [splitList [descriptorValue $data public_apis ids {}]]} {error {Preview public API is not declared}}
+     set section public_api.$gui
+-    if {[descriptorValue $data $section api_version {}] ne {1}} {error {Unsupported Preview GUI factory contract}}
++    if {[descriptorValue $data $section api_version {}] ne {1}} {error {Unsupported Preview public API contract}}
+     _datasetPreviewProviderRelative [descriptorValue $data $section entrypoint {}]
+-    if {![regexp {^::GX::[A-Za-z_][A-Za-z0-9_]*(::[A-Za-z_][A-Za-z0-9_]*)*$} [descriptorValue $data $section namespace {}]]} {error {Invalid Preview GUI factory namespace}}
+-    return $out
++    if {![regexp {^::GX::[A-Za-z_][A-Za-z0-9_]*(::[A-Za-z_][A-Za-z0-9_]*)*$} [descriptorValue $data $section namespace {}]]} {error {Invalid Preview public API namespace}}
+ }
+ proc ::GX::_datasetPreviewProviderHostInfo {} {
+     # Compiled CORE metadata only; this operation may not dlopen a provider.
++    if {![llength [info commands ::gx::native2d::_preview_provider]] && [llength [info commands ::GX::datasetPreviewNativeEnsure]]} {datasetPreviewNativeEnsure}
+     if {![llength [info commands ::gx::native2d::_preview_provider]]} {return {}}
+     set result [::gx::native2d::_preview_provider info]
+     foreach key {native_abi native_platform native_layout_id native_build_id} {if {![dict exists $result $key]} {error {Incomplete native Preview host identity}}}
+@@ -68,11 +94,31 @@ proc ::GX::_datasetPreviewProviderPackageState {id} {
+ proc ::GX::datasetPreviewProviderInfo {componentId} {
+     if {$componentId ni $::GX::moduleOrder || [moduleField $componentId kind {}] ne {preview}} {_datasetPreviewProviderError INVALID_ARGUMENT {Unknown Preview component}}
+     set id $componentId
+-    set out [dict create component_id $id name [moduleField $id name $id] installed_version [moduleField $id version {}] active_version {} pending_version {} enabled 0 descriptor_valid 0 native_abi {} native_platform {} native_layout_id {} native_build_id {} dataset_contracts {} capabilities {} verified_capabilities {} gui_design_sha256 {} compatibility_status unknown load_status not_checked available 0 admission_fingerprint {} reason {Preview descriptor is invalid}]
++    set out [dict create component_id $id profile native name [moduleField $id name $id] installed_version [moduleField $id version {}] active_version {} pending_version {} enabled 0 descriptor_valid 0 native_abi {} native_platform {} native_layout_id {} native_build_id {} dataset_contracts {} capabilities {} verified_capabilities {} gui_design_sha256 {} compatibility_status unknown load_status not_checked available 0 admission_fingerprint {} reason {Preview descriptor is invalid}]
+     # Reject forbidden Configuration aliases before either activation or package
+     # state can interpret an unrelated cfg value as a module boolean.
+     if {[catch {set declaration [_datasetPreviewProviderDescriptor $id]} message]} {dict set out reason [string range $message 0 255];return $out}
+     dict set out enabled [moduleIsEnabled $id]
++    dict set out profile [dict get $declaration profile]
++    if {[dict get $declaration profile] eq {presentation}} {
++        dict set out descriptor_valid 1
++        dict set out dataset_contracts [dict get $declaration dataset_contracts]
++        dict set out capabilities {tabs}
++        dict set out compatibility_status compatible
++        if {[dict exists $::GX::pluginRuntimeLoaded $id]} {dict set out active_version [dict get $::GX::pluginRuntimeLoaded $id]}
++        if {[dict exists $::GX::pluginRuntimePending $id]} {
++            dict set out pending_version [dict get $::GX::pluginRuntimePending $id version]
++            dict set out load_status restart_required;dict set out reason {Preview update requires activation}
++        } elseif {![dict get $out enabled]} {
++            dict set out reason {Preview component is disabled}
++        } else {
++            # This is callable presentation, not native byte admission. Keep
++            # native verified-capability/fingerprint fields empty and honest.
++            dict set out available 1
++            dict set out reason {Presentation API activates on Dataset Preview}
++        }
++        return $out
++    }
+     set stateInvalid [catch {set state [_datasetPreviewProviderPackageState $id]}]
+     if {!$stateInvalid && $state ne {}} {
+         foreach key {active_version pending_version} {dict set out $key [dict get $state $key]}
+@@ -151,3 +197,148 @@ proc ::GX::datasetPreviewProviderSelect {datasetId {capability standard}} {
+     }
+     return $result
+ }
++
++# Read-only cache binding of ordinary Module/loader state and current source
++# bytes. This is derived on demand, never a second provider/package registry.
++proc ::GX::datasetPreviewProviderIdentity {datasetId} {
++    set identity {};set hasNative 0
++    foreach info [datasetPreviewProviders $datasetId] {
++        set id [dict get $info component_id]
++        set assets {}
++        set descriptor [moduleField $id descriptor {}]
++        set data [moduleField $id dict {}]
++        set root [file dirname $descriptor]
++        set entry [descriptorValue $data public_api.PREVIEW_COMPONENT_GUI_API_v1 entrypoint {}]
++        foreach relative [list [file tail $descriptor] $entry] {
++            set digest unavailable
++            if {![catch {_datasetPreviewProviderRelative $relative}]} {
++                set path [file normalize [file join $root $relative]]
++                if {[string match ${root}/* $path] && [file isfile $path]} {set digest [sha256File $path]}
++            }
++            lappend assets $relative $digest
++        }
++        set state {}
++        foreach key {component_id profile installed_version enabled descriptor_valid dataset_contracts capabilities pending_version} {dict set state $key [dict get $info $key]}
++        if {[dict get $info profile] eq {native}} {set hasNative 1}
++        lappend identity [list $state $assets]
++    }
++    if {$hasNative && [llength [info commands ::GX::datasetPreviewNativeIdentity]]} {
++        if {[catch {set native [datasetPreviewNativeIdentity $datasetId]} why]} {set native [list unavailable $why]}
++        lappend identity [list native $native]
++    }
++    return $identity
++}
++
++proc ::GX::_datasetPreviewProviderContext {datasetId representation} {
++    set session [sessionInspectionCurrentSession]
++    set token [interactiveDocumentSessionToken]
++    set metadata [datasetMetadataRead $session $datasetId]
++    set contributors [datasetMetadataContributors $session $datasetId]
++    set summary {}
++    foreach key {key kind current row_count displayed_points description axes dimensions selections ordering} {
++        if {[dict exists $representation $key]} {dict set summary $key [dict get $representation $key]}
++    }
++    # Curve buffers remain with the existing renderer. Modules receive the
++    # already-prepared source/Quality summaries, never a duplicate model/store.
++    if {[dict exists $representation digitizer]} {
++        set digitizer [dict get $representation digitizer];set selected {}
++        foreach key {dataset_id quality quality_rows quality_summary host_source_verification original_image main_image images image_message raster_available} {
++            if {[dict exists $digitizer $key]} {dict set selected $key [dict get $digitizer $key]}
++        }
++        dict set summary digitizer $selected
++    }
++    set rows [datasetField $datasetId row_count 0]
++    set availability [dict create source 0 native_model [dict exists $representation native_model] table [expr {[string is entier -strict $rows] && $rows>0}] media_artifact 0 source_image 0 quality 0]
++    if {![catch {sessionInspectionDatasetLocation $datasetId $session}]} {dict set availability source 1}
++    if {[dict exists $representation media_artifact path] && [file isfile [dict get $representation media_artifact path]]} {
++        dict set availability media_artifact 1
++        dict set summary media_artifact [dict get $representation media_artifact]
++    }
++    if {[dict exists $summary digitizer images]} {
++        dict for {image record} [dict get $summary digitizer images] {
++            if {[dict exists $record path] && [file isfile [dict get $record path]]} {dict set availability source_image 1}
++        }
++    }
++    if {[dict exists $summary digitizer quality] && [dict get $summary digitizer quality] ne {}} {dict set availability quality 1}
++    return [dict create schema gxtxt.preview_context.v1 dataset_id $datasetId session $session token $token \
++        contract [datasetField $datasetId contract [datasetField $datasetId kind]] \
++        metadata $metadata contributors $contributors variables [datasetVariableSchemaV3 $datasetId] \
++        representation $summary availability $availability]
++}
++
++proc ::GX::_datasetPreviewProviderContextCurrent {id context identity} {
++    expr {![catch {interactiveDocumentSessionToken} token] && $token eq [dict get $context token] && ![catch {datasetViewerScientificIdentity $id} actual] && $actual eq $identity}
++}
++
++# Extensions contribute data descriptors to the one CORE Preview notebook.
++# Their contract is read-only; existing trusted Module and Dataset owners remain
++# responsible for package code and scientific access. No new loader/registry.
++proc ::GX::datasetPreviewProviderTabs {datasetId {representation {}}} {
++    set tabs {};set diagnostics {}
++    if {$datasetId ni [datasetRegistryIds]} {_datasetPreviewProviderError INVALID_ARGUMENT {Unknown canonical Dataset}}
++    set candidates [datasetPreviewProviders $datasetId]
++    if {![llength $candidates]} {return [dict create tabs {} diagnostics {}]}
++    if {[catch {
++        set context [_datasetPreviewProviderContext $datasetId $representation]
++        set identity [datasetViewerScientificIdentity $datasetId]
++    } message]} {return [dict create tabs {} diagnostics [list "Dataset Preview: $message"]]}
++    set previewDir {}
++    if {[dict exists $representation key] && [regexp {^[a-f0-9]{64}$} [dict get $representation key]]} {
++        set previewDir [datasetPreviewCachePath $::GX::currentSession [dict get $representation key]]
++    }
++    foreach info $candidates {
++        set id [dict get $info component_id]
++        if {![dict get $info enabled]} continue
++        set preparedNative 0
++        if {[dict get $info profile] eq {native} && [dict exists $representation native_provider component_id] && [dict get $representation native_provider component_id] eq $id && [llength [info commands ::GX::datasetPreviewNativeReceiptCurrent]]} {
++            catch {
++                if {[dict get $representation native_provider receipt source_receipt cache_key] eq [dict get $representation key]} {
++                    set preparedNative [datasetPreviewNativeReceiptCurrent $datasetId [dict get $representation native_provider]]
++                }
++            }
++        }
++        if {![dict get $info available] && !$preparedNative} {
++            lappend diagnostics "$id: [dict get $info reason]"
++            continue
++        }
++        if {[catch {
++            set declaration [_datasetPreviewProviderDescriptor $id]
++            modulePublicApiActivate $id PREVIEW_COMPONENT_GUI_API_v1
++            set namespace [descriptorValue [moduleField $id dict {}] public_api.PREVIEW_COMPONENT_GUI_API_v1 namespace {}]
++            set callback ${namespace}::preview
++            if {![llength [info commands $callback]]} {
++                if {[dict get $info profile] eq {native}} continue
++                error {Preview public API has no preview(context) operation}
++            }
++            set response [_datasetPrivateWithModule $id [list $callback $context]]
++            if {[string bytelength $response]>1048576 || [catch {dict size $response}]} {error {Preview response must be a dictionary up to1MiB}}
++            if {[dict keys $response] ne {tabs} || [llength [dict get $response tabs]]>32} {error {Preview response requires at most32 tab descriptors}}
++            set contribution {};set ids {}
++            foreach tab [dict get $response tabs] {
++                if {[dict exists $tab kind] && [dict get $tab kind] eq {native} && ![dict get $context availability native_model]} continue
++                if {[dict exists $tab kind] && [dict get $tab kind] eq {table}} {
++                    if {![dict exists $tab dataset_id]} {dict set tab dataset_id $datasetId}
++                    set target [dict get $tab dataset_id]
++                    set rows [datasetField $target row_count 0]
++                    if {$target ni [datasetRegistryIds] || ![string is entier -strict $rows] || $rows==0 || [catch {sessionInspectionDatasetLocation $target}]} continue
++                }
++                set normalized [previewDescriptorTabNormalize $tab $previewDir]
++                if {$normalized eq {}} continue
++                set tabId [dict get $normalized id]
++                if {$tabId in $ids} {error {Preview component returned duplicate tab IDs}}
++                lappend ids $tabId
++                dict set normalized component_id $id
++                lappend contribution $normalized
++            }
++            if {![_datasetPreviewProviderContextCurrent $datasetId $context $identity]} {error {Dataset or Session changed during Preview contribution}}
++            if {![moduleIsEnabled $id]} {error {Preview component was disabled during its callback}}
++            lappend tabs {*}$contribution
++        } message]} {
++            lappend diagnostics "$id: [string range $message 0 511]"
++        }
++        if {![_datasetPreviewProviderContextCurrent $datasetId $context $identity]} {
++            return [dict create tabs {} diagnostics [concat $diagnostics [list "$id: Dataset or Session changed; refresh Preview"]]]
++        }
++    }
++    return [dict create tabs $tabs diagnostics $diagnostics]
++}
+diff --git a/core/tcl/dataset_preview_worker_v1.tcl b/core/tcl/dataset_preview_worker_v1.tcl
+index ec17d42d..d25cb369 100644
+--- a/core/tcl/dataset_preview_worker_v1.tcl
++++ b/core/tcl/dataset_preview_worker_v1.tcl
+@@ -36,6 +36,10 @@ set status [catch {
+     set ::env(GXTXT_PREVIEW_WORKER) 1
+     set argv0 __gxtxt_preview_worker__
+     source [file join $framework gxtxt_pipeline.tcl]
++    if {![llength [info commands ::GX::datasetPreviewNativeEnsure]]} {
++        source [file join $framework core tcl dataset_preview_provider_v1.tcl]
++        source [file join $framework core tcl dataset_preview_native_v1.tcl]
++    }
+     ::GX::defaults;::GX::loadModuleCatalog
+     set ::GX::currentSession [file normalize $session]
+     ::GX::loadManifest [file join $session metadata manifest.ini]
+diff --git a/core/tcl/preview_descriptor_api_v1.tcl b/core/tcl/preview_descriptor_api_v1.tcl
+index 74996ace..c2121b7e 100644
+--- a/core/tcl/preview_descriptor_api_v1.tcl
++++ b/core/tcl/preview_descriptor_api_v1.tcl
+@@ -133,3 +133,67 @@ proc ::GX::previewDescriptorRenderTextWidget {w descriptor} {
+         }
+     }
+ }
++
++# Optional Dataset Preview panes use the same metadata/artifact contract and
++# bounded canonical table owner. Providers return data, never renderer commands.
++proc ::GX::previewDescriptorTabNormalize {tab previewDir} {
++    if {[catch {dict size $tab}]} {error {Preview tab must be a dictionary}}
++    foreach key {id label kind} {if {![dict exists $tab $key]} {error "Preview tab needs $key"}}
++    set id [dict get $tab id];set label [string trim [dict get $tab label]];set kind [dict get $tab kind]
++    if {![regexp {^[A-Za-z][A-Za-z0-9_.-]{0,63}$} $id]} {error {Invalid Preview tab ID}}
++    if {$label eq {} || [string length $label]>96 || [regexp {[\x00\r\n]} $label]} {error {Invalid Preview tab label}}
++    set out [dict create id $id label $label kind $kind]
++    switch -- $kind {
++        metadata {
++            if {![dict exists $tab metadata] || [catch {dict size [dict get $tab metadata]} size]} {error {Preview tab metadata must be a dictionary}}
++            if {$size==0} {return {}}
++            if {$size>128 || [string bytelength [dict get $tab metadata]]>65536} {error {Preview metadata tab exceeds its display limit}}
++            dict set out descriptor [previewDescriptorNormalize [dict create preview_kind metadata preview_metadata [dict get $tab metadata]] $previewDir]
++        }
++        artifact {
++            if {![dict exists $tab artifact]} {error {Preview artifact tab needs an artifact}}
++            dict set out descriptor [previewDescriptorNormalize [dict create preview_kind artifact preview_artifact [dict get $tab artifact]] $previewDir]
++        }
++        table {
++            if {![dict exists $tab dataset_id]} {error {Preview table tab needs a canonical Dataset ID}}
++            dict set out dataset_id [datasetPublicationV2ValidateId dataset [dict get $tab dataset_id]]
++            set count [datasetPublicationV2DictDefault $tab count 100]
++            if {![string is entier -strict $count] || $count<1 || $count>1000} {error {Preview table count must be between 1 and 1000}}
++            set variables [datasetPublicationV2DictDefault $tab variable_ids {}]
++            if {[llength $variables]>32} {error {Preview table supports at most 32 variables}}
++            dict set out count $count;dict set out variable_ids $variables
++        }
++        native {}
++        default {error "Unsupported Preview tab kind '$kind'"}
++    }
++    return $out
++}
++proc ::GX::previewDescriptorTabDispose {expected actual} {
++    if {$expected eq $actual} {previewDescriptorClearWidgetArtifact $expected}
++}
++proc ::GX::previewDescriptorTabRender {parent tab {representation {}}} {
++    if {[dict get $tab kind] eq {native}} {
++        if {![dict exists $representation native_model]} {return 0}
++        modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
++        ::GX::PlotDatasetAPIv4::widgetCreate $parent.plot [dict get $representation native_model] {prepared_model 1 retain_presentation 1}
++        pack $parent.plot -fill both -expand 1
++        return 1
++    }
++    set page {}
++    if {[dict get $tab kind] eq {table}} {
++        set page [datasetPreviewPage $::GX::currentSession [dict get $tab dataset_id] [dict create count [dict get $tab count] variable_ids [dict get $tab variable_ids]]]
++        if {![dict get $page available] || ![llength [dict get $page rows]]} {return 0}
++    }
++    text $parent.text -wrap word -state normal -font TkFixedFont
++    ttk::scrollbar $parent.y -command [list $parent.text yview]
++    ttk::scrollbar $parent.x -orient horizontal -command [list $parent.text xview]
++    $parent.text configure -yscrollcommand [list $parent.y set] -xscrollcommand [list $parent.x set]
++    grid $parent.text -row 0 -column 0 -sticky nsew
++    grid $parent.y -row 0 -column 1 -sticky ns;grid $parent.x -row 1 -column 0 -sticky ew
++    grid rowconfigure $parent 0 -weight 1;grid columnconfigure $parent 0 -weight 1
++    bind $parent.text <Destroy> [list ::GX::previewDescriptorTabDispose $parent.text %W]
++    if {$page ne {}} {datasetPreviewRenderTableSnapshot $parent.text $page
++    } else {previewDescriptorRenderTextWidget $parent.text [dict get $tab descriptor]}
++    $parent.text configure -state disabled
++    return 1
++}
+diff --git a/core/tcl/scientific_dataset_filters_v1.tcl b/core/tcl/scientific_dataset_filters_v1.tcl
+index 350b2dbc..be0d700d 100644
+--- a/core/tcl/scientific_dataset_filters_v1.tcl
++++ b/core/tcl/scientific_dataset_filters_v1.tcl
+@@ -209,13 +209,17 @@ proc ::GX::scientificDatasetPreviewFiltered {id x y output requests {options {}}
+     set context [datasetCoordinateRead $::GX::currentSession $id]
+     set rows 0;set reduced 0;set traces {};set displayed 0;set prepared {}
+     set ordering [datasetPublicationV2DictDefault [dict merge [_datasetPreviewConfiguredOptions $id] $options] ordering {}]
+-    set sources {}
++    set sources {};set nativeProvider {};set nativeOverlay {}
+     if {[dict exists $options batch_plan]} {
+         set plan [dict get $options batch_plan]
+         if {[dict get $plan dataset_id] ne $id} {error {Preview grouping plan belongs to another Dataset}}
+         set request [dict create dataset_id $id x_variable_id $x y_variable_id $y display_budget 4096 filters [dict get $plan filters]]
+         if {$ordering ne {}} {dict set request order_variable_id $ordering}
+-        set batch [curveSourceDisplayBatch $::GX::currentSession $request [dict create group_variable_ids [dict get $plan group_variable_ids]]]
++        set batchOptions [dict create group_variable_ids [dict get $plan group_variable_ids]]
++        if {[llength [info commands ::GX::datasetPreviewNativeBatch]]} {dict set batchOptions preview_provider [dict create cache_key [file tail [file dirname $output]]]}
++        set batch [curveSourceDisplayBatch $::GX::currentSession $request $batchOptions]
++        if {[dict exists $batch diagnostics native_provider]} {set nativeProvider [dict get $batch diagnostics native_provider]}
++        set nativeOverlay [datasetPublicationV2DictDefault $batch native_overlay {}]
+         set sources [dict get $batch series]
+     } else {
+         foreach filters $requests {
+@@ -256,7 +260,7 @@ proc ::GX::scientificDatasetPreviewFiltered {id x y output requests {options {}}
+     set receipt [::GX::PlotDatasetAPIv4::renderModel $model $output 960 580]
+     set bounds [scientificDatasetPlotReceiptBounds $receipt]
+     set presentation [dict get $receipt coordinate_presentation]
+-    return [dict merge [lindex $traces 0] [dict create row_count $rows reduced $reduced trace_count [llength $sources] traces $traces displayed_points $displayed view_bounds $bounds axis_aspect auto coordinate_presentation $presentation native_model $model]]
++    return [dict merge [lindex $traces 0] [dict create row_count $rows reduced $reduced trace_count [llength $sources] traces $traces displayed_points $displayed view_bounds $bounds axis_aspect auto coordinate_presentation $presentation native_model $model native_provider $nativeProvider native_overlay $nativeOverlay]]
+ }
+ 
+ source [file join [file dirname [info script]] scientific_dataset_filter_configuration_v1.tcl]
+diff --git a/core/tcl/scientific_dataset_preview_v1.tcl b/core/tcl/scientific_dataset_preview_v1.tcl
+index 4a36c4ba..6ec95ed4 100644
+--- a/core/tcl/scientific_dataset_preview_v1.tcl
++++ b/core/tcl/scientific_dataset_preview_v1.tcl
+@@ -65,7 +65,8 @@ proc ::GX::scientificDatasetPreviewControls {id axes {preparedDimensions @discov
+     set ui(previewMap,status) [scientificDatasetFilterMode $ui(previewMap,dimensions) $ui(previewMap,filters) $ui(previewMap,separate)]
+     return $axes
+ }
+-proc ::GX::scientificDatasetArrayPreview {id output} {
++proc ::GX::scientificDatasetArrayPreview {id output {receiptVar {}}} {
++    if {$receiptVar ne {}} {upvar 1 $receiptVar nativeReceipt;set nativeReceipt {}}
+     foreach variable [datasetVariableSchemaV3 $id] {
+         if {[dict get $variable enabled]&&[dict get $variable rank]>=2&&[dict get $variable value_kind] ne "text"} {set v $variable;break}
+     }
+@@ -92,7 +93,8 @@ proc ::GX::scientificDatasetArrayPreview {id output} {
+             set chunk [datasetAccessReadHyperslab $handle [dict get $v variable_id] $starts $counts]
+             set column [dict create dtype [dict get $chunk dtype] values [dict get $chunk values]]
+         }
+-        set plane [::gx::native2d::_preview_plane $column $nx $ny]
++        set plane [datasetPreviewNativePlane $id $v $starts $counts $column $nx $ny $output]
++        if {$receiptVar ne {} && [dict exists $plane native_provider]} {set nativeReceipt [dict get $plane native_provider]}
+     } finally {datasetAccessClose $handle}
+     set lo [dict get $plane minimum];set hi [dict get $plane maximum]
+     set encoder [datasetPreviewTool magick]
+diff --git a/docs/api/DATASET_PREVIEW_API_v1.md b/docs/api/DATASET_PREVIEW_API_v1.md
+index 14a0bcef..53ea10aa 100644
+--- a/docs/api/DATASET_PREVIEW_API_v1.md
++++ b/docs/api/DATASET_PREVIEW_API_v1.md
+@@ -301,3 +301,23 @@ The cache-owner fingerprint includes this source file: updated source can make
+ previous prepared representations stale, following the existing normal source
+ identity policy. This diagnostic change does not fix a failed Render or establish
+ its cause, geometry support, native3D behavior or performance.
++
++## Installed Preview components (DEV111-P002)
++
++Configuration → Modules contains a dedicated Preview Components tab, separate
++from Acquisition and Viewers. It reuses normal Module activation and Plugin
++Manager installation. Acquisition also has its own Configuration tab; Export
++retains its previous position and implementation.
++
++Compatible Preview components contribute named, data-dependent panes alongside
++the standard Plot/source/Quality workspace. Matching uses the registered Dataset
++contract, structured metadata/provenance and actual availability. Providers are
++ordinary installed modules, discovered from the existing catalog; no separate
++Preview registry or canonical Dataset rewrite is required. The presentation
++callback and descriptor fields are documented in PREVIEW_DESCRIPTOR_API_v1.md.
++
++The Preview cache identity includes the compatible component code/asset identity
++and activation, in addition to the existing canonical source/metadata/settings
++identity. Changed or pending components cannot silently reuse an incompatible
++prepared result. Native processing and tab presentation remain separate: a
++presentation-only component is not reported as native-admitted.
+diff --git a/docs/api/PREVIEW_DESCRIPTOR_API_v1.md b/docs/api/PREVIEW_DESCRIPTOR_API_v1.md
+index c989b527..790d206d 100644
+--- a/docs/api/PREVIEW_DESCRIPTOR_API_v1.md
++++ b/docs/api/PREVIEW_DESCRIPTOR_API_v1.md
+@@ -71,3 +71,94 @@ Artifact paths are validated to remain below the framework-owned `preview_dir`.
+ ## Non-goals
+ 
+ Preview Descriptor API v1 does not define audio playback, video playback, image decoding, codecs, ROI semantics or scientific image processing. Those belong to plugins and future scientific APIs.
++
++## Dataset tabs (dev111, incremental patch P002)
++
++Installed `kind=preview` modules can add panes to the existing Dataset Preview.
++The ordinary Module and Plugin Manager owners control installation, dependencies,
++activation and pending updates. Multiple compatible components can contribute;
++none removes the standard Preview. Disabled, incompatible or failed components
++leave the generic fallback available.
++
++A presentation-only component declares the following in its normal `module.ini`:
++
++```ini
++[meta]
++api_version=1
++id=preview.example
++kind=preview
++name=Example Dataset views
++version=1.0.0
++selectable=1
++default_enabled=0
++runner=service
++enabled_key=
++run_key=
++
++[preview_provider]
++api_version=1
++profile=presentation
++dataset_contracts=curve_family.table
++gui_public_api=PREVIEW_COMPONENT_GUI_API_v1
++
++[public_apis]
++ids=PREVIEW_COMPONENT_GUI_API_v1
++
++[public_api.PREVIEW_COMPONENT_GUI_API_v1]
++api_version=1
++entrypoint=api/preview.tcl
++namespace=::GX::ExamplePreview
++```
++
++The normal public-API loader activates that entrypoint. Its fixed
++`::GX::ExamplePreview::preview context` callback returns a dictionary with a
++`tabs` list. Each pane has a stable component-local `id`, a readable `label` and
++one of these `kind` values:
++
++| Kind | Content fields | CORE rendering owner |
++| --- | --- | --- |
++| `metadata` | `metadata` label/value dictionary | Preview Descriptor metadata renderer |
++| `artifact` | `artifact` with `path`, `media_type`, optional `label` | Existing artifact validator/renderer; path must stay inside the supplied Preview directory |
++| `table` | `dataset_id`, optional `variable_ids`, optional `count` | Canonical `datasetPreviewPage` and existing text sample renderer; count 1–1000, at most 32 variables |
++| `native` | No new geometry or renderer command | The current prepared CORE `native_model`, rendered by existing Plot Dataset API v4 |
++
++For example, a module may return calibration or acquisition metadata only when
++those registered fields exist. It should omit a source-image pane when the
++linked registered Dataset or prepared image is unavailable. A `native` pane may
++rename the current curve view (for example Curves or Chromatograms) without
++creating another numerical or drawing engine. This patch does not ship new
++scientific Digitizer or chromatography Viewers.
++
++The context carries the canonical Dataset identity and registered contract,
++Session token, structured metadata/contributors, variable schema, actual payload
++availability and a bounded projection of the current prepared representation.
++Use those facts together; a contract name alone does not prove that calibration,
++integrated peaks, uncertainty or a source image exist. Empty metadata and absent
++native/table/artifact data do not create useful scientific views. Labels and
++contents are supplied by the component; widget identity includes the component
++ID, so two modules may use the same local tab ID.
++
++Callbacks are trusted installed module code and run under the existing module
++ownership context. They are a read-only display contract: do not publish, edit
++canonical data/contracts/metadata, run analyses, or create persistent selections
++merely to show a pane. Return descriptor data rather than Tcl renderer commands.
++Provider errors are shown as component diagnostics and do not replace the
++standard Preview. Source, Session and provider-byte changes invalidate existing
++Preview identities through the existing cache and lifecycle owners.
++
++The strict native profile retains its ABI, platform, native/design hashes and
++ordinary public-API declarations. A presentation component does not claim native
++admission or verified C++ capabilities. Native processing uses the existing
++common batch/plane/overlay engines and the fixed managed Preview worker;
++capability/readiness remains separate from presentation availability.
++
++Native processing on Linux x86_64/Tcl 8.6 is supplied by the prebuilt P002 addon;
++the base native engine is unchanged. The fixed managed Preview worker admits
++normal installed native components after descriptor/asset/design and ABI checks.
++The GUI may inspect adapter metadata but cannot enable native admission. Actual
++invocations verify only their used capabilities: grouped curves, bounded array
++planes, and optional raster overlays. Raster reuse requires the same canonical
++role map, filters, source/provider identity and Preview key; otherwise the
++existing CORE collector remains the fallback. A shared canonical stream retains
++opaque curve identities and point order; Preview never invents uncertainty or
++source-image availability. No runtime compiler is introduced.
+diff --git a/gxtxt_pipeline.tcl b/gxtxt_pipeline.tcl
+index 683703f6..100d8b89 100644
+--- a/gxtxt_pipeline.tcl
++++ b/gxtxt_pipeline.tcl
+@@ -340,6 +340,8 @@ source [file join $::GX::scriptDir core tcl dataset_preview_cache.tcl]
+ source [file join $::GX::scriptDir core tcl dataset_scientific_profile_api_v1.tcl]
+ source [file join $::GX::scriptDir core tcl scientific_dataset_series_v1.tcl]
+ source [file join $::GX::scriptDir core tcl scientific_dataset_preview_v1.tcl]
++source [file join $::GX::scriptDir core tcl dataset_preview_provider_v1.tcl]
++source [file join $::GX::scriptDir core tcl dataset_preview_native_v1.tcl]
+ 
+ source [file join $::GX::scriptDir core tcl mesh_dataset_viewer_v1.tcl]
+ source [file join $::GX::scriptDir core tcl native3d_compact_preview_v1.tcl]

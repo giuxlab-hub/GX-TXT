@@ -301,3 +301,23 @@ The cache-owner fingerprint includes this source file: updated source can make
 previous prepared representations stale, following the existing normal source
 identity policy. This diagnostic change does not fix a failed Render or establish
 its cause, geometry support, native3D behavior or performance.
+
+## Installed Preview components (DEV111-P002)
+
+Configuration → Modules contains a dedicated Preview Components tab, separate
+from Acquisition and Viewers. It reuses normal Module activation and Plugin
+Manager installation. Acquisition also has its own Configuration tab; Export
+retains its previous position and implementation.
+
+Compatible Preview components contribute named, data-dependent panes alongside
+the standard Plot/source/Quality workspace. Matching uses the registered Dataset
+contract, structured metadata/provenance and actual availability. Providers are
+ordinary installed modules, discovered from the existing catalog; no separate
+Preview registry or canonical Dataset rewrite is required. The presentation
+callback and descriptor fields are documented in PREVIEW_DESCRIPTOR_API_v1.md.
+
+The Preview cache identity includes the compatible component code/asset identity
+and activation, in addition to the existing canonical source/metadata/settings
+identity. Changed or pending components cannot silently reuse an incompatible
+prepared result. Native processing and tab presentation remain separate: a
+presentation-only component is not reported as native-admitted.

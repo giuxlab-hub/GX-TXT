@@ -1,0 +1,244 @@
+{
+  "schema": "gxtxt.incremental_patch.v1",
+  "patch_id": "DEV111-P002",
+  "patch_number": 2,
+  "required_predecessor_patch": 1,
+  "baseline": {
+    "version": "0.9.8.10-dev-111",
+    "artifact_revision": "r3",
+    "source_commit": "83b391de4b81a87e4e76f477491371b58cdc3a40",
+    "archive_sha256": "c31721b84e8f66cd385c1df4d82fae76e32ca816f2bec7f74c434ac720d26cfe"
+  },
+  "predecessor": {
+    "patch_id": "DEV111-P001",
+    "zip_sha256": "4f40d54d66391a1a0b2051b3c71ecc0e1ed14f614350f568b0664bffd1dd434b",
+    "installer_revision_2_same_payload": true
+  },
+  "predecessor_files": [
+    {
+      "path": "app/gui/modules_page.tcl",
+      "sha256": "20dd48c0a053b697f95bdc74f8c0e043f6e10b0fdd59cd94a19a9b0c55b76094"
+    },
+    {
+      "path": "app/modules_page_controller.tcl",
+      "sha256": "d0a87881c86ce160a38cf2103aae4df1e5a90dc4639c7ef72561fb7372288e16"
+    },
+    {
+      "path": "app/run_page_redesign.tcl",
+      "sha256": "f49e3f0efefbf9273474e286d8e8600245bee98fb1f49806510dc76264b2314c"
+    },
+    {
+      "path": "app/session_controller.tcl",
+      "sha256": "304e34ef1c2f54ffcec37e8152723acf6c06c41053491e2c79523795eb88bdc0"
+    },
+    {
+      "path": "core/tcl/module_api_v1.tcl",
+      "sha256": "664a3b89edc44e9a1d24b5e5ff959a7747b2e69d2d79b4213cf12a6e714db03f"
+    },
+    {
+      "path": "core/tcl/plot_module_variants.tcl",
+      "sha256": "6d0a6557a531188aac02ce6767e64c58a94fe12841e8677b8334a890040df8ff"
+    }
+  ],
+  "required_unchanged_files": [
+    {
+      "path": "core/native2d/bin/gx2dtcl.so",
+      "sha256": "2676f87007bad677f3cf96a16702127a15ed45ab7cfffb743968988b0f79f86b"
+    }
+  ],
+  "files": [
+    {
+      "path": "app/gui/configuration_module_editor.tcl",
+      "before_sha256": "7909e8c0081c5dbb238fb59109cc69ab15d7bdedddfe235b0e205ee4c1dfd79a",
+      "after_sha256": "a7b18cbdb96d3937d11878f448ebbdc6e764dd9c1d45ff0787868f8ccdc0bfb8",
+      "mode": 436
+    },
+    {
+      "path": "app/gui/configuration_modules.tcl",
+      "before_sha256": "0d16edac9aea21f6159a20a2abe55928148ff1eac70323f22ccb753542de5fbc",
+      "after_sha256": "2651f1ba6411ea22f868bec2d01052bf95d44b7c40840945e5390f5d7352f5f8",
+      "mode": 436
+    },
+    {
+      "path": "app/gui/configuration_preview_components.tcl",
+      "before_sha256": "10b295998385947edf61b08308357f01abb1baa9d8c288fe09c27d3c3a616e78",
+      "after_sha256": "aac2310c5fb2c67fccb6e313c961cb4f91663b4d82f763108ea3c5291e00d392",
+      "mode": 436
+    },
+    {
+      "path": "app/gui/dataset_preview_live.tcl",
+      "before_sha256": "a8b431650068151e21733208ae951c95de0beaca709199d317e6db6d0f05f0ed",
+      "after_sha256": "a71e2a7bc49c2c3aa33d5b5130e5249d5b6ac4470df33af31ea42dc991fbef34",
+      "mode": 436
+    },
+    {
+      "path": "core/native2d/bin/gxpreviewprovider.so",
+      "before_sha256": null,
+      "after_sha256": "b413188d526d1c8251e52f0beb03ed2bf33f4eaae19fc64a7a6e861b6f3f1403",
+      "mode": 509
+    },
+    {
+      "path": "core/native2d/gx2d_preview_provider_loader.cpp",
+      "before_sha256": null,
+      "after_sha256": "270678ce357bdb3f8dfdf2d0a8e644fff174ab2604ee334e24ec3d42beba3521",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/curve_source_api_v1.tcl",
+      "before_sha256": "604166b4db47cb7be6238ba3db02346089b8f6063b8796238c4a86042e4c95bd",
+      "after_sha256": "213a53b59a1ab4e0d7cc9b3fbf76ab7e8f8c0e72b913f59f259864d302127b46",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/dataset_digitizer_preview_v1.tcl",
+      "before_sha256": "8cc29082d96af0218d61a77fa5fb57a2ee92e293b502fe1d5f63eb3a61d9464a",
+      "after_sha256": "bafaca21b1e806bf5cd5c217e2db151f214021a4b42cb3b115be54c5e2c843a8",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/dataset_preview_cache.tcl",
+      "before_sha256": "ca34789cfbb88ef16cd76d350f9cb5c8b6ede1e28a1bb473ace9eb2ea007ef0c",
+      "after_sha256": "bf7887508852e5287018757662aab94de8e532b13955cb7cc5f5c6a88f1dfeaf",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/dataset_preview_native_v1.tcl",
+      "before_sha256": null,
+      "after_sha256": "b5d5b9e1597774ab8dacc58573c8eb1481e86b893299e998503b4784b2a8b578",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/dataset_preview_provider_v1.tcl",
+      "before_sha256": "8916eb1a3264f8b928b86eb1dacd9c51130334e04e588da4d1926bd0efc112e0",
+      "after_sha256": "2235ea9062f18b01535fb798af1d39c793bf74506eb07030dbde510df847e18f",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/dataset_preview_worker_v1.tcl",
+      "before_sha256": "113b558831b1ecafd687a2db86a7edf1bec16a2d7ff989ec8ad1869b6ab8d7e5",
+      "after_sha256": "17823db72d1ac4738c71f41cba41990923a85ca4ba54b091fd2bc9ae0ea7c4c7",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/preview_descriptor_api_v1.tcl",
+      "before_sha256": "6fce31a5372be08e05c9dd0b23fe85e6da5a558fe31e973ac700603cf07fcc72",
+      "after_sha256": "ff09325302e3fb4531a953b6ec5f93a025dff1e1ace8556b4d734589ba2eaf5e",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/scientific_dataset_filters_v1.tcl",
+      "before_sha256": "92db6d5200d15e02d941baec7cbb579b32f097230669f19c3751520ca4d4b665",
+      "after_sha256": "f1b12dbbb222fb2e0592b1049af98218d56edfe09a8bf8b0170940de2a831299",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/scientific_dataset_preview_v1.tcl",
+      "before_sha256": "b3f6dd02cf9df83387b40e09f04eee0dbb39f5b8050e37769cb44fb6393b4f0d",
+      "after_sha256": "c508b0d6d31463a770789d41078b642d67d01738fca958fd83130ecba25368de",
+      "mode": 436
+    },
+    {
+      "path": "docs/api/DATASET_PREVIEW_API_v1.md",
+      "before_sha256": "7283194d07388e9d93db720cb281e7bd1ea93b131b61c79b2e016af1dc01ba48",
+      "after_sha256": "ccb2065a39a9f49d8b03c1c31ee473e106bcf44331ab2a6af2e5dcec504d2d76",
+      "mode": 436
+    },
+    {
+      "path": "docs/api/PREVIEW_DESCRIPTOR_API_v1.md",
+      "before_sha256": "5f92b376538cc6eed4822943cf872f26b12a82fcf0d09478564ca541487f3944",
+      "after_sha256": "3a3a11878ba93ed95bff0b0261e07eb9edb19fdf6866154b4c04329833b2d123",
+      "mode": 436
+    },
+    {
+      "path": "gxtxt_pipeline.tcl",
+      "before_sha256": "4da523227e941ddd0a27e942696c8df9f03447a12b02e08838a8832446a9d78f",
+      "after_sha256": "bea5353fd1daf1fde1b6ca7de1dce0143276e75ab69a51240be69876cf2307ec",
+      "mode": 436
+    }
+  ],
+  "native_platform": "Linux x86_64, Tcl 8.6",
+  "native_build": "Only existing provider bridge plus fixed loader; base gx2dtcl/science engines unchanged.",
+  "installed_modified": false,
+  "created_utc": "2026-10-23T13:32:36.468609+00:00",
+  "status": "PASS_FOCUSED_VERIFIED_STAGED_NOT_APPLIED",
+  "implementation_commit": "893634c4fbb4b2dd9d6923172d744c71640f3d11",
+  "focused_receipts": [
+    {
+      "path": "evidence/configuration/config01/observations.txt",
+      "sha256": "5bbb1221dd29c83ee7ba74d54fbb463475c04aa18e3af3bbdb5403b7e1eed7f4"
+    },
+    {
+      "path": "evidence/configuration/lifecycle01/observations.txt",
+      "sha256": "1163533ed582ef686eeee6b5d9bfb964453b7a9accd88cd3f9fe338834cf0495"
+    },
+    {
+      "path": "evidence/configuration/lifecycle_outer02/observations.txt",
+      "sha256": "002679e9bc8580a35503d4134b3dbc6f6a6872a32c5c0e287f477cef0b8fbb2b"
+    },
+    {
+      "path": "evidence/presentation/contract03.log",
+      "sha256": "4150046b9082321db6a76dd789a92a18b1100b49a7a7f8a251e104b2b52830ab"
+    },
+    {
+      "path": "evidence/native/test03/log.txt",
+      "sha256": "49933fced4418babc5a6e661be57bf007e20479aac8dcf29b7c93172d0922f81"
+    },
+    {
+      "path": "evidence/native/negative02/log.txt",
+      "sha256": "e6ae288428d876ed91518c5efc49636d9abb54ac88018b2b0578400853ea0ab2"
+    },
+    {
+      "path": "evidence/native/failure01/log.txt",
+      "sha256": "16fe6cb88545db5f7b1bb15007ee8a53180248f0738abc062d5a087bf747e474"
+    },
+    {
+      "path": "evidence/native/plane01/log.txt",
+      "sha256": "87347669f71c6661e5efecd7d7e533cb9e2c7b97392cd5d8e87b08fd225c325c"
+    },
+    {
+      "path": "evidence/native/plane01/cleanup.log",
+      "sha256": "6811f1fac0c2b5c705e4f0075fc0e48426853a5fa5061a522165da4028e1f5af"
+    },
+    {
+      "path": "evidence/native/overlay01/log.txt",
+      "sha256": "df99ebe6fe7a854603667a41466282e93c583866ef74057702ed68d0e38bbd45"
+    },
+    {
+      "path": "evidence/native/overlay_guard01.log",
+      "sha256": "0610ed10a9520153d747a09c615dd202648600cba58a448e96676c06804fdb16"
+    },
+    {
+      "path": "evidence/native/overlay_integrated02/log.txt",
+      "sha256": "b40d2f8eb0f043ce51ef5c2b7051febe28e2d3d3c2c759b3f4356ebf37097ab3"
+    },
+    {
+      "path": "evidence/native/overlay_integrated02/SOURCE_PINS.json",
+      "sha256": "7fc6cd1e2e029f87b9dcf61e50eaa3bbc260c2e57bc55307282a14166851dc65"
+    },
+    {
+      "path": "evidence/main/preview_gui03/observations.txt",
+      "sha256": "dc3b9778b3e12649f1e7aa056874d694bfcd51837cd7d12b2b9171ebba102c2b"
+    },
+    {
+      "path": "evidence/main/installer_checks/RESULT.json",
+      "sha256": "7b1b6a891e0ae8bc03da9d61435185d3ba78911f696b5e27501588eb5a6765b6"
+    }
+  ],
+  "validation": "VALIDATION.md",
+  "installer_fixture_tests": {
+    "status": "PASS",
+    "scope": "Sparse scratch-only filesystem fixtures; no framework process or live installation",
+    "checks": [
+      "PASS: incompatible P001 refused clearly before any mutation",
+      "PASS: incompatible touched source refused without overwriting local edits",
+      "PASS: single apply command installs exactly the P002 payload on a sparse fixture",
+      "PASS: all six preceding P001 postimages remain unchanged",
+      "PASS: same-script rollback restores post-P001 preimages and removes only new P002 files"
+    ],
+    "installer_sha256": "8379555b26cf2619bd07336723ab0784f242e1929de9dee42bc87897f6958a0c"
+  },
+  "native_limitations": [
+    "Fixed managed Preview worker only; GUI cannot acquire native admission.",
+    "Linux x86_64/Tcl8.6 prebuilt addon; aggregate allocation reservation unsupported by existing engines."
+  ]
+}

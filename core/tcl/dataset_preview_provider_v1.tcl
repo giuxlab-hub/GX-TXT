@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Conditional TASK210 development only. MAIN has not wired this candidate into
-# startup or adopted its public routes/descriptor. Module/Package/GUI owners
-# retain activation, byte admission, lifecycle and Builder authority.
+# Standard Module-owned Preview contributions. Presentation components use the
+# existing public API loader; native components retain their strict ABI/package
+# admission. Module/Package/GUI owners retain lifecycle and rendering authority.
 namespace eval ::GX::PreviewProvider {
     variable descriptorKeys {api_version native_abi native_library native_sha256 native_platform native_layout_id native_build_id dataset_contracts capabilities gui_design gui_design_sha256 gui_contract gui_public_api gui_handler_factory}
     variable capabilities {grouped_curves bounded_array_plane raster_overlay}
@@ -16,11 +16,27 @@ proc ::GX::_datasetPreviewProviderDescriptor {id} {
     set data [moduleField $id dict {}]
     if {[moduleField $id kind {}] ne {preview} || [descriptorValue $data meta id {}] ne $id || [moduleField $id runner {}] ne {service} || ![moduleField $id selectable 1]} {error {Expected an ordinary selectable Preview service module}}
     if {[moduleField $id enabled_key {}] ne {} || [moduleField $id run_key {}] ne {}} {error {Preview components require ordinary per-module activation without legacy Configuration aliases}}
+    set profile [descriptorValue $data preview_provider profile native]
+    if {$profile ni {native presentation}} {error {Unsupported Preview provider profile}}
+    set allowed [linsert $::GX::PreviewProvider::descriptorKeys 0 profile]
+    if {$profile eq {presentation}} {set allowed {profile api_version dataset_contracts gui_public_api}}
     set prefix preview_provider.
     foreach key [dict keys $data ${prefix}*] {
-        if {[string range $key [string length $prefix] end] ni $::GX::PreviewProvider::descriptorKeys} {error {Unknown Preview provider descriptor field}}
+        if {[string range $key [string length $prefix] end] ni $allowed} {error {Unknown Preview provider descriptor field for its profile}}
     }
-    set out [dict create component_id $id]
+    set out [dict create component_id $id profile $profile]
+    if {$profile eq {presentation}} {
+        foreach key {api_version dataset_contracts gui_public_api} {
+            set value [descriptorValue $data preview_provider $key {}]
+            if {$value eq {} || [string bytelength $value]>4096 || [regexp {[\x00\r\n]} $value]} {error "Missing or invalid Preview presentation field: $key"}
+            dict set out $key $value
+        }
+        if {[dict get $out api_version] ne {1}} {error {Unsupported Preview presentation API version}}
+        dict set out dataset_contracts [_datasetPreviewProviderContracts [dict get $out dataset_contracts]]
+        dict set out capabilities {tabs}
+        _datasetPreviewProviderPublicApi $data [dict get $out gui_public_api]
+        return $out
+    }
     foreach key $::GX::PreviewProvider::descriptorKeys {
         set value [descriptorValue $data preview_provider $key {}]
         if {$value eq {} || [string bytelength $value]>4096 || [regexp {[\x00\r\n]} $value]} {error "Missing or invalid Preview provider field: $key"}
@@ -40,16 +56,26 @@ proc ::GX::_datasetPreviewProviderDescriptor {id} {
     }
     # An explicit ordinary public-API activation declaration is mandatory for
     # Builder-generated handlers. Context never supplies an arbitrary command.
-    set gui [dict get $out gui_public_api]
-    if {$gui ne {PREVIEW_COMPONENT_GUI_API_v1} || [dict get $out gui_handler_factory] ne {handlers} || $gui ni [splitList [descriptorValue $data public_apis ids {}]]} {error {Preview controlled GUI factory is not declared}}
-    set section public_api.$gui
-    if {[descriptorValue $data $section api_version {}] ne {1}} {error {Unsupported Preview GUI factory contract}}
-    _datasetPreviewProviderRelative [descriptorValue $data $section entrypoint {}]
-    if {![regexp {^::GX::[A-Za-z_][A-Za-z0-9_]*(::[A-Za-z_][A-Za-z0-9_]*)*$} [descriptorValue $data $section namespace {}]]} {error {Invalid Preview GUI factory namespace}}
+    if {[dict get $out gui_handler_factory] ne {handlers}} {error {Preview controlled GUI factory is not declared}}
+    _datasetPreviewProviderPublicApi $data [dict get $out gui_public_api]
     return $out
+}
+proc ::GX::_datasetPreviewProviderContracts {raw} {
+    set values [splitList $raw]
+    if {![llength $values] || [llength $values]>32 || [llength [lsort -unique $values]]!=[llength $values]} {error {Invalid Preview Dataset contracts}}
+    foreach value $values {if {![regexp {^[A-Za-z0-9][A-Za-z0-9_.:-]*$} $value]} {error {Invalid canonical Dataset contract ID}}}
+    return $values
+}
+proc ::GX::_datasetPreviewProviderPublicApi {data gui} {
+    if {$gui ne {PREVIEW_COMPONENT_GUI_API_v1} || $gui ni [splitList [descriptorValue $data public_apis ids {}]]} {error {Preview public API is not declared}}
+    set section public_api.$gui
+    if {[descriptorValue $data $section api_version {}] ne {1}} {error {Unsupported Preview public API contract}}
+    _datasetPreviewProviderRelative [descriptorValue $data $section entrypoint {}]
+    if {![regexp {^::GX::[A-Za-z_][A-Za-z0-9_]*(::[A-Za-z_][A-Za-z0-9_]*)*$} [descriptorValue $data $section namespace {}]]} {error {Invalid Preview public API namespace}}
 }
 proc ::GX::_datasetPreviewProviderHostInfo {} {
     # Compiled CORE metadata only; this operation may not dlopen a provider.
+    if {![llength [info commands ::gx::native2d::_preview_provider]] && [llength [info commands ::GX::datasetPreviewNativeEnsure]]} {datasetPreviewNativeEnsure}
     if {![llength [info commands ::gx::native2d::_preview_provider]]} {return {}}
     set result [::gx::native2d::_preview_provider info]
     foreach key {native_abi native_platform native_layout_id native_build_id} {if {![dict exists $result $key]} {error {Incomplete native Preview host identity}}}
@@ -68,11 +94,31 @@ proc ::GX::_datasetPreviewProviderPackageState {id} {
 proc ::GX::datasetPreviewProviderInfo {componentId} {
     if {$componentId ni $::GX::moduleOrder || [moduleField $componentId kind {}] ne {preview}} {_datasetPreviewProviderError INVALID_ARGUMENT {Unknown Preview component}}
     set id $componentId
-    set out [dict create component_id $id name [moduleField $id name $id] installed_version [moduleField $id version {}] active_version {} pending_version {} enabled 0 descriptor_valid 0 native_abi {} native_platform {} native_layout_id {} native_build_id {} dataset_contracts {} capabilities {} verified_capabilities {} gui_design_sha256 {} compatibility_status unknown load_status not_checked available 0 admission_fingerprint {} reason {Preview descriptor is invalid}]
+    set out [dict create component_id $id profile native name [moduleField $id name $id] installed_version [moduleField $id version {}] active_version {} pending_version {} enabled 0 descriptor_valid 0 native_abi {} native_platform {} native_layout_id {} native_build_id {} dataset_contracts {} capabilities {} verified_capabilities {} gui_design_sha256 {} compatibility_status unknown load_status not_checked available 0 admission_fingerprint {} reason {Preview descriptor is invalid}]
     # Reject forbidden Configuration aliases before either activation or package
     # state can interpret an unrelated cfg value as a module boolean.
     if {[catch {set declaration [_datasetPreviewProviderDescriptor $id]} message]} {dict set out reason [string range $message 0 255];return $out}
     dict set out enabled [moduleIsEnabled $id]
+    dict set out profile [dict get $declaration profile]
+    if {[dict get $declaration profile] eq {presentation}} {
+        dict set out descriptor_valid 1
+        dict set out dataset_contracts [dict get $declaration dataset_contracts]
+        dict set out capabilities {tabs}
+        dict set out compatibility_status compatible
+        if {[dict exists $::GX::pluginRuntimeLoaded $id]} {dict set out active_version [dict get $::GX::pluginRuntimeLoaded $id]}
+        if {[dict exists $::GX::pluginRuntimePending $id]} {
+            dict set out pending_version [dict get $::GX::pluginRuntimePending $id version]
+            dict set out load_status restart_required;dict set out reason {Preview update requires activation}
+        } elseif {![dict get $out enabled]} {
+            dict set out reason {Preview component is disabled}
+        } else {
+            # This is callable presentation, not native byte admission. Keep
+            # native verified-capability/fingerprint fields empty and honest.
+            dict set out available 1
+            dict set out reason {Presentation API activates on Dataset Preview}
+        }
+        return $out
+    }
     set stateInvalid [catch {set state [_datasetPreviewProviderPackageState $id]}]
     if {!$stateInvalid && $state ne {}} {
         foreach key {active_version pending_version} {dict set out $key [dict get $state $key]}
@@ -150,4 +196,149 @@ proc ::GX::datasetPreviewProviderSelect {datasetId {capability standard}} {
         return [dict create status candidate component_id [dict get $item component_id] capability $capability admission_required [expr {![dict get $item available] || $capability ni [dict get $item verified_capabilities]}] code {} reason {}]
     }
     return $result
+}
+
+# Read-only cache binding of ordinary Module/loader state and current source
+# bytes. This is derived on demand, never a second provider/package registry.
+proc ::GX::datasetPreviewProviderIdentity {datasetId} {
+    set identity {};set hasNative 0
+    foreach info [datasetPreviewProviders $datasetId] {
+        set id [dict get $info component_id]
+        set assets {}
+        set descriptor [moduleField $id descriptor {}]
+        set data [moduleField $id dict {}]
+        set root [file dirname $descriptor]
+        set entry [descriptorValue $data public_api.PREVIEW_COMPONENT_GUI_API_v1 entrypoint {}]
+        foreach relative [list [file tail $descriptor] $entry] {
+            set digest unavailable
+            if {![catch {_datasetPreviewProviderRelative $relative}]} {
+                set path [file normalize [file join $root $relative]]
+                if {[string match ${root}/* $path] && [file isfile $path]} {set digest [sha256File $path]}
+            }
+            lappend assets $relative $digest
+        }
+        set state {}
+        foreach key {component_id profile installed_version enabled descriptor_valid dataset_contracts capabilities pending_version} {dict set state $key [dict get $info $key]}
+        if {[dict get $info profile] eq {native}} {set hasNative 1}
+        lappend identity [list $state $assets]
+    }
+    if {$hasNative && [llength [info commands ::GX::datasetPreviewNativeIdentity]]} {
+        if {[catch {set native [datasetPreviewNativeIdentity $datasetId]} why]} {set native [list unavailable $why]}
+        lappend identity [list native $native]
+    }
+    return $identity
+}
+
+proc ::GX::_datasetPreviewProviderContext {datasetId representation} {
+    set session [sessionInspectionCurrentSession]
+    set token [interactiveDocumentSessionToken]
+    set metadata [datasetMetadataRead $session $datasetId]
+    set contributors [datasetMetadataContributors $session $datasetId]
+    set summary {}
+    foreach key {key kind current row_count displayed_points description axes dimensions selections ordering} {
+        if {[dict exists $representation $key]} {dict set summary $key [dict get $representation $key]}
+    }
+    # Curve buffers remain with the existing renderer. Modules receive the
+    # already-prepared source/Quality summaries, never a duplicate model/store.
+    if {[dict exists $representation digitizer]} {
+        set digitizer [dict get $representation digitizer];set selected {}
+        foreach key {dataset_id quality quality_rows quality_summary host_source_verification original_image main_image images image_message raster_available} {
+            if {[dict exists $digitizer $key]} {dict set selected $key [dict get $digitizer $key]}
+        }
+        dict set summary digitizer $selected
+    }
+    set rows [datasetField $datasetId row_count 0]
+    set availability [dict create source 0 native_model [dict exists $representation native_model] table [expr {[string is entier -strict $rows] && $rows>0}] media_artifact 0 source_image 0 quality 0]
+    if {![catch {sessionInspectionDatasetLocation $datasetId $session}]} {dict set availability source 1}
+    if {[dict exists $representation media_artifact path] && [file isfile [dict get $representation media_artifact path]]} {
+        dict set availability media_artifact 1
+        dict set summary media_artifact [dict get $representation media_artifact]
+    }
+    if {[dict exists $summary digitizer images]} {
+        dict for {image record} [dict get $summary digitizer images] {
+            if {[dict exists $record path] && [file isfile [dict get $record path]]} {dict set availability source_image 1}
+        }
+    }
+    if {[dict exists $summary digitizer quality] && [dict get $summary digitizer quality] ne {}} {dict set availability quality 1}
+    return [dict create schema gxtxt.preview_context.v1 dataset_id $datasetId session $session token $token \
+        contract [datasetField $datasetId contract [datasetField $datasetId kind]] \
+        metadata $metadata contributors $contributors variables [datasetVariableSchemaV3 $datasetId] \
+        representation $summary availability $availability]
+}
+
+proc ::GX::_datasetPreviewProviderContextCurrent {id context identity} {
+    expr {![catch {interactiveDocumentSessionToken} token] && $token eq [dict get $context token] && ![catch {datasetViewerScientificIdentity $id} actual] && $actual eq $identity}
+}
+
+# Extensions contribute data descriptors to the one CORE Preview notebook.
+# Their contract is read-only; existing trusted Module and Dataset owners remain
+# responsible for package code and scientific access. No new loader/registry.
+proc ::GX::datasetPreviewProviderTabs {datasetId {representation {}}} {
+    set tabs {};set diagnostics {}
+    if {$datasetId ni [datasetRegistryIds]} {_datasetPreviewProviderError INVALID_ARGUMENT {Unknown canonical Dataset}}
+    set candidates [datasetPreviewProviders $datasetId]
+    if {![llength $candidates]} {return [dict create tabs {} diagnostics {}]}
+    if {[catch {
+        set context [_datasetPreviewProviderContext $datasetId $representation]
+        set identity [datasetViewerScientificIdentity $datasetId]
+    } message]} {return [dict create tabs {} diagnostics [list "Dataset Preview: $message"]]}
+    set previewDir {}
+    if {[dict exists $representation key] && [regexp {^[a-f0-9]{64}$} [dict get $representation key]]} {
+        set previewDir [datasetPreviewCachePath $::GX::currentSession [dict get $representation key]]
+    }
+    foreach info $candidates {
+        set id [dict get $info component_id]
+        if {![dict get $info enabled]} continue
+        set preparedNative 0
+        if {[dict get $info profile] eq {native} && [dict exists $representation native_provider component_id] && [dict get $representation native_provider component_id] eq $id && [llength [info commands ::GX::datasetPreviewNativeReceiptCurrent]]} {
+            catch {
+                if {[dict get $representation native_provider receipt source_receipt cache_key] eq [dict get $representation key]} {
+                    set preparedNative [datasetPreviewNativeReceiptCurrent $datasetId [dict get $representation native_provider]]
+                }
+            }
+        }
+        if {![dict get $info available] && !$preparedNative} {
+            lappend diagnostics "$id: [dict get $info reason]"
+            continue
+        }
+        if {[catch {
+            set declaration [_datasetPreviewProviderDescriptor $id]
+            modulePublicApiActivate $id PREVIEW_COMPONENT_GUI_API_v1
+            set namespace [descriptorValue [moduleField $id dict {}] public_api.PREVIEW_COMPONENT_GUI_API_v1 namespace {}]
+            set callback ${namespace}::preview
+            if {![llength [info commands $callback]]} {
+                if {[dict get $info profile] eq {native}} continue
+                error {Preview public API has no preview(context) operation}
+            }
+            set response [_datasetPrivateWithModule $id [list $callback $context]]
+            if {[string bytelength $response]>1048576 || [catch {dict size $response}]} {error {Preview response must be a dictionary up to1MiB}}
+            if {[dict keys $response] ne {tabs} || [llength [dict get $response tabs]]>32} {error {Preview response requires at most32 tab descriptors}}
+            set contribution {};set ids {}
+            foreach tab [dict get $response tabs] {
+                if {[dict exists $tab kind] && [dict get $tab kind] eq {native} && ![dict get $context availability native_model]} continue
+                if {[dict exists $tab kind] && [dict get $tab kind] eq {table}} {
+                    if {![dict exists $tab dataset_id]} {dict set tab dataset_id $datasetId}
+                    set target [dict get $tab dataset_id]
+                    set rows [datasetField $target row_count 0]
+                    if {$target ni [datasetRegistryIds] || ![string is entier -strict $rows] || $rows==0 || [catch {sessionInspectionDatasetLocation $target}]} continue
+                }
+                set normalized [previewDescriptorTabNormalize $tab $previewDir]
+                if {$normalized eq {}} continue
+                set tabId [dict get $normalized id]
+                if {$tabId in $ids} {error {Preview component returned duplicate tab IDs}}
+                lappend ids $tabId
+                dict set normalized component_id $id
+                lappend contribution $normalized
+            }
+            if {![_datasetPreviewProviderContextCurrent $datasetId $context $identity]} {error {Dataset or Session changed during Preview contribution}}
+            if {![moduleIsEnabled $id]} {error {Preview component was disabled during its callback}}
+            lappend tabs {*}$contribution
+        } message]} {
+            lappend diagnostics "$id: [string range $message 0 511]"
+        }
+        if {![_datasetPreviewProviderContextCurrent $datasetId $context $identity]} {
+            return [dict create tabs {} diagnostics [concat $diagnostics [list "$id: Dataset or Session changed; refresh Preview"]]]
+        }
+    }
+    return [dict create tabs $tabs diagnostics $diagnostics]
 }

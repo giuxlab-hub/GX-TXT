@@ -36,6 +36,10 @@ set status [catch {
     set ::env(GXTXT_PREVIEW_WORKER) 1
     set argv0 __gxtxt_preview_worker__
     source [file join $framework gxtxt_pipeline.tcl]
+    if {![llength [info commands ::GX::datasetPreviewNativeEnsure]]} {
+        source [file join $framework core tcl dataset_preview_provider_v1.tcl]
+        source [file join $framework core tcl dataset_preview_native_v1.tcl]
+    }
     ::GX::defaults;::GX::loadModuleCatalog
     set ::GX::currentSession [file normalize $session]
     ::GX::loadManifest [file join $session metadata manifest.ini]

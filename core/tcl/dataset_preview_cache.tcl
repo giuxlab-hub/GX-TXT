@@ -40,6 +40,7 @@ proc ::GX::datasetPreviewCacheKey {id {options {}}} {
             core/tcl/dataset_preview_cache.tcl core/tcl/dataset_preview_worker_v1.tcl core/tcl/scientific_dataset_filters_v1.tcl
             core/tcl/dataset_digitizer_preview_v1.tcl core/python/dataset_digitizer_quality_summary_v1.py
             core/tcl/dataset_preview_api_v1.tcl core/tcl/scientific_dataset_preview_v1.tcl
+            core/tcl/dataset_preview_provider_v1.tcl core/tcl/dataset_preview_native_v1.tcl core/tcl/preview_descriptor_api_v1.tcl
             core/tcl/scientific_dataset_filter_configuration_v1.tcl core/tcl/dataset_viewer_api_v1.tcl
             core/tcl/curve_source_api_v1.tcl core/tcl/dataset_coordinate_context_v1.tcl
             core/tcl/scientific_dataset_coordinates_v1.tcl
@@ -63,7 +64,7 @@ proc ::GX::datasetPreviewCacheKey {id {options {}}} {
     # Keep values intact, including scientifically meaningful grouping lists.
     set orderedOptions {}
     foreach name [lsort [dict keys $options]] {dict set orderedOptions $name [dict get $options $name]}
-    return [datasetStorageSha256Text $::GX::currentSession [list [sessionOriginRead $::GX::currentSession] [datasetPreviewCacheSource $id] $orderedOptions $linked $renderer $settings $configured]]
+    return [datasetStorageSha256Text $::GX::currentSession [list [sessionOriginRead $::GX::currentSession] [datasetPreviewCacheSource $id] $orderedOptions $linked $renderer $settings $configured [datasetPreviewProviderIdentity $id]]]
 }
 proc ::GX::datasetPreviewCachePath {session key} {
     if {![regexp {^[0-9a-f]{64}$} $key]} {error {Invalid Preview cache key}}
@@ -203,16 +204,20 @@ proc ::GX::_datasetPreviewCachePrepare {id options key source dir} {
                 set receipt [scientificDatasetPreviewFiltered $id [dict get $axes x] [dict get $axes y] [file join $dir standard.png] $requests $renderOptions]
                 dict set result kind native2d
                 foreach field {native_model row_count displayed_points} {dict set result $field [dict get $receipt $field]}
+                if {[dict exists $receipt native_provider]} {dict set result native_provider [dict get $receipt native_provider]}
                 dict set result selections $selections
                 dict set result dimensions $dimensions
                 if {[dict exists $options ordering]} {dict set result ordering [dict get $options ordering]}
-                if {![catch {set digitizer [datasetDigitizerPreviewPrepare $id $selections $dimensions $dir [datasetPublicationV2DictDefault $options processed_image {}]]} message]} {dict set result digitizer $digitizer} else {dict set result description "Source raster/Quality unavailable: $message"}
+                set nativeOverlay [datasetPublicationV2DictDefault $receipt native_overlay {}]
+                if {$nativeOverlay ne {} && ([catch {dict get $nativeOverlay native_provider receipt source_receipt cache_key} overlayKey] || $overlayKey ne $key)} {set nativeOverlay {}}
+                if {![catch {set digitizer [datasetDigitizerPreviewPrepare $id $selections $dimensions $dir [datasetPublicationV2DictDefault $options processed_image {}] $nativeOverlay]} message]} {dict set result digitizer $digitizer} else {dict set result description "Source raster/Quality unavailable: $message"}
             } else {
                 if {!$mesh && ![dict exists $result media_artifact]} {
                     set arrayPath [file join $dir array-standard.png]
-                    if {![catch {set arrayDescription [scientificDatasetArrayPreview $id $arrayPath]}] && $arrayDescription ne {}} {
+                    if {![catch {set arrayDescription [scientificDatasetArrayPreview $id $arrayPath nativeReceipt]}] && $arrayDescription ne {}} {
                         dict set result media_artifact [dict create path $arrayPath media_type image/png label {Bounded original array cells}]
                         dict set result kind array;dict set result description $arrayDescription
+                        if {$nativeReceipt ne {}} {dict set result native_provider $nativeReceipt}
                     }
                 }
                 if {![dict exists $result media_artifact] && ![dict exists $result description]} {dict set result description "Dataset $id: [datasetField $id kind]. Use Open Dataset for supported media, geometry or explicit multidimensional selection."}

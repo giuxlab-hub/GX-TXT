@@ -133,3 +133,67 @@ proc ::GX::previewDescriptorRenderTextWidget {w descriptor} {
         }
     }
 }
+
+# Optional Dataset Preview panes use the same metadata/artifact contract and
+# bounded canonical table owner. Providers return data, never renderer commands.
+proc ::GX::previewDescriptorTabNormalize {tab previewDir} {
+    if {[catch {dict size $tab}]} {error {Preview tab must be a dictionary}}
+    foreach key {id label kind} {if {![dict exists $tab $key]} {error "Preview tab needs $key"}}
+    set id [dict get $tab id];set label [string trim [dict get $tab label]];set kind [dict get $tab kind]
+    if {![regexp {^[A-Za-z][A-Za-z0-9_.-]{0,63}$} $id]} {error {Invalid Preview tab ID}}
+    if {$label eq {} || [string length $label]>96 || [regexp {[\x00\r\n]} $label]} {error {Invalid Preview tab label}}
+    set out [dict create id $id label $label kind $kind]
+    switch -- $kind {
+        metadata {
+            if {![dict exists $tab metadata] || [catch {dict size [dict get $tab metadata]} size]} {error {Preview tab metadata must be a dictionary}}
+            if {$size==0} {return {}}
+            if {$size>128 || [string bytelength [dict get $tab metadata]]>65536} {error {Preview metadata tab exceeds its display limit}}
+            dict set out descriptor [previewDescriptorNormalize [dict create preview_kind metadata preview_metadata [dict get $tab metadata]] $previewDir]
+        }
+        artifact {
+            if {![dict exists $tab artifact]} {error {Preview artifact tab needs an artifact}}
+            dict set out descriptor [previewDescriptorNormalize [dict create preview_kind artifact preview_artifact [dict get $tab artifact]] $previewDir]
+        }
+        table {
+            if {![dict exists $tab dataset_id]} {error {Preview table tab needs a canonical Dataset ID}}
+            dict set out dataset_id [datasetPublicationV2ValidateId dataset [dict get $tab dataset_id]]
+            set count [datasetPublicationV2DictDefault $tab count 100]
+            if {![string is entier -strict $count] || $count<1 || $count>1000} {error {Preview table count must be between 1 and 1000}}
+            set variables [datasetPublicationV2DictDefault $tab variable_ids {}]
+            if {[llength $variables]>32} {error {Preview table supports at most 32 variables}}
+            dict set out count $count;dict set out variable_ids $variables
+        }
+        native {}
+        default {error "Unsupported Preview tab kind '$kind'"}
+    }
+    return $out
+}
+proc ::GX::previewDescriptorTabDispose {expected actual} {
+    if {$expected eq $actual} {previewDescriptorClearWidgetArtifact $expected}
+}
+proc ::GX::previewDescriptorTabRender {parent tab {representation {}}} {
+    if {[dict get $tab kind] eq {native}} {
+        if {![dict exists $representation native_model]} {return 0}
+        modulePublicApiActivate plot.dataset PLOT_DATASET_API_v4
+        ::GX::PlotDatasetAPIv4::widgetCreate $parent.plot [dict get $representation native_model] {prepared_model 1 retain_presentation 1}
+        pack $parent.plot -fill both -expand 1
+        return 1
+    }
+    set page {}
+    if {[dict get $tab kind] eq {table}} {
+        set page [datasetPreviewPage $::GX::currentSession [dict get $tab dataset_id] [dict create count [dict get $tab count] variable_ids [dict get $tab variable_ids]]]
+        if {![dict get $page available] || ![llength [dict get $page rows]]} {return 0}
+    }
+    text $parent.text -wrap word -state normal -font TkFixedFont
+    ttk::scrollbar $parent.y -command [list $parent.text yview]
+    ttk::scrollbar $parent.x -orient horizontal -command [list $parent.text xview]
+    $parent.text configure -yscrollcommand [list $parent.y set] -xscrollcommand [list $parent.x set]
+    grid $parent.text -row 0 -column 0 -sticky nsew
+    grid $parent.y -row 0 -column 1 -sticky ns;grid $parent.x -row 1 -column 0 -sticky ew
+    grid rowconfigure $parent 0 -weight 1;grid columnconfigure $parent 0 -weight 1
+    bind $parent.text <Destroy> [list ::GX::previewDescriptorTabDispose $parent.text %W]
+    if {$page ne {}} {datasetPreviewRenderTableSnapshot $parent.text $page
+    } else {previewDescriptorRenderTextWidget $parent.text [dict get $tab descriptor]}
+    $parent.text configure -state disabled
+    return 1
+}

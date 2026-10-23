@@ -340,6 +340,8 @@ source [file join $::GX::scriptDir core tcl dataset_preview_cache.tcl]
 source [file join $::GX::scriptDir core tcl dataset_scientific_profile_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_dataset_series_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_dataset_preview_v1.tcl]
+source [file join $::GX::scriptDir core tcl dataset_preview_provider_v1.tcl]
+source [file join $::GX::scriptDir core tcl dataset_preview_native_v1.tcl]
 
 source [file join $::GX::scriptDir core tcl mesh_dataset_viewer_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_compact_preview_v1.tcl]

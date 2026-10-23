@@ -9,6 +9,9 @@ namespace eval ::GX::ConfigurationModules {
     variable exportQuery {}
     variable exportRecords {}
     variable exportSelected {}
+    variable acquisitionQuery {}
+    variable acquisitionRecords {}
+    variable acquisitionSelected {}
 }
 proc ::GX::configurationInstalledPlugins {} {
     set result {}
@@ -36,16 +39,22 @@ proc ::GX::configurationInstalledPlugins {} {
 proc ::GX::configurationModulesBuild {parent row} {
     ttk::notebook $parent.kinds
     ttk::frame $parent.kinds.services;ttk::frame $parent.kinds.exports;ttk::frame $parent.kinds.viewers
-    $parent.kinds add $parent.kinds.services -text {Analysis, Acquisition & Services}
+    $parent.kinds add $parent.kinds.services -text {Analysis & Services}
     $parent.kinds add $parent.kinds.exports -text Export
     $parent.kinds add $parent.kinds.viewers -text Viewers
+    ttk::frame $parent.kinds.acquisition
+    ttk::frame $parent.kinds.preview
+    $parent.kinds add $parent.kinds.acquisition -text Acquisition
+    $parent.kinds add $parent.kinds.preview -text {Preview Components}
     grid $parent.kinds -row $row -column 0 -columnspan 4 -sticky nsew
     grid rowconfigure $parent $row -weight 1
     configurationModulesBrowserBuild $parent.kinds.services services
     configurationModulesBrowserBuild $parent.kinds.exports exports
+    configurationModulesBrowserBuild $parent.kinds.acquisition acquisition
     configurationSubscribe ::GX::configurationEditorChanged
     configurationModulesReload
     viewerManagerBuild $parent.kinds.viewers
+    configurationPreviewComponentsBuild $parent.kinds.preview
 }
 # Both category browsers consume the same installed registry and Configuration
 # editor. Their query/selection variables are presentation drafts only.
@@ -57,6 +66,7 @@ proc ::GX::configurationModulesBrowserBuild {parent category} {
     ttk::frame $w.search
     ttk::label $w.search.label -text "Installed plugins"
     set queryVariable [expr {$category eq {exports} ? {::GX::ConfigurationModules::exportQuery} : {::GX::ConfigurationModules::query}}]
+    if {$category eq {acquisition}} {set queryVariable ::GX::ConfigurationModules::acquisitionQuery}
     ttk::entry $w.search.query -textvariable $queryVariable -width 32
     ttk::button $w.search.refresh -text Refresh -command ::GX::configurationModulesReload
     pack $w.search.label $w.search.query $w.search.refresh -side left -padx 4
@@ -101,23 +111,27 @@ proc ::GX::configurationModulesBrowserBuild {parent category} {
 proc ::GX::configurationModulesReload {} {
     set ::GX::ConfigurationModules::catalog {}
     configurationModulesRefresh
+    configurationPreviewComponentsRefresh
 }
 proc ::GX::configurationModulesCategoryMatches {record category} {
     set kind {}
     if {[dict get $record type] eq {module}} {set kind [moduleField [dict get $record id] kind {}]}
     switch -- $category {
         exports {return [expr {$kind eq {export}}]}
-        services {return [expr {$kind ni {viewer export preview}}]}
+        acquisition {return [expr {$kind eq {acquisition}}]}
+        services {return [expr {$kind ni {viewer export preview acquisition}}]}
         default {error "Unknown module configuration category '$category'"}
     }
 }
 proc ::GX::configurationModulesRefresh {{category all}} {
     if {$category eq {all}} {
-        foreach kind {services exports} {configurationModulesRefresh $kind}
+        foreach kind {services exports acquisition} {configurationModulesRefresh $kind}
         return
     }
     if {$category eq {services}} {
         upvar #0 ::GX::ConfigurationModules::records records ::GX::ConfigurationModules::query query ::GX::ConfigurationModules::selected selected
+    } elseif {$category eq {acquisition}} {
+        upvar #0 ::GX::ConfigurationModules::acquisitionRecords records ::GX::ConfigurationModules::acquisitionQuery query ::GX::ConfigurationModules::acquisitionSelected selected
     } else {
         upvar #0 ::GX::ConfigurationModules::exportRecords records ::GX::ConfigurationModules::exportQuery query ::GX::ConfigurationModules::exportSelected selected
     }
@@ -145,6 +159,8 @@ proc ::GX::configurationModulesRefresh {{category all}} {
 proc ::GX::configurationModulesSelect {{category services}} {
     if {$category eq {exports}} {
         upvar #0 ::GX::ConfigurationModules::exportRecords records ::GX::ConfigurationModules::exportSelected selected
+    } elseif {$category eq {acquisition}} {
+        upvar #0 ::GX::ConfigurationModules::acquisitionRecords records ::GX::ConfigurationModules::acquisitionSelected selected
     } else {
         upvar #0 ::GX::ConfigurationModules::records records ::GX::ConfigurationModules::selected selected
     }
@@ -188,7 +204,11 @@ proc ::GX::configurationModulesSelect {{category services}} {
     }
 }
 proc ::GX::configurationModulesDocumentation {{category services}} {
+    if {$category eq {acquisition}} {
+        upvar #0 ::GX::ConfigurationModules::acquisitionSelected selected
+    } else {
     if {$category eq {exports}} {upvar #0 ::GX::ConfigurationModules::exportSelected selected} else {upvar #0 ::GX::ConfigurationModules::selected selected}
+    }
     if {[string match module:* $selected]} {documentationBrowserOpenModule [string range $selected 7 end]} else {.top.nb select .top.nb.help;documentationBrowserPopulate}
 }
 proc ::GX::configurationModuleProviderToggle {id} {
@@ -228,4 +248,5 @@ proc ::GX::configurationModulesResize {parent width {height {}}} {
     }
 }
 
+source [file join [file dirname [info script]] configuration_preview_components.tcl]
 source [file join [file dirname [info script]] configuration_module_editor.tcl]

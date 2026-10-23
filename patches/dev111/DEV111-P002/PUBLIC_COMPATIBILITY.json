@@ -1,0 +1,18 @@
+{
+  "schema": "gxtxt.public-patch-compatibility/2",
+  "patch_id": "DEV111-P002",
+  "baseline_framework": "0.9.8.10-dev-111",
+  "release_revision": "r3",
+  "public_main_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+  "p001_commit": "5c9d72b4a30e3d464bd263fbf3a3a072c651bbe0",
+  "required_predecessor_patch": 1,
+  "original_zip_sha256": "65a4d7d33ec4d2defbd8c81a2240aecdc89dc4bd2f710a5954e4b4f437ad6cfe",
+  "files": 18,
+  "added": 3,
+  "modified": 15,
+  "preimages_and_predecessors_compatible": true,
+  "owner_validation": "VERIFIED_APPROVED",
+  "installer_and_payload_unchanged": true,
+  "host_internal_evidence_redacted_from_public_zip": true,
+  "platform": "Linux x86_64; Tcl 8.6"
+}

@@ -209,13 +209,17 @@ proc ::GX::scientificDatasetPreviewFiltered {id x y output requests {options {}}
     set context [datasetCoordinateRead $::GX::currentSession $id]
     set rows 0;set reduced 0;set traces {};set displayed 0;set prepared {}
     set ordering [datasetPublicationV2DictDefault [dict merge [_datasetPreviewConfiguredOptions $id] $options] ordering {}]
-    set sources {}
+    set sources {};set nativeProvider {};set nativeOverlay {}
     if {[dict exists $options batch_plan]} {
         set plan [dict get $options batch_plan]
         if {[dict get $plan dataset_id] ne $id} {error {Preview grouping plan belongs to another Dataset}}
         set request [dict create dataset_id $id x_variable_id $x y_variable_id $y display_budget 4096 filters [dict get $plan filters]]
         if {$ordering ne {}} {dict set request order_variable_id $ordering}
-        set batch [curveSourceDisplayBatch $::GX::currentSession $request [dict create group_variable_ids [dict get $plan group_variable_ids]]]
+        set batchOptions [dict create group_variable_ids [dict get $plan group_variable_ids]]
+        if {[llength [info commands ::GX::datasetPreviewNativeBatch]]} {dict set batchOptions preview_provider [dict create cache_key [file tail [file dirname $output]]]}
+        set batch [curveSourceDisplayBatch $::GX::currentSession $request $batchOptions]
+        if {[dict exists $batch diagnostics native_provider]} {set nativeProvider [dict get $batch diagnostics native_provider]}
+        set nativeOverlay [datasetPublicationV2DictDefault $batch native_overlay {}]
         set sources [dict get $batch series]
     } else {
         foreach filters $requests {
@@ -256,7 +260,7 @@ proc ::GX::scientificDatasetPreviewFiltered {id x y output requests {options {}}
     set receipt [::GX::PlotDatasetAPIv4::renderModel $model $output 960 580]
     set bounds [scientificDatasetPlotReceiptBounds $receipt]
     set presentation [dict get $receipt coordinate_presentation]
-    return [dict merge [lindex $traces 0] [dict create row_count $rows reduced $reduced trace_count [llength $sources] traces $traces displayed_points $displayed view_bounds $bounds axis_aspect auto coordinate_presentation $presentation native_model $model]]
+    return [dict merge [lindex $traces 0] [dict create row_count $rows reduced $reduced trace_count [llength $sources] traces $traces displayed_points $displayed view_bounds $bounds axis_aspect auto coordinate_presentation $presentation native_model $model native_provider $nativeProvider native_overlay $nativeOverlay]]
 }
 
 source [file join [file dirname [info script]] scientific_dataset_filter_configuration_v1.tcl]

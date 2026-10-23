@@ -523,7 +523,7 @@ proc ::GX::curveSourceDisplayBatch {session request {options {}} {progress {}}} 
         if {![dict exists $request $key]} {error "Curve Source batch needs $key"}
         datasetPublicationV2ValidateId [expr {$key eq "dataset_id"?"dataset":"variable"}] [dict get $request $key]
     }
-    foreach key [dict keys $options] {if {$key ni {group_variable_ids max_series total_display_points}} {error "Unknown Curve Source batch option '$key'"}}
+    foreach key [dict keys $options] {if {$key ni {group_variable_ids max_series total_display_points preview_provider}} {error "Unknown Curve Source batch option '$key'"}}
     foreach {key default minimum maximum} {start 0 0 2000000 count -1 -1 2000000 display_budget 4096 6 4096} {
         set value [datasetPublicationV2DictDefault $request $key $default]
         if {![string is entier -strict $value] || $value<$minimum || $value>$maximum} {error "Invalid Curve Source batch $key"}
@@ -580,15 +580,30 @@ proc ::GX::curveSourceDisplayBatch {session request {options {}} {progress {}}} 
     set batchContext [_curveSourceBatchContext $session $id $metadata]
     if {[interactiveDocumentSessionToken] ne $lifetime || [_curveSourceIdentity $session $id] ne $identity || [_curveSourceBatchContext $session $id] ne $batchContext} {error {Curve Source batch changed during request admission}}
     set stream {};set native {};set position 0
+    set nativeCommand ::gx::native2d::_preview_batch
+    set beginArguments [list $config]
+    if {[dict exists $options preview_provider] && [llength [info commands ::GX::datasetPreviewNativeBatch]]} {
+        set nativeCommand ::GX::datasetPreviewNativeBatch
+        set nativeOptions [dict get $options preview_provider]
+        set overlay [datasetPreviewNativeOverlayPlan $id]
+        if {$overlay ne {}} {
+            dict set nativeOptions overlay $overlay
+            foreach vid [dict values [dict get $overlay columns]] {if {$vid ni $projection} {lappend projection $vid}}
+        }
+        lappend beginArguments $id $nativeOptions
+    }
+    set nativeOverlay {}
     try {
-        set native [::gx::native2d::_preview_batch begin $config]
+        set native [$nativeCommand begin {*}$beginArguments]
         # Integer scalar identities stay tagged/exact when the native adapter
         # decodes canonical typed blocks; CSV retains its existing lexemes.
-        set stream [tableStreamOpenDataset $session $id $projection 4096 {numeric_transport auto}]
+        set transport auto
+        if {[info exists overlay] && $overlay ne {}} {set transport values}
+        set stream [tableStreamOpenDataset $session $id $projection 4096 [dict create numeric_transport $transport]]
         while 1 {
             set chunk [tableStreamNext $stream];set columns {}
             foreach column [dict get $chunk columns] vid $projection {dict set columns $vid [_curveSourceNativeColumn $column]}
-            ::gx::native2d::_preview_batch push $native $columns
+            $nativeCommand push $native $columns
             incr position [dict get $chunk row_count]
             if {$progress ne {}} {
                 curveSourceCooperativeBoundary $progress [dict create stage batch_display completed_rows $position total_rows [dict get [tableStreamMetadata $stream] row_count]]
@@ -598,8 +613,13 @@ proc ::GX::curveSourceDisplayBatch {session request {options {}} {progress {}}} 
         }
         set diagnostics [tableStreamDiagnostics $stream]
         set closing $stream;set stream {};tableStreamClose $closing
-        set nativeSeries [::gx::native2d::_preview_batch finish $native]
-        dict set diagnostics native_batch [::gx::native2d::_preview_batch inspect $native]
+        if {$nativeCommand eq {::GX::datasetPreviewNativeBatch} && [info exists overlay] && $overlay ne {}} {
+            set bundle [$nativeCommand finish_overlay $native]
+            set nativeSeries [dict get $bundle series];set nativeOverlay [dict get $bundle overlay]
+        } else {set nativeSeries [$nativeCommand finish $native]}
+        set nativeDiagnostics [$nativeCommand inspect $native]
+        dict set diagnostics native_batch $nativeDiagnostics
+        if {[dict exists $nativeDiagnostics backend]} {dict set diagnostics native_provider $nativeDiagnostics}
         dict set diagnostics canonical_streams 1
         set output {}
         foreach item $nativeSeries {
@@ -613,10 +633,28 @@ proc ::GX::curveSourceDisplayBatch {session request {options {}} {progress {}}} 
             lappend output [dict create group_key [dict get $item group_key] filters $selectedFilters source_descriptor $descriptor display $display]
         }
         if {[interactiveDocumentSessionToken] ne $lifetime || [_curveSourceIdentity $session $id] ne $identity || [_curveSourceBatchContext $session $id] ne $batchContext} {error {Curve Source batch source, Session or continuity changed before commit}}
-        return [dict create api_id CURVE_SOURCE_API_v1 api_version 1 operation batch_display source_identities [list $identity] series $output diagnostics $diagnostics]
+        set response [dict create api_id CURVE_SOURCE_API_v1 api_version 1 operation batch_display source_identities [list $identity] series $output diagnostics $diagnostics]
+        if {$nativeOverlay ne {}} {dict set response native_overlay $nativeOverlay}
+        return $response
+    } on error {reason errorOptions} {
+        # A compatible extension can decline/fail during actual processing. The
+        # ordinary owner retries its own reader once, only for an unchanged
+        # source/Session/context. It never adopts partial provider results.
+        if {$nativeCommand eq {::GX::datasetPreviewNativeBatch} && $native ne {} &&
+            [dict get $native backend] eq {native} &&
+            [interactiveDocumentSessionToken] eq $lifetime &&
+            [_curveSourceIdentity $session $id] eq $identity &&
+            [_curveSourceBatchContext $session $id] eq $batchContext} {
+            if {$stream ne {}} {set closing $stream;set stream {};tableStreamClose $closing}
+            set closing $native;set native {}; $nativeCommand destroy $closing
+            set fallback [curveSourceDisplayBatch $session $request [dict remove $options preview_provider] $progress]
+            dict set fallback diagnostics native_provider [dict create backend core status fallback fallback_reason $reason]
+            return $fallback
+        }
+        return -options $errorOptions $reason
     } finally {
         try {if {$stream ne {}} {tableStreamClose $stream}} finally {
-            if {$native ne {}} {::gx::native2d::_preview_batch destroy $native}
+            if {$native ne {}} {$nativeCommand destroy $native}
         }
     }
 }

@@ -71,3 +71,94 @@ Artifact paths are validated to remain below the framework-owned `preview_dir`. 
 ## Non-goals
 
 Preview Descriptor API v1 does not define audio playback, video playback, image decoding, codecs, ROI semantics or scientific image processing. Those belong to plugins and future scientific APIs.
+
+## Dataset tabs (dev111, incremental patch P002)
+
+Installed `kind=preview` modules can add panes to the existing Dataset Preview.
+The ordinary Module and Plugin Manager owners control installation, dependencies,
+activation and pending updates. Multiple compatible components can contribute;
+none removes the standard Preview. Disabled, incompatible or failed components
+leave the generic fallback available.
+
+A presentation-only component declares the following in its normal `module.ini`:
+
+```ini
+[meta]
+api_version=1
+id=preview.example
+kind=preview
+name=Example Dataset views
+version=1.0.0
+selectable=1
+default_enabled=0
+runner=service
+enabled_key=
+run_key=
+
+[preview_provider]
+api_version=1
+profile=presentation
+dataset_contracts=curve_family.table
+gui_public_api=PREVIEW_COMPONENT_GUI_API_v1
+
+[public_apis]
+ids=PREVIEW_COMPONENT_GUI_API_v1
+
+[public_api.PREVIEW_COMPONENT_GUI_API_v1]
+api_version=1
+entrypoint=api/preview.tcl
+namespace=::GX::ExamplePreview
+```
+
+The normal public-API loader activates that entrypoint. Its fixed
+`::GX::ExamplePreview::preview context` callback returns a dictionary with a
+`tabs` list. Each pane has a stable component-local `id`, a readable `label` and
+one of these `kind` values:
+
+| Kind | Content fields | CORE rendering owner |
+| --- | --- | --- |
+| `metadata` | `metadata` label/value dictionary | Preview Descriptor metadata renderer |
+| `artifact` | `artifact` with `path`, `media_type`, optional `label` | Existing artifact validator/renderer; path must stay inside the supplied Preview directory |
+| `table` | `dataset_id`, optional `variable_ids`, optional `count` | Canonical `datasetPreviewPage` and existing text sample renderer; count 1–1000, at most 32 variables |
+| `native` | No new geometry or renderer command | The current prepared CORE `native_model`, rendered by existing Plot Dataset API v4 |
+
+For example, a module may return calibration or acquisition metadata only when
+those registered fields exist. It should omit a source-image pane when the
+linked registered Dataset or prepared image is unavailable. A `native` pane may
+rename the current curve view (for example Curves or Chromatograms) without
+creating another numerical or drawing engine. This patch does not ship new
+scientific Digitizer or chromatography Viewers.
+
+The context carries the canonical Dataset identity and registered contract,
+Session token, structured metadata/contributors, variable schema, actual payload
+availability and a bounded projection of the current prepared representation.
+Use those facts together; a contract name alone does not prove that calibration,
+integrated peaks, uncertainty or a source image exist. Empty metadata and absent
+native/table/artifact data do not create useful scientific views. Labels and
+contents are supplied by the component; widget identity includes the component
+ID, so two modules may use the same local tab ID.
+
+Callbacks are trusted installed module code and run under the existing module
+ownership context. They are a read-only display contract: do not publish, edit
+canonical data/contracts/metadata, run analyses, or create persistent selections
+merely to show a pane. Return descriptor data rather than Tcl renderer commands.
+Provider errors are shown as component diagnostics and do not replace the
+standard Preview. Source, Session and provider-byte changes invalidate existing
+Preview identities through the existing cache and lifecycle owners.
+
+The strict native profile retains its ABI, platform, native/design hashes and
+ordinary public-API declarations. A presentation component does not claim native
+admission or verified C++ capabilities. Native processing uses the existing
+common batch/plane/overlay engines and the fixed managed Preview worker;
+capability/readiness remains separate from presentation availability.
+
+Native processing on Linux x86_64/Tcl 8.6 is supplied by the prebuilt P002 addon;
+the base native engine is unchanged. The fixed managed Preview worker admits
+normal installed native components after descriptor/asset/design and ABI checks.
+The GUI may inspect adapter metadata but cannot enable native admission. Actual
+invocations verify only their used capabilities: grouped curves, bounded array
+planes, and optional raster overlays. Raster reuse requires the same canonical
+role map, filters, source/provider identity and Preview key; otherwise the
+existing CORE collector remains the fallback. A shared canonical stream retains
+opaque curve identities and point order; Preview never invents uncertainty or
+source-image availability. No runtime compiler is introduced.
