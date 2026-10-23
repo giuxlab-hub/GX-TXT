@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="author" content="Giux-Lab">
+  <meta name="description" content="Patch di manutenzione su sei file, vincolata esattamente ai sorgenti dev-111 r3, per mostrare o nascondere pannelli Analysis senza alterare le scelte Run.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="GX-TXT dev-111 r3 — DEV111-P001 — Visibilità Modules separata dalla selezione Run di Analysis">
+  <meta property="og:description" content="Patch di manutenzione su sei file, vincolata esattamente ai sorgenti dev-111 r3, per mostrare o nascondere pannelli Analysis senza alterare le scelte Run.">
+  <meta property="og:url" content="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p001-modules-visibility/">
+  <title>GX-TXT dev-111 r3 — DEV111-P001 — Visibilità Modules separata dalla selezione Run di Analysis</title>
+  <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p001-modules-visibility/">
+  <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p001-modules-visibility/">
+  <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p001-modules-visibility/">
+  <link rel="alternate" hreflang="x-default" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p001-modules-visibility/">
+  <link rel="stylesheet" href="../../../assets/style.css">
+  <link rel="stylesheet" href="../../../assets/hotfixes.css">
+  <link rel="icon" type="image/svg+xml" href="../../../assets/favicon.svg">
+</head>
+<body>
+  <a class="skip" href="#main">Vai al contenuto</a>
+  <header><div class="wrap header">
+    <a class="brand" href="../../../it/" aria-label="GX-TXT"><span class="logo" aria-hidden="true">GX</span><span><strong>GX-TXT</strong><small>Scientific workbench</small></span></a>
+    <nav aria-label="Main navigation"><a href="../../releases/#dev-111">Cronologia release</a><a href="https://github.com/giuxlab-hub/GX-TXT">GitHub ↗</a></nav>
+    <div class="lang" aria-label="Language selection"><a href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p001-modules-visibility/" hreflang="en">EN</a> / <a href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p001-modules-visibility/" hreflang="it">IT</a></div>
+  </div></header>
+  <main id="main">
+    <section class="wrap hotfix-hero">
+      <div class="tag">GX-TXT / PATCH DI MANUTENZIONE</div>
+      <p class="hotfix-id">0.9.8.10-dev-111 / v0.9.8.10-dev-111-p001</p>
+      <h1>Visibilità Modules separata dalla selezione Run di Analysis</h1>
+      <p class="lead">Patch di manutenzione su sei file, vincolata esattamente ai sorgenti dev-111 r3, per mostrare o nascondere pannelli Analysis senza alterare le scelte Run.</p>
+      <div class="hotfix-meta">
+        <div><small>Solo dev-111 r3</small><strong>0.9.8.10-dev-111 / r3</strong></div>
+        <div><small>Stato</small><strong>Verifica mirata; NON installata</strong></div>
+        <div><small>Verifiche eseguite</small><strong>8 ricevute mirate; collaudi completi NON eseguiti</strong></div>
+      </div>
+      <div class="buttons">
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p001/DEV111-P001.zip">Scarica patch originale ↓</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p001/ROLLBACK.zip">Scarica ZIP di rollback ↓</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p001">GitHub Release ↗</a>
+      </div>
+      <p class="hotfix-digest">DEV111-P001.zip SHA-256: <code>4f40d54d66391a1a0b2051b3c71ecc0e1ed14f614350f568b0664bffd1dd434b</code></p>
+      <p class="hotfix-digest">ROLLBACK.zip SHA-256: <code>017ccc04f76067c03fcff2bb83add3a89d1fa087dc9670aa2a1526c9f6a439cf</code></p>
+    </section>
+    <section class="section"><div class="wrap hotfix-content">
+      <h2>Correzione introdotta</h2>
+      <p>Nella dev-111 originale la checkbox Modules era associata alla selezione Run, invece che alla visibilità del pannello del modulo abilitato in Analysis.</p>
+      <ul class="hotfix-list">      <li>La checkbox mostra o nasconde il pannello del modulo senza alterarne Run, abilitazione, API registrate e descrittori.</li>
+      <li>I comandi originali Script Module Builder e Reset selected module runtime e il nome del modulo selezionato restano attivi e vengono disposti accanto alla ricerca, con ritorno a capo su finestre strette.</li>
+      <li>La configurazione della Session conserva la nuova preferenza aggiuntiva; le vecchie Session senza la chiave continuano a mostrare i pannelli.</li>
+      <li>Patch e rollback includono esattamente sei file Tcl; il diff applicato a un checkout isolato produce gli stessi byte dello ZIP originale.</li></ul>
+      <h2>Compatibilità e limiti</h2>
+      <ul class="hotfix-list hotfix-warning">      <li>Esclusivamente GX-TXT dev-111 r3 originale, commit sorgente pubblico 4daf135e49378eff1f413310bc17cf32f1928c44. Nessuna patch precedente richiesta; le revisioni successive non sono automaticamente compatibili.</li>
+      <li>Tutti gli otto hash SHA-256 dei sorgenti coincidono con GitHub. Il commit dell’autore Debian appartiene a un’altra cronologia Git, ma i file rilevanti hanno contenuto identico.</li>
+      <li>L’installatore originale richiede permessi Unix 0664 (decimale 436); un clone Git normale ha generalmente 0644 e viene rifiutato. Non aggirare i controlli.</li>
+      <li>I test mirati originali sono documentati, ma non sono stati eseguiti qui collaudi scientifici/GUI completi, applicazioni sul server né test Windows/macOS.</li>
+      <li>L’indice privato delle patch aveva ancora uno stato precedente di non consegnato; questa prerelease documenta il pacchetto depositato, non un’installazione attiva.</li></ul>
+      <h2>Installazione e rollback</h2>
+      <p>Leggere APPLY.md. Chiudere GX-TXT, verificare gli hash e applicare soltanto alla dev-111 r3 originale autorizzata, con i permessi Unix richiesti. Il normale clone Git con 0644 viene rifiutato. Conservare backup, giornale della transazione e procedura ROLLBACK.</p>
+      <p><a href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P001/APPLY.md">Istruzioni di installazione e ripristino ↗</a></p>
+      <p><a href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P001/PUBLIC_COMPATIBILITY.json">Manifest pubblico di compatibilità ↗</a></p>
+      <h2>Sorgenti e verifiche</h2>
+      <p>Gli otto hash della base e i sei risultati della patch sono stati confrontati indipendentemente con il commit pubblico GitHub e gli ZIP originali.</p>
+      <p>GitHub dev-111 r3: <a href="https://github.com/giuxlab-hub/GX-TXT/commit/4daf135e49378eff1f413310bc17cf32f1928c44"><code>4daf135e49378eff1f413310bc17cf32f1928c44</code></a></p>
+      <p>GitHub maintenance: <a href="https://github.com/giuxlab-hub/GX-TXT/commit/5c9d72b4a30e3d464bd263fbf3a3a072c651bbe0"><code>5c9d72b4a30e3d464bd263fbf3a3a072c651bbe0</code></a></p>
+      <p><a href="https://github.com/giuxlab-hub/GX-TXT/tree/maintenance/dev111/patches/dev111/DEV111-P001">Consulta i sorgenti della manutenzione ↗</a></p>
+    </div></section>
+  </main>
+  <footer><div class="wrap"><p>GX-TXT — Giux-Lab · GNU GPL-3.0-or-later</p><div class="links"><a href="../../releases/#dev-111">Cronologia release</a><a href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p001-modules-visibility/">EN / IT</a></div></div></footer>
+</body>
+</html>

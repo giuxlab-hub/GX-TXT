@@ -2,6 +2,88 @@
   "schema": "gxtxt.pages.hotfix-registry/1",
   "entries": [
     {
+      "id": "dev111-p001-modules-visibility",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "debian_author_commit": "83b391de4b81a87e4e76f477491371b58cdc3a40",
+      "original_release_archive_sha256": "c31721b84e8f66cd385c1df4d82fae76e32ca816f2bec7f74c434ac720d26cfe",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "5c9d72b4a30e3d464bd263fbf3a3a072c651bbe0",
+      "tag": "v0.9.8.10-dev-111-p001",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p001",
+      "asset_name": "DEV111-P001.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p001/DEV111-P001.zip",
+      "asset_sha256": "4f40d54d66391a1a0b2051b3c71ecc0e1ed14f614350f568b0664bffd1dd434b",
+      "asset_bytes": 103915,
+      "rollback_name": "ROLLBACK.zip",
+      "rollback_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p001/ROLLBACK.zip",
+      "rollback_sha256": "017ccc04f76067c03fcff2bb83add3a89d1fa087dc9670aa2a1526c9f6a439cf",
+      "rollback_bytes": 103397,
+      "required_predecessor_patch": 0,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "status": "FOCUSED_VERIFIED_STAGED_NOT_INSTALLED",
+      "installation_status": "NOT_INSTALLED",
+      "scoped_original_test_receipts": 8,
+      "full_scientific_gui_regression": "NOT RUN",
+      "original_installer_mode_octal": "0664",
+      "typical_git_checkout_mode_octal": "0644",
+      "published_date": "2026-10-23",
+      "en": {
+        "label": "Dev-111 r3 P001 — focused verified, not installed",
+        "title": "Modules visibility independent of Analysis Run",
+        "lead": "A strictly source-pinned six-file maintenance patch for showing or hiding enabled module panes in Analysis, preserving independent Run choices and original toolbar controls.",
+        "problem": "In the original dev-111 Modules page, checkbox state was tied to Run selection instead of controlling whether enabled module panes were shown in Analysis.",
+        "behavior": [
+          "Checkbox toggles the module pane in Analysis without changing its separate Run selection, enabled state, registered API capability or module descriptors.",
+          "The original Script Module Builder, Reset selected module runtime and selected-module label remain functional and are repositioned beside Modules search, wrapping at narrower widths.",
+          "Session Save Config preserves the additive visibility preference; older Sessions without the new key retain the existing visible panes.",
+          "Patch and rollback each contain exactly six Tcl files, and an isolated Git diff reproduces the original patch byte for byte."
+        ],
+        "caution": [
+          "Only original GX-TXT dev-111 revision r3, exact public source baseline commit 4daf135e49378eff1f413310bc17cf32f1928c44. No predecessor patch is required; future revisions are not automatically compatible.",
+          "All eight baseline source SHA-256 checks match the public commit. The original Debian author Git SHA differs only in repository history, not in the pinned source content.",
+          "The original apply procedure requires Unix mode 0664 (decimal 436). An ordinary Git checkout typically has mode 0644 and will be refused. Do not bypass mode or checksum guards.",
+          "Focused author test evidence was reviewed, but full scientific/GUI regression, live application/installation and Windows/macOS platform checks were not performed during this publication.",
+          "The private upstream patch-series index still carried an earlier not-delivered status; this GitHub prerelease documents the deposited focused-tested patch, not an active installation."
+        ],
+        "statusText": "Focused verified; NOT installed",
+        "testText": "8 original scoped receipts; full tests NOT RUN",
+        "install": "Read the reviewed APPLY.md. Close GX-TXT, verify both ZIPs and source hashes and apply only to an authorized original r3 installation with required Unix permissions. Original installer refuses a normal Git clone with mode 0644. Preserve transaction preimages and the exact ROLLBACK procedure.",
+        "guide": "Installation and rollback instructions",
+        "contract": "Exact public compatibility manifest",
+        "sourceNote": "Exact eight source baseline guards and six patched results were independently compared with the GitHub public tree and original ZIPs.",
+        "source": "Review maintenance source"
+      },
+      "it": {
+        "label": "Dev-111 r3 P001 — collaudo mirato verificato, non installata",
+        "title": "Visibilità Modules separata dalla selezione Run di Analysis",
+        "lead": "Patch di manutenzione su sei file, vincolata esattamente ai sorgenti dev-111 r3, per mostrare o nascondere pannelli Analysis senza alterare le scelte Run.",
+        "problem": "Nella dev-111 originale la checkbox Modules era associata alla selezione Run, invece che alla visibilità del pannello del modulo abilitato in Analysis.",
+        "behavior": [
+          "La checkbox mostra o nasconde il pannello del modulo senza alterarne Run, abilitazione, API registrate e descrittori.",
+          "I comandi originali Script Module Builder e Reset selected module runtime e il nome del modulo selezionato restano attivi e vengono disposti accanto alla ricerca, con ritorno a capo su finestre strette.",
+          "La configurazione della Session conserva la nuova preferenza aggiuntiva; le vecchie Session senza la chiave continuano a mostrare i pannelli.",
+          "Patch e rollback includono esattamente sei file Tcl; il diff applicato a un checkout isolato produce gli stessi byte dello ZIP originale."
+        ],
+        "caution": [
+          "Esclusivamente GX-TXT dev-111 r3 originale, commit sorgente pubblico 4daf135e49378eff1f413310bc17cf32f1928c44. Nessuna patch precedente richiesta; le revisioni successive non sono automaticamente compatibili.",
+          "Tutti gli otto hash SHA-256 dei sorgenti coincidono con GitHub. Il commit dell’autore Debian appartiene a un’altra cronologia Git, ma i file rilevanti hanno contenuto identico.",
+          "L’installatore originale richiede permessi Unix 0664 (decimale 436); un clone Git normale ha generalmente 0644 e viene rifiutato. Non aggirare i controlli.",
+          "I test mirati originali sono documentati, ma non sono stati eseguiti qui collaudi scientifici/GUI completi, applicazioni sul server né test Windows/macOS.",
+          "L’indice privato delle patch aveva ancora uno stato precedente di non consegnato; questa prerelease documenta il pacchetto depositato, non un’installazione attiva."
+        ],
+        "statusText": "Verifica mirata; NON installata",
+        "testText": "8 ricevute mirate; collaudi completi NON eseguiti",
+        "install": "Leggere APPLY.md. Chiudere GX-TXT, verificare gli hash e applicare soltanto alla dev-111 r3 originale autorizzata, con i permessi Unix richiesti. Il normale clone Git con 0644 viene rifiutato. Conservare backup, giornale della transazione e procedura ROLLBACK.",
+        "guide": "Istruzioni di installazione e ripristino",
+        "contract": "Manifest pubblico di compatibilità",
+        "sourceNote": "Gli otto hash della base e i sei risultati della patch sono stati confrontati indipendentemente con il commit pubblico GitHub e gli ZIP originali.",
+        "source": "Consulta i sorgenti della manutenzione"
+      }
+    },
+    {
       "id": "dev108-viewer-cache-popup-v3",
       "framework": "0.9.8.10-dev-108",
       "target_release_id": "108",
