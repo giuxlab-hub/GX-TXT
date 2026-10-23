@@ -2,6 +2,77 @@
   "schema": "gxtxt.pages.hotfix-registry/1",
   "entries": [
     {
+      "id": "dev111-p002-preview-configuration",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "1fa55c798ec35825c680ec1bdf2deac764db74d8",
+      "tag": "v0.9.8.10-dev-111-p002",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p002",
+      "asset_name": "DEV111-P002-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p002/DEV111-P002-PUBLIC.zip",
+      "asset_sha256": "34944a5a945b7c3dc1ab3b8fd71614e1df322f69e59cc1ca8264650385371814",
+      "asset_bytes": 284633,
+      "rollback_url": "https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P002/APPLY.md",
+      "original_package_sha256": "65a4d7d33ec4d2defbd8c81a2240aecdc89dc4bd2f710a5954e4b4f437ad6cfe",
+      "required_predecessor_patch": 1,
+      "exclusive_compatibility": true,
+      "owner_verification": "VERIFIED_APPROVED",
+      "status": "VERIFIED_AND_APPROVED_BY_PROJECT_OWNER",
+      "published_date": "2026-10-23",
+      "en": {
+        "label": "DEV111-P002 — Verified and approved by the project owner",
+        "title": "Preview Configuration and native scientific providers",
+        "lead": "The project-owner verified second sequential dev-111-r3 patch adds Acquisition and Preview Components to Configuration and managed native Preview presentations.",
+        "problem": "The original Configuration did not expose the new dedicated Acquisition/Preview Components presentation and bounded registered native Preview extension workflow.",
+        "behavior": [
+          "Add dedicated Acquisition and Preview Components tabs to the existing Configuration interface while preserving existing exporter, Viewer, and module management.",
+          "Present registered provider results as metadata, tables, scientific curves, bounded native planes, and raster overlays under canonical Dataset, Session and Preview controls.",
+          "Retain the existing scientific source identity, provider activation, cache invalidation, fallback behavior, and a fixed C-gated native worker without uncontrolled GUI authority.",
+          "The original P002 patch provides 18 science/source payload files, with 15 exact original-file preimages for rollback and three controlled new files."
+        ],
+        "caution": [
+          "Only GX-TXT dev-111 revision r3, with DEV111-P001 applied first. This is the second sequential patch, not a replacement for P001 and not a patch for later framework versions.",
+          "The installer verifies all six previous P001 postimages, unchanged original native engine and the exact 18 P002 file conditions. Any mismatch stops the operation.",
+          "The native addon is Linux x86_64 and Tcl 8.6 specific; other operating systems or incompatible ABIs are not supported.",
+          "The public distribution excludes private test captures and machine paths. Its scientific payload, original installer, manifest and rollback preimages are byte-identical to the verified deposit."
+        ],
+        "statusText": "Verified and approved",
+        "testText": "Project owner functional verification completed",
+        "install": "Close GX-TXT, extract the distribution ZIP and follow APPLY.md. Run bash apply.sh /path/to/gxtxt after P001 is present. Use bash apply.sh --rollback /path/to/gxtxt to restore the post-P001 state. Never bypass version or SHA-256 guards.",
+        "guide": "Apply and rollback procedure",
+        "contract": "Exact compatibility manifest",
+        "sourceNote": "All six post-P001 hashes, native dependency and 18 P002 file constraints match the public maintenance branch. Owner validation is complete, and the public package retains the original functional payload.",
+        "source": "Maintained scientific source"
+      },
+      "it": {
+        "label": "DEV111-P002 — Verificata e approvata dal responsabile del progetto",
+        "title": "Configurazione Preview e provider scientifici nativi",
+        "lead": "Seconda patch sequenziale della dev-111-r3, verificata dal responsabile del progetto, per Acquisition, Preview Components e nuove rappresentazioni native gestite.",
+        "problem": "La Configuration originale non esponeva le nuove schede dedicate Acquisition e Preview Components né il flusso controllato dei componenti Preview nativi.",
+        "behavior": [
+          "Introduce le schede Acquisition e Preview Components nella Configuration conservando le funzioni esistenti di Export, Viewer e gestione moduli.",
+          "Visualizza risultati dei provider registrati come metadati, tabelle, curve scientifiche, piani nativi e overlay raster, con autorità ai servizi CORE Dataset, Session e Preview.",
+          "Mantiene identità dei sorgenti, attivazione dei provider, invalidazione delle cache e fallback, con un worker nativo a capacità limitate e senza autorità diretta della GUI.",
+          "La patch comprende 18 file di payload scientifico; i 15 file originali modificati sono conservati per il rollback, insieme a tre nuovi file controllati."
+        ],
+        "caution": [
+          "Solo GX-TXT dev-111 revisione r3, dopo l’applicazione della DEV111-P001. È una patch cumulativa in sequenza, non sostituisce P001 e non vale per altre versioni.",
+          "L’installatore verifica i sei hash successivi alla P001, il motore nativo originale e tutte le 18 condizioni della P002; qualsiasi discordanza blocca l’operazione.",
+          "L’addon è destinato esclusivamente a Linux x86_64 con Tcl 8.6; piattaforme e ABI differenti non sono supportate.",
+          "Il pacchetto pubblico esclude schermate, log privati e percorsi locali. Il payload, il manifest, l’installatore e i preimage del rollback mantengono i byte originali verificati."
+        ],
+        "statusText": "Verificata e approvata",
+        "testText": "Collaudo funzionale del responsabile completato",
+        "install": "Chiudere GX-TXT ed estrarre il pacchetto; dopo P001 eseguire bash apply.sh /path/to/gxtxt. Per il ripristino eseguire bash apply.sh --rollback /path/to/gxtxt. Non aggirare mai i controlli su versione e checksum.",
+        "guide": "Procedura di applicazione e ripristino",
+        "contract": "Manifest di compatibilità",
+        "sourceNote": "I sei hash risultanti dalla P001, la dipendenza nativa e tutti i 18 vincoli P002 coincidono con il branch pubblico. Il responsabile ha completato il collaudo e il pacchetto conserva il payload funzionale originale.",
+        "source": "Sorgenti scientifici della manutenzione"
+      }
+    },
+    {
       "id": "dev111-p001-modules-visibility",
       "framework": "0.9.8.10-dev-111",
       "target_release_id": "111",
