@@ -11,7 +11,6 @@
   "added": 3,
   "modified": 15,
   "preimages_and_predecessors_compatible": true,
-  "owner_validation": "VERIFIED_APPROVED",
   "installer_and_payload_unchanged": true,
   "host_internal_evidence_redacted_from_public_zip": true,
   "platform": "Linux x86_64; Tcl 8.6"

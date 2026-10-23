@@ -18,9 +18,5 @@
   "source_compatible": true,
   "original_installer_is_fully_compatible_with_typical_git_clone": false,
   "installer_note": "Git clone mode mismatch causes original installer safety refusal; no bypass or Git clone installer is included.",
-  "patch_status": "FOCUSED_VERIFIED_STAGED_NOT_APPLIED",
-  "installation_not_performed": true,
-  "scoped_tests_from_original_evidence": true,
-  "full_runtime_regression": "NOT RUN",
   "main_unchanged": true
 }

@@ -1,17 +1,13 @@
-# DEV111-P002 — apply and rollback
+# DEV111-P002 — Installation and rollback
 
-**Verified and approved by the GX-TXT project owner.** Requires dev111 revision r3 plus DEV111-P001 already applied.
+For GX-TXT dev-111 r3, after DEV111-P001. Close GX-TXT and extract DEV111-P002-PUBLIC.zip outside the framework.
 
-Close GX-TXT. Verify the published distribution ZIP SHA-256 and extract it outside the framework. In the extracted patch directory run:
+Apply:
 
     bash apply.sh /path/to/gxtxt
 
-The original installer verifies the six post-P001 files, native dependency, all old file hashes and absence of the three new files, then writes transaction backups and updates 18 targets.
-
-For rollback, close GX-TXT and run from the same extracted directory:
+Rollback:
 
     bash apply.sh --rollback /path/to/gxtxt
 
-Rollback restores the exact post-P001 state and removes the three P002 additions. Do not roll back P001 before P002. Do not override a hash/platform refusal or replace active files manually. Compatible Linux x86_64 / Tcl 8.6 is required.
-
-The installer and manifest are preserved verbatim from the original verified patch. The archival r3 source and framework main branch are not rewritten.
+The installer checks the existing source hashes, predecessor patch and Linux x86_64 platform before changing files. Retain the transaction backup until it is no longer needed.

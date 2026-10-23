@@ -1,19 +1,12 @@
-# DEV111-P001 — staged patch, NOT installed
+# DEV111-P001 — Installation and rollback
 
-> **GitHub source compatibility:** This patch was compared with published GX-TXT dev-111-r3 main commit 4daf135e49378eff1f413310bc17cf32f1928c44. All six preimage SHA-256 and two unchanged owner guards matched. The independent original Linux source commit 83b391de4b81a87e4e76f477491371b58cdc3a40 is not a source-bytes mismatch.
->
-> **Installer permissions limitation:** Every touched file has a required original mode of 0664 (manifest decimal 436). Normal Git checkouts have tracked mode 100644 and commonly materialize as 0644, so the original installer refuses those clones. Do not bypass this refusal: use the compatible original extracted r3 installation or separately validate a Git-clone-specific installer.
->
-> **Release status:** Staged and focused-test verified; NOT installed. The official main source and original release archives are unchanged. Full GUI/scientific regression is not asserted.
+For GX-TXT dev-111 revision r3. The installer checks the original file hashes and Unix mode 0664 before modifying any file. Close GX-TXT and retain the rollback archive.
 
----
-
-Requires explicit user authorization before performing the apply or rollback steps.
 Target: GX-TXT 0.9.8.10-dev-111 artifact r3, source
 83b391de4b81a87e4e76f477491371b58cdc3a40, predecessor patch 0.
 Archive SHA-256: c31721b84e8f66cd385c1df4d82fae76e32ca816f2bec7f74c434ac720d26cfe.
 
-Review MANIFEST.json, product.diff and VALIDATION.md. Back up any unsaved work,
+Review MANIFEST.json, product.diff and README.md. Back up any unsaved work,
 save and close GX-TXT normally (including other GUIs/CLI processes using this
 target). Confirm the target release using the original acceptance receipt. Keep
 the original archive and complete existing release rollback unchanged.
