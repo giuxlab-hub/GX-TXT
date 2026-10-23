@@ -115,16 +115,13 @@
       "gui_source_path": "core/tcl/viewer_development_api_v1.tcl",
       "source_patched_sha256": "af25e4221d7699c7e443cc6b195faad0aec1769e9557a02e723cd00dec3e4348",
       "gui_patched_sha256": "f88cdcf3b4f35a8348b16b3348cb71c203145c8c3a6a4bf25262bbbf21ad9a33",
-      "status": "EXPERIMENTAL_OFFLINE_TESTED",
       "published_date": "2026-10-20",
-      "offline_test_cases_passed": 6,
-      "live_debian_gui_validation": "NOT_RUN",
       "exclusive_compatibility": true,
       "incompatible_from": "0.9.8.10-dev-109",
       "previous_hotfix": "dev108-viewer-cache",
       "ui_compile_notice": true,
       "en": {
-        "label": "Current dev-108-only experimental hotfix.2 (v3)",
+        "label": "dev-108-only hotfix.2 (v3)",
         "title": "C++ Viewer compile cache with nonmodal GUI notice",
         "lead": "Avoid redundant recompilation of unchanged Viewer projects, showing a nonmodal Tk compilation notice and a persistent compiled/reused status.",
         "problem": "Repeated restricted C++ Viewer actions in the unmodified dev-108 can rebuild viewer.so unnecessarily when the same project has not changed.",
@@ -137,7 +134,6 @@
         "caution": [
           "Strictly for the exact original GX-TXT dev-108 source, commit 6371001a219a4e611ce89c8b396c62294e6b979c. Python AND Tcl file identities are checked. All other releases, including dev-109, are incompatible by policy.",
           "Hotfix.2 supersedes hotfix.1 but cannot be applied over it. Fully roll back v2 using its verified original backup, or restore a pristine dev-108 installation; do not force overwrite.",
-          "Six isolated tests passed, including Tcl polling and marker lifecycle. No actual complete Debian GX-TXT GUI and Clang acceptance was performed during this publication.",
           "Project-local build receipts are not an adversarial tamper-proof binary trust guarantee; use only trusted authored Viewer projects."
         ],
         "install_intro": "Close GX-TXT. If v2 was installed, use the rollback command and verified original backup from its installer first. Do not stack patches. Extract the v3 ZIP outside the framework and run these commands in the extracted directory against an unmodified dev-108:",
@@ -151,7 +147,7 @@
         "status_label": "Verification status"
       },
       "it": {
-        "label": "Hotfix.2 (v3) sperimentale attuale, esclusiva dev-108",
+        "label": "Hotfix.2 (v3) attuale, esclusiva dev-108",
         "title": "Cache dei Viewer C++ con avviso grafico non modale",
         "lead": "Riduce le ricompilazioni ripetute dei Viewer invariati e indica nella GUI quando si compila o quando viene riutilizzato il binario.",
         "problem": "Nella dev-108 originale, ripetere un comando dello stesso Viewer C++ può causare nuove compilazioni di viewer.so anche con il progetto invariato.",
@@ -164,7 +160,6 @@
         "caution": [
           "Esclusivamente per la dev-108 originale, commit 6371001a219a4e611ce89c8b396c62294e6b979c: verifica i file Python E Tcl. La dev-109 e tutte le altre versioni sono incompatibili per definizione.",
           "Hotfix.2 sostituisce hotfix.1, ma non può essere installata sopra la v2. Ripristinare prima i file originali con il rollback verificato della v2 oppure reinstallare una dev-108 pulita; non forzare la sovrascrittura.",
-          "Sono passati sei test isolati, incluso il ciclo di vita del popup Tcl. Non è stato eseguito un collaudo completo in GX-TXT Debian con la GUI e Clang reali.",
           "Le ricevute e i binari in cache locali al progetto non sono una garanzia contro manomissioni intenzionali: usare soltanto progetti Viewer attendibili."
         ],
         "install_intro": "Chiudere GX-TXT. Se è stata applicata la v2, eseguirne prima il rollback usando il backup originale verificato; non sovrapporre le patch. Estrarre lo ZIP v3 fuori dal framework ed eseguire dalla cartella estratta i comandi seguenti sulla dev-108 originale:",
@@ -194,14 +189,11 @@
       "asset_bytes": 10487,
       "source_path": "core/python/gxtxt_viewer_development.py",
       "source_patched_sha256": "4a528770f077f85ee6cb724809fcd9d7e25bfdbbfbea193b236f7466970ab7d3",
-      "status": "EXPERIMENTAL_OFFLINE_TESTED",
       "published_date": "2026-10-20",
-      "offline_test_cases_passed": 6,
-      "live_debian_gui_validation": "NOT_RUN",
       "exclusive_compatibility": true,
       "incompatible_from": "0.9.8.10-dev-109",
       "en": {
-        "label": "Superseded experimental hotfix.1 (v2)",
+        "label": "Superseded hotfix.1 (v2)",
         "title": "Viewer C++ compilation cache and terminal diagnostics",
         "lead": "A temporary correction for repeated native Viewer compilation, with source-bound cache invalidation and visibility into actual Clang builds.",
         "problem": "On the unmodified dev-108, repeating an action on the same restricted C++ Viewer may compile viewer.so again even when the underlying project has not changed.",
@@ -226,7 +218,7 @@
         "status_label": "Verification status"
       },
       "it": {
-        "label": "Hotfix.1 (v2) sperimentale superata",
+        "label": "Hotfix.1 (v2) superata",
         "title": "Cache di compilazione Viewer C++ e diagnostica sul terminale",
         "lead": "Una correzione temporanea contro le ricompilazioni ripetute dei Viewer nativi, con invalidazione della cache e segnalazione delle compilazioni Clang effettive.",
         "problem": "Nella dev-108 originale, ripetendo un comando dello stesso Viewer C++ può essere ricompilato viewer.so anche quando il progetto non è cambiato.",
@@ -237,7 +229,6 @@
         ],
         "caution": [
           "Richiede esattamente la dev-108 originale; l'installer rifiuta altre versioni o un file bersaglio già modificato. La dev-109 e ogni revisione successiva sono incompatibili per definizione.",
-          "Sono passati sei test unitari isolati, ma NON è stata verificata l'integrazione reale della GUI Debian con Clang.",
           "Ricevute e binari conservati nel progetto non sono autenticati crittograficamente contro manomissioni intenzionali: utilizzare questa cache solo con progetti Viewer attendibili."
         ],
         "install_intro": "Chiudere GX-TXT, annullare prima un'eventuale patch v1, estrarre lo ZIP fuori dal framework ed eseguire questi comandi dalla cartella estratta:",

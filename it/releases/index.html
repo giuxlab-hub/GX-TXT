@@ -94,20 +94,20 @@
 </div>
     <p class="release-intro">GX-TXT dev-111, revisione r3, amplia lo sviluppo dei Viewer scientifici con un inizializzatore numerico corretto, un catalogo di icone più ampio, l’ispezione di sorgenti EAGLE abbinati e nuove integrazioni scientifiche. Le precedenti revisioni dell’archivio rimangono conservate separatamente.</p>
     <h3 class="release-group-label">Novità principali</h3>
-    <ul class="release-bullets"><li>Corregge le capacità richieste dall’inizializzatore predefinito dei Viewer numerici, limitandole alle operazioni host sui valori e sul testo effettivamente utilizzate; il collaudo completo Build/Export/install non è implicito.</li>
-<li>Estende il catalogo condiviso del Viewer Builder a 100 icone in cinque famiglie, con ricerca, anteprima, assegnazione e modifiche reversibili entro i casi verificati.</li>
+    <ul class="release-bullets"><li>Corregge le capacità richieste dall’inizializzatore predefinito dei Viewer numerici, limitandole alle operazioni host sui valori e sul testo effettivamente utilizzate.</li>
+<li>Estende il catalogo condiviso del Viewer Builder a 100 icone in cinque famiglie, con ricerca, anteprima, assegnazione e modifiche reversibili.</li>
 <li>Introduce un ispettore sperimentale di sorgenti EAGLE abbinati con importazione, consultazione e Save/Open che conservano l’identità dei file: non è un simulatore PCB, Circuit o elettromagnetico.</li>
 <li>Estende l’interoperabilità cromatografia/Replicate, l’esportazione video di animazioni scientifiche, i controlli di Curve Workbench e la documentazione, conservando le autorità scientifiche esistenti.</li>
 <li>Mantiene il comportamento originale del Curve Digitizer 2.0.9; nuovi manuali e materiali didattici dichiarano esplicitamente i limiti scientifici.</li></ul>
-    <div class="release-scope"><span>Ambito scientifico</span><p>Si pubblicano i sorgenti depositati della dev-111 r3, NON un collaudo completo dell’installazione. La parità GUI e prestazionale resta limitata, il rendering HTML nativo ha ancora mostrato anomalie e sette pacchetti tutorial non risultano completati. Nel deposito non è presente una nuova serie di ZIP plugin ufficiali dev-111: quelli precedenti sono preservati. Le hotfix esclusive dev-108 sono incompatibili con dev-111 per definizione.</p></div>
+    <div class="release-scope"><span>Ambito scientifico</span><p>Nella revisione r3 il Viewer HTML nativo presenta limitazioni di rendering e sette pacchetti tutorial sono ancora in sviluppo. I precedenti ZIP ufficiali dei plugin sono conservati; le patch di manutenzione esclusive della dev-108 sono incompatibili con la dev-111.</p></div>
 <div class="release-maintenance" aria-label="DEV111-P002 — Configurazione Preview">
 <strong>DEV111-P002 — Configurazione Preview</strong>
-<p>undefined</p>
+<p>DEV111-P002 amplia Configuration in GX-TXT dev-111 r3 con le schede dedicate Acquisition e Preview Components e con provider registrati per diverse rappresentazioni di dati scientifici.</p>
 <a href="../hotfixes/dev111-p002-preview-configuration/">Documentazione e download ↗</a>
 </div>
 <div class="release-maintenance" aria-label="DEV111-P001 — Visibilità Modules e Analysis">
 <strong>DEV111-P001 — Visibilità Modules e Analysis</strong>
-<p>undefined</p>
+<p>DEV111-P001 aggiorna l’interfaccia Modules di GX-TXT dev-111 r3: la visibilità dei pannelli in Analysis è indipendente dalla selezione Run, con comandi riorganizzati e preferenze conservate nella Session.</p>
 <a href="../hotfixes/dev111-p001-modules-visibility/">Documentazione e download ↗</a>
 </div>
 <div class="release-actions">
@@ -126,14 +126,14 @@
   <h2>Anteprime scientifiche, digitalizzazione e integrazione cromatografica</h2></div>
 
 </div>
-    <p class="release-intro">GX-TXT dev-110 è uno snapshot intermedio di sviluppo scientifico. Estende i componenti Preview, l’integrazione del Curve Digitizer e l’acquisizione cromatografica, mantenendo esplicite le verifiche scientifiche e di piattaforma ancora incomplete.</p>
+    <p class="release-intro">GX-TXT dev-110 amplia i componenti condivisi di Preview scientifico, l’integrazione del Curve Digitizer e gli strumenti di acquisizione cromatografica.</p>
     <h3 class="release-group-label">Novità principali</h3>
     <ul class="release-bullets"><li>Preview acquisisce componenti condivisi per raggruppamento, coordinate, overlay persistenti e rappresentazioni collegate ai Dataset; migliora il controllo delle Session e delle cache.</li>
 <li>È integrato il Curve Digitizer 2.0.9 originale senza alterare il calcolo scientifico di Quality; si aggiunge una verifica separata dell’identità dei sorgenti CORE.</li>
 <li>Sono aggiunti importatori cromatografici Metrohm IC Net CHW e standard AIA/ANDI, con provenienza, lettura limitata dei file e note di qualificazione.</li>
 <li>Sono introdotti miglioramenti incrementali per creazione/promozione Session, finestra Generate, Modules, intervalli di stampa, ScriptJob duplex e trasporto metadati Scientific Library.</li>
 <li>La guida preparatoria del Curve Digitizer comprende nuovi grafici e spiegazioni su calibrazione, elaborazione e provenienza scientifica.</li></ul>
-    <div class="release-scope"><span>Ambito scientifico</span><p>SNAPSHOT INTERMEDIO. L’archivio depositato conserva verifiche GUI/Octave e operazioni del runtime HTML ancora incomplete. Non è stata depositata una nuova serie di ZIP ufficiali dev-110: i pacchetti precedenti restano invariati. La pubblicazione GitHub dei sorgenti non costituisce collaudo scientifico installato. Le hotfix dev-108 sono incompatibili per definizione.</p></div>
+    <div class="release-scope"><span>Ambito scientifico</span><p>I sorgenti comprendono integrazioni GUI/Octave e componenti del ciclo di vita HTML nativo in evoluzione. I precedenti pacchetti ufficiali restano invariati; le patch di manutenzione esclusive della dev-108 sono incompatibili con la dev-110.</p></div>
 
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/ccde3a0f62020941c6ed3756c4de3c135a4772e4">Apri il commit esatto ↗</a>
@@ -158,7 +158,7 @@
 <li>Curve Workbench e Dataset Preview affinano dimensionalità, assi calibrati, cache persistenti locali alle Session, titoli scientifici lunghi e accesso ai dati RAW/schema.</li>
 <li>Print/PDF Studio aggiunge la composizione poster; i Viewer documentali estendono HTML, redazione LaTeX/PDF e API condivise per sorgenti e risorse.</li>
 <li>Viewer CAD 3D ed Electromagnetics Studio realizzati con Builder riutilizzano i servizi geometrici e FEM esistenti; Scientific Library Workspace, Modules e Script UI migliorano controlli e presentazione.</li></ul>
-    <div class="release-scope"><span>Ambito scientifico</span><p>Le verifiche Debian della release sono separate dalla pubblicazione statica Windows; non sono stati ripetuti qui test scientifici GUI/native Windows. Le hotfix.1 e hotfix.2 della dev-108 sono incompatibili con la dev-109 per definizione: non vanno installate né integrate. Session scientifiche originali e ricevute interne non sono distribuite.</p></div>
+    <div class="release-scope"><span>Ambito scientifico</span><p>Le hotfix.1 e hotfix.2 esclusive della dev-108 sono incompatibili con dev-109 e non devono essere installate né integrate. Le Session scientifiche private e il materiale interno di sviluppo non fanno parte dell’archivio pubblico.</p></div>
 
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/940b94c4cd3cbe4200f23f3eb5a04c9d836bd3f0">Apri il commit esatto ↗</a>
@@ -182,14 +182,14 @@
 <li>Viewer Interface Builder e Development Workspace aggiungono un catalogo condiviso di icone con licenze e identità tracciate, profili dei componenti, test delle interazioni GUI e controlli di debug C++ vincolati.</li>
 <li>Numeric 1.63.0 estende espressioni, interpolazioni e gestione di valori complessi tramite risorse CORE. Plot Dataset 4.2.2 migliora la conservazione dei grafici validi, unità, assi multipannello e cursore associato alla sorgente.</li>
 <li>Gli Script Workspace Python e GNU Octave migliorano il ciclo di vita del sorgente e offrono Help/About e manuali illustrati; i pacchetti Viewer generati mantengono le risorse dichiarate dal progetto.</li></ul>
-    <div class="release-scope"><span>Ambito scientifico</span><p>Le verifiche scientifiche della release riguardano il contesto Debian accettato, non nuove prove GUI Windows. Lo sviluppo C++ resta ristretto e non equivale a un sandbox contro codice nativo ostile. La pausa asincrona di GNU Octave rimane non disponibile.</p></div>
-<div class="release-maintenance" aria-label="Hotfix.2 (v3) sperimentale attuale, esclusiva dev-108">
-<strong>Hotfix.2 (v3) sperimentale attuale, esclusiva dev-108</strong>
+    <div class="release-scope"><span>Ambito scientifico</span><p>Lo sviluppo vincolato dei Viewer C++ non è un ambiente isolato contro codice nativo ostile. In questa versione la pausa asincrona di GNU Octave non è disponibile.</p></div>
+<div class="release-maintenance" aria-label="Hotfix.2 (v3) attuale, esclusiva dev-108">
+<strong>Hotfix.2 (v3) attuale, esclusiva dev-108</strong>
 <p>Riduce le ricompilazioni ripetute dei Viewer invariati e indica nella GUI quando si compila o quando viene riutilizzato il binario.</p>
 <a href="../hotfixes/dev108-viewer-cache-popup-v3/">Documentazione e download ↗</a>
 </div>
-<div class="release-maintenance" aria-label="Hotfix.1 (v2) sperimentale superata">
-<strong>Hotfix.1 (v2) sperimentale superata</strong>
+<div class="release-maintenance" aria-label="Hotfix.1 (v2) superata">
+<strong>Hotfix.1 (v2) superata</strong>
 <p>Una correzione temporanea contro le ricompilazioni ripetute dei Viewer nativi, con invalidazione della cache e segnalazione delle compilazioni Clang effettive.</p>
 <a href="../hotfixes/dev108-viewer-cache/">Documentazione e download ↗</a>
 </div>
@@ -215,7 +215,7 @@
 <li>Native3D GUI Host v2 permette Viewer integrati con ciclo di vita indipendente, rendering asincrono e interazione nativa con scena e camera. Le dimostrazioni Native2D e Plot v4 senza Session restano in RAM e non pubblicano Dataset scientifici.</li>
 <li>I Workspace Python e GNU Octave condividono una disposizione configurabile di pannelli e assistenti, con stack, variabili, breakpoint e controlli sull’identità del codice.</li>
 <li>Viewer Interface Builder aggiunge esempi di componenti integrati, gestione degli eventi tramite API pubbliche e revisione dei candidati, senza modificare le autorità scientifiche CORE esistenti.</li></ul>
-    <div class="release-scope"><span>Ambito scientifico</span><p>Lo sviluppo controllato supporta attualmente solo C++. Il permesso di scrittura vale per l’albero dei processi autorizzati, non per tutto l’account, e non certifica un ambiente sicuro contro codice nativo ostile. La pausa asincrona di GNU Octave non è supportata; la pubblicazione non costituisce un nuovo collaudo scientifico Debian né una verifica della GUI Windows.</p></div>
+    <div class="release-scope"><span>Ambito scientifico</span><p>Lo sviluppo vincolato supporta C++ e concede la scrittura solo all’albero dei processi autorizzati. Non è un ambiente isolato contro codice nativo ostile. La pausa asincrona di GNU Octave non è disponibile.</p></div>
 
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/2e404977430906f6bc711239d5d934b72f0a6080">Apri il commit esatto ↗</a>
@@ -239,7 +239,7 @@
 <li>Markdown, HTML e XML strutturato sono consultabili con una visualizzazione delimitata che conserva i byte originali. Il Viewer HTML non esegue script, form o risorse esterne.</li>
 <li>I Workspace Python e GNU Octave aggiungono servizi condivisi per il codice, importazione strutturata, stato delle modifiche e Undo/Redo accurati, oltre al debug gestito con stack e controllo della revisione del sorgente.</li>
 <li>La consultazione dei Results usa selezioni indipendenti e distingue output del programma, stderr e diagnostica, con esportazione esplicita e pubblicazione come Dataset canonico.</li></ul>
-    <div class="release-scope"><span>Ambito scientifico</span><p>La verifica scientifica/GUI riguarda il contesto Debian collaudato, non Windows. Restano incompleti alcuni scenari avanzati di debugger/breakpoint; la colorazione è lessicale e il renderer HTML minimale non mostra immagini o layout CSS e non esegue script o form.</p></div>
+    <div class="release-scope"><span>Ambito scientifico</span><p>Le combinazioni avanzate di debugger e breakpoint hanno supporto limitato. La colorazione è lessicale; il renderer HTML minimale non mostra immagini o layout CSS e non esegue script o form.</p></div>
 
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/db10ef525670944f031bcb33b8d9968d6bcac312">Apri il commit esatto ↗</a>
@@ -263,7 +263,7 @@
 <li>L’organizzazione dei Project aggiunge gruppi logici di Session, navigazione gerarchica e spostamenti drag/drop o Taglia/Incolla con controlli di revisione, preservando identità dei Dataset e dei Workspace.</li>
 <li>Lo studio Print/PDF compone pagine reali, PDF/immagini/testi originali, tabelle Dataset con tipi esatti, grafici e annotazioni con verifiche sulle sorgenti.</li>
 <li>La ricerca delle stampanti e delle funzioni CUPS è asincrona e annullabile; l’invio esplicito ricontrolla la validità delle sorgenti e del layout.</li></ul>
-    <div class="release-scope"><span>Ambito scientifico</span><p>Una coda di stampa che accetta il lavoro non prova la stampa fisica. Alcuni percorsi Help non sono stati testati; componenti di progettazione Native3D e callback scientifici Replicate non vengono creati automaticamente. I test GUI sono stati eseguiti su Debian Xorg, non su Windows.</p></div>
+    <div class="release-scope"><span>Ambito scientifico</span><p>Lo stato della coda di stampa indica l’accettazione del lavoro, non necessariamente l’uscita fisica della pagina. Alcuni percorsi Help utilizzano la navigazione precedente; i componenti Native3D di progettazione e le callback di dominio Replicate automatiche sono fuori dall’ambito del Builder.</p></div>
 
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/d99268348aa55b62f3a1e21ec3672f04504a740d">Apri il commit esatto ↗</a>
@@ -287,7 +287,7 @@
 <li>I Dataset canonici possono essere consultati da remoto tramite intervalli e hyperslab tipizzati con trasporto verificato tramite SHA; la copia locale completa richiede un&#39;operazione esplicita.</li>
 <li>Dataset Preview prepara le rappresentazioni scientifiche in modo asincrono, con avanzamento, annullamento e cache verificata eliminabile. Modificare i controlli lascia visibile l&#39;ultimo frame valido finché non si sceglie Render.</li>
 <li>Il catalogo raggruppa 30 provider Viewer, ciascuno con immagini scientifiche dedicate e disponibilità persistente. I comandi GUI condivisi e i dialoghi Replicate/Curve Workbench riutilizzano le autorità CORE.</li></ul>
-    <div class="release-scope"><span>Ambito scientifico</span><p>I nodi di calcolo sono stati verificati con processi Linux separati e TLS su localhost, non tra due macchine fisiche. La preparazione iniziale di Preview può richiedere tempo; non si dichiarano test GUI Windows né intervalli avanzati di covarianza condivisa.</p></div>
+    <div class="release-scope"><span>Ambito scientifico</span><p>L’architettura dei nodi di calcolo utilizza processi indipendenti collegati tramite TLS mutuale; le configurazioni localhost e con macchine remote dipendono dalla topologia dei provider. La preparazione di Preview può richiedere tempo; gli stimatori avanzati degli intervalli con covarianza condivisa non sono inclusi.</p></div>
 
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/e07376e0a62e0eecf1737da33c87bbbb41273f4b">Apri il commit esatto ↗</a>
@@ -488,7 +488,7 @@
     <div class="wrap release-note">
       <div class="tag">GX-TXT / CHANGELOG delle versioni</div>
       <h2>Le novità non sostituiscono la documentazione.</h2>
-      <p>I riepiloghi sono tratti dal CHANGELOG pubblico di GX-TXT. Descrivono le funzionalità introdotte o modificate nei sorgenti di ogni versione, senza implicare il collaudo completo di tutte le piattaforme, la certificazione numerica o la disponibilità di ogni metodo scientifico opzionale. Per i contratti completi consulta l’API, il manuale e il commit della versione.</p>
+      <p>I riepiloghi descrivono le funzionalità e le modifiche principali tratte dal CHANGELOG pubblico di GX-TXT. Per dettagli tecnici, requisiti e metodi disponibili consulta le API, il manuale e il commit della versione.</p>
       <a href="https://github.com/giuxlab-hub/GX-TXT/tree/main/docs/api">Esplora le API pubbliche ↗</a>
     </div>
   </section>

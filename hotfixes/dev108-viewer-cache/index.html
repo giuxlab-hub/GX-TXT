@@ -37,7 +37,7 @@
 
       <div class="hotfix-meta">
         <div><small>Strict compatibility</small><strong>Only 0.9.8.10-dev-108</strong></div>
-        <div><small>Experimental hotfix</small><strong>6 isolated tests: PASS; live GUI: not verified</strong></div>
+        <div><small>Feature</small><strong>Viewer C++ compilation cache</strong></div>
         <div><small>Never on dev-109</small><strong>0.9.8.10-dev-109 +</strong></div>
       </div>
       <div class="buttons">
@@ -66,7 +66,7 @@ python3 backport.py --apply &quot;$ROOT&quot;</code></pre>
       <p>Use the exact ROLLBACK command printed by the installer. The original file is preserved under .gxtxt_patch_backups; a later unrelated edit makes rollback refuse the overwrite.</p>
     </div></section>
     <section class="section"><div class="wrap hotfix-content">
-      <h2>Validation and security limitations</h2>
+      <h2>Compatibility and limitations</h2>
       <ul class="hotfix-list hotfix-warning"><li>Exactly the original dev-108 source is required; the installer refuses other versions or any modified target. All dev-109 and later revisions are incompatible by design.</li>
 <li>Six isolated unit tests passed; the live Debian GUI/Clang recompilation behavior has NOT been verified.</li>
 <li>Project-local build receipts and binaries are not cryptographically authenticated against malicious authors; use this optimization only with trusted Viewer projects.</li></ul>

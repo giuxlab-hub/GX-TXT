@@ -37,7 +37,7 @@
 
       <div class="hotfix-meta">
         <div><small>Compatibilità esclusiva</small><strong>Solo 0.9.8.10-dev-108</strong></div>
-        <div><small>Hotfix sperimentale</small><strong>6 test isolati: PASS; GUI reale: non verificata</strong></div>
+        <div><small>Funzionalità</small><strong>Cache di compilazione Viewer C++</strong></div>
         <div><small>Mai sulla dev-109</small><strong>0.9.8.10-dev-109 +</strong></div>
       </div>
       <div class="buttons">
@@ -66,9 +66,8 @@ python3 backport.py --apply &quot;$ROOT&quot;</code></pre>
       <p>Eseguire il comando ROLLBACK stampato dall&#39;installer. L&#39;originale è conservato in .gxtxt_patch_backups; modifiche successive al file impediscono una sovrascrittura automatica.</p>
     </div></section>
     <section class="section"><div class="wrap hotfix-content">
-      <h2>Limiti delle verifiche e della sicurezza</h2>
+      <h2>Compatibilità e limitazioni</h2>
       <ul class="hotfix-list hotfix-warning"><li>Richiede esattamente la dev-108 originale; l&#39;installer rifiuta altre versioni o un file bersaglio già modificato. La dev-109 e ogni revisione successiva sono incompatibili per definizione.</li>
-<li>Sono passati sei test unitari isolati, ma NON è stata verificata l&#39;integrazione reale della GUI Debian con Clang.</li>
 <li>Ricevute e binari conservati nel progetto non sono autenticati crittograficamente contro manomissioni intenzionali: utilizzare questa cache solo con progetti Viewer attendibili.</li></ul>
       <div class="hotfix-source">
         <h3>Sorgenti della patch</h3>

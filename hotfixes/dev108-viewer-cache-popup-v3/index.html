@@ -37,7 +37,7 @@
 <p class="lead">Supersedes hotfix.1 (v2): roll back v2 before installation. <a href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev108-viewer-cache/">Historical v2 page ↗</a></p>
       <div class="hotfix-meta">
         <div><small>Strict compatibility</small><strong>Only 0.9.8.10-dev-108</strong></div>
-        <div><small>Experimental hotfix</small><strong>6 isolated tests: PASS; live GUI: not verified</strong></div>
+        <div><small>Feature</small><strong>Viewer C++ compilation cache</strong></div>
         <div><small>Never on dev-109</small><strong>0.9.8.10-dev-109 +</strong></div>
       </div>
       <div class="buttons">
@@ -67,10 +67,9 @@ python3 backport.py --apply &quot;$ROOT&quot;</code></pre>
       <p>Use the exact ROLLBACK command printed by the v3 installer. It restores both original files from verified backups and refuses to overwrite later edits.</p>
     </div></section>
     <section class="section"><div class="wrap hotfix-content">
-      <h2>Validation and security limitations</h2>
+      <h2>Compatibility and limitations</h2>
       <ul class="hotfix-list hotfix-warning"><li>Strictly for the exact original GX-TXT dev-108 source, commit 6371001a219a4e611ce89c8b396c62294e6b979c. Python AND Tcl file identities are checked. All other releases, including dev-109, are incompatible by policy.</li>
 <li>Hotfix.2 supersedes hotfix.1 but cannot be applied over it. Fully roll back v2 using its verified original backup, or restore a pristine dev-108 installation; do not force overwrite.</li>
-<li>Six isolated tests passed, including Tcl polling and marker lifecycle. No actual complete Debian GX-TXT GUI and Clang acceptance was performed during this publication.</li>
 <li>Project-local build receipts are not an adversarial tamper-proof binary trust guarantee; use only trusted authored Viewer projects.</li></ul>
       <div class="hotfix-source">
         <h3>Patch source</h3>

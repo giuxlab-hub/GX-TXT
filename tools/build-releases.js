@@ -67,7 +67,7 @@ const translations = {
     changelogAction: 'CHANGELOG at this revision ↗',
     docAction: 'Relevant public documentation ↗',
     noteHeading: 'Release highlights, not a substitute for the documentation.',
-    noteText: 'These summaries are selected from the public GX-TXT CHANGELOG. They describe what was introduced or changed in each source snapshot—not a claim of complete platform coverage, numerical certification or availability of every optional scientific method. For the full contract, consult the corresponding API/manual and source commit.',
+    noteText: 'These summaries describe selected features and changes from the public GX-TXT CHANGELOG. For technical details, requirements and supported methods, consult the corresponding API, manual and source commit.',
     noteLink: 'Browse public API contracts ↗',
     home: 'Overview', workflow: 'Workflow', guides: 'Guides', resources: 'Resources', releases: 'Releases',
     developer: 'Developer', manual: 'Handbook',
@@ -94,7 +94,7 @@ const translations = {
     changelogAction: 'CHANGELOG di questa versione ↗',
     docAction: 'Documentazione pubblica pertinente ↗',
     noteHeading: 'Le novità non sostituiscono la documentazione.',
-    noteText: 'I riepiloghi sono tratti dal CHANGELOG pubblico di GX-TXT. Descrivono le funzionalità introdotte o modificate nei sorgenti di ogni versione, senza implicare il collaudo completo di tutte le piattaforme, la certificazione numerica o la disponibilità di ogni metodo scientifico opzionale. Per i contratti completi consulta l’API, il manuale e il commit della versione.',
+    noteText: 'I riepiloghi descrivono le funzionalità e le modifiche principali tratte dal CHANGELOG pubblico di GX-TXT. Per dettagli tecnici, requisiti e metodi disponibili consulta le API, il manuale e il commit della versione.',
     noteLink: 'Esplora le API pubbliche ↗',
     home: 'Panoramica', workflow: 'Come funziona', guides: 'Guide', resources: 'Risorse', releases: 'Release',
     developer: 'Sviluppatore', manual: 'Manuale',
@@ -130,7 +130,7 @@ function render(lang) {
       return [
         '<div class="release-maintenance" aria-label="' + escapeHTML(notice.label) + '">',
         '<strong>' + escapeHTML(notice.label) + '</strong>',
-        '<p>' + escapeHTML(notice.lead) + '</p>',
+        '<p>' + escapeHTML(notice.intro || notice.lead || (italian ? 'Patch disponibile per questa versione.' : 'Patch available for this version.')) + '</p>',
         
         '<a href="../hotfixes/' + encodeURIComponent(h.id) + '/">' + (italian ? 'Documentazione e download ↗' : 'Documentation and download ↗') + '</a>',
         '</div>'

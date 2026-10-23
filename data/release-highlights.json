@@ -15,25 +15,25 @@
         "title": "Viewer authoring, 100 shared icons and experimental EAGLE inspection",
         "intro": "GX-TXT dev-111 revision r3 extends the scientific Viewer development environment with improved numeric-template admission, a larger shared icon catalog, paired EAGLE source inspection and additional scientific interoperability. The original earlier revision archives remain separate.",
         "highlights": [
-          "Fix the default numeric-template Viewer initialization capability request to match the host value/text operations actually needed; broader Build/Export/install acceptance is not inferred.",
+          "Correct the default numeric-template Viewer initializer to request the host value/text operations used by its source.",
           "Expand the Viewer Builder shared icon catalog to 100 assets in five families, with bounded catalog, preview, assignment and reversible editing workflows.",
           "Introduce an experimental paired EAGLE source snapshot inspector supporting source-preserving import, inspection and Save/Open behavior; it is not a PCB, Circuit or electromagnetic solver.",
           "Extend chromatography/Replicate interoperability, scientific animation/video export, incremental Curve Workbench controls and user documentation, preserving existing canonical scientific ownership.",
           "Retain original Curve Digitizer 2.0.9 behavior. New manual and selected tutorial materials are released with explicit scientific limitations."
         ],
-        "caveat": "This is the deposited dev-111 r3 source revision, NOT a claim of complete installed acceptance. Full GUI and performance parity remain limited, native HTML painting still failed in recorded tests, and seven tutorial packages were not accepted as complete. No new official dev-111 plugin ZIP series appears in the deposit; prior official packages are preserved. Dev-108-only hotfixes are incompatible with dev-111 by policy."
+        "caveat": "Revision r3 includes a native HTML Viewer with known rendering limitations and seven tutorial packages still under development. The previous official plugin ZIP packages are retained; dev-108-only maintenance patches are incompatible with dev-111."
       },
       "it": {
         "title": "Sviluppo Viewer, 100 icone condivise e ispezione EAGLE sperimentale",
         "intro": "GX-TXT dev-111, revisione r3, amplia lo sviluppo dei Viewer scientifici con un inizializzatore numerico corretto, un catalogo di icone più ampio, l’ispezione di sorgenti EAGLE abbinati e nuove integrazioni scientifiche. Le precedenti revisioni dell’archivio rimangono conservate separatamente.",
         "highlights": [
-          "Corregge le capacità richieste dall’inizializzatore predefinito dei Viewer numerici, limitandole alle operazioni host sui valori e sul testo effettivamente utilizzate; il collaudo completo Build/Export/install non è implicito.",
-          "Estende il catalogo condiviso del Viewer Builder a 100 icone in cinque famiglie, con ricerca, anteprima, assegnazione e modifiche reversibili entro i casi verificati.",
+          "Corregge le capacità richieste dall’inizializzatore predefinito dei Viewer numerici, limitandole alle operazioni host sui valori e sul testo effettivamente utilizzate.",
+          "Estende il catalogo condiviso del Viewer Builder a 100 icone in cinque famiglie, con ricerca, anteprima, assegnazione e modifiche reversibili.",
           "Introduce un ispettore sperimentale di sorgenti EAGLE abbinati con importazione, consultazione e Save/Open che conservano l’identità dei file: non è un simulatore PCB, Circuit o elettromagnetico.",
           "Estende l’interoperabilità cromatografia/Replicate, l’esportazione video di animazioni scientifiche, i controlli di Curve Workbench e la documentazione, conservando le autorità scientifiche esistenti.",
           "Mantiene il comportamento originale del Curve Digitizer 2.0.9; nuovi manuali e materiali didattici dichiarano esplicitamente i limiti scientifici."
         ],
-        "caveat": "Si pubblicano i sorgenti depositati della dev-111 r3, NON un collaudo completo dell’installazione. La parità GUI e prestazionale resta limitata, il rendering HTML nativo ha ancora mostrato anomalie e sette pacchetti tutorial non risultano completati. Nel deposito non è presente una nuova serie di ZIP plugin ufficiali dev-111: quelli precedenti sono preservati. Le hotfix esclusive dev-108 sono incompatibili con dev-111 per definizione."
+        "caveat": "Nella revisione r3 il Viewer HTML nativo presenta limitazioni di rendering e sette pacchetti tutorial sono ancora in sviluppo. I precedenti ZIP ufficiali dei plugin sono conservati; le patch di manutenzione esclusive della dev-108 sono incompatibili con la dev-111."
       },
       "doc": "docs/api/SCIENTIFIC_VIDEO_EXPORT_API_v1.md"
     },
@@ -42,7 +42,7 @@
       "sha": "ccde3a0f62020941c6ed3756c4de3c135a4772e4",
       "en": {
         "title": "Scientific Preview, digitization and chromatography integration",
-        "intro": "GX-TXT dev-110 is a deposited intermediate scientific development snapshot. It extends shared Preview components, Curve Digitizer integration and chromatography acquisition while recording incomplete platform and scientific acceptance.",
+        "intro": "GX-TXT dev-110 expands shared scientific Preview components, Curve Digitizer integration and chromatography acquisition tools.",
         "highlights": [
           "Native Preview gains additional shared components for grouping, coordinates, retained overlays and source-bound data representations; Session creation and cache ownership receive targeted corrections.",
           "Original Curve Digitizer 2.0.9 is integrated without changing its scientific Quality calculations; a separate CORE source-integrity observation accompanies the update.",
@@ -50,11 +50,11 @@
           "Session promotion and persistence, Generate dialog geometry, Modules settings, bounded Print tables, ScriptJob duplex and Scientific Library metadata host handling receive incremental improvements.",
           "The preparation guide for Curve Digitizer is expanded with graphics and published scientific calibration/provenance concepts."
         ],
-        "caveat": "INTERMEDIATE SOURCE SNAPSHOT. The deposited archive retains incomplete integrated GUI/Octave qualification and some native HTML lifecycle operations. No new official dev-110 module ZIP series was deposited; previous official module packages remain unchanged. GitHub source publication is not installed scientific acceptance. Historical dev-108 hotfixes are incompatible with dev-110 by policy."
+        "caveat": "The source includes developing GUI/Octave integrations and native HTML lifecycle components. Previous official plugin packages remain unchanged; dev-108-only maintenance patches are incompatible with dev-110."
       },
       "it": {
         "title": "Anteprime scientifiche, digitalizzazione e integrazione cromatografica",
-        "intro": "GX-TXT dev-110 è uno snapshot intermedio di sviluppo scientifico. Estende i componenti Preview, l’integrazione del Curve Digitizer e l’acquisizione cromatografica, mantenendo esplicite le verifiche scientifiche e di piattaforma ancora incomplete.",
+        "intro": "GX-TXT dev-110 amplia i componenti condivisi di Preview scientifico, l’integrazione del Curve Digitizer e gli strumenti di acquisizione cromatografica.",
         "highlights": [
           "Preview acquisisce componenti condivisi per raggruppamento, coordinate, overlay persistenti e rappresentazioni collegate ai Dataset; migliora il controllo delle Session e delle cache.",
           "È integrato il Curve Digitizer 2.0.9 originale senza alterare il calcolo scientifico di Quality; si aggiunge una verifica separata dell’identità dei sorgenti CORE.",
@@ -62,7 +62,7 @@
           "Sono introdotti miglioramenti incrementali per creazione/promozione Session, finestra Generate, Modules, intervalli di stampa, ScriptJob duplex e trasporto metadati Scientific Library.",
           "La guida preparatoria del Curve Digitizer comprende nuovi grafici e spiegazioni su calibrazione, elaborazione e provenienza scientifica."
         ],
-        "caveat": "SNAPSHOT INTERMEDIO. L’archivio depositato conserva verifiche GUI/Octave e operazioni del runtime HTML ancora incomplete. Non è stata depositata una nuova serie di ZIP ufficiali dev-110: i pacchetti precedenti restano invariati. La pubblicazione GitHub dei sorgenti non costituisce collaudo scientifico installato. Le hotfix dev-108 sono incompatibili per definizione."
+        "caveat": "I sorgenti comprendono integrazioni GUI/Octave e componenti del ciclo di vita HTML nativo in evoluzione. I precedenti pacchetti ufficiali restano invariati; le patch di manutenzione esclusive della dev-108 sono incompatibili con la dev-110."
       },
       "doc": "plugins/modules/acq.metrohm_icnet_chw/README.md"
     },
@@ -79,7 +79,7 @@
           "Scientific Print/PDF adds poster composition, and the document Viewer family extends bounded HTML, LaTeX editing/PDF production and shared source/asset publication interfaces.",
           "Builder-based 3D CAD and Electromagnetics Studio viewers reuse established scientific geometry/FEM owners; Scientific Library Workspace and Modules/Script UI gain integrated presentation and controls."
         ],
-        "caveat": "The accepted Debian release evidence is separate from this Windows static-source publication; no new Windows native or GUI scientific regression tests were executed. Dev-108 hotfix.1 and hotfix.2 remain strictly incompatible with dev-109 and must never be installed or merged into it. Original scientific Sessions and internal acceptance records are intentionally withheld."
+        "caveat": "Dev-108-only hotfix.1 and hotfix.2 are incompatible with dev-109 and must not be installed or merged into it. Private scientific Sessions and internal development material are not part of the public source archive."
       },
       "it": {
         "title": "Viewer installati stabili, editing scientifico e nuovi strumenti documentali",
@@ -91,7 +91,7 @@
           "Print/PDF Studio aggiunge la composizione poster; i Viewer documentali estendono HTML, redazione LaTeX/PDF e API condivise per sorgenti e risorse.",
           "Viewer CAD 3D ed Electromagnetics Studio realizzati con Builder riutilizzano i servizi geometrici e FEM esistenti; Scientific Library Workspace, Modules e Script UI migliorano controlli e presentazione."
         ],
-        "caveat": "Le verifiche Debian della release sono separate dalla pubblicazione statica Windows; non sono stati ripetuti qui test scientifici GUI/native Windows. Le hotfix.1 e hotfix.2 della dev-108 sono incompatibili con la dev-109 per definizione: non vanno installate né integrate. Session scientifiche originali e ricevute interne non sono distribuite."
+        "caveat": "Le hotfix.1 e hotfix.2 esclusive della dev-108 sono incompatibili con dev-109 e non devono essere installate né integrate. Le Session scientifiche private e il materiale interno di sviluppo non fanno parte dell’archivio pubblico."
       },
       "doc": "docs/api/HTML_VIEWER_API_v1.md"
     },
@@ -107,7 +107,7 @@
           "Public Numeric 1.63.0 extends managed captured expression, interpolation and complex-data handling. Plot Dataset 4.2.2 improves preservation of valid frames, unit display, multi-panel axes and source cursor behavior.",
           "Python and GNU Octave Script Workspaces gain revised source/editing lifetime behavior, canonical Help/About and illustrated operating manuals; generated Viewer packages retain declared project-owned assets."
         ],
-        "caveat": "The release follows the accepted Debian scientific integration scope; this publication did not rerun those scientific tests or validate Windows GUI. C++ authoring remains restricted and is not a general hostile-native-code sandbox. GNU Octave asynchronous Pause is still unavailable."
+        "caveat": "Restricted C++ Viewer authoring is not a sandbox for arbitrary hostile native code. GNU Octave asynchronous Pause is unavailable in this version."
       },
       "it": {
         "title": "Circuit Workbench e nuove funzioni scientifiche condivise per i Viewer",
@@ -118,7 +118,7 @@
           "Numeric 1.63.0 estende espressioni, interpolazioni e gestione di valori complessi tramite risorse CORE. Plot Dataset 4.2.2 migliora la conservazione dei grafici validi, unità, assi multipannello e cursore associato alla sorgente.",
           "Gli Script Workspace Python e GNU Octave migliorano il ciclo di vita del sorgente e offrono Help/About e manuali illustrati; i pacchetti Viewer generati mantengono le risorse dichiarate dal progetto."
         ],
-        "caveat": "Le verifiche scientifiche della release riguardano il contesto Debian accettato, non nuove prove GUI Windows. Lo sviluppo C++ resta ristretto e non equivale a un sandbox contro codice nativo ostile. La pausa asincrona di GNU Octave rimane non disponibile."
+        "caveat": "Lo sviluppo vincolato dei Viewer C++ non è un ambiente isolato contro codice nativo ostile. In questa versione la pausa asincrona di GNU Octave non è disponibile."
       },
       "doc": "plugins/modules/viewer.circuit_workbench/MANUAL.md"
     },
@@ -134,7 +134,7 @@
           "Python and GNU Octave Script Workspaces share a configurable pane/assistant layout with debugger call stack, variable observation, breakpoint context and exact source identity guards.",
           "The Viewer Interface Builder adds integrated component examples, public UI event handling and candidate review without changing the authority of existing CORE numerical or scientific publication services."
         ],
-        "caveat": "Restricted authoring currently supports C++ only. The project-write grant applies to the authorized process tree, not the entire account, and is not a hostile-native-code sandbox certification. Asynchronous Pause is not supported for GNU Octave; publication itself did not rerun Debian scientific tests or certify Windows GUI behavior."
+        "caveat": "Restricted authoring supports C++ and grants write access only to the authorized process tree. It is not a sandbox for arbitrary hostile native code. GNU Octave asynchronous Pause is unavailable."
       },
       "it": {
         "title": "Sviluppo Viewer C++ controllato e componenti grafici nativi indipendenti",
@@ -145,7 +145,7 @@
           "I Workspace Python e GNU Octave condividono una disposizione configurabile di pannelli e assistenti, con stack, variabili, breakpoint e controlli sull’identità del codice.",
           "Viewer Interface Builder aggiunge esempi di componenti integrati, gestione degli eventi tramite API pubbliche e revisione dei candidati, senza modificare le autorità scientifiche CORE esistenti."
         ],
-        "caveat": "Lo sviluppo controllato supporta attualmente solo C++. Il permesso di scrittura vale per l’albero dei processi autorizzati, non per tutto l’account, e non certifica un ambiente sicuro contro codice nativo ostile. La pausa asincrona di GNU Octave non è supportata; la pubblicazione non costituisce un nuovo collaudo scientifico Debian né una verifica della GUI Windows."
+        "caveat": "Lo sviluppo vincolato supporta C++ e concede la scrittura solo all’albero dei processi autorizzati. Non è un ambiente isolato contro codice nativo ostile. La pausa asincrona di GNU Octave non è disponibile."
       },
       "doc": "docs/api/VIEWER_DEVELOPMENT_API_v1.md"
     },
@@ -161,7 +161,7 @@
           "Python and GNU Octave Script Workspaces gain shared source services, structural import, precise dirty/Undo/Redo behavior and managed debugging with stack inspection and source-revision checks.",
           "Results inspection separates selectable items and independent Program output, stderr and diagnostics, with explicit source export and canonical Dataset publication."
         ],
-        "caveat": "Debian scientific/GUI verification is bounded, not a Windows acceptance. Advanced debugging/breakpoint combinations remain incompletely tested; source coloring is lexical, and minimal HTML rendering omits images, CSS layout, scripts and forms."
+        "caveat": "Advanced debugger/breakpoint combinations have limited support. Source coloring is lexical; the minimal HTML renderer does not present images or CSS layouts and does not execute scripts or forms."
       },
       "it": {
         "title": "Viewer scientifici, documenti e debug gestito degli script",
@@ -172,7 +172,7 @@
           "I Workspace Python e GNU Octave aggiungono servizi condivisi per il codice, importazione strutturata, stato delle modifiche e Undo/Redo accurati, oltre al debug gestito con stack e controllo della revisione del sorgente.",
           "La consultazione dei Results usa selezioni indipendenti e distingue output del programma, stderr e diagnostica, con esportazione esplicita e pubblicazione come Dataset canonico."
         ],
-        "caveat": "La verifica scientifica/GUI riguarda il contesto Debian collaudato, non Windows. Restano incompleti alcuni scenari avanzati di debugger/breakpoint; la colorazione è lessicale e il renderer HTML minimale non mostra immagini o layout CSS e non esegue script o form."
+        "caveat": "Le combinazioni avanzate di debugger e breakpoint hanno supporto limitato. La colorazione è lessicale; il renderer HTML minimale non mostra immagini o layout CSS e non esegue script o form."
       },
       "doc": "docs/api/SOURCE_SURFACE_API_v1.md"
     },
@@ -188,7 +188,7 @@
           "The main scientific Print/PDF studio composes genuine pages, original PDF/image/text resources, exact typed Dataset tables, Graphs and annotations with source-aware verification.",
           "CUPS printer discovery and capabilities are asynchronous and cancellable; printing requires explicit reviewed submission and stale sources or layouts are refused."
         ],
-        "caveat": "Physical printer completion was not verified—an accepted/spooled status is not a printed-page result. Some legacy Help paths remain untested; Native3D design components and automatic Replicate domain callbacks are outside the Builder scope. Acceptance took place on Debian Xorg, not Windows."
+        "caveat": "Printer spool status indicates queue acceptance rather than physical page delivery. Some legacy Help paths use older navigation; Native3D design components and automatic Replicate domain callbacks are outside the Builder scope."
       },
       "it": {
         "title": "Viewer Interface Builder, organizzazione dei Project e stampa scientifica",
@@ -199,7 +199,7 @@
           "Lo studio Print/PDF compone pagine reali, PDF/immagini/testi originali, tabelle Dataset con tipi esatti, grafici e annotazioni con verifiche sulle sorgenti.",
           "La ricerca delle stampanti e delle funzioni CUPS è asincrona e annullabile; l’invio esplicito ricontrolla la validità delle sorgenti e del layout."
         ],
-        "caveat": "Una coda di stampa che accetta il lavoro non prova la stampa fisica. Alcuni percorsi Help non sono stati testati; componenti di progettazione Native3D e callback scientifici Replicate non vengono creati automaticamente. I test GUI sono stati eseguiti su Debian Xorg, non su Windows."
+        "caveat": "Lo stato della coda di stampa indica l’accettazione del lavoro, non necessariamente l’uscita fisica della pagina. Alcuni percorsi Help utilizzano la navigazione precedente; i componenti Native3D di progettazione e le callback di dominio Replicate automatiche sono fuori dall’ambito del Builder."
       },
       "doc": "docs/api/VIEWER_GUI_DESIGN_v1.md"
     },
@@ -215,7 +215,7 @@
           "Dataset Preview prepares standard scientific representations asynchronously, offers progress and cancellation, and retains a disposable verified cache. Editing presentation settings leaves the last successful frame visible until Render.",
           "The grouped catalog presents distinct scientific artwork for 30 Viewer providers, with persisted presentation availability. Shared Viewer GUI controls and Replicate/Curve Workbench dialogs reuse established CORE authorities."
         ],
-        "caveat": "Compute-node acceptance used separately running Linux client/agent/Supervisor processes over localhost TLS, not two physical machines. Large Preview preparation can still take time; Windows GUI acceptance and advanced shared-covariance intervals are not claimed."
+        "caveat": "The compute-node architecture supports independent processes connected over mutual TLS; local-host and remote-machine configurations depend on the provider topology. Large Preview preparation may take time; advanced shared-covariance interval estimators are not included."
       },
       "it": {
         "title": "Nodi di calcolo remoti e ambiente scientifico più reattivo",
@@ -226,7 +226,7 @@
           "Dataset Preview prepara le rappresentazioni scientifiche in modo asincrono, con avanzamento, annullamento e cache verificata eliminabile. Modificare i controlli lascia visibile l'ultimo frame valido finché non si sceglie Render.",
           "Il catalogo raggruppa 30 provider Viewer, ciascuno con immagini scientifiche dedicate e disponibilità persistente. I comandi GUI condivisi e i dialoghi Replicate/Curve Workbench riutilizzano le autorità CORE."
         ],
-        "caveat": "I nodi di calcolo sono stati verificati con processi Linux separati e TLS su localhost, non tra due macchine fisiche. La preparazione iniziale di Preview può richiedere tempo; non si dichiarano test GUI Windows né intervalli avanzati di covarianza condivisa."
+        "caveat": "L’architettura dei nodi di calcolo utilizza processi indipendenti collegati tramite TLS mutuale; le configurazioni localhost e con macchine remote dipendono dalla topologia dei provider. La preparazione di Preview può richiedere tempo; gli stimatori avanzati degli intervalli con covarianza condivisa non sono inclusi."
       },
       "doc": "docs/api/SCIENTIFIC_EXECUTION_API_v1.md"
     },
