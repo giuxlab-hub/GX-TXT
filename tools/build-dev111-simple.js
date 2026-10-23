@@ -10,7 +10,7 @@ module.exports=function renderPatch(id){
  if(!p||p.target_release_id!=='111'||!p.exclusive_compatibility)throw Error('Invalid version-bound patch '+id);
  for(const lang of ['en','it']){
   const it=lang==='it',t=p[lang],slug=it?'it/':'',depth=it?'../../../':'../../';
-  if(!t||!Array.isArray(t.changes)||t.changes.length!==3)throw Error('Incomplete public change description '+lang);
+  if(!t||!Array.isArray(t.changes)||t.changes.length<4)throw Error('Incomplete public change description '+lang);
   const url=base+slug+'hotfixes/'+id+'/';
   const releasePage=depth+(it?'it/':'')+'releases/#dev-111';
   const technical='https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/'+(id.includes('p001')?'DEV111-P001':'DEV111-P002')+'/APPLY.md';
@@ -43,6 +43,7 @@ module.exports=function renderPatch(id){
 '      <div class="tag">'+label.published+'</div>',
 '      <h1>'+esc(t.title)+'</h1>',
 '      <p class="lead">'+esc(t.intro)+'</p>',
+'      <p>'+esc(t.details)+'</p>',
 '      <ul class="hotfix-list">'+t.changes.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul>',
 '      <p>'+esc(t.requirement)+'</p>',
 '      <div class="buttons">',

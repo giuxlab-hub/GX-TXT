@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="DEV111-P002 is available for GX-TXT dev-111 r3.">
-  <title>GX-TXT dev-111 r3 — Preview Configuration</title>
+  <meta name="description" content="DEV111-P002 expands Configuration in GX-TXT dev-111 r3 with dedicated Acquisition and Preview Components tabs and registered scientific Preview providers for several data representations.">
+  <title>GX-TXT dev-111 r3 — Preview Components and Acquisition configuration</title>
   <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p002-preview-configuration/">
   <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p002-preview-configuration/">
   <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p002-preview-configuration/">
@@ -22,10 +22,11 @@
   <main id="main">
     <section class="wrap hotfix-hero">
       <div class="tag">Patch available</div>
-      <h1>Preview Configuration</h1>
-      <p class="lead">DEV111-P002 is available for GX-TXT dev-111 r3.</p>
-      <ul class="hotfix-list"><li>Adds Acquisition and Preview Components tabs to Configuration.</li><li>Adds scientific previews for metadata, tables, curves, native planes and raster overlays.</li><li>Includes cache management and fallback handling.</li></ul>
-      <p>Requires DEV111-P001 first. Native component: Linux x86_64 / Tcl 8.6.</p>
+      <h1>Preview Components and Acquisition configuration</h1>
+      <p class="lead">DEV111-P002 expands Configuration in GX-TXT dev-111 r3 with dedicated Acquisition and Preview Components tabs and registered scientific Preview providers for several data representations.</p>
+      <p>Preview providers can contribute source-bound metadata, tabular data, scientific curves, native 2D planes and raster overlays while keeping Dataset and Session ownership in the existing framework services. The patch includes cache invalidation and controlled fallback handling, together with a bounded native Preview component. It contains 15 replacements and three additions, with the original replacement files included for rollback.</p>
+      <ul class="hotfix-list"><li>Add dedicated Acquisition and Preview Components tabs to the Configuration interface.</li><li>Allow registered Preview providers to present metadata, scientific tables and curves, native 2D views and raster overlays.</li><li>Preserve Dataset/Session source identity and existing provider activation and data ownership.</li><li>Manage preview caching, source changes and controlled fallback when a provider cannot present data.</li><li>Include a Linux x86_64 native Preview component for Tcl 8.6, using the original provider loader and worker.</li></ul>
+      <p>For GX-TXT dev-111 revision r3 on Linux x86_64 with Tcl 8.6. DEV111-P001 must already be applied; the same apply.sh handles P002 installation and rollback.</p>
       <div class="buttons">
         <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p002/DEV111-P002-PUBLIC.zip">Download patch ↓</a>
         

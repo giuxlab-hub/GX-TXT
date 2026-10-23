@@ -19,25 +19,31 @@
       "exclusive_compatibility": true,
       "en": {
         "label": "DEV111-P002 — Preview Configuration",
-        "title": "Preview Configuration",
-        "intro": "DEV111-P002 is available for GX-TXT dev-111 r3.",
+        "title": "Preview Components and Acquisition configuration",
+        "intro": "DEV111-P002 expands Configuration in GX-TXT dev-111 r3 with dedicated Acquisition and Preview Components tabs and registered scientific Preview providers for several data representations.",
         "changes": [
-          "Adds Acquisition and Preview Components tabs to Configuration.",
-          "Adds scientific previews for metadata, tables, curves, native planes and raster overlays.",
-          "Includes cache management and fallback handling."
+          "Add dedicated Acquisition and Preview Components tabs to the Configuration interface.",
+          "Allow registered Preview providers to present metadata, scientific tables and curves, native 2D views and raster overlays.",
+          "Preserve Dataset/Session source identity and existing provider activation and data ownership.",
+          "Manage preview caching, source changes and controlled fallback when a provider cannot present data.",
+          "Include a Linux x86_64 native Preview component for Tcl 8.6, using the original provider loader and worker."
         ],
-        "requirement": "Requires DEV111-P001 first. Native component: Linux x86_64 / Tcl 8.6."
+        "requirement": "For GX-TXT dev-111 revision r3 on Linux x86_64 with Tcl 8.6. DEV111-P001 must already be applied; the same apply.sh handles P002 installation and rollback.",
+        "details": "Preview providers can contribute source-bound metadata, tabular data, scientific curves, native 2D planes and raster overlays while keeping Dataset and Session ownership in the existing framework services. The patch includes cache invalidation and controlled fallback handling, together with a bounded native Preview component. It contains 15 replacements and three additions, with the original replacement files included for rollback."
       },
       "it": {
         "label": "DEV111-P002 — Configurazione Preview",
-        "title": "Configurazione Preview",
-        "intro": "È disponibile DEV111-P002 per GX-TXT dev-111 r3.",
+        "title": "Configurazione di Preview Components e Acquisition",
+        "intro": "DEV111-P002 amplia Configuration in GX-TXT dev-111 r3 con le schede dedicate Acquisition e Preview Components e con provider registrati per diverse rappresentazioni di dati scientifici.",
         "changes": [
-          "Aggiunge le schede Acquisition e Preview Components in Configuration.",
-          "Aggiunge anteprime scientifiche per metadati, tabelle, curve, piani nativi e overlay raster.",
-          "Include la gestione delle cache e dei fallback."
+          "Aggiunge le schede Acquisition e Preview Components nell’interfaccia Configuration.",
+          "Permette ai provider Preview registrati di mostrare metadati, tabelle e curve scientifiche, viste native 2D e overlay raster.",
+          "Conserva identità dei sorgenti Dataset/Session, attivazione dei provider e proprietà dei dati nei servizi esistenti.",
+          "Gestisce le cache delle anteprime, i cambiamenti dei sorgenti e il fallback controllato in caso di indisponibilità.",
+          "Include una componente Preview nativa per Linux x86_64 con Tcl 8.6, utilizzando il loader e il worker originali."
         ],
-        "requirement": "Richiede prima DEV111-P001. Componente nativa: Linux x86_64 / Tcl 8.6."
+        "requirement": "Per GX-TXT dev-111 revisione r3 su Linux x86_64 con Tcl 8.6. DEV111-P001 deve essere già applicata; lo stesso apply.sh gestisce installazione e rollback della P002.",
+        "details": "I provider Preview possono presentare metadati collegati ai sorgenti, dati tabellari, curve scientifiche, piani nativi 2D e overlay raster, lasciando ai servizi esistenti la proprietà dei Dataset e delle Session. La patch gestisce invalidazione delle cache e fallback controllati e include una componente Preview nativa a capacità limitate. Contiene 15 file sostituiti e tre aggiunti, con gli originali necessari al rollback."
       }
     },
     {
@@ -65,25 +71,29 @@
       "typical_git_checkout_mode_octal": "0644",
       "en": {
         "label": "DEV111-P001 — Modules and Analysis visibility",
-        "title": "Modules and Analysis visibility",
-        "intro": "DEV111-P001 is available for GX-TXT dev-111 r3.",
+        "title": "Modules panel visibility and Analysis toolbar",
+        "intro": "DEV111-P001 updates the Modules interface in GX-TXT dev-111 r3: module visibility in Analysis is controlled independently of the Run selection, with reorganized toolbar actions and Session persistence.",
         "changes": [
-          "The Modules checkbox shows or hides module panes in Analysis without changing Run selection.",
-          "The Module Builder and Reset commands have been repositioned alongside search.",
-          "Visibility preferences are saved in the Session configuration."
+          "Add a separate show/hide control for enabled modules in Analysis without modifying the Run selection.",
+          "Store each module’s visibility preference through existing Session/configuration persistence; existing Sessions without that preference retain visible panels.",
+          "Arrange the selected-module label, Script Module Builder and Reset commands alongside search, adapting to window width.",
+          "Keep existing module identity, activation and API registration behavior unchanged."
         ],
-        "requirement": "For dev-111 r3."
+        "requirement": "Compatible with GX-TXT dev-111 revision r3. Six Tcl files are included; ROLLBACK.zip contains the corresponding original files.",
+        "details": "The visibility checkbox affects the enabled module panel shown in Analysis, not whether that module is available for execution. Existing module activation, registered APIs and Run choices remain separate. The selected-module indicator, Script Module Builder and Reset selected module runtime commands remain accessible alongside the module search, with wrapping at narrow window widths."
       },
       "it": {
         "label": "DEV111-P001 — Visibilità Modules e Analysis",
-        "title": "Visibilità Modules e Analysis",
-        "intro": "È disponibile DEV111-P001 per GX-TXT dev-111 r3.",
+        "title": "Visibilità dei moduli in Analysis e barra dei comandi",
+        "intro": "DEV111-P001 aggiorna l’interfaccia Modules di GX-TXT dev-111 r3: la visibilità dei pannelli in Analysis è indipendente dalla selezione Run, con comandi riorganizzati e preferenze conservate nella Session.",
         "changes": [
-          "La checkbox Modules mostra o nasconde i pannelli in Analysis senza modificare la selezione Run.",
-          "Module Builder e Reset sono stati riposizionati accanto alla ricerca.",
-          "Le preferenze di visibilità vengono salvate nella configurazione della Session."
+          "Introduce un controllo mostra/nascondi per i moduli abilitati in Analysis, indipendente dalla selezione Run.",
+          "Conserva le preferenze di visibilità nella configurazione della Session; le Session precedenti mantengono i pannelli visibili.",
+          "Dispone il nome del modulo selezionato, Script Module Builder e Reset accanto alla ricerca, adattandosi alla larghezza della finestra.",
+          "Mantiene invariati identità, attivazione e API registrate dei moduli."
         ],
-        "requirement": "Per dev-111 r3."
+        "requirement": "Compatibile con GX-TXT dev-111 revisione r3. Include sei file Tcl; ROLLBACK.zip contiene i relativi originali.",
+        "details": "La checkbox di visibilità mostra o nasconde il pannello del modulo abilitato in Analysis, senza decidere se il modulo possa essere eseguito. Restano separate l’attivazione, le API registrate e la selezione Run. Il nome del modulo selezionato e i comandi Script Module Builder e Reset selected module runtime sono disponibili accanto alla ricerca, con adattamento alle finestre più strette."
       }
     },
     {

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="È disponibile DEV111-P001 per GX-TXT dev-111 r3.">
-  <title>GX-TXT dev-111 r3 — Visibilità Modules e Analysis</title>
+  <meta name="description" content="DEV111-P001 aggiorna l’interfaccia Modules di GX-TXT dev-111 r3: la visibilità dei pannelli in Analysis è indipendente dalla selezione Run, con comandi riorganizzati e preferenze conservate nella Session.">
+  <title>GX-TXT dev-111 r3 — Visibilità dei moduli in Analysis e barra dei comandi</title>
   <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p001-modules-visibility/">
   <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p001-modules-visibility/">
   <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p001-modules-visibility/">
@@ -22,10 +22,11 @@
   <main id="main">
     <section class="wrap hotfix-hero">
       <div class="tag">Patch disponibile</div>
-      <h1>Visibilità Modules e Analysis</h1>
-      <p class="lead">È disponibile DEV111-P001 per GX-TXT dev-111 r3.</p>
-      <ul class="hotfix-list"><li>La checkbox Modules mostra o nasconde i pannelli in Analysis senza modificare la selezione Run.</li><li>Module Builder e Reset sono stati riposizionati accanto alla ricerca.</li><li>Le preferenze di visibilità vengono salvate nella configurazione della Session.</li></ul>
-      <p>Per dev-111 r3.</p>
+      <h1>Visibilità dei moduli in Analysis e barra dei comandi</h1>
+      <p class="lead">DEV111-P001 aggiorna l’interfaccia Modules di GX-TXT dev-111 r3: la visibilità dei pannelli in Analysis è indipendente dalla selezione Run, con comandi riorganizzati e preferenze conservate nella Session.</p>
+      <p>La checkbox di visibilità mostra o nasconde il pannello del modulo abilitato in Analysis, senza decidere se il modulo possa essere eseguito. Restano separate l’attivazione, le API registrate e la selezione Run. Il nome del modulo selezionato e i comandi Script Module Builder e Reset selected module runtime sono disponibili accanto alla ricerca, con adattamento alle finestre più strette.</p>
+      <ul class="hotfix-list"><li>Introduce un controllo mostra/nascondi per i moduli abilitati in Analysis, indipendente dalla selezione Run.</li><li>Conserva le preferenze di visibilità nella configurazione della Session; le Session precedenti mantengono i pannelli visibili.</li><li>Dispone il nome del modulo selezionato, Script Module Builder e Reset accanto alla ricerca, adattandosi alla larghezza della finestra.</li><li>Mantiene invariati identità, attivazione e API registrate dei moduli.</li></ul>
+      <p>Compatibile con GX-TXT dev-111 revisione r3. Include sei file Tcl; ROLLBACK.zip contiene i relativi originali.</p>
       <div class="buttons">
         <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p001/DEV111-P001.zip">Scarica la patch ↓</a>
         <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p001/ROLLBACK.zip">Scarica il rollback ↓</a>

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="DEV111-P001 is available for GX-TXT dev-111 r3.">
-  <title>GX-TXT dev-111 r3 — Modules and Analysis visibility</title>
+  <meta name="description" content="DEV111-P001 updates the Modules interface in GX-TXT dev-111 r3: module visibility in Analysis is controlled independently of the Run selection, with reorganized toolbar actions and Session persistence.">
+  <title>GX-TXT dev-111 r3 — Modules panel visibility and Analysis toolbar</title>
   <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p001-modules-visibility/">
   <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p001-modules-visibility/">
   <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p001-modules-visibility/">
@@ -22,10 +22,11 @@
   <main id="main">
     <section class="wrap hotfix-hero">
       <div class="tag">Patch available</div>
-      <h1>Modules and Analysis visibility</h1>
-      <p class="lead">DEV111-P001 is available for GX-TXT dev-111 r3.</p>
-      <ul class="hotfix-list"><li>The Modules checkbox shows or hides module panes in Analysis without changing Run selection.</li><li>The Module Builder and Reset commands have been repositioned alongside search.</li><li>Visibility preferences are saved in the Session configuration.</li></ul>
-      <p>For dev-111 r3.</p>
+      <h1>Modules panel visibility and Analysis toolbar</h1>
+      <p class="lead">DEV111-P001 updates the Modules interface in GX-TXT dev-111 r3: module visibility in Analysis is controlled independently of the Run selection, with reorganized toolbar actions and Session persistence.</p>
+      <p>The visibility checkbox affects the enabled module panel shown in Analysis, not whether that module is available for execution. Existing module activation, registered APIs and Run choices remain separate. The selected-module indicator, Script Module Builder and Reset selected module runtime commands remain accessible alongside the module search, with wrapping at narrow window widths.</p>
+      <ul class="hotfix-list"><li>Add a separate show/hide control for enabled modules in Analysis without modifying the Run selection.</li><li>Store each module’s visibility preference through existing Session/configuration persistence; existing Sessions without that preference retain visible panels.</li><li>Arrange the selected-module label, Script Module Builder and Reset commands alongside search, adapting to window width.</li><li>Keep existing module identity, activation and API registration behavior unchanged.</li></ul>
+      <p>Compatible with GX-TXT dev-111 revision r3. Six Tcl files are included; ROLLBACK.zip contains the corresponding original files.</p>
       <div class="buttons">
         <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p001/DEV111-P001.zip">Download patch ↓</a>
         <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p001/ROLLBACK.zip">Download rollback ↓</a>
