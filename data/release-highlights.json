@@ -4,16 +4,45 @@
   "sourceRepository": "https://github.com/giuxlab-hub/GX-TXT",
   "coverage": {
     "first": "095",
-    "last": "110",
-    "count": 15
+    "last": "111",
+    "count": 16
   },
   "releases": [
+    {
+      "id": "111",
+      "sha": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "en": {
+        "title": "Viewer authoring, 100 shared icons and experimental EAGLE inspection",
+        "intro": "GX-TXT dev-111 revision r3 extends the scientific Viewer development environment with improved numeric-template admission, a larger shared icon catalog, paired EAGLE source inspection and additional scientific interoperability. The original earlier revision archives remain separate.",
+        "highlights": [
+          "Fix the default numeric-template Viewer initialization capability request to match the host value/text operations actually needed; broader Build/Export/install acceptance is not inferred.",
+          "Expand the Viewer Builder shared icon catalog to 100 assets in five families, with bounded catalog, preview, assignment and reversible editing workflows.",
+          "Introduce an experimental paired EAGLE source snapshot inspector supporting source-preserving import, inspection and Save/Open behavior; it is not a PCB, Circuit or electromagnetic solver.",
+          "Extend chromatography/Replicate interoperability, scientific animation/video export, incremental Curve Workbench controls and user documentation, preserving existing canonical scientific ownership.",
+          "Retain original Curve Digitizer 2.0.9 behavior. New manual and selected tutorial materials are released with explicit scientific limitations."
+        ],
+        "caveat": "This is the deposited dev-111 r3 source revision, NOT a claim of complete installed acceptance. Full GUI and performance parity remain limited, native HTML painting still failed in recorded tests, and seven tutorial packages were not accepted as complete. No new official dev-111 plugin ZIP series appears in the deposit; prior official packages are preserved. Dev-108-only hotfixes are incompatible with dev-111 by policy."
+      },
+      "it": {
+        "title": "Sviluppo Viewer, 100 icone condivise e ispezione EAGLE sperimentale",
+        "intro": "GX-TXT dev-111, revisione r3, amplia lo sviluppo dei Viewer scientifici con un inizializzatore numerico corretto, un catalogo di icone più ampio, l’ispezione di sorgenti EAGLE abbinati e nuove integrazioni scientifiche. Le precedenti revisioni dell’archivio rimangono conservate separatamente.",
+        "highlights": [
+          "Corregge le capacità richieste dall’inizializzatore predefinito dei Viewer numerici, limitandole alle operazioni host sui valori e sul testo effettivamente utilizzate; il collaudo completo Build/Export/install non è implicito.",
+          "Estende il catalogo condiviso del Viewer Builder a 100 icone in cinque famiglie, con ricerca, anteprima, assegnazione e modifiche reversibili entro i casi verificati.",
+          "Introduce un ispettore sperimentale di sorgenti EAGLE abbinati con importazione, consultazione e Save/Open che conservano l’identità dei file: non è un simulatore PCB, Circuit o elettromagnetico.",
+          "Estende l’interoperabilità cromatografia/Replicate, l’esportazione video di animazioni scientifiche, i controlli di Curve Workbench e la documentazione, conservando le autorità scientifiche esistenti.",
+          "Mantiene il comportamento originale del Curve Digitizer 2.0.9; nuovi manuali e materiali didattici dichiarano esplicitamente i limiti scientifici."
+        ],
+        "caveat": "Si pubblicano i sorgenti depositati della dev-111 r3, NON un collaudo completo dell’installazione. La parità GUI e prestazionale resta limitata, il rendering HTML nativo ha ancora mostrato anomalie e sette pacchetti tutorial non risultano completati. Nel deposito non è presente una nuova serie di ZIP plugin ufficiali dev-111: quelli precedenti sono preservati. Le hotfix esclusive dev-108 sono incompatibili con dev-111 per definizione."
+      },
+      "doc": "docs/api/SCIENTIFIC_VIDEO_EXPORT_API_v1.md"
+    },
     {
       "id": "110",
       "sha": "ccde3a0f62020941c6ed3756c4de3c135a4772e4",
       "en": {
-        "title": "TASK210 intermediate scientific source snapshot",
-        "intro": "GX-TXT dev-110 is a deposited intermediate TASK210 source snapshot, not a completed all-feature release. It introduces new scientific Preview infrastructure, updated Curve Digitizer integration and chromatography import modules while retaining explicitly unfinished GUI and scientific acceptance scope.",
+        "title": "Scientific Preview, digitization and chromatography integration",
+        "intro": "GX-TXT dev-110 is a deposited intermediate scientific development snapshot. It extends shared Preview components, Curve Digitizer integration and chromatography acquisition while recording incomplete platform and scientific acceptance.",
         "highlights": [
           "Native Preview gains additional shared components for grouping, coordinates, retained overlays and source-bound data representations; Session creation and cache ownership receive targeted corrections.",
           "Original Curve Digitizer 2.0.9 is integrated without changing its scientific Quality calculations; a separate CORE source-integrity observation accompanies the update.",
@@ -21,11 +50,11 @@
           "Session promotion and persistence, Generate dialog geometry, Modules settings, bounded Print tables, ScriptJob duplex and Scientific Library metadata host handling receive incremental improvements.",
           "The preparation guide for Curve Digitizer is expanded with graphics and published scientific calibration/provenance concepts."
         ],
-        "caveat": "INTERMEDIATE SOURCE SNAPSHOT. The official archive explicitly leaves integrated GUI/Octave qualification, certain native HTML runtime behaviors and further TASK210 scope incomplete. No new official_dev110 module ZIP series is deposited; dev109 official ZIPs remain unchanged. GitHub source publication does not certify installation/activation or a successful functional release. Both dev108 hotfixes remain incompatible with dev110 by policy."
+        "caveat": "INTERMEDIATE SOURCE SNAPSHOT. The deposited archive retains incomplete integrated GUI/Octave qualification and some native HTML lifecycle operations. No new official dev-110 module ZIP series was deposited; previous official module packages remain unchanged. GitHub source publication is not installed scientific acceptance. Historical dev-108 hotfixes are incompatible with dev-110 by policy."
       },
       "it": {
-        "title": "Snapshot intermedio TASK210 dei sorgenti scientifici",
-        "intro": "GX-TXT dev-110 è uno snapshot intermedio TASK210 depositato, non una release completa di tutte le funzionalità. Introduce infrastruttura Preview, una nuova integrazione del Curve Digitizer e moduli cromatografici, conservando esplicitamente le verifiche scientifiche e GUI ancora aperte.",
+        "title": "Anteprime scientifiche, digitalizzazione e integrazione cromatografica",
+        "intro": "GX-TXT dev-110 è uno snapshot intermedio di sviluppo scientifico. Estende i componenti Preview, l’integrazione del Curve Digitizer e l’acquisizione cromatografica, mantenendo esplicite le verifiche scientifiche e di piattaforma ancora incomplete.",
         "highlights": [
           "Preview acquisisce componenti condivisi per raggruppamento, coordinate, overlay persistenti e rappresentazioni collegate ai Dataset; migliora il controllo delle Session e delle cache.",
           "È integrato il Curve Digitizer 2.0.9 originale senza alterare il calcolo scientifico di Quality; si aggiunge una verifica separata dell’identità dei sorgenti CORE.",
@@ -33,7 +62,7 @@
           "Sono introdotti miglioramenti incrementali per creazione/promozione Session, finestra Generate, Modules, intervalli di stampa, ScriptJob duplex e trasporto metadati Scientific Library.",
           "La guida preparatoria del Curve Digitizer comprende nuovi grafici e spiegazioni su calibrazione, elaborazione e provenienza scientifica."
         ],
-        "caveat": "SNAPSHOT INTERMEDIO. Nell’archivio risultano ancora incomplete verifiche GUI/Octave, aspetti del runtime HTML e altre attività TASK210. Non è presente una nuova serie di ZIP official_dev110: i pacchetti ufficiali dev109 restano invariati. La pubblicazione GitHub del sorgente non certifica installazione, attivazione o collaudo completo. Le hotfix della dev108 sono incompatibili con la dev110 per definizione."
+        "caveat": "SNAPSHOT INTERMEDIO. L’archivio depositato conserva verifiche GUI/Octave e operazioni del runtime HTML ancora incomplete. Non è stata depositata una nuova serie di ZIP ufficiali dev-110: i pacchetti precedenti restano invariati. La pubblicazione GitHub dei sorgenti non costituisce collaudo scientifico installato. Le hotfix dev-108 sono incompatibili per definizione."
       },
       "doc": "plugins/modules/acq.metrohm_icnet_chw/README.md"
     },

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0c131d">
-  <title>GX-TXT — Novità delle release | dalla dev-095 alla dev-110</title>
+  <title>GX-TXT — Novità delle release | dalla dev-095 alla dev-111</title>
   <meta name="description" content="Le tappe dello sviluppo pubblico di GX-TXT: Dataset scientifici, statistica, Curve Digitizer, Workspace, Worksheet, simulazioni e curve replicate.">
   <meta name="author" content="Giux-Lab">
   <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/it/releases/">
@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="../../assets/releases.css">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="GX-TXT / Giux-Lab">
-  <meta property="og:title" content="GX-TXT — Novità delle release | dalla dev-095 alla dev-110">
+  <meta property="og:title" content="GX-TXT — Novità delle release | dalla dev-095 alla dev-111">
   <meta property="og:description" content="Le tappe dello sviluppo pubblico di GX-TXT: Dataset scientifici, statistica, Curve Digitizer, Workspace, Worksheet, simulazioni e curve replicate.">
   <meta property="og:url" content="https://giuxlab-hub.github.io/GX-TXT/it/releases/">
 </head>
@@ -50,15 +50,15 @@
       <h1 id="releases-title">Come si è evoluto il framework scientifico.</h1>
       <p class="lead">Una selezione delle novità più significative di ogni versione pubblicata, dalla prima copia ripulita su GitHub fino all’ultima release coperta da questa pagina.</p>
       <div class="buttons">
-        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/blob/ccde3a0f62020941c6ed3756c4de3c135a4772e4/CHANGELOG.md">Consulta il CHANGELOG completo ↗</a>
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/blob/4daf135e49378eff1f413310bc17cf32f1928c44/CHANGELOG.md">Consulta il CHANGELOG completo ↗</a>
         <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT">Vai ai sorgenti ↗</a>
       </div>
     </div>
     <div class="release-stat" aria-label="VERSIONI DOCUMENTATE">
       <div class="release-stat-head">GX-TXT / 0.9.8.10</div>
-      <div class="release-stat-number">15</div>
+      <div class="release-stat-number">16</div>
       <div class="release-stat-label">REVISIONI PUBBLICHE</div>
-      <div class="release-stat-row"><span>VERSIONI DOCUMENTATE</span><strong>dev-095 → dev-110</strong></div>
+      <div class="release-stat-row"><span>VERSIONI DOCUMENTATE</span><strong>dev-095 → dev-111</strong></div>
       <div class="release-stat-row"><span>FONTE PRINCIPALE</span><strong>CHANGELOG delle versioni</strong></div>
     </div>
   </section>
@@ -66,6 +66,7 @@
     <div class="wrap">
       <nav class="release-jump" aria-label="Vai a una release">
         <span>Vai a una release</span>
+<a href="#dev-111" aria-label="GX-TXT 0.9.8.10-dev-111">dev-111</a>
 <a href="#dev-110" aria-label="GX-TXT 0.9.8.10-dev-110">dev-110</a>
 <a href="#dev-109" aria-label="GX-TXT 0.9.8.10-dev-109">dev-109</a>
 <a href="#dev-108" aria-label="GX-TXT 0.9.8.10-dev-108">dev-108</a>
@@ -83,22 +84,47 @@
 <a href="#dev-095" aria-label="GX-TXT 0.9.8.10-dev-095">dev-095</a>
       </nav>
       <ol class="release-timeline">
-<li class="release-entry" id="dev-110">
-  <div class="release-marker" aria-hidden="true"><span>110</span></div>
+<li class="release-entry" id="dev-111">
+  <div class="release-marker" aria-hidden="true"><span>111</span></div>
   <article class="release-panel release-featured">
 <div class="release-head">
-  <div><div class="release-version">0.9.8.10-dev-110</div>
-  <h2>Snapshot intermedio TASK210 dei sorgenti scientifici</h2></div>
+  <div><div class="release-version">0.9.8.10-dev-111</div>
+  <h2>Sviluppo Viewer, 100 icone condivise e ispezione EAGLE sperimentale</h2></div>
   <span class="release-current">ULTIMA VERSIONE DI QUESTA CRONOLOGIA</span>
 </div>
-    <p class="release-intro">GX-TXT dev-110 è uno snapshot intermedio TASK210 depositato, non una release completa di tutte le funzionalità. Introduce infrastruttura Preview, una nuova integrazione del Curve Digitizer e moduli cromatografici, conservando esplicitamente le verifiche scientifiche e GUI ancora aperte.</p>
+    <p class="release-intro">GX-TXT dev-111, revisione r3, amplia lo sviluppo dei Viewer scientifici con un inizializzatore numerico corretto, un catalogo di icone più ampio, l’ispezione di sorgenti EAGLE abbinati e nuove integrazioni scientifiche. Le precedenti revisioni dell’archivio rimangono conservate separatamente.</p>
+    <h3 class="release-group-label">Novità principali</h3>
+    <ul class="release-bullets"><li>Corregge le capacità richieste dall’inizializzatore predefinito dei Viewer numerici, limitandole alle operazioni host sui valori e sul testo effettivamente utilizzate; il collaudo completo Build/Export/install non è implicito.</li>
+<li>Estende il catalogo condiviso del Viewer Builder a 100 icone in cinque famiglie, con ricerca, anteprima, assegnazione e modifiche reversibili entro i casi verificati.</li>
+<li>Introduce un ispettore sperimentale di sorgenti EAGLE abbinati con importazione, consultazione e Save/Open che conservano l’identità dei file: non è un simulatore PCB, Circuit o elettromagnetico.</li>
+<li>Estende l’interoperabilità cromatografia/Replicate, l’esportazione video di animazioni scientifiche, i controlli di Curve Workbench e la documentazione, conservando le autorità scientifiche esistenti.</li>
+<li>Mantiene il comportamento originale del Curve Digitizer 2.0.9; nuovi manuali e materiali didattici dichiarano esplicitamente i limiti scientifici.</li></ul>
+    <div class="release-scope"><span>Ambito scientifico</span><p>Si pubblicano i sorgenti depositati della dev-111 r3, NON un collaudo completo dell’installazione. La parità GUI e prestazionale resta limitata, il rendering HTML nativo ha ancora mostrato anomalie e sette pacchetti tutorial non risultano completati. Nel deposito non è presente una nuova serie di ZIP plugin ufficiali dev-111: quelli precedenti sono preservati. Le hotfix esclusive dev-108 sono incompatibili con dev-111 per definizione.</p></div>
+
+<div class="release-actions">
+<a href="https://github.com/giuxlab-hub/GX-TXT/commit/4daf135e49378eff1f413310bc17cf32f1928c44">Apri il commit esatto ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/4daf135e49378eff1f413310bc17cf32f1928c44/CHANGELOG.md">CHANGELOG di questa versione ↗</a>
+<a href="https://github.com/giuxlab-hub/GX-TXT/blob/4daf135e49378eff1f413310bc17cf32f1928c44/docs/api/SCIENTIFIC_VIDEO_EXPORT_API_v1.md">Documentazione pubblica pertinente ↗</a>
+</div>
+  </article>
+</li>
+
+<li class="release-entry" id="dev-110">
+  <div class="release-marker" aria-hidden="true"><span>110</span></div>
+  <article class="release-panel">
+<div class="release-head">
+  <div><div class="release-version">0.9.8.10-dev-110</div>
+  <h2>Anteprime scientifiche, digitalizzazione e integrazione cromatografica</h2></div>
+
+</div>
+    <p class="release-intro">GX-TXT dev-110 è uno snapshot intermedio di sviluppo scientifico. Estende i componenti Preview, l’integrazione del Curve Digitizer e l’acquisizione cromatografica, mantenendo esplicite le verifiche scientifiche e di piattaforma ancora incomplete.</p>
     <h3 class="release-group-label">Novità principali</h3>
     <ul class="release-bullets"><li>Preview acquisisce componenti condivisi per raggruppamento, coordinate, overlay persistenti e rappresentazioni collegate ai Dataset; migliora il controllo delle Session e delle cache.</li>
 <li>È integrato il Curve Digitizer 2.0.9 originale senza alterare il calcolo scientifico di Quality; si aggiunge una verifica separata dell’identità dei sorgenti CORE.</li>
 <li>Sono aggiunti importatori cromatografici Metrohm IC Net CHW e standard AIA/ANDI, con provenienza, lettura limitata dei file e note di qualificazione.</li>
 <li>Sono introdotti miglioramenti incrementali per creazione/promozione Session, finestra Generate, Modules, intervalli di stampa, ScriptJob duplex e trasporto metadati Scientific Library.</li>
 <li>La guida preparatoria del Curve Digitizer comprende nuovi grafici e spiegazioni su calibrazione, elaborazione e provenienza scientifica.</li></ul>
-    <div class="release-scope"><span>Ambito scientifico</span><p>SNAPSHOT INTERMEDIO. Nell’archivio risultano ancora incomplete verifiche GUI/Octave, aspetti del runtime HTML e altre attività TASK210. Non è presente una nuova serie di ZIP official_dev110: i pacchetti ufficiali dev109 restano invariati. La pubblicazione GitHub del sorgente non certifica installazione, attivazione o collaudo completo. Le hotfix della dev108 sono incompatibili con la dev110 per definizione.</p></div>
+    <div class="release-scope"><span>Ambito scientifico</span><p>SNAPSHOT INTERMEDIO. L’archivio depositato conserva verifiche GUI/Octave e operazioni del runtime HTML ancora incomplete. Non è stata depositata una nuova serie di ZIP ufficiali dev-110: i pacchetti precedenti restano invariati. La pubblicazione GitHub dei sorgenti non costituisce collaudo scientifico installato. Le hotfix dev-108 sono incompatibili per definizione.</p></div>
 
 <div class="release-actions">
 <a href="https://github.com/giuxlab-hub/GX-TXT/commit/ccde3a0f62020941c6ed3756c4de3c135a4772e4">Apri il commit esatto ↗</a>
@@ -463,7 +489,7 @@
 
 <footer><div class="wrap">
 <div><p><strong>GX-TXT</strong> — Sviluppato da <a href="https://giux-lab.it/" rel="author">Giux-Lab</a>.</p>
-<p>Open source · GNU GPL-3.0-or-later · 15 release</p></div>
+<p>Open source · GNU GPL-3.0-or-later · 16 release</p></div>
 <div class="links">
 <a href="../">Panoramica</a>
 <a href="../#guides">Guide</a>
