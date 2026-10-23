@@ -19,7 +19,7 @@ proc ::GX::CurveWorkbench::_timelineBuild {w} {
     pack forget $w.status
     ttk::frame $w.strip -height $height
     pack propagate $w.strip 0
-    pack $w.strip -side bottom -fill x -before $w.main
+    grid $w.strip -in $w.upper -row 1 -column 0 -columnspan 2 -sticky ew
     ttk::combobox $w.strip.choice -values {Description History} -state readonly -width 12 -textvariable ::GX::CurveWorkbench::st($w,stripView)
     pack $w.strip.choice -side left -fill y
     pack $w.status -in $w.strip -side left -fill x -expand 1;raise $w.status
@@ -37,7 +37,10 @@ proc ::GX::CurveWorkbench::_timelineBuild {w} {
 }
 proc ::GX::CurveWorkbench::_timelineShow {w} {
     variable st
-    if {$st($w,stripVisible)} {pack $w.strip -side bottom -fill x -before $w.main} else {pack forget $w.strip}
+    if {$st($w,stripVisible)} {
+        grid $w.strip -in $w.upper -row 1 -column 0 -columnspan 2 -sticky ew
+        _timelineRender $w
+    } else {grid remove $w.strip}
 }
 proc ::GX::CurveWorkbench::_timelineSwitch {w} {
     variable st
@@ -49,7 +52,7 @@ proc ::GX::CurveWorkbench::_timelineDescriptionLayout {w} {
     variable st
     if {![winfo exists $w.strip] || $st($w,stripView) ne {Description}} return
     set width [expr {max(80,[winfo width $w.strip]-[winfo reqwidth $w.strip.choice]-8)}]
-    $w.status configure -wraplength $width
+    if {[$w.status cget -wraplength]!=$width} {$w.status configure -wraplength $width}
     set height [expr {max([winfo reqheight $w.status]+4,[winfo reqheight $w.strip.choice]+2)}]
     if {[$w.strip cget -height]!=$height} {$w.strip configure -height $height}
 }
@@ -69,8 +72,16 @@ proc ::GX::CurveWorkbench::_timelineKind {before after step} {
 proc ::GX::CurveWorkbench::_timelineRender {w} {
     variable st
     if {![winfo exists $w.strip.timeline]} return
+    set record $st($w,scientificRecipe)
+    set st($w,historyCount) [expr {$record eq {}?0:[llength [dict get $record steps]]}]
+    if {!$st($w,historyBrowsing)} {set st($w,historyCursor) $st($w,historyCount)}
+    # Navigation remains current while hidden; replay/paint only on History.
+    if {$st($w,stripView) ne "History"||!$st($w,stripVisible)} {
+        _timelineDescriptionLayout $w
+        return
+    }
     set c $w.strip.timeline;$c delete all
-    set record $st($w,scientificRecipe);set groups {};set index 0;set previousKind {}
+    set groups {};set index 0;set previousKind {}
     if {$record ne {}} {
         set before [dict get $record base]
         foreach step [dict get $record steps] {

@@ -471,7 +471,7 @@ proc ::GX::InterfaceBuilder::sourceBind {} {
 proc ::GX::InterfaceBuilder::importDialog {} {
     variable s
     set w .gxInterfaceImport;catch {destroy $w}
-    ::GX::uiFieldDialogCreate $w .gxInterfaceDesigner {Import Existing Viewer} 650x230
+    ::GX::uiFieldDialogCreate $w .gxInterfaceDesigner {Import Existing Viewer} 840x250
     set s(importChoices) {};set labels {}
     foreach module $::GX::moduleOrder {
         foreach provider [::GX::viewerProviderIds $module] {
@@ -486,9 +486,19 @@ proc ::GX::InterfaceBuilder::importDialog {} {
     ::GX::uiFieldSelectorWithinViewer $w.choice $w
     ttk::button $w.original -text {Open original for inspection} -command {::GX::InterfaceBuilder::safe importOriginal}
     ttk::button $w.import -text {Import declared interface} -command {::GX::InterfaceBuilder::safe importApply}
+    ttk::button $w.maintain -text {Maintain original source…} -command {::GX::InterfaceBuilder::safe importMaintain}
     ttk::button $w.cancel -text Cancel -command [list ::GX::uiFieldDialogClose $w]
-    pack $w.about $w.choice -fill x -padx 10 -pady 8;pack $w.original $w.import $w.cancel -side left -padx 8 -pady 10
+    pack $w.about $w.choice -fill x -padx 10 -pady 8;pack $w.original $w.import $w.maintain $w.cancel -side left -padx 8 -pady 10
     ::GX::uiFieldDialogPresent $w $w.choice 0
+}
+proc ::GX::InterfaceBuilder::importMaintain {} {
+    variable s
+    lassign [dict get $s(importChoices) $s(importChoice)] module provider
+    set approved [::GX::viewerDevelopmentMaintenanceModules]
+    if {![dict exists $approved $module] || [dict get $approved $module provider] ne $provider} {error {This Viewer has no approved trusted maintenance source scope; use declared-interface import or request its owner}}
+    set window [::GX::viewerOpen viewer.development_workspace development_workspace [dict create maintenance_module $module maintenance_provider $provider]]
+    set s(status) {Original-source maintenance opened in the official Development Workspace. Interface import coverage and layout adoption remain separate checks.}
+    return $window
 }
 proc ::GX::InterfaceBuilder::importOriginal {} {
     variable s;lassign [dict get $s(importChoices) $s(importChoice)] module provider

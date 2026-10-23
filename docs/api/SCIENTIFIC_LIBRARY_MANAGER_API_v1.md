@@ -1,5 +1,75 @@
 # Scientific Library Manager API v1
 
+## Step5 bounded source extension — adoption and runtime gated
+
+MAIN503/523 and MAIN638 decision003 authorize bounded source implementation
+under this same Library owner. The three restricted Script aliases remain
+credential_status, credential_unlock and credential_lock;21 Script operations
+are prepared in total and the original18 retain their behavior. The unshipped
+secret-bearing Tcl credentialUnlock and credentialProfileAdmin create/replace
+forms are superseded and return fixed unavailable responses. They are not
+successful pending aliases. Profile administration and the three CORE-only
+phase routes below remain absent from ordinary Script operations and grants.
+Source registration is not feature adoption or actual native/runtime acceptance.
+
+The outward Script credential_unlock(library_id,unlock_credential,
+lifetime_seconds=300) remains one synchronous final result. The lifetime must
+be an integer from 1 through 900: pass Python `30` (an `int`) or Octave
+`int64(30)`. Ordinary Octave `30` is a double and is rejected, as are Python
+booleans, Octave logicals, null and zero. Omitting the lifetime argument uses
+the binding's integer default of 300.
+
+Its binding calls
+credentialPrepare unlock with exact nonsecret library_id/lifetime_seconds,
+captures its validated operation reference, calls the native credentialSubmit
+directly, lets that COMPLETE Tcl invocation return to Python, then calls
+nonsecret credentialFinish with the captured reference. No Tcl catch/uplevel
+wrapper surrounds protected Submit. References from Submit/Finish responses
+cannot retarget cleanup. Failed or malformed Submit always invokes exact-owner
+quarantine and Finish; failed Finish or final typed validation quarantines that
+same captured operation. No automatic resubmission or library-only replacement
+lock is used. Status/lock keep their existing final result contract.
+
+MAIN accepts the complete Tcl-return boundary, not return of the enclosing
+external Python JSON/module.invoke request. Python arguments/request/memory
+remain; no Python/Tcl zeroization, arbitrary observer or unexpected diagnostic
+erasure guarantee is made. The binding raises fixed BridgeErrors outside caught
+exception handlers and never forwards raw error text/context/cause/traceback.
+
+Runtime status fields are library_id, configured(bool|null),
+authentication_required(bool|null), authentication_status, expires_in_seconds
+(integer0..900), cleanup_pending(bool). States not_required/unconfigured/locked/
+unlocked/failed/unavailable/unknown/revoking are specific to this NEW result;
+old capability.v1 authentication enums are unchanged. Authoritative result_json
+retains JSON null/bool/integer types despite Tcl text mirrors. Unlock's default
+TTL300/max900 means a CORE grant, never a fabricated remote login success.
+
+The Step5 Script lock result needs two genuine nullable fields. TASK210's
+registered continuation exposed the shared Bridge's missing encoding for Python
+`None`; the explicit one-key null envelope now has a source correction in the
+server and matching clients. Python receives `None`; Octave receives `[]` and
+must retain `result_json` as authoritative for null identity. Ordinary Octave
+empty-array arguments retain their previous encoding. This is a transport
+correction to the existing Step5 contract, separate from the unchanged Step4
+content projections below. Source review and actual validation status belong to
+the current TASK210 receipts; neither the failed continuation nor whole Step5
+is promoted by this correction.
+
+Exact CORE signatures, finite administration/CAS, protected raw32KiB and
+final64KiB frame limits, provider-private scope preserving old hook signatures,
+lazy encrypted profile dependency and all unqualified lifetime/security gates
+are documented in
+public library source integration notes.
+Legacy nonprofile1MiB input stays unchanged. Profile-bound one-shot content
+fails locked before provider import; authorized sync/async calls must share the
+same owned private runtime. Failed durable admin/bind dispatch may have committed:
+mutation_outcome unknown requires read-only inspect/inspect_binding reconciliation
+using original expected revisions, without automatic retry or rollback.
+
+The source-only correction has not executed helpers, imports, dependency probes,
+provider calls, real scripts or GUI. Original scoped Step3/4 evidence is preserved;
+Step5/6/7 completion and release acceptance are not inferred.
+
 ## Step 1 additive registry contract (dev-045)
 
 This is an additive v1 extension. Existing managed package installation,
@@ -153,7 +223,8 @@ are synchronous host calls unless explicitly submitted using the additive
 each record through the helper. Do not present them as asynchronous Job APIs.
 
 This family is discoverable through the existing CORE API owner. It has no
-registered Python/Octave Script Bridge family. Restricted C++ has the three
+automatic Python/Octave grant from this host surface. The reviewed Step4 subset
+is specified below. Restricted C++ has the three
 typed catalog methods described below. Do not call `gxtxt_api_call` with this family
 solely because a catalog row exists. The Python helper is an implementation
 owned by CORE, not a public consumer import or a replacement public service.
@@ -194,7 +265,9 @@ remain the owners of scientific presentation.
 | `libraryRequest operation arguments callback` | Returns the existing ScriptJob asynchronous request ID. Callback receives common `ok` plus `result` or `error` response. Fixed operations listed below; `arguments` is the operation's positional list, not shell text. |
 
 `apiInfo` retains version1/registry1 and additionally advertises the capability
-schema, exact operation list and `script_exposure host_module_only`.
+schema, exact host operation list and `script_exposure intentional_subset` with
+the separate finite `script_operations` list. Technical capabilities do not grant
+additional script operations.
 
 `libraryRequest` accepts `catalog_page`, `library_capabilities`,
 `provider_capabilities`, `library_action`, `info`, `entries`, `verify`, `install`,
@@ -211,6 +284,25 @@ request service. Cancellation is not a rollback of a committed administration
 operation. Provider descriptors come from the current loaded module catalog and
 are passed only to the helper child. This is an asynchronous host service, not a
 new supervised scientific Job or a Script Bridge grant.
+
+All synchronous helper invocations use the private fixed `--request-sync` entry
+to the existing `--request` Tcl-dict stdin decoder/finite dispatcher and recursive Tcl
+response envelope. The command argv contains only the configured Python runtime,
+`-B`, the fixed CORE helper and `--request-sync`; catalog query text, IDs, paths,
+provider arguments and descriptors are inert stdin data. Tcl `exec` control words
+are not prohibited query text and must not become redirections/pipelines.
+The complete request has a 1 MiB input bound, checked before dispatch and again
+by the helper before Tcl-list parsing. Loaded catalog descriptors stay local to
+that helper process; the synchronous facade does not modify host environment.
+The finite private request dispatcher additionally accepts the existing
+synchronous CLI operations `root`, `list`, `registered`, `compatible`, `spectrum`.
+This does not extend `libraryRequest`'s advertised asynchronous operation list.
+Both facades return the established inner information/list/spectrum/content
+wire to the existing decoders; no new serializer or manager is introduced.
+The sync entry inherits its caller's existing process group/session, preserving
+managed/Job/wrapper cancellation and drain. Only the unchanged async `--request`
+entry calls the existing request-process-group owner for its own group; mode is
+a fixed private CLI selector, never a caller-controlled request field.
 
 ### Optional provider hooks and truthful status
 
@@ -328,9 +420,10 @@ Opening delegates to the registered domain Viewer through the same manager.
 
 This additive v1 contract extends the existing Python/Tcl manager. MAIN's
 independent proposal review accepted the bounded content/provider design; actual
-release/milestone acceptance remains separate. Ordinary scripts remain excluded:
-`apiInfo` continues `script_exposure host_module_only`. No Step4 binding,
-credential facility, provider registry or scientific store is added.
+release/milestone acceptance remains separate. Step3 introduced no script grant.
+The separately reviewed Step4 subset below reuses these owners through its
+API-owned binding; no credential facility, provider registry or scientific store
+is added.
 
 ### Exact public host signatures
 
@@ -472,8 +565,10 @@ set args [list $libraryId read_entry [dict create entry_id $entryId]]
 ::GX::ScientificLibraryManagerAPIv1::libraryRequest content $args $callback
 ```
 
-The helper's fixed CLI is `python3 -B scientific_library_manager.py content`,
-reading that same3-item Tcl list from stdin. Successful and failed content use a
+The direct helper CLI `python3 -B scientific_library_manager.py content` still
+reads that same3-item Tcl list from stdin. Host synchronous and managed calls use
+the same decoder with fixed `--request-sync` or async `--request` and those
+arguments as data. Successful and failed content use a
 single C/base64 record containing the finite recursive Tcl response schema;
 CLI failure exits nonzero, while managed-worker transport carries the result to
 the facade's decoder. No provider payload is required in argv. All old F/L/M/P/D
@@ -492,5 +587,116 @@ actual sync facade plus existing scriptJobAsync pipes/callbacks. Typed JSON
 roundtrip, normalized failures, pre/post integrity, mutation ambiguity, legacy
 wire and final response bounds are developer-checked. These checks do not prove
 production remote service, domain IR/NMR, GUI or ordinary Script Bridge support.
-MAIN retains integration and Step3 milestone acceptance. Steps4–7 remain ordered
-unfinished work; no Step4 exposure or credential mechanism is inferred here.
+MAIN accepted bounded Step3 through the preserved development source integration. The
+Step4 implementation below still requires real registered Python/Octave runtime
+validation and MAIN milestone acceptance. Steps5–7 remain unfinished in order;
+no credential mechanism is inferred here.
+
+
+## Step4 intentional Python/GNU Octave Bridge subset
+
+MAIN independently approved the exact design on2026-10-22, including its closed
+projections and fixed eighteen operations. Implementation is in the existing
+API-owned `core/script_bindings/scientific_library_manager.py`; no shared Bridge,
+client, runner or scientific registry was extended. Registered real-language
+runtime validation and milestone acceptance remain pending. Design approval is
+not a scientific/runtime PASS.
+
+Both languages use `gxtxt_api_call("SCIENTIFIC_LIBRARY_MANAGER_API_v1", operation,
+args)` with positional list/cell arguments. The exact callable surface is:
+
+| Operation | Arguments | Existing host owner |
+|---|---|---|
+| api_info | none | apiInfo, safe subset projection |
+| effective_root | none | libraryRoot, read-only root query |
+| list_types | none | listLibraryTypes |
+| list_libraries | none | listRegisteredLibraries, safe public records |
+| list_installed_libraries | none | listInstalledLibraries, managed-only records |
+| library_info | library_id | getLibraryInfo, safe public fields |
+| compatible_libraries | library_type | queryCompatibleLibraries |
+| legacy_entries | library_id | listLibraryEntries, managed-only compatibility |
+| provider_capabilities | library_type | getProviderCapabilities, closed fields |
+| library_capabilities | library_id | getLibraryCapabilities, closed fields/status |
+| catalog_page | optional options map | libraryCatalogPage |
+| entries_page | library_id, optional paging map | libraryEntriesPage |
+| entry_info | library_id, entry_id | getLibraryEntryInfo |
+| search_entries | library_id, query_json, optional paging map | searchLibraryEntries |
+| read_entry | library_id, entry_id | readLibraryEntry |
+| export_entry | library_id, entry_id, format | exportLibraryEntry, data-return only |
+| add_entry | library_id, entry_json | addLibraryEntry, existing mutable library |
+| remove_entry | library_id, entry_id | removeLibraryEntry, existing mutable library |
+
+`paging` accepts only `limit`1–200 and bounded opaque `continuation`.
+`catalog_page` accepts only mode(all/managed/external/remote), query<=1024
+characters, nonnegative integer offset, and limit1–200. Every other argument
+is a string. query_json and entry_json are explicit JSON **text**, retaining the
+provider's scientific meaning and the accepted1MiB complete-input bound.
+Finite integral Octave paging numbers normalize to exact integers; logical,
+fractional, nonfinite or out-of-range limits reject before provider dispatch.
+
+No operation forwards provider_json/options_json, destination, configuration,
+credential-profile data or arbitrary action names. Export supplies no destination
+or options: its result has the existing provider media_type, utf-8/base64 encoding
+and data contract. The provider's named format and explicit owner policy/license,
+authentication and integrity checks remain authoritative. Capability flags and
+free-text license/rights do not authorize a call. Mutation affects an entry in an
+already-mutable library only; managed versioned packages remain immutable.
+Scripts may retain public lists/results through their normal framework-owned run
+output/artifact/Dataset services; this family adds no host file writer.
+
+All seven content operations return exactly `{schema, result_json}`. The existing
+accepted result_json is authoritative for JSON null versus empty text, boolean
+versus number, nested values and exact int64/uint64 text. Python may use json.loads;
+Octave may use jsondecode for convenient values, but its native numeric conversion
+does not replace the authoritative JSON when an exact large integer is needed.
+No new serializer/null sentinel or shared transport type guess is introduced.
+Final ordinary typed Bridge JSON frames are bounded to24MiB, without truncation,
+in addition to existing manager input/result/wire bounds.
+
+api_info validates the existing host identity/version/schema, then returns only
+api_name/version/registry_version/capability_schema, intentional_subset exposure,
+fixed CORE provider identity, exact eighteen script aliases, and capabilities
+library_discovery/public_status/explicit_json_results/data_return_export/
+conditional_entry_mutation. It never returns the unrestricted host operations.
+
+Library info/catalog records admit only library_id/library_type/provider_id/
+provider_version/display_name/version/mode/state/read_only/availability/
+authentication_required/authentication_status/entry_count/description/license/
+rights/installed_at/updated_at/sha256 when actually present. Configuration,
+managed/package storage locations, implementation paths and profile fields are
+excluded. effective_root is the deliberately approved read-only path query.
+
+The complete exact capability/status keys, types, finite enums and two safe fixed
+reason fields are in
+private implementation projection inventory.
+There are sixteen fixed technical capability boolean keys; no wildcard capability
+or provider status.reason is forwarded. Unknown optional fields stay absent;
+invalid selected values reject rather than guessing authenticated/false/unknown.
+A technical host/Viewer capability is not a script operation grant.
+
+Normalized content failures raise `GXTXT:ScientificLibrary:<code>` with a bounded
+JSON error message containing code/message and available retry_after_seconds,
+provider_code or mutation_outcome. Existing finite Step3 codes remain unchanged.
+Input schema/arity failures use existing InvalidArguments; unregistered methods
+use UnknownOperation. Failed search remains an error. A mutation whose result
+cannot be returned reports mutation_outcome unknown: reconcile provider state
+before retrying; no automatic retry or rollback is claimed.
+
+The exact classification of all31 public methods (apiInfo plus30 listed host
+operations) is
+private implementation operation classification.
+The thirteen host/module-only methods are resolveLibraryProvider, installLibrary,
+updateLibrary, removeLibrary, verifyLibrary, openLibrary, openLibraryEntry,
+readLibrarySpectrum, registerLibrary, unregisterLibrary, openLibraryViewer,
+invokeLibraryAction and libraryRequest. Domain spectral workflows retain their
+existing dedicated Reference Library bindings. Whole-library/provider/root/
+credential administration is excluded; credential unlock/lock waits for the
+ordered Step5 vault/protected path.
+
+The catalogued `validation/task210/library_step4/contract.tcl FRAMEWORK BASELINE
+NEW_OUTPUT` prepares one private0700 candidate and runs one real registered Python
+and one GNU Octave script via existing Script Registry+scriptExecutionRun. It
+checks actual discovery/read/export/mutable add-remove/readonly and policy denial,
+auth/rate/unavailability errors, exact JSON and absent administrative routes.
+MAIN routes execution after exact helper/source/catalog review. No such run or
+Step4 PASS is claimed by this implementation transfer.

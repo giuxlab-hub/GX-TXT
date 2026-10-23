@@ -5,6 +5,7 @@ namespace eval ::GX::Engine3D {
     variable embedded 0
     variable hostWidgetChanging 0
     variable mountGeneration 0
+    variable scientificPresentationGeneration 0
     variable resizePending {}
     variable renderedSize {960 640}
     variable ownerModule viewer.engine_3d
@@ -144,6 +145,9 @@ namespace eval ::GX::Engine3D {
     variable timelineRangeLast 1
     variable timelineTimer ""
     variable timelineLastTick 0
+    variable videoDialogs {}
+    variable videoDialogSerial 0
+    variable videoInputs
     variable fieldKind lines
     variable fieldSourceMode static
     variable fieldSourceTrack ""
@@ -693,6 +697,7 @@ proc ::GX::Engine3D::backend {action scene} {
     set provider [dict get $scene provider]
     setHostIdentity [dict get $provider module_id] [dict get $provider viewer_id]
     if {$action eq {open}} {
+        incr ::GX::Engine3D::scientificPresentationGeneration
         set scientificDocumentId [::GX::datasetPublicationV2DictDefault [::GX::datasetPublicationV2DictDefault $scene open_context {}] scientific_document_id {}]
         set scientificDocumentSession [::GX::interactiveDocumentSessionToken]
     }
@@ -1512,6 +1517,410 @@ proc ::GX::Engine3D::datasetSelected {} {
 proc ::GX::Engine3D::timelineDefinitions {} {
     return [dict get [::GX::viewerSceneGet [::GX::Engine3D::ownerModule] [::GX::Engine3D::ownerProvider]] timeline_definitions]
 }
+proc ::GX::Engine3D::videoDialogCurrent {context} {
+    variable videoDialogs
+    set w [dict get $context dialog]
+    if {![dict exists $videoDialogs $w] || [dict get $videoDialogs $w context] ne $context} {return 0}
+    if {![winfo exists $w] || [winfo id $w] ne [dict get $context dialog_id] ||
+        ![winfo exists [dict get $context host]] || [winfo id [dict get $context host]] ne [dict get $context host_id]} {return 0}
+    if {[dict get $context mount_generation]!=$::GX::Engine3D::mountGeneration ||
+        [dict get $context session_token] ne [::GX::interactiveDocumentSessionToken] ||
+        [dict get $context module_id] ne [ownerModule] || [dict get $context provider_id] ne [ownerProvider]} {return 0}
+    return 1
+}
+proc ::GX::Engine3D::videoDialogClose {w {destroyed {}}} {
+    variable videoDialogs;variable videoInputs
+    if {$destroyed ne {} && $destroyed ne $w} return
+    if {![dict exists $videoDialogs $w]} return
+    set entry [dict get $videoDialogs $w]
+    dict unset videoDialogs $w
+    set request [dict get $entry request]
+    if {$request ne {}} {catch {::GX::scriptJobRequestCancel $request}}
+    foreach key [array names videoInputs "$w,*"] {unset videoInputs($key)}
+    if {$destroyed eq {} && [winfo exists $w] && [winfo id $w] eq [dict get $entry context dialog_id]} {destroy $w}
+}
+proc ::GX::Engine3D::videoDialogBrowse {context} {
+    variable videoInputs
+    if {![videoDialogCurrent $context]} return
+    set w [dict get $context dialog]
+    set path [tk_getSaveFile -parent $w -title {Export scientific animation/video} -defaultextension .mp4 -filetypes {{H.264 MP4 {.mp4}}} -confirmoverwrite 0]
+    if {![videoDialogCurrent $context]} return
+    if {$path ne {}} {set videoInputs($w,destination) $path}
+}
+proc ::GX::Engine3D::videoDialogComplete {context response} {
+    variable videoDialogs;variable videoInputs
+    if {![videoDialogCurrent $context]} return
+    set w [dict get $context dialog]
+    dict set videoDialogs $w request {}
+    $w.actions.start configure -state normal
+    $w.actions.cancel configure -state disabled
+    videoDialogInputsState $w 0
+    set text [::GX::datasetPublicationV2DictDefault $response status error]
+    foreach key {error message} {
+        if {[dict exists $response $key] && [dict get $response $key] ne {}} {append text ": " [dict get $response $key]}
+    }
+    set videoInputs($w,status) $text
+    # A captured-source outcome never declares the current changed scene ready.
+    if {[catch {set now [::GX::_native3DAnimationDescribeSource [dict get $context module_id] [dict get $context provider_id] [dict get $context timeline_id]]}] ||
+        [dict get $now expected_source] ne [dict get $videoDialogs $w expected_source]} {
+        append videoInputs($w,status) { (captured source; current scene changed)}
+    }
+}
+proc ::GX::Engine3D::videoDialogCancel {context} {
+    variable videoDialogs;variable videoInputs
+    if {![videoDialogCurrent $context]} return
+    set w [dict get $context dialog];set request [dict get $videoDialogs $w request]
+    if {$request ne {}} {
+        ::GX::scriptJobRequestCancel $request
+        if {[videoDialogCurrent $context]} {set videoInputs($w,status) {Cancellation requested. A commit already authorized may require destination reconciliation.}}
+    }
+}
+proc ::GX::Engine3D::videoDialogInputsState {w busy} {
+    foreach key {first last width height fps_num fps_den duration} {$w.fields.$key configure -state [expr {$busy?{disabled}:{normal}}]}
+    foreach key {timing quality} {$w.fields.$key configure -state [expr {$busy?{disabled}:{readonly}}]}
+    $w.destination.path configure -state [expr {$busy?{disabled}:{normal}}]
+    $w.destination.browse configure -state [expr {$busy?{disabled}:{normal}}]
+}
+proc ::GX::Engine3D::videoDialogStart {context} {
+    variable videoDialogs;variable videoInputs
+    if {![videoDialogCurrent $context]} return
+    set w [dict get $context dialog]
+    if {[dict get $videoDialogs $w request] ne {}} return
+    if {![llength [info commands ::GX::native3DAnimationExportAsync]]} {error {Scientific video export API is unavailable}}
+    set now [::GX::_native3DAnimationDescribeSource [dict get $context module_id] [dict get $context provider_id] [dict get $context timeline_id]]
+    if {[dict get $now expected_source] ne [dict get $videoDialogs $w expected_source]} {error {Animation source changed; close and reopen this export dialog}}
+    set options [dict create first_index $videoInputs($w,first) last_index $videoInputs($w,last) width $videoInputs($w,width) height $videoInputs($w,height) quality $videoInputs($w,quality) policy create_only]
+    if {$videoInputs($w,timing) eq {fps}} {
+        dict set options fps [list $videoInputs($w,fps_num) $videoInputs($w,fps_den)]
+    } elseif {$videoInputs($w,timing) eq {duration}} {dict set options playback_duration_seconds $videoInputs($w,duration)} else {error {Choose FPS or playback duration}}
+    $w.actions.start configure -state disabled
+    videoDialogInputsState $w 1
+    set videoInputs($w,status) {Preparing owned background export; renderer/encoder admission is pending.}
+    try {
+        set request [::GX::native3DAnimationExportAsync [dict get $context module_id] [dict get $context provider_id] [dict get $context timeline_id] $videoInputs($w,destination) $options [list ::GX::Engine3D::videoDialogComplete $context]]
+    } on error {message details} {
+        if {[videoDialogCurrent $context]} {$w.actions.start configure -state normal;videoDialogInputsState $w 0;set videoInputs($w,status) $message}
+        return -options $details $message
+    }
+    if {![videoDialogCurrent $context]} {catch {::GX::scriptJobRequestCancel $request};return}
+    dict set videoDialogs $w request $request
+    $w.actions.cancel configure -state normal
+}
+proc ::GX::Engine3D::videoExportDialog {} {
+    variable window;variable videoDialogs;variable videoInputs;variable videoDialogSerial
+    if {![llength [info commands ::GX::native3DAnimationDescribe]] || ![llength [info commands ::GX::native3DAnimationExportAsync]]} {error {Scientific video export API is unavailable in this runtime}}
+    set module [ownerModule];set provider [ownerProvider]
+    set timelineId [dict get [activeTimeline] id]
+    set source [::GX::_native3DAnimationDescribeSource $module $provider $timelineId]
+    set description [dict get $source description]
+    set host $window;set hostId [winfo id $host]
+    set sessionToken [::GX::interactiveDocumentSessionToken];set mount $::GX::Engine3D::mountGeneration
+    set w ${host}.videoExport[incr videoDialogSerial]
+    try {
+        toplevel $w
+        wm title $w {Export scientific animation/video}
+        set context [dict create dialog $w dialog_id [winfo id $w] host $host host_id $hostId mount_generation $mount session_token $sessionToken module_id $module provider_id $provider timeline_id $timelineId]
+        dict set videoDialogs $w [dict create context $context expected_source [dict get $source expected_source] request {}]
+        foreach {key value} [list first [dict get $description range_first] last [dict get $description range_last] width 960 height 640 timing fps fps_num 24 fps_den 1 duration {} quality normal destination {} status {Source declared; renderer and encoder admission not checked.}] {set videoInputs($w,$key) $value}
+        ttk::label $w.source -text "$module / $provider / $timelineId\n[dict get $description source_frame_count] source samples; declared sample unit: [dict get $description time_unit]" -wraplength 580
+        pack $w.source -fill x -padx 8 -pady 6
+        ttk::frame $w.fields
+        set row 0
+        foreach {key label} {first {First source sample} last {Last source sample (inclusive)} width {Video width (even pixels)} height {Video height (even pixels)} fps_num {FPS numerator} fps_den {FPS denominator} duration {Playback duration (seconds; duration mode)}} {
+            ttk::label $w.fields.${key}Label -text $label
+            ttk::entry $w.fields.$key -textvariable ::GX::Engine3D::videoInputs($w,$key)
+            grid $w.fields.${key}Label -row $row -column 0 -sticky w -padx 4 -pady 3
+            grid $w.fields.$key -row $row -column 1 -sticky ew -padx 4 -pady 3
+            incr row
+        }
+        foreach {key label values} {timing {Playback timing} {fps duration} quality {H.264 quality} {draft normal high}} {
+            ttk::label $w.fields.${key}Label -text $label
+            ttk::combobox $w.fields.$key -textvariable ::GX::Engine3D::videoInputs($w,$key) -values $values -state readonly
+            grid $w.fields.${key}Label -row $row -column 0 -sticky w -padx 4 -pady 3
+            grid $w.fields.$key -row $row -column 1 -sticky ew -padx 4 -pady 3
+            incr row
+        }
+        grid columnconfigure $w.fields 1 -weight 1
+        pack $w.fields -fill x -padx 6
+        ttk::label $w.policy -text {One video frame per original sample. Video playback timing is separate from scientific sample time. Destination must not already exist.} -wraplength 580
+        pack $w.policy -fill x -padx 8 -pady 6
+        ttk::frame $w.destination
+        ttk::entry $w.destination.path -textvariable ::GX::Engine3D::videoInputs($w,destination) -width 55
+        ttk::button $w.destination.browse -text {Choose MP4…} -command [list ::GX::Engine3D::showError [list ::GX::Engine3D::videoDialogBrowse $context]]
+        pack $w.destination.browse -side right -padx 4
+        pack $w.destination.path -side left -fill x -expand 1
+        pack $w.destination -fill x -padx 8
+        ttk::label $w.status -textvariable ::GX::Engine3D::videoInputs($w,status) -wraplength 580
+        pack $w.status -fill x -padx 8 -pady 6
+        ttk::frame $w.actions
+        ttk::button $w.actions.start -text {Export MP4} -command [list ::GX::Engine3D::showError [list ::GX::Engine3D::videoDialogStart $context]]
+        ttk::button $w.actions.cancel -text {Cancel export} -state disabled -command [list ::GX::Engine3D::showError [list ::GX::Engine3D::videoDialogCancel $context]]
+        ttk::button $w.actions.close -text Close -command [list ::GX::Engine3D::videoDialogClose $w]
+        pack $w.actions.start $w.actions.cancel $w.actions.close -side left -padx 4
+        pack $w.actions -padx 6 -pady 8
+        wm protocol $w WM_DELETE_WINDOW [list ::GX::Engine3D::videoDialogClose $w]
+        bind $w <Destroy> [list ::GX::Engine3D::videoDialogClose $w %W]
+        if {![videoDialogCurrent $context]} {error {Native3D host changed while constructing the export dialog}}
+    } on error {message details} {
+        videoDialogClose $w
+        if {[winfo exists $w]} {destroy $w}
+        return -options $details $message
+    }
+    return $w
+}
+# Scientific video's light seam reads existing public registry projections only.
+# It must never invoke payload verification, lazy schema enrichment or rendering.
+proc ::GX::_native3DAnimationDatasetSnapshot {id} {
+    if {[datasetField $id id {}] ne $id} {error "Unknown animation Dataset '$id'"}
+    set result {}
+    foreach key {id kind contract format storage_provider path canonical_sha256 canonical_delimiter row_count var_count variable_schema_api_version structured_metadata_file structured_metadata_api_version structured_metadata_revision structured_metadata_updated_at source_module_id source_job_id source_dataset_id} {
+        dict set result $key [datasetField $id $key {}]
+    }
+    if {[dict get $result storage_provider] eq {remote}} {error {Animation export does not admit remote Dataset payloads}}
+    set count [dict get $result var_count]
+    if {![string is integer -strict $count] || $count<0 || $count>256} {error {Animation Dataset schema exceeds the bounded 256-variable projection}}
+    if {[dict get $result variable_schema_api_version] ni {2 3}} {error {Animation export requires an existing variable schema; open/save the Dataset schema first}}
+    for {set i 1} {$i<=$count} {incr i} {
+        foreach key {variable_id enabled source_column source_channel original_header canonical canonical_position unit canonical_unit to_canonical from_canonical display_label semantic_role semantic_source semantic_reason instrument_id instrument_channel value_kind value_format decimal_separator time_origin time_reference dtype rank shape dimension_ids coordinate_variable_ids coordinate_role axis_kind axis_origin axis_step axis_count component_ids group_id} {
+            dict set result var${i}_$key [datasetField $id var${i}_$key {}]
+        }
+        if {[string bytelength $result]>1048576} {error {Animation Dataset metadata exceeds the 1 MiB source bound}}
+    }
+    return $result
+}
+proc ::GX::_native3DAnimationOwnerIdentity {module provider} {
+    # These are existing metadata/lifecycle queries, never entrypoint loading.
+    set moduleInfo [moduleOperationalInfo $module]
+    if {![dict get $moduleInfo enabled]} {error "Animation module '$module' is disabled"}
+    pluginRuntimeGuardNewLoad $module
+    set definition [viewerProviderDefinition $module $provider]
+    if {$definition eq {} || ![dict get $definition enabled]} {error "Animation Viewer Provider '$module/$provider' is disabled"}
+    set version [moduleField $module version {}]
+    set moduleDefinition [moduleField $module dict {}]
+    if {$version eq {} || $moduleDefinition eq {}} {error {Animation owner has no registered versioned module definition}}
+    # Icon paths belong to the catalog's presentation resolver, not source
+    # identity. Keep logical provider fields and the declared module bytes.
+    set identity [dict create module_id $module module_version $version module_definition $moduleDefinition provider_definition [dict remove $definition icon_path]]
+    if {[string bytelength $identity]>524288} {error {Animation owner definition exceeds its 512 KiB metadata bound}}
+    return $identity
+}
+proc ::GX::_native3DAnimationPresentationContext {module provider} {
+    # The editable host can inject a ScientificDocument figure after normal
+    # viewerSceneResolve. This export slice captures only the base scene, so
+    # never silently strip that active presentation or resolve its document.
+    if {$module ne $::GX::Engine3D::ownerModule || $provider ne $::GX::Engine3D::ownerProvider} {
+        return [dict create kind base_scene host_matched 0]
+    }
+    if {[info exists ::GX::Engine3D::scientificDocumentId] && $::GX::Engine3D::scientificDocumentId ne {}} {
+        if {![info exists ::GX::Engine3D::scientificDocumentSession] || $::GX::Engine3D::scientificDocumentSession ne [interactiveDocumentSessionToken]} {
+            error {Animation export refuses a stale ScientificDocument presentation; explicitly reopen the base scene}
+        }
+        error {Animation export supports base scenes only; active ScientificDocument figure capture is unavailable}
+    }
+    # An open/close/rebind during asynchronous capture must invalidate even a
+    # round trip back to an otherwise identical base-scene projection. This is
+    # private host context; workers do not recreate the GUI incarnation.
+    return [dict create kind base_scene host_matched 1 presentation_generation $::GX::Engine3D::scientificPresentationGeneration mount_generation $::GX::Engine3D::mountGeneration]
+}
+proc ::GX::_native3DAnimationRequireLineScene {scene} {
+    # Export uses the existing one-line renderer transport. Interactive figure
+    # owners retain their multiline support; this private route refuses it.
+    if {[regexp {[\r\n]} $scene]} {error {Animation export does not support LF/CR in renderer scene data}}
+    if {[dict exists $scene scientific_figure]} {
+        set figure [dict get $scene scientific_figure]
+        foreach key {title legend scalar_label x_label y_label z_label} {
+            if {[dict exists $figure $key] && [regexp {[\r\n]} [dict get $figure $key]]} {
+                error {Animation export requires single-line scientific figure text (no LF/CR)}
+            }
+        }
+    }
+}
+proc ::GX::_native3DAnimationDescribeSource {module provider timelineId} {
+    set owner [_native3DAnimationOwnerIdentity $module $provider]
+    set presentation [_native3DAnimationPresentationContext $module $provider]
+    set view [viewerSceneGet $module $provider]
+    if {[string bytelength $view]>1048576} {error {Animation scene exceeds the 1 MiB source bound}}
+    _native3DAnimationRequireLineScene $view
+    set selected {}
+    foreach timeline [dict get $view timeline_definitions] {
+        if {[dict get $timeline id] eq $timelineId} {set selected $timeline;break}
+    }
+    if {$selected eq {}} {error "Animation timeline '$timelineId' is unavailable"}
+    if {[llength [dict get $selected times]]<1 || [llength [dict get $selected times]]>256 ||
+        [llength [dict get $selected tracks]]<1 || [llength [dict get $selected tracks]]>64} {error {Animation requires 1..256 samples and 1..64 source tracks}}
+    set ids [viewerLayerIds $module $provider]
+    if {[llength $ids]>256} {error {Animation export admits at most 256 complete source layers}}
+    set layers {};set datasets {};set sources {}
+    foreach id $ids {
+        set layer [viewerLayerGet $module $provider $id]
+        if {[string bytelength $layer]>65536} {error {Animation layer metadata exceeds 64 KiB}}
+        if {[regexp {[\r\n]} $layer]} {error {Animation export does not support LF/CR in renderer layer data}}
+        if {[llength [viewerAttributeIds $module $provider $id]] || [datasetPublicationV2DictDefault $layer texture {}] ne {}} {
+            error {Animation export does not yet support external attributes or textures; no dependency is silently omitted}
+        }
+        if {[dict get $layer source_mode] eq {artifact}} {
+            if {[dict get $layer format] ni {vti vtu vtp}} {error {Animation export initially supports self-contained VTI, VTU and VTP artifacts}}
+        } elseif {[dict get $layer source_mode] eq {dataset}} {
+            if {[datasetField [dict get $layer dataset_id] format {}] ne {csv}} {error {Animation Dataset frames require an actual canonical CSV payload}}
+        } else {error {Unsupported animation layer source mode}}
+        dict set layers $id $layer
+        set source [dict create layer_id $id source_mode [dict get $layer source_mode]]
+        foreach key {kind dataset_id resource_path sha256 format source_dataset_id source_dataset_sha256 x_variable_id y_variable_id z_variable_id scalar_array vector_array radius_array opacity_array source_update_policy} {
+            dict set source $key [datasetPublicationV2DictDefault $layer $key {}]
+        }
+        foreach ds [lsort -unique [list [dict get $layer dataset_id] [dict get $layer source_dataset_id]]] {
+            if {$ds eq {}} continue
+            if {![dict exists $datasets $ds]} {dict set datasets $ds [_native3DAnimationDatasetSnapshot $ds]}
+        }
+        lappend sources $source
+    }
+    foreach track [dict get $selected tracks] {
+        if {[llength [dict get $track frames]] != [llength [dict get $selected times]]} {error {Animation track/sample count differs}}
+        foreach id [dict get $track frames] {if {$id ne {} && ![dict exists $layers $id]} {error "Animation frame layer '$id' is unavailable"}}
+    }
+    set settings [dict create view $view graphics_policy [native3dGraphicsPolicy]]
+    set snapshot [dict create module_id $module provider_id $provider timeline_id $timelineId owner_identity $owner presentation_context $presentation view $view layers $layers dataset_records $datasets graphics_policy [dict get $settings graphics_policy]]
+    if {[string bytelength $snapshot]>1048576} {error {Animation source projection exceeds 1 MiB}}
+    set units {}
+    dict for {ds record} $datasets {
+        set vars {}
+        for {set i 1} {$i<=[dict get $record var_count]} {incr i} {
+            lappend vars [dict create variable_id [dict get $record var${i}_variable_id] unit [dict get $record var${i}_unit] canonical_unit [dict get $record var${i}_canonical_unit]]
+        }
+        dict set units $ds $vars
+    }
+    set description [dict create status declared module_id $module module_version [dict get $owner module_version] provider_id $provider timeline_id $timelineId source_frame_count [llength [dict get $selected times]] sample_times [dict get $selected times] time_unit [dict get $selected unit] range_first [dict get $selected range_first] range_last [dict get $selected range_last] tracks [dict get $selected tracks] sources $sources declared_units $units render_settings $settings availability not_checked reason {Renderer and encoder admission have not been checked}]
+    return [dict create description $description expected_source $snapshot]
+}
+# Worker-only dependency copies reuse the existing complete-file authority.
+proc ::GX::_native3DAnimationCopyDependency {path sha directory dependenciesVar copiesVar totalVar} {
+    upvar 1 $dependenciesVar dependencies $copiesVar copies $totalVar total
+    set sha [string tolower $sha]
+    if {![regexp {^[0-9a-f]{64}$} $sha]} {error {Animation dependency requires SHA-256}}
+    set path [file normalize $path]
+    if {[dict exists $copies $path]} {
+        foreach dependency $dependencies {
+            if {[dict get $dependency path] eq $path && [dict get $dependency sha256] eq $sha} {return [dict get $copies $path]}
+        }
+        error {Animation dependency has conflicting captured SHA-256 identities}
+    }
+    if {![file isfile $path] || [file type $path] ne {file} || [sha256File $path] ne $sha} {error {Animation dependency changed before capture}}
+    set size [file size $path]
+    if {$size>268435456-$total} {error {Animation source capture exceeds its 256 MiB admission bound}}
+    incr total $size
+    set copy [file join $directory [format {source_%04d%s} [dict size $copies] [file extension $path]]]
+    filePublicationCopy $path $copy $sha create_only
+    if {[file size $path]!=$size || [sha256File $path] ne $sha} {error {Animation dependency changed during capture}}
+    lappend dependencies [dict create path $path sha256 $sha byte_count $size]
+    dict set copies $path $copy
+    return $copy
+}
+proc ::GX::_native3DAnimationCaptureSource {module provider timelineId options workdir} {
+    if {[llength [info commands winfo]] || ![dict exists $options expected_source]} {error {Animation capture requires an isolated headless worker and a captured source projection}}
+    set expected [dict get $options expected_source]
+    if {[string bytelength $expected]>1048576 || [dict get $expected module_id] ne $module || [dict get $expected provider_id] ne $provider || [dict get $expected timeline_id] ne $timelineId} {error {Animation capture source identity differs}}
+    if {[_native3DAnimationOwnerIdentity $module $provider] ne [dict get $expected owner_identity]} {error {Animation module or Viewer Provider definition changed before capture}}
+    set revisions {}
+    dict for {ds record} [dict get $expected dataset_records] {
+        if {[_native3DAnimationDatasetSnapshot $ds] ne $record} {error "Animation Dataset '$ds' metadata changed; save current source metadata before retrying"}
+        dict set revisions $ds [datasetRevisionToken $ds]
+    }
+    # These setters affect only this worker's loaded process state. No save or
+    # registration of a scientific Dataset occurs, including for unsaved views.
+    foreach id [viewerLayerIds $module $provider] {
+        if {![dict exists $expected layers $id]} {viewerLayerRemove $module $provider $id} else {
+            foreach attribute [viewerAttributeIds $module $provider $id] {viewerAttributeRemove $module $provider $id $attribute}
+        }
+    }
+    dict for {id layer} [dict get $expected layers] {viewerLayerSet $module $provider $id $layer}
+    set view [dict get $expected view]
+    dict set view active_timeline_id $timelineId
+    viewerSceneSet $module $provider $view
+    set privateSource [_native3DAnimationDescribeSource $module $provider $timelineId]
+    set timeline {}
+    foreach item [dict get $view timeline_definitions] {if {[dict get $item id] eq $timelineId} {set timeline $item;break}}
+    set first [dict get $options first_index];set last [dict get $options last_index]
+    if {![string is integer -strict $first] || ![string is integer -strict $last] || $first<0 || $first>$last || $last>=[llength [dict get $timeline times]]} {error {Animation capture range is invalid}}
+    foreach track [dict get $timeline tracks] {
+        foreach id [lrange [dict get $track frames] $first $last] {if {$id eq {}} {error {Selected animation range contains a sparse source slot}}}
+    }
+    set workdir [file normalize $workdir]
+    if {![file isdirectory $workdir] || [file type $workdir] ne {directory}} {error {Animation capture requires an allocated Resource directory}}
+    set directory [file join $workdir sources]
+    if {[file exists $directory]} {error {Animation capture source directory already exists}}
+    file mkdir $directory
+    set scene [native3DScenePrepare [viewerSceneResolve $module $provider]]
+    dict set scene graphics_policy [dict get $expected graphics_policy]
+    _native3DAnimationRequireLineScene $scene
+    set dependencies {};set copies {};set total 0;set metadata {}
+    set datasetIdentities {};set dependencyIdentities {};set renderBindings {}
+    dict for {ds record} [dict get $expected dataset_records] {
+        set payload [sessionInspectionDatasetPayload $ds]
+        set sha [dict get $payload sha256]
+        if {![string equal -nocase $sha [dict get $record canonical_sha256]]} {error {Animation Dataset content changed before capture}}
+        set payloadCopy [_native3DAnimationCopyDependency [dict get $payload path] $sha $directory dependencies copies total]
+        set payloadBytes [file size $payloadCopy]
+        set variables {}
+        for {set i 1} {$i<=[dict get $record var_count]} {incr i} {
+            set variable {};set prefix var${i}_
+            dict for {key value} $record {
+                if {[string first $prefix $key]==0} {dict set variable [string range $key [string length $prefix] end] $value}
+            }
+            lappend variables $variable
+        }
+        set schema [dict create api_version [dict get $record variable_schema_api_version] row_count [dict get $record row_count] canonical_delimiter [dict get $record canonical_delimiter] variables $variables]
+        dict set datasetIdentities $ds [dict create dataset_id $ds canonical_sha256 $sha byte_count $payloadBytes format [dict get $payload format] payload_reference [dict get $payload relative_path] schema $schema]
+        lappend dependencyIdentities [dict create kind dataset_payload dataset_id $ds resource_path [dict get $payload relative_path] sha256 $sha byte_count $payloadBytes format [dict get $payload format]]
+        set values [datasetMetadataRead $::GX::currentSession $ds]
+        set relative [dict get $record structured_metadata_file]
+        if {$relative eq {} && $values ne {}} {error {Animation metadata requires its registered relative Resource identity}}
+        if {$relative ne {}} {
+            set path [file normalize [file join $::GX::currentSession $relative]]
+            set metadataSha [sha256File $path]
+            set checked [viewerArtifactResolve $relative $metadataSha]
+            set metadataCopy [_native3DAnimationCopyDependency $checked $metadataSha $directory dependencies copies total]
+            lappend dependencyIdentities [dict create kind dataset_metadata dataset_id $ds resource_path $relative sha256 $metadataSha byte_count [file size $metadataCopy]]
+            if {[datasetMetadataRead $::GX::currentSession $ds] ne $values} {error {Animation metadata changed during capture}}
+        }
+        dict set metadata $ds $values
+    }
+    dict for {id layer} [dict get $scene layers] {
+        if {[dict get $layer source_mode] eq {artifact}} {
+            set original [dict get $layer absolute_path]
+            dict set layer absolute_path [_native3DAnimationCopyDependency $original [dict get $layer sha256] $directory dependencies copies total]
+            lappend dependencyIdentities [dict create kind session_artifact layer_id $id resource_path [dict get $layer resource_path] sha256 [string tolower [dict get $layer sha256]] byte_count [file size [dict get $layer absolute_path]] format [dict get $layer format]]
+        } else {
+            set ds [dict get $layer dataset_id]
+            set payload [sessionInspectionDatasetPayload $ds]
+            dict set layer dataset_path [_native3DAnimationCopyDependency [dict get $payload path] [dict get $payload sha256] $directory dependencies copies total]
+            # The legacy helper's scalar branch is namespace-relative. Require
+            # the exact existing stable-ID mapping for this private CSV input.
+            if {[dict get $layer scalar_array] ne {}} {dict set layer scalar_column [::GX::Engine3D::column $ds [dict get $layer scalar_array]]}
+            set ids {};set columns {}
+            foreach key {x_variable_id y_variable_id z_variable_id scalar_array vector_array radius_array opacity_array} {
+                dict set ids $key [datasetPublicationV2DictDefault $layer $key {}]
+            }
+            foreach key {x_column y_column z_column scalar_column vector_columns radius_column opacity_column} {
+                if {[dict exists $layer $key]} {dict set columns $key [dict get $layer $key]}
+            }
+            lappend renderBindings [dict create layer_id $id dataset_id $ds variable_ids $ids native_columns $columns]
+        }
+        dict set scene layers $id $layer
+    }
+    # Revalidate source metadata and every original file after all copies.
+    if {[_native3DAnimationOwnerIdentity $module $provider] ne [dict get $expected owner_identity]} {error {Animation module or Viewer Provider definition changed during capture}}
+    dict for {ds record} [dict get $expected dataset_records] {
+        if {[_native3DAnimationDatasetSnapshot $ds] ne $record || [datasetRevisionToken $ds] ne [dict get $revisions $ds]} {error {Animation Dataset metadata changed during capture}}
+    }
+    foreach dependency $dependencies {
+        if {[file size [dict get $dependency path]] != [dict get $dependency byte_count] || [sha256File [dict get $dependency path]] ne [dict get $dependency sha256]} {error {Animation dependency changed after capture}}
+    }
+    dict set scene cache_root [file join $workdir native_cache]
+    dict set scene session_namespace [file normalize $::GX::currentSession]
+    set description [dict get $privateSource description]
+    set receipt [dict create module_id $module module_version [dict get $description module_version] provider_id $provider timeline_id $timelineId sample_times [dict get $timeline times] time_unit [dict get $timeline unit] tracks [dict get $timeline tracks] sources [dict get $description sources] dataset_identities $datasetIdentities render_bindings $renderBindings dependency_identities $dependencyIdentities declared_units [dict get $description declared_units] metadata $metadata render_settings [dict get $description render_settings]]
+    return [dict create scene $scene source_receipt $receipt dependencies $dependencies source_description $description dataset_revisions $revisions]
+}
 proc ::GX::Engine3D::activeTimeline {} {
     set scene [::GX::viewerSceneGet [::GX::Engine3D::ownerModule] [::GX::Engine3D::ownerProvider]]
     set active [dict get $scene active_timeline_id]
@@ -1799,6 +2208,9 @@ proc ::GX::Engine3D::panel {{raiseWindow 1}} {
         pack $window.side.scroll.controls.timelineButtons.$name -side left
     }
     pack $window.side.scroll.controls.timelineButtons -fill x
+    ttk::button $window.side.scroll.controls.timelineExport -text {Export scientific animation/video…} \
+        -command {::GX::Engine3D::showError ::GX::Engine3D::videoExportDialog}
+    pack $window.side.scroll.controls.timelineExport -fill x -pady 4
     ttk::separator $window.side.scroll.controls.fieldSep -orient horizontal
     pack $window.side.scroll.controls.fieldSep -fill x -pady 5
     ttk::label $window.side.scroll.controls.fieldTitle -text "Derived scientific field"

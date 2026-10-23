@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original GUIDE explanatory manuscript. -->
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Curve Digitizer — configuration, preferences and persistence</title><link rel="stylesheet" href="concepts.css"></head>
+<body><main>
+<p class="label">Curve Digitizer 2.0.9 · reference · review draft</p>
+<h1>Know which state you are changing</h1>
+<p class="lead">A source filter, a shared preference, a scientific configuration and a published Dataset have different identities and persistence. Keeping those roles explicit makes a saved workflow easier to understand and reopen.</p>
+
+<nav aria-label="On this page"><ul><li><a href="#namespace">Namespace and source</a></li><li><a href="#configuration">Configuration identity</a></li><li><a href="#scopes">Preference scopes</a></li><li><a href="#apply">Apply and save</a></li><li><a href="#notes">Notes and publication</a></li><li><a href="#reopen">Reopen deliberately</a></li></ul></nav>
+<section id="namespace"><h2>A Dataset namespace filters choices without rebinding the source</h2>
+<p>The vendor manual describes Dataset namespaces as organizational groups for canonical Datasets. They are distinct from filesystem directories and Session Workspaces. A namespace selection narrows the compatible Image Dataset choices; an all-namespaces selection shows compatible images across the Session.</p>
+<p>Changing that filter does not move or rename a Dataset and does not change a saved configuration's bound source ID. A source can be hidden by the current filter while remaining the configuration's source. Do not select a similarly named visible image merely to make the selector look populated.</p>
+<p>The documented catalog refresh tracks revisions and updates available choices. Refreshing a list does not authorize replacing an old source binding or applying its calibration to different bytes. Missing or changed sources need their real diagnostic and deliberate recovery; preserve the existing points and calibration rather than guessing a replacement.</p>
+<p>Keep a selected browser item, an explicitly confirmed source binding and a verified source identity separate in the explanation. For published Quality data, also retain the <a href="quality-concepts.html#source">provider-versus-CORE observation qualification</a>; a provider field alone does not establish current-byte verification.</p>
+</section>
+<section id="configuration"><h2>A named configuration has a stable scientific identity</h2>
+<p>A Digitizer configuration is a Session Interactive Document associated with one source image. It holds scientific axes/calibrations, curves and ordered points, relevant per-configuration state, publication targets and notes. The display name helps you find it; its stable identity distinguishes it from another configuration with similar content.</p>
+<table><caption>Documented configuration operations and identity</caption><thead><tr><th scope="col">Operation</th><th scope="col">Meaning</th><th scope="col">Important boundary</th></tr></thead><tbody>
+<tr><td>New</td><td>Create a new configuration and deliberately choose its compatible source.</td><td>A new display name alone does not bind the intended image.</td></tr>
+<tr><td>Rename</td><td>Change a configuration's display name.</td><td>The stable configuration identity remains the same.</td></tr>
+<tr><td>Duplicate</td><td>Copy state into an independent configuration with a new stable identity.</td><td>A similar initial state does not make subsequent edits shared between the two.</td></tr>
+<tr><td>Delete</td><td>Remove the selected configuration's persisted state after confirmation.</td><td>Already published Datasets are not silently deleted.</td></tr>
+</tbody></table>
+<p>Several configurations can use the same image with different scientific regions or calibrations. A source binding is still meaningful only for its actual raster. The manual blocks changing a calibrated configuration to an unrelated source; use the deliberate new/duplicate/reset workflow appropriate to the real accepted version.</p>
+<p>Do not confuse a configuration identity with a curve identity, calibration measurement identity or calibration transform fingerprint. The same mapping can occur in two different measurement realizations. See <a href="publication-concepts.html#objects">publication objects</a> and <a href="concepts.html#groups">calibration grouping</a>.</p>
+</section>
+<section id="scopes"><h2>Shared defaults and configuration science have different owners</h2>
+<table><caption>Which state an operator intends to change</caption><thead><tr><th scope="col">State</th><th scope="col">Documented scope</th><th scope="col">Interpretation</th></tr></thead><tbody>
+<tr><td>User defaults</td><td>Shared module preferences managed by the normal CORE configuration service.</td><td>A starting preference, not a new calibration of every existing configuration.</td></tr>
+<tr><td>Session overrides</td><td>Explicit shared preferences in the current Session, with normal CORE inheritance/precedence.</td><td>An inherited value and an explicitly overridden value can look the same while having different scope.</td></tr>
+<tr><td>Configuration-owned scientific state</td><td>Axes, measured references, points, source bindings, names and publication targets in the selected Interactive Document.</td><td>Scientific meaning remains attached to the actual configuration and source.</td></tr>
+</tbody></table>
+<p>For example, a scale-bar tick convention, default length or full-image Y-direction preference applies to subsequent calibration actions. Changing a default does not retroactively rescale an accepted measurement. Likewise, hiding a saved scale overlay changes its presentation; resetting physical scale is a separate explicit scientific action.</p>
+<p>The source documents distinguish current configuration appearance, ordering and trace output density from shared presentation/default preferences. Follow the actual accepted configuration service and document state instead of treating every value in a settings window as a global preference. A legacy saved UI snapshot must not silently override the effective shared configuration registry.</p>
+</section>
+<section id="apply"><h2>Applying settings is different from publishing a Dataset</h2>
+<p>The documented settings window groups Display, Digitizing, Calibration, Axes &amp; output, Dataset browser and Configurations. A page can display information or jump to a scientific editor without itself publishing an output. The operational manual maps the current source-confirmed menus/pages/actions; actual unchanged-GUI workflow verification remains pending.</p>
+<p>The manual describes these explicit button outcomes:</p>
+<ul><li><strong>Apply</strong> validates the tabs, commits changed shared preferences through CORE as Session overrides and saves the current Interactive Document. It stays open and reports the actual saved/error result.</li><li><strong>OK</strong> applies and closes only after successful saving.</li><li><strong>Cancel</strong> closes without applying the currently pending edits.</li></ul>
+<p>Settings Apply is not one all-or-nothing transaction across shared preferences and the saved Interactive Document: an error while later saving the configuration can leave earlier shared preference changes committed. Preserve the exact error and inspect both scopes before retrying; a closed dialog does not prove rollback.</p>
+<p>A previous successful Apply remains a committed action; cancelling a later pending draft does not imply that earlier successful saves were undone. Preserve the real save result instead of equating a closed window with success.</p>
+<p>Invalid values or a stale shared draft are handled by the existing CORE transaction owner. Report and reconcile the actual conflict rather than privately overwriting registry state. Applying preferences does not publish a scientific Dataset or edit the source image; output names can be prepared before a separate publication action.</p>
+</section>
+<section id="notes"><h2>Notes, descriptions and structured metadata are separate</h2>
+<p>Configuration notes preserve scientific context such as legend interpretation, distortion or intentionally excluded traces. The documented publication workflow appends nonempty notes as a titled section in the published Dataset's Notes document, preserving existing content.</p>
+<p>Publishing identical notes again does not duplicate that section. Changed notes append a new section preserving earlier published context; empty configuration notes leave existing Dataset Notes unchanged. This history is distinct from structured metadata and from a short Dataset description.</p>
+<p>The vendor manual explicitly describes a possible partial outcome: a scientific Dataset can be published successfully while a subsequent notes update fails. Retain both facts and the actual reported reason. Do not call the scientific publication rolled back simply because its notes were not saved. Use the normal supported recovery and inspect the exact output; see <a href="publication-concepts.html#recovery">per-output recovery</a>.</p>
+</section>
+<section id="reopen"><h2>Reopen the same scientific context deliberately</h2>
+<ol><li>Identify the intended Session, configuration and actual bound source.</li><li>Check which shared values are inherited and which are explicit Session overrides.</li><li>Inspect configuration-owned axes, accepted/active calibrations, curve identities and point ordering.</li><li>Distinguish pending settings drafts from already committed saves.</li><li>Select the exact published output and inspect its notes, scientific metadata and actual Dataset Preview separately.</li><li>Preserve missing, changed, stale or conflicting state with its real reason rather than silently rebinding another source.</li></ol>
+<p>A Session change creates a different ownership context. The documented viewer protects against writing a previous Session's work into a newly selected Session. Final tutorials must demonstrate the actual save/close/reopen and Session/source handling through MAIN's allocated GUI workflow; this chapter provides no executed persistence or concurrency evidence.</p>
+</section>
+<footer><p><a href="index.html">Return to the complete manual</a> · <a href="api-reference.html">Public contract reference</a></p><p>GX210-GUIDE · GPL-3.0-or-later · Review draft for unchanged Curve Digitizer 2.0.9 on deposited dev110. Illustrations and analytical examples are identified explicitly; actual workflow validation remains pending.</p></footer>
+</main></body></html>

@@ -1,0 +1,26 @@
+{
+  "ownership": "Project-associated request under VIEWER_DEVELOPMENT_API_v1; CORE owner adjudicates separately.",
+  "project_snapshot": {
+    "design.gxtxt-viewer": "5ce2c7d8dc97a614fb7a3388b3404bf5ac55ac4ddbf8a0c6817cd5c8a79ead39",
+    "handlers.cpp": "d9fa5f7aa40538ceb856e4ad88e0cadbde7095c3f0b3aeba1649b83bd99d84ff",
+    "project.json": "e87c44bc29084b21097f63edee8927b5940a3bba7600dda05a7ab47a523c4cbc"
+  },
+  "request": {
+    "desired_input_output": "Extend the existing typed GUI Host raster form/owner, without raw paths or canonical arrays, to distinguish already-bound same Dataset/source SHA and Document revision from requested replacement. Same-source reuse must retain ROI Document/accepted geometry/History/presentation and mint no owner/resource; changed source must use existing owner's explicit save/discard/cancel disposition and Session/source/revision guards. Return typed receipt containing reused/new/cancelled status and managed identity; preserve current owner and ROI state on cancel/stale/error. No second source registry or private Viewer cache.",
+    "minimal_acceptance_test": "Owner-level and real installed GUI checks: select same source then Open repeatedly retains exact Document ID/revision/ROIs/History and no extra resource/owner; selecting source only stages choice; changed source while dirty exercises save/discard/cancel, cancelled/failed/stale paths retain original owner and pixels/ROI; Workspace save/reopen retains original binding; late events cannot replace current Document. Verify source hashes and measured responsiveness through MAIN real GUI slots.",
+    "missing_operation_or_contract": "Typed idempotent same-source raster rebind and guarded source-switch/dirty-scene disposition owned by the existing canonical Document/Workspace/History owner.",
+    "public_api_inspected": [
+      "VIEWER_GUI_HOST_API_v1",
+      "VIEWER_DEVELOPMENT_API_v1",
+      "SESSION_WORKSPACE_API_v1",
+      "SCIENTIFIC_RECIPE_API_v1"
+    ],
+    "reproduction": "Source-only: deposited110 core/tcl/viewer_gui_raster_v1.tcl viewerGuiDesignRasterBind calls _viewerGuiRasterBindDataset without a retained binding. Its default binding{} sets created and invokes interactiveDocumentCreate, even for an already selected source. SDK gx::Host exposes raster_bind(viewport,selector) but no current canonical Dataset identity getter or lifecycle-safe rebind/switch contract. No runtime or GUI failure is claimed. Corrected preview stages selector changes and binds only through explicit Start new ROI scene action.",
+    "request_id": "GAP-TASK210-DOC-RASTER-LIFECYCLE",
+    "schema": "gxtxt.core_api_gap.v1",
+    "status": "REQUESTED",
+    "task": "GX-TXT TASK210 Section16 formal dev111 source-reviewed raster lifecycle",
+    "viewer_project": "viewer.unified_document_extraction",
+    "why_existing_api_fails": "Generic selector change plus Open could request two new ROI owners; a local source-ID cache cannot enforce canonical identity/revision or dirty-scene disposition and is not authored. Existing workspace restoration uses a private retained-binding route that the SDK cannot call. The public raster_bind contract cannot express reuse, explicit reset or safe source-switch disposition."
+  }
+}

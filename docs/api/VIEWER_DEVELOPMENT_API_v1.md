@@ -1140,3 +1140,104 @@ callback is retired with the Browser. Metadata and source text are unchanged.
 ## Generated installed-provider reference
 
 Export emits an inert `public_contract` in the generated Restricted Viewer client descriptor. It documents the exact generated `handlers`, `dispatch`, `workspaceOpen` and `texOpen` host signatures and their existing Session/Workspace contexts. API Browser can inspect these declarations without loading the provider. They do not grant Script Bridge or C++ SDK operations. Re-exporting unchanged compiled source retains its native artifact; changing this documentation formatter alone does not invalidate the native build dependencies.
+# Trusted existing Tcl Viewer maintenance (TASK210 additive operations)
+
+The existing Development owner also provides a finite **trusted maintainer**
+workflow for the registered bundled Curve Workbench and Replicate providers.
+Curve Digitizer is excluded entirely: its complete vendor2.0.9 package is
+protected AS IS, not a maintenance target. This is separate from C++ authoring/runtime:
+ordinary C++ policy, source whitelist, compiler, ABI and prebuilt runtime are
+unchanged. No maintenance operation is exposed as a restricted native SDK grant.
+
+`viewerDevelopmentMaintenanceModules` returns only the actual registered bundled
+module/provider/backend identities admitted by CORE. A different registered
+descriptor location is refused. `viewerDevelopmentMaintenanceCreate module
+provider new_project callback` verifies this selection and delegates to the same
+managed `viewerDevelopmentRequest` broker/backend and project-only Landlock grant.
+The backend anchors the source to its actual bundled descriptor/package and
+rechecks original file inventory, SHA256, member modes and source identity.
+
+The additive request operations take `options {request_json JSON}` only:
+
+| Operation | JSON request | Result |
+|---|---|---|
+| `maintenance_init` | `module`, `provider` | Fresh private project and opaque editable source IDs |
+| `maintenance_inspect` | empty object, or `file_id` | Policy/file list, or inert bounded UTF-8 text/SHA256, `language` and actual `exists` |
+| `maintenance_save` | `file_id`, `expected_sha256`, `content` | Atomic Save, or no-replace creation of the exact absent approved document; original module stays unchanged |
+| `maintenance_validate` | empty object | Preserved-file identity/mode checks, Tcl lexical completeness and inert Markdown UTF-8 checks only |
+| `maintenance_export` | empty object | Preserved-payload plugin candidate, full ZIP readback and explicit untested functional status |
+
+CORE owns the editable-file policy; project metadata cannot add paths. Initial
+scope is eight TASK210-approved Workbench source units bounded to 64 KiB each,
+and Replicate's original `api/replicate_viewer.tcl` bounded to 128 KiB. The latter
+accommodates the reviewed producer adapter without removing existing controls
+or splitting it into unapproved files. The exact opaque Replicate
+document IDs are `doc_manual` for existing `MANUAL.md` and
+`doc_interoperability` for `DIGITIZER_INTEROPERABILITY_API_v1.md`, each inert
+Markdown within 64 KiB. No other path may be created. C++ keeps its original
+64 KiB source policy. JSON transport is bounded to 1 MiB for escaped text;
+this does not increase source limits. Source and metadata must be ordinary
+singly linked files with no linked ancestors, traversal, special files or NUL.
+Inventory is bounded to 512 files / 64 MiB per original module.
+
+New projects use `gxtxt.viewer_maintenance_project.v2` with a fixed policy revision
+and explicit original-absence list. Old optional prototype projects remain
+untouched and require explicit fresh staging; no automatic metadata upgrade
+discards their edits. An absent approved document returns `exists=false`,
+`sha256=null` and empty content. Only this absence accepts JSON null as the
+expected SHA; an empty string or guessed empty-file digest does not. First Save
+publishes without replacement and with mode0644. Existing files require their
+real inspected SHA and retain their original mode. An intervening creation,
+stale hash, changed absence provenance or symlink/hardlink refuses the Save.
+
+Initialization supports an **absent fresh project path**, reserved by exclusive
+mkdir. Existing directories, including empty ones, are refused and preserved.
+Initialization creates the persistent `derived/maintenance.lock`; later requests
+require it and never create, replace or unlink it. Same-project cooperative
+inspect/save/validate/export and their load/preimage/readback/revalidation run
+under nonblocking POSIX flock. A busy request refuses without waiting or changing
+the editor baseline. The opened lock must be owned, singly linked, mode0600,
+regular and still named by the same pathname/inode; descriptors use NOFOLLOW and
+CLOEXEC. Source reads bind inode/link/mode checks to the actual opened FD before
+and after bounded reads. This is cooperative owner serialization, **not** a
+hostile-process filesystem CAS or account-wide security guarantee.
+
+A committed save is byte/mode read back before SAVED. A lost/cancelled response
+or failed postcommit readback is uncertain: retain editor text and resolve by
+read-only inspection before any mutation retry. No blind rollback/retry occurs.
+
+Every action rejects altered original provenance, foreign identities, removed
+members, unapproved additions and changes to unapproved source/resources/native
+binaries or permissions. Only the exact originally absent optional document may
+be added, and it then enters the complete candidate inventory. Editing, Save and lexical
+validation never source/evaluate Tcl or execute authored commands. Lexical
+completeness is **not** runtime/security/scientific/GUI validation. Markdown is
+inert UTF-8 data and is never checked as Tcl or claimed semantically validated.
+A candidate
+retains original backend, API, protected-core status, licensing, resources and
+native bytes/modes; only approved source changes, a deterministic patch-version
+bump in the two existing package descriptors and regenerated checksums differ.
+The standard package owner writes the ZIP and refuses existing output.
+Replicate descriptor/public-contract/capability contributions remain MAIN-owned;
+this finite file policy does not provide a metadata editor or register new API
+operations. A final changed public contract requires its own exact owner review.
+
+Maintenance export does not install, activate or hot-reload a Viewer. Normal
+Plugin Manager/protected-core integration and real installed GUI/science checks
+remain with their established owners. Builder import/compare coverage does not
+claim that a layout edit has been applied to the original widget construction.
+Actual Builder fragment adoption for a changed layout remains an explicit
+original-Viewer-owner integration obligation.
+
+Legacy packages carrying both root SHA256SUMS and SHA256SUMS.txt retain both.
+The standard package writer regenerates identical complete inventories covering
+every nonmanifest member; both names are excluded from hash cycles. New Builder
+packages remain TXT-only. Both manifest updates are explicit packaging deltas;
+all other original member bytes/modes remain subject to preservation checks.
+Both candidate ZIP and checksum sidecar use exclusive atomic link publication;
+the checksum is completely staged/flushed first. Existing entries, including
+dangling links, are preserved. If a checksum appears after preflight, the complete
+ZIP remains and the competing checksum is untouched; export reports a partial
+publication for explicit inspection. This is not a crash-atomic two-file pair,
+automatic rollback, repair or permission to rerun blindly. Default Builder
+signature, default member0644 and caller/umask sidecar permissions are retained.

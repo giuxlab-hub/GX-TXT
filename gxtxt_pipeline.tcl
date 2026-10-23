@@ -109,7 +109,7 @@
 # Full release history: CHANGELOG.md
 
 namespace eval ::GX {
-    variable version "0.9.8.10-dev-110"
+    variable version "0.9.8.10-dev-111"
     variable scriptDir [file dirname [file normalize [info script]]]
     variable cfg
     variable ch
@@ -228,6 +228,9 @@ source [file join $::GX::scriptDir app gui cache_storage_panel.tcl]
 source [file join $::GX::scriptDir core tcl importer_builder_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl script_execution_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl script_job_api_v1.tcl]
+# Normal trusted prebuilt admission; unavailable credentials remain fail closed.
+::GX::ScientificLibraryManagerAPIv1::_credentialLoadNative $::GX::scriptDir
+source [file join $::GX::scriptDir core tcl scientific_library_credentials_gui_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_execution_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl scientific_io_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl resource_lifecycle_api_v1.tcl]
@@ -260,6 +263,7 @@ source [file join $::GX::scriptDir core tcl dataset_preview_paging_v1.tcl]
 source [file join $::GX::scriptDir core tcl native2d_host_v1.tcl]
 source [file join $::GX::scriptDir core tcl dataset_transform_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl dataset_transform_responsive_v1.tcl]
+source [file join $::GX::scriptDir core tcl viewer_gui_transform_v1.tcl]
 source [file join $::GX::scriptDir core tcl ui_field_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl viewer_gui_host_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl curve_source_api_v1.tcl]
@@ -271,6 +275,7 @@ source [file join $::GX::scriptDir core tcl file_publication_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl interactive_document_tex_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_gui_host_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_gui_host_v2.tcl]
+source [file join $::GX::scriptDir core tcl scientific_video_export_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl statistical_result_semantics_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_geometry_api_v1.tcl]
 source [file join $::GX::scriptDir core tcl native3d_organization_v1.tcl]

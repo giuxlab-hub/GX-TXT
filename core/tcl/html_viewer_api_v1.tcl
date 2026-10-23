@@ -280,6 +280,9 @@ proc ::GX::HTMLViewer::_accept {handle line} {
     set frame [string range $line 8 end]
     if {[string bytelength $frame]>16384 || [catch {dict size $frame}] || ![dict exists $frame schema] || [dict get $frame schema] ne {gxtxt.html_runtime.v1}} {_error RUNTIME_PROTOCOL {Invalid bounded HTML runtime receipt.}}
     set instance [_get $handle]
+    # Cancellation may leave already-drained receipts in this poll's FIFO.
+    # Retain the first stale diagnostic; managed completion still owns retirement.
+    if {[dict exists $instance stale_failure]} return
     foreach key {event state generation source_id source_sha256 request_id zoom_percent can_back can_forward} {if {![dict exists $frame $key]} {_error RUNTIME_PROTOCOL {Incomplete HTML runtime receipt.}}}
     set generation [dict get $frame generation]
     if {![string is integer -strict $generation]} {_error RUNTIME_PROTOCOL {Invalid HTML source generation.}}
@@ -357,18 +360,49 @@ proc ::GX::HTMLViewer::_accept {handle line} {
     }
     _notify $handle
 }
+proc ::GX::HTMLViewer::_staleReason {code} {
+    # Closed diagnostics only: never publish caught text, paths or native frames.
+    switch -- $code {
+        SOURCE_CHANGED {set message {HTML source changed; reopen the document.}}
+        SESSION_CHANGED {set message {HTML Session changed; reopen the document.}}
+        HOST_GONE {set message {The HTML host is no longer available; reopen it.}}
+        RUNTIME_DRAIN {set message {HTML runtime output could not be read; reopen the document.}}
+        RUNTIME_RECEIPT {set message {HTML runtime receipt processing failed; reopen the document.}}
+        RUNTIME_PROTOCOL {set message {An HTML runtime receipt was invalid; reopen the document.}}
+        RUNTIME_EXITED {set message {HTML runtime stopped or was cancelled; reopen the document.}}
+        RUNTIME_UNAVAILABLE {set message {The HTML runtime is unavailable; reopen the document.}}
+        NAVIGATION_BUSY {set message {The HTML runtime control queue was busy; reopen the document.}}
+        SOURCE_UNAVAILABLE {set message {The HTML source is unavailable; reopen the document.}}
+        SOURCE_KIND - INVALID_ARGUMENT {set message {HTML source or control admission was refused; reopen the document.}}
+        UNKNOWN_HANDLE - HOST_IN_USE - RUNTIME_ACTIVE {set message {The HTML presentation owner is unavailable; reopen it.}}
+        default {set code RUNTIME_GUARD;set message {The HTML presentation could not be checked; reopen it.}}
+    }
+    return [dict create code $code message $message]
+}
+proc ::GX::HTMLViewer::_failureCode {options fallback} {
+    if {[dict exists $options -errorcode]} {
+        set errorcode [dict get $options -errorcode]
+        if {![catch {llength $errorcode} count] && $count==3 && [lrange $errorcode 0 1] eq {GX HTML}} {
+            set code [lindex $errorcode 2]
+            if {[dict get [_staleReason $code] code] eq $code} {return $code}
+        }
+    }
+    return $fallback
+}
 proc ::GX::HTMLViewer::_poll {handle} {
     variable instances
     if {![dict exists $instances $handle] || [dict get $instances $handle managed_request] eq {}} return
     dict set instances $handle timer {}
     if {[catch {
         set result [::GX::scriptJobRequestDrain [dict get $instances $handle managed_request] 16]
-        if {![dict exists $instances $handle]} return
+    } ignored options]} {_stale $handle [_failureCode $options RUNTIME_DRAIN];return}
+    if {![dict exists $instances $handle]} return
+    if {[catch {
         foreach line [dict get $result messages] {_accept $handle $line}
-    }]} {_stale $handle RUNTIME_PROTOCOL;return}
+    } ignored options]} {_stale $handle [_failureCode $options RUNTIME_RECEIPT];return}
     if {[dict exists $instances $handle] && [dict get $instances $handle managed_request] ne {}} {
         if {![dict get $result active]} {_ended $handle {};return}
-        if {[dict get $result cancelled] ne {}} {_stale $handle RUNTIME_EXITED;return}
+        if {[dict get $result cancelled] ne {}} {_stale $handle RUNTIME_EXITED [dict get $result cancelled];return}
     }
     if {[dict exists $instances $handle] && [dict get $instances $handle managed_request] ne {}} {
         set current [dict get $instances $handle]
@@ -386,12 +420,22 @@ proc ::GX::HTMLViewer::_watch {handle} {
     }
     dict set instances $handle watcher [after 1000 [list ::GX::HTMLViewer::_watch $handle]]
 }
-proc ::GX::HTMLViewer::_stale {handle code} {
+proc ::GX::HTMLViewer::_stale {handle code {transportReason {}}} {
     variable instances
     if {![dict exists $instances $handle]} return
+    if {[dict exists $instances $handle stale_failure] || [dict get $instances $handle state] eq {stale}} return
+    # Latch before detach: setting state=stale first would bypass its Cancel.
+    # This is a small private field in the same bounded instance, not a registry.
+    set failure [_staleReason $code]
+    if {[dict get $failure code] eq {RUNTIME_EXITED}} {
+        if {$transportReason ni {closed read_error write_error output_limit timeout cancelled}} {set transportReason unknown}
+        dict append failure message " Managed transport reason: $transportReason."
+    }
+    dict set instances $handle stale_failure $failure
     catch {detach $handle}
-    dict set instances $handle state stale;dict set instances $handle status {HTML source or host changed; reopen it}
-    dict set instances $handle last_error [dict create code $code message {HTML source or host changed; reopen it.}]
+    if {![dict exists $instances $handle]} return
+    dict set instances $handle state stale;dict set instances $handle status [dict get $failure message]
+    dict set instances $handle last_error $failure
     catch {_notify $handle}
 }
 proc ::GX::HTMLViewer::_ended {handle response} {

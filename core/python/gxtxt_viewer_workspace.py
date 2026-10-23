@@ -64,6 +64,35 @@ def review(project, request):
     for action,binding in new_trusted.items():
         if action in old_handlers and old_trusted.get(action)!=binding:deny('New presentation binding would intercept an original callback: '+action)
     reserved={'fit','zoom_in','zoom_out'}|set(new_trusted)
+    # Narrow Circuit addition: tool selection stays in the existing host's
+    # validated local diagram route. Original C++/grants/203 declarations and
+    # callbacks are still proven by the unchanged checks above/below.
+    diagram_actions={}
+    for component in new_components[len(old_components):]:
+        p=component['properties']
+        if component['type']!='action' or 'diagram_tool' not in p:continue
+        if old['module_id']!='viewer.circuit_workbench' or old['provider_id']!='circuit_workbench' or len(old_components)!=203:
+            deny('Appended discrete tools require the original203-control Circuit contract')
+        pair=t.splitlist(p['diagram_tool'])
+        if len(pair)!=2:deny('Appended diagram tool needs one original target and registered kind')
+        target,tool=pair
+        diagram=old_by_id.get(target)
+        if target!='graphics' or not diagram or diagram['type']!='native2d' or diagram['properties'].get('diagram_catalog')!='electrical.basic':
+            deny('Appended discrete tool requires the original electrical diagram')
+        if tool not in {'nmos','pmos','spst','spdt'} or component['id']!='tool_'+tool or component['parent']!='palette':
+            deny('Appended discrete tool is outside the finite Circuit addition')
+        action=p.get('action')
+        if action!='diagram_'+tool or action in old_handlers or action in new_trusted or action in diagram_actions:
+            deny('Appended diagram tool cannot intercept an existing or competing callback')
+        if 'diagram_command' not in requested.get('NATIVE2D_VIEWPORT_HOST_v1',set()):
+            deny('Appended diagram tool lacks the unchanged existing command grant')
+        h=dictionary(new_handlers.get(action,''))
+        if h!={'arguments':'window action','effect':'presentation'}:
+            deny('Appended diagram tool requires an inert presentation handler contract')
+        # validate(project) already verified SAME registered catalog, symbol
+        # and ToolBindings. Do not spawn another CORE per appended action.
+        diagram_actions[action]=component['id']
+    reserved.update(diagram_actions)
     for name,value in old_handlers.items():
         if new_handlers.get(name)!=value:deny('Existing handler contract changed: '+name)
     for name,value in new_handlers.items():
@@ -185,6 +214,10 @@ def review(project, request):
             if set(p)-{'label','tooltip','choices','default','width'} or t.splitlist(p.get('choices',''))!=('voltage','current') or p.get('default')!='voltage':
                 deny('New probe mode must be an inert voltage/current choice with voltage default')
             defaults[ident]='voltage'
+        elif kind=='action' and p.get('action') in diagram_actions:
+            if ident!=diagram_actions[p['action']] or set(p)-common-{'action','diagram_tool'}:
+                deny('Appended discrete tool carries a non-inert or competing property')
+            changes.append('diagram_tool_action:'+ident)
         elif kind in plain:
             allowed=common|({'action','component_visibility'} if kind=='action' else {'actions','visibility_commands'} if kind=='menu' else {'default','component_visibility'} if kind in {'toggle','checkbutton'} else {'default','choices'} if kind in {'choice','combobox'} else {'default','datatype','min','max'} if kind in {'field','entry'} else {'orientation'} if kind=='splitter' else set())
             if set(p)-allowed:deny('Appended component has a non-inert property: '+ident)

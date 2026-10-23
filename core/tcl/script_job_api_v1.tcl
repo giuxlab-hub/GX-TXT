@@ -41,12 +41,76 @@ proc ::GX::scriptJobAsync {command payload callback {options {}}} {
     fileevent $pipe readable [list ::GX::scriptJobReadable $request]
     return $request
 }
+proc ::GX::_scriptJobRequestReadResume {request} {
+    variable scriptJobRequests
+    if {![dict exists $scriptJobRequests $request receive_paused]} return
+    # Clear before touching the channel: a failed rearm uses ordinary Cancel,
+    # which must not recursively try the same failed rearm.
+    dict unset scriptJobRequests $request receive_paused
+    set pipe [dict get $scriptJobRequests $request pipe]
+    if {[catch {fileevent $pipe readable [list ::GX::scriptJobReadable $request]}]} {
+        dict set scriptJobRequests $request eof 1
+        scriptJobRequestCancel $request read_error
+    }
+}
+proc ::GX::_scriptJobRequestReadPause {request} {
+    variable scriptJobRequests
+    if {![dict exists $scriptJobRequests $request] || [dict get $scriptJobRequests $request cancelled] ne {}} return
+    dict set scriptJobRequests $request receive_paused 1
+    if {[catch {fileevent [dict get $scriptJobRequests $request pipe] readable {}}]} {
+        dict set scriptJobRequests $request eof 1
+        scriptJobRequestCancel $request read_error
+    }
+}
+proc ::GX::_scriptJobRequestFrame {request} {
+    variable scriptJobRequests
+    if {![dict exists $scriptJobRequests $request]} {return 0}
+    set entry [dict get $scriptJobRequests $request]
+    set data [dict get $entry data];set maximum [dict get $entry options max_bytes]
+    if {$maximum>0} {
+        # Read only after complete staged lines are consumed. The old bounded
+        # prefix plus ONE existing 65536-character read bounds parked staging;
+        # this is a character bound, not an assertion about UTF-8 byte width.
+        set invalid [expr {[string length $data]>$maximum+65536}]
+        if {!$invalid} {
+            foreach line [split $data \n] {
+                if {[string bytelength $line]>$maximum} {set invalid 1;break}
+            }
+        }
+        if {$invalid} {
+            dict set entry data [string range $data 0 [expr {max(0,$maximum/8-1)}]]
+            dict set scriptJobRequests $request $entry
+            scriptJobRequestCancel $request output_limit
+            return 0
+        }
+    }
+    # Do not consume the next frame without a slot. The exact suffix (including
+    # empty frames) remains with this same owner until its consumer frees space.
+    while {[llength [datasetPublicationV2DictDefault $entry messages {}]]<16 && [set newline [string first \n $data]]>=0} {
+        dict lappend entry messages [string range $data 0 [expr {$newline-1}]]
+        set data [string range $data [expr {$newline+1}] end]
+    }
+    dict set entry data $data
+    dict set scriptJobRequests $request $entry
+    return 1
+}
 proc ::GX::scriptJobReadable {request} {
     variable scriptJobRequests
     if {![dict exists $scriptJobRequests $request]} return
     set entry [dict get $scriptJobRequests $request];set pipe [dict get $entry pipe]
     set ended [dict exists $entry eof]
-    if {!$ended} {
+    set deferred 0
+    if {!$ended && [dict get $entry options duplex] && [dict get $entry cancelled] eq {}} {
+        if {![_scriptJobRequestFrame $request]} return
+        set entry [dict get $scriptJobRequests $request]
+        set deferred [expr {[llength [datasetPublicationV2DictDefault $entry messages {}]]>=16}]
+        if {!$deferred} {
+            _scriptJobRequestReadResume $request
+            if {![dict exists $scriptJobRequests $request]} return
+            set entry [dict get $scriptJobRequests $request];set ended [dict exists $entry eof]
+        }
+    }
+    if {!$ended && !$deferred} {
         if {[catch {read $pipe 65536} chunk]} {
             # A failed/closed channel must still use the existing cancellation,
             # escalation and terminal callback owner, even without another EOF.
@@ -64,28 +128,30 @@ proc ::GX::scriptJobReadable {request} {
             # retaining additional unsolicited native output.
             dict set entry data {}
         } else {
-        set data [dict get $entry data]
-        while {[set newline [string first \n $data]]>=0} {
-            set line [string range $data 0 [expr {$newline-1}]]
-            set data [string range $data [expr {$newline+1}] end]
-            if {$maximum>0 && [string bytelength $line]>$maximum} {dict set scriptJobRequests $request $entry;scriptJobRequestCancel $request output_limit;return}
-            if {[llength [datasetPublicationV2DictDefault $entry messages {}]]>=16} {
-                dict set entry data {};dict set scriptJobRequests $request $entry
-                scriptJobRequestCancel $request output_limit;return
-            }
-            dict lappend entry messages $line
-        }
-        dict set entry data $data
+        dict set scriptJobRequests $request $entry
+        if {![_scriptJobRequestFrame $request]} return
+        set entry [dict get $scriptJobRequests $request]
         }
     }
-    if {$maximum>0 && [string bytelength [dict get $entry data]]>$maximum} {
+    if {![dict get $entry options duplex] && $maximum>0 && [string bytelength [dict get $entry data]]>$maximum} {
         dict set entry data [string range [dict get $entry data] 0 [expr {max(0,$maximum/8-1)}]]
         dict set scriptJobRequests $request $entry
         scriptJobRequestCancel $request output_limit
         set entry [dict get $scriptJobRequests $request]
     }
     dict set scriptJobRequests $request $entry
-    if {!$ended && ![eof $pipe]} return
+    if {!$ended} {
+        if {[catch {eof $pipe} atEOF]} {
+            scriptJobRequestCancel $request read_error
+            dict set scriptJobRequests $request eof 1
+            set entry [dict get $scriptJobRequests $request]
+        } elseif {!$atEOF} {
+            if {[dict get $entry options duplex] && [dict get $entry cancelled] eq {} && [llength [datasetPublicationV2DictDefault $entry messages {}]]>=16} {
+                _scriptJobRequestReadPause $request
+            }
+            return
+        }
+    }
     if {[dict get $entry options duplex] && [dict get $entry cancelled] eq {}} {
         # A persistent native leader can crash after fork while a descendant
         # redirects stdout. Retain ownership until the whole group is reaped.
@@ -122,7 +188,12 @@ proc ::GX::scriptJobRequestExchange {request payload {timeout_ms 12000}} {
         set entry [dict get $::GX::scriptJobRequests $request]
         if {[dict get $entry cancelled] ne {}} {error {Managed compiled request was cancelled}}
         set messages [datasetPublicationV2DictDefault $entry messages {}]
-        if {[llength $messages]} {dict set ::GX::scriptJobRequests $request messages [lrange $messages 1 end];return [lindex $messages 0]}
+        if {[llength $messages]} {
+            dict set ::GX::scriptJobRequests $request messages [lrange $messages 1 end]
+            _scriptJobRequestReadResume $request
+            if {![dict exists $::GX::scriptJobRequests $request] || [dict get $::GX::scriptJobRequests $request cancelled] ne {}} {error {Managed compiled request was cancelled}}
+            return [lindex $messages 0]
+        }
         if {[clock milliseconds]>=$deadline} {scriptJobRequestCancel $request timeout;error {Compiled local event exceeded its bounded response time}}
         after 1
     }
@@ -165,18 +236,41 @@ proc ::GX::scriptJobRequestDrain {request {maximum 16}} {
     if {![dict get $scriptJobRequests $request options duplex]} {
         return -code error -errorcode {GXTXT SCRIPT_JOB INACTIVE} {Managed duplex request is no longer active}
     }
+    # Blocking Exchange/Bridge callers do not pump the ordinary after timer.
+    # Service only this already-cancelled request's captured escalation deadline.
+    set entry [dict get $scriptJobRequests $request]
+    if {[dict get $entry cancelled] ne {} && ![dict exists $entry escalated] && [dict exists $entry kill_deadline_ms] && [clock milliseconds]>=[dict get $entry kill_deadline_ms]} {
+        _scriptJobRequestEscalate $request
+        if {![dict exists $scriptJobRequests $request]} {return $inactive}
+    }
+    # Free existing FIFO capacity before ONE readable service. Held frames are
+    # still subordinate to terminal/cancellation authority from that service.
+    set entry [dict get $scriptJobRequests $request]
+    set messages {}
+    if {[dict get $entry cancelled] eq {}} {
+        set queued [datasetPublicationV2DictDefault $entry messages {}]
+        set messages [lrange $queued 0 [expr {$maximum-1}]]
+        dict set scriptJobRequests $request messages [lrange $queued $maximum end]
+        _scriptJobRequestReadResume $request
+    }
     scriptJobReadable $request
     # Readable can terminalize and invoke arbitrary trusted host cleanup. Only
     # the actual surviving entry may supply messages or receive the residuals.
     if {![dict exists $scriptJobRequests $request]} {return $inactive}
     set entry [dict get $scriptJobRequests $request]
     set cancelled [dict get $entry cancelled]
-    set messages {}
     if {$cancelled eq {}} {
         set queued [datasetPublicationV2DictDefault $entry messages {}]
-        set messages [lrange $queued 0 [expr {$maximum-1}]]
-        dict set scriptJobRequests $request messages [lrange $queued $maximum end]
+        set remaining [expr {$maximum-[llength $messages]}]
+        if {$remaining>0} {
+            lappend messages {*}[lrange $queued 0 [expr {$remaining-1}]]
+            dict set scriptJobRequests $request messages [lrange $queued $remaining end]
+            _scriptJobRequestReadResume $request
+        }
+        if {![dict exists $scriptJobRequests $request]} {return $inactive}
+        set cancelled [dict get $scriptJobRequests $request cancelled]
     }
+    if {$cancelled ne {}} {set messages {}}
     return [dict create request_id $request active 1 cancelled $cancelled messages $messages]
 }
 proc ::GX::_scriptJobRequestSignal {request signal} {
@@ -197,19 +291,35 @@ proc ::GX::scriptJobRequestCancel {request {reason cancelled}} {
     if {$reason ni {cancelled timeout output_limit closed read_error write_error}} {error {Unknown managed request cancellation reason.}}
     if {![dict exists $scriptJobRequests $request] || [dict get $scriptJobRequests $request cancelled] ne {}} {return 0}
     dict set scriptJobRequests $request cancelled $reason
+    dict set scriptJobRequests $request kill_deadline_ms [expr {[clock milliseconds]+500}]
     _scriptJobRequestSignal $request TERM
     dict set scriptJobRequests $request kill_timer [after 500 [list ::GX::_scriptJobRequestEscalate $request]]
+    # A full receive window may have paused fileevents before EOF was known.
+    # Cancellation must resume discard-reading or escalation cannot retire it.
+    _scriptJobRequestReadResume $request
     return 1
 }
 proc ::GX::_scriptJobRequestEscalate {request} {
-    if {![dict exists $::GX::scriptJobRequests $request]} return
-    _scriptJobRequestSignal $request KILL
+    if {![dict exists $::GX::scriptJobRequests $request] || [dict exists $::GX::scriptJobRequests $request escalated]} return
     dict set ::GX::scriptJobRequests $request escalated 1
+    set timer [dict get $::GX::scriptJobRequests $request kill_timer]
+    if {$timer ne {}} {after cancel $timer;dict set ::GX::scriptJobRequests $request kill_timer {}}
+    _scriptJobRequestSignal $request KILL
     if {[dict exists $::GX::scriptJobRequests $request eof]} {scriptJobReadable $request}
 }
 proc ::GX::scriptJobRequestsShutdown {actual} {
     if {$actual ne {.}} return
-    dict for {request entry} $::GX::scriptJobRequests {if {[dict get $entry options ui_lifetime]} {_scriptJobRequestSignal $request KILL}}
+    dict for {request entry} $::GX::scriptJobRequests {
+        if {[dict get $entry options ui_lifetime]} {
+            _scriptJobRequestSignal $request KILL
+            # A rearmed full queue must discard, rather than pause again.
+            # Enter the same Cancel/EOF/escalation owner; first reason wins.
+            if {[dict get $entry options duplex]} {
+                scriptJobRequestCancel $request closed
+                _scriptJobRequestReadResume $request
+            }
+        }
+    }
 }
 proc ::GX::scriptJobSubmit {reference parameters {options {}} {callback {}}} {
     if {[string match core-service:* $reference] || [dict exists $options core_service]} {error {Private CORE services cannot be submitted through user Script Job APIs}}

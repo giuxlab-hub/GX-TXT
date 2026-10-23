@@ -14,6 +14,7 @@ import sys
 import tempfile
 import subprocess
 import os
+import uuid
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 
@@ -558,31 +559,80 @@ def public_api_files(data: dict) -> dict[str, bytes]:
     return result
 
 
-def write_module_zip(payload: dict[str, bytes], module_id: str, version: str, output: Path) -> tuple[Path, str]:
+def module_package_payload(payload: dict[str, bytes]) -> dict[str, bytes]:
+    """Normalize conventional root checksums without self/cross-manifest cycles.
+
+    Existing legacy packages may carry both spellings. They have identical
+    coverage of every other member; keep that convention and refresh both.
+    New Builder packages continue to receive SHA256SUMS.txt only.
+    """
+    dual = 'SHA256SUMS' in payload
+    result = {name: raw for name, raw in payload.items() if name not in {'SHA256SUMS', 'SHA256SUMS.txt'}}
+    manifest = ''.join(f'{digest(result[name])}  {name}\n' for name in sorted(result)).encode()
+    result['SHA256SUMS.txt'] = manifest
+    if dual:
+        result['SHA256SUMS'] = manifest
+    return result
+
+
+def write_module_zip(payload: dict[str, bytes], module_id: str, version: str, output: Path, *, file_modes: dict[str, int] | None = None) -> tuple[Path, str]:
     """Shared deterministic standard-package writer for every Builder profile."""
     output = output.resolve(); output.mkdir(parents=True, exist_ok=True)
     zip_path = output / f"{module_id}_{version}.zip"
-    if zip_path.exists() or zip_path.with_suffix('.zip.sha256').exists():
+    checksum_path = zip_path.with_suffix('.zip.sha256')
+    if os.path.lexists(zip_path) or os.path.lexists(checksum_path):
         raise FileExistsError(f'refusing to overwrite {zip_path}')
     payload = dict(payload)
-    payload.pop('SHA256SUMS.txt', None)
-    payload['SHA256SUMS.txt'] = ''.join(f'{digest(payload[name])}  {name}\n' for name in sorted(payload)).encode()
+    if file_modes is not None:
+        if not isinstance(file_modes, dict):
+            raise ValueError('Package modes require a member-to-permissions mapping')
+        for name, mode in file_modes.items():
+            if (not isinstance(name, str) or name in {'', '.'} or name not in payload or '\\' in name
+                    or Path(name).as_posix() != name or name.startswith('/')
+                    or '..' in Path(name).parts or type(mode) is not int
+                    or mode < 0 or mode > 0o777):
+                raise ValueError('Package modes must name existing normalized regular members with nonprivileged permissions')
+    payload = module_package_payload(payload)
     with tempfile.NamedTemporaryFile(dir=output, prefix='.viewer-package-', delete=False) as temporary_file:
         temporary = Path(temporary_file.name)
+    temporary_checksum = None
     try:
         with ZipFile(temporary, 'w', compression=ZIP_DEFLATED, compresslevel=9) as archive:
             for name in sorted(payload):
                 if name.startswith('/') or '..' in Path(name).parts:
                     raise ValueError('Invalid module asset path')
                 info = ZipInfo(name, date_time=(2020, 1, 1, 0, 0, 0))
-                info.compress_type = ZIP_DEFLATED; info.external_attr = 0o100644 << 16
+                mode = (file_modes or {}).get(name, 0o644)
+                if type(mode) is not int or mode < 0 or mode > 0o777:
+                    raise ValueError('Package modes must be ordinary nonprivileged permission bits')
+                info.compress_type = ZIP_DEFLATED; info.external_attr = (0o100000 | mode) << 16
                 archive.writestr(info, payload[name], compress_type=ZIP_DEFLATED, compresslevel=9)
-        # No partial package is installable; link promotion also refuses races.
+        with temporary.open('rb') as stream:
+            os.fsync(stream.fileno())
+        zip_sha = digest(temporary.read_bytes())
+        checksum_name = output / ('.viewer-checksum-' + uuid.uuid4().hex)
+        # Match the old sidecar's ordinary create/umask permissions, but finish
+        # and flush it privately before exclusive publication. O_EXCL means a
+        # coincident temporary name is never adopted or cleaned as ours.
+        fd = os.open(checksum_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC, 0o666)
+        temporary_checksum = checksum_name
+        with os.fdopen(fd, 'wb') as stream:
+            stream.write(f'{zip_sha}  {zip_path.name}\n'.encode('utf-8'))
+            stream.flush(); os.fsync(stream.fileno())
+        # Each complete member is published without replacement. These two
+        # links are deliberately not a crash-atomic pair/rollback transaction.
         os.link(temporary, zip_path)
+        try:
+            os.link(temporary_checksum, checksum_path)
+        except OSError as error:
+            message = f'ZIP retained at {zip_path}; checksum publication failed at {checksum_path}; inspect this partial outcome before any retry'
+            if isinstance(error, FileExistsError):
+                raise FileExistsError(error.errno, message, str(checksum_path)) from error
+            raise OSError(error.errno, message, str(checksum_path)) from error
     finally:
         temporary.unlink(missing_ok=True)
-    zip_sha = digest(zip_path.read_bytes())
-    zip_path.with_suffix('.zip.sha256').write_text(f'{zip_sha}  {zip_path.name}\n', encoding='utf-8')
+        if temporary_checksum is not None:
+            temporary_checksum.unlink(missing_ok=True)
     return zip_path, zip_sha
 
 

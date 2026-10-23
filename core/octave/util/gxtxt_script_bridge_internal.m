@@ -295,6 +295,13 @@ function value=unpack_value(wire,depth,arrays)
   if(nargin<3),arrays=containers.Map('KeyType','char','ValueType','any');endif
   if(depth>32),error('GXTXT:ScriptBridge:Transport','bridge result nesting exceeds 32');endif
   switch(wire.kind)
+    case 'null'
+      if(!isstruct(wire)||numel(wire)!=1||!isequal(fieldnames(wire),{'kind'}))
+        error('GXTXT:ScriptBridge:Transport','invalid null bridge value');
+      endif
+      % Octave has no distinct JSON-null scalar. Keep result_json authoritative;
+      % ordinary [] arguments retain their existing numeric-array encoding.
+      value=[];
     case 'string',value=wire.value;
     case 'logical',value=logical(wire.value);
     case 'numeric_scalar',value=str2double(wire.value);

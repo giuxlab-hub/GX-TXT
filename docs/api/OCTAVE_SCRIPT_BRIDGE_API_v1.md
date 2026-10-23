@@ -7,6 +7,14 @@ discover and call GX-TXT public APIs registered for script use. The
 `analysis.octave_script` runner starts and stops the bridge around each user
 script. Scripts should not call those lifecycle functions themselves.
 
+The shared transport can return an explicit one-field `{"kind":"null"}` value.
+Octave represents that result as `[]` because it has no separate JSON-null scalar.
+This convenience projection is lossy: use an API's authoritative `result_json`
+to distinguish null from an empty numeric value. Sending ordinary `[]` continues
+to send an empty numeric array; it does not construct null. Extra fields on a null
+envelope are rejected. The matching framework server and client must be deployed
+together; this adds no operation, grant or scientific missing-value policy.
+
 ## Stable Octave functions
 
 ```octave

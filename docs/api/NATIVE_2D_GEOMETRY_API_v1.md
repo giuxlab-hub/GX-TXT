@@ -1271,3 +1271,17 @@ Independent execution verified 17 focused owner/presentation/lifetime checks,
 including reordered no-op updates, the real 16,384-byte capacity boundary,
 unchanged state after rejection, generation replacement and a real native
 `scene_bounds` live/closed transition. This is not installed GUI acceptance.
+
+### dev111 Circuit discrete catalog source candidate
+
+The same bounded `electrical.basic` catalog adds original NMOS/PMOS4terminal
+paths, and SPST/SPDT paths with canonical `position` choice variants. Existing
+catalog registration, DiagramValidate/Edit/Endpoint/Project, native placement,
+Properties, History and Workspace persistence remain the owners. No constructor,
+render path, private graph or public signature is added. See the exact terminal,
+SI geometry, finite static-contact and educational-model contract in
+[Scientific Execution](SCIENTIFIC_EXECUTION_API_v1.md#dev111-discrete-device-source-candidate-acceptance-pending).
+Catalog/source presence is not GUI, physical model or installed acceptance;
+MAIN separately qualifies actual first-click kinds/pins/wiring/Properties,
+History/save-reopen and normal/narrow visual/performance parity. Fuse physics
+and manual fuse simulation remain unsupported.

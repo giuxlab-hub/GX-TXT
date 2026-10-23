@@ -64,7 +64,7 @@ proc ::GX::datasetPreviewLiveCancel {} {
 }
 proc ::GX::datasetPreviewLiveOptions {id} {
     set options [datasetPreviewConfigurationRead $id]
-    set options [dict remove $options last_render version schema_identity types]
+    set options [dict remove $options last_render version schema_identity types retained_visibility]
     foreach axis {x y z} {if {[info exists ::GX::ui(previewMap,$axis)]} {dict set options $axis $::GX::ui(previewMap,$axis)}}
     if {[info exists ::GX::ui(previewMap,filters)]} {dict set options selections $::GX::ui(previewMap,filters)}
     return $options
@@ -162,6 +162,21 @@ proc ::GX::datasetPreviewLiveActivate {id {explicit 0}} {
     datasetPreviewLiveSetStatus {Preparing source-verified Preview in CORE Job Supervisor…}
     dict set active key [datasetPreviewCacheRequest $id $options [list ::GX::_datasetPreviewLiveReady $id $token $generation $explicit]]
 }
+proc ::GX::_datasetPreviewLivePersistReceipt {id token result} {
+    # Receipt persistence never materializes automatically discovered scientific
+    # controls. Recheck the actual preparation identity after widget adoption.
+    if {$token ne [interactiveDocumentSessionToken] ||
+        ![datasetPublicationV2DictDefault $result current 1] ||
+        [dict get $result source] ne [datasetPreviewCacheSource $id] ||
+        [dict get $result key] ne [datasetPreviewCacheKey $id [dict get $result options]]} {return 0}
+    set metadata [datasetPrivateMetadataRead $::GX::currentSession $id]
+    set saved [datasetPublicationV2DictDefault $metadata _gxtxt.framework.dataset_preview {}]
+    if {$saved ne {} && (![dict exists $saved version] || [dict get $saved version]!=1)} {return 0}
+    dict set saved version 1
+    dict set saved last_render [dict create key [dict get $result key] options [dict get $result options]]
+    _datasetFrameworkMetadataUpdate $::GX::currentSession $id [dict create dataset_preview $saved]
+    return 1
+}
 proc ::GX::_datasetPreviewLiveReady {id token generation explicit response} {
     variable ::GX::PreviewLive::active;variable ::GX::PreviewLive::epoch
     if {$generation!=$epoch || ![dict exists $active id] || [dict get $active id] ne $id || ![winfo exists .top.nb.preview.live]} return
@@ -188,20 +203,9 @@ proc ::GX::_datasetPreviewLiveReady {id token generation explicit response} {
         return
     }
     if {[datasetPublicationV2DictDefault $result current 1]} {
-        set saved [datasetPreviewConfigurationRead $id]
-        dict set saved version 1
-        # Persist the actual controls adopted from this representation, including
-        # automatically selected defaults. A last_render-only record is not a
-        # complete filter configuration and must not disable default grouping.
-        if {[info exists ::GX::ui(previewMap,dataset)] && $::GX::ui(previewMap,dataset) eq $id} {
-            foreach {field variable} {selections filters ordering ordering types filterTypes} {
-                if {[info exists ::GX::ui(previewMap,$variable)]} {dict set saved $field $::GX::ui(previewMap,$variable)}
-            }
-            foreach axis {x y z} {if {[info exists ::GX::ui(previewMap,$axis)]} {dict set saved $axis $::GX::ui(previewMap,$axis)}}
-            dict set saved schema_identity [_datasetScientificProfileIdentity $id]
+        if {[catch {_datasetPreviewLivePersistReceipt $id $token $result} persisted] || !$persisted} {
+            datasetPreviewLiveSetStatus {The prepared view is retained; its saved render receipt was not updated. Select Render to refresh.}
         }
-        dict set saved last_render [dict create key [dict get $result key] options [dict get $result options]]
-        _datasetFrameworkMetadataUpdate $::GX::currentSession $id [dict create dataset_preview $saved]
     }
 }
 proc ::GX::datasetPreviewLiveAdopt {id result cacheHit} {
@@ -240,7 +244,13 @@ proc ::GX::datasetPreviewLiveAdopt {id result cacheHit} {
     foreach child [winfo children $f.live.panes.plot] {if {!$reused || $child ne $path} {destroy $child}}
     $w configure -state normal;$w delete 1.0 end
     $w insert end "Dataset: $id\n[datasetPublicationV2DictDefault $result description {}]\n"
-    if {[dict exists $result digitizer] && [dict get $result digitizer] ne {}} {datasetDigitizerPreviewRender $w $id [dict get $result digitizer]}
+    if {[dict exists $result digitizer] && [dict get $result digitizer] ne {}} {
+        # A restored previous representation has its own preparation source.
+        # Never recertify its old curves with today's source identity.
+        set digitizer [dict get $result digitizer]
+        dict set digitizer prepared_source [dict get $result source]
+        datasetDigitizerPreviewRender $w $id $digitizer
+    }
     if {[dict exists $result native_model]} {
         $f.live.panes tab $f.live.panes.plot -state normal
         foreach button {fit zoomIn zoomOut} {$f.live.actions.$button state !disabled}
@@ -275,6 +285,8 @@ proc ::GX::datasetPreviewLiveAdopt {id result cacheHit} {
     }
     if {[dict exists $result remote_unverified]} {set text {Previous remote render — verifying authoritative source availability and revision…}}
     if {$current && [dict exists $result digitizer unavailable_selection]} {set text {Selected processed image is unavailable. Choose Original source image to render the verified original.}}
+    set visibilityNotice [_datasetDigitizerPreviewVisibilityNotice $id]
+    if {$visibilityNotice ne {}} {append text " — $visibilityNotice"}
     datasetPreviewLiveSetStatus $text
     datasetPreviewActionsState
     if {!$current} {datasetPreviewLiveCheck 1}

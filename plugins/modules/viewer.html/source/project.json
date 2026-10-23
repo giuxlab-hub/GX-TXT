@@ -1,7 +1,7 @@
 {
   "schema": "gxtxt.viewer_development_project.v1",
   "module_id": "viewer.html",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "language": "cpp",
   "profile": "synthetic_view_v1",
   "source": "handlers.cpp",

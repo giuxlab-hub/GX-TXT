@@ -1,0 +1,80 @@
+{
+  "content_id": "curve_digitizer.tutorial.02.en",
+  "version": "0.1.0",
+  "author": "GX210-GUIDE",
+  "license": "GPL-3.0-or-later",
+  "source_baseline": {
+    "version": "0.9.8.10-dev-110",
+    "commit": "e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68",
+    "deposition_sha256": "5ba61e98498d7cdafce50bb05bbcbdda68592697974d4f402583f4a07354f0d8"
+  },
+  "unchanged_vendor": {
+    "version": "2.0.9",
+    "original_zip_sha256": "dbd271bd70b4d13d6fbe4889750f73aef97825b6ef4bc4dce89d7510a278b84a"
+  },
+  "original_assets": "All SVGs and extra PNGs are original authored explanatory diagrams/static teaching inputs; no application screenshots or published scientific outputs are represented.",
+  "files": {
+    "LICENSE.txt": {
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "bytes": 35149
+    },
+    "README.md": {
+      "sha256": "de6f4614ee0ee39882cfbe60fd3b78e04f47bdce43047408a178e8b093096d0a",
+      "bytes": 3154
+    },
+    "assets/log-reference.json": {
+      "sha256": "3a576405b1ffc68af2c7beb13794fae2452c3d6cf915d3d2ed491f2e0a53f1e9",
+      "bytes": 1508
+    },
+    "assets/log-reference.png": {
+      "sha256": "727a73ba99a4e803852cf61daf820ac2a22252f9707f5daca84847fd843821e9",
+      "bytes": 9330
+    },
+    "documentation-package.ini": {
+      "sha256": "8f4393b143a5a005426c50ae4884277f4d7f7e851acea70103b9d34c6c1c0216",
+      "bytes": 416
+    },
+    "figures/calibration-realizations.svg": {
+      "sha256": "04fdef3cb058c2ce997f99b2da6e04689e03dbc18a79099f4145bffb507f1747",
+      "bytes": 1385
+    },
+    "figures/source-lineage.svg": {
+      "sha256": "acd5592484686f033bb68aa5d75181df1171e8c807f073a46687607caa8fc5f0",
+      "bytes": 1720
+    },
+    "figures/tracing-ambiguity.svg": {
+      "sha256": "d51e50493b10d82e3a57c4041058832dd3643a611f707c45b7ec082b2c8fd0ec",
+      "bytes": 1564
+    },
+    "index.html": {
+      "sha256": "f1daa0953ae3a91ae5ea7c127dccd4804f58b927ed56e0a6da032ee3bec8319a",
+      "bytes": 22554
+    },
+    "reference.json": {
+      "sha256": "49bfc8b7b2d293a77eee7769352019ccf75e0bc9b88457168a55523f8d293396",
+      "bytes": 1927
+    },
+    "step-outcomes.json": {
+      "sha256": "7ed5a006ac564dcaedbaf9bd73591bb2a4a18a582386139d3ae0e97d0779f063",
+      "bytes": 4078
+    },
+    "tutorial.css": {
+      "sha256": "3012608c1c7c919b03426b5d529274596310414345a4ec7f136319166fd6b270",
+      "bytes": 2233
+    },
+    "tutorial.js": {
+      "sha256": "a2049a9bce6463eb9123fbfbaa930fada787df57e02dd1ac4d8e05630f50f154",
+      "bytes": 1464
+    }
+  },
+  "self_hash_policy": "This inventory excludes provenance.json itself; final archive hash supplied separately.",
+  "actual_execution_evidence": null,
+  "TUTORIAL1_quality_acceptance": null,
+  "review003_source_corrections": {
+    "review_commit": "38602486",
+    "scope": {
+      "HOST-LINK-02": "READMEhref replaced byexistingHTMLrecordsectionanchor withself-containedpackage/compatibilitynotes;MDbytes preserved"
+    },
+    "runtime_or_scientific_acceptance": false
+  }
+}

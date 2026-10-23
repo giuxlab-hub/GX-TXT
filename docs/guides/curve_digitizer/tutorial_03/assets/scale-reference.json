@@ -1,0 +1,59 @@
+{
+  "creator": "GX210-GUIDE",
+  "helper_version": "1.0.0",
+  "helper_sha256": "05c5f1e46b132e3420b4d025125389649baf05bd13fdf1c7c29f884e6d33faeb",
+  "license": "GPL-3.0-or-later",
+  "kind": "original synthetic teaching input",
+  "actual_digitizer_results": null,
+  "measurement_warning": "Ideal continuous references are not raster click measurements or accepted scientific results.",
+  "dimensions": [
+    720,
+    560
+  ],
+  "bar": {
+    "centres": [
+      [
+        42,
+        510
+      ],
+      [
+        194,
+        510
+      ]
+    ],
+    "pixel_length": 152,
+    "physical_length": 10,
+    "unit": "um",
+    "convention": "centre-to-centre",
+    "terminal_tick_width_px": 3
+  },
+  "ideal_uniform_um_per_pixel": 0.06578947368421052,
+  "full_image_centre_spans_um": [
+    47.30263157894737,
+    36.776315789473685
+  ],
+  "cartesian_up_mapping": {
+    "x": "px*10/152",
+    "y": "(559-py)*10/152"
+  },
+  "curves": [
+    {
+      "domain_px": [
+        80,
+        640
+      ],
+      "py": "280+70*sin((px-80)*2*pi/560)",
+      "nominal_draw_width_px": 6
+    },
+    {
+      "domain_px": [
+        80,
+        640
+      ],
+      "py": "180+0.15*(px-80)",
+      "nominal_draw_width_px": 3
+    }
+  ],
+  "limitation": "Nominal raster pen width is not a measured stroke estimator result or standard uncertainty. This is not an instrument image.",
+  "png_sha256": "f81a63082218830b223dec535af9bb8d4b68dc9a83cda7fd5cb0949500e62398"
+}

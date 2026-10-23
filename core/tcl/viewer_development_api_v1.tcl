@@ -5,7 +5,23 @@ source [file join [file dirname [info script]] viewer_development_api_browser_v1
 source [file join [file dirname [info script]] viewer_development_gui_test_v1.tcl]
 source [file join [file dirname [info script]] viewer_development_workspace_upgrade_v1.tcl]
 proc ::GX::viewerDevelopmentApiInfo {} {
-    return [dict create api_id VIEWER_DEVELOPMENT_API_v1 api_version 1 language cpp python_authoring 0 profiles {synthetic_view_v1 numeric_view_v1 document_view_v1 scientific_view_v1} operations {request inspect save check_source facility_request builder manual_asset debug debug_status debug_control preview invoke close installed_open installed_bindings workspace_upgrade_review workspace_review workspace_upgrade gui_test_attach gui_test_detach gui_test} backend core/python/gxtxt_viewer_development.py source_surface SOURCE_SURFACE_API_v1 gui_owner VIEWER_GUI_HOST_API_v1 renderer_owners {NATIVE2D_VIEWPORT_HOST_v1 NATIVE2D_TEMPORARY_DISPLAY_API_v1 NATIVE_PLOT_DISPLAY_API_v1 NATIVE_3D_GUI_HOST_API_v2} publication 0 install {candidate export; normal Plugin Manager promotion}]
+    return [dict create api_id VIEWER_DEVELOPMENT_API_v1 api_version 1 language cpp python_authoring 0 profiles {synthetic_view_v1 numeric_view_v1 document_view_v1 scientific_view_v1} operations {request inspect save check_source facility_request builder manual_asset debug debug_status debug_control preview invoke close installed_open installed_bindings workspace_upgrade_review workspace_review workspace_upgrade gui_test_attach gui_test_detach gui_test maintenance_modules maintenance_create maintenance_init maintenance_inspect maintenance_save maintenance_validate maintenance_export} backend core/python/gxtxt_viewer_development.py source_surface SOURCE_SURFACE_API_v1 gui_owner VIEWER_GUI_HOST_API_v1 renderer_owners {NATIVE2D_VIEWPORT_HOST_v1 NATIVE2D_TEMPORARY_DISPLAY_API_v1 NATIVE_PLOT_DISPLAY_API_v1 NATIVE_3D_GUI_HOST_API_v2} publication 0 install {candidate export; normal Plugin Manager promotion}]
+}
+proc ::GX::viewerDevelopmentMaintenanceModules {} {
+    set result {}
+    foreach {module provider backend} {viewer.curve_workbench curve_workbench curve_workbench_tk viewer.replicate_curve_analysis replicate_consensus replicate_consensus_tk viewer.interface_builder interface_builder viewer_interface_builder_tk} {
+        if {[catch {set definition [viewerProviderDefinition $module $provider 1]}]} continue
+        set expected [file normalize [file join $::GX::scriptDir plugins modules $module module.ini]]
+        if {![info exists ::GX::moduleCatalog($module,descriptor)] || [file normalize $::GX::moduleCatalog($module,descriptor)] ne $expected || [dict get $definition backend] ne $backend} continue
+        dict set result $module [dict create provider $provider name [dict get $definition name] backend $backend]
+    }
+    return $result
+}
+proc ::GX::viewerDevelopmentMaintenanceCreate {module provider project callback} {
+    set approved [viewerDevelopmentMaintenanceModules]
+    if {![dict exists $approved $module] || [dict get $approved $module provider] ne $provider} {error {Select an installed registered Viewer admitted by the CORE maintenance policy}}
+    set payload [format {{"module":%s,"provider":%s}} [viewerDevelopmentJsonString $module] [viewerDevelopmentJsonString $provider]]
+    return [viewerDevelopmentRequest maintenance_init $project $callback [dict create request_json $payload]]
 }
 # Encode bounded control text without evaluating it or invoking a language host.
 proc ::GX::viewerDevelopmentJsonString {text} {
@@ -33,7 +49,7 @@ proc ::GX::viewerDevelopmentStateJson {state} {
     return [format {{"values":[%s],"counter":%s}} [join $values ,] $counter]
 }
 proc ::GX::viewerDevelopmentRequest {operation project callback {options {}}} {
-    if {$operation ni {init validate build prepare run test export api inspect manual_asset save check_source facility_request builder debug debug_control debug_status gui_test workspace_upgrade_review}} {error {Unknown restricted development operation}}
+    if {$operation ni {init validate build prepare run test export api inspect manual_asset save check_source facility_request builder debug debug_control debug_status gui_test workspace_upgrade_review maintenance_init maintenance_inspect maintenance_save maintenance_validate maintenance_export}} {error {Unknown restricted development operation}}
     foreach key [dict keys $options] {if {$key ni {module_id event state file source request_json breakpoints target document debug_token}} {error {Unknown restricted development option}}}
     set project [file normalize $project]
     set command [list /usr/bin/python3 -I -B [file join $::GX::scriptDir core python gxtxt_viewer_development.py] $operation $project --tcl]
@@ -60,8 +76,9 @@ proc ::GX::viewerDevelopmentRequest {operation project callback {options {}}} {
         lappend command --breakpoints \[[join [dict get $options breakpoints] ,]\]
     }
     set payload {}
-    if {$operation in {facility_request builder debug_control gui_test manual_asset workspace_upgrade_review}} {
-        if {![dict exists $options request_json] || ([dict keys [dict remove $options request_json debug_token]] ne {}) || ([dict exists $options debug_token] && $operation ne {debug_control}) || [string bytelength [dict get $options request_json]]>[expr {$operation eq {workspace_upgrade_review}?8388608:65536}]} {error {A bounded typed JSON author request is required}}
+    if {$operation in {facility_request builder debug_control gui_test manual_asset workspace_upgrade_review maintenance_init maintenance_inspect maintenance_save maintenance_validate maintenance_export}} {
+        set requestLimit [expr {[string match maintenance_* $operation]?1048576:($operation eq {workspace_upgrade_review}?8388608:65536)}]
+        if {![dict exists $options request_json] || ([dict keys [dict remove $options request_json debug_token]] ne {}) || ([dict exists $options debug_token] && $operation ne {debug_control}) || [string bytelength [dict get $options request_json]]>$requestLimit} {error {A bounded typed JSON author request is required}}
         set payload [dict get $options request_json]
     } elseif {[dict exists $options request_json]} {error {Typed request payload belongs to Builder/facility request only}}
     if {$operation in {save check_source}} {
@@ -136,6 +153,8 @@ proc ::GX::_viewerDevelopmentOpenWindow {project module provider context {runtim
 }
 proc ::GX::_viewerDevelopmentPreviewValidated {w response} {
     if {![dict exists $::GX::ViewerDevelopment::windows $w]||![winfo exists $w]} return
+    # Refusal/source change cannot leave an older form proof reachable.
+    catch {dict unset ::GX::ViewerDevelopment::windows $w pcb_source_form_admission}
     dict set ::GX::ViewerDevelopment::windows $w busy {}
     set r [dict get $::GX::ViewerDevelopment::windows $w]
     set project [dict get $r project];set module [dict get $r module];set provider [dict get $r provider]
@@ -156,6 +175,33 @@ proc ::GX::_viewerDevelopmentPreviewValidated {w response} {
         if {[sha256File [file join $project $name]] ne [dict get $report $key]} {$w.loading configure -text {Project changed after validation; close and reopen the Demo.};dict set ::GX::ViewerDevelopment::windows $w status SOURCE_CHANGED;return}
     }
     dict set ::GX::ViewerDevelopment::windows $w validated_snapshot [_viewerDevelopmentSnapshot $project]
+    # Only the current backend's admitted form/profile/grants supply authority.
+    # Installed admission recomputes this too; never read an author JSON report.
+    if {[dict exists $report transform_form_admission]} {
+        set proof [dict get $report transform_form_admission]
+        if {[catch {
+            if {[dict get $proof schema] ne {gxtxt.viewer_transform_admission.v1} || [dict get $proof profile] ne {scientific_view_v1}} {error {Invalid Transform form admission}}
+            foreach key {source_sha256 design_sha256 project_sha256} {
+                if {[dict get $proof $key] ne [dict get $::GX::ViewerDevelopment::windows $w validated_snapshot $key]} {error {Transform admission differs from the validated project}}
+            }
+        } reason]} {
+            dict set ::GX::ViewerDevelopment::windows $w status REJECTED
+            $w.loading configure -text $reason
+            return
+        }
+        dict set ::GX::ViewerDevelopment::windows $w transform_form_admission $proof
+    } else {catch {dict unset ::GX::ViewerDevelopment::windows $w transform_form_admission}}
+    if {[dict exists $report pcb_source_form_admission]} {
+        if {[catch {
+            set pcbDesign [viewerGuiDesignRead [file join $project design.gxtxt-viewer]]
+            set proof [_viewerGuiPCBProofValidate $pcbDesign [dict get $report pcb_source_form_admission] [dict get $::GX::ViewerDevelopment::windows $w validated_snapshot]]
+        } reason]} {
+            dict set ::GX::ViewerDevelopment::windows $w status REJECTED
+            $w.loading configure -text $reason
+            return
+        }
+        dict set ::GX::ViewerDevelopment::windows $w pcb_source_form_admission $proof
+    }
     dict set ::GX::ViewerDevelopment::windows $w workspace_callback_contract [dict get $report workspace_callback_contract_sha256]
     set design [viewerGuiDesignRead [file join $project design.gxtxt-viewer]]
     set handlers {}
@@ -204,6 +250,7 @@ proc ::GX::viewerDevelopmentInvoke {window action} {
     if {[dict get $r busy] ne {}} {return {status busy message {Wait or cancel the current native event}}}
     if {[dict get $r status] eq {RUNNING}} {return {status busy message {Wait for the current native event's trusted host operations}}}
     if {![dict exists $r validated_snapshot]||[catch {_viewerDevelopmentSnapshot [dict get $r project]} current]||$current ne [dict get $r validated_snapshot]} {
+        catch {dict unset ::GX::ViewerDevelopment::windows $window pcb_source_form_admission}
         dict set ::GX::ViewerDevelopment::windows $window status SOURCE_CHANGED
         [dict get $::GX::ViewerGui::instances $window slots status] configure -text {Project source/design/facilities changed; close and reopen Demo before executing another event.}
         return {status SOURCE_CHANGED message {Reopen Demo for the current project revision}}
@@ -315,6 +362,7 @@ proc ::GX::_viewerDevelopmentRan {window generation response} {
             }
         }
     }
+    if {$status eq {SOURCE_CHANGED}} {catch {dict unset ::GX::ViewerDevelopment::windows $window pcb_source_form_admission}}
     dict set ::GX::ViewerDevelopment::windows $window status $status
     dict set ::GX::ViewerDevelopment::windows $window last_result $response
     set message [expr {$status eq {COMPLETED} ? {Ready} : $status}]

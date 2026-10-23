@@ -15,16 +15,19 @@ def shared_catalog():
     if root.resolve()!=root or manifest.is_symlink() or not manifest.is_file() or manifest.stat().st_nlink!=1 or manifest.stat().st_size>65536:
         raise ValueError('Shared icon catalog must be an ordinary bounded CORE resource')
     spec=json.loads(manifest.read_text(encoding='utf-8'))
-    if set(spec)!={'schema','icons'} or spec['schema']!='gxtxt.viewer_shared_icons.v1' or not isinstance(spec['icons'],list) or not 1<=len(spec['icons'])<=64:
+    if set(spec)!={'schema','icons'} or spec['schema']!='gxtxt.viewer_shared_icons.v1' or not isinstance(spec['icons'],list) or not 1<=len(spec['icons'])<=128:
         raise ValueError('Invalid shared icon catalog schema/bound')
     rows={};sources=set()
     for entry in spec['icons']:
-        if not isinstance(entry,dict) or set(entry)!={'id','title','category','license','source'}:
+        required={'id','title','category','license','source'}
+        optional={'action','origin','sha256'}
+        if not isinstance(entry,dict) or not required.issubset(entry) or not set(entry).issubset(required|optional):
             raise ValueError('Shared icon fields differ')
         identifier=entry['id'];name=entry['source']
         if not isinstance(identifier,str) or not re.fullmatch(r'[a-z][a-z0-9_]{0,63}',identifier) or identifier in rows or not isinstance(name,str) or not re.fullmatch(r'[a-z][a-z0-9_]{0,63}\.(svg|png)',name) or name in sources:
             raise ValueError('Invalid/duplicate shared icon identity/source')
-        for key in ('title','category','license'):
+        for key in ('title','category','license','action','origin'):
+            if key not in entry:continue
             value=entry[key]
             if not isinstance(value,str) or not value.strip() or len(value)>200 or any(ord(c)<32 for c in value):
                 raise ValueError('Shared icon provenance must be bounded single-line text')
@@ -32,10 +35,15 @@ def shared_catalog():
         if path.is_symlink() or path.resolve()!=path or not path.is_file() or path.stat().st_nlink!=1 or path.stat().st_size>LIMIT:
             raise ValueError('Shared icon source must be an ordinary bounded CORE asset')
         data=path.read_bytes();fmt=path.suffix[1:]
+        actual_sha=sha(data)
+        if 'sha256' in entry and (not isinstance(entry['sha256'],str) or not re.fullmatch(r'[0-9a-f]{64}',entry['sha256']) or entry['sha256']!=actual_sha):
+            raise ValueError('Declared shared icon SHA256 differs from source bytes')
         if fmt=='svg':
             node=ET.fromstring(svg(data));width=int(node.get('width').removesuffix('px'));height=int(node.get('height').removesuffix('px'))
         else:width,height,_=png(data)
-        rows[identifier]=dict(id=identifier,title=entry['title'],category=entry['category'],license=entry['license'],path=str(path),sha256=sha(data),source_format=fmt,width=width,height=height)
+        rows[identifier]=dict(id=identifier,title=entry['title'],category=entry['category'],license=entry['license'],path=str(path),sha256=actual_sha,source_format=fmt,width=width,height=height)
+        for key in ('action','origin'):
+            if key in entry:rows[identifier][key]=entry[key]
         sources.add(name)
     return dict(schema=spec['schema'],icons={key:rows[key] for key in sorted(rows)},count=len(rows),authority='Fixed CORE icon resources; discovery grants no filesystem reader')
 def png(data, *, max_bytes=LIMIT, max_dimension=512, capture_metadata=False):

@@ -82,6 +82,8 @@ proc ::GX::buildConfigurationPage {} {
     grid $f.sections.libraries.registry -row [dict get $row Libraries] -column 0 -columnspan 2 -sticky w -padx 8 -pady 7
     ttk::button $f.sections.libraries.open -text {Open Libraries…} -command [list ::GX::viewerGuiDispatch open viewer.scientific_library_workspace scientific_library_workspace]
     grid $f.sections.libraries.open -row [expr {[dict get $row Libraries]+1}] -column 0 -columnspan 2 -sticky w -padx 8 -pady 7
+    ttk::button $f.sections.libraries.credentials -text {Credential profiles…} -command [list ::GX::_scientificLibraryCredentialsDialog $f]
+    grid $f.sections.libraries.credentials -row [expr {[dict get $row Libraries]+2}] -column 0 -columnspan 2 -sticky w -padx 8 -pady 7
     ttk::label $f.sections.scripts.explain -text "This path contains registered reusable scripts. Session-owned script snapshots remain inside each Session." -wraplength 760 -justify left
     grid $f.sections.scripts.explain -row [dict get $row Scripts] -column 0 -columnspan 2 -sticky w -padx 8 -pady 7
     pythonEnvironmentPanelBuild $f.sections.scripts [expr {[dict get $row Scripts]+1}]

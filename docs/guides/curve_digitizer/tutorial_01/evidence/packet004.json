@@ -1,0 +1,223 @@
+{
+  "record_type": "curated_actual_remaining_packet004_observations",
+  "content_id": "curve_digitizer.tutorial.01.en",
+  "status": "PARTIAL_ACTUAL_REMAINING_PATH; PREVIEW_GUARD_FINDING_OPEN",
+  "operator": "GX210-TUTORIAL1",
+  "packet": "T01 remaining004",
+  "source_result_sha256": "5354b88c4980a8516fcc01cbc4bb8c8d9905f5d625036902e9ef4a5c2b130c7b",
+  "build": {
+    "version": "0.9.8.10-dev-111",
+    "candidate_commit": "06ebcb958357322d5d6ccde15800e803f485de0a",
+    "classification": "FROZEN_COMMITTED_MAIN_CANDIDATE_NOT_INSTALLED",
+    "installed_or_activated_acceptance": false
+  },
+  "origin": {
+    "same_original_publication": "cd.tutorial01.measurement_1.curves",
+    "original_registered_generation": "packet003 normalcalibrated_digitizer1.0.0",
+    "whole_copy_preserves_original003": true,
+    "new_jobs_generations_publications_datasets": 0,
+    "GUIDE_private_CSV_clipboard_API_or_row_extraction": false
+  },
+  "canonical_display": {
+    "record": "evidence/packet004-canonical-display.json",
+    "current_all4rows8columns_UUIDs_observed": true,
+    "independent_visual_transcription_corrob": true,
+    "original_canonical_sha256": "b28616fc9c7feba75a4707ec3042acfe6dcebb5af97913c356f7acb493b9470f",
+    "no_preUndo_UUID_baseline": true,
+    "mathematical_validation_or_tolerance_acceptance": false
+  },
+  "preview_operator_fields": {
+    "row_filters_missing_key": "DID_NOT_RECUR boundedcorrectednativeattachment",
+    "auto_first_native": "022 actualvisibleconnectedgeometry, Previousrender guardstatus",
+    "one_explicit_normal_Render": "024 permittedR03 freshcandidatecurrentRender;025Quality Sessioncachehit/sourceverified,026sourceimagecurrent",
+    "visibility_hide": "027overlayremoved/028nativeempty withcurrentcachehitstatus",
+    "visibility_restore": "031checkboxon/overlayrestored,030nativegeometryvisiblebutPreviousrenderwarning",
+    "new_issue": "PersistentPreviousrender afternormalvisibilitycycle. Causeunestablished; retained047.",
+    "zoom": "030actualboundschanged; inputbatchedbefore029warningreview;qualifiedstale notfullPASS",
+    "Fit_pan": "NOT_TESTED; furtheraffectedworkstoppedafter031",
+    "after_SaveOpen": "042checkedvisibleoverlay/Previousrender; no furtherRender",
+    "current_visible_native_capture_limit": "022visible nativewasPreviousrender;025currentQuality/026currentSourceimage;028currentnativeempty;030restorednativevisiblebutstale. No mislabelledcurrentvisiblelinecapture."
+  },
+  "chronological_frame_qualification": [
+    {
+      "frame": "022",
+      "scope": "NativeTime/sVoltage/Vconnectedgeometry visible; explicitly Previousrender, notcurrentverifiedline."
+    },
+    {
+      "frame": "025",
+      "scope": "AfteronepermittednormalRender, Qualitytab displays Sessioncachehit/source-verifiedretainedPreview. Providerreportedverified/ok0issues,4rasterpoints/4rows/1curve/1map/3segments; physicalaccuracy not_assessed,uncertainty not_declared. Not a Plotgeometryframe orindependentcontinuousbyteaudit."
+    },
+    {
+      "frame": "026",
+      "scope": "Original100x100sourceimagewithretainedcurveoverlay, checkedvisibility, verifiedimagewording atthisstate;4source/4canonical/4display. Not physicalXYPlot."
+    },
+    {
+      "frame": "027",
+      "scope": "Uncheckedvisibility removesretainedoverlay; bluecrosses/grid remaininputpixels. No rowdeletion/newmeasurement implied."
+    },
+    {
+      "frame": "028",
+      "scope": "NativePlot geometryhidden, axesremain, source-verifiedcachebanner. Currentempty-by-visibility, notfailedpreparation."
+    },
+    {
+      "frame": "030",
+      "scope": "Restorednativegeometry, changedticks/clippingafterZoomin request; Previousrender remains. Dispatchbatched before029warninginspection; no exactbounds/zoomfactor/current-sourceZoomPASS/Fit/pan/performance."
+    },
+    {
+      "frame": "031",
+      "scope": "Checked/restoredsourceoverlay nowPreviousrender, image textsourcechanged. Warningnotpayload-mutationcauseproof; no furtheraffectedactions."
+    },
+    {
+      "frame": "045",
+      "scope": "OperatornormalSave/Open/freshViewer/table consultation retainedallcurrentdisplayedrows/UUIDs; samepixelsas015 do not independentlyproveOpencontext."
+    }
+  ],
+  "guard_finding": {
+    "source_sha256": "d4588c5163afaf96c7e2763418a5b66c6368d7cb8b754cad50bb3ce1ffece97f",
+    "status": "NEW_PREVIEW_SOURCE_GUARD_STALE_OBSERVED_AFTER_NORMAL_VISIBILITY; AFFECTED_PATH_STOPPED",
+    "reported_at": "2026-10-22T22:35:21.444980+00:00",
+    "cause_from_frames": "NOT_ESTABLISHED",
+    "later_MAIN_source_fix": "MAIN647 reports keyprojectionfixfe393306 independentlysource-cleared; runtimeNOT_TESTED",
+    "affected_path_stopped": true
+  },
+  "source_quality_interpretation": "Providerfields remain unchanged and read-only. Providerverified is not independentcurrent-byteintegrity or physicalaccuracy. SeparateCOREpreparationreceipt andcachehitstatus aretime-qualified;025/026do notwaive022/031warnings or provecontinuousverification. Longclippeddigests nottranscribedfromstills.",
+  "persistence_operator_fields": {
+    "save_confirmation": "034",
+    "normal_sameprocess_open": "035–036",
+    "new_original_Viewer_source_config": "038idoc0001/source100x100/hash",
+    "accepted_calibration": "039meas73b415 Time/s0..8Voltage/V-2..2",
+    "notes": "040 exactdisplayedretained",
+    "four_point_curve": "041",
+    "fullcanonicalrowsUUIDs": "045",
+    "publication_identity_hash_producer209": "046",
+    "fresh_application_restart_afternewvisibilitysettings": "NOT_TESTED",
+    "hidden_preference_restart": "NOT_TESTED; finalvisibledefaultwasrestoredbeforeSave"
+  },
+  "timing_qualification": "Secondprecisiondispatch/capturechronology includesoperator/tool/settlewaits, notprecisefirstframe/p95/comparativeperformance",
+  "new_operations": {
+    "generations": 0,
+    "jobs": 0,
+    "publications": 0,
+    "datasets": 0,
+    "helper_or_native_contract_campaigns": 0
+  },
+  "operator_corrections": [
+    "005xdotooltrailingcommandwords typedinto path; corrected006 beforeOpen",
+    "029/030batcheddispatch beforestale029review; no furtherRender/Fit/zoomafter031"
+  ],
+  "normal_close_utc": "2026-10-22T22:38:06Z",
+  "existing_postclose_guards": {
+    "selected18bytepins_match": true,
+    "copied_and_original3payloads_each_match": true,
+    "scope": "Existingbytehashreceipts only; no fulltree/mode/math/UUIDextraction. Sixpayloadhashes alone do notdiagnoseguardcause."
+  },
+  "independent_preview_capture_review": {
+    "sha256": "b73b117abf9f63dfa7e91332346ce34df84bb1b614f373aafc11a9a750c9d23e",
+    "scope": "Only022/025/026/027/028/030/031staticqualifications; no newGUI/input/capture/process/science/causediagnosis or runtimeacceptance."
+  },
+  "images": [
+    {
+      "path": "figures/actual-gui-004/015_canonical_rows_full_ids.png",
+      "sha256": "2f88c502b0888231b794736f01f65a3a27f7b44049d1d5063205b7926cb703f3",
+      "bytes": 43420,
+      "source_capture_name": "015_canonical_rows_full_ids.png",
+      "captured_utc": "2026-10-22T22:31:57.692196+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-004/016_canonical_column_details.png",
+      "sha256": "a43fe3795ec0500aa86a87be42ec3011374aa71fd033c69c73620f0147bfac7f",
+      "bytes": 59224,
+      "source_capture_name": "016_canonical_column_details.png",
+      "captured_utc": "2026-10-22T22:32:11.920632+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-004/017_canonical_schema_point_ids_pixels.png",
+      "sha256": "5569aee9f7c9192fda2fc5d028a5d46b30457dd761f5924e9b38e1ce21df03d2",
+      "bytes": 60812,
+      "source_capture_name": "017_canonical_schema_point_ids_pixels.png",
+      "captured_utc": "2026-10-22T22:32:30.069188+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-004/022_candidate_preview_adoption.png",
+      "sha256": "1de24ffe76af184ac973d1f31a255a491f7266455743b8afdf701076e1bccb11",
+      "bytes": 84737,
+      "source_capture_name": "022_candidate_preview_adoption.png",
+      "captured_utc": "2026-10-22T22:33:15.374574+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-004/025_after_single_render_current_status.png",
+      "sha256": "639078537f8452c5e88e1b1e8d11b801d01c6b9b5465aacf44fa85ac058e9375",
+      "bytes": 126661,
+      "source_capture_name": "025_after_single_render_current_status.png",
+      "captured_utc": "2026-10-22T22:34:04.224067+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-004/026_current_source_image_visibility.png",
+      "sha256": "91eda51bf377fe17858c795d3c9c3c082c51f78fffaf87f4bc05dabdcc88c964",
+      "bytes": 74079,
+      "source_capture_name": "026_current_source_image_visibility.png",
+      "captured_utc": "2026-10-22T22:34:12.068306+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-004/027_curve_hidden_source_overlay.png",
+      "sha256": "73d0c88aef55649f256d673d9925e48881086ac25216a277e0906e7f03cef0d3",
+      "bytes": 73868,
+      "source_capture_name": "027_curve_hidden_source_overlay.png",
+      "captured_utc": "2026-10-22T22:34:23.752663+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-004/028_curve_hidden_native_plot.png",
+      "sha256": "7179d4c41719ddc5bbd8fc49746e6017e2f0438cf27c559edc45014c6ed35378",
+      "bytes": 60372,
+      "source_capture_name": "028_curve_hidden_native_plot.png",
+      "captured_utc": "2026-10-22T22:34:24.260679+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-004/030_zoom_in_button.png",
+      "sha256": "dde6c8dc52ee270fb8e397021b7d9ba2481d17f379b0295613b15408ec86d784",
+      "bytes": 85775,
+      "source_capture_name": "030_zoom_in_button.png",
+      "captured_utc": "2026-10-22T22:34:35.693027+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-004/031_restored_curve_stale_guard.png",
+      "sha256": "b9cee6e30e8da59c71434805b848a6ab650c3d64682fd0803e672a81a8a864be",
+      "bytes": 75360,
+      "source_capture_name": "031_restored_curve_stale_guard.png",
+      "captured_utc": "2026-10-22T22:34:55.913644+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-004/045_reopened_canonical_full_rows_ids.png",
+      "sha256": "2f88c502b0888231b794736f01f65a3a27f7b44049d1d5063205b7926cb703f3",
+      "bytes": 43420,
+      "source_capture_name": "045_reopened_canonical_full_rows_ids.png",
+      "captured_utc": "2026-10-22T22:37:39.630627+00:00",
+      "edited": false
+    }
+  ],
+  "acceptance": {
+    "current_visible_native_line_capture": false,
+    "full_stable_current_Preview": false,
+    "Fit_pan": false,
+    "full_keyboard_mouse_controls": false,
+    "preUndo_UUID_restore": false,
+    "mathematical_accuracy_or_uncertainty": false,
+    "cold_application_restart": false,
+    "native_Guides_HTML_actions": "NOT_TESTED in004; absenceofauthoredcontentapplies003only",
+    "original_candidate_parity_performance": false,
+    "full_tutorial_final_quality": null,
+    "T02_T03_credit": false,
+    "final_completed_tutorial_ZIPs": 0
+  },
+  "preservation": "Packet003/firstfailure/fullreceipts/tenPNGbytes andcandidate01/02unchanged. Append004; no historicalPASS rewrite."
+}

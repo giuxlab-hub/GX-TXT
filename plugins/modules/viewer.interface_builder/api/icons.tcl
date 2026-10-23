@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Typed icon inspector; persistence, validation and rendering stay CORE owned.
-namespace eval ::GX::InterfaceBuilder {variable icon;array set icon {search {} selected {} id {} title {} category Project license GPL-3.0-or-later presentation icon_text icon_position left icon_size 24 icon_spacing 4 icon_disabled {} icon_hover {} icon_selected {} status {Choose a project icon or import an owned PNG/SVG.}}}
+namespace eval ::GX::InterfaceBuilder {variable icon;array set icon {search {} selected {} id {} title {} category Project license GPL-3.0-or-later presentation icon_text icon_position left icon_size 24 icon_spacing 4 icon_disabled {} icon_hover {} icon_selected {} stockSerial 0 status {Choose a project icon or import an owned PNG/SVG.}}}
 proc ::GX::InterfaceBuilder::icons {} {
     variable icon;variable s;set w .gxInterfaceIcons
     if {[winfo exists $w]} {raise $w;return $w}
@@ -192,22 +192,198 @@ proc ::GX::InterfaceBuilder::iconImport {{path {}} {sharedSource {}}} {
     set title [file rootname [file tail $path]]
     if {$sharedSource ne {}} {set id [dict get $sharedSource id];set title [dict get $sharedSource title]}
     set asset [::GX::viewerGuiIconImport $path $title $icon(category) $icon(license)]
+    if {$sharedSource ne {} && [dict get $asset sha256] ne [dict get $sharedSource sha256]} {error {Shared icon changed during import; reopen its catalog}}
     dict for {other item} [::GX::datasetPublicationV2DictDefault [design] icons {}] {if {[dict get $asset sha256] eq [dict get $item sha256]} {set icon(selected) $other;set icon(status) "Duplicate bytes: using existing $other";iconsRefresh;return}}
     set base $id;set n 1;while {[dict exists [design] icons $id]} {set id ${base}_[incr n]}
     apply icon put $id $asset;set icon(selected) $id;iconsRefresh;set icon(status) "Imported owned $id. Choose the target component in Builder and Assign."
 }
 proc ::GX::InterfaceBuilder::iconShared {} {
     variable icon
-    set catalog [dict get [::GX::viewerGuiIconCatalog] icons]
-    set first [lindex [dict values $catalog] 0]
-    set path [tk_getOpenFile -parent .gxInterfaceIcons -title {Shared original GPL icon catalog} -initialdir [file dirname [dict get $first path]] -filetypes {{{SVG icon} .svg}}]
-    if {$path eq {}} return
-    set selected {}
-    dict for {id entry} $catalog {if {[dict get $entry path] eq [file normalize $path]} {set selected $entry;break}}
-    if {$selected eq {}} {error {Choose a declared shared icon; use Import for other owned assets}}
-    if {[::GX::sha256File $path] ne [dict get $selected sha256]} {error {Shared icon changed; reopen its catalog}}
-    set icon(category) [dict get $selected category];set icon(license) [dict get $selected license]
-    iconImport $path $selected
+    set w .gxInterfaceIcons.stock
+    if {[winfo exists $w]} {raise $w;return $w}
+    # Catalog is the fixed CORE stock owner. No per-Builder copy is persisted.
+    set icon(stockCatalog) [dict get [::GX::viewerGuiIconCatalog] icons]
+    set icon(stockQuery) {};set icon(stockCategory) {All categories}
+    set icon(stockSelected) {};set icon(stockAsset) {};set icon(stockPreviewAfter) {}
+    set icon(stockEpoch) [incr icon(stockSerial)]
+    set categories {}
+    dict for {id entry} $icon(stockCatalog) {lappend categories [dict get $entry category]}
+    toplevel $w;wm title $w {Shared icon catalog};wm geometry $w 920x660;wm minsize $w 700 480
+    wm transient $w .gxInterfaceIcons
+    ttk::frame $w.filters -padding 8;pack $w.filters -fill x
+    ttk::label $w.filters.label -text {Find name, ID or action:}
+    ttk::entry $w.filters.query -textvariable ::GX::InterfaceBuilder::icon(stockQuery)
+    ttk::combobox $w.filters.category -state readonly -textvariable ::GX::InterfaceBuilder::icon(stockCategory) -values [linsert [lsort -dictionary -unique $categories] 0 {All categories}]
+    pack $w.filters.label -side left
+    pack $w.filters.category -side right -padx {8 0}
+    pack $w.filters.query -side left -fill x -expand 1 -padx {8 0}
+    bind $w.filters.query <KeyRelease> [list ::GX::InterfaceBuilder::safe iconStockRefresh]
+    bind $w.filters.category <<ComboboxSelected>> [list ::GX::InterfaceBuilder::safe iconStockRefresh]
+    ttk::panedwindow $w.body -orient horizontal;pack $w.body -fill both -expand 1 -padx 8
+    ttk::frame $w.body.list
+    ttk::treeview $w.body.list.tree -columns {id category} -show {tree headings} -selectmode browse
+    $w.body.list.tree heading #0 -text {English label};$w.body.list.tree column #0 -width 200
+    foreach {key label width} {id {Semantic ID} 150 category Category 190} {
+        $w.body.list.tree heading $key -text $label
+        $w.body.list.tree column $key -width $width
+    }
+    ttk::scrollbar $w.body.list.y -command [list $w.body.list.tree yview]
+    ttk::scrollbar $w.body.list.x -orient horizontal -command [list $w.body.list.tree xview]
+    $w.body.list.tree configure -yscrollcommand [list $w.body.list.y set] -xscrollcommand [list $w.body.list.x set]
+    pack $w.body.list.y -side right -fill y;pack $w.body.list.x -side bottom -fill x
+    pack $w.body.list.tree -fill both -expand 1
+    bind $w.body.list.tree <<TreeviewSelect>> [list ::GX::InterfaceBuilder::safe iconStockSelected]
+    foreach {event target} {<Home> first <End> last <Return> focused <space> focused} {
+        bind $w.body.list.tree $event "[list ::GX::InterfaceBuilder::iconKeyboard $w.body.list.tree $target];break"
+    }
+    set f [::GX::uiFieldScrollableCreate $w.body.preview 320]
+    ttk::label $f.info -text {Choose an icon to preview its admitted source.} -justify left -wraplength 300
+    grid $f.info -row 0 -column 0 -sticky ew -pady 8
+    ttk::labelframe $f.states -text {Native state samples (24 px)} -padding 4
+    set row 0
+    foreach {state label} {normal Normal disabled Disabled hover Hover selected Selected} {
+        ttk::button $f.states.$state -text $label
+        grid $f.states.$state -row $row -column 0 -sticky ew -pady 3
+        incr row
+    }
+    grid columnconfigure $f.states 0 -weight 1
+    grid $f.states -row 1 -column 0 -sticky ew
+    grid columnconfigure $f 0 -weight 1
+    bind $f <Configure> +[list ::GX::InterfaceBuilder::iconStockWidth $f %w]
+    $w.body add $w.body.list -weight 3;$w.body add $w.body.preview -weight 2
+    ttk::frame $w.actions -padding 8;pack $w.actions -side bottom -fill x -before $w.body
+    ttk::button $w.actions.add -text {Add to project} -state disabled -command [list ::GX::InterfaceBuilder::safe iconStockAdd]
+    ttk::button $w.actions.cancel -text Cancel -command [list ::GX::InterfaceBuilder::safe iconStockClose]
+    pack $w.actions.add $w.actions.cancel -side left -padx 4
+    # Existing safe() exposes errors in the same Icon Library status. Keep them visible here too.
+    ttk::label $w.status -textvariable ::GX::InterfaceBuilder::icon(status) -wraplength 850 -padding 8
+    pack $w.status -side bottom -fill x -before $w.body
+    bind $w.status <Configure> [list $w.status configure -wraplength %w]
+    wm protocol $w WM_DELETE_WINDOW [list ::GX::InterfaceBuilder::safe iconStockClose]
+    bind $w <Escape> "[list ::GX::InterfaceBuilder::safe iconStockClose];break"
+    bind $w <Destroy> [list ::GX::InterfaceBuilder::iconStockDestroyed %W]
+    iconStockRefresh;focus $w.filters.query
+    return $w
+}
+proc ::GX::InterfaceBuilder::iconStockWidth {frame width} {
+    if {![winfo exists $frame.info]} return
+    $frame.info configure -wraplength [expr {max(100,$width-16)}]
+}
+proc ::GX::InterfaceBuilder::iconStockCancelPreview {} {
+    variable icon
+    if {[info exists icon(stockPreviewAfter)] && $icon(stockPreviewAfter) ne {}} {
+        after cancel $icon(stockPreviewAfter);set icon(stockPreviewAfter) {}
+    }
+}
+proc ::GX::InterfaceBuilder::iconStockClearPreview {} {
+    variable icon
+    # Invalidate pending/in-flight preview work, including A -> B -> A and
+    # close/reopen at the same widget paths. Keep the monotonic serial on close.
+    set icon(stockEpoch) [incr icon(stockSerial)]
+    iconStockCancelPreview
+    set icon(stockSelected) {};set icon(stockAsset) {}
+    set w .gxInterfaceIcons.stock
+    if {![winfo exists $w]} return
+    $w.actions.add state disabled
+    set f $w.body.preview.scroll.content
+    $f.info configure -text {Choose an icon to preview its admitted source.}
+    # Theme callbacks may retain the previous resource until the next admission.
+    # Hide its whole sample area while no current row has a valid preview.
+    grid remove $f.states
+}
+proc ::GX::InterfaceBuilder::iconStockRefresh {args} {
+    variable icon
+    set w .gxInterfaceIcons.stock;set tree $w.body.list.tree
+    if {![winfo exists $tree]} return
+    set selected $icon(stockSelected)
+    iconStockClearPreview
+    set rows [$tree children {}];if {[llength $rows]} {$tree delete $rows}
+    set query [string tolower [string trim $icon(stockQuery)]]
+    dict for {id entry} $icon(stockCatalog) {
+        if {$icon(stockCategory) ne {All categories} && [dict get $entry category] ne $icon(stockCategory)} continue
+        set action [::GX::datasetPublicationV2DictDefault $entry action {}]
+        set searchable [string tolower "$id [dict get $entry title] [dict get $entry category] $action"]
+        if {$query ne {} && [string first $query $searchable]<0} continue
+        # Metadata only: do not import/rasterize every catalog source on open/filter.
+        $tree insert {} end -id $id -text [dict get $entry title] -values [list $id [dict get $entry category]]
+    }
+    ::GX::uiFieldInspectionColumnsFit $tree
+    if {$selected ne {} && [$tree exists $selected]} {
+        $tree selection set $selected;$tree focus $selected;$tree see $selected
+        iconStockSelected
+    } else {
+        set first [lindex [$tree children {}] 0]
+        if {$first ne {}} {$tree focus $first}
+    }
+}
+proc ::GX::InterfaceBuilder::iconStockSelected {} {
+    variable icon
+    set tree .gxInterfaceIcons.stock.body.list.tree
+    if {![winfo exists $tree]} return
+    set id [lindex [$tree selection] 0]
+    iconStockClearPreview
+    if {$id eq {} || ![dict exists $icon(stockCatalog) $id]} return
+    set icon(stockSelected) $id
+    set icon(stockPreviewAfter) [after idle [list ::GX::InterfaceBuilder::safe iconStockPreview $icon(stockEpoch) $id]]
+}
+proc ::GX::InterfaceBuilder::iconStockCurrent {epoch id} {
+    variable icon
+    set tree .gxInterfaceIcons.stock.body.list.tree
+    return [expr {[winfo exists $tree] && [info exists icon(stockEpoch)] &&
+        $icon(stockEpoch) eq $epoch && $icon(stockSelected) eq $id &&
+        [lindex [$tree selection] 0] eq $id}]
+}
+proc ::GX::InterfaceBuilder::iconStockPreview {epoch id} {
+    variable icon
+    if {![iconStockCurrent $epoch $id]} return
+    set icon(stockPreviewAfter) {}
+    set w .gxInterfaceIcons.stock
+    set entry [dict get $icon(stockCatalog) $id];set path [dict get $entry path]
+    if {[::GX::sha256File $path] ne [dict get $entry sha256]} {error {Shared icon changed; close and reopen its catalog}}
+    set asset [::GX::viewerGuiIconImport $path [dict get $entry title] [dict get $entry category] [dict get $entry license]]
+    if {[dict get $asset sha256] ne [dict get $entry sha256]} {error {Shared icon changed during preview; close and reopen its catalog}}
+    if {![iconStockCurrent $epoch $id]} return
+    set f $w.body.preview.scroll.content
+    set p [dict create presentation icon_text icon_position left icon_size 24 icon_spacing 4]
+    foreach {state flags} {normal {!disabled !selected !active} disabled {disabled !selected !active} hover {!disabled !selected active} selected {!disabled selected !active}} {
+        if {![iconStockCurrent $epoch $id]} return
+        ::GX::uiFieldIconApply $f.states.$state $p $asset
+        if {![iconStockCurrent $epoch $id]} return
+        $f.states.$state state $flags
+    }
+    set action [::GX::datasetPublicationV2DictDefault $entry action {Not declared by this catalog row}]
+    set origin [::GX::datasetPublicationV2DictDefault $entry origin {Not declared by this catalog row}]
+    $f.info configure -text "[dict get $entry title]\nID: $id\nCategory: [dict get $entry category]\nAction: $action\nOrigin: $origin\nLicense: [dict get $entry license]\n[dict get $entry source_format] · [dict get $entry width]×[dict get $entry height]\nSource SHA-256: [dict get $entry sha256]\nPreview does not add a project resource."
+    grid $f.states
+    set icon(stockAsset) $asset
+    $w.actions.add state !disabled
+}
+proc ::GX::InterfaceBuilder::iconStockAdd {} {
+    variable icon
+    set id $icon(stockSelected)
+    if {$id eq {} || ![iconStockCurrent $icon(stockEpoch) $id] || $icon(stockAsset) eq {} || ![dict exists $icon(stockCatalog) $id]} {error {Select and preview a shared icon first}}
+    set entry [dict get $icon(stockCatalog) $id]
+    if {[dict get $icon(stockAsset) sha256] ne [dict get $entry sha256]} {error {Preview identity changed; select the icon again}}
+    # Only the explicit Add action updates the existing import inspector/model.
+    set oldCategory $icon(category);set oldLicense $icon(license)
+    set icon(category) [dict get $entry category];set icon(license) [dict get $entry license]
+    try {
+        iconImport [dict get $entry path] $entry
+    } on error {message options} {
+        set icon(category) $oldCategory;set icon(license) $oldLicense
+        return -options $options $message
+    }
+    iconStockClose
+}
+proc ::GX::InterfaceBuilder::iconStockClose {} {
+    iconStockCancelPreview
+    if {[winfo exists .gxInterfaceIcons.stock]} {destroy .gxInterfaceIcons.stock}
+}
+proc ::GX::InterfaceBuilder::iconStockDestroyed {widget} {
+    if {$widget ne {.gxInterfaceIcons.stock}} return
+    variable icon
+    iconStockCancelPreview
+    foreach key {stockCatalog stockQuery stockCategory stockSelected stockAsset stockPreviewAfter stockEpoch} {unset -nocomplain icon($key)}
 }
 proc ::GX::InterfaceBuilder::iconAssign {} {
     variable icon;variable s

@@ -1,0 +1,369 @@
+{
+  "content_id": "curve_digitizer.manual.en",
+  "language": "en",
+  "content_version": "0.1.0",
+  "state": "REVIEW_DRAFT; FUNCTIONAL_GUI_SCIENTIFIC_ACCEPTANCE_PENDING",
+  "author": "GX210-GUIDE",
+  "license": "GPL-3.0-or-later",
+  "created_utc": "2026-10-22T20:16:21.519730+00:00",
+  "basis": {
+    "framework_version": "0.9.8.10-dev-110",
+    "framework_source_commit": "e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68",
+    "module_version": "2.0.9",
+    "original_vendor_archive_sha256": "dbd271bd70b4d13d6fbe4889750f73aef97825b6ef4bc4dce89d7510a278b84a",
+    "actual_official_deposition": "/srv/gxtxt/releases/dev110/official_deposition/DEPOSITION.json",
+    "formal111_authority_control": "3f883096-9026-45c5-acce-d851e238e270",
+    "installed": false,
+    "activated": false,
+    "STABLE_FOR_DEV111": false
+  },
+  "source_documents": [
+    {
+      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_fd5cd9f2ee12]",
+      "sha256": "9ac7b7fbaf130fc67bf147287a0aa73ad0fdde18275d0ba19ef2c6f35748aa95"
+    },
+    {
+      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_4621625ae984]",
+      "sha256": "22d04bea5ff2d011170bbad330a216251298355ec552064ef3af500985e8adeb"
+    },
+    {
+      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_5a1e8c43db26]",
+      "sha256": "2441e5f663ad0b2198600a95f4574b9e7fdae9c5e4fa361b1baa8d34f90cb5ed"
+    },
+    {
+      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_24e6b4cc9fc0]",
+      "sha256": "3df148985115f09a3a18878e80f494db9acf08089a3dbc32de110e093fd02e77"
+    },
+    {
+      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_00aab52a5aba]",
+      "sha256": "07d901f9ed9bedf6bc25aa2392ae23b2985170f8b11d823a3569224e89c99d0a"
+    },
+    {
+      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_954b3f340e1f]",
+      "sha256": "4e402eb322d34e0749d2dc4500833fc1be05280023ce02afce5b1d4cc187acf8"
+    },
+    {
+      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_b0af7fde5a66]",
+      "sha256": "cf605fe9f56eb8101d94f4625f86d702802da74486770d78a80e8c42d8a65e02"
+    },
+    {
+      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_69030c63a389]",
+      "sha256": "9edad73b1e0415273180b52daaa27cbd46dee6a9016fdd2f1106f22c62f3dfef"
+    },
+    {
+      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_8c25e5b26d7a]",
+      "sha256": "09eb0102e808d669b84512e8cea70b4cf6693b253777d6509d9950e71585f77b"
+    },
+    {
+      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_41b62dc714f4]",
+      "sha256": "a58f2b01f37a77aeef724584944f3a00ca8f80043deaccc128634f131e5dcd43"
+    },
+    {
+      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_c15e32ea74db]",
+      "sha256": "311c68f4c0557e96231628b59729c324a5339dbd041a062fa3dbe2406eb0165f"
+    },
+    {
+      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_4f21719fdd54]",
+      "sha256": "0d0018cdda2f03a41c7b603f84e0302150ade33b720825d7f67b831ecd296d6c"
+    },
+    {
+      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_5babe13ed69a]",
+      "sha256": "c1d373ed1e1688e97c8d880c57440dfc2bad92bb5a6790a7251e6a4a32bd8838"
+    },
+    {
+      "path": "[PRIVATE_ORIGINAL_SOURCE_PATH_SHA256_56908f57ca82]",
+      "sha256": "bf42acfadc0f20ce265b7eceb0d2ca7dba9a1d4d6d5a428d813a5f70c7ad7e13"
+    }
+  ],
+  "reused_author_work": [
+    {
+      "path": "docs/guides/curve_digitizer/preparation/README.md",
+      "sha256": "e546331cbabe91fcb76a25b461672616113598eb997fe9301f04b8b8c1b03e87",
+      "role": "Original preparation retained unchanged; derivative reference reconciled for current manual"
+    },
+    {
+      "path": "docs/guides/curve_digitizer/preparation/calibration-concepts.html",
+      "sha256": "a7156533c83c2597036316ff0815f2828b73a695a63c0f70d20206bdedd437af",
+      "role": "Original preparation retained unchanged; derivative reference reconciled for current manual"
+    },
+    {
+      "path": "docs/guides/curve_digitizer/preparation/concepts.css",
+      "sha256": "4c9d409bbe1753684b0b66c7b6d3c7ca917ec50db5ed97cf88cee70df75a2c31",
+      "role": "Original preparation retained unchanged; derivative reference reconciled for current manual"
+    },
+    {
+      "path": "docs/guides/curve_digitizer/preparation/concepts.html",
+      "sha256": "c5bf7ddc99a22d0780d9a9f2cfa2a8d43b7c839c85be29793ffdedd36320985c",
+      "role": "Original preparation retained unchanged; derivative reference reconciled for current manual"
+    },
+    {
+      "path": "docs/guides/curve_digitizer/preparation/configuration-concepts.html",
+      "sha256": "b3a9d09d5c81b9bb8280d15c55e67eaed75f166d29fa0a126fb029433b0a8b3d",
+      "role": "Original preparation retained unchanged; derivative reference reconciled for current manual"
+    },
+    {
+      "path": "docs/guides/curve_digitizer/preparation/coordinate-map.js",
+      "sha256": "68b7841d194050d15a9f840ccd2873868256594b7b31625a60c2aeb61e3aaa9b",
+      "role": "Original preparation retained unchanged; derivative reference reconciled for current manual"
+    },
+    {
+      "path": "docs/guides/curve_digitizer/preparation/index.html",
+      "sha256": "488f451d9d884cee94c9ddad9b275295777e2658cf47e1ca2f9b2018732b87c7",
+      "role": "Original preparation retained unchanged; derivative reference reconciled for current manual"
+    },
+    {
+      "path": "docs/guides/curve_digitizer/preparation/processing-concepts.html",
+      "sha256": "7cee76d3b4c20b91eeda530441671fdd03678efbb1d5653c67cf857af199b323",
+      "role": "Original preparation retained unchanged; derivative reference reconciled for current manual"
+    },
+    {
+      "path": "docs/guides/curve_digitizer/preparation/provenance.json",
+      "sha256": "a695fcfd25aa1ee7604f01f48e2ac74f797c9a263668a476350d75bdc00f81fe",
+      "role": "Original preparation retained unchanged; derivative reference reconciled for current manual"
+    },
+    {
+      "path": "docs/guides/curve_digitizer/preparation/publication-concepts.html",
+      "sha256": "f59e46bd9b85c405c6436ed3f3a132f84f4bea36121546edde9771225ff7da87",
+      "role": "Original preparation retained unchanged; derivative reference reconciled for current manual"
+    },
+    {
+      "path": "docs/guides/curve_digitizer/preparation/quality-concepts.html",
+      "sha256": "a8a54f44e4eb513a6c57832a131daa338f12a529abfa5977f3b25b33174420e3",
+      "role": "Original preparation retained unchanged; derivative reference reconciled for current manual"
+    },
+    {
+      "path": "docs/guides/curve_digitizer/preparation/stroke-width-concepts.html",
+      "sha256": "da6615f71118b7341b332f26bda51e64df1787a43a3c5b37eb0b3ecdd3316e12",
+      "role": "Original preparation retained unchanged; derivative reference reconciled for current manual"
+    },
+    {
+      "path": "docs/guides/curve_digitizer/preparation/tracing-concepts.html",
+      "sha256": "6a333b8b4d94fd3b73ba3b9aac57a16a722006993205484596895aad1a9ab211",
+      "role": "Original preparation retained unchanged; derivative reference reconciled for current manual"
+    },
+    {
+      "path": "docs/guides/curve_digitizer/preparation/uncertainty-concepts.html",
+      "sha256": "968eb4298066743d238cb4a64a961493578e442b077eec5147517791e4cc514a",
+      "role": "Original preparation retained unchanged; derivative reference reconciled for current manual"
+    }
+  ],
+  "reconciliations": [
+    "Current exclusion table/unified history replaces historical Path#/UndoX/RedoX controls",
+    "Current Numeric source describes integrated zero-localization support, not the old separate patch prerequisite",
+    "Direct vendor Quality current-byte verification unsupported; separate CORE host receipt/time/reason retained",
+    "Legacy dev098 Preview guide product-version paragraph not reused as module version; actual2.0.9 descriptor authoritative",
+    "Actual common Help-tab HTML-entry route distinct from unchanged vendor F1; bridge assessment/explicit supported alternative retained"
+  ],
+  "real_images": [
+    {
+      "path": "figures/digitizer-shell-dev110.png",
+      "sha256": "459f930d05dffdba28c9f74fb51c95349c60d19d136d00ec93f3cba1222b1fba",
+      "owner_receipt": "/srv/gxtxt/agents/scratch/GX210-MAIN1/digitizer_shell_execution02/MAIN_GUI_ACCEPTANCE.json",
+      "scope": "Actual accepted empty-Session catalog/open/Ready/close only; no scientific, Preview, full controls/parity or performance evidence"
+    },
+    {
+      "path": "figures/actual-verification-packet003.png",
+      "sha256": "66a103e748404b01f52e400f724068bbe1814c8662d5afd9ce3b3e4d49ced91a",
+      "bytes": 110230,
+      "original_capture_name": "032_actual_verification.png",
+      "original_capture_packet": "T01 GUI003",
+      "edited": false,
+      "scope": "Actual independent verification draft before calibration acceptance; a residual readout is not physical accuracy or uncertainty acceptance."
+    },
+    {
+      "path": "figures/actual-publication-info-packet003.png",
+      "sha256": "909d0811e8d106870d386855833872cdca5b351d2b30fb7cacd1f0662759b04e",
+      "bytes": 108247,
+      "original_capture_name": "059_published_dataset_actual_info.png",
+      "original_capture_packet": "T01 GUI003",
+      "edited": false,
+      "scope": "Published table.generic Dataset metadata: four rows, producer2.0.9, schema and canonical identity. This view does not itself expose all row values or immutable IDs."
+    },
+    {
+      "path": "figures/actual-preview-failure-packet003.png",
+      "sha256": "53de28a180c0b745a547866701216c9537701a9f004538af6c1c725665e9e58a",
+      "bytes": 50603,
+      "original_capture_name": "061_actual_published_preview_ready.png",
+      "original_capture_packet": "T01 GUI003",
+      "edited": false,
+      "scope": "First Preview failure: missing filters key. Despite the original filename containing ready, no scientific plot is rendered; the operator stopped this affected path."
+    }
+  ],
+  "illustrative_assets": "Seven original SVGs and local coordinate card are conceptual/analytical; no application-produced result is inferred",
+  "claims": {
+    "formal111_started": true,
+    "complete_user_content_reviewed": false,
+    "registered_in_actual_catalog": false,
+    "original_F1_connected_to_new_HTML": false,
+    "actual_HTML_native_render_verified": false,
+    "actual_tutorial_scientific_workflows_verified": false,
+    "vendor_modified": false,
+    "tutorial_ZIPs_complete": 0
+  },
+  "review": {
+    "MAIN": "PENDING",
+    "TUTORIAL1_final_tutorial_review": "PENDING; manual is not another tutorial"
+  },
+  "assets": [
+    {
+      "path": "LICENSE.txt",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "bytes": 35149
+    },
+    {
+      "path": "README.md",
+      "sha256": "6af47bfce7feace0ee1d48a66fc4a67b5f93c4558f63cfbb6d29e28573f96fa2",
+      "bytes": 2373
+    },
+    {
+      "path": "api-reference.html",
+      "sha256": "22ed466cfae50b30eeb5970ce4db08aa0be72a6e3850cdc64a21d8ba58a120f7",
+      "bytes": 8813
+    },
+    {
+      "path": "calibration-concepts.html",
+      "sha256": "c383c4a88d5c0b339ca960643566995dcab5975689508e78cbab22f8179480db",
+      "bytes": 7525
+    },
+    {
+      "path": "concepts.css",
+      "sha256": "4c9d409bbe1753684b0b66c7b6d3c7ca917ec50db5ed97cf88cee70df75a2c31",
+      "bytes": 2093
+    },
+    {
+      "path": "concepts.html",
+      "sha256": "f2a418b1fc5389f42f259907999e9b2fc36dedc5415570d3294257855de8d213",
+      "bytes": 11698
+    },
+    {
+      "path": "configuration-concepts.html",
+      "sha256": "dc9a9091111ebd38e0c2e0c059240e84f1ca3b36b870dd6372488fb9b1e75155",
+      "bytes": 10705
+    },
+    {
+      "path": "coordinate-map.js",
+      "sha256": "68b7841d194050d15a9f840ccd2873868256594b7b31625a60c2aeb61e3aaa9b",
+      "bytes": 1283
+    },
+    {
+      "path": "documentation-package.ini",
+      "sha256": "3a12a24ddc3617d3fe469b449c53d74d4899eda8144a7e5be3ad6311e22db5ab",
+      "bytes": 294
+    },
+    {
+      "path": "evidence/packet003-summary.json",
+      "sha256": "c70480f193e6015834bc5180e2d494f44dd18c4d04022dc62a8fa0fa15fe3cc1",
+      "bytes": 4537
+    },
+    {
+      "path": "figures/actual-preview-failure-packet003.png",
+      "sha256": "53de28a180c0b745a547866701216c9537701a9f004538af6c1c725665e9e58a",
+      "bytes": 50603
+    },
+    {
+      "path": "figures/actual-publication-info-packet003.png",
+      "sha256": "909d0811e8d106870d386855833872cdca5b351d2b30fb7cacd1f0662759b04e",
+      "bytes": 108247
+    },
+    {
+      "path": "figures/actual-verification-packet003.png",
+      "sha256": "66a103e748404b01f52e400f724068bbe1814c8662d5afd9ce3b3e4d49ced91a",
+      "bytes": 110230
+    },
+    {
+      "path": "figures/calibration-realizations.svg",
+      "sha256": "0898be2f757432c258f3b6163e652bb3d843224b5629a73435de2e032c3a55da",
+      "bytes": 3117
+    },
+    {
+      "path": "figures/digitizer-shell-dev110.png",
+      "sha256": "459f930d05dffdba28c9f74fb51c95349c60d19d136d00ec93f3cba1222b1fba",
+      "bytes": 8462
+    },
+    {
+      "path": "figures/processing-authority.svg",
+      "sha256": "8ccab7510dda56ea56df5fa245e7a168ba51ca4e9ab62054477b2913fcfea1a0",
+      "bytes": 3592
+    },
+    {
+      "path": "figures/publication-boundaries.svg",
+      "sha256": "819c6399de66f1a31358b20f5c89d1dbb69ab59ffea798900604dc31ecb85ec5",
+      "bytes": 2714
+    },
+    {
+      "path": "figures/scale-bar-conventions.svg",
+      "sha256": "cfad26a451f6d57b80caa7b655bb016fefc1443de0028dcb594272ee9f6c10ca",
+      "bytes": 2890
+    },
+    {
+      "path": "figures/shared-calibration.svg",
+      "sha256": "1bfa3902adb550c0caf4284d32b973065e51c984f334d6f7cf0bde4c89b8f177",
+      "bytes": 3209
+    },
+    {
+      "path": "figures/source-lineage.svg",
+      "sha256": "63d5e1ffef444129c7c84537022a9fc705668e4867e07012261a845c4d83b8d5",
+      "bytes": 3402
+    },
+    {
+      "path": "figures/tracing-ambiguity.svg",
+      "sha256": "24655bf466cf195e234148162a870893bdeb285ecffcd1c680be1ea573bd2865",
+      "bytes": 3151
+    },
+    {
+      "path": "index.html",
+      "sha256": "d30230e323c4edf56a6caf7ff14fad798b128f711b5be20be9f45c70513edd1a",
+      "bytes": 45358
+    },
+    {
+      "path": "manual.css",
+      "sha256": "4920db6fc3e4f0ba0d4915a0511a2dcf4ba38b7161bdf8dd6473d847e8ca9a5a",
+      "bytes": 1895
+    },
+    {
+      "path": "processing-concepts.html",
+      "sha256": "9ddd5fbbd9d6132f8994e420e13bda9924b8717b9b78ad1ac80de9d952224402",
+      "bytes": 10813
+    },
+    {
+      "path": "publication-concepts.html",
+      "sha256": "299e992d5ecf29745312cfec0b05384a937de1ac1565e6a169d2f0d70afd3c4a",
+      "bytes": 9759
+    },
+    {
+      "path": "quality-concepts.html",
+      "sha256": "7eb338f0faa99decb047cc2c731a00fe4b3d0c9b39a2d5ee410e5d23a1a7b775",
+      "bytes": 9465
+    },
+    {
+      "path": "stroke-width-concepts.html",
+      "sha256": "9a051430a3a4b0c34e583e2973c46e63d58e797f657b303d48aa0b20b9eca500",
+      "bytes": 9182
+    },
+    {
+      "path": "tracing-concepts.html",
+      "sha256": "652aeeb2953556eac44a420dd9c6ae160fcb6e4a1eaccc26ebda66ff8a1488ad",
+      "bytes": 9063
+    },
+    {
+      "path": "uncertainty-concepts.html",
+      "sha256": "aa8b385e75fcbd30b5ff067df594a35d93ca839f35223f066b2433778bd50b26",
+      "bytes": 11166
+    }
+  ],
+  "amended_utc": "2026-10-22T23:23:45.100613+00:00",
+  "source_review_amendments": {
+    "authority": "MAIN405 / independent MAIN-SUB3 review01",
+    "M18-01": "Actual Monotonicity/order/Apply/current configuration semantics",
+    "M18-02": "0 or 2..10000 acceptance/current proposal resampling replaces edited batch; Undo",
+    "advisories": "rasterPoints pagination; shared preferences may commit before configuration-save error; source-confirmed vs pending GUI wording"
+  },
+  "source_review_002_clarifications": "EachSetarmsonecornerclick; Notesfocus-outsave/status; actualViewer/configreopen readback vs oldcanvas/in-processSessionOpen. Sourceonly, noGUIacceptance.",
+  "scoped_operator_observations": {
+    "summary": "evidence/packet003-summary.json",
+    "original003": "Partial normal generation/calibration/history/publication/in-process reopen; first Preview failure preserved.",
+    "later004": "Current rows/UUID display observed, limited Preview states with later Previous render guard; no preUndo identity, math/tolerance/current visible native line/full workflow acceptance.",
+    "final_TUTORIAL1_quality": null,
+    "later005": "Current visible native explicitRender/Hide/Show/Fit/Zoom scoped observations; initialautoPreviousrender remainsOPEN; no pan/coldrestart/math/fullworkflow/parity/performance/finalquality acceptance."
+  }
+}

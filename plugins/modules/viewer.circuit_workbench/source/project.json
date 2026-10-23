@@ -1,7 +1,7 @@
 {
   "schema": "gxtxt.viewer_development_project.v1",
   "module_id": "viewer.circuit_workbench",
-  "version": "1.9.9",
+  "version": "1.10.0",
   "language": "cpp",
   "profile": "scientific_view_v1",
   "source": "handlers.cpp",
@@ -101,7 +101,8 @@
     "scientific_source": null,
     "template": "restricted_cpp_viewer_v1",
     "author": "restricted_circuit_interaction_author",
-    "purpose": "dev109 1.9.8 manual chronology only: preserve original source, all203 interface components, scientific grants, icon/resources and historical manuals. Reconcile later independent installed197 evidence and accepted P0; final CW and release acceptance remain MAIN-owned."
+    "purpose": "dev109 1.9.8 manual chronology only: preserve original source, all203 interface components, scientific grants, icon/resources and historical manuals. Reconcile later independent installed197 evidence and accepted P0; final CW and release acceptance remain MAIN-owned.",
+    "task210_discrete_source_candidate": "NMOS/PMOS educational4terminal + static finite SPST/SPDT; no scientific/GUI acceptance; release metadata MAIN-only"
   },
   "tests": {
     "events": [

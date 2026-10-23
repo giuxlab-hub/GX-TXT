@@ -10,7 +10,7 @@ proc ::GX::scientificExecutionCircuitInspect {document {parameters {}}} {
         if {![catch {dict get $response error} message]} {error $message}
         error {Circuit inspection failed; no scientific Job was submitted}
     }
-    return [dict merge [dict get $response result] [dict create document [dict remove $owner payload] provider_id core.ngspice.circuit provider_version 1.0.0 analyses {op tran ac dc} parameters $parameters]]
+    return [dict merge [dict get $response result] [dict create document [dict remove $owner payload] provider_id core.ngspice.circuit provider_version [dict get $::GX::ScientificExecution::providers core.ngspice.circuit version] analyses {op tran ac dc} parameters $parameters]]
 }
 proc ::GX::scientificExecutionCircuitPrepare {document parameters {options {}}} {
     foreach key [dict keys $options] {if {$key ni {node_id remote_session_id expected_generation expected_revision expected_sha256}} {error {Unknown circuit preparation option}}}
@@ -61,7 +61,7 @@ proc ::GX::scientificExecutionCircuitSweepPrepare {document parameters items {op
         foreach item $preparedItems {catch {scientificExecutionDiscard [dict get $item preparation]}}
         return -options $errorOptions $message
     }
-    return [dict create api_id SCIENTIFIC_EXECUTION_API_v1 operation circuit_sweep_prepare provider_id core.ngspice.circuit provider_version 1.0.0 source_guard $guard source_resource $resource items $preparedItems destination [datasetPublicationV2DictDefault $options node_id [scientificExecutionDestination]]]
+    return [dict create api_id SCIENTIFIC_EXECUTION_API_v1 operation circuit_sweep_prepare provider_id core.ngspice.circuit provider_version [dict get $::GX::ScientificExecution::providers core.ngspice.circuit version] source_guard $guard source_resource $resource items $preparedItems destination [datasetPublicationV2DictDefault $options node_id [scientificExecutionDestination]]]
 }
 proc ::GX::_scientificExecutionCircuitSubmitItem {guard item context} {
     _scientificExecutionPublicationGuard $guard
@@ -80,7 +80,7 @@ proc ::GX::scientificExecutionCircuitSweepSubmit {preparation {options {}}} {
     # admitted/scheduled exclusively by the existing durable Job Supervisor.
     return [dict create api_id SCIENTIFIC_EXECUTION_API_v1 operation circuit_sweep_submit state ADMISSION_FINISHED source_guard $guard provider_id [dict get $preparation provider_id] provider_version [dict get $preparation provider_version] destination [dict get $preparation destination] coordination $coordination completion_policy {Admission success is not simulation completion; inspect every canonical child Job. Retain preparations for uncertain remote admission retry; discard only known submitted or explicitly abandoned items.} execution_authority SCRIPT_JOB_API_v1]
 }
-::GX::scientificExecutionRegister core.ngspice.circuit [dict create module_id core.scientific_execution version 1.0.0 worker core/python/gxtxt_scientific_circuit_provider.py tools {spice} parameters [dict create \
+::GX::scientificExecutionRegister core.ngspice.circuit [dict create module_id core.scientific_execution version 1.1.0 worker core/python/gxtxt_scientific_circuit_provider.py tools {spice} parameters [dict create \
     analysis {type choice default op values {op tran ac dc}} \
     step_seconds {type number default 1e-5 min 1e-12 max 1} \
     stop_seconds {type number default .005 min 1e-12 max 100} \

@@ -1,0 +1,394 @@
+{
+  "content_id": "curve_digitizer.tutorial.01.en",
+  "record_type": "curated_actual_operator_packet003_observations",
+  "status": "PARTIAL_ACTUAL_OBSERVATIONS; FULL_TUTORIAL_NOT_ACCEPTED",
+  "packet": "GX210-TUTORIAL-DIGITIZER-T01-GUI-003",
+  "operator": "GX210-TUTORIAL1",
+  "operator_recorded_utc": "2026-10-22T22:06:36.468274+00:00",
+  "source_receipt_name": "DIGITIZER_T01_GUI_RESULT_043.json",
+  "source_receipt_sha256": "4f078814225c043294a44b5f73790a6a2871a03189821b57e5bb20d2017b24c4",
+  "curation": "GUIDE transcribed the existing operator receipt and copied original images; no new GUI, numerical calculation, row/ID extraction or runtime campaign. All statements retain the source scope.",
+  "build": {
+    "framework": "0.9.8.10-dev-110",
+    "source_commit": "e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68",
+    "producer_version": "2.0.9",
+    "stage": "allocated staged dev110; no official activation/installed-dev111 acceptance inferred"
+  },
+  "normal_start": {
+    "session_name": "task210-digitizer-t01-003",
+    "session_title": "Independent calibrated curve digitization",
+    "registered_library_id": "org.giuxlab.gxtxt.numerical_examples",
+    "library_version_gui_readback": null,
+    "generator_id": "calibrated_digitizer",
+    "actual_generator_version": "1.0.0",
+    "input_method": "Allocated ordinary mouse/keyboard interaction; operator reports no hidden callbacks/API/private Session construction or vendor edits"
+  },
+  "source": {
+    "dataset_id": "digitizer.calibration.image",
+    "dimensions": [
+      100,
+      100
+    ],
+    "sha256": "ba9871e4cfe0b39827bdd6f89437076777d2f25e1c389d005d78a531689c5039",
+    "independent_reference_id": "digitizer.calibration.points"
+  },
+  "configuration": {
+    "id": "idoc_0001",
+    "name": "Tutorial 01 - Four points",
+    "accepted_calibration_id": "meas_73b415",
+    "label": "Measurement 1",
+    "short_fingerprint_warning": "e4e17cf0; not treated as calibration ID/fullhash",
+    "axes": {
+      "x": {
+        "quantity": "Time",
+        "unit": "s",
+        "minimum": 0,
+        "maximum": 8,
+        "scale": "linear",
+        "role": "independent"
+      },
+      "y": {
+        "quantity": "Voltage",
+        "unit": "V",
+        "minimum": -2,
+        "maximum": 2,
+        "scale": "linear",
+        "role": "measured"
+      }
+    },
+    "corners_source_pixel_status_rounded_3_decimals": {
+      "BL": [
+        10.581,
+        90.323
+      ],
+      "BR": [
+        90.452,
+        90.323
+      ],
+      "TL": [
+        10.581,
+        10.581
+      ],
+      "TR": [
+        90.452,
+        10.581
+      ]
+    },
+    "corner_rms_display": "1.67e-16; not independent accuracy",
+    "corner_condition_display": 341
+  },
+  "verification": {
+    "expected": [
+      2,
+      -1
+    ],
+    "actual_source_pixel_display": [
+      30.581,
+      70.452
+    ],
+    "actual_physical_display": [
+      2.003231018,
+      -1.003236246
+    ],
+    "delta_x_s_display": 0.003231017771,
+    "delta_y_V_display": -0.003236245955,
+    "cleared_marker_before_points": true,
+    "did_not_acquire_curve_point": true,
+    "not_measurement_uncertainty": true
+  },
+  "acquisition_readouts": [
+    {
+      "teaching_label": "P1",
+      "source_pixel_display": [
+        30.581,
+        70.452
+      ],
+      "physical_display": [
+        2.003231018,
+        -1.003236246
+      ],
+      "independent_ideal_target": [
+        2,
+        -1
+      ],
+      "capture": "039_actual_point1.png"
+    },
+    {
+      "teaching_label": "P2",
+      "source_pixel_display": [
+        60.516,
+        40.516
+      ],
+      "physical_display": [
+        5.001615509,
+        0.498381877
+      ],
+      "independent_ideal_target": [
+        5,
+        0.5
+      ],
+      "capture": "040_actual_point2.png"
+    },
+    {
+      "teaching_label": "P3",
+      "source_pixel_display": [
+        75.484,
+        65.419
+      ],
+      "physical_display": [
+        6.500807754,
+        -0.7508090615
+      ],
+      "independent_ideal_target": [
+        6.5,
+        -0.75
+      ],
+      "capture": "041_actual_point3.png"
+    },
+    {
+      "teaching_label": "P4",
+      "source_pixel_display": [
+        40.516,
+        25.548
+      ],
+      "physical_display": [
+        2.998384491,
+        1.249190939
+      ],
+      "independent_ideal_target": [
+        3,
+        1.25
+      ],
+      "capture": "042_actual_point4.png"
+    }
+  ],
+  "acquisition_readout_scope": "Displayed actual click/acquisition values versus analytical teaching targets, no invented tolerance or private output recalculation; full canonical actualrow comparison NOT_COMPLETE",
+  "numerical_tolerance": null,
+  "immutable_curve_id": null,
+  "immutable_point_ids": [],
+  "identity_limitation": "GUI numbers1..4 are sequence labels, not immutable IDs; complete IDs and canonicalrowreadback remain unverified, no privateextractor used",
+  "ordering": {
+    "monotonicity": "None",
+    "ordering_source": "Insertion order",
+    "snap": false,
+    "apply_status": "Applied and saved to the selected configuration",
+    "reopened_readback_same": true
+  },
+  "history": {
+    "CtrlZ_four_to_three": "043",
+    "CtrlY_three_to_four": "044",
+    "Move_P2_changed": "045",
+    "Move_Undo_visible_restoration": "046",
+    "Delete_P2_four_to_three": "047",
+    "Delete_Undo_three_to_four": "048",
+    "counts_visible_positions_order_restored": true,
+    "immutable_ID_restore_independently_readback": false
+  },
+  "notes": "Entered normalNotes, FocusOut viaPublish; identicaltextretainedafteractualViewerclose/SessionOpen/newViewer in080",
+  "publication": {
+    "mode": "none",
+    "mode_status": "Uncertainty publication disabled; no sigmas will be invented.",
+    "layout": "separate",
+    "selected_accepted_calibrations": 1,
+    "actual_output_id": "cd.tutorial01.measurement_1.curves",
+    "reported_dataset_count": 1,
+    "actual_contract": "table.generic",
+    "actual_row_count": 4,
+    "actual_producer_version": "2.0.9",
+    "actual_schema_columns": [
+      "x",
+      "y",
+      "curve_id",
+      "curve_label",
+      "point_index",
+      "point_id",
+      "pixel_x",
+      "pixel_y"
+    ],
+    "x_unit": "s",
+    "y_unit": "V",
+    "pixel_units": "px",
+    "sha256": "b28616fc9c7feba75a4707ec3042acfe6dcebb5af97913c356f7acb493b9470f",
+    "capture_success": "055_publication_result.png",
+    "capture_info": "059_published_dataset_actual_info.png",
+    "reopened_schema": "085_reopened_output_variables.png",
+    "reopened_info": "086_reopened_output_identity.png",
+    "full_rows_ids_readback": "INCOMPLETE; Sessionfiletextpane clipped"
+  },
+  "preview": {
+    "status": "FAILED_OWNER_GAP",
+    "message": "Preview unavailable: key \"filters\" not known in dictionary Select Render to retry.",
+    "first_capture": "061_actual_published_preview_ready.png",
+    "Render_retry": false,
+    "Fit_zoom_pan_group_ShowHide_Source_Quality": "NOT_TESTED after firstfailure; no privatefallback",
+    "return_dataset_tab_after_reopen": "084 restored unavailablePreviewtab automatically; no Render/input retry, switchedVariables085"
+  },
+  "first_failure": {
+    "status": "FIRST_MATERIAL_FAILURE_PRESERVED_D07_PREVIEW; AFFECTED_PATH_STOPPED",
+    "message": "Preview unavailable: key \"filters\" not known in dictionary Select Render to retry.",
+    "affected_path": "Preview render/manipulation stopped; no Render retry, bypass or private patch",
+    "later_owner_status": "MAIN614 reports CORE source fix19b; fresh remaining packet004 runtime result pending, not accepted here"
+  },
+  "persistence": {
+    "ordinary_save_confirmation": "070_save_confirmation.png",
+    "external_viewer_closed_before_session_Open": "073_digitizer_closed_before_open.png",
+    "normal_Open_exact_path": "075–077",
+    "actual_new_Viewer_opened": "078",
+    "source_config_hash_dimensions_retained": true,
+    "accepted_calibration_axes_retained": "079",
+    "notes_retained": "080",
+    "four_numbered_positions_count_retained": "081",
+    "ordering_retained": "083",
+    "output_identity_schema_rowcount_hash_retained": "085–086",
+    "full_numerical_ids_readback": false,
+    "application_cold_restart": false,
+    "preview_reopened_interaction": "BLOCKED bypreservedfirstfailure"
+  },
+  "operator_input_corrections": [
+    {
+      "captures": [
+        "025",
+        "026"
+      ],
+      "description": "Tk Entry Ctrl+A moved insertion point rather than clearing; initial TimeX/VoltageY/81/-20/21 preserved, then normal Home/ShiftEnd/BackSpace corrected fields and Apply BEFORE anycorner/point. No wrongaxespublication."
+    },
+    {
+      "captures": [
+        "065",
+        "066",
+        "067",
+        "068"
+      ],
+      "description": "Sessionfiletextpane clipped; attemptedordinarysashdrag/doubleclick didnotexposefullrows.066filename full_readback is an attemptlabel, not evidenceofcomplete readback. NormalCopyfiletextclicked; OSxclipread failed exit127 unavailable, noclipboarddataobtained/noinstall/fallback/privateextract."
+    }
+  ],
+  "operator_scoped_D01_D09": {
+    "D01": "PASS normalregisteredGenerate/sourceinputs",
+    "D02": "PASS normalDigitalizercatalog/newconfig/reviewimage/link100x100hash",
+    "D03": "PASS scopedactualmanualcalibration/verification/accept; noexactidealclickclaim",
+    "D04": "PASS fouractualpoints/orderApply, immutableIDsreadbackINCOMPLETE",
+    "D05": "PASS count/visiblepositionhistory; immutableIDrestorationNOT_VERIFIED",
+    "D06": "PASS normalgenuinepublication4rows/schema/units; fullcanonicalnumericalrow/IDreadbackINCOMPLETE",
+    "D07": "FAILED Preview keyfilters; dependentcontrolsNOT_TESTED",
+    "D08": "PASS scopedinprocessSave/Open/newViewer source/config/map/Notes/count/order/outputmetadata; fullrowIDs/Preview/COLDNT",
+    "D09": "PASS normalclose22:04:56; recordedowncleanupqualifiedonly"
+  },
+  "selected_existing_guards": {
+    "source_pins": {
+      "count": 17,
+      "scope": "Selected source/precompiled byte pins after close only; not fulltree/mode or numerical validation",
+      "all_match": true,
+      "receipt_sha256": "f0324f1a2875a05f3e68352406f78aa3390dc2fe73be157b3fbca7e1a15aa86a"
+    },
+    "payload_hashes": {
+      "count": 3,
+      "scope": "Original RAW image, canonical source image, published CSV byte hashes only; no CSV/ID/numeric extraction",
+      "all_match": true,
+      "receipt_sha256": "b482c47b2de4f423098e02789e122f92cd3e22f999aa60a266f7d2aae76e3ce2"
+    }
+  },
+  "images": [
+    {
+      "path": "figures/actual-gui-003/010_selected_calibrated_digitizer.png",
+      "sha256": "7b1c1383b68ab4a344aa35763a33d9d83432fc02345af10efd2e64994c006148",
+      "bytes": 84083,
+      "operator_capture_name": "010_selected_calibrated_digitizer.png",
+      "captured_utc": "2026-10-22T21:53:32.041774+00:00",
+      "edited": false,
+      "source_capture_inventory_sha256": "5309650464490885cef387e3aaa42d305e901932946b2178025f9c5b95501553"
+    },
+    {
+      "path": "figures/actual-gui-003/012_generation_result.png",
+      "sha256": "44fc376dda65f2f208f7ab553d06cfad2d493bc73e8205f4644dd15dfe4bec92",
+      "bytes": 48169,
+      "operator_capture_name": "012_generation_result.png",
+      "captured_utc": "2026-10-22T21:53:44.822141+00:00",
+      "edited": false,
+      "source_capture_inventory_sha256": "5309650464490885cef387e3aaa42d305e901932946b2178025f9c5b95501553"
+    },
+    {
+      "path": "figures/actual-gui-003/032_actual_verification.png",
+      "sha256": "66a103e748404b01f52e400f724068bbe1814c8662d5afd9ce3b3e4d49ced91a",
+      "bytes": 110230,
+      "operator_capture_name": "032_actual_verification.png",
+      "captured_utc": "2026-10-22T21:55:58.685998+00:00",
+      "edited": false,
+      "source_capture_inventory_sha256": "5309650464490885cef387e3aaa42d305e901932946b2178025f9c5b95501553"
+    },
+    {
+      "path": "figures/actual-gui-003/042_actual_point4.png",
+      "sha256": "b7da8e81880aa00cdb7d8d263a024b547193a10b0c10b1b29a893cc049c475e8",
+      "bytes": 92382,
+      "operator_capture_name": "042_actual_point4.png",
+      "captured_utc": "2026-10-22T21:56:59.979772+00:00",
+      "edited": false,
+      "source_capture_inventory_sha256": "5309650464490885cef387e3aaa42d305e901932946b2178025f9c5b95501553"
+    },
+    {
+      "path": "figures/actual-gui-003/055_publication_result.png",
+      "sha256": "fb855bd87c10c721a76793b3147032aac1d59c5480f31e0cafead73a40188976",
+      "bytes": 73623,
+      "operator_capture_name": "055_publication_result.png",
+      "captured_utc": "2026-10-22T21:58:32.826466+00:00",
+      "edited": false,
+      "source_capture_inventory_sha256": "5309650464490885cef387e3aaa42d305e901932946b2178025f9c5b95501553"
+    },
+    {
+      "path": "figures/actual-gui-003/059_published_dataset_actual_info.png",
+      "sha256": "909d0811e8d106870d386855833872cdca5b351d2b30fb7cacd1f0662759b04e",
+      "bytes": 108247,
+      "operator_capture_name": "059_published_dataset_actual_info.png",
+      "captured_utc": "2026-10-22T21:59:11.447589+00:00",
+      "edited": false,
+      "source_capture_inventory_sha256": "5309650464490885cef387e3aaa42d305e901932946b2178025f9c5b95501553"
+    },
+    {
+      "path": "figures/actual-gui-003/061_actual_published_preview_ready.png",
+      "sha256": "53de28a180c0b745a547866701216c9537701a9f004538af6c1c725665e9e58a",
+      "bytes": 50603,
+      "operator_capture_name": "061_actual_published_preview_ready.png",
+      "captured_utc": "2026-10-22T21:59:25.916010+00:00",
+      "edited": false,
+      "source_capture_inventory_sha256": "5309650464490885cef387e3aaa42d305e901932946b2178025f9c5b95501553"
+    },
+    {
+      "path": "figures/actual-gui-003/080_reopened_notes.png",
+      "sha256": "1a1e4060b940dca6c046a9d60090e6ffdfb91004b9e55746713233615802b7e1",
+      "bytes": 57512,
+      "operator_capture_name": "080_reopened_notes.png",
+      "captured_utc": "2026-10-22T22:03:24.602979+00:00",
+      "edited": false,
+      "source_capture_inventory_sha256": "5309650464490885cef387e3aaa42d305e901932946b2178025f9c5b95501553"
+    },
+    {
+      "path": "figures/actual-gui-003/081_reopened_four_points.png",
+      "sha256": "b6d80bc0c7b25229ebfccec973107221a51d3cbbdc1ceb6114a0b3077ef851c0",
+      "bytes": 86642,
+      "operator_capture_name": "081_reopened_four_points.png",
+      "captured_utc": "2026-10-22T22:03:25.022991+00:00",
+      "edited": false,
+      "source_capture_inventory_sha256": "5309650464490885cef387e3aaa42d305e901932946b2178025f9c5b95501553"
+    },
+    {
+      "path": "figures/actual-gui-003/086_reopened_output_identity.png",
+      "sha256": "909d0811e8d106870d386855833872cdca5b351d2b30fb7cacd1f0662759b04e",
+      "bytes": 108247,
+      "operator_capture_name": "086_reopened_output_identity.png",
+      "captured_utc": "2026-10-22T22:04:42.893272+00:00",
+      "edited": false,
+      "source_capture_inventory_sha256": "5309650464490885cef387e3aaa42d305e901932946b2178025f9c5b95501553"
+    }
+  ],
+  "acceptance_and_remaining_status": {
+    "full_canonical_rows_or_immutable_ids_verified": false,
+    "full_tutorial_accepted": false,
+    "native_Guides_HTML_action": "OMITTED unchanged stage content absent",
+    "Preview_render_or_controls_verified": false,
+    "cold_application_restart_tested": false,
+    "GUI_parity_or_performance_accepted": false,
+    "optional_full_T01_exercises": "NOT_TESTED",
+    "T02_or_T03_workflows": "NOT_TESTED by this packet",
+    "final_quality_acceptance": null,
+    "final_completed_tutorial_ZIPs": 0
+  }
+}

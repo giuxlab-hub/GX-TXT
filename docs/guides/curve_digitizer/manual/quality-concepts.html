@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original GUIDE explanatory manuscript. -->
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Curve Digitizer — Quality and source evidence</title><link rel="stylesheet" href="concepts.css"></head>
+<body><main>
+<p class="label">Curve Digitizer 2.0.9 · reference · review draft</p>
+<h1>Read a diagnostic with its coverage and source evidence</h1>
+<p class="lead">A Quality report describes the published digitization and bounded image observations. Interpret its counts, limitations and source claims together, without converting them into a claim of measurement accuracy.</p>
+
+<nav aria-label="On this page"><ul><li><a href="#diagnostics">Diagnostic meaning</a></li><li><a href="#coverage">Coverage and truncation</a></li><li><a href="#counts">Points and rows</a></li><li><a href="#source">Provider and host evidence</a></li><li><a href="#review">Practical review</a></li></ul></nav>
+<section id="diagnostics"><h2>Separate a useful warning from an accuracy estimate</h2>
+<p>The documented report includes curve/segment structure, calibration observations, local image evidence and issue summaries. Invalid calibration geometry, out-of-image points, repeated consecutive points, long segments, weak contrast or a monotonicity issue can help locate a problem worth inspecting.</p>
+<p>Absence of a warning does not identify the correct scientific curve. A dark grid line, annotation, overlapping trace or wrong branch can still look locally convincing. Image-space diagnostics do not independently establish that the raster faithfully represents the original physical measurement.</p>
+<p>The current vendor Quality documentation describes accuracy and uncertainty as <code>not_assessed</code>. A separately enabled uncertainty declaration belongs to its own scientific contract. Do not treat a declaration, a small corner reprojection residual or descriptive spread across calibration realizations as independent proof of accuracy.</p>
+<p>The documented image evidence uses the canonical source raster, rather than GUI opacity or a display filter. Publishing a processed image and deliberately selecting that new Dataset as the source establishes a different canonical source context. Preserve the actual identity and lineage; see <a href="processing-concepts.html#publish">processed-image publication</a>.</p>
+</section>
+<section id="coverage"><h2>Read returned records alongside total counts</h2>
+<table><caption>Vendor source limits awaiting actual-release confirmation</caption><thead><tr><th scope="col">Diagnostic detail</th><th scope="col">Documented bound</th><th scope="col">Interpretation</th></tr></thead><tbody>
+<tr><td>Retained segment records</td><td>Up to 1500 intervals; flagged intervals are preferred if more exist.</td><td>A retained list can be a bounded subset. Inspect total/returned counts, truncation and sampling policy.</td></tr>
+<tr><td>Detailed issue records</td><td>At most 400 detailed issues, with additional occurrences counted.</td><td>Detail count can differ from total issue count. An omitted item is not a cleared warning.</td></tr>
+<tr><td>Image evidence</td><td>At most 12000 sampled cross-section pixels per Dataset.</td><td>A bounded sample does not establish full-image or full-curve coverage.</td></tr>
+</tbody></table>
+<p>A report's coverage and validity statements are part of its scientific interpretation. Do not label an interval error-free merely because it has no retained record. A missing report or unsupported schema also remains missing/unsupported, rather than becoming a perfect score or a zero.</p>
+<p>Keep per-segment locations and curve/calibration identifiers when following a warning back to the image. A segment reference describes original consecutive raster points; it is not automatically an index into a replicated multi-calibration table.</p>
+</section>
+<section id="counts"><h2>Unique raster points and scientific rows answer different questions</h2>
+<p>One accepted original point may be transformed by more than one calibration. A combined scientific Dataset can therefore contain more rows than there are unique original raster points. Retain the actual curve, point and calibration identities when interpreting counts.</p>
+<p>For an illustrative curve with three unique raster points and two published calibrations, a combined output can have six scientific rows. That does not create six independent operator clicks or six independent physical measurements. The <a href="concepts.html#groups">calibration-realization explanation</a> shows this conceptual distinction.</p>
+<p>Scientific-space plots must preserve both curve and calibration grouping. A source-raster overlay can de-duplicate the same original point by its curve/point identity. De-duplication for display must not erase distinct scientific calibration realizations or rewrite canonical published rows.</p>
+<p>The report is a publication-time snapshot. Later edits to a current configuration do not silently update the old Dataset or its diagnostics. Select the exact intended published output; preserve its source and accepted-calibration context.</p>
+</section>
+<section id="source"><h2>Label provider claims and CORE observations separately</h2>
+<p><strong>MAIN's explicit qualification:</strong> direct unchanged-vendor 2.0.9 Quality current-byte verification remains unsupported. Provider-returned integrity/digest fields do not, by themselves, establish that the current source-file bytes were independently measured. Keep those fields unchanged and retain their provider meaning.</p>
+<p>The supplied CORE host contract separately describes a source-verification receipt with publication/registered expected identities, an observed digest, status, owner/method, observation time and reason. The successful local path reuses the existing Session Inspection verified Dataset Payload receipt. This is an owner observation, distinct from a provider claim or registry comparison.</p>
+<table><caption>Interpret the host observation according to its actual owner result</caption><thead><tr><th scope="col">Condition described by the host contract</th><th scope="col">Meaning to preserve</th></tr></thead><tbody>
+<tr><td>Valid publication and registered identities match successful canonical-owner verification.</td><td>A qualified <code>verified</code> observation at that source-preparation/verification time, not a continuing byte guarantee.</td></tr>
+<tr><td>Actual measured/publication identity mismatch.</td><td><code>changed</code>, with the relevant refusal/reason; do not align an overlay as if it were the original source.</td></tr>
+<tr><td>Missing or malformed identity/digest, or a later matching observation after an earlier canonical-owner refusal.</td><td><code>unverified</code> with the actual reason. A malformed identity alone is not evidence that bytes changed; a later match does not waive the earlier refusal.</td></tr>
+<tr><td>Remote source outside the local raster verification route.</td><td><code>unsupported_remote</code>, rather than an assertion of successful local verification.</td></tr>
+</tbody></table>
+<p>Source/cache changes can make a previously rendered observation stale. A cached receipt is evidence at its preparation epoch, not continuous monitoring of current bytes. Preserve the actual observation time and previous-render qualification when interpreting a retained image or report.</p>
+<p>These meanings come from the existing supplied CORE owner contract. This manuscript adds no public field, alternative reader, hashing pass or API. Runtime and real GUI evidence are still required before claiming that the installed host presents or enforces the described behavior.</p>
+</section>
+<section id="review"><h2>Keep the result and its limitations together</h2>
+<ol><li>Identify the exact published Dataset, source bytes and published calibration set.</li><li>Check report availability/schema, total/returned counts, truncation and sampling policy.</li><li>Inspect the relevant curve/segment location against the intended source, including ambiguous or weakly sampled regions.</li><li>Distinguish provider-returned information from any separately qualified, time-bound CORE observation.</li><li>Keep independent reference evidence and justified uncertainty separate from descriptive Quality and stroke-width diagnostics.</li><li>Preserve unsupported, missing, stale or refused cases explicitly with their actual reason.</li></ol>
+<p>Continue with <a href="stroke-width-concepts.html">stroke-width interpretation</a>, <a href="uncertainty-concepts.html">uncertainty concepts</a> and <a href="publication-concepts.html#recovery">publication recovery</a>. The linked explanations preserve their analytical assumptions and distinguish source contract from actual workflow evidence. The three tutorials require actual controls, canonical outputs, Dataset Preview evidence and TUTORIAL1 quality review; this draft does not substitute text for those observations.</p>
+</section>
+<footer><p><a href="index.html">Return to the complete manual</a> · <a href="api-reference.html">Public contract reference</a></p><p>GX210-GUIDE · GPL-3.0-or-later · Review draft for unchanged Curve Digitizer 2.0.9 on deposited dev110. Illustrations and analytical examples are identified explicitly; actual workflow validation remains pending.</p></footer>
+</main></body></html>

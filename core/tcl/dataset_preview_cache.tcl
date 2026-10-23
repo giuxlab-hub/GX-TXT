@@ -17,10 +17,23 @@ proc ::GX::datasetPreviewCacheRoot {session} {
     return $root
 }
 proc ::GX::datasetPreviewCacheSource {id} {return [datasetViewerScientificIdentity $id]}
+proc ::GX::_datasetPreviewCacheScientificOptions {options} {
+    # Retained preparation keeps all curves; visibility only changes the
+    # presentation of that geometry. Preserve every scientific selection and
+    # reject malformed maps rather than masking them with an empty default.
+    if {[dict exists $options selections]} {
+        dict set options selections [dict remove [dict get $options selections] @hidden_filters]
+    }
+    return $options
+}
 proc ::GX::datasetPreviewCacheKey {id {options {}}} {
     variable ::GX::PreviewCache::renderer
     set configured [_datasetPreviewConfiguredOptions $id]
     set options [dict merge $configured $options]
+    # Project both terms: captured render options can override current defaults,
+    # but genuine saved scientific configuration changes must still invalidate.
+    set configured [_datasetPreviewCacheScientificOptions $configured]
+    set options [_datasetPreviewCacheScientificOptions $options]
     if {$renderer eq {}} {
         set renderer gxtxt.preview.retained.v1
         foreach relative {
@@ -129,6 +142,25 @@ proc ::GX::datasetPreviewCacheGenerate {id options {expectedKey {}}} {
         set source [datasetPreviewCacheSource $id]
         set dir [datasetPreviewCachePath $::GX::currentSession $key];file mkdir $dir
         file delete -force [file join $dir PREPARE_ERROR.tcldict]
+        set result [_datasetPreviewCachePrepare $id $options $key $source $dir]
+        set bytes [encoding convertto utf-8 $result]
+        if {[string length $bytes]>16777216} {error {Prepared Preview exceeds the 16 MiB representation bound}}
+        set path [file join $dir representation.tcldict]
+        resourceLifecycleWriteBytes $path $bytes
+        resourceLifecycleWriteBytes [file join $dir SHA256] [encoding convertto utf-8 [sha256File $path]]
+        resourceManagementObserve $dir dataset_preview [dict create category cache_reusable session $::GX::currentSession]
+        datasetPreviewCacheEvict $::GX::currentSession $key
+        return $result
+    } finally {set worker $prior}
+}
+# One preparation body for the normal cache writer and the reviewed future
+# managed-worker publication owner. The caller owns the destination and captures
+# source/options/key; this helper neither publishes a representation nor grants
+# native admission. No worker request can select a destination through this API.
+proc ::GX::_datasetPreviewCachePrepare {id options key source dir} {
+    variable ::GX::PreviewCache::worker
+    set prior $worker;set worker 1
+    try {
         set result [dict create schema gxtxt.session_preview.v1 dataset_id $id key $key source $source options $options generated_at [clock format [clock seconds] -gmt 1 -format %Y-%m-%dT%H:%M:%SZ] kind descriptive status ready]
         if {[datasetProviderFor $id] eq "remote"} {
             set remote [scientificExecutionRemoteCall [datasetField $id remote_node_id] [datasetField $id remote_session_id] dataset.preview $id [datasetField $id remote_revision] $options $dir]
@@ -195,13 +227,6 @@ proc ::GX::datasetPreviewCacheGenerate {id options {expectedKey {}}} {
             dict set artifacts [file tail $path] [sha256File $path]
         }
         dict set result artifacts $artifacts
-        set bytes [encoding convertto utf-8 $result]
-        if {[string length $bytes]>16777216} {error {Prepared Preview exceeds the 16 MiB representation bound}}
-        set path [file join $dir representation.tcldict]
-        resourceLifecycleWriteBytes $path $bytes
-        resourceLifecycleWriteBytes [file join $dir SHA256] [encoding convertto utf-8 [sha256File $path]]
-        resourceManagementObserve $dir dataset_preview [dict create category cache_reusable session $::GX::currentSession]
-        datasetPreviewCacheEvict $::GX::currentSession $key
         return $result
     } finally {set worker $prior}
 }
@@ -235,7 +260,7 @@ proc ::GX::datasetPreviewCacheRequest {id {options {}} {callback {}}} {
     }
     incr misses
     dict unset ::GX::PreviewCache::outcomes $key
-    dict set tasks $key [dict create session $session id $id options $options callbacks [expr {$callback eq {}?{}:[list $callback]}] job_id {} creator [expr {$::GX::PreviewCache::watchCalling ? {watch} : {legacy}}] legacy_joined [expr {!$::GX::PreviewCache::watchCalling}]]
+    dict set tasks $key [dict create session $session session_token [interactiveDocumentSessionToken] id $id options $options callbacks [expr {$callback eq {}?{}:[list $callback]}] job_id {} creator [expr {$::GX::PreviewCache::watchCalling ? {watch} : {legacy}}] legacy_joined [expr {!$::GX::PreviewCache::watchCalling}]]
     if {$::GX::PreviewCache::watchCalling && [auto_execok setsid] ne {} && [auto_execok tclsh] ne {}} {
         _datasetPreviewCacheManagedStart $key
     } else {
@@ -250,7 +275,6 @@ proc ::GX::_datasetPreviewCacheManagedStart {key} {
     set generation [incr ::GX::PreviewCache::managedSerial]
     dict set tasks $key execution_kind managed_request
     dict set tasks $key managed_generation $generation
-    dict set tasks $key session_token [interactiveDocumentSessionToken]
     dict set tasks $key request_id {}
     set payload [dict create schema gxtxt.preview_worker.v1 session [dict get $entry session] dataset_id [dict get $entry id] options [dict get $entry options] expected_key $key]
     set command [list [auto_execok setsid] [auto_execok tclsh] [file join $::GX::scriptDir core tcl dataset_preview_worker_v1.tcl] $::GX::scriptDir]
@@ -283,8 +307,7 @@ proc ::GX::_datasetPreviewCacheManagedDone {key generation response} {
     } elseif {![dict get $response ok]} {dict set result message [dict get $response error]
     } elseif {[catch {
         if {[dict get $response result key] ne $key || [dict get $response result dataset_id] ne [dict get $entry id]} {error {Preview worker returned a mismatched source/key}}
-        set prepared [datasetPreviewCacheRead [dict get $entry id] $key]
-        if {$prepared eq {}} {error {Preview worker output is absent, damaged or stale}}
+        _datasetPreviewCacheValidateCompletion $key $entry
     } reason]} {dict set result message $reason
     } else {dict set result status ready}
     if {[dict exists $response diagnostic_tail]} {dict set result diagnostic_tail [dict get $response diagnostic_tail]}
@@ -326,8 +349,24 @@ proc ::GX::_datasetPreviewCachePolled {key response} {
         after 200 [list ::GX::_datasetPreviewCachePoll $key];return
     }
     set status [expr {[dict get $job state] eq "COMPLETED"?"ready":"error"}]
+    if {$status eq {ready} && [catch {_datasetPreviewCacheValidateCompletion $key $entry} reason]} {
+        set status error
+        dict set job error $reason
+    }
     if {[datasetPublicationV2DictDefault $job error {}] eq {}} {dict set job error [dict get $job state]}
     _datasetPreviewCacheFinish $key [dict create status $status key $key job_id [dict get $entry job_id] message [datasetPublicationV2DictDefault $job error [dict get $job state]] cache_hit 0]
+}
+# Job completion proves execution ended; current usable Preview state belongs to
+# the cache owner. Both execution routes apply the same existing source/key/read
+# guards before notifying ready. This does not grant native-provider admission.
+proc ::GX::_datasetPreviewCacheValidateCompletion {key entry} {
+    if {[dict exists $entry cancelled]} {error {Preview preparation cancelled}}
+    if {[catch {interactiveDocumentSessionToken} token] || $token ne [dict get $entry session_token] || $::GX::currentSession ne [dict get $entry session]} {error {Preview preparation cancelled: Session lifetime changed}}
+    set id [dict get $entry id]
+    if {[datasetPreviewCacheKey $id [dict get $entry options]] ne $key} {error {Preview source or preparation settings changed before completion}}
+    set prepared [datasetPreviewCacheRead $id $key]
+    if {$prepared eq {}} {error {Preview worker output is absent, damaged or stale}}
+    return $prepared
 }
 proc ::GX::_datasetPreviewCacheFinish {key response} {
     variable ::GX::PreviewCache::tasks
@@ -423,12 +462,28 @@ proc ::GX::datasetPreviewCachePublished {session receipt} {
         if {[datasetField $id id {}] ne {}} {catch {datasetPreviewCacheRequest $id}}
     }
 }
+proc ::GX::_datasetPreviewCacheDiagnosticIdentity {record} {
+    # Public engineering identity only: never forward arbitrary failure fields.
+    set result [dict create execution_kind {} job_id {} request_id {}]
+    if {![dict exists $record execution_kind]} {return $result}
+    set kind [dict get $record execution_kind]
+    if {$kind ni {durable_job managed_request}} {return $result}
+    dict set result execution_kind $kind
+    if {$kind eq {durable_job} && [dict exists $record job_id]} {
+        set value [dict get $record job_id]
+        if {[string length $value]<=192 && [regexp {^[A-Za-z0-9][A-Za-z0-9_.:-]*$} $value]} {dict set result job_id $value}
+    } elseif {$kind eq {managed_request} && [dict exists $record request_id]} {
+        set value [dict get $record request_id]
+        if {[string length $value]<=192 && [regexp {^job-request-[0-9]+$} $value]} {dict set result request_id $value}
+    }
+    return $result
+}
 proc ::GX::datasetPreviewCacheInventory {session} {
     set result {};set root [datasetPreviewCacheRoot $session]
     foreach dir [glob -nocomplain -type d -directory $root *] {
         if {[file type $dir] eq "link" || ![regexp {^[a-f0-9]{64}$} [file tail $dir]]} continue
         set bytes 0;foreach file [glob -nocomplain -type f -directory $dir *] {incr bytes [file size $file]}
-        set path [file join $dir representation.tcldict];set item [dict create key [file tail $dir] size_bytes $bytes status preparing dataset_id {} generated_at {} kind descriptive error {} source_revision {}]
+        set path [file join $dir representation.tcldict];set item [dict create key [file tail $dir] size_bytes $bytes status preparing dataset_id {} generated_at {} kind descriptive error {} source_revision {} execution_kind {} job_id {} request_id {}]
         if {[file isfile $path] && [file type $path] ne "link" && [file size $path]<=16777216} {
             # Inventory is also used by eviction and Clear all. A damaged
             # disposable record must remain removable, not abort management
@@ -465,11 +520,15 @@ proc ::GX::datasetPreviewCacheInventory {session} {
                 foreach field {dataset_id generated_at} {
                     if {[dict exists $failure $field]} {dict set item $field [dict get $failure $field]}
                 }
+                set item [dict merge $item [_datasetPreviewCacheDiagnosticIdentity $failure]]
             }
         }
         if {[dict exists $::GX::PreviewCache::outcomes [file tail $dir]]} {
             set outcome [dict get $::GX::PreviewCache::outcomes [file tail $dir]]
-            if {[dict get $outcome status] eq "error"} {dict set item status error;dict set item error [dict get $outcome message]}
+            if {[dict get $outcome status] eq "error"} {
+                dict set item status error;dict set item error [dict get $outcome message]
+                set item [dict merge $item [_datasetPreviewCacheDiagnosticIdentity $outcome]]
+            }
         }
         lappend result $item
     }

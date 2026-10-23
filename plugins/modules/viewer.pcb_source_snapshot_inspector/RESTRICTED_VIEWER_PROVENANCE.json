@@ -1,0 +1,15 @@
+{
+  "author_tcl": false,
+  "binary_sha256": "3236d7e7b287377a59a23da0b561cd561dbf79ffb4d2fdf0d37b2a696ccc0194",
+  "design_sha256": "9e52f9a807cd57f20236363d07fa6ab2b88b26a1a9eb829badc989e0d8c6e39b",
+  "manual_assets": {},
+  "manual_sha256": "baa1503c8c1a7a4e643fd632d9f489b94fe2741779076f5a22dd8e6a72987fd1",
+  "module_id": "viewer.pcb_source_snapshot_inspector",
+  "policy_sha256": "fbf565e428952f6c4d587c1dd21e5b3eb96ae1e17bcc98a9e1877852a08ba3e7",
+  "promotion": "official Plugin Manager only",
+  "runtime": "VIEWER_DEVELOPMENT_API_v1 separate process",
+  "schema": "gxtxt.restricted_viewer_candidate.v1",
+  "sdk_sha256": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
+  "source_sha256": "3479824baadcdf130d9dd79f5278e7fb95194fc687bc109cea19c1af44806124",
+  "version": "0.1.0"
+}

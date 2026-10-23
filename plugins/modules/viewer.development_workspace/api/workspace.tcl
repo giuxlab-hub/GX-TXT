@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Ordinary Viewer client. CORE owns policy, compiler, runtime, native views and packages.
-namespace eval ::GX::ViewerDevelopmentWorkspace {variable s;array set s {project {} file handlers.cpp dirty 0 baseline {} busy {} generation 0 status {Open or create a restricted C++ project. No scientific Session is required.} preview {} find {}}}
+namespace eval ::GX::ViewerDevelopmentWorkspace {variable s;array set s {project {} mode cpp file handlers.cpp dirty 0 baseline {} busy {} generation 0 windowGeneration 0 status {Open or create a restricted C++ project, or maintain an approved installed Viewer. No scientific Session is required.} preview {} find {}}}
 proc ::GX::ViewerDevelopmentWorkspace::safe {method args} {
     if {[catch {[namespace current]::$method {*}$args} result options]} {set ::GX::ViewerDevelopmentWorkspace::s(status) $result;log "$result\n";return [dict create status FAILED message $result]}
     return $result
@@ -25,6 +25,7 @@ proc ::GX::ViewerDevelopmentWorkspace::prepare {} {
 }
 proc ::GX::ViewerDevelopmentWorkspace::save {} {
     variable s
+    if {$s(mode) eq {maintenance}} {return [maintenanceSave]}
     if {$s(project) eq {}||$s(file) ni {handlers.cpp project.json}} {error {Choose an editable project source first}}
     set source [::GX::sourceSurfaceGet [text]]
     transfer save $source $s(file)
@@ -55,6 +56,7 @@ proc ::GX::ViewerDevelopmentWorkspace::transferred {id response} {
 }
 proc ::GX::ViewerDevelopmentWorkspace::read {name} {
     variable s;if {![prepare]} return
+    if {$s(mode) eq {maintenance}} {return [maintenanceRead $name]}
     set roots [dict create handlers.cpp [file join $s(project) handlers.cpp] project.json [file join $s(project) project.json] design.gxtxt-viewer [file join $s(project) design.gxtxt-viewer] validation.json [file join $s(project) derived validation.json] build.json [file join $s(project) derived build.json] adapter.cpp [file join $::GX::scriptDir core development sdk trusted_adapter_v1.cpp]]
     if {![dict exists $roots $name]} {error {Unknown project browser file}}
     set path [dict get $roots $name]
@@ -74,10 +76,12 @@ proc ::GX::ViewerDevelopmentWorkspace::project {path} {
     variable s
     if {![prepare]} return
     set path [file normalize $path]
-    if {![file isfile [file join $path project.json]]} {error {Choose a developer project containing project.json}}
+    if {[file isfile [file join $path maintenance.json]]} {return [maintenanceProject $path]}
+    if {![file isfile [file join $path project.json]]} {error {Choose a developer project containing project.json or maintenance.json}}
     if {$s(busy) ne {}} {::GX::scriptJobRequestCancel $s(busy) closed;set s(busy) {}}
     incr s(generation)
-    set s(project) $path;set s(dirty) 0
+    set s(project) $path;set s(mode) cpp;set s(dirty) 0
+    wm title .gxViewerDevelopment {Viewer Development Workspace · restricted C++}
     set tree .gxViewerDevelopment.body.left.files.tree;$tree delete [$tree children {}]
     foreach {name label} {handlers.cpp {C++ handlers} project.json {Project / facilities / tests} design.gxtxt-viewer {Builder design (read-only)} validation.json {Validation report} build.json {Build manifest} adapter.cpp {Trusted C++ adapter}} {$tree insert {} end -id $name -text $label}
     ::GX::uiFieldInspectionColumnsSchedule $tree
@@ -106,11 +110,19 @@ proc ::GX::ViewerDevelopmentWorkspace::created {generation response} {
 }
 proc ::GX::ViewerDevelopmentWorkspace::openProject {} {
     if {![prepare]} return
-    set path [tk_chooseDirectory -parent .gxViewerDevelopment -title {Open restricted C++ Viewer project}]
+    set path [tk_chooseDirectory -parent .gxViewerDevelopment -title {Open C++ developer or trusted maintenance project}]
     if {$path ne {}} {project $path}
 }
 proc ::GX::ViewerDevelopmentWorkspace::request {operation} {
     variable s
+    if {$s(mode) eq {maintenance}} {
+        if {$operation ni {validate export}} {error {C++ Build/Run/Preview/Test are unavailable in trusted Tcl maintenance; use approved candidate promotion and real GUI verification}}
+        if {$s(dirty)} {save}
+        set result [maintenanceWait maintenance_$operation {{}}]
+        log "$result\n";diagnosticsShow $result
+        set s(status) "[dict get $result status] · lexical/package checks only; real GUI/science NOT_TESTED"
+        return $result
+    }
     if {$s(project) eq {}} {error {Open or create a developer project first}}
     if {$s(busy) ne {}} {error {Wait or cancel the current development request}}
     if {$s(dirty)} {save}
@@ -143,10 +155,18 @@ proc ::GX::ViewerDevelopmentWorkspace::controls {} {
     foreach id {validate build demo test export} {.gxViewerDevelopment.toolbar.$id state [expr {$s(busy) eq {}?{!disabled}:{disabled}}]}
     .gxViewerDevelopment.toolbar.cancel state [expr {$s(busy) eq {}?{disabled}:{!disabled}}]
     if {[llength [info commands debugButtons]]} {debugButtons}
+    if {$s(mode) eq {maintenance}} {
+        foreach id {build demo test} {.gxViewerDevelopment.toolbar.$id state disabled}
+        if {[winfo exists .gxViewerDevelopment.debugbar]} {foreach id {run start continue pause into over out stop} {.gxViewerDevelopment.debugbar.$id state disabled}}
+    }
+    foreach label {Build {Demo / Preview} Test {Enable installed native GUI testing} {Review saved Workspace upgrade…}} {
+        .gxViewerDevelopment.menus.develop entryconfigure $label -state [expr {$s(mode) eq {maintenance}?{disabled}:{normal}}]
+    }
 }
 proc ::GX::ViewerDevelopmentWorkspace::cancel {} {variable s;if {$s(busy) ne {}} {::GX::scriptJobRequestCancel $s(busy)}}
 proc ::GX::ViewerDevelopmentWorkspace::demo {} {
     variable s;if {$s(project) eq {}} {error {Open a project first}}
+    if {$s(mode) eq {maintenance}} {error {Tcl maintenance does not execute edited source; export and request normal candidate promotion}}
     if {$s(dirty)} {save}
     if {$s(preview) ne {}&&[winfo exists $s(preview)]} {destroy $s(preview)}
     set s(preview) [::GX::viewerDevelopmentPreview $s(project)]
@@ -161,7 +181,7 @@ proc ::GX::ViewerDevelopmentWorkspace::diagnostic {} {
 proc ::GX::ViewerDevelopmentWorkspace::apiRefresh {} {
     variable s
     set browser .gxViewerDevelopment.body.left.apiSplit.browser
-    ::GX::apiBrowserProjectSet $browser $s(project)
+    ::GX::apiBrowserProjectSet $browser [expr {$s(mode) eq {maintenance}?{}:$s(project)}]
     ::GX::apiBrowserRefresh $browser
 }
 proc ::GX::ViewerDevelopmentWorkspace::apiSelect {} {::GX::apiBrowserSelect .gxViewerDevelopment.body.left.apiSplit.browser}
@@ -183,6 +203,7 @@ proc ::GX::ViewerDevelopmentWorkspace::guiTesting {} {
 proc ::GX::ViewerDevelopmentWorkspace::find {direction} {variable s;::GX::sourceSurfaceFind [text] $s(find) $direction}
 proc ::GX::ViewerDevelopmentWorkspace::importSource {} {
     variable s;if {$s(project) eq {}} {error {Open a project first}};if {![prepare]} return
+    if {$s(mode) eq {maintenance}} {error {Use the admitted Source Surface file; arbitrary source import is unavailable in maintenance mode}}
     set path [tk_getOpenFile -parent .gxViewerDevelopment -title {Import C++ source as data} -filetypes {{{C++ source} {.cpp .cc .cxx}} {{All files} *}}]
     if {$path eq {}} return
     if {![file isfile $path]||[file size $path]>65536} {error {Imported source must be an ordinary UTF-8 file within 64 KiB}}
@@ -199,11 +220,17 @@ proc ::GX::ViewerDevelopmentWorkspace::close {} {
 }
 proc ::GX::ViewerDevelopmentWorkspace::open {{context {}}} {
     variable s;set w .gxViewerDevelopment
-    if {[winfo exists $w]} {raise $w;return $w}
+    if {[winfo exists $w]} {
+        raise $w
+        if {[dict exists $context maintenance_module]} {maintenanceDialog [dict get $context maintenance_module] [dict get $context maintenance_provider]}
+        return $w
+    }
+    incr s(windowGeneration)
     toplevel $w;wm title $w {Viewer Development Workspace · restricted C++};wm geometry $w 1320x860+40+60;wm minsize $w 980 650
     menu $w.menus -tearoff 0;$w configure -menu $w.menus
     foreach {id label} {file File edit Edit view View develop Develop help Help} {menu $w.menus.$id -tearoff 0;$w.menus add cascade -label $label -underline 0 -menu $w.menus.$id}
     foreach {label command} {{New project…} new {Open project…} openProject {Save source} save {Import C++ source…} importSource {Export candidate} {request export} Close close} {$w.menus.file add command -label $label -command [list ::GX::ViewerDevelopmentWorkspace::safe {*}$command]}
+    $w.menus.file insert 2 command -label {Maintain installed Viewer…} -command {::GX::ViewerDevelopmentWorkspace::safe maintenanceDialog}
     foreach {label operation} {Undo undo Redo redo {Select all} select_all Copy copy Cut cut Paste paste} {$w.menus.edit add command -label $label -command [list ::GX::uiTextEdit $w $operation]}
     foreach {label command} {Validate {request validate} Build {request build} {Demo / Preview} demo Test {request test} {Cancel request} cancel} {$w.menus.develop add command -label $label -command [list ::GX::ViewerDevelopmentWorkspace::safe {*}$command]}
     $w.menus.develop add command -label {C/C++ support catalog} -command [list ::GX::ViewerDevelopmentWorkspace::safe supportCatalog]
@@ -297,6 +324,7 @@ The same GUI/CLI backend owns admission, builds, native event lifetime and manag
     wm protocol $w WM_DELETE_WINDOW {::GX::ViewerDevelopmentWorkspace::safe close}
     controls
     if {[dict exists $context project]} {project [dict get $context project]}
+    if {[dict exists $context maintenance_module]} {maintenanceDialog [dict get $context maintenance_module] [dict get $context maintenance_provider]}
     return $w
 }
 proc ::GX::ViewerDevelopmentWorkspace::initialLayout {w} {
@@ -395,4 +423,106 @@ proc ::GX::ViewerDevelopmentWorkspace::workspaceUpgradeApply {w} {
     $w.report configure -state normal;$w.report insert end "\n\nCreated [dict get $result workspace_id]. Original: [dict get $result original_workspace_id]. Open the new copy through Session Workspaces or the source-bound public workspace_open operation."
     $w.report configure -state disabled
     set s(status) "Created upgraded Workspace [dict get $result workspace_id]"
+}
+
+# Trusted existing-module source maintenance. The CORE backend supplies the
+# opaque file list; ordinary restricted C++ projects retain their own policy.
+proc ::GX::ViewerDevelopmentWorkspace::maintenanceWait {operation payload} {
+    variable s;variable transferSerial;variable transfers
+    if {$s(busy) ne {}} {error {Wait or cancel the current development request}}
+    set id [incr transferSerial];set project $s(project);set generation $s(generation);set windowGeneration $s(windowGeneration)
+    set request [::GX::viewerDevelopmentRequest $operation $project [list ::GX::ViewerDevelopmentWorkspace::transferred $id] [dict create request_json $payload]]
+    set s(busy) $request;controls
+    try {
+        vwait ::GX::ViewerDevelopmentWorkspace::transfers($id)
+        set response $transfers($id)
+        if {$s(project) ne $project || $s(generation)!=$generation || $s(windowGeneration)!=$windowGeneration || ![winfo exists .gxViewerDevelopment]} {error {Maintenance response belongs to an earlier project/window; editor text was not accepted}}
+        if {![dict get $response ok]} {error "[::GX::datasetPublicationV2DictDefault $response code MAINTENANCE]: [dict get $response error]"}
+        return [dict get $response result]
+    } finally {
+        unset -nocomplain transfers($id)
+        if {$s(busy) eq $request} {set s(busy) {}}
+        if {[winfo exists .gxViewerDevelopment]} {controls}
+    }
+}
+proc ::GX::ViewerDevelopmentWorkspace::maintenanceProject {path} {
+    variable s
+    if {$s(busy) ne {}} {error {Wait or cancel the current request before changing maintenance project}}
+    set old [array get s];set windowGeneration $s(windowGeneration)
+    set s(project) $path;set s(mode) maintenance;incr s(generation)
+    set generation $s(generation)
+    try {set result [maintenanceWait maintenance_inspect {{}}]} on error {message options} {
+        # A replacement window owns its new state; never rewind its lifetime or
+        # apply an earlier window's provisional project after cancellation.
+        if {$s(windowGeneration)==$windowGeneration && $s(generation)==$generation && $s(project) eq $path} {array set s $old;controls}
+        return -options $options $message
+    }
+    set s(maintenanceFiles) [dict get $result files];set s(dirty) 0
+    set tree .gxViewerDevelopment.body.left.files.tree;$tree delete [$tree children {}]
+    dict for {id info} $s(maintenanceFiles) {$tree insert {} end -id $id -text "[dict get $info path] ([expr {[dict get $info limit]/1024}] KiB)[expr {[dict get $info exists]?{}:{ · not authored}}]"}
+    set first [lindex [dict keys $s(maintenanceFiles)] 0]
+    $tree selection set $first;maintenanceRead $first
+    wm title .gxViewerDevelopment "Viewer Development Workspace · maintaining [dict get $result module]"
+    set s(status) "Trusted source/document maintenance · candidate [dict get $result candidate_version] · Build/Preview/Debug unavailable; original preserved"
+    apiRefresh;controls
+}
+proc ::GX::ViewerDevelopmentWorkspace::maintenanceRead {id} {
+    variable s
+    if {![dict exists $s(maintenanceFiles) $id]} {error {Choose an admitted maintenance source ID}}
+    set result [maintenanceWait maintenance_inspect [format {{"file_id":%s}} [::GX::viewerDevelopmentJsonString $id]]]
+    set source [dict get $result content]
+    set s(file) $id;set s(baseline) $source;set s(maintenanceHash) [dict get $result sha256];set s(maintenanceExists) [dict get $result exists];set s(dirty) 0
+    ::GX::sourceSurfaceConfigure [text] [dict create language [dict get $result language] mode editable]
+    ::GX::sourceSurfaceSet [text] $source
+    set s(status) "[dict get $s(maintenanceFiles) $id path] · [dict get $result language] · [expr {$s(maintenanceExists)?{existing file}:{not authored; Save creates this exact approved document}}] · editing does not execute"
+}
+proc ::GX::ViewerDevelopmentWorkspace::maintenanceSave {} {
+    variable s
+    if {![dict exists $s(maintenanceFiles) $s(file)]} {error {Choose an admitted maintenance source}}
+    set source [::GX::sourceSurfaceGet [text]]
+    set expected [expr {$s(maintenanceExists)?[::GX::viewerDevelopmentJsonString $s(maintenanceHash)]:{null}}]
+    set payload [format {{"file_id":%s,"expected_sha256":%s,"content":%s}} [::GX::viewerDevelopmentJsonString $s(file)] $expected [::GX::viewerDevelopmentJsonString $source]]
+    set result [maintenanceWait maintenance_save $payload]
+    if {[dict get $result status] ne {SAVED}} {error {Maintenance save did not complete; editor text retained}}
+    set s(baseline) $source;set s(maintenanceHash) [dict get $result sha256];set s(maintenanceExists) 1;set s(dirty) [expr {[::GX::sourceSurfaceGet [text]] ne $source}]
+    dict set s(maintenanceFiles) $s(file) exists 1
+    set info [dict get $s(maintenanceFiles) $s(file)]
+    .gxViewerDevelopment.body.left.files.tree item $s(file) -text "[dict get $info path] ([expr {[dict get $info limit]/1024}] KiB)"
+    set s(status) "Saved admitted source · [string range $s(maintenanceHash) 0 11] · not executed"
+    return $result
+}
+proc ::GX::ViewerDevelopmentWorkspace::maintenanceDialog {{module {}} {provider {}}} {
+    variable s
+    if {![prepare]} return
+    if {$s(busy) ne {}} {error {Wait or cancel the current development request}}
+    set approved [::GX::viewerDevelopmentMaintenanceModules]
+    if {![dict size $approved]} {error {No installed Viewers are admitted by the CORE maintenance policy}}
+    set choices {};set s(maintenanceChoices) {}
+    dict for {id definition} $approved {
+        set label "[dict get $definition name] — $id"
+        lappend choices $label;dict set s(maintenanceChoices) $label [list $id [dict get $definition provider]]
+        if {$id eq $module && [dict get $definition provider] eq $provider} {set selected $label}
+    }
+    if {$module ne {} && ![info exists selected]} {error {Selected module/provider is outside the installed maintenance policy}}
+    set s(maintenanceChoice) [expr {[info exists selected]?$selected:[lindex $choices 0]}]
+    set w .gxMaintainViewer;catch {destroy $w}
+    ::GX::uiFieldDialogCreate $w .gxViewerDevelopment {Maintain installed Viewer source} 690x250
+    ttk::label $w.about -text {Create a private source snapshot of an approved installed Viewer. CORE admits a finite source list; all other resources, public APIs and native binaries are preserved. Save and lexical validation never execute Tcl. Candidate export does not install or prove GUI/scientific behavior.} -wraplength 650 -justify left
+    ttk::combobox $w.choice -state readonly -values $choices -textvariable ::GX::ViewerDevelopmentWorkspace::s(maintenanceChoice) -width 75
+    ::GX::uiFieldSelectorWithinViewer $w.choice $w
+    ttk::button $w.create -text {Choose private project folder…} -command {::GX::ViewerDevelopmentWorkspace::safe maintenanceCreate}
+    ttk::button $w.cancel -text Cancel -command [list ::GX::uiFieldDialogClose $w]
+    pack $w.about $w.choice -fill x -padx 10 -pady 10;pack $w.create $w.cancel -side left -padx 10 -pady 8
+    ::GX::uiFieldDialogPresent $w $w.choice 0
+}
+proc ::GX::ViewerDevelopmentWorkspace::maintenanceCreate {} {
+    variable s
+    lassign [dict get $s(maintenanceChoices) $s(maintenanceChoice)] module provider
+    set parent [tk_chooseDirectory -parent .gxMaintainViewer -title {Parent folder for a new private Viewer maintenance project}]
+    if {$parent eq {}} return
+    set project [file join $parent ${module}_maintenance_[clock microseconds]]
+    incr s(generation)
+    set s(busy) [::GX::viewerDevelopmentMaintenanceCreate $module $provider $project [list ::GX::ViewerDevelopmentWorkspace::created $s(generation)]]
+    set s(status) {Staging original source/resources through the CORE project-write owner…};controls
+    ::GX::uiFieldDialogClose .gxMaintainViewer
 }

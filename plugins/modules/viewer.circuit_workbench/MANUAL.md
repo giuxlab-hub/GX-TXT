@@ -1,4 +1,49 @@
-# Circuit Workbench 1.9.9
+# Circuit Workbench 1.10.0
+
+## dev111 discrete-device development candidate — validation pending
+
+Four additive Tools actions retain the original203 control identities: NMOS, PMOS, SPST and SPDT. MOS models are educational; contacts are static. Choose one,
+then the first ordinary schematic click places that exact canonical kind.
+This describes the authored source contract, not an already accepted GUI test.
+
+MOS devices expose four real pins: drain d=(30,22), gate g=(-30,0), source
+s=(30,-22), body b=(30,0), before normal rotation. Wire every terminal, including
+body, explicitly. The sole educational_level1 model uses the ngspice long-channel
+LEVEL1 approximation. Its original model cards have threshold +1V for NMOS and
+-1V for PMOS, KP=2e-5A/V², GAMMA=0.4sqrt(V), PHI=0.6V, LAMBDA=0.02/V,
+IS=1e-14A, TNOM=27C and instance TEMP=27C. Channel length/width default10um/100um,
+each1um..1mm in base metres; Properties accepts existing engineering notation.
+These are illustrative choices, not manufacturer data or power/short-channel/
+transient/temperature accuracy claims. Source/netlist inspection shows exact
+cards and d,g,s,b order. See the [upstream ngspice44 model contract](https://ngspice.sourceforge.io/docs/ngspice-44-manual.pdf#page=156),
+sections7.6.1,7.6.2.1,7.6.2.5; all parameter choices here are original GX-TXT.
+
+SPST pins a/b are two contacts; position=open/closed chooses finite leakage/
+contact resistance. SPDT pins c/a/b mean common and two throws; position=a/b
+chooses which branch gets Ron, while the other gets Roff. Ron defaults1Ohm
+(range1e-6..1e6), Roff1e9Ohm (range1..1e12), and Prepare requires Roff>Ron.
+These are maintained manual positions in an immutable solve, not dynamic
+switches, ideal infinite isolation, bounce, arc, center-off or relay models.
+Generated R_GXTXT_SW_NAME_a/_b elements remain mapped to the real stable source
+component; collisions with source names refuse preparation. Every terminal
+still follows existing explicit-connection and open/floating-source checks.
+
+Edit Properties/position, wire, rotate and save through the original Diagram,
+History and Workspace controls. A committed edit invalidates old preparation;
+old Jobs/Plots remain historical rather than results for the changed source.
+Inspect the actual canonical kind, pin mapping and prepared deck. There is no
+fuse symbol or simulation here: manual fuse continuity and automatic thermal/
+I-squared-t trip remain separately unsupported. New semiconductor/switch kind
+current is not fabricated; existing actual independent voltage-source branch
+current may be used in a properly wired measurement fixture.
+
+Numerical/GUI/first-click/persistence/visual/performance and exact remote-node
+qualification remain MAIN-allocated. No older NPN/diode campaign was rerun or
+repurposed. All original manual sections and real figures below are retained
+with their version-specific evidence and failures.
+
+
+# Preserved Circuit Workbench 1.9.9 guide
 
 Open Circuit Workbench from **Viewers → Simulation & Modeling → Circuit Workbench** in an open Session. The circuit icon identifies this scientific Viewer. A new circuit starts empty; placement, edits and results are explicit actions. The existing 203 controls, scientific workflow, eighteen schematic tool icons and C++ handlers are retained. Version 1.9.9 aligns this current guide with MAIN’s independently verified dev109 functional acceptance. The source, controls and scientific behavior retain their existing scope; the evidence below was obtained in its stated earlier versions and corrected shared-owner snapshots. This documentation update adds no circuit simulation or native GUI campaign.
 

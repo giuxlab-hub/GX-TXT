@@ -36,8 +36,8 @@
   "assets": [
     {
       "path": "README.md",
-      "sha256": "0d409755260aa1ccaa2c4dbdf6680b6b71a16a8ee462205c3474679cfeac5b8b",
-      "bytes": 4886,
+      "sha256": "e546331cbabe91fcb76a25b461672616113598eb997fe9301f04b8b8c1b03e87",
+      "bytes": 5418,
       "origin": "Original GUIDE explanatory text/code/vector artwork"
     },
     {
@@ -56,6 +56,12 @@
       "path": "concepts.html",
       "sha256": "c5bf7ddc99a22d0780d9a9f2cfa2a8d43b7c839c85be29793ffdedd36320985c",
       "bytes": 11628,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "configuration-concepts.html",
+      "sha256": "b3a9d09d5c81b9bb8280d15c55e67eaed75f166d29fa0a126fb029433b0a8b3d",
+      "bytes": 10799,
       "origin": "Original GUIDE explanatory text/code/vector artwork"
     },
     {
@@ -108,8 +114,8 @@
     },
     {
       "path": "index.html",
-      "sha256": "4d97387cd2b7713a315ed1feda00e640cfdd981008117e789f1b517aeecc1c40",
-      "bytes": 9999,
+      "sha256": "488f451d9d884cee94c9ddad9b275295777e2658cf47e1ca2f9b2018732b87c7",
+      "bytes": 10651,
       "origin": "Original GUIDE explanatory text/code/vector artwork"
     },
     {
@@ -122,6 +128,12 @@
       "path": "publication-concepts.html",
       "sha256": "f59e46bd9b85c405c6436ed3f3a132f84f4bea36121546edde9771225ff7da87",
       "bytes": 10067,
+      "origin": "Original GUIDE explanatory text/code/vector artwork"
+    },
+    {
+      "path": "quality-concepts.html",
+      "sha256": "a8a54f44e4eb513a6c57832a131daa338f12a529abfa5977f3b25b33174420e3",
+      "bytes": 9989,
       "origin": "Original GUIDE explanatory text/code/vector artwork"
     },
     {
@@ -197,7 +209,7 @@
     "MAIN_release_acceptance": "not requested for preparation as final release"
   },
   "runtime_owner_boundary": "No descriptor fields, documentation registration, CORE API, private generator URI or module MANUAL modification",
-  "updated_utc": "2026-10-22T17:53:14.458912+00:00",
+  "updated_utc": "2026-10-22T19:22:11.535749+00:00",
   "source_only_vendor_intake": {
     "control_id": "7ccf48f3-f1e4-5a31-b1b6-ecf3ffbbe553",
     "version": "2.0.9",
@@ -217,6 +229,34 @@
             "sha256": "07d901f9ed9bedf6bc25aa2392ae23b2985170f8b11d823a3569224e89c99d0a"
           }
         ]
+      },
+      {
+        "artifact": "quality-concepts.html",
+        "documents": [
+          {
+            "path": "/srv/gxtxt/main/task210/framework/plugins/modules/viewer.curve_digitizer/QUALITY_API_v2.md",
+            "sha256": "2441e5f663ad0b2198600a95f4574b9e7fdae9c5e4fa361b1baa8d34f90cb5ed"
+          },
+          {
+            "path": "/srv/gxtxt/main/task210/framework/docs/api/DATASET_PREVIEW_API_v1.md",
+            "sha256": "0d0018cdda2f03a41c7b603f84e0302150ade33b720825d7f67b831ecd296d6c"
+          }
+        ],
+        "qualification": "Vendor Quality and separately supplied CORE host source contract; no installed/runtime/GUI acceptance"
+      },
+      {
+        "artifact": "configuration-concepts.html",
+        "documents": [
+          {
+            "path": "/srv/gxtxt/main/task210/framework/plugins/modules/viewer.curve_digitizer/MANUAL.md",
+            "sha256": "22d04bea5ff2d011170bbad330a216251298355ec552064ef3af500985e8adeb"
+          },
+          {
+            "path": "/srv/gxtxt/main/task210/framework/plugins/modules/viewer.curve_digitizer/module.ini",
+            "sha256": "9ac7b7fbaf130fc67bf147287a0aa73ad0fdde18275d0ba19ef2c6f35748aa95"
+          }
+        ],
+        "qualification": "Documented source behavior only, real GUI/installed persistence not executed"
       }
     ],
     "prior_fragments": "Dev109 preparation basis retained; reconcile actual source-only intake and real deposited release before final use",

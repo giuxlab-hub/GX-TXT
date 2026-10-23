@@ -145,6 +145,10 @@ def decode_value(value):
     if not isinstance(value, dict) or "kind" not in value:
         raise BridgeError("GXTXT:ScriptBridge:Transport", "missing typed bridge value")
     kind = value["kind"]
+    if kind == "null":
+        if set(value) != {"kind"}:
+            raise BridgeError("GXTXT:ScriptBridge:Transport", "invalid null bridge value")
+        return None
     if kind == "callback":
         return CallbackRef(str(value["id"]))
     if kind == "string":
@@ -189,6 +193,8 @@ def decode_value(value):
 
 def encode_value(value, arrays=None):
     if arrays is None: arrays = {}
+    if value is None:
+        return {"kind": "null"}
     if isinstance(value, NumericArray):
         key = id(value)
         if key in arrays:
@@ -385,6 +391,8 @@ class Host:
         return True
 
     def tcl_arg(self, value):
+        if value is None:
+            raise BridgeError("GXTXT:ScriptBridge:InvalidArguments", "null has no generic Tcl argument representation")
         if np is not None and isinstance(value, np.ndarray):
             # Legacy provider adapters may pass the NumericArray buffer onward.
             # Preserve its full shape instead of NumPy's abbreviated text display.

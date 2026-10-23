@@ -1,0 +1,142 @@
+{
+  "record_type": "curated_actual_bounded_visibility005",
+  "content_id": "curve_digitizer.tutorial.01.en",
+  "operator": "GX210-TUTORIAL1",
+  "source_result_sha256": "57e6035e1b3f9df951e9775a66acb964fb556e209e608b9996f3eaed32d77eeb",
+  "build": {
+    "candidate": "d3e578c1e7b672a76e336f590a160180b1bb109d",
+    "version": "0.9.8.10-dev-111",
+    "classification": "FROZEN_COMMITTED_MAIN_CANDIDATE_NOT_INSTALLED",
+    "installed": false
+  },
+  "publication": {
+    "dataset_id": "cd.tutorial01.measurement_1.curves",
+    "row_count": 4,
+    "sample_count": 4,
+    "canonical_sha256": "b28616fc9c7feba75a4707ec3042acfe6dcebb5af97913c356f7acb493b9470f",
+    "producer": "viewer.curve_digitizer",
+    "producer_version": "2.0.9",
+    "source_dataset": "digitizer.calibration.image",
+    "normal_GUI_configuration": "idoc_0001 in provenance",
+    "canonical_identity_detail": "Previously transcribed004 fullUUIDs/rows preserved, not retranscribed or producer regenerated"
+  },
+  "observations": {
+    "initial_auto_preview": "013 FINALIZING then014 nativegeometry withPreviousrender guard;015Quality explicitly previous, retained as separate unresolvedinitialattachment issue",
+    "explicit_Render": "ONE normal Render;016 currentSessioncachehit/sourceverifiedretained Preview,providerverified/read-onlyQuality;017 nativeconnectedTime(s)/Voltage(V);018 sourceoverlayFourreferencepoints4unique/4canonical/4display",
+    "hide": "One OFF;1200ms boundedidle BEFORE019sourceinspection.019checkboxoff,overlayremoved(originalblue rastercrossesremain),4canonical/4displaypoints;020currentproviderQuality021independentCOREsourcebyteverificationverified at preparation time2026-10-22T23:11:03Z;022empty native with unchanged axes/currentstatus BEFORE restoration",
+    "show": "One ON;1200ms idle BEFORE023sourceinspection.023samecheckboxon/overlayrestored/current;024currentQualityCOREverified;025nativevisible/current BEFORE Fit/Zoom; no batched Show+navigation",
+    "Fit": "ONE normalFit afterrestorationinspection;1200msidle026nativecurrent/fullcurve/ticksunchanged because alreadyfit;027Qualitycurrent",
+    "Zoom": "ONE normalZoomin afterFitstatusinspection;1200msidle028nativecurveviewportchanged,current. LabelledXticks2.5..6 versusbaseline2..6.5;Yticks-0.5..1 versusbaseline-1..1. These are visible ticks not exact viewportlimits.029Qualitycurrent,030sourceoverlayon/4canonical4display/current",
+    "Save": "031menu032intermediate033normalconfirmation exactfixture/metadata/manifest.ini",
+    "close": "NormalWMrootClose dispatched23:13:53UTC beforecap;actorMANUAL_ROOT_CLOSE_OBSERVED exit0/wrappercase0/ownouter0, WM0/Xephyr0,recordedsurvivors[],parentWM/resunchanged. No aftercloseinput/capture/relaunch"
+  },
+  "normal_actions": {
+    "normal_explicit_Render_count": 1,
+    "normal_hide_count": 1,
+    "normal_show_count": 1,
+    "normal_Fit_count": 1,
+    "normal_Zoom_in_count": 1,
+    "normal_generator_or_producer_Run_count": 0
+  },
+  "initial_automatic_attachment": "Previous render remains unresolved, as observed014/015. Do not erase this because one explicit Render enables current later operations.",
+  "current_native_visible_line_observed_after_explicit_Render": true,
+  "sequential_input_and_settle": "Each Hide, Show, Fit and Zoom action was separated by a bounded1200ms idle and observation of its state before the next action. This is operator procedure, not measured response latency.",
+  "quality_receipt_scope": "Separate CORE source-byte verification reported at preparation2026-10-22T23:11:03Z. Provider Quality fields remain read-only and unchanged. Cache status is not continuous current-byte verification, numerical accuracy or physical uncertainty. Clipped digests/meanings are not transcribed.",
+  "navigation_scope": "Fit retained already-fitted ticks/full curve; no extra numerical range inference. Zoom changed visible ticks/clipping; ticks are not exact viewport bounds or a measured zoom factor. Native segments connect recorded point order, not a fitted law or new measured data.",
+  "timing_qualification": "UTC seconds are coarse dispatch-before-input markers; capture mtime first retained stable frame includes input/tool/model/operator/1200mssettle/PNG overhead. No true first-frame timing, p95, sustained redraw, original-vs-candidate benchmark or parity acceptance.",
+  "postclose_existing_receipts": {
+    "selected_source_byte_pins": "21/21 match, not full tree/mode/scientific validation",
+    "payloads": "6/6 existing byte hashes match,3 original003+3 newcopy005; no CSV parse/private extraction",
+    "normal_close": "2026-10-22T23:13:53Z; recorded normal close/exit0/owned survivors[] and no afterclose input/capture/relaunch only"
+  },
+  "images": [
+    {
+      "path": "figures/actual-gui-005/014_preview_auto_retained.png",
+      "sha256": "1de24ffe76af184ac973d1f31a255a491f7266455743b8afdf701076e1bccb11",
+      "bytes": 84737,
+      "source_capture_name": "014_preview_auto_retained.png",
+      "captured_utc": "2026-10-22T23:11:06.746702+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-005/017_current_native_baseline.png",
+      "sha256": "c0be99e18f20c327c6fab0c739c2716d1f65648202294fe39ffaf2051702a7a7",
+      "bytes": 84220,
+      "source_capture_name": "017_current_native_baseline.png",
+      "captured_utc": "2026-10-22T23:11:32.575511+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-005/019_hidden_source_after_idle.png",
+      "sha256": "73d0c88aef55649f256d673d9925e48881086ac25216a277e0906e7f03cef0d3",
+      "bytes": 73868,
+      "source_capture_name": "019_hidden_source_after_idle.png",
+      "captured_utc": "2026-10-22T23:11:54.608200+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-005/021_hidden_quality_core_receipt.png",
+      "sha256": "fbda6d92924adb0c7a3ab3b8bc31bcd602df01f363202e7352fffff28bbde68a",
+      "bytes": 146560,
+      "source_capture_name": "021_hidden_quality_core_receipt.png",
+      "captured_utc": "2026-10-22T23:12:02.792456+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-005/022_hidden_native.png",
+      "sha256": "7179d4c41719ddc5bbd8fc49746e6017e2f0438cf27c559edc45014c6ed35378",
+      "bytes": 60372,
+      "source_capture_name": "022_hidden_native.png",
+      "captured_utc": "2026-10-22T23:12:03.104466+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-005/023_restored_source_after_idle.png",
+      "sha256": "74577c35da1428bc68c977762dc422c399fffbfa020b78e200f0e9e64edc7f68",
+      "bytes": 74221,
+      "source_capture_name": "023_restored_source_after_idle.png",
+      "captured_utc": "2026-10-22T23:12:21.065028+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-005/025_restored_native_before_navigation.png",
+      "sha256": "c0be99e18f20c327c6fab0c739c2716d1f65648202294fe39ffaf2051702a7a7",
+      "bytes": 84220,
+      "source_capture_name": "025_restored_native_before_navigation.png",
+      "captured_utc": "2026-10-22T23:12:28.621264+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-005/026_fit_native_after_idle.png",
+      "sha256": "501ecdc5664338d9f4e120745d71606d83832bd57b0b7480edd8943972e926de",
+      "bytes": 84535,
+      "source_capture_name": "026_fit_native_after_idle.png",
+      "captured_utc": "2026-10-22T23:12:44.269753+00:00",
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-005/028_zoom_native_after_idle.png",
+      "sha256": "a04c0ac4074b61b4c9f526d1eb4ad6c8401be31da920f6be2a2d025b5ebd04cb",
+      "bytes": 85264,
+      "source_capture_name": "028_zoom_native_after_idle.png",
+      "captured_utc": "2026-10-22T23:13:06.546450+00:00",
+      "edited": false
+    }
+  ],
+  "not_established": [
+    "InitialautomaticPreviewattachment cause/fix",
+    "fulloriginal/candidateGUIparity",
+    "comparativelatency/performance",
+    "continuousflicker/redrawinstrumentation",
+    "allcanonicalidentity/qualitycompleteness",
+    "coldreopenorhiddenstatepersistence",
+    "T02T03workflow",
+    "fullPlotsmatrix/host/finalZIP",
+    "allprivate descendant drain outside recorded coverage"
+  ],
+  "earlier003_004_records_and_failures_preserved": true,
+  "whole_functional_groups_accepted": false,
+  "final_TUTORIAL1_quality": null,
+  "T02_T03_execution_credit": false,
+  "final_completed_tutorial_ZIPs": 0
+}

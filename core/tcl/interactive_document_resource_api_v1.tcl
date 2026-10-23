@@ -433,3 +433,7 @@ proc ::GX::interactiveDocumentResourceRemapReferences {value references} {
     }
     return [_workspaceRemapResources $value $mapping 0]
 }
+
+# Fixed paired-source intake is a private format-specific child of this owner.
+# The existing public Resource/CRUD signatures and registry remain unchanged.
+source [file join [file dirname [info script]] document_pcb_paired_source_v1.tcl]

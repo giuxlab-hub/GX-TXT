@@ -1,10 +1,56 @@
 # Viewer GUI Integration Manifest v1
 
+TASK210 source proposal: a finite declared `transform_kind=baseline_correct`
+form routes explicit `discover/create_corrected/cancel/inspect` actions through
+existing Dataset Transform and Plot owners. Create has effect `mutating`; exact
+scientific profile/grants are checked even without authored C++ SDK calls.
+There is no new SDK method or implicit analysis on selection. The complete
+form/admission/lifetime contract and its unexecuted acceptance limits are in
+the baseline form proposal.
+Central metadata/wiring and independent CORE review remain MAIN's responsibility;
+this source proposal alone does not claim runtime or GUI acceptance.
+
 Programmatic `viewerGuiDesignValueSet` on an integer field accepts an exact
 integral finite numeric value, including a C++ `Host.number` transport value
 such as `1.0`, and normalizes it to an integer before the existing min/max
 validation. Fractional and nonfinite values are rejected before field mutation.
 Interactive UI Field integer text validation retains its existing contract.
+
+## Declared target for reserved Plot navigation (dev111 source preparation)
+
+An `action` component may declare the optional identifier property
+`plot_navigation_target PLOT_COMPONENT_ID` only for its reserved `fit`,
+`zoom_in` or `zoom_out` command. The literal target must name a `plot`
+component in the same design, with the existing `PLOT_DATASET_API_v4@4`
+requirement. The command retains host-owned presentation semantics; existing
+reserved handlers spelled `effect unbound` remain compatible, `presentation`
+is accepted, and `mutating` is refused. No authored handler, SDK method,
+scientific operation or widget path is introduced.
+
+The declaration scopes the logical command ID, including its normal menu and
+key routes, to that one Plot. Duplicate action components for the same command
+must all declare the same target: different targets or a mixture of targeted
+and untargeted duplicates refuse. An action cannot combine this property with
+visibility, diagram-tool or raster-tool/command ownership. A target-bearing
+design is supported in ordinary preview/runtime composition; synthetic demo
+composition refuses because its separate demonstration dispatcher does not
+implement this declared target contract.
+
+For example, the existing IC raw Plot is `chromatograms`. Through the normal
+Builder `property` operation, set `plot_navigation_target` to `chromatograms`
+on the existing action components `fit`, `zoom_in` and `zoom_out`. This retains
+the existing action/control IDs and their built-in presentation handlers while
+preventing raw buttons/menus/keys from changing a separately bound result Plot,
+including one in a hidden panel. The result Plot retains only its actually
+supported existing local mouse/viewport controls; no separate global command
+or unsupported result toolbar is implied.
+
+The target does not change after another Plot is bound or shown/hidden. If its
+native Plot is not yet bound/live, the command has no connected Plot operation;
+it does not fall back to another Plot. Designs without this optional property
+retain the existing all-live-components navigation behavior, including their
+existing demo route. This additive source change is not runtime, original/
+candidate GUI parity, redraw/latency or performance acceptance.
 
 ## Scientific Library catalog section (dev109 additive)
 
@@ -512,13 +558,37 @@ oversize/missing assets and unsafe SVG content reject the catalog. There are no
 caller paths or general filesystem enumeration. Reading it performs no raster
 conversion, project edit, History navigation, Job or scientific computation.
 
-Builder's existing **Shared** file chooser and restricted `builder icon catalog`
+Builder's existing **Add shared icon** action and restricted `builder icon catalog`
 consume that same catalog. Shared selections are checked against the returned
 path/SHA/provenance before ordinary image admission. Existing Import, owned
 project catalog, embedded source/PNG bytes and normal Module packaging remain
 the owners; this adds no asset registry or renderer. The original library now
 also includes selection, remaining electrical devices/tools, Undo/Redo and
 Fit/Zoom actions under its existing GPL-3.0-or-later provenance.
+
+The compatible dev111 stock extension raises only the fixed CORE manifest row
+ceiling from 64 to 128. The five required row fields remain
+`id,title,category,license,source`; old five-field rows remain valid. Optional
+`action` and `origin` are bounded, nonempty, single-line strings with the same
+200-character limit as existing provenance. Optional `sha256` is exactly 64
+lowercase hexadecimal characters and must match actual source bytes. Unknown
+fields remain refused. Returned `sha256` always means the actual source SHA;
+`action`/`origin` are returned only when declared, without fabricated defaults.
+Manifest size remains 64 KiB; each source retains its 256 KiB/512-pixel bound and
+the existing safe SVG/PNG admission. No call signature or schema ID changes.
+
+The source stock manifest declares 100 distinct semantic IDs, 20 per family:
+Selection & Navigation; Geometry & Editing; Data, Plots & Analysis; Scientific
+Tools & Simulation; Documents & Workflow. All 30 original source assets/IDs are
+retained. The existing Builder picker filters metadata and previews one selected
+source via `viewerGuiIconImport`/`uiFieldIconApply`; only explicit Add changes the
+project. Selection/close generations invalidate deferred previews. Normal model
+edits, Undo/Redo, Assign and Module packaging retain their public owners. Project
+icons still have a separate 64-entry/2 MiB limit. Native menus keep their actual
+normal/disabled image contract; this adds no menu hover/selected-state promise.
+Source counts do not certify installed discovery, rendered legibility, GUI
+browse/filter/assignment/save/reopen or packaged install; those require actual
+release-scoped evidence. No new SDK method, grant, asset store or renderer exists.
 
 GAP036 extends the same safe-SVG normalization for inherited paint. The admitted
 fill/stroke, width/cap/join/rule and paint-opacity attributes are materialized on

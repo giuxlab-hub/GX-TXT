@@ -217,7 +217,13 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     set st($w,composeName) "Composed curve";set st($w,resultId) "edited_curve";set st($w,status) "Add an X/Y Dataset to begin."
     set st($w,preferredDataset) ""
     foreach key {dataset_id source_dataset_id} {if {[dict exists $context $key]} {set st($w,preferredDataset) [dict get $context $key]}}
-    ttk::frame $w.toolbar -padding 5;pack $w.toolbar -side top -fill x
+    # Keep the existing control frames and callbacks; share upper width with
+    # Workspace publication actions rather than reserving bottom toolbar rows.
+    ttk::frame $w.upper
+    pack $w.upper -side top -fill x
+    grid columnconfigure $w.upper 0 -weight 1
+    ttk::frame $w.toolbar -padding 5
+    grid $w.toolbar -in $w.upper -row 0 -column 0 -sticky new
     foreach {key label command} [list add "Add curve…" [list _sourceOpen $w] fit "Fit all" [list _fit $w 0] fitSelected "Fit active" [list _fit $w 1] undo Undo [list undo $w] redo Redo [list redo $w] duplicate Duplicate [list _duplicate $w] split Split [list _split $w] reverse Reverse [list _operation $w reverse] visibility Show/Hide [list _setVisibility $w] lock Lock/Unlock [list _setLock $w] remove "Remove curve" [list _deleteCurve $w]] {
         set command [lreplace $command 0 0 "::GX::CurveWorkbench::[lindex $command 0]"]
         ttk::button $w.toolbar.$key -text $label -command [list ::GX::CurveWorkbench::_safe $w $command]
@@ -340,7 +346,8 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     canvas $w.right.viewport.canvas -background white -height 580 -highlightthickness 0;pack $w.right.viewport.canvas -fill both -expand 1
     ttk::label $w.right.residualLabel -text "Signed residual by reference X or path distance (maximum highlighted)";pack $w.right.residualLabel -fill x
     ttk::frame $w.right.residual -height 220;pack propagate $w.right.residual 0;pack $w.right.residual -in $w.right -fill x
-    ttk::frame $w.validation -padding 5;pack $w.validation -side top -fill x
+    ttk::frame $w.validation -padding 5
+    grid $w.validation -in $w.upper -row 2 -column 0 -columnspan 2 -sticky ew
     ttk::label $w.validation.refLabel -text "Reference"
     ttk::combobox $w.validation.reference -textvariable ::GX::CurveWorkbench::st($w,referenceLabel) -state readonly -width 32
     ttk::combobox $w.validation.method -textvariable ::GX::CurveWorkbench::st($w,compareMethod) -values {x path} -state readonly -width 7
@@ -354,7 +361,8 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     foreach key {refLabel reference method compare metricLabel metric targetLabel target evaluate} {pack $w.validation.$key -side left -padx 3}
     bind $w.validation.reference <<ComboboxSelected>> [list ::GX::CurveWorkbench::_referenceSelect $w]
     ttk::label $w.metric -textvariable ::GX::CurveWorkbench::st($w,metricText) -anchor w;pack $w.metric -fill x -padx 8
-    ttk::frame $w.publish -padding 5;pack $w.publish -side top -fill x
+    ttk::frame $w.publish -padding 5
+    grid $w.publish -in $w.upper -row 0 -column 1 -sticky ne
     ttk::label $w.publish.idLabel -text "New Dataset ID"
     ttk::entry $w.publish.id -textvariable ::GX::CurveWorkbench::st($w,resultId) -width 22
     ttk::button $w.publish.go -text "Publish selected curve(s)" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_publishSelected $w]]
@@ -365,12 +373,11 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     ttk::label $w.status -textvariable ::GX::CurveWorkbench::st($w,status) -anchor w -wraplength 1450
     bind $w.status <Configure> [list $w.status configure -wraplength %w]
     pack $w.status -side bottom -fill x -padx 8 -pady 5
-    # Reserve publication and validation controls before the expanding pane.
-    pack forget $w.main $w.validation $w.metric $w.publish $w.status
+    # Only lightweight read-only feedback remains below the expanding pane.
+    # Upper control frames retain their original widget paths and own layouts.
+    pack forget $w.main $w.metric $w.status
     pack $w.status -side bottom -fill x -padx 8 -pady 5
-    pack $w.publish -side bottom -fill x -pady {0 8}
     pack $w.metric -side bottom -fill x -padx 8
-    pack $w.validation -side bottom -fill x
     pack $w.main -side top -fill both -expand 1
     _cadGui $w
     bind $w.publish <Configure> [list ::GX::native2DToolbarLayout $w.publish %w]

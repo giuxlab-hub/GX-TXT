@@ -7,14 +7,25 @@ For current interface contracts consult the API references under [docs/api](docs
 
 ## 0.9.8.10 - development revisions
 
-### 0.9.8.10-dev-110 (intermediate TASK210 source snapshot)
+### 0.9.8.10-dev-111 (deposited source revision r3)
+
+- Correct the default numeric-template Viewer initializer so it requests only the host value/text operations used by its source. Retain the public source/profile admission guards; full same-project GUI Build/Export/install acceptance is not claimed.
+- Expand the public Viewer Builder icon stock to 100 resources, grouped into five families, with source-tracked catalog and selected scoped UI interactions. Unverified export/theme/command combinations remain explicit limitations.
+- Add experimental paired EAGLE source snapshot inspection through the restricted C++ Viewer development path. The tool preserves source identity, supports scoped import and save/reopen checks, and is not a PCB, electrical or electromagnetic solver.
+- Update chromatogram/Replicate interoperability, scientific animation video export, incremental Curve Workbench actions, documentation and tutorial components without replacing established scientific Dataset/Session owners.
+- Preserve original Curve Digitizer 2.0.9 scientific behavior. The independent source history records limited Preview and script-job checks and separate observed scientific GUI failures.
+- Known limits: native HTML content remained blank in observed runs despite related source changes; complete unified GUI/Octave parity, performance and seven tutorial packages are not accepted as complete.
+- The published source uses the immutable dev-111-r3 deposit, not revision 1 or r2. No newly finalized official_dev111 plugin ZIP series is present; official earlier plugin distributions remain unchanged.
+- Publishing on GitHub validates source/integrity, not full operational acceptance. Dev-108-only stability hotfixes remain incompatible by policy.
+
+### 0.9.8.10-dev-110 (intermediate development source snapshot)
 
 - Add six native Preview shared components for canonical grouping, coordinates, overlays and source-bound scientific data presentation; preserve Dataset identities and existing acquisition/publication ownership.
 - Incorporate original Curve Digitizer 2.0.9 without modifying its vendor scientific Quality calculations; add separate CORE source-integrity checks.
 - Add the acquisition modules for Metrohm IC Net CHW and standard AIA/ANDI chromatography data, with explicit provenance, format qualification and limitations.
 - Improve Session creation/promotion persistence, documentation-copy defaults, Generate dialog geometry, grouped Modules layout/order and bounded Print table ranges.
 - Extend managed ScriptJob duplex Send/Drain services, Scientific Library host metadata operations and native documentation integration without replacing the existing scientific owners.
-- Keep the existing Curve Workbench scientific implementation and separately planned Native2D/Preview/Library integrations intact; this snapshot does not claim their unfinished TASK210 scope.
+- Keep the existing Curve Workbench scientific implementation and separately planned Native2D/Preview/Library integrations intact; this snapshot does not claim their unfinished the development phase scope.
 - The original source changelog explicitly identifies this dev-110 snapshot as intermediate: integrated GUI/Octave qualification, installed acceptance and some native HTML lifecycle operations remain incomplete. GitHub source publication is not functional acceptance.
 - No distinct finalized dev-110 module ZIP series exists in the deposited archive; existing dev-109 official packages remain preserved unchanged.
 

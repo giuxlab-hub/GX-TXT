@@ -222,3 +222,69 @@ receipts, and explicitly discard abandoned/unsubmitted preparations. Mutating th
 source between preparation/submissions rejects; partial admissions remain real
 Jobs and must be shown/recovered rather than erased. GUI/SDK exposure and actual
 concurrency/scientific acceptance require separate evidence.
+
+## dev111 experimental discrete-device source contracts
+
+The existing `electrical.basic` source candidate adds `nmos`, `pmos`, `spst`
+and `spdt` through the same Diagram Document, Scientific Execution worker,
+Script Job and raw-observation/publication owners. Public call signatures and
+existing eight-kind semantics remain unchanged. This section specifies source
+behavior; it does not assert numerical, native GUI, remote-node or installed
+acceptance. MAIN assigns final provider/package versions and delivery receipts.
+
+NMOS/PMOS have four explicit terminals `d g s b`, in that exact SPICE order;
+`b` is body/bulk, not a hidden source tie. Native offsets are d=(30,22),
+g=(-30,0), s=(30,-22), b=(30,0), before existing quarter-turn/translation.
+Both names begin M and are unique ignoring case across the whole source.
+`model` has the sole admitted choice `educational_level1`. `length` and `width`
+are channel dimensions in metres, each bounded1e-6..0.001; defaults10um/100um.
+The existing electrical Properties parser accepts engineering notation and
+stores SI. The original illustrative cards are:
+
+```
+.model GXTXT_M_NMOS_EDU NMOS(LEVEL=1 VTO=1 KP=2e-5 GAMMA=0.4 PHI=0.6 LAMBDA=0.02 IS=1e-14 TNOM=27)
+.model GXTXT_M_PMOS_EDU PMOS(LEVEL=1 VTO=-1 KP=2e-5 GAMMA=0.4 PHI=0.6 LAMBDA=0.02 IS=1e-14 TNOM=27)
+```
+
+A used MOS instance explicitly sets L/W and TEMP=27C; only used polarity cards
+are appended to the existing deck. VTO is in V, KP in A/V², GAMMA in sqrt(V),
+PHI in V, LAMBDA in1/V and IS in A. The paired parameters are original teaching
+choices, not measured or extracted device data. The four-terminal ordering,
+geometry units, enhancement threshold signs and LEVEL1 semantics follow the
+[ngspice44 manual, sections7.6.1,7.6.2.1 and7.6.2.5](https://ngspice.sourceforge.io/docs/ngspice-44-manual.pdf#page=156).
+That model describes long-channel behavior; its capacitance treatment has
+limits. No commercial/power/short-channel model, transient accuracy, charge
+conservation or temperature sweep is certified here. Wire body explicitly to
+the intended bias/source; do not infer a physical package pinout.
+
+SPST terminals are a=(-30,0), b=(30,0); SPDT terminals are c=(-30,0), a=(30,16),
+b=(30,-16). Both names begin S. `position` is `open|closed` for SPST (default
+open), `a|b` for SPDT (default a). This is a manually maintained position for
+one immutable solve, edited normally between preparations. Glyphs follow that
+canonical choice. `ron` defaults1Ohm, bounded1e-6..1e6; `roff` defaults1e9Ohm,
+bounded1..1e12; Prepare also requires Roff>Ron. SPST emits one finite resistor
+between a/b, choosing Ron when closed. SPDT emits c→a and c→b resistors; the
+selected throw gets Ron and the other Roff. Unselected means finite leakage,
+not perfect isolation. No dynamic control, center-off, bounce, arc, relay,
+hysteresis, switching timing, fuse blowing or thermal physics is implied.
+
+Generated names are `R_GXTXT_SW_SOURCENAME_a` (and `_b` for the second SPDT
+branch). Any case-insensitive collision with any actual source name or another
+generated element is refused before Job admission. User names are never silently
+changed. For sources using any new kind, Inspect and the real Job summary add
+`component_netlist`: stable original component ID→ordered emitted element names;
+ground maps to an empty list. Existing `net_mapping` remains original stable
+endpoint→electrical node. Existing source/worker SHA, Document generation/revision,
+Job/provider/parameter and publication provenance remain authoritative. No extra
+contact current is fabricated: observables remain actual node voltages and
+independent voltage-source branch currents. All terminals still require explicit
+connections under existing open/floating topology checks.
+
+Automatic and manual fuse simulation remain unsupported. No fuse glyph or
+resistor alias is advertised as a protection model. Other transistor/switch
+families need their own explicit source/model/fixture contract. New kinds are
+not compatible with older providers; inspect exact destination capability and
+worker/version compatibility before claiming remote support. Real numerical
+and first-click native authoring/save-reopen/parity/performance evidence is still
+required for each changed supported kind; prior diode/NPN acceptance is retained
+at its original scope and is not replayed or repurposed.

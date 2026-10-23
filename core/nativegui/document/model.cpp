@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Interpreter-owned RAII documents; opaque node IDs never expose native pointers.
 #include "render.h"
+#include "source_capture.h"
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 #include <algorithm>
@@ -235,4 +236,4 @@ static int scancmd(ClientData,Tcl_Interp*ip,int objc,Tcl_Obj *const objv[]){
     }
     put(ip,result,"tokens",tokens);put(ip,result,"folds",folds);put(ip,result,"line_count",Tcl_NewIntObj(line));put(ip,result,"characters",Tcl_NewIntObj(ch));put(ip,result,"bytes",Tcl_NewIntObj(length));put(ip,result,"truncated",Tcl_NewBooleanObj(count>=200000));put(ip,result,"engine",str("gxtxt.native_source.v1"));Tcl_SetObjResult(ip,result);return TCL_OK;
 }
-extern "C" int Gxtxtdocument_Init(Tcl_Interp*ip){if(!Tcl_InitStubs(ip,"8.6",0))return TCL_ERROR;Tcl_CreateNamespace(ip,"::GX::NativeDocument",nullptr,nullptr);auto*owner=new Owner;Tcl_SetAssocData(ip,"gxtxt.document.v1",dispose,owner);Tcl_CreateObjCommand(ip,"::GX::NativeDocument::xml",xmlcmd,owner,nullptr);Tcl_CreateObjCommand(ip,"::GX::NativeDocument::render",rendercmd,nullptr,nullptr);Tcl_CreateObjCommand(ip,"::GX::NativeDocument::scan",scancmd,nullptr,nullptr);return Tcl_PkgProvide(ip,"gxtxt_document","1.0");}
+extern "C" int Gxtxtdocument_Init(Tcl_Interp*ip){if(!Tcl_InitStubs(ip,"8.6",0))return TCL_ERROR;Tcl_CreateNamespace(ip,"::GX::NativeDocument",nullptr,nullptr);auto*owner=new Owner;Tcl_SetAssocData(ip,"gxtxt.document.v1",dispose,owner);Tcl_CreateObjCommand(ip,"::GX::NativeDocument::xml",xmlcmd,owner,nullptr);Tcl_CreateObjCommand(ip,"::GX::NativeDocument::render",rendercmd,nullptr,nullptr);Tcl_CreateObjCommand(ip,"::GX::NativeDocument::scan",scancmd,nullptr,nullptr);GXDocumentSourceCaptureInit(ip);return Tcl_PkgProvide(ip,"gxtxt_document","1.0");}

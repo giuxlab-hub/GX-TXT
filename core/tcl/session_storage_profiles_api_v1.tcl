@@ -68,6 +68,10 @@ proc ::GX::sessionStorageProfileEffective {role {session {}}} {
     workspaceValidateRole $role
     if {$session eq {}} {set session $::GX::currentSession}
     if {$session eq {}} {return {}}
+    # A legacy channels-only Session has no private profile yet. Effective
+    # chooser lookup uses the existing global policy without creating metadata.
+    # Explicit profile management still requires sessionStorageProfilesPath.
+    if {![file isdirectory [file join $session metadata]] && [file isdirectory [file join $session channels]]} {return {}}
     set data [sessionStorageProfilesRead $session];set active [dict get $data active]
     if {$active eq {}} {return {}}
     set path [dict get $data profiles $active $role]

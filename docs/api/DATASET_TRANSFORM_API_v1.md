@@ -1,5 +1,14 @@
 # Dataset Transform API v1 and Manifest v1
 
+TASK210 source proposal: the admitted Viewer baseline form delegates one explicit
+Create to existing `datasetTransformExecuteResponsive`, reads actual
+`datasetTransformProvenance`, and binds the committed canonical Dataset through
+Plot v4. Only the form's captured execution may be cancelled. A subsequent UI or
+Plot failure does not erase a successful canonical commit. This adds no Script
+responsive grant or new numerical backend. See the
+form contract and pending validation;
+central adoption and real GUI/scientific acceptance remain pending.
+
 `concat_rows` also accepts an owned `native_geometry` source: `xy_resource`
 (`native2d.float64_xy_le_v1`), `x_variable`/`y_variable` descriptors, optional
 `row_resource` (uint64 source-row ordinals; maximum uint64 means no source row),

@@ -346,8 +346,25 @@ proc ::GX::graphWorkflowProviderAliasPaths {session} {
             set safeRoot [file normalize $dir]
             if {[string first "${safeRoot}[file separator]" $alias] != 0} continue
             if {![file isfile $alias]} continue
-            if {[catch {set artifact [plotVariantArtifact plot.dataset $graphId $variantId]}]} continue
-            if {![file isfile $artifact] || [llength [plotVariantInfoForPath $artifact]] != 3} continue
+            # A retained bridge may name an ID later reused by an unrelated
+            # user Variant. Only the actual producer-owned representation is
+            # an alias; missing/stale provenance leaves the producer visible.
+            if {[catch {
+                set producer [graphUseIdentityForPath $alias]
+                if {[llength $producer] != 3} {error {Unknown producer graph}}
+                lassign $producer producerModule producerGraph producerVariant
+                if {[file normalize [graphAxisArtifactPath $producerModule $producerGraph $producerVariant]] ne $alias} {error {Producer artifact differs}}
+                set scope [expr {$producerVariant eq {} ? {base} : $producerVariant}]
+                set key [descriptorValue $data $section key {}]
+                if {$key eq {} || [descriptorValue $data $section scope {}] ne $scope} {error {Producer scope/key differs}}
+                set declaredKey [moduleGraphField $producerModule $producerGraph interactive_3d_key {}]
+                if {$declaredKey ne {} && $declaredKey ne $key} {error {Declared producer key differs}}
+                set artifact [plotVariantArtifact plot.dataset $graphId $variantId]
+                if {![file isfile $artifact] || [plotVariantInfoForPath $artifact] ne [list plot.dataset $graphId $variantId]} {error {Representation artifact differs}}
+                if {[plotVariantField plot.dataset $graphId $variantId provider_key {}] ne "${producerModule}:${scope}:${key}"} {error {Representation producer differs}}
+            }]} continue
+            # Historical absolute provider_artifact paths are provenance, not
+            # authority to open another Session after an ordinary Session copy.
             if {$alias ne [file normalize $artifact]} {lappend aliases $alias}
         }
     }

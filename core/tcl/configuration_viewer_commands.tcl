@@ -164,7 +164,14 @@ proc ::GX::viewerCommandEnabled {window id} {
     if {![dict exists $::GX::ViewerCommands::windows $window handlers $id] || ![winfo exists $window]} {return 0}
     set adapter [dict get $::GX::ViewerCommands::windows $window]
     if {[dict get $adapter session_token] ne {}} {
-        if {[catch {interactiveDocumentSessionToken} token] || $token ne [dict get $adapter session_token]} {return 0}
+        if {[catch {interactiveDocumentSessionToken} token] || $token ne [dict get $adapter session_token]} {
+            # A stale source may stop/inspect only its exact already-captured
+            # Transform or PCB intake. No authored handler or new scientific
+            # action is admitted; each private owner proves its captured action.
+            if {[llength [info commands ::GX::_viewerGuiTransformOwnedStopEnabled]] && ![catch {_viewerGuiTransformOwnedStopEnabled $window $id} owned] && $owned} {return 1}
+            if {[llength [info commands ::GX::_viewerGuiPCBOwnedStop]] && ![catch {_viewerGuiPCBOwnedStop $window $id} owned] && $owned} {return 1}
+            return 0
+        }
     }
     foreach predicate [list [dict get $adapter guard] [datasetPublicationV2DictDefault [dict get $adapter handlers $id] enabled {}]] {
         if {$predicate ne {} && ([catch {uplevel #0 $predicate} enabled] || !$enabled)} {return 0}

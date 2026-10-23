@@ -131,6 +131,15 @@ unavailability. Native failures appear asynchronously in `last_error` and the
 presentation status. Timed-out navigation drains within a bound or retires its
 owned host; reopening creates a fresh surface instead of accepting stale events.
 
+When a managed cancellation is observed during polling, `last_error` retains
+code `RUNTIME_EXITED` and the existing `code`/`message` keys. Its message appends
+` Managed transport reason: TOKEN.`, where TOKEN is exactly `closed`,
+`read_error`, `write_error`, `output_limit`, `timeout`, `cancelled` or `unknown`.
+The first failure is retained through detach and terminal retirement. This is
+a transport category, not proof of the cancellation initiator or native cause.
+If terminal completion is the first observation, the existing generic closed
+message remains; the diagnostic suffix is limited to the polling path.
+
 The precompiled Qt6 WebEngine executable and SHA-bound `.info` receipt are
 required under `core/nativegui/document/`. There is no compile-on-open fallback.
 The current implementation supports X11 embedding only and needs the existing

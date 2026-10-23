@@ -1,0 +1,28 @@
+{
+  "ownership": "Project-associated request under VIEWER_DEVELOPMENT_API_v1; CORE owner adjudicates separately.",
+  "project_snapshot": {
+    "design.gxtxt-viewer": "5ce2c7d8dc97a614fb7a3388b3404bf5ac55ac4ddbf8a0c6817cd5c8a79ead39",
+    "handlers.cpp": "d9fa5f7aa40538ceb856e4ad88e0cadbde7095c3f0b3aeba1649b83bd99d84ff",
+    "project.json": "e87c44bc29084b21097f63edee8927b5940a3bba7600dda05a7ab47a523c4cbc"
+  },
+  "request": {
+    "desired_input_output": "Select canonical PDF/image identity with source SHA, page, DPI, language, PSM, explicit native/OCR/Auto policy and pixel/normalized ROI conversion; return managed positioned-word/text/table preview with source/method/coordinate units, cancellation and stale-source guards. Preserve legacy PDF and both Table Extractor semantics, including native-table acceptance thresholds.",
+    "minimal_acceptance_test": "Canonical PDF native/OCR/Auto and raster OCR fixtures independently verify ROI/frame conversion, languages/PSM/DPI, empty/malformed/missing/stale inputs and public Job cancellation; compare source SHA/units and no implicit publication.",
+    "missing_operation_or_contract": "OCR_LAYOUT_API_v1 and TABLE_EXTRACTOR_API_v1 are declared host-only, sdk_exposed=false; exact canonical source-bound typed extraction form is unavailable.",
+    "public_api_inspected": [
+      "VIEWER_GUI_HOST_API_v1",
+      "VIEWER_DEVELOPMENT_API_v1",
+      "OCR_LAYOUT_API_v1",
+      "TABLE_EXTRACTOR_API_v1",
+      "SESSION_WORKSPACE_API_v1",
+      "FILE_PUBLICATION_API_v1"
+    ],
+    "reproduction": "Actual public Validate with OCR_LAYOUT_API_v1 extractPdfPage and TABLE_EXTRACTOR_API_v1 extractDataset is CAPABILITY_DENIED; receipts retained under own unified-official-author01/author. document_bind is read-only consultation and raster_bind only admits canonical images; neither performs extraction.",
+    "request_id": "GAP-TASK210-DOC-EXTRACTION-R2",
+    "schema": "gxtxt.core_api_gap.v1",
+    "status": "REQUESTED",
+    "task": "GX-TXT TASK210 Section16 formal dev111 unified document extraction",
+    "viewer_project": "viewer.unified_document_extraction",
+    "why_existing_api_fails": "Actual public Validate with OCR_LAYOUT_API_v1 extractPdfPage and TABLE_EXTRACTOR_API_v1 extractDataset is CAPABILITY_DENIED; receipts retained under own unified-official-author01/author. document_bind is read-only consultation and raster_bind only admits canonical images; neither performs extraction."
+  }
+}

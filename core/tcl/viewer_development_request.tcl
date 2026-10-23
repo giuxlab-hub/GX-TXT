@@ -2,10 +2,18 @@
 # Fixed headless public-owner operations for the shared development backend.
 lassign $argv framework operation
 set arguments [lrange $argv 2 end]
+proc ::gxtxtViewerDevelopmentRequestPhase {phase} {
+    # Developer diagnostics only; stdout remains the existing typed response.
+    catch {puts stderr [list GXTXT_DEVELOPMENT_PHASE [clock microseconds] $phase];flush stderr}
+}
 set argv0 __gxtxt_viewer_development_core_request__
+::gxtxtViewerDevelopmentRequestPhase source_begin
 source [file join [file normalize $framework] gxtxt_pipeline.tcl]
+::gxtxtViewerDevelopmentRequestPhase source_complete
 ::GX::defaults
+::gxtxtViewerDevelopmentRequestPhase defaults_complete
 ::GX::loadModuleCatalog
+::gxtxtViewerDevelopmentRequestPhase catalog_complete
 proc ::GX::_viewerDevelopmentCatalogAdd {target api row} {
     upvar 1 $target result
     set prior [::GX::datasetPublicationV2DictDefault $result $api {}]
@@ -57,6 +65,11 @@ proc ::GX::_viewerDevelopmentRequestApiCatalog {} {
     foreach {api command} {STATISTICAL_RESULT_SEMANTICS_API_v1 ::GX::StatisticsV1::apiInfo VIEWER_DEVELOPMENT_API_v1 ::GX::viewerDevelopmentApiInfo NATIVE2D_VIEWPORT_HOST_v1 ::GX::native2DViewportHostApiInfo SCIENTIFIC_EXECUTION_API_v1 ::GX::scientificExecutionApiInfo SCRIPT_JOB_API_v1 ::GX::scriptJobApiInfo PARALLEL_EXECUTION_API_v1 ::GX::parallelExecutionApiInfo VIEWER_GUI_HOST_API_v1 ::GX::viewerGuiHostApiInfo VIEWER_COMPONENT_DEMO_API_v1 ::GX::viewerGuiComponentDemoApiInfo NATIVE_3D_GUI_HOST_API_v1 ::GX::native3DGuiHostApiInfo NATIVE_3D_GUI_HOST_API_v2 ::GX::native3DGuiHostApiInfoV2 NATIVE2D_TEMPORARY_DISPLAY_API_v1 ::GX::native2DTemporaryDisplayApiInfo NATIVE_PLOT_DISPLAY_API_v1 ::GX::nativePlotDisplayApiInfo SOURCE_SURFACE_API_v1 ::GX::sourceSurfaceApiInfo UI_FIELD_API_v1 ::GX::uiFieldApiInfo} {
         set meta [$command];::GX::_viewerDevelopmentCatalogAdd result $api [dict merge $meta [dict create api_id $api version [dict get $meta api_version] provider CORE enabled 1 documentation docs/api/$api.md]]
     }
+    # Restricted declared forms project only existing host Transform operations.
+    # Keep the general public registry/Script entrypoint unchanged.
+    set meta [::GX::datasetTransformResponsiveApiInfo]
+    dict set meta operations {execute_responsive cancel provenance}
+    ::GX::_viewerDevelopmentCatalogAdd result DATASET_TRANSFORM_API_v1 [dict merge $meta [dict create api_id DATASET_TRANSFORM_API_v1 version 1 provider CORE enabled 1 documentation docs/api/DATASET_TRANSFORM_API_v1.md host_only 1]]
     # Analysis run selection does not disable the bundled Plot service.
     # Verify its real public activation; never set an analysis/config flag.
     if {[dict exists $result PLOT_DATASET_API_v4] && [file normalize [::GX::moduleField plot.dataset descriptor]] eq [file normalize [file join $::GX::scriptDir plugins modules plot.dataset module.ini]]} {
@@ -69,6 +82,7 @@ proc ::GX::_viewerDevelopmentRequestApiCatalog {} {
     }
     return $result
 }
+::gxtxtViewerDevelopmentRequestPhase operation_begin
 try {
     switch $operation {
         diagram_tool_validate {
@@ -201,5 +215,14 @@ try {
         }
         default {error {Unknown fixed development CORE operation}}
     }
+    ::gxtxtViewerDevelopmentRequestPhase operation_complete
     puts [dict create ok 1 result $result]
-} on error {message options} {puts [dict create ok 0 error $message code [expr {$operation in {numeric_add numeric_sqrt numeric_exp}?{NUMERIC_DOMAIN}:{CORE_API_GAP}}]];exit 1}
+    flush stdout
+    ::gxtxtViewerDevelopmentRequestPhase response_flushed
+} on error {message options} {
+    ::gxtxtViewerDevelopmentRequestPhase operation_failed
+    puts [dict create ok 0 error $message code [expr {$operation in {numeric_add numeric_sqrt numeric_exp}?{NUMERIC_DOMAIN}:{CORE_API_GAP}}]]
+    flush stdout
+    ::gxtxtViewerDevelopmentRequestPhase failure_response_flushed
+    exit 1
+}

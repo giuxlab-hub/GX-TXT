@@ -145,3 +145,55 @@ callers should destroy timelines explicitly when finished.
 - The PNG sequence operation stops on the first failure and leaves any earlier
   completed images in the caller's output directory. Callers needing an
   all-or-nothing movie package should stage and rename the output directory.
+
+## Internal source-labelled frame capture (dev111 source implementation)
+
+The existing renderer bridge adds the INTERNAL Tcl command
+`::GX3DEViewer::timeline_capture frame_index source_label PNG`. The normal
+`render scene PNG width height full` command initializes a private captured
+timeline first. The isolated renderer worker dispatches capture only outside its
+readonly allowlist. This is not a new native ABI, public arbitrary RPC, Script
+Bridge permission or v2 viewport mutation capability.
+
+The trusted export source adapter currently admits base Viewer scenes only.
+Active or stale ScientificDocument-backed editable-host presentations are
+explicitly refused before capture, because ordinary scene resolution does not
+include that host's injected figure. This native caption operation by itself
+does not establish Document-backed export support. Private host presentation
+and mount generations also invalidate capture on a presentation switch/reopen.
+
+Capture seeks the exact sample, queries that same native timeline's frame/time
+and unit, refreshes actual active-source objects and obtains their world bounds.
+It uses existing scientific-figure title/legend APIs to render source/time text
+into the native PNG. Existing timeline PNGs had no automatic such caption: Tk
+controls/status updated after rendering and were outside the PNG.
+
+An existing authentic figure is preserved, including its original title/legend.
+Captions do not accumulate across samples. For an unannotated scene, a caption
+band uses only finite nondegenerate actual 3D bounds as hidden identity render
+coordinates, with axes and colorbar disabled. This asserts no physical coordinate
+calibration or inferred unit. Unsupported bounds, control characters, excessive
+labels and native failures are explicit errors. Caption-only framing is recorded
+as presentation; it is not claimed byte-identical to an uncaptioned viewport.
+This new operation accepts strict UTF-8 BMP text for source/unit/figure captions,
+rejecting modified UTF-8, surrogate code points, non-BMP text, embedded NULs and
+unsupported controls, including LF, CR and tab in original title/legend. Export
+checks actual original figure text and units before seeking or writing output;
+its existing one-line renderer transport does not support multiline original
+captions. The added caption separator is used only inside the PNG figure and is
+not returned as a multiline receipt field. Interactive figure operations keep
+their existing compatibility behavior. Units
+are never normalized, transliterated or silently changed. This is a bounded
+capture limitation, not a general Tcl/Native3D Unicode fix or Unicode acceptance.
+
+The bounded metadata receipt contains `current_frame`, `current_time`,
+`time_unit`, actual `width`/`height`, `source_label`, added `caption`,
+`original_title`, `original_legend`, `figure_was_enabled`, `caption_policy`,
+actual `bounds_min`/`bounds_max`, camera vectors/projection and existing renderer
+diagnostics. It contains no PNG path or native pointer. The export owner computes
+and retains the PNG identity and separate video PTS. The original native C frame
+and PNG-sequence operations keep their existing compatibility behavior.
+
+Only source/diff review has been performed for this extension. Compilation,
+native visual captions, timing/content parity and playable encoded video remain
+subject to separate MAIN allocation and acceptance.

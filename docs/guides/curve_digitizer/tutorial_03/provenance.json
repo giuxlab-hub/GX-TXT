@@ -1,0 +1,84 @@
+{
+  "content_id": "curve_digitizer.tutorial.03.en",
+  "version": "0.1.0",
+  "author": "GX210-GUIDE",
+  "license": "GPL-3.0-or-later",
+  "source_baseline": {
+    "version": "0.9.8.10-dev-110",
+    "commit": "e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68",
+    "deposition_sha256": "5ba61e98498d7cdafce50bb05bbcbdda68592697974d4f402583f4a07354f0d8"
+  },
+  "unchanged_vendor": {
+    "version": "2.0.9",
+    "original_zip_sha256": "dbd271bd70b4d13d6fbe4889750f73aef97825b6ef4bc4dce89d7510a278b84a"
+  },
+  "original_assets": "All SVGs and extra PNGs are original authored explanatory diagrams/static teaching inputs; no application screenshots or published scientific outputs are represented.",
+  "files": {
+    "LICENSE.txt": {
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "bytes": 35149
+    },
+    "README.md": {
+      "sha256": "9d1c430dc9b02229f97defe80959f0d3e22d4bda9a2c666092a319085b847c0d",
+      "bytes": 3166
+    },
+    "assets/scale-reference.json": {
+      "sha256": "f2b26b532a01cb2ecb226f9379aaf15bf389d76b8c385cb22b1e21b9cdf6995d",
+      "bytes": 1429
+    },
+    "assets/scale-reference.png": {
+      "sha256": "f81a63082218830b223dec535af9bb8d4b68dc9a83cda7fd5cb0949500e62398",
+      "bytes": 6113
+    },
+    "documentation-package.ini": {
+      "sha256": "08e0c8ad02d452894bc86f68bf087b80590d212117a235c33d7638a033dbb62a",
+      "bytes": 428
+    },
+    "figures/processing-authority.svg": {
+      "sha256": "f805e11aabe5ead66d470695037190ec9748fd3df9693ad08d96bf66ac82231d",
+      "bytes": 1592
+    },
+    "figures/scale-bar-conventions.svg": {
+      "sha256": "9157f9976a927eec18d07e33402f81074936d2bc7493fb75407640d48acef1b9",
+      "bytes": 1372
+    },
+    "figures/shared-calibration.svg": {
+      "sha256": "2a80835f8924050493b7b2aebd17cc6b3139d417e4b830f2251398a7afa91952",
+      "bytes": 1375
+    },
+    "figures/source-lineage.svg": {
+      "sha256": "729114b5a1142f475fb793fa5aab3c384454df76379c8df0f0286d64f91baad3",
+      "bytes": 1711
+    },
+    "index.html": {
+      "sha256": "4dd1f3c12b57bc90b2e6db5813287dbb4271da418e900f67b26fc48a8da85add",
+      "bytes": 27126
+    },
+    "reference.json": {
+      "sha256": "b73aed511aef89971cba3331241883c50d741870d0450f5f94075b8f466ef16d",
+      "bytes": 2276
+    },
+    "step-outcomes.json": {
+      "sha256": "b8460b691504e3e21ec96c3271f23d6c7e861613f62e495245ba829e8b5c8a5f",
+      "bytes": 4168
+    },
+    "tutorial.css": {
+      "sha256": "3012608c1c7c919b03426b5d529274596310414345a4ec7f136319166fd6b270",
+      "bytes": 2233
+    },
+    "tutorial.js": {
+      "sha256": "a2049a9bce6463eb9123fbfbaa930fada787df57e02dd1ac4d8e05630f50f154",
+      "bytes": 1464
+    }
+  },
+  "self_hash_policy": "This inventory excludes provenance.json itself; final archive hash supplied separately.",
+  "actual_execution_evidence": null,
+  "TUTORIAL1_quality_acceptance": null,
+  "review003_source_corrections": {
+    "review_commit": "38602486",
+    "scope": {
+      "HOST-LINK-02": "READMEhref replaced byexistingHTMLrecordsectionanchor withself-containedpackage/compatibilitynotes;MDbytes preserved"
+    },
+    "runtime_or_scientific_acceptance": false
+  }
+}

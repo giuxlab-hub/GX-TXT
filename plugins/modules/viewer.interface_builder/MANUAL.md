@@ -509,9 +509,27 @@ GUI owner receipt does not certify fresh external CLI projection of every field.
 
 ### Discover shared original icons through the approved tools
 
-In **Icon Library → Add shared icon…**, choose a declared original source from the shared
-catalog. Its category/license come from the distributed catalog and the actual
-source SHA is checked before import. **Import** remains available for other
+In **Icon Library → Add shared icon…**, choose a category and search by English
+label, semantic ID or intended action. The dev111 source catalog declares 100
+stock entries in five families: Selection & Navigation; Geometry & Editing;
+Data, Plots & Analysis; Scientific Tools & Simulation; Documents & Workflow.
+Each family has 20 declared entries. Counts from source are distinct from the
+actual installed catalog and visual/GUI acceptance recorded by the release.
+
+Select a row to inspect its source identity, license, intended action and origin,
+with native 24-pixel Normal, Disabled, Hover and Selected samples. These samples
+use the current theme; missing state-specific images retain normal native
+fallback rather than implying four different stock icons. Opening/filtering the
+picker reads metadata, and only the selected source is admitted for preview.
+Preview and Cancel do not import resources or edit the design/Undo/Redo.
+
+Choose **Add to project** to admit that exact source through the existing icon
+owner and import one ordinary embedded resource. Then select an existing Builder
+component/command target and use **Assign to component** as described above.
+The category/license come from the distributed catalog and the source SHA is
+checked again at admission. Duplicate bytes reuse the existing project icon.
+The project limit remains 64 icons / 2 MiB; 100 stock choices do not import the
+whole stock collection into every project. **Import** remains available for other
 owned PNG/safe-SVG files. Assign a normal icon and optional state variants using
 the existing typed controls; imported images become ordinary project resources.
 The library includes electrical devices, selection/wiring/junction/probe tools,
@@ -525,7 +543,8 @@ Restricted authors discover these same sources with this exact Builder request:
 ```
 
 Read `builder.catalog.icons` for IDs, titles, category, license, admitted source
-paths, SHA256, format and dimensions. Use a returned path with the existing
+paths, SHA256, format and dimensions, plus optional `action` and `origin` metadata.
+Use a returned path with the existing
 five-argument `icon_import`, then apply typed component icon properties.
 Discovery takes no path or extra argument and changes no design/Undo/Redo file;
 the ordinary request provenance receipt is retained. It grants no filesystem
@@ -541,7 +560,7 @@ is no crash-atomicity claim or manual history-deletion recovery step. Restricted
 Builder response limits are16MiB at CORE/64MiB through the GUI request transport;
 ordinary source/C++ limits and runtime SDK permissions remain unchanged.
 
-![Actual native Add shared icon chooser lists the29 original distributed sources.](images/shared-icon-sources.png)
+![Historical dev108 native shared-file chooser; this image predates the categorized dev111 picker.](images/shared-icon-sources.png)
 ![Actual imported Voltage resource retains its declared title, Electrical category, license, source SHA and four native state previews.](images/shared-icon-metadata.png)
 ![Independent fresh generic Builder Preview: all18 added glyphs at16/24 pixels, normal and actual native disabled states. These are real controls after the inherited-paint correction, not installed Circuit Viewer certification.](images/shared-icon-native-sizes.png)
 

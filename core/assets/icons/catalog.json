@@ -2,214 +2,1004 @@
   "schema": "gxtxt.viewer_shared_icons.v1",
   "icons": [
     {
+      "id": "add_point",
+      "title": "Add point",
+      "category": "Geometry & Editing",
+      "license": "GPL-3.0-or-later",
+      "source": "add_point.svg",
+      "action": "Insert an editable point in existing geometry",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "174db6bbf4dda900df47621f7652d28bec04fac57128f2f7c03aacf053260185"
+    },
+    {
+      "id": "align_left",
+      "title": "Align left",
+      "category": "Geometry & Editing",
+      "license": "GPL-3.0-or-later",
+      "source": "align_left.svg",
+      "action": "Align selected objects to their left extent",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "e125aff523279cf67659f6d58e21fa483d8e0653308f68a70f74a73f02135b98"
+    },
+    {
+      "id": "attach",
+      "title": "Attach",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "attach.svg",
+      "action": "Attach an admitted existing resource",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "ce0c76d58687ef05959eae618d5e431f86621ab7f75bcc48bd86d6eb5acf1a24"
+    },
+    {
+      "id": "axis_settings",
+      "title": "Axes",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "axis_settings.svg",
+      "action": "Edit displayed axis scales ranges and units",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "5047cbc89b3129fd49b16eda5bca234764fa0c01e3d350a1b01f558e51b1d03b"
+    },
+    {
       "id": "capacitor",
       "title": "Capacitor",
-      "category": "Electrical",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "capacitor.svg"
+      "source": "capacitor.svg",
+      "action": "Choose a capacitor action where supported",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "4623a152f7005beb832219beb6dc5c43b1d1766bcda53250771dda137c451322"
+    },
+    {
+      "id": "center_selection",
+      "title": "Center selection",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "center_selection.svg",
+      "action": "Center the view on the selected objects",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "c384f7ca3c7ce07e35ce94698f4d3a26e2d24ca612307453ca7ac13ac7ef3489"
+    },
+    {
+      "id": "column",
+      "title": "Column",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "column.svg",
+      "action": "Inspect or choose a table variable column",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "a5cf49c3b6724dc6f406c3a8f8fd9fe185a311ea6c0829afcca0de86287f0f17"
+    },
+    {
+      "id": "concatenate_rows",
+      "title": "Concatenate rows",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "concatenate_rows.svg",
+      "action": "Append compatible rows in a declared sequence",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "10fd4ad0176ce17bd0b22a0feda3759d26987f583bd5ef396251f5ac8bb35b1f"
+    },
+    {
+      "id": "copy",
+      "title": "Copy",
+      "category": "Geometry & Editing",
+      "license": "GPL-3.0-or-later",
+      "source": "copy.svg",
+      "action": "Copy the selection to the clipboard",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "f7a28b17427532cc5d600d32f26d4059edf2a92e3d82462fd652b15629b0c393"
     },
     {
       "id": "current",
       "title": "Current",
-      "category": "Electrical",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "current.svg"
+      "source": "current.svg",
+      "action": "Choose a current source action where supported",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "797db4c8ad68d7d4f82bbfde6b7b3807bebe0cf61e642025f80aae9ad9b4ee48"
+    },
+    {
+      "id": "cut",
+      "title": "Cut",
+      "category": "Geometry & Editing",
+      "license": "GPL-3.0-or-later",
+      "source": "cut.svg",
+      "action": "Move the selection to the clipboard",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "d4033b06ca87aeac8b41a33b273df4765174c03ef0d5c07c77e01f47935bcd27"
+    },
+    {
+      "id": "dataset",
+      "title": "Dataset",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "dataset.svg",
+      "action": "Inspect or choose a canonical Dataset",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "173e489b1d0b1d46918f5dc065e1ff70c3de00bed16395a7ef6a9b8f0788de6e"
     },
     {
       "id": "delete",
       "title": "Delete",
-      "category": "Controls",
+      "category": "Geometry & Editing",
       "license": "GPL-3.0-or-later",
-      "source": "delete.svg"
+      "source": "delete.svg",
+      "action": "Delete the selected object",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "7c0f11c74845ef518602483f01521562dac46044547ab0c8d3cbcd8e55e94f10"
     },
     {
       "id": "diode",
       "title": "Diode",
-      "category": "Electrical",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "diode.svg"
+      "source": "diode.svg",
+      "action": "Choose a diode action where supported",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "3d9af786fccce611fc98be788ea5e541703ab974eb34ce2923774c967322f728"
+    },
+    {
+      "id": "draw_circle",
+      "title": "Circle",
+      "category": "Geometry & Editing",
+      "license": "GPL-3.0-or-later",
+      "source": "draw_circle.svg",
+      "action": "Create a circular geometry object",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "0a9b0c1720fc3640dd5fc3ac8a0af9c4340fe997cf50047d4f16b59ec9e02272"
+    },
+    {
+      "id": "draw_line",
+      "title": "Line",
+      "category": "Geometry & Editing",
+      "license": "GPL-3.0-or-later",
+      "source": "draw_line.svg",
+      "action": "Draw a line segment between endpoints",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "30cc7023722815f9bca1a3599b168e8c39ce1f2d904e54df5b93b966aa7c4fc4"
+    },
+    {
+      "id": "draw_polyline",
+      "title": "Polyline",
+      "category": "Geometry & Editing",
+      "license": "GPL-3.0-or-later",
+      "source": "draw_polyline.svg",
+      "action": "Draw a connected sequence of line segments",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "22852ecebe36e785b617082f0794d668d8721668825f11d09d04265a28fb626d"
+    },
+    {
+      "id": "draw_rectangle",
+      "title": "Rectangle",
+      "category": "Geometry & Editing",
+      "license": "GPL-3.0-or-later",
+      "source": "draw_rectangle.svg",
+      "action": "Create a rectangular geometry object",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "0f48f35bbcae468d3a537347d5258e2f97dd011d35cc4408e499c17118843539"
+    },
+    {
+      "id": "duplicate",
+      "title": "Duplicate",
+      "category": "Geometry & Editing",
+      "license": "GPL-3.0-or-later",
+      "source": "duplicate.svg",
+      "action": "Create another instance of the selected object",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "404868dbea0a9c96dcac67aa350d2e4b9b0132a924e2b6d6d32b10af6ad71287"
     },
     {
       "id": "electromagnetics",
       "title": "Electromagnetics Studio",
-      "category": "Simulation & Modeling",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "electromagnetics.png"
+      "source": "electromagnetics.png",
+      "action": "Open Electromagnetics Studio",
+      "origin": "Original GX-TXT Electromagnetics artwork; byte-identical retained PNG",
+      "sha256": "a8c0e967a0b4a77160f1956472953d39aa67e3ff3cc512e4557a8c82232d09ea"
+    },
+    {
+      "id": "error_bars",
+      "title": "Error bars",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "error_bars.svg",
+      "action": "Show declared observation uncertainty",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "6dd8c12ae889dc3cac31735a1d251884eaf87c2d255274b639951955771569dd"
+    },
+    {
+      "id": "export_file",
+      "title": "Export file",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "export_file.svg",
+      "action": "Write a presentation or exchange derivative to a chosen destination",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "dde20b11fdbc323eb363f73bf46d39e76ab88b798a673b54229519ee600b86fe"
+    },
+    {
+      "id": "export_pdf",
+      "title": "Export PDF",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "export_pdf.svg",
+      "action": "Export a portable PDF presentation derivative",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "874d39ebfecb59b88008ba4813489cf76067f6fbf1890d01dd7fb6d06131783e"
+    },
+    {
+      "id": "filter_rows",
+      "title": "Filter rows",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "filter_rows.svg",
+      "action": "Select rows matching a declared filter",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "9de57b3a88f8e8b63092ad27493db46c72a86c2cd481d867e54883e7eb256140"
+    },
+    {
+      "id": "first_item",
+      "title": "First item",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "first_item.svg",
+      "action": "Select the first item in an ordered collection",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "e29890757c5794efd587e9d654d2732277b4c1cadf952b55e24e7f1f869820e8"
     },
     {
       "id": "fit",
       "title": "Fit",
-      "category": "Controls",
+      "category": "Selection & Navigation",
       "license": "GPL-3.0-or-later",
-      "source": "fit.svg"
+      "source": "fit.svg",
+      "action": "Fit all eligible content in the current viewport",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "1b2384650a036d1caf14ade759986b28564aae598d39abe800495db930beb644"
+    },
+    {
+      "id": "fit_selection",
+      "title": "Fit selection",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "fit_selection.svg",
+      "action": "Fit selected objects within the viewport",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "572f4a495499043827eef55a8059720863e14c5d318b7a9536b601a2f9644555"
+    },
+    {
+      "id": "folder",
+      "title": "Folder",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "folder.svg",
+      "action": "Browse a filesystem or resource collection",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "311658a49c1aece87e29aa02a01383387afdfa3c54e245b49ef3b93ac36f8527"
+    },
+    {
+      "id": "fuse",
+      "title": "Fuse",
+      "category": "Scientific Tools & Simulation",
+      "license": "GPL-3.0-or-later",
+      "source": "fuse.svg",
+      "action": "Choose a fuse component action where supported",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "5d2a4f46bbd35105854ba83b97d91bfae3243c2be1d94a1000e05ae0cd438d3f"
     },
     {
       "id": "ground",
       "title": "Ground",
-      "category": "Electrical",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "ground.svg"
+      "source": "ground.svg",
+      "action": "Choose a ground reference action where supported",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "9f00784f508f2d52126c8809d0893f091bd40224c61b1b76a20d990a5b072bf9"
+    },
+    {
+      "id": "group_rows",
+      "title": "Group rows",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "group_rows.svg",
+      "action": "Group related records under a declared key",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "faf739a6588587823c0554f4e0fb1e0ca29fe5de4068fc88fdc1498ec7fe0361"
+    },
+    {
+      "id": "help",
+      "title": "Help",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "help.svg",
+      "action": "Open context help or usage guidance",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "5cf8930be8cf9f8bcbc146b114f9448ae21d6055b6084d6690780e7de7d0bbfa"
+    },
+    {
+      "id": "hide_selected",
+      "title": "Hide selection",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "hide_selected.svg",
+      "action": "Hide selected objects while retaining their identities",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "d63f1421880ec97eceb356de6bd3e09bef7282ea0504b03bea941e28f9f9e518"
+    },
+    {
+      "id": "histogram",
+      "title": "Histogram",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "histogram.svg",
+      "action": "Show a binned value distribution",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "e2b2027e832eceda3286dd50f3f384e1d4f7561f2319d5363353eab4a15c53bc"
+    },
+    {
+      "id": "history",
+      "title": "History",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "history.svg",
+      "action": "Inspect an operation history",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "a8a43137e576f777c9be7e19cbb5e5f4007faff207b9c77415282be18836df3d"
+    },
+    {
+      "id": "import_file",
+      "title": "Import file",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "import_file.svg",
+      "action": "Read an admitted external source through its normal importer",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "e1c6f4a6f540611a964a42f65dff569c48b4c83a7924dd67eb8992bc22a33243"
     },
     {
       "id": "inductor",
       "title": "Inductor",
-      "category": "Electrical",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "inductor.svg"
+      "source": "inductor.svg",
+      "action": "Choose an inductor action where supported",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "bb5e9b15aa620c3a2c02ef8b23ee9f3bb17c23dfe4183ee74063c76609993140"
+    },
+    {
+      "id": "join_tables",
+      "title": "Join tables",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "join_tables.svg",
+      "action": "Join compatible tables using the chosen contract",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "0dece95fa0cdc1b57794a8f08a826f2cf4ee3ec4245db4eb74f291268941666e"
     },
     {
       "id": "junction",
       "title": "Junction",
-      "category": "Electrical",
+      "category": "Geometry & Editing",
       "license": "GPL-3.0-or-later",
-      "source": "junction.svg"
+      "source": "junction.svg",
+      "action": "Create or inspect a wire junction",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "99d54b4931b4c58e4f627d95f2efc86617bee3eaeb8006d82172b4c06960c141"
     },
     {
       "id": "label",
       "title": "Label",
-      "category": "Electrical",
+      "category": "Geometry & Editing",
       "license": "GPL-3.0-or-later",
-      "source": "label.svg"
+      "source": "label.svg",
+      "action": "Label an existing object or net",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "0ffaa15c1da07c99d45f17441fd00f4d52b057fdd2540ffbd6d2f31325c71396"
+    },
+    {
+      "id": "last_item",
+      "title": "Last item",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "last_item.svg",
+      "action": "Select the last item in an ordered collection",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "b028106fbc6a6a5dab5dabd15f894ff41bdbff68f97d76be0a6660aaa346d215"
+    },
+    {
+      "id": "legend",
+      "title": "Legend",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "legend.svg",
+      "action": "Inspect or configure plotted series labels",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "bfb7ebc5321cd6568ee95fe82fef66bcfeead2c062b42503d2234f27fc16c085"
+    },
+    {
+      "id": "link",
+      "title": "Link",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "link.svg",
+      "action": "Reference a related registered resource or location",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "b6ffb475689a49bdf490938391bdba27bdf9c35f2ad7df210cef0105eba48528"
+    },
+    {
+      "id": "manual",
+      "title": "Manual",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "manual.svg",
+      "action": "Open the corresponding user manual",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "b1611d2521e69f5a7abab60722f771ae928f5f7a2198782cfcd1240690537f69"
+    },
+    {
+      "id": "mirror",
+      "title": "Mirror",
+      "category": "Geometry & Editing",
+      "license": "GPL-3.0-or-later",
+      "source": "mirror.svg",
+      "action": "Reflect selected geometry across an axis",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "8c7b9b1cee5e63717bb0e2bc83045693f20d5bf507f1a63227f51d0f4a4b9551"
+    },
+    {
+      "id": "mosfet_n",
+      "title": "N-channel MOSFET",
+      "category": "Scientific Tools & Simulation",
+      "license": "GPL-3.0-or-later",
+      "source": "mosfet_n.svg",
+      "action": "Choose an N-channel MOSFET action where supported",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "19b75f06ed8e0130baebb88b3cf2425520f49a0aebdb27804ba86281471bfa51"
+    },
+    {
+      "id": "mosfet_p",
+      "title": "P-channel MOSFET",
+      "category": "Scientific Tools & Simulation",
+      "license": "GPL-3.0-or-later",
+      "source": "mosfet_p.svg",
+      "action": "Choose a P-channel MOSFET action where supported",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "2e96cee117f65593993e5e6ba19bbf8a67208a27e062cdac747af7db8ccc8371"
+    },
+    {
+      "id": "navigate_back",
+      "title": "Back",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "navigate_back.svg",
+      "action": "Return to the preceding navigation location",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "5324271ae6ef760f9d20a780a4ef7001b5388b778d9c5df439cabecfc29f4384"
+    },
+    {
+      "id": "navigate_forward",
+      "title": "Forward",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "navigate_forward.svg",
+      "action": "Advance to the next navigation location",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "23c1580f89a8bbe7cf0e4bc8bd971e12325fd62d513b8664b78fc098b10e8e9a"
+    },
+    {
+      "id": "navigate_home",
+      "title": "Home",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "navigate_home.svg",
+      "action": "Open the navigation root or home location",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "0c7c2b1597f346c4a03997516e4fb56add6fc94c7026ecfda37a17a527b91701"
+    },
+    {
+      "id": "new_document",
+      "title": "New document",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "new_document.svg",
+      "action": "Create a new document",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "771335a695c3ef7564cf352cf374cdd9f087ea189ee99ace8e14b467a2ec52b9"
+    },
+    {
+      "id": "next_item",
+      "title": "Next item",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "next_item.svg",
+      "action": "Select the following item in an ordered collection",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "4d4e0e801ea8447e0ea25a8a61f3ed1fe3dd9984421833e6165cea4d516c97f7"
     },
     {
       "id": "npn",
       "title": "Npn",
-      "category": "Electrical",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "npn.svg"
+      "source": "npn.svg",
+      "action": "Choose an NPN transistor action where supported",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "19cbf23fbd9d1fcb2b5f3bd7a50ce71f24c8ae9fe2a9fa5379455296bffa4d9f"
+    },
+    {
+      "id": "open_document",
+      "title": "Open document",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "open_document.svg",
+      "action": "Open an existing document",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "7471a6c9c850b2fa1676a3425214b8189b48e91b173d47ea8402730aea206d15"
     },
     {
       "id": "pan",
       "title": "Pan",
-      "category": "Controls",
+      "category": "Selection & Navigation",
       "license": "GPL-3.0-or-later",
-      "source": "pan.svg"
+      "source": "pan.svg",
+      "action": "Pan the current viewport",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "d0d025897b182b7617a09fcb3b2c651b4fed9f4c20c370f6a4c80bd010d6a427"
+    },
+    {
+      "id": "paste",
+      "title": "Paste",
+      "category": "Geometry & Editing",
+      "license": "GPL-3.0-or-later",
+      "source": "paste.svg",
+      "action": "Insert clipboard content at the current target",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "d6348282ca21bd5ab3b14dca40e768e3622298a228d40e9adbc5cfaa81422cdf"
     },
     {
       "id": "pause",
       "title": "Pause",
-      "category": "Controls",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "pause.svg"
+      "source": "pause.svg",
+      "action": "Pause a supported active operation",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "c78e03331b3696fe4b08b3db911fdde2ffd3cb6a8d92c20ffaf3c6ff00ae6ba2"
     },
     {
       "id": "play",
       "title": "Run",
-      "category": "Controls",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "play.svg"
+      "source": "play.svg",
+      "action": "Run an explicitly selected supported operation",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "942c860508991ab981c221d2e3390e91ee179acb0733a5cd6c6493b334dc2ab9"
+    },
+    {
+      "id": "previous_item",
+      "title": "Previous item",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "previous_item.svg",
+      "action": "Select the preceding item in an ordered collection",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "561f7fbb0b8d87cae86e84a4576d7f5d0d413f24ed638b33e7b74753177d9591"
+    },
+    {
+      "id": "print",
+      "title": "Print",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "print.svg",
+      "action": "Prepare or submit printable document output",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "88d15897b03c6d6abd3ab3e57c97f89d8b4861a241df622c5b3dd4cc0ea8386c"
     },
     {
       "id": "probe",
       "title": "Probe",
-      "category": "Electrical",
+      "category": "Data, Plots & Analysis",
       "license": "GPL-3.0-or-later",
-      "source": "probe.svg"
+      "source": "probe.svg",
+      "action": "Inspect a supported source observation",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "b3d3cabbf45d092e6df004d337844ce4d4412c3b2dc525366b4ae24af0ee6063"
+    },
+    {
+      "id": "project",
+      "title": "Project",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "project.svg",
+      "action": "Choose or manage a collection of experiments",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "cc6e0d09a1f5ca86676ae6f5f683e1183c46bde51f38b0a3f01713e590ff1ac9"
     },
     {
       "id": "properties",
       "title": "Properties",
-      "category": "Controls",
+      "category": "Geometry & Editing",
       "license": "GPL-3.0-or-later",
-      "source": "properties.svg"
+      "source": "properties.svg",
+      "action": "Inspect or edit the selected object properties",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "fac92ec79f6515684bb900302ed610b48415e140dbc36233432db02277535cd0"
     },
     {
       "id": "redo",
       "title": "Redo",
-      "category": "Controls",
+      "category": "Geometry & Editing",
       "license": "GPL-3.0-or-later",
-      "source": "redo.svg"
+      "source": "redo.svg",
+      "action": "Reapply the next available history step",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "d7c94c2d2e8a6965f12ebea8a2d608301f532601856d20a7542d79e3a123bca8"
+    },
+    {
+      "id": "regression_fit",
+      "title": "Regression fit",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "regression_fit.svg",
+      "action": "Fit a supported model to eligible observations",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "9fcdb0c1aa637ab90065b1f16851a84f09b567f855db31e2553015622aa7f70e"
+    },
+    {
+      "id": "remove_point",
+      "title": "Remove point",
+      "category": "Geometry & Editing",
+      "license": "GPL-3.0-or-later",
+      "source": "remove_point.svg",
+      "action": "Remove one editable point from geometry",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "a7704f6d12f1848767f1ef8111e6df03573343f18db35ef0841d3fa3a4c1592d"
+    },
+    {
+      "id": "residuals",
+      "title": "Residuals",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "residuals.svg",
+      "action": "Inspect deviations from a selected fitted model",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "ec6a19d6500b2d992dda853d52b4a0f737aa7d69e301f82864808c58c6522f8a"
     },
     {
       "id": "resistor",
       "title": "Resistor",
-      "category": "Electrical",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "resistor.svg"
+      "source": "resistor.svg",
+      "action": "Choose a resistor action where supported",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "545d62a86719a94b9e3e6a3b56489ac10286f158f0f0525ef7bffce0507775ae"
     },
     {
       "id": "rotate",
       "title": "Rotate",
-      "category": "Controls",
+      "category": "Geometry & Editing",
       "license": "GPL-3.0-or-later",
-      "source": "rotate.svg"
+      "source": "rotate.svg",
+      "action": "Rotate the selected object",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "ce41af2a9eed92c6263ff2a66b46b789bb5d342f9543c71da68e96d2906a1fd6"
     },
     {
       "id": "save",
       "title": "Save",
-      "category": "Controls",
+      "category": "Documents & Workflow",
       "license": "GPL-3.0-or-later",
-      "source": "save.svg"
+      "source": "save.svg",
+      "action": "Save the current document through its owner",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "bf314c2b7983b489ede43dc29096a516321ba968a75d65238387343eac755614"
+    },
+    {
+      "id": "save_as",
+      "title": "Save as",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "save_as.svg",
+      "action": "Save content under a chosen new identity",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "9a840f139950d8bedb1df494534b7777db6f724c94d5da3df1606c820c3259cc"
+    },
+    {
+      "id": "scatter_plot",
+      "title": "Scatter plot",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "scatter_plot.svg",
+      "action": "Show individual paired numeric observations",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "c963183335ccdbb56da2ed9f3b144adbda68e65d8903e8bbd6cfcae7686a9621"
     },
     {
       "id": "select",
       "title": "Select",
-      "category": "Controls",
+      "category": "Selection & Navigation",
       "license": "GPL-3.0-or-later",
-      "source": "select.svg"
+      "source": "select.svg",
+      "action": "Select an object in the current view",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "f9577f6e2cb8bbfb6a66d6580191a31c9601b07e170519823b54f7e07e838c28"
+    },
+    {
+      "id": "selection_box",
+      "title": "Box selection",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "selection_box.svg",
+      "action": "Select objects inside a rectangular region",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "362e8334356170f3eeddd28564fc180b39522e3416eaa02ff14c5586a9bf3f04"
+    },
+    {
+      "id": "session",
+      "title": "Session",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "session.svg",
+      "action": "Choose or manage a scientific Session",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "f2fab5fd48679e13b12fa4f75ed45258cd8139e8cb689fa3825d56a563100bae"
+    },
+    {
+      "id": "settings",
+      "title": "Settings",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "settings.svg",
+      "action": "Edit application or module configuration",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "058e5f687dfd21b1d9f612829467c10c84ccd0383c06ce9bd2d0a8be036a249c"
+    },
+    {
+      "id": "show_all",
+      "title": "Show all",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "show_all.svg",
+      "action": "Show every eligible object in the current view",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "e6698a1d9333763da71916f03ede8dfead0e9144960c4f9f0d5a5a68b0b19e53"
+    },
+    {
+      "id": "sort_ascending",
+      "title": "Sort ascending",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "sort_ascending.svg",
+      "action": "Order records from lower to higher values",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "b35888d319b4d11c3124e14315359a03454e46cd4cb4ce2792fc72202f6f2192"
+    },
+    {
+      "id": "sort_descending",
+      "title": "Sort descending",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "sort_descending.svg",
+      "action": "Order records from higher to lower values",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "c3a5aa114fed7a01f7e53a79ee0d6095a8ffde9dd4229acb2e44420a7097de91"
+    },
+    {
+      "id": "statistics",
+      "title": "Statistics",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "statistics.svg",
+      "action": "Inspect supported descriptive statistics",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "a61839f0eb4f3c25b971d09afe3884069a99d200b149dbad0f344812bde64dcd"
     },
     {
       "id": "step_into",
       "title": "Step into",
-      "category": "Controls",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "step_into.svg"
+      "source": "step_into.svg",
+      "action": "Step into the next debugger operation",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "0d9e43009bfa3f43192e9265f3fc06375752881a696285b3c247c63236313928"
     },
     {
       "id": "step_out",
       "title": "Step out",
-      "category": "Controls",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "step_out.svg"
+      "source": "step_out.svg",
+      "action": "Step out of the current debugger context",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "be17a85272d8922b60eec9f8cafa00b077fb32947a1c50c67adeda75cb8c1ca0"
     },
     {
       "id": "step_over",
       "title": "Step over",
-      "category": "Controls",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "step_over.svg"
+      "source": "step_over.svg",
+      "action": "Step over the next debugger operation",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "81f88c70caf51451a93ad78ee42fd94761ef39ab81dd7ab3d0e55191b54a58dc"
     },
     {
       "id": "stop",
       "title": "Stop",
-      "category": "Controls",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "stop.svg"
+      "source": "stop.svg",
+      "action": "Stop the current supported operation",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "89c2a7eeec10bf1690b4bdb2239738a823eda930a8008853ced9622be43ae074"
+    },
+    {
+      "id": "surface_plot",
+      "title": "Surface plot",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "surface_plot.svg",
+      "action": "Show an eligible two-dimensional sampled field as a surface",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "44911576d68a7d32204179f1a975af2acb6abbd695d66fa04657c646b4b25d1a"
+    },
+    {
+      "id": "switch",
+      "title": "Switch",
+      "category": "Scientific Tools & Simulation",
+      "license": "GPL-3.0-or-later",
+      "source": "switch.svg",
+      "action": "Choose a switch component action where supported",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "9858df175e85a4ca0fb8944d7ec593cc85fe82322dca3692a478bbd14c6070b4"
+    },
+    {
+      "id": "table",
+      "title": "Table",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "table.svg",
+      "action": "Inspect tabular data",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "cb643044ce8b8013a799b4e2a41ea8af884445394c4fed8db7f1107188da6600"
+    },
+    {
+      "id": "toggle_visibility",
+      "title": "Visibility",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "toggle_visibility.svg",
+      "action": "Toggle visibility of the current target",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "df26edf219828247cd4d329ece9844fb096742ec99a279ccb40d6054e4120108"
+    },
+    {
+      "id": "transformer",
+      "title": "Transformer",
+      "category": "Scientific Tools & Simulation",
+      "license": "GPL-3.0-or-later",
+      "source": "transformer.svg",
+      "action": "Choose a transformer action where supported",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "d8e9512c77524554848b4bf5580b9a4b28c7b98ce4284b4755eb8d40091be6ac"
+    },
+    {
+      "id": "tutorial",
+      "title": "Tutorial",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "tutorial.svg",
+      "action": "Open guided instructional content",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "3774adebdfabea18b2aaf89ba39e69f350e287848e242d79d5200ec7955252ec"
     },
     {
       "id": "undo",
       "title": "Undo",
-      "category": "Controls",
+      "category": "Geometry & Editing",
       "license": "GPL-3.0-or-later",
-      "source": "undo.svg"
+      "source": "undo.svg",
+      "action": "Reverse the preceding available history step",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "ffc26fee1275c078af2f5e729818b7a82b3b7d5923a39b449be11b7b28ced2b6"
+    },
+    {
+      "id": "validate",
+      "title": "Validate",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "validate.svg",
+      "action": "Check declared content or package constraints",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "2aaa132ea1acb92e303118e2a039ee24bc90adfaab6878347605db5a846dcf8b"
     },
     {
       "id": "voltage",
       "title": "Voltage",
-      "category": "Electrical",
+      "category": "Scientific Tools & Simulation",
       "license": "GPL-3.0-or-later",
-      "source": "voltage.svg"
+      "source": "voltage.svg",
+      "action": "Choose a voltage source action where supported",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "826f011a4ff6d30b36773889b7df945b3a107571fe00921296e140429edd15df"
     },
     {
       "id": "wire",
       "title": "Wire",
-      "category": "Electrical",
+      "category": "Geometry & Editing",
       "license": "GPL-3.0-or-later",
-      "source": "wire.svg"
+      "source": "wire.svg",
+      "action": "Draw or inspect an electrical connection",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "09bdb55745019335abf15b2912ab1c2460925902410dc0cd981987e866f80103"
+    },
+    {
+      "id": "workspace",
+      "title": "Workspace",
+      "category": "Documents & Workflow",
+      "license": "GPL-3.0-or-later",
+      "source": "workspace.svg",
+      "action": "Choose or manage a persistent workspace",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "382642bcdd08c6c6709c5ec28931baec842dbfdf9baa3d18c6d4352de584aefa"
+    },
+    {
+      "id": "xy_plot",
+      "title": "XY plot",
+      "category": "Data, Plots & Analysis",
+      "license": "GPL-3.0-or-later",
+      "source": "xy_plot.svg",
+      "action": "Plot one numeric variable against another",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "dcecab36863917943110ec70231efd2f03f66f0dccfb010103208da6b1a443a2"
+    },
+    {
+      "id": "zoom_actual_size",
+      "title": "Actual size",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "zoom_actual_size.svg",
+      "action": "Show content at its native display scale",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "1bd0bd53248d377a34ffc358185ebad8df12fb5dc728712c0bd9c7370da3b57a"
+    },
+    {
+      "id": "zoom_area",
+      "title": "Zoom to area",
+      "category": "Selection & Navigation",
+      "license": "GPL-3.0-or-later",
+      "source": "zoom_area.svg",
+      "action": "Zoom into a deliberately chosen viewport area",
+      "origin": "Original TASK210 GX-TXT contributors, 2026; directly authored SVG",
+      "sha256": "d7f6aeb56f58bc900db0426cca782fb0e15232f84b77306c94488fd96623bb93"
     },
     {
       "id": "zoom_in",
       "title": "Zoom in",
-      "category": "Controls",
+      "category": "Selection & Navigation",
       "license": "GPL-3.0-or-later",
-      "source": "zoom_in.svg"
+      "source": "zoom_in.svg",
+      "action": "Increase the current view scale",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "1f0ba68a745390a7b410d9b7b3e34e40f0f15d07e3921495799f0bf37f2f340c"
     },
     {
       "id": "zoom_out",
       "title": "Zoom out",
-      "category": "Controls",
+      "category": "Selection & Navigation",
       "license": "GPL-3.0-or-later",
-      "source": "zoom_out.svg"
+      "source": "zoom_out.svg",
+      "action": "Decrease the current view scale",
+      "origin": "Original GX-TXT contributors, 2026; retained stock source",
+      "sha256": "69e934583ffd83461a10c1161e52b377558b260f6f65a5b25f4fcffb0955ab09"
     }
   ]
 }

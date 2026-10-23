@@ -1,0 +1,27 @@
+{
+  "schema": "gxtxt.viewer_development_project.v1",
+  "module_id": "viewer.pcb_source_snapshot_inspector",
+  "version": "0.1.0",
+  "profile": "document_view_v1",
+  "language": "cpp",
+  "source": "handlers.cpp",
+  "design": "design.gxtxt-viewer",
+  "capabilities": [
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "version": 1,
+      "operations": [
+        "pcb_source_form"
+      ]
+    }
+  ],
+  "provenance": {
+    "purpose": "Import-only fixed-pair completed canonical source inspector; incremental PCB18 producer/consumer phase",
+    "template": "restricted_cpp_viewer_v1; future official init only, remove synthetic demo before validation/build",
+    "scientific_source": null,
+    "source_contract": "MAIN946 CORE1 finite eagle_pair_fixed_v1 declared source form; exact accepted framework binding pending",
+    "retained_starter": "/srv/gxtxt/agents/scratch/task210/GX210-VIEWER1/pcb_dev111_project02",
+    "acceptance": "SOURCE_PAYLOAD_PROPOSAL_ONLY; no canonical/native/GUI/science acceptance"
+  },
+  "tests": {}
+}

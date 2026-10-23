@@ -93,6 +93,12 @@ proc ::GX::viewerGuiComponentCapabilities {} {
     foreach key {plot_dataset plot_x plot_y plot_probe plot_x_scale plot_y_scale} {dict set result section properties $key identifier}
     foreach key {plot_series plot_series_label plot_series_axis plot_series_enabled plot_panel plot_panel_title plot_series_target plot_series_status} {dict set result section properties $key identifier}
     dict set result section properties plot_series_commands dictionary
+    dict set result section properties transform_kind choice
+    foreach key {transform_dataset transform_x transform_y transform_method transform_grid_policy transform_nonfinite transform_output transform_baseline transform_corrected transform_row transform_status transform_report transform_plot} {dict set result section properties $key identifier}
+    foreach key {transform_options transform_commands} {dict set result section properties $key dictionary}
+    dict set result section properties pcb_source_kind choice
+    foreach key {pcb_sources pcb_status pcb_inspector} {dict set result section properties $key identifier}
+    dict set result section properties pcb_commands dictionary
     foreach key {numeric_dataset numeric_expression numeric_start numeric_count numeric_output_unit numeric_x numeric_status numeric_report numeric_source numeric_statistic numeric_observed numeric_relative_floor} {dict set result section properties $key identifier}
     foreach key {numeric_variables numeric_parameters} {dict set result section properties $key dictionary}
     dict set result section properties numeric_kind choice
@@ -113,6 +119,7 @@ proc ::GX::viewerGuiComponentCapabilities {} {
     dict set result action properties diagram_tool list
     dict set result action properties raster_tool list
     dict set result action properties raster_command list
+    dict set result action properties plot_navigation_target identifier
     dict set result section properties viewport_anchor dictionary
     dict set result section properties annotation_fields dictionary
     foreach type {command_toolbar menu context_menu} {dict set result $type properties command_icons dictionary}
@@ -132,7 +139,44 @@ proc ::GX::viewerGuiComponentCapabilities {} {
     }
     return $result
 }
+# One logical reserved presentation command has one optional declared Plot.
+# Menus/key bindings invoke that same command ID; no widget path is authored.
+proc ::GX::_viewerGuiPlotNavigationTargets {design} {
+    set definitions {};set targets {};set untargeted {}
+    foreach component [dict get $design components] {dict set definitions [dict get $component id] [dict get $component type]}
+    foreach component [dict get $design components] {
+        set properties [dict get $component properties];set type [dict get $component type]
+        if {![dict exists $properties plot_navigation_target]} {
+            if {$type eq {action} && [dict get $properties action] in {fit zoom_in zoom_out}} {lappend untargeted [dict get $properties action]}
+            continue
+        }
+        if {$type ne {action} || [dict get $properties action] ni {fit zoom_in zoom_out}} {error {Plot navigation targets belong only to reserved Fit/Zoom actions}}
+        set action [dict get $properties action];set target [dict get $properties plot_navigation_target]
+        # Existing reserved handlers can be spelled unbound: the host already
+        # owns their presentation dispatch. A mutating callback is not admitted.
+        if {![dict exists $design handlers $action] || [dict get $design handlers $action effect] ni {unbound presentation}} {error {Targeted Plot navigation requires a reserved presentation handler}}
+        if {![regexp {^[a-z][a-z0-9_]*$} $target] || ![dict exists $definitions $target] || [dict get $definitions $target] ne {plot}} {error {Plot navigation target must name a declared Plot component}}
+        if {![dict exists $design requirements PLOT_DATASET_API_v4] || [dict get $design requirements PLOT_DATASET_API_v4]!=4} {error {Targeted Plot navigation requires PLOT_DATASET_API_v4@4}}
+        foreach key {component_visibility diagram_tool raster_tool raster_command} {if {[dict exists $properties $key]} {error {Targeted Plot navigation cannot share another action owner}}}
+        if {[dict exists $targets $action] && [dict get $targets $action] ne $target} {error {One Plot navigation command cannot address different components}}
+        dict set targets $action $target
+    }
+    foreach action $untargeted {if {[dict exists $targets $action]} {error {Duplicate Plot navigation actions must declare the same target}}}
+    return $targets
+}
 proc ::GX::viewerGuiDesignAction {window id} {
+    set pcbAction [_viewerGuiPCBAction $window $id]
+    if {$pcbAction ne {} && [lindex $pcbAction 1] in {cancel inspect}} {
+        if {[catch {_viewerGuiPCBCommand $window {*}$pcbAction} result]} {return [dict create status failed message $result]}
+        return $result
+    }
+    set transformAction [_viewerGuiTransformAction $window $id]
+    # Only owned stop/inspection bypass current-source admission. This never
+    # invokes authored C++ or creates a new Transform after a Session switch.
+    if {$transformAction ne {} && [lindex $transformAction 1] in {cancel inspect}} {
+        if {[catch {viewerGuiDesignTransform $window {*}$transformAction} result]} {return [dict create status failed message $result]}
+        return $result
+    }
     if {![viewerGuiDesignGuard $window]} {return [dict create status rejected message {Viewer belongs to a previous Session.}]}
     set instance [dict get $::GX::ViewerGui::instances $window]
     if {[dict get $instance mode] eq {demo}} {return [viewerGuiDemoAction $window $id]}
@@ -146,7 +190,15 @@ proc ::GX::viewerGuiDesignAction {window id} {
         set navigate [expr {$id eq {undo} ? [dict get $record cursor]>0 : [dict get $record cursor]<[llength [dict get $record steps]]}]
     }
     try {
-        if {[dict exists [viewerGuiDesignDiagramToolBindings [dict get $instance design]] $id]} {
+        if {$pcbAction ne {}} {
+            set result [_viewerGuiPCBCommand $window {*}$pcbAction]
+            set status [dict get $result status]
+            set statusMessage [datasetPublicationV2DictDefault $result message {}]
+        } elseif {$transformAction ne {}} {
+            set result [viewerGuiDesignTransform $window {*}$transformAction]
+            set status [dict get $result status]
+            set statusMessage [datasetPublicationV2DictDefault $result message {}]
+        } elseif {[dict exists [viewerGuiDesignDiagramToolBindings [dict get $instance design]] $id]} {
             lassign [dict get [viewerGuiDesignDiagramToolBindings [dict get $instance design]] $id] target tool
             viewerGuiDesignDiagramCommand $window $target tool $tool
             set status completed
@@ -166,7 +218,10 @@ proc ::GX::viewerGuiDesignAction {window id} {
             if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Toggle pane $target"}
             set status completed
         } elseif {$id in {fit zoom_in zoom_out}} {
+            set navigationTargets [_viewerGuiPlotNavigationTargets [dict get $instance design]]
+            set navigationTarget [datasetPublicationV2DictDefault $navigationTargets $id {}]
             dict for {component widget} [dict get $instance widgets] {
+                if {$navigationTarget ne {} && $component ne $navigationTarget} continue
                 if {[winfo exists $widget.curve] && ![catch {native2DViewportCurveDescribe $widget.curve}]} {
                     set op [expr {$id eq {fit} ? {fit} : {zoom}}]
                     if {$op eq {fit}} {native2DViewportCurveNavigate $widget.curve fit} else {native2DViewportCurveNavigate $widget.curve zoom [expr {$id eq {zoom_in} ? 1.25 : 0.8}] [expr {[winfo width $widget.curve]/2}] [expr {[winfo height $widget.curve]/2}]}
@@ -215,6 +270,10 @@ proc ::GX::viewerGuiDesignAction {window id} {
     return $receipt
 }
 proc ::GX::viewerGuiDesignActionEnabled {window id} {
+    set pcb [_viewerGuiPCBActionEnabled $window $id]
+    if {$pcb ne {}} {return $pcb}
+    set transform [_viewerGuiTransformActionEnabled $window $id]
+    if {$transform ne {}} {return $transform}
     if {![viewerGuiDesignGuard $window]} {return 0}
     set instance [dict get $::GX::ViewerGui::instances $window]
     set anchored [_viewerGuiAnchoredActionEnabled $window $id]
@@ -299,6 +358,7 @@ proc ::GX::viewerGuiDesignComponent {window id} {
 # changes the disposable parent, never the declared field's owner or contract.
 proc ::GX::_viewerGuiDesignUIFieldMount {window component widget mode context {callback {}}} {
     set id [dict get $component id];set type [dict get $component type];set p [dict get $component properties]
+    if {[dict exists $::GX::ViewerGui::instances $window widgets $id]} {_viewerGuiPCBComponentReplacing $window $id}
     if {$callback eq {}} {
         set callback [list ::GX::viewerGuiDesignFieldChanged $window $id]
         if {$type eq {action}} {set callback [list ::GX::viewerCommandInvoke $window [dict get $p action]]}
@@ -306,6 +366,7 @@ proc ::GX::_viewerGuiDesignUIFieldMount {window component widget mode context {c
     set componentContext {}
     if {$mode eq {demo} && $type eq {dataset_selector}} {set componentContext {demo_choices {{Synthetic sensor A} {Synthetic sensor B} {Synthetic calibration}}}}
     uiFieldComponentCreate $widget $type $p ::GX::ViewerGui::values($window,$id) $callback $componentContext
+    _viewerGuiPCBComponentMounted $window $id $widget
     if {$type eq {dataset_selector} && [dict exists $context dataset_id] && [dict get $context dataset_id] in [$widget.entry cget -values]} {set ::GX::ViewerGui::values($window,$id) [dict get $context dataset_id]}
     return $widget
 }
@@ -321,6 +382,7 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
     set design [viewerGuiDesignValidate $design]
     if {$mode ni {preview runtime demo}} {error {Choose preview, demo or runtime mode.}}
     if {$mode eq {demo} && $handlers ne {}} {error {Synthetic demonstrations cannot connect domain handlers}}
+    if {$mode eq {demo} && [_viewerGuiPlotNavigationTargets $design] ne {}} {error {Targeted Plot navigation is unavailable in synthetic demo mode}}
     set workspaceName {}
     if {[dict exists $context workspace_name]} {
         if {[datasetPublicationV2DictDefault $context workspace_id {}] ne {new}} {error {A Workspace name belongs only to a new Workspace}}
@@ -444,6 +506,7 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
         _viewerGuiTeXInitialize $window $context
         _viewerGuiEMInitialize $window $context
         _viewerGuiWorkbenchInitialize $window
+        _viewerGuiPCBInitialize $window
         if {$payload ne {}} {viewerGuiDesignRestore $window $payload}
         dict set ::GX::ViewerGui::instances $window committed_values [viewerGuiDesignValues $window]
         dict set ::GX::ViewerGui::instances $window saved [viewerGuiDesignCapture $window]
@@ -503,6 +566,8 @@ proc ::GX::viewerGuiDesignDirty window {
 }
 proc ::GX::viewerGuiDesignDispose {window actual} {
     if {$window ne $actual} return
+    _viewerGuiPCBDispose $window
+    _viewerGuiTransformDispose $window
     _viewerGuiCatalogDispose $window
     _viewerGuiTeXDispose $window
     if {[dict exists $::GX::ViewerGui::instances $window em_availability_timer]} {after cancel [dict get $::GX::ViewerGui::instances $window em_availability_timer]}
@@ -845,6 +910,7 @@ proc ::GX::viewerGuiDesignRead path {
 }
 proc ::GX::viewerGuiDesignRestore {window state} {
     viewerGuiDesignStateValidate $state
+    _viewerGuiPCBRestoreCheck $window $state
     _viewerGuiTeXRestoreCheck $window [datasetPublicationV2DictDefault $state domain_state {}]
     _viewerGuiEMRestoreCheck $window [datasetPublicationV2DictDefault $state domain_state {}]
     _viewerGuiWorkbenchRestoreCheck $window [datasetPublicationV2DictDefault $state domain_state {}]
@@ -852,6 +918,10 @@ proc ::GX::viewerGuiDesignRestore {window state} {
         if {[dict get $binding kind] eq {document}} {_viewerGuiDocumentRestoreCheck $window $id $binding}
         if {[dict get $binding kind] eq {raster}} {_viewerGuiRasterRestoreCheck $window $id $binding}
     }
+    # Stop only after existing restore admission succeeds. A restore starts a
+    # new form lifetime even when its displayed scalar values happen to match.
+    _viewerGuiPCBDispose $window
+    _viewerGuiTransformDispose $window
     dict set ::GX::ViewerGui::instances $window restoring 1
     try {
         viewerGuiDesignContextSet $window [datasetPublicationV2DictDefault $state domain_state {}]
@@ -896,6 +966,7 @@ proc ::GX::viewerGuiDesignRestore {window state} {
         _viewerGuiNumericRestore $window
         _viewerGuiScientificRestore $window
         _viewerGuiWorkbenchRestore $window
+        _viewerGuiPCBRestore $window
         _viewerGuiVisibilitySync $window
     } finally {dict set ::GX::ViewerGui::instances $window restoring 0}
     viewerGuiActionsRefresh $window
@@ -980,6 +1051,7 @@ proc ::GX::viewerGuiDesignValidate design {
     foreach {api command} {SCIENTIFIC_EXECUTION_API_v1 ::GX::scientificExecutionApiInfo SCRIPT_JOB_API_v1 ::GX::scriptJobApiInfo PARALLEL_EXECUTION_API_v1 ::GX::parallelExecutionApiInfo SCIENTIFIC_LIBRARY_MANAGER_API_v1 ::GX::ScientificLibraryManagerAPIv1::apiInfo FILE_PUBLICATION_API_v1 ::GX::filePublicationApiInfo} {
         if {[llength [info commands $command]]} {dict set versions $api [dict get [$command] api_version]}
     }
+    if {[llength [info commands ::GX::datasetTransformExecuteResponsive]]} {dict set versions DATASET_TRANSFORM_API_v1 1}
     if {[dict exists $design requirements NUMERIC_API_v1]} {
         modulePublicApiActivate math.numeric NUMERIC_API_v1
         dict set versions NUMERIC_API_v1 [dict get [::GX::NumericAPIv1::apiInfo] api_version]
@@ -1115,6 +1187,9 @@ proc ::GX::viewerGuiDesignValidate design {
     }
     _viewerGuiScientificDesignValidate $design
     _viewerGuiPlotDesignValidate $design
+    _viewerGuiPlotNavigationTargets $design
+    _viewerGuiTransformDesignValidate $design
+    _viewerGuiPCBDesignValidate $design
     _viewerGuiNumericDesignValidate $design
     _viewerGuiCatalogDesignValidate $design
     _viewerGuiTeXDesignValidate $design
@@ -1452,3 +1527,4 @@ source [file join [file dirname [info script]] viewer_gui_catalog_v1.tcl]
 source [file join [file dirname [info script]] viewer_gui_tex_v1.tcl]
 source [file join [file dirname [info script]] viewer_gui_em_v1.tcl]
 source [file join [file dirname [info script]] viewer_gui_workbench_v1.tcl]
+source [file join [file dirname [info script]] viewer_gui_pcb_source_v1.tcl]

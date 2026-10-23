@@ -142,36 +142,144 @@ proc ::GX::datasetDigitizerPreviewImage {w id title token {overlay 0}} {
     }
     return $canvas
 }
+proc ::GX::_datasetDigitizerPreviewVisibilityFilters {filters curveVariable} {
+    # These are opaque presentation identities, not Graph Selection predicates.
+    # Bounds apply to saved preferences, never to canonical curve membership.
+    if {[string bytelength $curveVariable]>1024 || [string bytelength $filters]>1048576 ||
+        [catch {llength $filters} count] || $count>4096} {error {Saved curve visibility exceeds its supported limits.}}
+    set seen {};set result {}
+    foreach filter $filters {
+        if {[catch {lsort [dict keys $filter]} keys] || $keys ne {filter_variable_id predicate value} ||
+            [dict get $filter filter_variable_id] ne $curveVariable ||
+            [dict get $filter predicate] ne {not_equal} ||
+            [string bytelength [dict get $filter value]]>16384} {error {Saved curve visibility is invalid.}}
+        set value [dict get $filter value]
+        if {[dict exists $seen $value]} {error {Saved curve visibility has duplicate identities.}}
+        dict set seen $value 1
+        lappend result [dict create filter_variable_id $curveVariable predicate not_equal value $value]
+    }
+    return $result
+}
+proc ::GX::_datasetDigitizerPreviewVisibilityRead {saved curveVariable} {
+    if {[dict exists $saved retained_visibility]} {
+        set preference [dict get $saved retained_visibility]
+        if {[string bytelength $preference]>1048576 || [catch {lsort [dict keys $preference]} keys] ||
+            $keys ne {hidden_filters version} || [dict get $preference version] ne {1}} {error {Saved curve visibility is invalid or unsupported.}}
+        set hidden [dict get $preference hidden_filters]
+    } else {
+        # Presence, including a valid empty new list, takes precedence over this
+        # historical location. Reading never migrates or rewrites either form.
+        set hidden {}
+        if {[dict exists $saved selections]} {set hidden [datasetPublicationV2DictDefault [dict get $saved selections] @hidden_filters {}]}
+    }
+    return [_datasetDigitizerPreviewVisibilityFilters $hidden $curveVariable]
+}
+proc ::GX::_datasetDigitizerPreviewVisibilityMerge {hidden curveVariable represented visible} {
+    set byIdentity {}
+    foreach filter [_datasetDigitizerPreviewVisibilityFilters $hidden $curveVariable] {
+        dict set byIdentity [dict get $filter value] $filter
+    }
+    foreach curve $represented {
+        if {![dict exists $visible $curve] || [dict get $visible $curve] ni {0 1}} {error {Curve visibility state is unavailable.}}
+        if {[dict get $visible $curve]} {
+            dict unset byIdentity $curve
+        } else {dict set byIdentity $curve [dict create filter_variable_id $curveVariable predicate not_equal value $curve]}
+    }
+    # Entries outside the displayed scientific subset remain inactive intent.
+    # This does not certify that they exist in a complete publication.
+    set result {};dict for {curve filter} $byIdentity {lappend result $filter}
+    return [_datasetDigitizerPreviewVisibilityFilters $result $curveVariable]
+}
+proc ::GX::_datasetDigitizerPreviewVisibilityStore {id source curveVariable represented visible} {
+    if {$source eq {} || $source ne [datasetPreviewCacheSource $id]} {error {Preview source changed; saved visibility was not updated.}}
+    set metadata [datasetPrivateMetadataRead $::GX::currentSession $id]
+    set saved [datasetPublicationV2DictDefault $metadata _gxtxt.framework.dataset_preview {}]
+    if {$saved ne {} && (![dict exists $saved version] || [dict get $saved version]!=1)} {error {Saved Preview configuration is unsupported; visibility was not updated.}}
+    set hidden [_datasetDigitizerPreviewVisibilityRead $saved $curveVariable]
+    set hidden [_datasetDigitizerPreviewVisibilityMerge $hidden $curveVariable $represented $visible]
+    set preference [dict create version 1 hidden_filters $hidden]
+    if {[string bytelength $preference]>1048576} {error {Saved curve visibility exceeds its supported limits.}}
+    dict set saved version 1
+    dict set saved retained_visibility $preference
+    _datasetFrameworkMetadataUpdate $::GX::currentSession $id [dict create dataset_preview $saved]
+    return $hidden
+}
+proc ::GX::_datasetDigitizerPreviewVisibilityCurrent {record} {
+    if {[catch {
+        set w [dict get $record text_widget]
+        expr {[dict get $record session_token] eq [interactiveDocumentSessionToken] &&
+            [winfo exists $w] && [winfo id $w] eq [dict get $record text_widget_xid] &&
+            [dict get $record prepared_source] ne {} &&
+            [dict get $record prepared_source] eq [datasetPreviewCacheSource [dict get $record dataset_id]]}
+    } valid]} {return 0}
+    return $valid
+}
+proc ::GX::_datasetDigitizerPreviewVisibilityRetire {token} {
+    variable ::GX::DigitizerPreview::state
+    if {[dict exists $state $token visibility_after]} {
+        after cancel [dict get $state $token visibility_after]
+        dict unset state $token visibility_after
+    }
+}
+proc ::GX::_datasetDigitizerPreviewVisibilityNotice {id} {
+    variable ::GX::DigitizerPreview::state
+    dict for {token record} $state {
+        if {[dict get $record dataset_id] eq $id && ![dict get $record visibility_valid]} {
+            return {Saved curve visibility is invalid or too large; all curves in this view are shown and visibility changes are not saved.}
+        }
+    }
+    return {}
+}
 proc ::GX::datasetDigitizerPreviewToggle {token curve} {
     variable ::GX::DigitizerPreview::state
     if {![dict exists $state $token]} return
     set record [dict get $state $token]
-    if {[dict get $record session_token] ne [interactiveDocumentSessionToken]} {error {Preview belongs to another Session lifetime}}
+    if {![dict exists $record curves $curve]} return
+    if {![_datasetDigitizerPreviewVisibilityCurrent $record]} {
+        _datasetDigitizerPreviewVisibilityRetire $token
+        if {[dict exists $record visibility_applied $curve]} {set ::GX::DigitizerPreview::visible($token,$curve) [dict get $record visibility_applied $curve]}
+        setStatus {Preview source or Session changed. Render again before changing curve visibility.} 100
+        return
+    }
     set show [set ::GX::DigitizerPreview::visible($token,$curve)]
     if {[dict exists $record native_widget]} {
         foreach series [datasetPublicationV2DictDefault [dict get $record native_series] $curve {}] {::GX::PlotDatasetAPIv4::widgetVisibility [dict get $record native_widget] main $series $show}
     }
     if {[dict exists $record canvas]} {[dict get $record canvas] itemconfigure [dict get $record curves $curve tag] -state [expr {$show?"normal":"hidden"}]}
-    set hidden {}
+    dict set record visibility_applied $curve $show
+    dict set state $token visibility_applied $curve $show
+    set visible {}
     dict for {identity data} [dict get $record curves] {
-        if {![set ::GX::DigitizerPreview::visible($token,$identity)]} {lappend hidden [dict create filter_variable_id [dict get $record curve_variable] predicate not_equal value $identity]}
+        dict set visible $identity [expr {!![set ::GX::DigitizerPreview::visible($token,$identity)]}]
     }
-    dict set ::GX::ui(previewMap,filters) @hidden_filters $hidden
-    set ::GX::ui(previewRasterVisibility) [dict create identity [dict get $record visibility_identity] hidden $hidden]
-    if {[dict exists $record visibility_after]} {after cancel [dict get $record visibility_after]}
+    _datasetDigitizerPreviewVisibilityRetire $token
+    if {![dict get $record visibility_valid] || [catch {
+        set hidden [_datasetDigitizerPreviewVisibilityMerge [dict get $record hidden_filters] [dict get $record curve_variable] [dict keys [dict get $record curves]] $visible]
+    }]} {
+        setStatus {Visibility changed for this view; saved visibility preferences are invalid or exceed supported limits and were not updated.} 100
+        return
+    }
+    if {[info exists ::GX::ui(previewMap,dataset)] && $::GX::ui(previewMap,dataset) eq [dict get $record dataset_id]} {
+        dict set ::GX::ui(previewMap,filters) @hidden_filters $hidden
+        set ::GX::ui(previewRasterVisibility) [dict create identity [dict get $record visibility_identity] hidden $hidden]
+    }
     dict set state $token visibility_after [after 750 [list ::GX::datasetDigitizerPreviewVisibilitySave $token]]
 }
 proc ::GX::datasetDigitizerPreviewVisibilitySave {token} {
     variable ::GX::DigitizerPreview::state
     if {![dict exists $state $token]} return
     set record [dict get $state $token]
-    if {[dict get $record session_token] ne [interactiveDocumentSessionToken]} return
-    set hidden {};dict for {curve data} [dict get $record curves] {if {!$::GX::DigitizerPreview::visible($token,$curve)} {lappend hidden [dict create filter_variable_id [dict get $record curve_variable] predicate not_equal value $curve]}}
-    set saved [datasetPreviewConfigurationRead [dict get $record dataset_id]]
-    if {![dict exists $saved version]} {set saved [dict create version 1 selections {} ordering {} types {}]}
-    dict set saved selections @hidden_filters $hidden
-    _datasetFrameworkMetadataUpdate $::GX::currentSession [dict get $record dataset_id] [dict create dataset_preview $saved]
-    dict unset state $token visibility_after
+    # Retirement precedes every refusal, including Release's pending flush.
+    _datasetDigitizerPreviewVisibilityRetire $token
+    if {![_datasetDigitizerPreviewVisibilityCurrent $record] || ![dict get $record visibility_valid]} return
+    set visible {};dict for {curve data} [dict get $record curves] {dict set visible $curve [expr {!!$::GX::DigitizerPreview::visible($token,$curve)}]}
+    if {[catch {
+        set hidden [_datasetDigitizerPreviewVisibilityStore [dict get $record dataset_id] [dict get $record prepared_source] [dict get $record curve_variable] [dict keys [dict get $record curves]] $visible]
+    }]} {
+        setStatus {Saved curve visibility could not be updated. The current view is retained.} 100
+        return
+    }
+    if {[dict exists $state $token]} {dict set state $token hidden_filters $hidden}
 }
 proc ::GX::datasetDigitizerPreviewHasRecord {id} {
     dict for {token record} $::GX::DigitizerPreview::state {if {[dict get $record dataset_id] eq $id && [dict size [dict get $record curves]]} {return 1}}
@@ -184,9 +292,15 @@ proc ::GX::datasetDigitizerPreviewAttachNative {id w model {parent {}}} {
     dict for {token record} $state {
         if {[dict get $record dataset_id] ne $id || ![dict size [dict get $record curves]]} continue
         set path [expr {$parent eq {}?"$w.retainedXY":"$parent.retainedXY"}];set mapping {}
+        set seriesList [dict get [lindex [dict get $model panels] 0] series]
+        # scientificModel normalizes input trace filters to model row_filters.
+        # Missing predicates must refuse before creating a partial native widget.
+        foreach series $seriesList {
+            if {![dict exists $series row_filters] || [catch {llength [dict get $series row_filters]}]} {error {Prepared Digitizer Preview requires normalized row_filters}}
+        }
         ::GX::PlotDatasetAPIv4::widgetCreate $path $model {prepared_model 1 retain_presentation 1}
-        foreach series [dict get [lindex [dict get $model panels] 0] series] {
-            foreach filter [dict get $series filters] {
+        foreach series $seriesList {
+            foreach filter [dict get $series row_filters] {
                 if {[dict get $filter filter_variable_id] eq [dict get $record curve_variable] && [dict get $filter predicate] eq "exact_equal"} {
                     set curve [dict get $filter value]
                     dict lappend mapping $curve [dict get $series id]
@@ -381,8 +495,13 @@ proc ::GX::datasetDigitizerPreviewPrepare {id selections dimensions directory {p
 proc ::GX::datasetDigitizerPreviewRender {w id {prepared {}}} {
     variable ::GX::DigitizerPreview::state;variable ::GX::DigitizerPreview::serial
     if {$prepared eq {}} {return 0}
+    set visibilityValid [expr {![catch {
+        set hidden [_datasetDigitizerPreviewVisibilityRead [datasetPreviewConfigurationRead $id] [dict get $prepared curve_variable]]
+    }]}]
+    if {!$visibilityValid} {set hidden {}}
     set token digitizer-preview-[incr serial]
-    set record [dict merge $prepared [dict create dataset_id $id session_token [interactiveDocumentSessionToken] photos {} widgets {} text_widget $w visibility_identity [list [datasetPreviewCacheSource $id] $::GX::ui(previewMap,filters)]]]
+    set source [datasetPublicationV2DictDefault $prepared prepared_source {}]
+    set record [dict merge $prepared [dict create dataset_id $id session_token [interactiveDocumentSessionToken] photos {} widgets {} text_widget $w text_widget_xid [winfo id $w] prepared_source $source visibility_valid $visibilityValid hidden_filters $hidden visibility_identity [list $source $::GX::ui(previewMap,filters)]]]
     dict set state $token $record
     try {
     $w insert end "Curve Digitalizer publication — canonical source identities\n"
@@ -404,11 +523,11 @@ proc ::GX::datasetDigitizerPreviewRender {w id {prepared {}}} {
     set table $w.digitizerCurves$serial;ttk::labelframe $table -text {Retained curve visibility}
     set record [dict get $state $token];dict lappend record widgets $table
     dict set state $token $record
-    set hidden [datasetPublicationV2DictDefault $::GX::ui(previewMap,filters) @hidden_filters {}]
     set palette {#0876bd #c84427 #238b45 #8849a3 #a67513 #008b8b #ba3377};set i 0
     dict for {curve data} [dict get $record curves] {
         set show 1;foreach filter $hidden {if {[dict get $filter value] eq $curve} {set show 0}}
         set ::GX::DigitizerPreview::visible($token,$curve) $show
+        dict set record visibility_applied $curve $show
         if {![dict exists $data tag]} {dict set data tag curve_$i;dict set data color [lindex $palette [expr {$i%7}]];dict set data displayed_points 0;dict set record curves $curve $data}
         if {!$show && [dict exists $record canvas]} {[dict get $record canvas] itemconfigure [dict get $data tag] -state hidden}
         ttk::checkbutton $table.show$i -text {Show / Hide} -variable ::GX::DigitizerPreview::visible($token,$curve) -command [list ::GX::datasetDigitizerPreviewToggle $token $curve]

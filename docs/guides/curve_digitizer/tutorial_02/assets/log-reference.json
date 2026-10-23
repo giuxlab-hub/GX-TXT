@@ -1,0 +1,78 @@
+{
+  "creator": "GX210-GUIDE",
+  "helper_version": "1.0.0",
+  "helper_sha256": "05c5f1e46b132e3420b4d025125389649baf05bd13fdf1c7c29f884e6d33faeb",
+  "license": "GPL-3.0-or-later",
+  "kind": "original synthetic teaching input",
+  "actual_digitizer_results": null,
+  "measurement_warning": "Ideal continuous references are not raster click measurements or accepted scientific results.",
+  "dimensions": [
+    1000,
+    700
+  ],
+  "axes": {
+    "x": {
+      "min": 1,
+      "max": 1000,
+      "scale": "log10",
+      "unit": "1"
+    },
+    "y": {
+      "min": 0.01,
+      "max": 100,
+      "scale": "log10",
+      "unit": "1"
+    }
+  },
+  "corners": {
+    "BL": [
+      120,
+      600
+    ],
+    "BR": [
+      920,
+      600
+    ],
+    "TL": [
+      120,
+      80
+    ],
+    "TR": [
+      920,
+      80
+    ]
+  },
+  "mapping": {
+    "x": "10**(3*(px-120)/800)",
+    "y": "10**(-2+4*(600-py)/520)"
+  },
+  "curve": "y=sqrt(x)",
+  "anchors": [
+    {
+      "x": 1,
+      "y": 1.0,
+      "px": 120.0,
+      "py": 340
+    },
+    {
+      "x": 10,
+      "y": 3.1622776601683795,
+      "px": 386.6666666666667,
+      "py": 275
+    },
+    {
+      "x": 100,
+      "y": 10.0,
+      "px": 653.3333333333334,
+      "py": 210
+    },
+    {
+      "x": 1000,
+      "y": 31.622776601683793,
+      "px": 920.0,
+      "py": 145
+    }
+  ],
+  "drawing": "3-pixel RGB line rounded to integer centres; red corner centres define the ideal calibration",
+  "png_sha256": "727a73ba99a4e803852cf61daf820ac2a22252f9707f5daca84847fd843821e9"
+}

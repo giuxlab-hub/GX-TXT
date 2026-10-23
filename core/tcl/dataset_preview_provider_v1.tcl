@@ -15,6 +15,7 @@ proc ::GX::_datasetPreviewProviderRelative {value} {
 proc ::GX::_datasetPreviewProviderDescriptor {id} {
     set data [moduleField $id dict {}]
     if {[moduleField $id kind {}] ne {preview} || [descriptorValue $data meta id {}] ne $id || [moduleField $id runner {}] ne {service} || ![moduleField $id selectable 1]} {error {Expected an ordinary selectable Preview service module}}
+    if {[moduleField $id enabled_key {}] ne {} || [moduleField $id run_key {}] ne {}} {error {Preview components require ordinary per-module activation without legacy Configuration aliases}}
     set prefix preview_provider.
     foreach key [dict keys $data ${prefix}*] {
         if {[string range $key [string length $prefix] end] ni $::GX::PreviewProvider::descriptorKeys} {error {Unknown Preview provider descriptor field}}
@@ -67,13 +68,16 @@ proc ::GX::_datasetPreviewProviderPackageState {id} {
 proc ::GX::datasetPreviewProviderInfo {componentId} {
     if {$componentId ni $::GX::moduleOrder || [moduleField $componentId kind {}] ne {preview}} {_datasetPreviewProviderError INVALID_ARGUMENT {Unknown Preview component}}
     set id $componentId
-    set out [dict create component_id $id name [moduleField $id name $id] installed_version [moduleField $id version {}] active_version {} pending_version {} enabled [moduleIsEnabled $id] descriptor_valid 0 native_abi {} native_platform {} native_layout_id {} native_build_id {} dataset_contracts {} capabilities {} verified_capabilities {} gui_design_sha256 {} compatibility_status unknown load_status not_checked available 0 admission_fingerprint {} reason {Preview descriptor is invalid}]
+    set out [dict create component_id $id name [moduleField $id name $id] installed_version [moduleField $id version {}] active_version {} pending_version {} enabled 0 descriptor_valid 0 native_abi {} native_platform {} native_layout_id {} native_build_id {} dataset_contracts {} capabilities {} verified_capabilities {} gui_design_sha256 {} compatibility_status unknown load_status not_checked available 0 admission_fingerprint {} reason {Preview descriptor is invalid}]
+    # Reject forbidden Configuration aliases before either activation or package
+    # state can interpret an unrelated cfg value as a module boolean.
+    if {[catch {set declaration [_datasetPreviewProviderDescriptor $id]} message]} {dict set out reason [string range $message 0 255];return $out}
+    dict set out enabled [moduleIsEnabled $id]
     set stateInvalid [catch {set state [_datasetPreviewProviderPackageState $id]}]
     if {!$stateInvalid && $state ne {}} {
         foreach key {active_version pending_version} {dict set out $key [dict get $state $key]}
         if {[dict get $state pending_version] ne {}} {dict set out load_status restart_required}
     }
-    if {[catch {set declaration [_datasetPreviewProviderDescriptor $id]} message]} {dict set out reason [string range $message 0 255];return $out}
     dict set out descriptor_valid 1
     foreach key {native_abi native_platform native_layout_id native_build_id dataset_contracts capabilities gui_design_sha256} {dict set out $key [dict get $declaration $key]}
     if {[catch {set host [_datasetPreviewProviderHostInfo]}]} {dict set out reason {Native Preview host identity is unavailable};return $out}

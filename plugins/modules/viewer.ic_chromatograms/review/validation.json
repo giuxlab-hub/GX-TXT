@@ -1,0 +1,136 @@
+{
+  "admitted_headers": [
+    "algorithm",
+    "array",
+    "assert.h",
+    "atomic",
+    "cassert",
+    "cerrno",
+    "chrono",
+    "condition_variable",
+    "cstddef",
+    "cstdint",
+    "cstdio",
+    "cstdlib",
+    "cstring",
+    "deque",
+    "errno.h",
+    "exception",
+    "functional",
+    "limits",
+    "list",
+    "map",
+    "memory",
+    "mutex",
+    "new",
+    "pthread.h",
+    "queue",
+    "set",
+    "stack",
+    "stddef.h",
+    "stdexcept",
+    "stdint.h",
+    "stdio.h",
+    "stdlib.h",
+    "string",
+    "string.h",
+    "string_view",
+    "sys/types.h",
+    "sys/wait.h",
+    "thread",
+    "tuple",
+    "type_traits",
+    "typeinfo",
+    "unistd.h",
+    "unordered_map",
+    "unordered_set",
+    "utility",
+    "vector"
+  ],
+  "architecture_review": "Language admission is not approval of alternate canonical Dataset/Job/Workspace/Plot ownership; review author data flows separately.",
+  "author_ast_kinds": [
+    "BinaryOperator",
+    "CXXMemberCallExpr",
+    "CompoundAssignOperator",
+    "CompoundStmt",
+    "DeclRefExpr",
+    "FunctionDecl",
+    "IfStmt",
+    "ImplicitCastExpr",
+    "IntegerLiteral",
+    "MemberExpr",
+    "ParmVarDecl",
+    "StringLiteral"
+  ],
+  "canonical_lifecycle_scope": "declared canonical Viewer state through existing guarded Workspace/History owners",
+  "code_generation_invoked": false,
+  "compiler_sha256": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
+  "compiler_version": "19.1.7",
+  "design_sha256": "2364399ccea2c2d42ab5968351b69a89089989a2f9a424803432a1a663a1ac19",
+  "diagnostics": [],
+  "functions": [
+    "on_event"
+  ],
+  "language_support": {
+    "debugger": "Existing managed GDB/MI; detailed threading/fork/aggregate usability requires the next acceptance matrix, not assumed from compilation",
+    "features": [
+      "functions",
+      "pointers/references",
+      "classes/structs/enums/unions",
+      "inheritance/virtual dispatch/RTTI",
+      "overloads/templates",
+      "recursion",
+      "callbacks/lambdas",
+      "malloc/free/new/delete/RAII",
+      "containers/algorithms",
+      "preprocessing/macros/assert",
+      "exceptions",
+      "threads/synchronization",
+      "fork/wait"
+    ],
+    "ownership": "Local project logic/data/concurrency are allowed. Canonical Dataset/Schema/Publication/Session/Workspace/History/Job/scientific Plot remain public CORE responsibilities. Language admission does not approve an architectural bypass.",
+    "runtime": "Debian system libc/libstdc++/libm/pthread; extra libraries and compiler options require purpose-specific review",
+    "standard": "C++17 including C facilities"
+  },
+  "policy_sha256": "fa3022c808176616238040e057c60ed93ac6211a903fe6615e9e79f24da0c530",
+  "profile": "cpp_view_v1",
+  "project_profile": "scientific_view_v1",
+  "project_sha256": "035e57d704aec2eca5f2292a08d8c9d485b49b6a7ca6d5971627a8765901ab4a",
+  "schema": "gxtxt.cpp_validation.v1",
+  "sdk_calls": [
+    "plot_bind",
+    "plot_discover",
+    "text"
+  ],
+  "sdk_sha256": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
+  "source_sha256": "3ccfdbf6f7fa749d3d10e2817b68d85bbbc2dc16ff4db70521dfba737df5ee4f",
+  "stages": [
+    "clang_raw_lexer",
+    "clang_resolved_ast"
+  ],
+  "status": "PASS",
+  "transform_form_admission": {
+    "design_sha256": "2364399ccea2c2d42ab5968351b69a89089989a2f9a424803432a1a663a1ac19",
+    "forms": [
+      "baseline_form"
+    ],
+    "grants": {
+      "DATASET_TRANSFORM_API_v1": [
+        "cancel",
+        "execute_responsive",
+        "provenance"
+      ],
+      "PLOT_DATASET_API_v4": [
+        "widgetCreate"
+      ],
+      "VIEWER_GUI_HOST_API_v1": [
+        "transform_form"
+      ]
+    },
+    "profile": "scientific_view_v1",
+    "project_sha256": "035e57d704aec2eca5f2292a08d8c9d485b49b6a7ca6d5971627a8765901ab4a",
+    "schema": "gxtxt.viewer_transform_admission.v1",
+    "source_sha256": "3ccfdbf6f7fa749d3d10e2817b68d85bbbc2dc16ff4db70521dfba737df5ee4f"
+  },
+  "workspace_callback_contract_sha256": "be8e5382dd712c347977b1fafd39a6a96c9f2d9d0730cc07255b1c0ffef17a71"
+}

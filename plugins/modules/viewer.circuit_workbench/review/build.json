@@ -3,11 +3,11 @@
   "binary_sha256": "a65eaa03c2dae37c13e9c9c1200c65e2257902796e31526d6185c35636057f4f",
   "build_dependencies": {
     "files": {
-      "/srv/gxtxt/agents/worktrees/author_circuit_final253/core/development/policy_v1.json": "b0b8115c624297c86e5eb390d46e5380f2c1494b225c5b8d24a1202dd2f49ca2",
-      "/srv/gxtxt/agents/worktrees/author_circuit_final253/core/development/sdk/gxtxt_viewer_sdk_v1.hpp": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
-      "/srv/gxtxt/agents/worktrees/author_circuit_final253/core/development/sdk/trusted_adapter_v1.cpp": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66",
-      "/srv/gxtxt/agents/worktrees/author_circuit_final253/core/development/toolchain/clang-19": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
-      "/srv/gxtxt/agents/worktrees/author_circuit_final253/core/development/toolchain/manifest.json": "5ec19600eb988358ed8467daec98420a3adc78ff0393e8d9fd5b39a440bd4ee7"
+      "core/development/policy_v1.json": "b0b8115c624297c86e5eb390d46e5380f2c1494b225c5b8d24a1202dd2f49ca2",
+      "core/development/sdk/gxtxt_viewer_sdk_v1.hpp": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
+      "core/development/sdk/trusted_adapter_v1.cpp": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66",
+      "core/development/toolchain/clang-19": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
+      "core/development/toolchain/manifest.json": "5ec19600eb988358ed8467daec98420a3adc78ff0393e8d9fd5b39a440bd4ee7"
     },
     "flags": [
       "--no-default-config",
@@ -118,8 +118,8 @@
   "compiler_version": "19.1.7",
   "debug_symbols": false,
   "header_dependencies": {
-    "/srv/gxtxt/agents/worktrees/author_circuit_final253/core/development/sdk/gxtxt_viewer_sdk_v1.hpp": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
-    "/srv/gxtxt/agents/worktrees/author_circuit_final253/core/development/sdk/trusted_adapter_v1.cpp": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66"
+    "/srv/gxtxt/agents/worktrees/GX210-MAIN1-SUB1/circuit111_owner01/core/development/sdk/gxtxt_viewer_sdk_v1.hpp": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
+    "/srv/gxtxt/agents/worktrees/GX210-MAIN1-SUB1/circuit111_owner01/core/development/sdk/trusted_adapter_v1.cpp": "076e08612eba8e1b1ae4990df6485b211ae08d255a7858ea2ecefc882c0d3b66"
   },
   "link_policy": "fixed SDK adapter; reviewed system C/C++ runtime, math and pthread; no undefined symbols; extra libraries/options require review",
   "log": "\n\n",
@@ -194,7 +194,7 @@
     "code_generation_invoked": false,
     "compiler_sha256": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
     "compiler_version": "19.1.7",
-    "design_sha256": "49b38ccdaf36cac274b56037b364fc40511e0e08f022fd877cbe9d41fc43a3d2",
+    "design_sha256": "424ba0a98346b0919897069e2a3fcf3a384bc097a244b8b66ebca977816ac650",
     "diagnostics": [],
     "functions": [
       "on_event"
@@ -223,7 +223,7 @@
     "policy_sha256": "b0b8115c624297c86e5eb390d46e5380f2c1494b225c5b8d24a1202dd2f49ca2",
     "profile": "cpp_view_v1",
     "project_profile": "scientific_view_v1",
-    "project_sha256": "79b7c7e089503e5d9b71a7031cab68389ff25795203429de62c3fbe8570614c3",
+    "project_sha256": "53f1aafbc5f0b034da54c6812d1a38b05a8a3ce31583ac6a67f35751ff83a9f4",
     "schema": "gxtxt.cpp_validation.v1",
     "sdk_calls": [
       "diagram_command",
@@ -255,6 +255,6 @@
       "clang_resolved_ast"
     ],
     "status": "PASS",
-    "workspace_callback_contract_sha256": "9fcdb344139626748b3215ed6330c87aa847a9640479dbf350ef5fd7f1c20feb"
+    "workspace_callback_contract_sha256": "c25ee7e25a5038eef50afcaeac2cb13a5c7cf5eafa1de950f6fe53328edaf9cd"
   }
 }

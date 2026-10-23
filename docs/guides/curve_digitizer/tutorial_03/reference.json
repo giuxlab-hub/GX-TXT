@@ -1,0 +1,106 @@
+{
+  "content_id": "curve_digitizer.tutorial.03.en",
+  "reference_kind": "independent analytical design; not actual GUI results",
+  "source_baseline": "0.9.8.10-dev-110/e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68",
+  "vendor": "unchanged2.0.9",
+  "actual_measurements": null,
+  "registered_source_image": "digitizer.calibration.image",
+  "imported_scale_input": "assets/scale-reference.png",
+  "input_design": "assets/scale-reference.json",
+  "ideal_scale": {
+    "um_per_px": 0.06578947368421052,
+    "x_span_um": 47.30263157894737,
+    "y_span_um": 36.776315789473685,
+    "condition": "Only for exact measured centre-to-centre152px and declared10um; actual endpoints must be recorded."
+  },
+  "reference_configuration": {
+    "corners": [
+      [
+        10,
+        90
+      ],
+      [
+        90,
+        90
+      ],
+      [
+        10,
+        10
+      ],
+      [
+        90,
+        10
+      ]
+    ],
+    "x_range": [
+      0,
+      8
+    ],
+    "y_range": [
+      -2,
+      2
+    ],
+    "units": [
+      "s",
+      "V"
+    ],
+    "points": [
+      [
+        30,
+        70
+      ],
+      [
+        60,
+        40
+      ],
+      [
+        75,
+        65
+      ],
+      [
+        40,
+        25
+      ]
+    ]
+  },
+  "uncertainty": {
+    "pedagogic_pixel_model": "rectangular_full_width",
+    "full_width_pixels": [
+      1,
+      2
+    ],
+    "calibration_input_std_count": 12,
+    "calibration_input_std_values": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "rationale": "Fixed ideal teacher transform for analytical comparison only; no claim that real human calibration uncertainty is zero.",
+    "ideal_sigma_s": 0.028867513459481284,
+    "ideal_sigma_V": 0.028867513459481284,
+    "ideal_covariance": 0,
+    "physical_override_std": [
+      0.3,
+      0.7
+    ],
+    "override_units": [
+      "s",
+      "V"
+    ],
+    "override_rationale": "Explicit pedagogic independent assumption; not measured; replaces pixel model."
+  },
+  "warnings": [
+    "Nominal drawn pen width is not standard uncertainty.",
+    "Scale-bar transforms cannot use generic nonzero manual-corner perturbation uncertainty.",
+    "Per-row covariance does not capture every shared-calibration cross-point dependence."
+  ]
+}

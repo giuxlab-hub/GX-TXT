@@ -46,13 +46,26 @@ outside an active GX-TXT run raise `GXTXT:ScriptBridge:NotActive`.
 
 ## Values
 
-The client carries UTF-8 strings, booleans, exact integer scalars, floating-point
+The client carries explicit Python `None`, UTF-8 strings, booleans, exact integer scalars, floating-point
 scalars, dictionaries, lists and nested values. Supported NumPy numeric arrays
 include boolean, integer, floating-point and complex values. In an active managed
 Bridge, arrays with more than 64 elements, or a dtype other than `float64`, use
 the existing typed binary descriptor transport. Small `float64` arrays may use
 inline values. A one-dimensional NumPy input is represented as a column array;
 matrix shape and column-major logical order remain explicit.
+
+`None` uses the exact one-field typed envelope `{"kind":"null"}`. Both the
+client and server reject extra fields on that envelope. It remains distinct
+from an empty string, `False`, zero, an empty list and numeric missing-value
+masks or NaN. Operations still decide whether a nullable argument is valid;
+transport support grants no new API access. Deploy the matching framework client
+and server together: older clients do not understand this additional value kind.
+There is no fallback to text or an implicit conversion of NumPy NaT to null.
+The generic Tcl argument boundary rejects `None`, including nested list or
+dictionary values, with `GXTXT:ScriptBridge:InvalidArguments`. It never turns
+null into the string `None` or an empty value. An API that accepts nullable
+JSON must validate and serialize it through its existing typed JSON contract
+before reaching that boundary.
 
 The current dtype/shape/exact-integer/complex contract is
 [scientific binary descriptor v2](SCIENTIFIC_BINARY_TRANSPORT_v2.md).

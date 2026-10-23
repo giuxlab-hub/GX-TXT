@@ -49,6 +49,8 @@ class CallbackHandle:
 def _pack(value, temporary, depth=0):
     if depth > 32:
         raise GXTXTBridgeError("GXTXT:ScriptBridge:InvalidArguments", "value nesting exceeds 32")
+    if value is None:
+        return {"kind": "null"}
     if _np is not None and isinstance(value, _np.generic):
         value = value.item()
     if isinstance(value, CallbackHandle):
@@ -100,6 +102,10 @@ def _unpack(wire, depth=0, arrays=None):
     if depth > 32:
         raise GXTXTBridgeError("GXTXT:ScriptBridge:Transport", "result nesting exceeds 32")
     kind = wire["kind"]
+    if kind == "null":
+        if set(wire) != {"kind"}:
+            raise GXTXTBridgeError("GXTXT:ScriptBridge:Transport", "invalid null bridge value")
+        return None
     if kind == 'numeric_array_ref':
         if wire.get('array_id') not in arrays:
             raise GXTXTBridgeError('GXTXT:ScriptBridge:Transport', 'unknown response array reference')

@@ -20,9 +20,13 @@ escalation, without requiring another readable event. This
 transport does not add a scientific scheduler or make a GUI request a durable Job.
 
 With `duplex=1`, the existing pipe retains its write side for a managed compiled
-Viewer lifetime. The owner buffers newline-delimited reply messages; at most16
-pending messages are retained, and `max_bytes` bounds each complete line and the
-unfinished line. The compiled Viewer caller uses base64-encoded Tcl envelopes;
+Viewer lifetime. The owner buffers newline-delimited reply messages; its parsed
+queue holds at most16 messages, and `max_bytes` bounds each complete line and the
+unfinished line. A full queue pauses its owned readable event until its one
+consumer frees capacity, instead of cancelling a valid burst. Complete staged
+frames retain exact FIFO order, including empty frames. They are accounted for
+separately from the unfinished line; their aggregate is not a single frame.
+The compiled Viewer caller uses base64-encoded Tcl envelopes;
 this encoding is its protocol, not a new general Script API.
 
 Host-only `::GX::scriptJobRequestExchange request payload ?timeout_ms=12000?`
@@ -57,8 +61,8 @@ retried. Inactive/nonduplex/cancelled requests raise `{GXTXT SCRIPT_JOB INACTIVE
 invalid payload framing raises `{GXTXT SCRIPT_JOB FRAME}`.
 
 `scriptJobRequestDrain request ?maximum=16?` validates an integer from1 through16
-(`{GXTXT SCRIPT_JOB MAXIMUM}` on refusal), performs at most one existing
-nonblocking readable pass, and returns
+(`{GXTXT SCRIPT_JOB MAXIMUM}` on refusal), frees existing FIFO capacity, performs
+at most one existing nonblocking readable service, and returns
 `{request_id ID active BOOLEAN cancelled REASON messages LIST}`. Unknown or ended
 requests return active0 and no messages. An existing nonduplex request is refused
 with `{GXTXT SCRIPT_JOB INACTIVE}`. A surviving cancelled request returns its
@@ -71,12 +75,30 @@ callbacks and never recreates a retired request.
 Send/Drain are trusted host auxiliary operations, with no Script/SDK grant or
 durable Job identity. One logical consumer owns a duplex reply stream: never mix
 Exchange and Drain as competing readers. Consumers correlate their own request
-IDs and source generations. The existing16-frame receive cap and `max_bytes`
-semantics remain: a burst exceeding the cap cancels with output_limit, even when
-a later Drain could have consumed it. EOF can terminalize before queued final
-frames are consumed; the terminal callback remains authoritative and final-frame
-replay is not promised. Existing callback, timeout, UI lifetime and group
-escalation semantics remain owned by ScriptJob.
+IDs and source generations. Queue capacity remains16; a larger valid burst is
+backpressured rather than dropped or cancelled. Readable handles staged complete
+frames before another channel read. A service appends at most the existing65536
+Tcl-character read to an unfinished prefix. For `max_bytes=N>0`, parked staging
+has at most `N+65536` Tcl characters, with each complete frame and the actual
+unfinished tail independently bounded by N Tcl bytes. This character bound is
+not a65536-byte UTF-8 promise. The existing `max_bytes=0` option still leaves a
+prefix unlimited; no stronger global memory bound is claimed for that option.
+True overlong frames/tails still cancel with `output_limit`.
+
+Drain releases buffered capacity before its one service and fills its bounded
+result in FIFO order. Exchange also rearms after its one-frame consumption.
+Both recheck the surviving owner; cancelled or terminal state supersedes any
+held frames. No extra timer, event-loop pump or competing consumer is introduced.
+While capacity is paused, further EOF observation may wait for consumption or
+cancellation; no final-frame replay guarantee is added. Cancel rearms paused
+discard-reading. Duplex UI shutdown retains immediate KILL and enters ordinary Cancel
+with reason `closed` unless a first reason already exists, so a full rearmed
+queue discards instead of pausing again. Normal EOF and500ms escalation retire
+the same owned request. EOF can still terminalize before queued final frames are
+consumed; first cancellation reason and the one terminal callback remain
+authoritative. Existing timeout, UI lifetime and group escalation ownership
+remain with ScriptJob; nonduplex UI shutdown retains its prior KILL/EOF behavior
+and durable scientific Jobs are unaffected.
 
 SPDX-License-Identifier: GPL-3.0-or-later
 

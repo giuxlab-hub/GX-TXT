@@ -1,0 +1,25 @@
+{
+  "ownership": "Project-associated request under VIEWER_DEVELOPMENT_API_v1; CORE owner adjudicates separately.",
+  "project_snapshot": {
+    "design.gxtxt-viewer": "70b1b1774771c6f9cb82282c8aa9cc5debf5655562ecb714a27517963c16e9b6",
+    "handlers.cpp": "85ffd582e60ef430295d16be05346e31b9bc87b96aaae0b3c34cfd92d73e20af",
+    "project.json": "eedfb69bd6edf331706122e944887e763ca9e1e7c99eeb7f22d0195bad164872"
+  },
+  "request": {
+    "desired_input_output": "Explicit ordered canonical study source IDs and stamps, visibility, actual Plot view and future baseline settings -> existing guarded canonical Workspace.",
+    "minimal_acceptance_test": "Real save/close/reopen preserves exact seven-only study identities and view; stale/deleted/cross-Session source fails. A legitimate baseline form may satisfy the existing predicate without another API.",
+    "missing_operation_or_contract": "Plot-only canonical study Workspace participation is not admitted by the existing author lifecycle predicate.",
+    "public_api_inspected": [
+      "SESSION_WORKSPACE_API_v1",
+      "SCIENTIFIC_RECIPE_API_v1",
+      "PLOT_DATASET_API_v4"
+    ],
+    "reproduction": "Retained study_lifecycle_negative validate rejects a real declared Workspace with exact grants on this Plot-only project.",
+    "request_id": "GAP-GX210-IC-STUDY-LIFECYCLE",
+    "schema": "gxtxt.core_api_gap.v1",
+    "status": "REQUESTED",
+    "task": "TASK210 Section17",
+    "viewer_project": "viewer.ic_chromatograms",
+    "why_existing_api_fails": "Current lifecycle requires declared diagram/raster/Numeric/TeX/EM model. No dummy unrelated form is added to bypass it."
+  }
+}

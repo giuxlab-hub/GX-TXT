@@ -127,6 +127,47 @@ def project_environment(project):
         env[key]=str(project/'derived/host-environment'/key)
     return env
 
+def _core_timeout_evidence(project, command, child, output, errors, started, timeout, cleanup):
+    """Keep bounded developer evidence; never replace the original timeout."""
+    detail={'pid':child.pid,'timeout_seconds':timeout,'elapsed_seconds':time.monotonic()-started,
+            'cleanup':cleanup,'scope':'Owned request only; descendant retirement is not certified.'}
+    try:
+        parent=project/'derived/diagnostics'
+        if (project/'derived').resolve()!=project/'derived':
+            raise ValueError('Linked diagnostic parent')
+        parent.mkdir(mode=0o700,exist_ok=True)
+        if parent.resolve()!=parent or not parent.is_dir():
+            raise ValueError('Ordinary project diagnostic directory required')
+        folder=parent/('core-timeout-'+str(time.time_ns())+'-'+str(child.pid))
+        folder.mkdir(mode=0o700)
+        streams={}
+        for name,stream in (('stdout',output),('stderr',errors)):
+            stream.seek(0,os.SEEK_END);total=stream.tell()
+            stream.seek(0);prefix=stream.read(1048576)
+            stream.seek(max(0,total-65536));tail=stream.read(65536)
+            for suffix,raw in (('prefix',prefix),('tail',tail)):
+                path=folder/(name+'.'+suffix+'.bin')
+                fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL|os.O_NOFOLLOW,0o600)
+                with os.fdopen(fd,'wb') as target:
+                    target.write(raw);target.flush();os.fsync(target.fileno())
+            streams[name]={'bytes':total,'sha256':digest(prefix) if total<=len(prefix) else None,
+                           'prefix_sha256':digest(prefix),'tail_sha256':digest(tail),'prefix_bytes':len(prefix),
+                           'tail_offset':max(0,total-len(tail)),'tail_bytes':len(tail),
+                           'complete_in_prefix':total<=len(prefix)}
+        record=dict(detail,schema='gxtxt.development.core_timeout.v1',command=command,cwd=str(project),
+                    streams=streams,source_sha256={name:digest((FRAMEWORK/name).read_bytes()) for name in
+                    ('core/python/gxtxt_viewer_development.py','core/tcl/viewer_development_request.tcl')})
+        path=folder/'receipt.json';write_json(path,record)
+        with path.open('rb') as stream:os.fsync(stream.fileno())
+        for directory in (folder,parent):
+            fd=os.open(directory,os.O_RDONLY|os.O_DIRECTORY)
+            try:os.fsync(fd)
+            finally:os.close(fd)
+        detail['diagnostics']=str(path)
+    except Exception as error:
+        detail['diagnostic_error']=str(error)[:1024]
+    return detail
+
 def core(project, operation, *arguments, timeout=12):
     """Fixed trusted helper; project arguments are data, never Tcl programs."""
     command=['/usr/bin/tclsh',str(FRAMEWORK/'core/tcl/viewer_development_request.tcl'),str(FRAMEWORK),operation,*map(str,arguments)]
@@ -134,10 +175,22 @@ def core(project, operation, *arguments, timeout=12):
         child=subprocess.Popen(command,stdin=null,stdout=output,stderr=errors,
                                cwd=project,env=project_environment(project),start_new_session=True)
         ACTIVE_PROCESSES.add(child.pid)
+        started=time.monotonic()
         try: code=child.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
-            os.killpg(child.pid,signal.SIGKILL);child.wait();raise DevelopmentError('Public CORE request timed out','CORE_TIMEOUT')
-        finally: ACTIVE_PROCESSES.discard(child.pid)
+            cleanup={'signal':'SIGKILL','known_owned_group':child.pid,'reaped':False}
+            try:os.killpg(child.pid,signal.SIGKILL)
+            except ProcessLookupError:cleanup['signal_result']='group_already_absent'
+            except OSError as error:cleanup['signal_error']=str(error)
+            try:
+                cleanup['returncode']=child.wait(timeout=3)
+                cleanup['reaped']=True
+            except subprocess.TimeoutExpired:cleanup['reap_error']='Owned child did not exit within cleanup bound'
+            except OSError as error:cleanup['reap_error']=str(error)
+            detail=_core_timeout_evidence(project,command,child,output,errors,started,timeout,cleanup)
+            raise DevelopmentError('Public CORE request timed out','CORE_TIMEOUT',detail)
+        finally:
+            if child.returncode is not None:ACTIVE_PROCESSES.discard(child.pid)
         response_limit=16777216 if operation in {'builder_edit','runtime_design'} or (operation=='validate_design' and len(arguments)==2 and str(arguments[1])=='with_catalog') else 4194304
         output.seek(0);errors.seek(0);raw=output.read(response_limit+1);err=errors.read(65536)
     if len(raw)>response_limit: raise DevelopmentError('Public CORE response exceeds bound')
@@ -196,6 +249,10 @@ def _describe_api_catalog(raw):
         'import':{'request':{'scope':'complete declared EM form; finite duplicate/Workspace manager action only'},'result':'existing Workspace import with normal names/dialogs and resource ownership; no C++ path or arbitrary payload'},
         'em_command':{'request':{'scope':'complete declared EM model section index plus finite operation; exact EM service grants required'},'result':'deferred original native EM/Workspace/Job/Plot service action; no model arrays or execution paths returned to C++'},
         'workbench_command':{'request':{'scope':'complete declared canonical geometry section index; finite lifecycle and public Workbench3D purpose-form commands'},'result':'original Workbench3D Document, editable Native3D v1 host and semantic History; no author geometry/model/renderer or Tcl dispatcher'},
+        'transform_form':{'request':{'scope':'scientific_view_v1 declared baseline_correct form; explicit create_corrected/cancel/inspect/discover actions, even without SDK calls'},'result':'deferred existing responsive Transform and canonical publication; no authored manifest, callback, arrays or SDK method'},
+        'pcb_source_form':{'request':{'scope':'document_view_v1 declared eagle_pair_fixed_v1 import-only form; explicit import_pair/refresh/inspect/cancel through existing reserved GUI actions, including empty SDK callers'},'result':'existing CORE canonical Document/Resource immutable source snapshot; normal chooser only, no SDK method, authored paths, new renderer or Script grant'},
+        'execute_responsive':{'request':{'scope':'declared baseline_correct form and explicit Create corrected Dataset only'},'result':'existing single-output responsive Transform with precommit cancellation; no implicit preview or private Job'},
+        'provenance':{'request':{'scope':'actual committed output of the owned baseline_correct form'},'result':'canonical transform provenance and effective baseline receipt'},
         'open_page':{'request':{'scope':'Host::em_command(form, runtime) only; fixed existing Runtime page'},'result':'ordinary Configuration navigation; no configuration mutation or widget paths returned to C++'},
         'cellFieldProfileSpec':{'request':{'scope':'finite EM profile or publish_charts; actual canonical field roles'},'result':'source-bound scatter of actual stored cell-centroid samples at all Y; no interpolation or arrays returned to C++'},
         'upsertPlotFromSpec':{'request':{'scope':'finite EM publish_charts; stable installed Viewer producer and actual Dataset identity'},'result':'two independent retained Graph/Variants through existing Plot owner; no author spec/file path'},
@@ -235,7 +292,11 @@ def _describe_api_catalog(raw):
             row['operation_shapes']={op:{'request':{'scope':'complete declared EM model form; Host::em_command(form, finite_action), explicit native service grants'},'result':'original EM model/managed FEM Job/retained log/canonical publication/exact node-cell field service; no source payload, process or file path returned to C++'} for op in row['allowed_operations']}
         if key=='WORKBENCH_3D_API_v1':
             row['operation_shapes']={op:{'request':{'scope':'complete declared editable3d geometry form through workbench_command only'},'result':'original viewer.3d_workbench/workbench_3d scientific owner; one editable host, exact Document identity and native geometry resources'} for op in row['allowed_operations']}
+        if key=='DATASET_TRANSFORM_API_v1':
+            row['sdk_exposed']=False
+            row['operation_shapes']={op:{'request':{'scope':'exact declared baseline_correct form; captured execution only for cancel'},'result':'existing responsive canonical Transform/provenance owner; no Script responsive grant or new SDK method'} for op in row['allowed_operations']}
         row['authorization_reason']='Explicit trusted SDK v1 facility; project must request it' if allowed else 'Installed public API is outside this restricted SDK; request a reviewed CORE facility extension'
+        if key=='DATASET_TRANSFORM_API_v1':row['authorization_reason']='Finite declared baseline_correct GUI form only; scientific profile and exact grants; no authored SDK method'
     return catalog
 
 def _sdk_required():
@@ -280,6 +341,8 @@ def _capability_admission(meta, request, catalog):
     if not available or available.get('version_conflict') or str(available.get('version'))!=str(request['version']) or str(available.get('available',available.get('enabled')))!='1':
         return 'CORE_API_GAP'
     if not policy or api not in POLICY['profiles'][meta['profile']] or request['version']!=policy['version'] or not set(request['operations']).issubset(policy['operations']):
+        return 'CAPABILITY_DENIED'
+    if api=='VIEWER_GUI_HOST_API_v1' and 'pcb_source_form' in request['operations'] and meta['profile']!='document_view_v1':
         return 'CAPABILITY_DENIED'
     return 'ADMITTED_REQUEST'
 
@@ -344,7 +407,83 @@ def _browser_cpp_catalog(catalog, project=None):
             'sdk_sha256':digest(SDK.read_bytes())}
     return context
 
-def capability_check(project,meta,catalog,validation):
+def _transform_form_admission(meta,design,validation,requested,catalog):
+    """Declared mutating actions require admission independently of sdk_calls."""
+    # A source-transfer check is not a live interface admission. Preserve its
+    # source-only behavior; Validate and compiled/installed admission pass the
+    # actual authoritative design and must generate the complete proof.
+    if design is None:return {}
+    forms=[]
+    for value in tkinter.Tcl().splitlist(design['components']):
+        component=dictionary(value);properties=dictionary(component['properties'])
+        if 'transform_kind' in properties:
+            if component['type']!='section' or properties['transform_kind']!='baseline_correct':
+                raise DevelopmentError('Only a declared baseline_correct Transform form is admitted','RUNTIME_COMPONENT')
+            forms.append(component['id'])
+    if not forms:return {}
+    needed={'VIEWER_GUI_HOST_API_v1':{'transform_form'},
+            'DATASET_TRANSFORM_API_v1':{'execute_responsive','cancel','provenance'},
+            'PLOT_DATASET_API_v4':{'widgetCreate'}}
+    if meta['profile']!='scientific_view_v1':
+        raise DevelopmentError('Baseline Transform forms require scientific_view_v1','CAPABILITY_DENIED')
+    for api,operations in needed.items():
+        if not operations.issubset(requested.get(api,set())):
+            raise DevelopmentError('Declared Transform form lacks its explicit grant: '+api,'CAPABILITY_DENIED')
+    available=set(tkinter.Tcl().splitlist(catalog['DATASET_TRANSFORM_API_v1'].get('operations','')))
+    if not needed['DATASET_TRANSFORM_API_v1'].issubset(available):
+        raise DevelopmentError('Current Transform host contract lacks responsive/cancel/provenance metadata','CORE_API_GAP')
+    return dict(schema='gxtxt.viewer_transform_admission.v1',profile=meta['profile'],forms=forms,
+                source_sha256=validation['source_sha256'],design_sha256=validation['design_sha256'],
+                project_sha256=validation['project_sha256'],
+                grants={api:sorted(operations) for api,operations in needed.items()})
+
+def _pcb_source_form_admission(meta,design,validation,requested,catalog):
+    """A declared import form needs proof independently of compiled SDK calls."""
+    if design is None:return {}
+    forms=[];commands={};controls={}
+    for raw in tkinter.Tcl().splitlist(design['components']):
+        component=dictionary(raw);properties=dictionary(component['properties'])
+        if not any(key.startswith('pcb_') for key in properties):continue
+        if {key for key in properties if key.startswith('pcb_')}!={'pcb_source_kind','pcb_sources','pcb_status','pcb_inspector','pcb_commands'}:
+            raise DevelopmentError('PCB source form requires exactly its five closed properties','RUNTIME_COMPONENT')
+        if component['type']!='section' or properties.get('pcb_source_kind')!='eagle_pair_fixed_v1':
+            raise DevelopmentError('Only the declared fixed-pair import section is admitted','RUNTIME_COMPONENT')
+        form=component['id'];forms.append(form)
+        commands[form]=dictionary(properties['pcb_commands'])
+        controls[form]={key:properties[key] for key in ('pcb_sources','pcb_status','pcb_inspector')}
+    if not forms:return {}
+    if meta['profile']!='document_view_v1':
+        raise DevelopmentError('PCB source forms require document_view_v1','CAPABILITY_DENIED')
+    if 'pcb_source_form' not in requested.get('VIEWER_GUI_HOST_API_v1',set()):
+        raise DevelopmentError('PCB source form lacks its explicit finite host grant','CAPABILITY_DENIED')
+    # The owner metadata is checked at runtime as well; a requested operation
+    # alone cannot manufacture a completed form or a native capture facility.
+    owner=catalog.get('VIEWER_GUI_HOST_API_v1',{})
+    if str(owner.get('available',owner.get('enabled')))!='1':
+        raise DevelopmentError('Current Viewer GUI host is unavailable','CORE_API_GAP')
+    metadata={'pcb_source_form_kind':'eagle_pair_fixed_v1',
+              'pcb_source_form_profile':'document_view_v1',
+              'pcb_source_form_capability':'pcb_source_form',
+              'pcb_source_form_entrypoint':'viewerGuiDesignAction',
+              'pcb_source_form_implicit_import':'0',
+              'pcb_source_form_scope':'import_only_completed_canonical_snapshots',
+              'pcb_source_form_native_projection':'0'}
+    if any(str(owner.get(key))!=value for key,value in metadata.items()):
+        raise DevelopmentError('Current CORE metadata does not admit this finite PCB source form','CORE_API_GAP')
+    try: advertised=tuple(tkinter.Tcl().splitlist(owner.get('pcb_source_form_commands','')))
+    except (tkinter.TclError,TypeError):
+        raise DevelopmentError('Current CORE PCB command metadata is malformed','CORE_API_GAP')
+    if advertised!=('import_pair','refresh','inspect','cancel'):
+        raise DevelopmentError('Current CORE PCB command metadata is incompatible','CORE_API_GAP')
+    return dict(schema='gxtxt.viewer_pcb_source_admission.v1',profile=meta['profile'],
+                module_id=design['module_id'],provider_id=design['provider_id'],
+                kind='eagle_pair_fixed_v1',forms=forms,commands=commands,controls=controls,
+                source_sha256=validation['source_sha256'],design_sha256=validation['design_sha256'],
+                project_sha256=validation['project_sha256'],
+                backend_sha256=digest(Path(__file__).read_bytes()),
+                grants={'VIEWER_GUI_HOST_API_v1':['pcb_source_form']})
+
+def capability_check(project,meta,catalog,validation,design=None):
     requested={}
     for request in meta['capabilities']:
         admission=_capability_admission(meta,request,catalog)
@@ -372,6 +511,12 @@ def capability_check(project,meta,catalog,validation):
         extra=_sdk_extra(method)
         if not extra.issubset(requested.get('NUMERIC_API_v1',set())):
             raise DevelopmentError('SDK Numeric form needs its complete bounded operation grant: '+method,'CAPABILITY_DENIED')
+    admission=_transform_form_admission(meta,design,validation,requested,catalog)
+    if admission:validation['transform_form_admission']=admission
+    else:validation.pop('transform_form_admission',None)
+    admission=_pcb_source_form_admission(meta,design,validation,requested,catalog)
+    if admission:validation['pcb_source_form_admission']=admission
+    else:validation.pop('pcb_source_form_admission',None)
     return requested
 
 def initialize(project,module_id):
@@ -389,10 +534,11 @@ def initialize(project,module_id):
                           for key in ('VIEWER_GUI_HOST_API_v1','VIEWER_COMPONENT_DEMO_API_v1','NUMERIC_API_v1')],
           'provenance':{'template':'restricted_cpp_viewer_v1','scientific_source':None},
           'tests':{'events':[{'kind':0,'component':0,'value':0.0},{'kind':1,'component':4,'value':18.0},{'kind':1,'component':4,'value':20.0}],'expected_counter':2,'expected_values':{'0':293.15}}}
-    # Preserve the legacy template's scalar-only grant. New scientific form
-    # operations require an explicit author request, never an implicit upgrade.
+    # The fixed template requests only its value/text host operations and
+    # legacy scalar Numeric grant. New forms require an explicit author request.
     for request in meta['capabilities']:
-        if request['api_id']=='NUMERIC_API_v1': request['operations']=['array_binary.add','array_unary.sqrt','array_unary.exp']
+        if request['api_id']=='VIEWER_GUI_HOST_API_v1': request['operations']=['value_set','text_set']
+        elif request['api_id']=='NUMERIC_API_v1': request['operations']=['array_binary.add','array_unary.sqrt','array_unary.exp']
     (project/'handlers.cpp').write_text(SOURCE)
     (project/'design.gxtxt-viewer').write_text(design+'\n')
     write_json(project/'project.json',meta)
@@ -438,7 +584,7 @@ def validate(project):
     report['project_profile']=meta['profile']
     report['workspace_callback_contract_sha256']=workspace_callback_contract(meta,design,report['source_sha256'])
     catalog=_describe_api_catalog(admitted['catalog'])
-    requested=capability_check(project,meta,catalog,report)
+    requested=capability_check(project,meta,catalog,report,design)
     components=[dictionary(value) for value in tkinter.Tcl().splitlist(design['components'])]
     diagrams=[component for component in components if component['type']=='native2d' and dictionary(component['properties']).get('diagram_catalog')]
     rasters=[component for component in components if component['type']=='native2d' and dictionary(component['properties']).get('source_kind')=='raster']
@@ -624,6 +770,16 @@ def _sweep_grants(requested):
 def broker_message(project,message,by_index,requested,deadline,tool_catalog=None):
     operations=[];numeric=[]
     operation=message['operation'];component=by_index.get(message['component']);left=finite(message['left']);right=finite(message['right'])
+    pcb_owned=set()
+    for declared in by_index.values():
+        p=dictionary(declared['properties'])
+        if p.get('pcb_source_kind')=='eagle_pair_fixed_v1':
+            pcb_owned.add(declared['id'])
+            pcb_owned.update(p[key] for key in ('pcb_sources','pcb_status','pcb_inspector'))
+    # Scalar Numeric messages carry dummy component0; they address no widget.
+    # Preserve their existing grant/domain checks independently of form order.
+    if operation not in {4,6,7} and component is not None and component['id'] in pcb_owned:
+        raise DevelopmentError('PCB source controls belong to the admitted CORE form, not authored SDK operations','CAPABILITY_DENIED')
     response={'request':message['request'],'ok':True,'value':0.0}
     if operation in {4,6,7}:
         numeric_operation={4:'array_binary.add',6:'array_unary.sqrt',7:'array_unary.exp'}[operation]
@@ -941,7 +1097,7 @@ def _installed_sdk_compatible(root, built):
 def _admit_compiled(project, built, work, *, installed=False):
     """Compatibility and public service admission; never C++ source validation."""
     meta=read_project(project, installed=installed)
-    report=built['validation']
+    report=dict(built['validation'])
     if built.get('status')!='BUILT' or report.get('status')!='PASS':
         raise DevelopmentError('Viewer has no successful compiled build receipt; build it in Development Workspace', 'BINARY_MISSING')
     for name,key in [('handlers.cpp','source_sha256'),('design.gxtxt-viewer','design_sha256'),('project.json','project_sha256')]:
@@ -960,7 +1116,7 @@ def _admit_compiled(project, built, work, *, installed=False):
     design['_runtime_diagram_tools']={key:list(tkinter.Tcl().splitlist(value)) for key,value in dictionary(admitted['diagram_tools']).items()}
     if design['module_id']!=meta['module_id'] or design['version']!=meta['version']:
         raise DevelopmentError('Compiled Viewer interface and module identity differ','BINARY_INCOMPATIBLE')
-    requested=capability_check(work,meta,_describe_api_catalog(admitted['catalog']),report)
+    requested=capability_check(work,meta,_describe_api_catalog(admitted['catalog']),report,design)
     return meta,report,design,requested
 
 def installed_admission(root, work):
@@ -1416,7 +1572,7 @@ def main():
         print(tcl_result({'ok':True,'result':{'schema':'gxtxt.api_browser_catalog.v1','apis':catalog,'script_languages':['Python','Octave'],'execution_context':'inactive_metadata_only','cpp_context':context,'operation_invocations':0}}),flush=True)
         return 0
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('operation',choices=['init','validate','build','prepare','run','test','export','api','inspect','manual_asset','save','check_source','grant','facility_request','builder','debug','debug_control','debug_status','gui_test','workspace_upgrade_review','runtime_inspect','runtime_run','runtime_serve'])
+    parser.add_argument('operation',choices=['init','validate','build','prepare','run','test','export','api','inspect','manual_asset','save','check_source','grant','facility_request','builder','debug','debug_control','debug_status','gui_test','workspace_upgrade_review','runtime_inspect','runtime_run','runtime_serve','maintenance_init','maintenance_inspect','maintenance_save','maintenance_validate','maintenance_export'])
     parser.add_argument('project',type=Path)
     parser.add_argument('--module-id',default='viewer.restricted_example')
     parser.add_argument('--event',type=json.loads)
@@ -1444,6 +1600,11 @@ def main():
             if arguments.operation=='runtime_serve':return compiled_serve(project,work)
             result=(installed_inspect(project,work) if arguments.operation=='runtime_inspect'
                     else installed_run(project,work,arguments.event,arguments.state))
+        elif arguments.operation.startswith('maintenance_'):
+            from gxtxt_viewer_maintenance import dispatch
+            raw=sys.stdin.buffer.read(1048577)
+            if len(raw)>1048576:raise DevelopmentError('Maintenance request exceeds 1 MiB escaped UTF-8 envelope','REQUEST_LIMIT')
+            result=dispatch(arguments.operation,project,json.loads(raw))
         elif arguments.operation=='init': result=initialize(project,arguments.module_id)
         else:
             grant=enforce_project_write(project)
@@ -1527,7 +1688,7 @@ def main():
             write_json(project/'derived/project-write-grant.json',grant)
         response={'ok':True,'result':result}
         print(tcl_result(response) if arguments.tcl else json.dumps(response,ensure_ascii=False,allow_nan=False),flush=True)
-        return 0 if result.get('status') in {'PASS','CREATED','BUILT','COMPLETED','CATALOG','CANDIDATE_EXPORTED','SAVED','REQUESTED','REVIEWED_INERT_ADDITIVE_UPGRADE'} else 1
+        return 0 if result.get('status') in {'PASS','CREATED','BUILT','COMPLETED','CATALOG','CANDIDATE_EXPORTED','SAVED','REQUESTED','REVIEWED_INERT_ADDITIVE_UPGRADE','MAINTENANCE_READY','LEXICALLY_COMPLETE','INCOMPLETE','MAINTENANCE_CANDIDATE_EXPORTED'} else 1
     except Exception as error:
         response={'ok':False,'error':str(error),'code':getattr(error,'code','DEVELOPMENT_ERROR'),'detail':getattr(error,'detail',None)}
         print(tcl_result(response) if arguments.tcl else json.dumps(response,ensure_ascii=False),flush=True)

@@ -128,7 +128,7 @@ proc ::GX::scientificDatasetFilterControls {parent id arrayName prefix {reset 0}
     set state($prefix,filterTypes) $types
     if {$state($prefix,ordering) ni $ids} {set state($prefix,ordering) {}}
     set state($prefix,dimensions) $dims
-    if {$preparedDimensions eq "@discover" && $saved ne {} && [datasetPublicationV2DictDefault $saved schema_identity {}] ne [_datasetScientificProfileIdentity $id]} {scientificDatasetFilterPersist $arrayName $prefix}
+    if {$preparedDimensions eq "@discover" && [dict exists $saved selections] && [dict exists $saved ordering] && [datasetPublicationV2DictDefault $saved schema_identity {}] ne [_datasetScientificProfileIdentity $id]} {scientificDatasetFilterPersist $arrayName $prefix}
     foreach child [winfo children $parent] {if {[winfo toplevel $child] ne $child} {destroy $child}}
     ttk::button $parent.configure -text {Configure filters / grouping…} -command [list ::GX::scientificDatasetFilterConfigure $parent $arrayName $prefix]
     grid $parent.configure -row 0 -column 0 -sticky w -padx 3

@@ -1,0 +1,28 @@
+{
+  "ownership": "Project-associated request under VIEWER_DEVELOPMENT_API_v1; CORE owner adjudicates separately.",
+  "project_snapshot": {
+    "design.gxtxt-viewer": "5ce2c7d8dc97a614fb7a3388b3404bf5ac55ac4ddbf8a0c6817cd5c8a79ead39",
+    "handlers.cpp": "d9fa5f7aa40538ceb856e4ad88e0cadbde7095c3f0b3aeba1649b83bd99d84ff",
+    "project.json": "e87c44bc29084b21097f63edee8927b5940a3bba7600dda05a7ab47a523c4cbc"
+  },
+  "request": {
+    "desired_input_output": "Original owner validates saved JSON InteractiveDocument/workspace payload and returns a managed reviewed copy preserving source ID/SHA, page/DPI/zoom/pixel ROI/languages/PSM, table settings/matrix/boundaries, output IDs and resource lineage; never silently reassign original provider or alter original bytes.",
+    "minimal_acceptance_test": "Open all four legacy entries through original owners, retain byte-identical original workspaces; reviewed-copy roundtrip preserves every applicable setting/coordinate/output identity; missing/stale resources fail clearly; real GUI and performance comparison remains separate.",
+    "missing_operation_or_contract": "Reviewed copy/migration from three original module/provider Workspace formats into the new unified identity is unavailable.",
+    "public_api_inspected": [
+      "VIEWER_GUI_HOST_API_v1",
+      "VIEWER_DEVELOPMENT_API_v1",
+      "OCR_LAYOUT_API_v1",
+      "TABLE_EXTRACTOR_API_v1",
+      "SESSION_WORKSPACE_API_v1",
+      "FILE_PUBLICATION_API_v1"
+    ],
+    "reproduction": "Official restricted-CPP Workspace upgrade requires the same module/provider and previous restricted-CPP snapshot. Original PDF OCR/Table workspaces are distinct JSON schemas, so current preview only saves its own declared interface state. Existing original owners stay available.",
+    "request_id": "GAP-TASK210-DOC-LEGACY-WORKSPACE-R2",
+    "schema": "gxtxt.core_api_gap.v1",
+    "status": "REQUESTED",
+    "task": "GX-TXT TASK210 Section16 formal dev111 unified document extraction",
+    "viewer_project": "viewer.unified_document_extraction",
+    "why_existing_api_fails": "Official restricted-CPP Workspace upgrade requires the same module/provider and previous restricted-CPP snapshot. Original PDF OCR/Table workspaces are distinct JSON schemas, so current preview only saves its own declared interface state. Existing original owners stay available."
+  }
+}

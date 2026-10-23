@@ -15,8 +15,12 @@ from gxtxt_scientific_execution import tdict, tvalue
 SCHEMA = 'gxtxt.native2d.diagram.v1'
 PIN_ORDER = {'resistor':('p','n'), 'capacitor':('p','n'), 'inductor':('p','n'),
              'voltage':('p','n'), 'current':('p','n'), 'ground':('g',),
-             'diode':('a','k'), 'npn':('c','b','e')}
-PREFIX = dict(zip(PIN_ORDER, ('R','C','L','V','I','G','D','Q')))
+             'diode':('a','k'), 'npn':('c','b','e'),
+             'nmos':('d','g','s','b'), 'pmos':('d','g','s','b'),
+             'spst':('a','b'), 'spdt':('c','a','b')}
+PREFIX = {'resistor':'R', 'capacitor':'C', 'inductor':'L', 'voltage':'V',
+          'current':'I', 'ground':'G', 'diode':'D', 'npn':'Q',
+          'nmos':'M', 'pmos':'M', 'spst':'S', 'spdt':'S'}
 ATTRIBUTES = {
     'resistor':{'value':(1000,1e-15)}, 'capacitor':{'value':(1e-6,1e-18)},
     'inductor':{'value':(.001,1e-15)},
@@ -25,7 +29,22 @@ ATTRIBUTES = {
         'width':(.01,1e-15),'period':(.02,1e-15),'frequency':(1000,1e-15)},
     'current':{'value':(.001,None),'ac':(0,0)}, 'ground':{},
     'diode':{'model':('generic',('generic','silicon'))},
-    'npn':{'model':('generic',('generic','small_signal'))}}
+    'npn':{'model':('generic',('generic','small_signal'))},
+    'nmos':{'model':('educational_level1',('educational_level1',)),
+            'length':(1e-5,1e-6),'width':(1e-4,1e-6)},
+    'pmos':{'model':('educational_level1',('educational_level1',)),
+            'length':(1e-5,1e-6),'width':(1e-4,1e-6)},
+    'spst':{'position':('open',('open','closed')),'ron':(1,1e-6),'roff':(1e9,1)},
+    'spdt':{'position':('a',('a','b')),'ron':(1,1e-6),'roff':(1e9,1)}}
+
+# Original educational parameters, not a manufacturer or extracted process.
+# ngspice44 manual 7.6.1/7.6.2.1/7.6.2.5 documents terminal order, SI geometry,
+# enhancement threshold polarity and the long-channel LEVEL1 model limitations.
+MOS_MODELS = {
+    'nmos':('GXTXT_M_NMOS_EDU',
+            '.model GXTXT_M_NMOS_EDU NMOS(LEVEL=1 VTO=1 KP=2e-5 GAMMA=0.4 PHI=0.6 LAMBDA=0.02 IS=1e-14 TNOM=27)'),
+    'pmos':('GXTXT_M_PMOS_EDU',
+            '.model GXTXT_M_PMOS_EDU PMOS(LEVEL=1 VTO=-1 KP=2e-5 GAMMA=0.4 PHI=0.6 LAMBDA=0.02 IS=1e-14 TNOM=27)')}
 
 def number(value, minimum=None):
     value = float(value)
@@ -94,6 +113,11 @@ def compile_circuit(raw, override_component='', override_value=0, component_valu
                 if attrs[key] not in constraint: raise ValueError('Unsupported circuit attribute choice')
                 values[key] = attrs[key]
             else: values[key] = number(attrs[key], constraint)
+        if kind in MOS_MODELS and any(float(values[key])>0.001 for key in ('length','width')):
+            raise ValueError('Educational MOS channel geometry requires 1e-6..0.001 metres')
+        if kind in {'spst','spdt'}:
+            if float(values['ron'])>1e6 or float(values['roff'])>1e12 or float(values['roff'])<=float(values['ron']):
+                raise ValueError('Static contacts require Ron<=1e6 Ohm, Roff<=1e12 Ohm and Roff>Ron')
         for pin in PIN_ORDER[kind]:
             key = (ident,pin); parent[key] = key; terminals[key] = name
         prepared.append((ident,kind,name,values))
@@ -147,8 +171,10 @@ def compile_circuit(raw, override_component='', override_value=0, component_valu
         for root in edges[pending.pop()]-reached: reached.add(root); pending.append(root)
     if set(counts)-reached: raise ValueError('Circuit has a floating disconnected island')
     lines = ['GX-TXT canonical electrical diagram']; sources = []; probes = []
+    component_netlist = {}; generated_names = set()
     for ident,kind,name,attrs in prepared:
         nodes = [net_names[find((ident,p))] for p in PIN_ORDER[kind]]
+        component_netlist[ident] = [] if kind == 'ground' else [name]
         if kind == 'ground': continue
         lead = name+' '+' '.join(nodes)+' '
         if kind in {'resistor','capacitor','inductor'}: line = lead+attrs['value']
@@ -162,23 +188,52 @@ def compile_circuit(raw, override_component='', override_value=0, component_valu
             line = lead+stimulus+' AC '+attrs['ac']; sources.append(name)
         elif kind == 'current': line = lead+'DC '+attrs['value']+' AC '+attrs['ac']; sources.append(name)
         elif kind == 'diode': line = lead+'GXTXT_D_'+attrs['model'].upper()
-        else: line = lead+'GXTXT_Q_'+attrs['model'].upper()
+        elif kind == 'npn': line = lead+'GXTXT_Q_'+attrs['model'].upper()
+        elif kind in MOS_MODELS:
+            line = lead+MOS_MODELS[kind][0]+' L='+attrs['length']+' W='+attrs['width']+' TEMP=27'
+        elif kind in {'spst','spdt'}:
+            # State is an explicit immutable source parameter for this solve.
+            # A finite resistor is a declared contact approximation, never an
+            # ideal graph join, time-driven switch, relay or fuse trip model.
+            branches = [('a',nodes[0],nodes[1],attrs['ron'] if attrs['position']=='closed' else attrs['roff'])] if kind=='spst' else [
+                (pin,nodes[0],nodes[index],attrs['ron'] if attrs['position']==pin else attrs['roff'])
+                for index,pin in enumerate(('a','b'),1)]
+            component_netlist[ident] = []
+            for pin,start,end,resistance in branches:
+                generated = 'R_GXTXT_SW_'+name+'_'+pin
+                if generated.lower() in names or generated.lower() in generated_names:
+                    raise ValueError('Generated static-contact element conflicts with circuit name: '+generated)
+                generated_names.add(generated.lower())
+                component_netlist[ident].append(generated)
+                lines.append(generated+' '+start+' '+end+' '+resistance)
+            continue
+        else: raise ValueError('Unsupported circuit device translation')
         lines.append(line)
     # Original, explicit generic example parameter cards, GPL-3.0-or-later.
     lines += ['.model GXTXT_D_GENERIC D(IS=1e-14 N=1)',
               '.model GXTXT_D_SILICON D(IS=1e-14 N=1.5 RS=1)',
               '.model GXTXT_Q_GENERIC NPN(IS=1e-14 BF=100 VAF=100)',
               '.model GXTXT_Q_SMALL_SIGNAL NPN(IS=1e-14 BF=200 VAF=100)']
+    kinds = {kind for ident,kind,name,attrs in prepared}
+    for kind in ('nmos','pmos'):
+        if kind in kinds: lines.append(MOS_MODELS[kind][1])
     for node in sorted(set(net_names.values())-{'0'}):
         probes.append(dict(id='v_'+node,expression='v('+node+')',unit='V'))
     for ident,kind,name,attrs in prepared:
         if kind == 'voltage': probes.append(dict(id='i_'+name.lower(),expression='i('+name+')',unit='A'))
     if not probes: raise ValueError('Circuit has no observable quantity')
-    return dict(lines=lines,probes=probes,sources=sources,
+    result = dict(lines=lines,probes=probes,sources=sources,
                 source_sha256=hashlib.sha256(raw).hexdigest(),
                 component_values={key:number(value) for key,value in sorted(overrides.items())},
                 net_mapping={tvalue(list(key)):net_names[find(key)] for key in sorted(parent)},
                 model_origin='Original explicit generic educational parameter cards; GPL-3.0-or-later')
+    if kinds.intersection({'nmos','pmos','spst','spdt'}):
+        result['component_netlist'] = component_netlist
+        if kinds.intersection(MOS_MODELS):
+            result['model_origin'] += '; MOS: original educational long-channel LEVEL1, explicit body and SI L/W, TEMP/TNOM27C'
+        if kinds.intersection({'spst','spdt'}):
+            result['model_origin'] += '; contacts: user-selected static finite Ron/Roff, no dynamic switching or fuse physics'
+    return result
 
 def analysis_command(circuit, p):
     analysis = p['analysis']
@@ -207,9 +262,11 @@ def observation_axis(analysis, parameters):
 def inspect(raw, parameters):
     circuit = compile_circuit(raw, parameters.get('override_component',''), parameters.get('override_value',0), parameters.get('component_values',''))
     analysis, command = analysis_command(circuit,parameters)
-    return dict(analysis=analysis,analysis_command=command,source_sha256=circuit['source_sha256'],netlist='\n'.join(circuit['lines'])+'\n.end\n',
+    result = dict(analysis=analysis,analysis_command=command,source_sha256=circuit['source_sha256'],netlist='\n'.join(circuit['lines'])+'\n.end\n',
                 independent_variable=observation_axis(analysis, parameters),
                 probes=circuit['probes'],net_mapping=circuit['net_mapping'],component_values=circuit['component_values'],model_origin=circuit['model_origin'])
+    if 'component_netlist' in circuit: result['component_netlist'] = circuit['component_netlist']
+    return result
 
 def run(context):
     if set(context.inputs) != {'circuit'}: raise ValueError('Provider requires exactly one canonical circuit snapshot')
@@ -245,10 +302,12 @@ def run(context):
     context.publish_output('waveform.csv','waveform','csv',columns)
     (context.output/'netlist.cir').write_text(deck,encoding='utf-8')
     context.publish_output('netlist.cir','netlist','text')
-    context.summary(dict(validation='validated_structure',analysis=analysis,rows=count,
+    summary = dict(validation='validated_structure',analysis=analysis,rows=count,
         circuit_sha256=circuit['source_sha256'],netlist_sha256=hashlib.sha256(deck.encode()).hexdigest(),
         solver='ngspice',solver_version=version['stdout'][:4096],model_origin=circuit['model_origin'],component_values=circuit['component_values'],
-        numerical_postprocessing='none; raw solver observations only'))
+        numerical_postprocessing='none; raw solver observations only')
+    if 'component_netlist' in circuit: summary['component_netlist'] = circuit['component_netlist']
+    context.summary(summary)
 
 if __name__ == '__main__':
     if sys.argv[1:] != ['--inspect']: raise SystemExit('Only bounded circuit inspection is public here')

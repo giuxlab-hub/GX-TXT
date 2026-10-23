@@ -372,6 +372,19 @@ proc ::GX::projectAssociateCurrentExperiment {projectId} {
 proc ::GX::_projectEncounterSession {session} {
     if {[_sessionCreationPending $session]} {return {}}
     set manifest [file join $session metadata manifest.ini]
+    # Legacy channels-only Sessions have no organizational identity to enroll.
+    # Keep normal opening read-only until the existing Save owner writes one.
+    if {![file isfile $manifest]} {
+        if {$::GX::currentSession eq $session} {
+            # An absent identity must not inherit the previous Session's ID or
+            # origin. The ordinary Save transaction will issue a fresh ID.
+            foreach key {experiment_id experiment_project_id experiment_project experiment_project_legacy session_origin} {set ::GX::cfg($key) {}}
+            set ::GX::cfg(experiment_name) [file tail $session]
+            projectRefreshExperimentUi
+            updateSessionUi
+        }
+        return {}
+    }
     set identity [_projectAtomic [list $manifest] {
         # Every encounter, including reopen/restoration, uses fresh registry
         # state while holding the existing short writer transaction.
@@ -417,10 +430,13 @@ rename ::GX::openSessionPath ::GX::openSessionPath_before_projects083
 proc ::GX::openSessionPath {path} {
     set path [file normalize $path]
     # Refuse cross-linked identities before replacing the active Session.
-    set data [parseIni [file join $path metadata manifest.ini]]
-    set eid [datasetPublicationV2DictDefault $data project_link.experiment_id {}]
-    set recorded [projectMembershipField $eid session_path {}]
-    if {$eid ne {} && $recorded ne {} && [file normalize $recorded] ne $path && [file exists $recorded]} {error {Experiment ID collision: independent copies must use Portable Import.}}
+    set manifest [file join $path metadata manifest.ini]
+    if {[file isfile $manifest]} {
+        set data [parseIni $manifest]
+        set eid [datasetPublicationV2DictDefault $data project_link.experiment_id {}]
+        set recorded [projectMembershipField $eid session_path {}]
+        if {$eid ne {} && $recorded ne {} && [file normalize $recorded] ne $path && [file exists $recorded]} {error {Experiment ID collision: independent copies must use Portable Import.}}
+    }
     set result [openSessionPath_before_projects083 $path]
     if {$::GX::currentSession eq $path} {_projectEncounterSession $path}
     return $result

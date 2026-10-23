@@ -180,3 +180,94 @@ The typed original-box/cylinder contract verifies two different immediate
 frames at unchanged 404×712 dimensions using one worker generation; actual
 installed cold retesting remains required. Failed test01/02 filename oracles
 are preserved with their actual changed-frame observations.
+
+## Scientific animation video adapter (dev111 source implementation)
+
+The existing Scientific timeline group adds **Export scientific animation/video…**.
+It uses the separately owned trusted-host `native3DAnimationDescribe` and
+`native3DAnimationExportAsync` routes when present. A missing route is an explicit
+unavailable diagnostic. The dialog selects an inclusive original sample range,
+even pixel resolution, rational FPS or playback duration, bounded quality and a
+new external MP4 destination. One video frame corresponds to one original sample;
+video playback time is distinct from declared scientific time, especially for
+nonuniform samples. The MP4 is a presentation derivative, never a canonical
+Dataset. Source data and live timeline position are not changed.
+
+The private `_native3DAnimationDescribeSource` seam returns `description` and
+`expected_source`. It reads only bounded existing public registry projections,
+including unsaved view/layer state and declared Dataset variable metadata. It
+first requires an enabled registered module and Viewer Provider through their
+existing public owners, and uses the existing plugin new-load guard to reject
+pending replacement/restart state without activating an entrypoint. The private
+snapshot binds the bounded declared module definition/version and logical
+provider definition; the worker compares that identity before/after capture.
+The public description reports the declared module version, without inferring
+an active implementation version. Source rechecks therefore also reject a
+changed definition/version or a disabled owner.
+It does not read scientific payloads, hash files, enrich schemas, probe native
+rendering, copy or launch work. The full private projection is capped at 1 MiB;
+the initial limits are 256 scene layers and 256 variables per Dataset. The
+public facade returns only its inert description and reports runtime admission
+as not checked. No Script Bridge, C++ SDK or worker opcode grant is added.
+
+`_native3DAnimationCaptureSource` runs only in the owned headless worker. It
+reconstructs unsaved view/layers in that process through existing public setters,
+resolves actual supported sources and prepares existing native renderer inputs.
+It never saves the original Session. Captured source copies use the existing
+FilePublication complete-file owner within the allocated operation Resource;
+total input bytes are bounded to 256 MiB. Registered metadata, existing Dataset
+revision tokens and every original dependency are checked around capture.
+Private paths/revision tokens stay in the worker, outside public receipts.
+Original identity and render input copies remain distinct.
+
+This first export slice captures base Viewer scenes only. The editable Engine3D
+host may add an active ScientificDocument's scientific figure after ordinary
+scene resolution; Describe explicitly refuses that presentation for the matching
+host owner, including a stale/missing document Session identity. It does not read
+the document, omit its figure silently or promise Document-backed video capture.
+Private source identity also binds that matching host's presentation-open and
+mount generations. Switching into/out of Document mode, reopening, closing or
+rebinding during capture therefore invalidates the parent's later source check,
+even when the base scene projection happens to return to the same values. An
+unrelated host owner does not turn another provider's base scene into a Document
+presentation. The isolated worker does not recreate a GUI incarnation; the
+parent's existing current-source gate compares this private context.
+
+The retained source receipt includes `dataset_identities`, keyed by actual
+Dataset ID, with the verified canonical SHA-256, byte count, CSV format,
+Session-relative `payload_reference` and captured variable schema. The schema
+keeps its version, row count, delimiter and full bounded stable-variable fields,
+including canonical positions and units. `render_bindings` records each Dataset
+layer's selected stable variable IDs and actual prepared zero-based native column
+mapping. `dependency_identities` records payload, registered metadata and artifact
+SHA-256/byte counts using logical Dataset/layer IDs and Session-relative Resource
+references, without private copy paths. These identities reuse the verified
+capture copies; optional layer source-hash fields are not substituted for the
+actual CSV identity. The export owner's existing 4 MiB retained-manifest limit
+still applies and rejects an oversized complete receipt.
+
+Initial source support is canonical CSV Dataset frames and self-contained
+VTI/VTU/VTP artifacts. External attributes/textures, sparse selected slots,
+legacy unresolved schemas, remote/non-CSV Dataset payloads, unsupported formats
+and unregistered metadata resources are explicit errors. No dependency is
+silently dropped, no HDF5 file is relabelled CSV, and no solver is run. A private
+CSV scalar mapping uses the existing Engine3D stable-variable column resolver.
+Export additionally refuses literal LF/CR in renderer scene/layer data and in
+actual scientific figure text before the initial worker render. The native
+capture boundary independently refuses control-bearing original captions before
+seeking or output. Interactive figure APIs retain their existing behavior; this
+export path does not claim multiline-caption transport support.
+
+Dialog callbacks bind the host/dialog window incarnations, mount generation,
+Session token and captured source. A chooser cannot apply to a recreated host.
+Closing cancels only that dialog's existing managed request; CORE retains the
+actual operation outcome. After commit authorization, interruption can mean
+**finalization outcome unknown**, since the destination may already contain the
+complete MP4. Do not equate cancellation with removal or deletion of a committed
+file. Publication/reconciliation and retained diagnostics belong to the export
+owner; this UI creates no process, publication or export-history manager.
+
+This section documents source implementation. A rebuilt precompiled bridge,
+central API adoption, allocated native/encoding checks and actual GUI acceptance
+are still required. No render, video, caption readability, codec initialization,
+scientific demonstration or installed-runtime PASS follows from this source batch.

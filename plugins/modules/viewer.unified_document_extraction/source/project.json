@@ -1,0 +1,101 @@
+{
+  "capabilities": [
+    {
+      "api_id": "VIEWER_GUI_HOST_API_v1",
+      "version": 1,
+      "operations": [
+        "text_set",
+        "document_bind",
+        "raster_bind",
+        "raster_tool",
+        "raster_command"
+      ]
+    },
+    {
+      "api_id": "SESSION_WORKSPACE_API_v1",
+      "version": 1,
+      "operations": [
+        "create",
+        "get",
+        "update",
+        "list"
+      ]
+    },
+    {
+      "api_id": "SCIENTIFIC_RECIPE_API_v1",
+      "version": 1,
+      "operations": [
+        "scientificHistoryViewerRecord",
+        "scientificHistoryViewerNavigate"
+      ]
+    }
+  ],
+  "design": "design.gxtxt-viewer",
+  "language": "cpp",
+  "module_id": "viewer.unified_document_extraction",
+  "profile": "document_view_v1",
+  "provenance": {
+    "task": "TASK210 Section16 formal dev111",
+    "deposited_framework": "gxtxt_pipeline_v09810dev_110",
+    "source_commit": "e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68",
+    "deposition_sha256": "5ba61e98498d7cdafce50bb05bbcbdda68592697974d4f402583f4a07354f0d8",
+    "author_route": "official init/builder/save/validate/build/test/export",
+    "legacy_union": "Preserved 55-row four-entry/three-package inventory; no deprecation or automatic legacy Workspace conversion",
+    "legacy_audit_sha256": "ec0008fd3505454bd9320f52e35283974ea533de18a1b47bb1ed8c2aa016713b",
+    "scope": "Canonical document consultation and image ROI; extraction/review/OCRPDF remain project-bound CORE gaps",
+    "gui_parity": "NOT_TESTED",
+    "performance": "NOT_TESTED",
+    "raster_lifecycle": "Source-reviewed explicit new-scene action only; selectors stage choices. Save existing ROI Workspace before requesting a separate ROI owner. No private idempotent-rebind or dirty-scene guard."
+  },
+  "schema": "gxtxt.viewer_development_project.v1",
+  "source": "handlers.cpp",
+  "tests": {
+    "events": [
+      {
+        "kind": 0,
+        "component": 0,
+        "value": 0.0
+      },
+      {
+        "kind": 1,
+        "component": 6,
+        "value": 0.0
+      },
+      {
+        "kind": 2,
+        "component": 5,
+        "value": 0.0
+      },
+      {
+        "kind": 1,
+        "component": 10,
+        "value": 0.0
+      },
+      {
+        "kind": 2,
+        "component": 9,
+        "value": 0.0
+      },
+      {
+        "kind": 1,
+        "component": 23,
+        "value": 0.0
+      },
+      {
+        "kind": 2,
+        "component": 22,
+        "value": 0.0
+      },
+      {
+        "kind": 1,
+        "component": 0,
+        "value": 0.0
+      }
+    ],
+    "expected_counter": 3,
+    "expected_values": {
+      "0": 0.0
+    }
+  },
+  "version": "0.1.1"
+}

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 580" role="img" aria-labelledby="title description">
+<title id="title">Separate publication commits each output Dataset individually</title>
+<desc id="description">A conceptual plan has two valid separate outputs. Output A is committed successfully. If a later publication of output B fails, A remains available and B must be reported as failed. This diagram illustrates transaction boundaries rather than an observed application failure.</desc>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original GX210-GUIDE conceptual artwork. -->
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#426589"/></marker>
+<style>text{font-family:system-ui,sans-serif;fill:#172d47}.title{font-size:27px;font-weight:700}.heading{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:17px;fill:#496079}.line{fill:none;stroke:#426589;stroke-width:2.5;marker-end:url(#arrow)}</style></defs>
+<rect width="1000" height="580" rx="16" fill="#f3f7fc"/>
+<text x="34" y="45" class="title">Publication status belongs to each output Dataset</text>
+<text x="34" y="75" class="small">Conceptual failure boundary · no actual Dataset or observed incident is shown</text>
+<rect x="34" y="112" width="932" height="96" rx="12" fill="#fff" stroke="#91a9c3" stroke-width="2"/>
+<text x="56" y="146" class="heading">A valid plan selects separate outputs for accepted calibrations</text>
+<text x="56" y="180" class="body">Names and selected mappings are checked before publication begins.</text>
+<path d="M260 208V258" class="line"/>
+<rect x="34" y="268" width="432" height="150" rx="12" fill="#e7f3eb" stroke="#619377" stroke-width="2"/>
+<text x="56" y="307" class="heading">Output A commits</text>
+<text x="56" y="343" class="body">Its Dataset and metadata become available.</text>
+<text x="56" y="378" class="small">Keep the actual ID and inspect this result.</text>
+<path d="M466 343H528" class="line"/>
+<rect x="538" y="268" width="428" height="150" rx="12" fill="#fff0cc" stroke="#b39852" stroke-width="2"/>
+<text x="560" y="307" class="heading">A later output B fails</text>
+<text x="560" y="343" class="body">Identify which output failed.</text>
+<text x="560" y="378" class="small">B must not be reported as completed.</text>
+<rect x="34" y="460" width="932" height="86" rx="12" fill="#fff" stroke="#91a9c3" stroke-width="2"/>
+<text x="56" y="494" class="heading">Result: A remains committed; investigate and recover B deliberately.</text>
+<text x="56" y="526" class="small">The whole selected set is not one all-or-nothing multi-Dataset transaction.</text>
+</svg>

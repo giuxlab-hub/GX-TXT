@@ -145,6 +145,10 @@ proc ::GX::_uiFieldDialogDestroyed {dialogWindow actual} {
 proc ::GX::_uiFieldDialogPlace {dialogWindow} {
     variable ::GX::UiField::dialogGeometry
     if {![winfo exists $dialogWindow] || ![winfo viewable $dialogWindow]} return
+    # Use one pixel extent for both centering and clamping. Explicitly sized
+    # mapped dialogs can be wider than their children's geometry request.
+    set width [winfo width $dialogWindow]
+    set height [winfo height $dialogWindow]
     # The global work-area mapper can freeze Tk's initial 200x200 size before
     # children negotiate their request. Shared dialogs without explicit size
     # use the completed request, rather than preserving that provisional size.
@@ -155,11 +159,18 @@ proc ::GX::_uiFieldDialogPlace {dialogWindow} {
     }
     set parent [wm transient $dialogWindow]
     if {$parent ne {} && [winfo exists $parent]} {
-        set x [expr {[winfo rootx $parent]+max(0,([winfo width $parent]-[winfo reqwidth $dialogWindow])/2)}]
-        set y [expr {[winfo rooty $parent]+max(0,([winfo height $parent]-[winfo reqheight $dialogWindow])/2)}]
-        set x [expr {max(0,min($x,[winfo screenwidth $dialogWindow]-[winfo reqwidth $dialogWindow]))}]
-        set y [expr {max(25,min($y,[winfo screenheight $dialogWindow]-[winfo reqheight $dialogWindow]-35))}]
-        wm geometry $dialogWindow +$x+$y
+        set x [expr {[winfo rootx $parent]+max(0,([winfo width $parent]-$width)/2)}]
+        set y [expr {[winfo rooty $parent]+max(0,([winfo height $parent]-$height)/2)}]
+        set availableX [expr {max(0,[winfo screenwidth $dialogWindow]-$width)}]
+        set x [expr {max(0,min($x,$availableX))}]
+        set y [expr {max(25,min($y,[winfo screenheight $dialogWindow]-$height-35))}]
+        # WM positions include decorations; width is the mapped client extent.
+        # Anchor to the nearer horizontal edge so the WM accounts for its own
+        # border at that edge. A positive client-width clamp can clip the right
+        # border/client by the frame inset (observed with xfwm4).
+        set horizontal +$x
+        if {$x>$availableX/2} {set horizontal -[expr {$availableX-$x}]}
+        wm geometry $dialogWindow ${horizontal}+$y
     }
 }
 proc ::GX::uiFieldDialogClose {dialogWindow} {

@@ -286,6 +286,50 @@
       "width": "192",
       "height": "192",
       "alpha": "1"
+    },
+    "circuit_nmos": {
+      "title": "NMOS (educational)",
+      "category": "Circuit discrete devices",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "95fbc1c75cc896d831c185cf0e02fd00d0f8b74ed73b7e472456d5aadea904bc",
+      "png_sha256": "10d4eda686ec0e1089fcc7abf4fc1434be49fcf116b86f651da0d902586b46d8",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "circuit_pmos": {
+      "title": "PMOS (educational)",
+      "category": "Circuit discrete devices",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "1840164e0937a92ae086af09fc8b0659ee63f5e5f0fe90ccd769f28af53b06b1",
+      "png_sha256": "eaa7b426d5de400b0ebb4c99d850bd13016da7628f03a6edd7a429bfba57e20c",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "circuit_spst": {
+      "title": "SPST (static)",
+      "category": "Circuit discrete devices",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "a96bb42b37098cb2918f3c2ac3a294d8d437b9d0d77fc659a00a135ab83ddbcc",
+      "png_sha256": "83f5baf068d3db0640abb4bd86339641dccd72b5ce18e00ee5523e826c24b064",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
+    },
+    "circuit_spdt": {
+      "title": "SPDT (static)",
+      "category": "Circuit discrete devices",
+      "license": "GPL-3.0-or-later",
+      "source_format": "svg",
+      "sha256": "7200d4b8549ba127296405de5232e6223f51a892acc65c99e0a79d5f56ea46d4",
+      "png_sha256": "4eafddba096e6eb5790e83e47a68625314eafec0ef90658a79a0293179c14915",
+      "width": "128",
+      "height": "128",
+      "alpha": "1"
     }
   }
 }

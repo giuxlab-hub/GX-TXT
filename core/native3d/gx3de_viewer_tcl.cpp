@@ -122,6 +122,8 @@ struct State {
     gx3de_view_manipulation *planeManip=nullptr;
     uint32_t planeManipTarget=0,planeManipSlot=0;
     gx3de_animation *timeline=nullptr;
+    bool captureFigureSaved=false;
+    gx3de_scientific_figure captureOriginalFigure{};
     gx3de_object *gizmoObject=nullptr;
     std::string gizmoLayer;
     std::vector<std::pair<gx3de_object*,std::string>> objects;
@@ -135,6 +137,7 @@ struct State {
         if(timeline) {gx3de_animation_destroy(timeline);timeline=nullptr;}
         for(auto& source:frameSources)if(source->layer)Tcl_DecrRefCount(source->layer);
         frameSources.clear();timelineLayers.clear();
+        captureFigureSaved=false;captureOriginalFigure={};
         objects.clear();
         annotationAnchors.clear();
         autoFitted=false;
@@ -1530,6 +1533,116 @@ int timelineControl(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[
         Tcl_SetObjResult(ip,reply);return TCL_OK;
     }catch(const std::exception& e){error(ip,e);return TCL_ERROR;}
 }
+// Internal export-worker operation. This is deliberately absent from the
+// readonly viewport worker allowlist and adds no native ABI or script grant.
+// Tcl 8.6 may supply modified UTF-8. This new caption boundary intentionally
+// accepts strict BMP UTF-8 only; it never normalizes units or repairs surrogates.
+void requireCaptureText(const char* text,size_t size){
+    for(size_t i=0;i<size;){
+        const auto c=static_cast<unsigned char>(text[i++]);uint32_t code=0;
+        if(c<0x80)code=c;
+        else if(c>=0xc2&&c<=0xdf){
+            if(i>=size)throw std::runtime_error("Capture text requires strict BMP UTF-8");
+            const auto b=static_cast<unsigned char>(text[i++]);
+            if((b&0xc0)!=0x80)throw std::runtime_error("Capture text requires strict BMP UTF-8");
+            code=((c&0x1f)<<6)|(b&0x3f);
+        }else if(c>=0xe0&&c<=0xef){
+            if(size-i<2)throw std::runtime_error("Capture text requires strict BMP UTF-8");
+            const auto b=static_cast<unsigned char>(text[i++]),d=static_cast<unsigned char>(text[i++]);
+            if((b&0xc0)!=0x80||(d&0xc0)!=0x80||(c==0xe0&&b<0xa0)||(c==0xed&&b>=0xa0))
+                throw std::runtime_error("Capture text requires strict BMP UTF-8 without surrogates");
+            code=((c&0xf)<<12)|((b&0x3f)<<6)|(d&0x3f);
+        }else throw std::runtime_error("Capture captions do not support modified UTF-8 or non-BMP text");
+        if(code<32||(code>=0x7f&&code<=0x9f))
+            throw std::runtime_error("Capture text contains unsupported control characters");
+    }
+}
+int timelineCapture(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj* const args[]){
+    if(argc!=4){Tcl_WrongNumArgs(ip,1,args,"frame_index source_label png");return TCL_ERROR;}
+    auto& state=*static_cast<State*>(data);
+    try{
+        if(!state.timeline||!state.target||!state.view)throw std::runtime_error("Render a captured scientific timeline before capture");
+        Tcl_WideInt requested=0;
+        if(Tcl_GetWideIntFromObj(ip,args[1],&requested)!=TCL_OK||requested<0)
+            throw std::runtime_error("Capture frame index must be a nonnegative integer");
+        int labelBytes=0;const char* label=Tcl_GetStringFromObj(args[2],&labelBytes);
+        if(labelBytes<1||labelBytes>320)throw std::runtime_error("Capture source label must contain 1..320 UTF-8 bytes");
+        requireCaptureText(label,static_cast<size_t>(labelBytes));
+        std::string sourceLabel(label,static_cast<size_t>(labelBytes));
+        auto original=state.captureOriginalFigure;
+        if(!state.captureFigureSaved){
+            original.struct_size=sizeof(original);
+            check(gx3de_view_scientific_figure_get(state.view,&original),"read original capture figure");
+        }
+        // Refuse transport-unsafe original captions before seeking, changing a
+        // figure or writing PNG. Generated legend separators remain PNG-only.
+        requireCaptureText(original.title_utf8,std::strlen(original.title_utf8));
+        requireCaptureText(original.legend_utf8,std::strlen(original.legend_utf8));
+        requireCaptureText(original.scalar_label_utf8,std::strlen(original.scalar_label_utf8));
+        for(const auto& axis:original.axis_labels_utf8)requireCaptureText(axis,std::strlen(axis));
+        char unit[1024]{};uint64_t required=0;
+        check(gx3de_animation_time_unit(state.timeline,unit,sizeof(unit),&required),"query captured time unit");
+        requireCaptureText(unit,std::strlen(unit));
+        if(!state.captureFigureSaved){state.captureOriginalFigure=original;state.captureFigureSaved=true;}
+        check(gx3de_animation_seek_frame(state.timeline,static_cast<uint64_t>(requested)),"seek exact capture sample");
+        refreshTimelineObjects(state);
+        gx3de_animation_info info{};info.struct_size=sizeof(info);
+        check(gx3de_animation_info_get(state.timeline,&info),"query captured sample");
+        double sampleTime=0;
+        check(gx3de_animation_frame_time(state.timeline,info.current_frame,&sampleTime),"query captured sample time");
+        if(info.current_frame!=static_cast<uint64_t>(requested)||sampleTime!=info.current_time)
+            throw std::runtime_error("Capture did not select the exact declared sample");
+        gx3de_bounds bounds{};bool haveBounds=false;
+        for(const auto& entry:state.objects){
+            uint32_t visible=0;check(gx3de_object_get_visible(entry.first,&visible),"query capture visibility");
+            if(!visible)continue;
+            gx3de_bounds one{};check(gx3de_object_bounds(entry.first,1,&one),"query capture world bounds");
+            const double values[]={one.min.x,one.min.y,one.min.z,one.max.x,one.max.y,one.max.z};
+            for(double x:values)if(!std::isfinite(x))throw std::runtime_error("Capture source bounds are not finite");
+            if(!haveBounds){bounds=one;haveBounds=true;}
+            else{bounds.min.x=std::min(bounds.min.x,one.min.x);bounds.min.y=std::min(bounds.min.y,one.min.y);bounds.min.z=std::min(bounds.min.z,one.min.z);
+                bounds.max.x=std::max(bounds.max.x,one.max.x);bounds.max.y=std::max(bounds.max.y,one.max.y);bounds.max.z=std::max(bounds.max.z,one.max.z);}
+        }
+        if(!haveBounds)throw std::runtime_error("Capture has no visible source bounds");
+        auto figure=state.captureOriginalFigure;
+        if(!figure.enabled){
+            if(!(bounds.min.x<bounds.max.x&&bounds.min.y<bounds.max.y&&bounds.min.z<bounds.max.z))
+                throw std::runtime_error("Caption-only capture requires nondegenerate actual 3D bounds");
+            figure.enabled=1;figure.axes_grid_visible=0;figure.colorbar_visible=0;
+            figure.world_bounds=bounds;
+            // Hidden identity render coordinates are not physical calibration.
+            figure.axis_min[0]=bounds.min.x;figure.axis_min[1]=bounds.min.y;figure.axis_min[2]=bounds.min.z;
+            figure.axis_max[0]=bounds.max.x;figure.axis_max[1]=bounds.max.y;figure.axis_max[2]=bounds.max.z;
+        }
+        char timeText[64]{};std::snprintf(timeText,sizeof(timeText),"%.17g",sampleTime);
+        const std::string caption=sourceLabel+" | frame "+std::to_string(info.current_frame)+" | sample "+timeText+(unit[0]?std::string(" ")+unit:std::string(" (unit unspecified)"));
+        std::string legend=state.captureOriginalFigure.legend_utf8;
+        if(!legend.empty())legend+='\n';
+        legend+=caption;
+        if(legend.size()>=sizeof(figure.legend_utf8))throw std::runtime_error("Capture caption exceeds native legend capacity");
+        std::memcpy(figure.legend_utf8,legend.c_str(),legend.size()+1);
+        check(gx3de_view_scientific_figure_set(state.view,&figure),"set source/time capture caption");
+        checkRender(state.target,gx3de_target_render(state.target),"render exact scientific capture");
+        check(gx3de_target_write_png(state.target,str(args[3]).c_str()),"write scientific capture PNG");
+        gx3de_target_geometry geometry{};geometry.struct_size=sizeof(geometry);
+        check(gx3de_target_geometry_get(state.target,&geometry),"query capture resolution");
+        gx3de_camera camera{};camera.struct_size=sizeof(camera);
+        check(gx3de_view_get_camera(state.view,&camera),"query capture camera");
+        Tcl_Obj* reply=Tcl_NewDictObj();
+        put(ip,reply,"current_frame",Tcl_NewWideIntObj(static_cast<Tcl_WideInt>(info.current_frame)));
+        put(ip,reply,"current_time",Tcl_NewDoubleObj(sampleTime));
+        put(ip,reply,"time_unit",Tcl_NewStringObj(unit,-1));
+        put(ip,reply,"width",Tcl_NewWideIntObj(geometry.physical_width));put(ip,reply,"height",Tcl_NewWideIntObj(geometry.physical_height));
+        put(ip,reply,"source_label",Tcl_NewStringObj(sourceLabel.c_str(),-1));put(ip,reply,"caption",Tcl_NewStringObj(caption.c_str(),-1));
+        put(ip,reply,"original_title",Tcl_NewStringObj(state.captureOriginalFigure.title_utf8,-1));put(ip,reply,"original_legend",Tcl_NewStringObj(state.captureOriginalFigure.legend_utf8,-1));
+        put(ip,reply,"figure_was_enabled",Tcl_NewIntObj(state.captureOriginalFigure.enabled));
+        put(ip,reply,"caption_policy",Tcl_NewStringObj(state.captureOriginalFigure.enabled?"preserve_existing_figure":"caption_only_render_coordinates",-1));
+        put(ip,reply,"bounds_min",vecObj(bounds.min));put(ip,reply,"bounds_max",vecObj(bounds.max));
+        put(ip,reply,"camera_position",vecObj(camera.position));put(ip,reply,"camera_target",vecObj(camera.target));put(ip,reply,"camera_up",vecObj(camera.up));
+        put(ip,reply,"projection",Tcl_NewStringObj(camera.orthographic?"orthographic":"perspective",-1));
+        putRendererInfo(ip,reply,state.target);Tcl_SetObjResult(ip,reply);return TCL_OK;
+    }catch(const std::exception& e){error(ip,e);return TCL_ERROR;}
+}
 #include "native3d_workbench_tcl_v1.inc"
 int exportVector(ClientData data,Tcl_Interp* ip,int argc,Tcl_Obj*const args[]) {
     if(argc!=3){Tcl_WrongNumArgs(ip,1,args,"path svg|pdf");return TCL_ERROR;}
@@ -1574,6 +1687,7 @@ extern "C" int Gx3deviewer_Init(Tcl_Interp *ip) {
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::export_png",exportPng,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::export_vector",exportVector,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::timeline",timelineControl,state,nullptr);
+    Tcl_CreateObjCommand(ip,"::GX3DEViewer::timeline_capture",timelineCapture,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::plane_begin",planeBegin,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::plane_update",planeUpdate,state,nullptr);
     Tcl_CreateObjCommand(ip,"::GX3DEViewer::plane_end",planeEnd,state,nullptr);

@@ -1,0 +1,80 @@
+{
+  "content_id": "curve_digitizer.manual.en",
+  "scope": "Existing allocated TUTORIAL1 packet003 observations only, with separately identified later004 outcome; no new GUI or scientific validation by GUIDE.",
+  "original_packet003_record_sha256": "e23b8dd43821085498c8db896639036873bd0e171404a75ea46a0376b20b4cb2",
+  "original_operator_receipt_sha256": "4f078814225c043294a44b5f73790a6a2871a03189821b57e5bb20d2017b24c4",
+  "build_original": "0.9.8.10-dev-110 / e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68",
+  "module": "2.0.9 unchanged vendor",
+  "configuration_id": "idoc_0001",
+  "accepted_calibration_id": "meas_73b415",
+  "dataset_id": "cd.tutorial01.measurement_1.curves",
+  "dataset_rows": 4,
+  "canonical_sha256": "b28616fc9c7feba75a4707ec3042acfe6dcebb5af97913c356f7acb493b9470f",
+  "first_Preview_failure": "Preview unavailable: key \"filters\" not known in dictionary Select Render to retry.",
+  "images": [
+    {
+      "path": "figures/actual-verification-packet003.png",
+      "sha256": "66a103e748404b01f52e400f724068bbe1814c8662d5afd9ce3b3e4d49ced91a",
+      "bytes": 110230,
+      "original_capture_name": "032_actual_verification.png",
+      "original_capture_packet": "T01 GUI003",
+      "edited": false,
+      "scope": "Actual independent verification draft before calibration acceptance; a residual readout is not physical accuracy or uncertainty acceptance."
+    },
+    {
+      "path": "figures/actual-publication-info-packet003.png",
+      "sha256": "909d0811e8d106870d386855833872cdca5b351d2b30fb7cacd1f0662759b04e",
+      "bytes": 108247,
+      "original_capture_name": "059_published_dataset_actual_info.png",
+      "original_capture_packet": "T01 GUI003",
+      "edited": false,
+      "scope": "Published table.generic Dataset metadata: four rows, producer2.0.9, schema and canonical identity. This view does not itself expose all row values or immutable IDs."
+    },
+    {
+      "path": "figures/actual-preview-failure-packet003.png",
+      "sha256": "53de28a180c0b745a547866701216c9537701a9f004538af6c1c725665e9e58a",
+      "bytes": 50603,
+      "original_capture_name": "061_actual_published_preview_ready.png",
+      "original_capture_packet": "T01 GUI003",
+      "edited": false,
+      "scope": "First Preview failure: missing filters key. Despite the original filename containing ready, no scientific plot is rendered; the operator stopped this affected path."
+    }
+  ],
+  "later_packet004": {
+    "candidate": {
+      "version": "0.9.8.10-dev-111",
+      "candidate_commit": "06ebcb958357322d5d6ccde15800e803f485de0a",
+      "classification": "FROZEN_COMMITTED_MAIN_CANDIDATE_NOT_INSTALLED",
+      "installed_or_activated_acceptance": false
+    },
+    "source_result_sha256": "5354b88c4980a8516fcc01cbc4bb8c8d9905f5d625036902e9ef4a5c2b130c7b",
+    "current_all_rows_UUID_display_readback_observed": true,
+    "preUndo_UUID_preservation_verified": false,
+    "independent_numerical_accuracy_or_tolerance_accepted": false,
+    "current_visible_native_line_capture": false,
+    "guard_finding": {
+      "source_sha256": "d4588c5163afaf96c7e2763418a5b66c6368d7cb8b754cad50bb3ce1ffece97f",
+      "status": "NEW_PREVIEW_SOURCE_GUARD_STALE_OBSERVED_AFTER_NORMAL_VISIBILITY; AFFECTED_PATH_STOPPED",
+      "reported_at": "2026-10-22T22:35:21.444980+00:00",
+      "cause_from_frames": "NOT_ESTABLISHED",
+      "later_MAIN_source_fix": "MAIN647 reports keyprojectionfixfe393306 independentlysource-cleared; runtimeNOT_TESTED",
+      "affected_path_stopped": true
+    },
+    "scope": "Later normal copied-Session Open and current table readback, partial native/Quality/Source/visibility; Previous render after restore, further affected work stopped. Not installed, no new publication; these three images remain historical003 only."
+  },
+  "full_tutorial_HTML_Preview_parity_performance_or_final_quality_accepted": false,
+  "vendor_modified": false,
+  "final_completed_tutorial_ZIPs": 0,
+  "later_packet005": {
+    "candidate": {
+      "candidate": "d3e578c1e7b672a76e336f590a160180b1bb109d",
+      "version": "0.9.8.10-dev-111",
+      "classification": "FROZEN_COMMITTED_MAIN_CANDIDATE_NOT_INSTALLED",
+      "installed": false
+    },
+    "source_result_sha256": "57e6035e1b3f9df951e9775a66acb964fb556e209e608b9996f3eaed32d77eeb",
+    "initial_auto_attachment_resolved": false,
+    "current_explicit_Render_Hide_Show_Fit_Zoom_observed": true,
+    "scope": "No pan/coldrestart/comparativeperformance/fulltutorial/finalquality. Three manualimages remain historical003 only; no new producer generation/publication."
+  }
+}

@@ -1,0 +1,122 @@
+{
+  "record_type": "MAIN_accepted_Preview007_supplementary_observations",
+  "content_id": "curve_digitizer.tutorial.01.en",
+  "scope": "Later relocated saved-Hidden Session in a fresh application root. Supplementary observations only; existing T01 step-outcomes retain their003/004/005 scope.",
+  "source_records": {
+    "MAIN_acceptance_sha256": "5a4f0ef8be6de0047b0c1a6d6fa2438b0c01f28e92208bf1d3dcc1e7e98af45b",
+    "operator_result075_sha256": "fce3cd3049d325372bf33219e897aed6f2129b37ff2b10c543cddf8e4da5723e",
+    "operator_source_commit": "8b5bfe5cc84494e0e26c6a1c62578d78db71bebd",
+    "full_source_result_MD_sha256": "6d02c4193384a8a02949406f462e2de1870cb5aa642e1586a4bbfea8ea3b7231",
+    "independent_existing_seven_frame_review_sha256": "8b98d3df2866bc7f476e2a915925b94d96dee145c6abae6fde204e66ed3fc59c"
+  },
+  "build": {
+    "framework": "0.9.8.10-dev-111",
+    "frozen_candidate": "98ab504e03d991100630d38de9172eb362f978c9",
+    "integration_snapshot": "08",
+    "installed": false,
+    "vendor_module": "2.0.9 unchanged AS-IS"
+  },
+  "publication": {
+    "id": "cd.tutorial01.measurement_1.curves",
+    "retained_labels": {
+      "unique_source_points": 4,
+      "canonical_rows": 4,
+      "display_points": 4
+    },
+    "retained_label_scope": "Visible retained-data labels, not an independent payload recount or four native points drawn while hidden."
+  },
+  "attributed_operator_action_counts": {
+    "new_root_launch": 1,
+    "normal_Session_Open": 1,
+    "Render": 0,
+    "Hide": 0,
+    "Show": 1,
+    "Fit": 1,
+    "Zoom_in": 1,
+    "normal_Save": 1,
+    "Generate_producer_publication_history_replay": 0,
+    "normal_ROOT_close": 1
+  },
+  "initial_state": {
+    "saved_visibility": "Unchecked/Hidden after normal Open of relocated independently saved copy from closed006",
+    "native_presentation": "007 empty WITH AXES, distinct from006 grey pane; attributed to full operator/MAIN frame011 review, not shown by the four safe image subset alone.",
+    "source_presentation": "Original raster crosses retained; connected overlay/filled markers absent in012.",
+    "status_text": "Prepared retained Preview — source-verified",
+    "Current_semantics": "MAIN accepted settled automatic current/source-verified preparation without explicit Render/Hide; action history is operator-recorded, not inferred from buttons in screenshots.",
+    "transient_Previous_or_Preparing": "Not captured; no forced refresh/rescue. This does not prove no transient event ever occurred."
+  },
+  "CORE_preparation": {
+    "owner": "SESSION_INSPECTION_API_v1.datasetPayload",
+    "observed_source_sha256": "ba9871e4cfe0b39827bdd6f89437076777d2f25e1c389d005d78a531689c5039",
+    "observation_time_UTC": "2026-10-23T01:36:31Z",
+    "before_Show": true,
+    "context_after_Show_Fit_Zoom": "Same preparation time retained; no per-toggle fresh hash or continuous verification.",
+    "attribution": "Full operator result/MAIN accepted015 owner and016 digest observations. Four copied safe images are not a full CORE readback.",
+    "provider_and_physics": "Unchanged read-only provider Quality is separate; physical accuracy not_assessed and uncertainty not_declared."
+  },
+  "Show_Fit_Zoom": {
+    "Show": "One at01:38:01UTC, bounded1.2s idle, source overlay restored and native geometry visible019 BEFORE Fit/Zoom.",
+    "Fit": "One at01:38:45UTC with separate1.2s idle; already-fitted full view. No required tick change or independently inferred exact bounds.",
+    "Zoom": "One at01:39:02UTC with separate1.2s idle; viewport/clipping changes023. Clipping is not row deletion; crossing is not a fifth point.",
+    "timing": "Input/idle/capture includes operator/tool overhead; not measured first-frame latency, p95 or comparative performance."
+  },
+  "persistence_and_close": {
+    "normal_Save": "One confirmation028 for exact007 working Session and metadata/manifest.ini.",
+    "normal_ROOT_close_UTC": "2026-10-23T01:41:06.651015Z",
+    "recorded_exit_codes": 0,
+    "scope": "Operator/MAIN records normal root close with no after-close input/capture. Save image alone does not prove close/cleanup; universal descendant drain not established."
+  },
+  "existing_guard_scope": {
+    "selected_files": 62,
+    "unchanged_bytes_and_modes": 61,
+    "only_expected_normal_Save_change": "Working007 metadata/manifest.ini,57344bytes/mode0600; SHA c2120a8cb5d0e867ad6189a8f7939e2c0d381552b3a5e40572aea1178bcfe024",
+    "closed006_ancestor": "Preserved separately; original003/closed006/new007 nine raw/canonical image/CSV byte guards unchanged, no parse/math rerun.",
+    "whole_Session_immutability_or_math_revalidation": false
+  },
+  "images": [
+    {
+      "path": "figures/actual-gui-007/012_initial_hidden_source.png",
+      "sha256": "7b0a87e85fd9a09e624dae093ef1d77e2bc1d6371e39a22c08ca7c1a9a2c20a5",
+      "bytes": 73447,
+      "source_capture_name": "012_initial_hidden_source.png",
+      "MAIN_adopted_safe_copy": true,
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-007/019_Show_native_BEFORE_Fit_Zoom.png",
+      "sha256": "9125bfc91563c95063911fe5ad4df84718a28b6bd7137e7b26a5c8162a128018",
+      "bytes": 83900,
+      "source_capture_name": "019_Show_native_BEFORE_Fit_Zoom.png",
+      "MAIN_adopted_safe_copy": true,
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-007/023_Zoom_settled_native.png",
+      "sha256": "cb5372991451ab3750aaac581afb90eb16fe02e991b5d09f2db394cb2f5f2358",
+      "bytes": 84926,
+      "source_capture_name": "023_Zoom_settled_native.png",
+      "MAIN_adopted_safe_copy": true,
+      "edited": false
+    },
+    {
+      "path": "figures/actual-gui-007/028_normal_Save_confirmation.png",
+      "sha256": "ab380f385349f8c39a505f2540ed272fdef939f09396633649346df7241603d6",
+      "bytes": 54927,
+      "source_capture_name": "028_normal_Save_confirmation.png",
+      "MAIN_adopted_safe_copy": true,
+      "edited": false
+    }
+  ],
+  "not_accepted": [
+    "samepathcoldcache reuse/old006preparationfreshness",
+    "Physicalaccuracy/uncertainty/fullT01/fullPlots/nativeHTML/fullkeyboardmouseparity/comparativeperformance",
+    "Universaldescendantdrain orinstalled/activatedbehavior",
+    "Finalscientifictutorialquality/completedtutorialZIP"
+  ],
+  "same_path_cold_cache_reuse": false,
+  "old006_cache_freshness_or_continuous_monitoring": false,
+  "earlier003_004_005_006_failures_preserved": true,
+  "full_T01_HTML_Plots_science_parity_performance_or_final_quality_accepted": false,
+  "completed_scientific_tutorials": 0,
+  "GUIDE_actions": "Read existing accepted records and viewed/copied only4MAINsafePNGs; no newGUI/producer/Audio/history/privateextract or runtime campaign."
+}

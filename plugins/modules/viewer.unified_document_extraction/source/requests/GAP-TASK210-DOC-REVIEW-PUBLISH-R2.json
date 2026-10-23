@@ -1,0 +1,28 @@
+{
+  "ownership": "Project-associated request under VIEWER_DEVELOPMENT_API_v1; CORE owner adjudicates separately.",
+  "project_snapshot": {
+    "design.gxtxt-viewer": "5ce2c7d8dc97a614fb7a3388b3404bf5ac55ac4ddbf8a0c6817cd5c8a79ead39",
+    "handlers.cpp": "d9fa5f7aa40538ceb856e4ad88e0cadbde7095c3f0b3aeba1649b83bd99d84ff",
+    "project.json": "e87c44bc29084b21097f63edee8927b5940a3bba7600dda05a7ab47a523c4cbc"
+  },
+  "request": {
+    "desired_input_output": "CORE-owned editable text and cell matrix review, header/expected-column/method settings, exact numeric/string inference without invented units, atomic Text/Image/Table Dataset publication with lineage and stable same-owner output IDs. Return managed IDs/receipts, never author paths, canonical arrays or private Tcl.",
+    "minimal_acceptance_test": "Edit/cancel/commit a cell and text preview, preserve int64/float64/string/blank/Unicode-minus behavior and source lineage; reject stale source/session; verify rollback on publish failure and exact save/reopen.",
+    "missing_operation_or_contract": "Typed editable extracted-table/text review and managed publication with original source guards are unavailable to this SDK.",
+    "public_api_inspected": [
+      "VIEWER_GUI_HOST_API_v1",
+      "VIEWER_DEVELOPMENT_API_v1",
+      "OCR_LAYOUT_API_v1",
+      "TABLE_EXTRACTOR_API_v1",
+      "SESSION_WORKSPACE_API_v1",
+      "FILE_PUBLICATION_API_v1"
+    ],
+    "reproduction": "The released table component and document kind table are read-only; SDK has no extraction matrix edit or typed publication form. File Publication publish_bundle does not provide this source-bound review/schema transaction. Existing modules retain independent original implementations.",
+    "request_id": "GAP-TASK210-DOC-REVIEW-PUBLISH-R2",
+    "schema": "gxtxt.core_api_gap.v1",
+    "status": "REQUESTED",
+    "task": "GX-TXT TASK210 Section16 formal dev111 unified document extraction",
+    "viewer_project": "viewer.unified_document_extraction",
+    "why_existing_api_fails": "The released table component and document kind table are read-only; SDK has no extraction matrix edit or typed publication form. File Publication publish_bundle does not provide this source-bound review/schema transaction. Existing modules retain independent original implementations."
+  }
+}

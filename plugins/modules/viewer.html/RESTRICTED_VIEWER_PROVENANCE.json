@@ -1,9 +1,9 @@
 {
   "author_tcl": false,
   "binary_sha256": "6002c87a14bd50874470daade724ccdebc82c5851481526860833110a3702784",
-  "design_sha256": "3abcc2e8e7a8ed5595f70ee5544cc7919c45a9be00919381254e1271b09cdf86",
+  "design_sha256": "3b6a03574c5c4f67fe10bb6922c2b9278a28374bc4d92d97a79c097b1e312a21",
   "manual_assets": {},
-  "manual_sha256": "0e0501eb0082026b3e111f233699425a24a608fed1a5685d20e75121307bbe9f",
+  "manual_sha256": "fa23467b15ab0f75e65ad0061997743f62d072ad40864e553664cc98b584d592",
   "module_id": "viewer.html",
   "policy_sha256": "b0b8115c624297c86e5eb390d46e5380f2c1494b225c5b8d24a1202dd2f49ca2",
   "promotion": "official Plugin Manager only",
@@ -11,5 +11,5 @@
   "schema": "gxtxt.restricted_viewer_candidate.v1",
   "sdk_sha256": "759849a88f9d615625f0273df021c2bb3f8e6f2c029028a1597a2bd96ac2b1f0",
   "source_sha256": "832ce39c07afe1aea46d2cdcf3dd5e5c02c4620620164f22a81e846c00002f97",
-  "version": "1.2.2"
+  "version": "1.2.3"
 }

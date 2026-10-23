@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original GUIDE explanatory reference. -->
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Curve Digitizer 2.0.9 — public scientific reference</title><link rel="stylesheet" href="concepts.css"></head>
+<body><main><p class="label">Curve Digitizer 2.0.9 · public reference · review draft</p><h1>Read a published result through its public owners</h1>
+<p class="lead">Scientific consumers use the actual Dataset identity, semantic roles and retained public provenance. They do not need the viewer's mutable GUI or a private configuration-file parser to interpret a published result.</p>
+<nav aria-label="On this page"><ul><li><a href="#contracts">Contract map</a></li><li><a href="#read">Read-only host example</a></li><li><a href="#identity">Identity and grouping</a></li><li><a href="#limits">Scientific limits</a></li></ul></nav>
+<section id="contracts"><h2>Contract map</h2><p>These are existing public contracts declared by unchanged vendor 2.0.9, not new APIs introduced by this guide. The host Tcl entrypoints below are not page JavaScript and must not be advertised as automatically available in every Script Bridge or restricted SDK context.</p>
+<table><caption>Existing contracts and representative documented operations</caption><thead><tr><th scope="col">Contract</th><th scope="col">Purpose / operations</th><th scope="col">Interpretation</th></tr></thead><tbody>
+<tr><td><code>CURVE_DIGITIZER_CALIBRATION_API_v1</code></td><td><code>::GX::CurveDigitizerCalibration::read</code>, <code>replicates</code>, <code>transformPoints</code>.</td><td>Resolve the actual published source, mapping/realizations, units and transformation. Choose the intended realization and supported direction/domain.</td></tr>
+<tr><td><code>CURVE_DIGITIZER_DATASET_SCHEMA_API_v1</code></td><td><code>::GX::CurveDigitizerDataset::read</code>, <code>rasterPoints</code>.</td><td>Resolve semantic coordinate/grouping/order roles and original raster data; do not assume a stored column position or label.</td></tr>
+<tr><td><code>CURVE_DIGITIZER_QUALITY_API_v2</code></td><td><code>::GX::CurveDigitizerQuality::read</code>, <code>hasReport</code>, <code>reportJson</code>.</td><td>Read the published schema-2 diagnostic snapshot and coverage. Provider digest/status fields alone do not establish current source-byte verification.</td></tr>
+<tr><td><code>CURVE_DIGITIZER_IMAGE_PROCESSING_API_v1</code></td><td>Existing <code>::GX::CurveDigitizerImage</code> public processed-image provenance reader.</td><td>Resolve the canonical parent and ordered processing/geometry lineage. Do not infer a derivative from a similar filename.</td></tr>
+<tr><td><code>CURVE_DIGITIZER_STROKE_WIDTH_API_v1</code></td><td><code>::GX::CurveDigitizerStrokeWidth::configurationRead</code>, <code>curveRead</code>, <code>hasPublished</code>, <code>publishedRead</code>.</td><td>Active-Session configuration reads and published diagnostic snapshots have different scope. Width is descriptive px geometry, not implicit uncertainty.</td></tr>
+<tr><td><code>CURVE_DIGITIZER_UNCERTAINTY_API_v1</code></td><td><code>::GX::CurveDigitizerUncertainty::read</code>, <code>hasReport</code>, <code>reportJson</code>, <code>factorsJson</code>, <code>coreMeaning</code>; supported covariance publication is separate.</td><td>Read the declaration, identities and CORE-qualified scientific interpretation. Shared factors cannot silently become independent weights.</td></tr>
+<tr><td><code>CURVE_DIGITIZER_COMPANION_API_v1</code></td><td>Existing public configuration/context and guarded companion operations.</td><td>Mutation requires its documented source/Session/optimistic-concurrency rules. It is not permission to write private documents or fabricate a producer result.</td></tr>
+<tr><td><code>CURVE_DIGITIZER_VIEWER_API_v1</code></td><td>The registered Viewer backend and normal opening/context owner.</td><td>Retain current Session/runtime ownership; a successful API activation is not a full GUI/scientific workflow test.</td></tr>
+</tbody></table>
+<p>Use the main framework Help documentation list to read the installed normative API documents. Vendor references include CALIBRATION_API_v1, CURVE_DATASET_SCHEMA_API_v1, IMAGE_PROCESSING_API_v1, QUALITY_API_v2, UNCERTAINTY_API_v1 and STROKE_WIDTH_API_v1. Their exact arguments/versioned results remain their owner's contract. This guide does not replace them with a private schema.</p>
+</section>
+<section id="read"><h2>A documented read-only Tcl host pattern</h2>
+<p>In an already authorized GX-TXT host context, substitute the exact actual published Dataset ID before using the documented readers:</p>
+<pre><code># This is a source example, not an executed tutorial result.
+set datasetId {your.actual.published.dataset}
+::GX::modulePublicApiActivate viewer.curve_digitizer CURVE_DIGITIZER_CALIBRATION_API_v1
+::GX::modulePublicApiActivate viewer.curve_digitizer CURVE_DIGITIZER_DATASET_SCHEMA_API_v1
+::GX::modulePublicApiActivate viewer.curve_digitizer CURVE_DIGITIZER_QUALITY_API_v2
+set calibration [::GX::CurveDigitizerCalibration::read $datasetId]
+set schema [::GX::CurveDigitizerDataset::read $datasetId]
+set pixelRows [::GX::CurveDigitizerDataset::rasterPoints $datasetId]
+set quality [::GX::CurveDigitizerQuality::read $datasetId]</code></pre>
+<p>The one-argument <code>rasterPoints</code> example reads at most the first 10000 original Dataset rows. Full traversal uses explicit <code>start</code>/<code>count</code> (count 1…100000) and advances by returned <code>consumed_rows</code>, not the length of filtered <code>points</code>. Curve/calibration filters are applied after each original-row batch read. Preserve original row order and the reader’s actual end condition.</p>
+<p>Missing reports, incompatible schemas or unavailable owners must retain their actual error. Do not replace a refusal with an empty success or a manually constructed scientific record. Python/Octave callers must use only operations actually registered in their admitted Script Bridge context; this page grants no process, filesystem or scientific publication authority.</p>
+</section>
+<section id="identity"><h2>Preserve scientific rows and source roles</h2>
+<ul><li>Keep the canonical Dataset identity and exact row order with the actual variable IDs, declared types, units and semantic roles.</li><li>Group scientific-space rows by both curve and calibration when multiple realizations exist.</li><li>Original raster point identity can repeat across calibrated realizations. A display overlay can deduplicate the same original curve/point without deleting scientific rows.</li><li>A readable curve/configuration label, a measurement ID and a transform fingerprint have different meanings.</li><li>Processed-image lineage requires the existing public identity/geometry owner; timestamps or filenames are insufficient.</li></ul>
+<p>The separate CORE Preview source receipt is a time-bound host observation, not another vendor Quality field. Retain its owner/method/status/reason and observation epoch. A cached representation must not become a claim of continuous verification.</p>
+</section>
+<section id="limits"><h2>Keep uncertainty and consumer qualification explicit</h2>
+<p>Quality and stroke-width diagnostics do not establish metrological accuracy. An enabled uncertainty declaration requires evidence and source/point/calibration binding. CORE Numeric and Statistical Semantics remain authoritative; the unchanged vendor package must not acquire a private epsilon or fallback solver.</p>
+<p>Marginal X/Y uncertainties, within-point covariance and shared cross-point calibration terms are different information. Qualified response-only GLS requires the supported managed full response covariance and excludes predictor uncertainty. Other fit routes retain their actual eligibility rules. A zero contribution can be deliberately valid while making a specific fitting method inapplicable.</p>
+<p>Documented uncertainty bounds include 4096 output rows, 1 MiB compressed factors and 512 original rows for full covariance materialization. Keep unsupported combined multi-calibration or physical scale-bar measurement models explicit. No example here establishes an installed Fitter run.</p>
+<p><a href="uncertainty-concepts.html">Uncertainty explanation</a> · <a href="quality-concepts.html">Quality/source evidence</a> · <a href="publication-concepts.html">Publication and recovery</a></p>
+</section>
+<footer><p><a href="index.html">Return to the complete manual</a> · GX210-GUIDE · GPL-3.0-or-later. Review draft based on unchanged 2.0.9/deposited dev110 public documentation; actual tutorial GUI/scientific verification remains pending.</p></footer>
+</main></body></html>

@@ -59,27 +59,58 @@ bool standard_utf8(const std::string &s){
     for(size_t i=0;i<s.size();){unsigned char a=static_cast<unsigned char>(s[i++]);if(a<0x80)continue;unsigned n;if(a>=0xc2&&a<=0xdf)n=1;else if(a>=0xe0&&a<=0xef)n=2;else if(a>=0xf0&&a<=0xf4)n=3;else return false;if(n>s.size()-i)return false;unsigned char b=static_cast<unsigned char>(s[i]);if((a==0xe0&&b<0xa0)||(a==0xed&&b>=0xa0)||(a==0xf0&&b<0x90)||(a==0xf4&&b>=0x90))return false;for(unsigned k=0;k<n;++k){unsigned char c=static_cast<unsigned char>(s[i++]);if(c<0x80||c>0xbf)return false;}}
     return true;
 }
+constexpr char kDiagnosticFallback[]="Preview diagnostic is unavailable";
+// Private diagnostic codec capacity, not an ABI Text or scientific input cap.
+// Tcl8.6 DString conversion and allocation both use signed geometric growth.
+// Leave sixteenfold headroom, including character/terminator slack, rather than
+// treating a final INT_MAX-1 byte count as a proof of intermediate safety.
+constexpr size_t kCommandCodecCapacity=(static_cast<size_t>(std::numeric_limits<int>::max())-1024)/16;
+static_assert(TCL_UTF_MAX<=6 && TCL_DSTRING_STATIC_SIZE<=1024,"Review diagnostic growth slack for this Tcl profile");
+static_assert(kCommandCodecCapacity>4096 && 8*(kCommandCodecCapacity+65)<static_cast<size_t>(std::numeric_limits<int>::max()),"Diagnostic codec growth headroom");
+size_t diagnostic_codec_size(Tcl_Encoding encoding,const char *source,size_t bytes,bool to_internal){
+    if(bytes>kCommandCodecCapacity)throw Error(kDiagnosticFallback);
+    Tcl_EncodingState state=nullptr;size_t consumed=0,total=0;bool first=true;
+    for(;;){
+        char scratch[4096];int read=0,written=0,characters=0;
+        const int remaining=static_cast<int>(bytes-consumed);
+        const int flags=TCL_ENCODING_END|TCL_ENCODING_STOPONERROR|TCL_ENCODING_NO_TERMINATE|(first?TCL_ENCODING_START:0);
+        const int code=to_internal
+            ?Tcl_ExternalToUtf(nullptr,encoding,source+consumed,remaining,flags,&state,scratch,sizeof scratch,&read,&written,&characters)
+            :Tcl_UtfToExternal(nullptr,encoding,source+consumed,remaining,flags,&state,scratch,sizeof scratch,&read,&written,&characters);
+        first=false;
+        if(read<0||read>remaining||written<0||written>static_cast<int>(sizeof scratch)||static_cast<size_t>(written)>kCommandCodecCapacity-total)throw Error(kDiagnosticFallback);
+        consumed+=static_cast<size_t>(read);total+=static_cast<size_t>(written);
+        if(code==TCL_OK){if(consumed!=bytes)throw Error(kDiagnosticFallback);return total;}
+        if(code!=TCL_CONVERT_NOSPACE||(!read&&!written))throw Error(kDiagnosticFallback);
+    }
+}
 // Tcl's internal modified UTF-8 is not the provider's standard UTF-8.
 // Convert losslessly through the actual Tcl encoding owner. Reject a value
 // that cannot round-trip (for example an isolated surrogate), never replace it.
-std::string utf8_text(Tcl_Interp *ip,Tcl_Obj *value){
+// Only private diagnostic callers opt into the extra capacity guard; existing
+// scientific text callers retain their existing budgets and conversion owner.
+std::string utf8_text(Tcl_Interp *ip,Tcl_Obj *value,bool diagnostic=false){
     Tcl_Encoding encoding=Tcl_GetEncoding(ip,"utf-8");if(!encoding)throw Error("UTF-8 encoding owner unavailable",Status::unsupported);
     Tcl_DString external,internal;Tcl_DStringInit(&external);Tcl_DStringInit(&internal);
     struct Cleanup{Tcl_Encoding e;Tcl_DString *a,*b;~Cleanup(){Tcl_DStringFree(a);Tcl_DStringFree(b);Tcl_FreeEncoding(e);}} cleanup{encoding,&external,&internal};
-    int n;const char *source=Tcl_GetStringFromObj(value,&n);Tcl_UtfToExternalDString(encoding,source,n,&external);
+    int n;const char *source=Tcl_GetStringFromObj(value,&n);
+    size_t expected=0;if(diagnostic){if(n<0)throw Error(kDiagnosticFallback);expected=diagnostic_codec_size(encoding,source,static_cast<size_t>(n),false);}
+    Tcl_UtfToExternalDString(encoding,source,n,&external);
+    if(diagnostic&&(Tcl_DStringLength(&external)<0||static_cast<size_t>(Tcl_DStringLength(&external))!=expected))throw Error(kDiagnosticFallback);
     std::string encoded(Tcl_DStringValue(&external),static_cast<size_t>(Tcl_DStringLength(&external)));
     if(!standard_utf8(encoded))throw Error("Owner text is not representable as standard UTF-8",Status::unsupported);
+    if(diagnostic)expected=diagnostic_codec_size(encoding,encoded.data(),encoded.size(),true);
     Tcl_ExternalToUtfDString(encoding,Tcl_DStringValue(&external),Tcl_DStringLength(&external),&internal);
+    if(diagnostic&&(Tcl_DStringLength(&internal)<0||static_cast<size_t>(Tcl_DStringLength(&internal))!=expected))throw Error(kDiagnosticFallback);
     Obj roundtrip(Tcl_NewStringObj(Tcl_DStringValue(&internal),Tcl_DStringLength(&internal)));
     int a,b;const Tcl_UniChar *x=Tcl_GetUnicodeFromObj(value,&a),*y=Tcl_GetUnicodeFromObj(roundtrip.p,&b);
     if(a!=b||(a&&std::memcmp(x,y,static_cast<size_t>(a)*sizeof(*x))))throw Error("Owner text cannot round-trip through standard UTF-8",Status::unsupported);
     return encoded;
 }
-constexpr char kDiagnosticFallback[]="Preview diagnostic is unavailable";
 std::string tcl_error_text(Tcl_Interp *ip){
     Obj original(Tcl_GetObjResult(ip));
     struct Restore{Tcl_Interp *ip;Tcl_InterpState state;~Restore(){Tcl_RestoreInterpState(ip,state);}} restore{ip,Tcl_SaveInterpState(ip,TCL_ERROR)};
-    try{return utf8_text(ip,original.p);}catch(...){return kDiagnosticFallback;}
+    try{return utf8_text(ip,original.p,true);}catch(...){return kDiagnosticFallback;}
 }
 std::string bounded_diagnostic(const std::string &message){
     if(!standard_utf8(message))return kDiagnosticFallback;
@@ -88,6 +119,35 @@ std::string bounded_diagnostic(const std::string &message){
     // position identify a partial character; exclude its leading byte too.
     if(end<message.size())while(end&&(static_cast<unsigned char>(message[end])&0xc0)==0x80)--end;
     return message.substr(0,end);
+}
+// The inverse boundary is explicit: word(std::string) remains for already-
+// internal Tcl serialization. Preserve full external error text when both input
+// and every conversion fit the private source-proven geometric capacity bound.
+size_t external_utf8_internal_size(Tcl_Encoding encoding,const std::string &text){
+    return diagnostic_codec_size(encoding,text.data(),text.size(),true);
+}
+Obj external_utf8_word(Tcl_Interp *ip,const std::string &text) noexcept {
+    try{
+        if(text.size()>kCommandCodecCapacity||!standard_utf8(text))throw Error(kDiagnosticFallback);
+        Tcl_Encoding encoding=Tcl_GetEncoding(nullptr,"utf-8");if(!encoding)throw Error(kDiagnosticFallback);
+        Tcl_DString internal;Tcl_DStringInit(&internal);
+        struct Cleanup{Tcl_Encoding encoding;Tcl_DString *value;~Cleanup(){Tcl_DStringFree(value);Tcl_FreeEncoding(encoding);}} cleanup{encoding,&internal};
+        // Count through the same owner into bounded scratch first. This avoids
+        // exceeding the safe geometric capacity when external UTF-8 expands.
+        const size_t expected=external_utf8_internal_size(encoding,text);
+        Tcl_ExternalToUtfDString(encoding,text.data(),static_cast<int>(text.size()),&internal);
+        const int length=Tcl_DStringLength(&internal);
+        if(length<0||static_cast<size_t>(length)!=expected)throw Error(kDiagnosticFallback);
+        Obj result(Tcl_NewStringObj(Tcl_DStringValue(&internal),length));
+        if(utf8_text(ip,result.p,true)!=text)throw Error(kDiagnosticFallback);
+        return result;
+    }catch(...){return word(kDiagnosticFallback);}
+}
+void set_external_error_result(Tcl_Interp *ip,const std::string &text) noexcept {
+    Obj result=external_utf8_word(ip,text);Tcl_SetObjResult(ip,result.p);
+}
+void set_external_error_result(Tcl_Interp *ip,const char *text) noexcept {
+    try{const char *message=text?text:kDiagnosticFallback;size_t bytes=0;while(bytes<=kCommandCodecCapacity&&message[bytes])++bytes;if(bytes>kCommandCodecCapacity)throw Error(kDiagnosticFallback);set_external_error_result(ip,std::string(message,bytes));}catch(...){Tcl_SetObjResult(ip,Tcl_NewStringObj(kDiagnosticFallback,-1));}
 }
 abi::Text view(const std::string &s){return {s.empty()?nullptr:s.data(),s.size()};}
 bool eq(abi::Text a,abi::Text b){return a.bytes==b.bytes&&(!a.bytes||(a.data&&b.data&&std::memcmp(a.data,b.data,static_cast<size_t>(a.bytes))==0));}
@@ -459,7 +519,7 @@ int command(ClientData client,Tcl_Interp *ip,int objc,Tcl_Obj *const objv[]){
         struct Busy{Invocation&i;explicit Busy(Invocation&v):i(v){i.busy=true;}~Busy(){i.busy=false;}} busy(i);
         if(op=="close"&&objc==3){i.close();if(i.cleanup_failed)throw Error("Common CORE cleanup failed; managed worker retirement required",Status::internal);if(i.unload_failed)throw Error("Native unload failed; managed worker retirement required",Status::internal);retire(i,i.admitted?"normal_close":"admission_failed");invocations.erase(&i);state.entries.erase(token_key);Tcl_ResetResult(ip);return TCL_OK;}
         if(op=="admit"&&objc==4){admit(state,i,objv[3]);Obj value=receipt(i);Tcl_SetObjResult(ip,value.p);return TCL_OK;}
-        if(op=="inspect"&&objc==3){Obj value=receipt(i);number(value.p,"input_rows",i.input_rows);number(value.p,"admitted",i.admitted);number(value.p,"sealed",i.sealed);number(value.p,"failed",i.failed);number(value.p,"cancelled",i.cancelled);number(value.p,"cleanup_failed",i.cleanup_failed);number(value.p,"unload_failed",i.unload_failed);put(value.p,"cleanup_message",i.cleanup_message);Tcl_SetObjResult(ip,value.p);return TCL_OK;}
+        if(op=="inspect"&&objc==3){Obj value=receipt(i);number(value.p,"input_rows",i.input_rows);number(value.p,"admitted",i.admitted);number(value.p,"sealed",i.sealed);number(value.p,"failed",i.failed);number(value.p,"cancelled",i.cancelled);number(value.p,"cleanup_failed",i.cleanup_failed);number(value.p,"unload_failed",i.unload_failed);{Obj message=external_utf8_word(ip,i.cleanup_message);put(value.p,"cleanup_message",message.p);}Tcl_SetObjResult(ip,value.p);return TCL_OK;}
         if(!i.admitted||!i.provider||!i.provider_handle)throw Error("No admitted native provider",Status::unsupported);
         abi::Diagnostic d{};d.struct_bytes=sizeof d;
         if(op=="cancel"&&objc==3){Status status=i.provider->cancel(i.provider_handle,&d);if(status!=Status::cancelled&&status!=Status::ok)require_ok(status,i,d);i.cancelled=true;Tcl_ResetResult(ip);return TCL_OK;}
@@ -468,8 +528,8 @@ int command(ClientData client,Tcl_Interp *ip,int objc,Tcl_Obj *const objv[]){
         if(op=="seal"&&objc==3){i.input.reset();abi::Progress p{};p.struct_bytes=sizeof p;Status status=i.provider->seal(i.provider_handle,&p,&d);require_ok(status,i,d,true);i.require_result(i.result_token);Tcl_ResetResult(ip);return TCL_OK;}
         if(op=="result"&&objc==3){abi::ResultToken token=0;Status status=i.provider->result(i.provider_handle,&token,&d);require_ok(status,i,d,true);i.require_result(token);Obj out=dict(),r=receipt(i);put(out.p,"receipt",r.p);put(out.p,"mode",i.plan.mode==abi::PlanMode::grouped_curves?"grouped_curves":"bounded_array_plane");if(i.raw_result.p)put(out.p,"native_series",i.raw_result.p);if(i.overlay_result.p)put(out.p,"overlay",i.overlay_result.p);if(i.plane_result.p)put(out.p,"plane",i.plane_result.p);put(out.p,"publication_requires_owner_source_session_key_guard","1");Tcl_SetObjResult(ip,out.p);return TCL_OK;}
         throw Error("Unknown private provider operation/argument count");
-    }catch(const Error &e){if(owned)owned->failed=true;Tcl_SetObjResult(ip,Tcl_NewStringObj(e.message.data(),static_cast<int>(e.message.size())));Tcl_SetErrorCode(ip,"GXTXT","PREVIEW_PROVIDER",e.status==Status::unsupported?"UNSUPPORTED":"FAILED",nullptr);return TCL_ERROR;}
-    catch(const std::exception &e){if(owned)owned->failed=true;Tcl_SetObjResult(ip,Tcl_NewStringObj(e.what(),-1));return TCL_ERROR;}
+    }catch(const Error &e){if(owned)owned->failed=true;set_external_error_result(ip,e.message);Tcl_SetErrorCode(ip,"GXTXT","PREVIEW_PROVIDER",e.status==Status::unsupported?"UNSUPPORTED":"FAILED",nullptr);return TCL_ERROR;}
+    catch(const std::exception &e){if(owned)owned->failed=true;set_external_error_result(ip,e.what());return TCL_ERROR;}
     catch(...){if(owned)owned->failed=true;Tcl_SetObjResult(ip,Tcl_NewStringObj("Unknown private Preview bridge failure",-1));return TCL_ERROR;}
 }
 void dispose(ClientData data,Tcl_Interp *){
@@ -491,7 +551,7 @@ extern "C" int gx2d_preview_provider_v1_init(Tcl_Interp *ip){
         auto *state=new State(ip);Tcl_SetAssocData(ip,"gx2d.preview.provider.v1",dispose,state);
         if(!Tcl_CreateObjCommand(ip,"::gx::native2d::_preview_provider",command,state,nullptr)){Tcl_DeleteAssocData(ip,"gx2d.preview.provider.v1");return TCL_ERROR;}
         return TCL_OK;
-    }catch(const std::exception &e){Tcl_SetObjResult(ip,Tcl_NewStringObj(e.what(),-1));return TCL_ERROR;}
+    }catch(const std::exception &e){set_external_error_result(ip,e.what());return TCL_ERROR;}
     catch(...){Tcl_SetObjResult(ip,Tcl_NewStringObj("Preview bridge initialization failed",-1));return TCL_ERROR;}
 }
 extern "C" int gx2d_preview_provider_v1_enable_host_authority(Tcl_Interp *ip){

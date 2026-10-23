@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 650" role="img" aria-labelledby="title description">
+<title id="title">A combined publication preserves curve and calibration grouping</title>
+<desc id="description">Three source raster points on one illustrative curve are mapped by two accepted calibrations. The combined representation has six rows in two separate calibration groups. Repeating the coordinate mapping does not create independent physical observations.</desc>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original GX210-GUIDE artwork. -->
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#426589"/></marker>
+<style>text{font-family:system-ui,sans-serif;fill:#172d47}.title{font-size:27px;font-weight:700}.heading{font-size:21px;font-weight:700}.body{font-size:18px}.small{font-size:17px;fill:#496079}.mono{font-family:ui-monospace,monospace;font-size:18px}.line{fill:none;stroke:#426589;stroke-width:2.5;marker-end:url(#arrow)}</style></defs>
+<rect width="1000" height="650" rx="16" fill="#f3f7fc"/>
+<text x="34" y="45" class="title">The same raster points, two calibration realizations</text>
+<text x="34" y="75" class="small">Illustrative identities and row counts · no produced Dataset is shown</text>
+<rect x="34" y="113" width="932" height="102" rx="12" fill="#fff" stroke="#91a9c3" stroke-width="2"/>
+<text x="56" y="147" class="heading">One source raster · one curve C1 · original points P1, P2, P3</text>
+<text x="56" y="181" class="body">The source and point identities remain the same under both mappings.</text>
+<path d="M360 215V259H265V280" class="line"/>
+<path d="M640 215V259H735V280" class="line"/>
+<rect x="34" y="288" width="442" height="180" rx="12" fill="#e8f1fd" stroke="#6d93bf" stroke-width="2"/>
+<text x="56" y="324" class="heading">Accepted calibration A</text>
+<text x="56" y="355" class="body">Rows grouped by curve C1 + calibration A</text>
+<text x="56" y="389" class="mono">C1 · A · P1 → (xA1, yA1)</text>
+<text x="56" y="420" class="mono">C1 · A · P2 → (xA2, yA2)</text>
+<text x="56" y="451" class="mono">C1 · A · P3 → (xA3, yA3)</text>
+<rect x="524" y="288" width="442" height="180" rx="12" fill="#eef4e6" stroke="#93a86d" stroke-width="2"/>
+<text x="546" y="324" class="heading">Accepted calibration B</text>
+<text x="546" y="355" class="body">Rows grouped by curve C1 + calibration B</text>
+<text x="546" y="389" class="mono">C1 · B · P1 → (xB1, yB1)</text>
+<text x="546" y="420" class="mono">C1 · B · P2 → (xB2, yB2)</text>
+<text x="546" y="451" class="mono">C1 · B · P3 → (xB3, yB3)</text>
+<rect x="34" y="508" width="932" height="108" rx="12" fill="#fff0cc"/>
+<text x="56" y="543" class="heading">3 unique raster points × 2 accepted calibrations = 6 illustrative rows</text>
+<text x="56" y="576" class="body">Retain both grouping keys; these are alternative coordinate realizations.</text>
+<text x="56" y="602" class="small">No extra independent physical observations are created by the second mapping.</text>
+</svg>

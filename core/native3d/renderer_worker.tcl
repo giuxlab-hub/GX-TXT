@@ -34,6 +34,7 @@ while {[gets stdin line] >= 0} {
             gizmo_end {if {[llength $args] != 1} {error "gizmo_end expects accept"};set result [::GX3DEViewer::gizmo_end {*}$args]}
             export_png {if {[llength $args] ni {3 4}} {error "export_png expects path, width, height and optional graphics policy"};set result [::GX3DEViewer::export_png {*}$args]}
             timeline {if {[llength $args] != 3} {error "timeline expects action, value, PNG"};set result [::GX3DEViewer::timeline {*}$args]}
+            timeline_capture {if {[llength $args]!=3} {error {timeline_capture expects sample index, source label and PNG}};set result [::GX3DEViewer::timeline_capture {*}$args]}
             plane_begin {if {[llength $args] != 6} {error "plane_begin expects target, action, handle, slot, x, y"};set result [::GX3DEViewer::plane_begin {*}$args]}
             plane_update {if {[llength $args] != 3} {error "plane_update expects x, y, PNG"};set result [::GX3DEViewer::plane_update {*}$args]}
             plane_end {if {[llength $args] != 1} {error "plane_end expects accept"};set result [::GX3DEViewer::plane_end {*}$args]}

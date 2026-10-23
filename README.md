@@ -4,22 +4,32 @@ GX-TXT is a desktop scientific workbench for working with **experimental measure
 
 Within the same Session you can inspect and compare measurements, perform numerical, statistical and spectral analyses or curve fitting, run registered Python and GNU Octave scripts through the Script Bridge, and create scientific 2D/3D plots and interactive viewers. Derived results stay connected to their source Datasets, while independent modules extend the workflow through public CORE APIs.
 
-**Source version:** 0.9.8.10-dev-110  
+**Source version:** 0.9.8.10-dev-111 (deposited revision r3)  
 **License:** GNU GPL-3.0-or-later (see [LICENSE](LICENSE)). Third-party packages and assets retain their applicable licenses.
 
 **Project website:** [GX-TXT on GitHub Pages](https://giuxlab-hub.github.io/GX-TXT/) · [Italian version](https://giuxlab-hub.github.io/GX-TXT/it/).
 **Official developer website:** [Giux-Lab](https://giux-lab.it/).
 **Online documentation:** [GX-TXT handbook](https://gxtxt.giux-lab.it/).
 
-## Dev-110 intermediate development snapshot
+## Dev-110 development source snapshot
 
-This dev-110 source snapshot integrates a subset of TASK210 improvements. The deposited source explicitly marks it as **intermediate**: integrated GUI/Octave qualification and several planned capabilities remain incomplete. Do not infer a complete installed release or scientific acceptance from the source version or from GitHub publication.
+This dev-110 source snapshot integrates a subset of the ongoing development phase improvements. The deposited source explicitly marks it as **intermediate**: integrated GUI/Octave qualification and several planned capabilities remain incomplete. Do not infer a complete installed release or scientific acceptance from the source version or from GitHub publication.
 
-Notable source additions include native Preview grouping and coordinate controls, the unchanged integrated Curve Digitizer 2.0.9, Metrohm IC Net CHW and AIA/ANDI chromatography readers, Session creation/promotion safeguards, bounded Print table ranges and additional ScriptJob/Scientific Library and documentation infrastructure. GUI parity, embedded native HTML media/teardown and other TASK210 milestones still require platform verification.
+Notable source additions include native Preview grouping and coordinate controls, the unchanged integrated Curve Digitizer 2.0.9, Metrohm IC Net CHW and AIA/ANDI chromatography readers, Session creation/promotion safeguards, bounded Print table ranges and additional ScriptJob/Scientific Library and documentation infrastructure. GUI parity, embedded native HTML media/teardown and other the ongoing development phase milestones still require platform verification.
 
 The official dev-110 archive contains no new finalized plugin_packages/official_dev110 directory. Previously published official dev-109 ZIPs are retained; do not relabel them or claim a new dev-110 module distribution.
 
 Dev-108-only Viewer compilation hotfixes remain incompatible with dev-109 and dev-110 by policy. They are separate from all later core branches.
+
+## Development revision dev-111 (r3)
+
+The public source originates exclusively from the deposited **dev-111 revision r3** archive; the earlier initial and r2 deposits remain preserved privately. This is a versioned development source snapshot. Only the explicitly verified component-level features below should be treated as implemented. Complete integrated GUI, compiler, Octave and scientific platform acceptance was not re-executed during publication.
+
+Updates include a corrected numeric-template default capability request for public Viewer authoring, expansion of the reusable icon catalog to 100 shared assets, and a source-preserving experimental paired EAGLE snapshot inspector. Chromatography/Replicate interoperability, scientific animation video export, Curve Workbench controls and illustrated documentation continue at bounded tested scopes.
+
+The original release records unresolved native HTML display failures and limited end-to-end GUI verification; the reported EAGLE tool is not an electrical, PCB or electromagnetic solver. Seven separate tutorial packages remain partial. The existing Curve Digitizer 2.0.9 scientific behavior is preserved.
+
+No new finalized official_dev111 plugin ZIP series is present in the deposited r3 source. The previously published official_dev109 packages remain unchanged. The historical dev-108-only Viewer stability hotfixes are incompatible with dev-111 by policy.
 
 ## Features
 

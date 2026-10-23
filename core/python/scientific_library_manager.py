@@ -29,6 +29,9 @@ FRAMEWORK = Path(__file__).resolve().parents[2]
 SAFE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 VERSION = re.compile(r"^[0-9]+(?:\.[0-9]+){1,3}$")
 PACKAGE_FILES = {"library.ini", "SHA256SUMS.txt", "payload/library.gxsrl"}
+# A protected process owns at most one library grant. No host/global store of
+# plaintext credentials, daemon, or import of optional cryptography on old paths.
+_CREDENTIAL_CONTEXT = None
 
 
 def fail(message):
@@ -256,6 +259,8 @@ def provider_capabilities(provider, record=None):
     Status hooks describe known state; discovery does not probe a remote server
     or infer protocol, authentication, scientific meaning or permission.
     """
+    if record is not None:
+        _credential_require(record, provider)
     module = provider['module']
     declared = getattr(module, 'LIBRARY_CAPABILITIES', {})
     if not isinstance(declared, dict):
@@ -272,7 +277,7 @@ def provider_capabilities(provider, record=None):
     out = dict(capability_schema='gxtxt.library_capabilities.v1',
                library_type=provider['library_type'], provider_id=provider['provider_id'],
                provider_version=provider['provider_version'], supported_modes=' '.join(modes),
-               script_exposure='host_module_only; Script Bridge belongs to progression Step4')
+               script_exposure='intentional_subset; technical capabilities do not grant Script Bridge operations')
     out['declaration_source']='provider_declaration' if declared else 'legacy_managed_contract'
     defaults = dict(list_entries=True, verify=callable(getattr(module, 'validate', None)),
                     read_only=True, offline_available=True,
@@ -327,7 +332,7 @@ def provider_capabilities(provider, record=None):
     status_hook=getattr(module, 'library_status', None)
     if status_hook is not None:
         if not callable(status_hook):fail('library_status must be callable')
-        observed=status_hook(dict(record), FRAMEWORK)
+        observed=_credential_status_call(provider, record, status_hook)
         if not isinstance(observed, dict) or set(observed)-{'availability', 'read_only', 'authentication_required', 'authentication_status', 'entry_count', 'reason'}:
             fail('library_status returned an invalid normalized status')
         status.update(observed);out['status_source']='provider_status'
@@ -373,9 +378,16 @@ def library_capabilities(library_id):
     registry, fingerprint=registry_snapshot(managed_root())
     record=registry['libraries'].get(safe_id(library_id))
     if not record:fail('unknown scientific library '+library_id)
+    if _credential_bound(record) and _CREDENTIAL_CONTEXT is None:
+        _credential_error('credentials_locked')
+    if _CREDENTIAL_CONTEXT is not None and _CREDENTIAL_CONTEXT.secret:
+        _CREDENTIAL_CONTEXT.require_record(record)
     try:
         provider=select_provider(record['library_type'], record['provider_id'])
     except ValueError as exc:
+        if _CREDENTIAL_CONTEXT is not None:
+            # Discovery/import diagnostics are not a protected result channel.
+            _credential_error('provider_unavailable')
         # Inspection of an actual registered resource remains possible when its
         # provider was uninstalled. A retained tombstone is still inactive:
         # provider absence must not revive its inspection/unregistration actions.
@@ -758,12 +770,17 @@ def _content_provider_call(function, *args):
         if not isinstance(code, str) or code not in _CONTENT_ERRORS or not isinstance(message, str) or not message or len(message) > 4096:
             _content_error('invalid_provider_response', 'Invalid normalized provider error.')
         detail = {}
+        protected = _CREDENTIAL_CONTEXT is not None and _CREDENTIAL_CONTEXT.in_scope
+        if protected:
+            # A trusted auth hook's arbitrary diagnostic is never a secret
+            # redactor. Protected errors use CORE's fixed code/message table.
+            message = _credential_message(code)
         if 'retry_after_seconds' in error:
             retry = error['retry_after_seconds']
             if type(retry) not in (int, float) or retry < 0:
                 _content_error('invalid_provider_response', 'Invalid provider retry interval.')
             detail['retry_after_seconds'] = retry
-        if 'provider_code' in error:
+        if 'provider_code' in error and not protected:
             if not isinstance(error['provider_code'], str) or len(error['provider_code']) > 256:
                 _content_error('invalid_provider_response', 'Invalid provider error identifier.')
             detail['provider_code'] = error['provider_code']
@@ -795,6 +812,14 @@ def _content_resolve(root, library_id):
         _content_error('integrity_failure', 'Saved Library type/provider identity is invalid.')
     if record['state'] != 'installed':
         _content_error('library_not_found', 'Library is absent or its saved reference was removed.')
+    if _credential_bound(record) and _CREDENTIAL_CONTEXT is None:
+        # A one-shot content call must not import/use an authenticated provider
+        # and trust its reported unlocked flag in lieu of a CORE-owned lease.
+        _credential_error('credentials_locked')
+    if _CREDENTIAL_CONTEXT is not None and _CREDENTIAL_CONTEXT.secret:
+        # A changed/unbound registration cannot downgrade an existing grant to
+        # the legacy provider path, including before discovery/import.
+        _CREDENTIAL_CONTEXT.require_record(record)
     try:
         provider = select_provider(record['library_type'], record['provider_id'])
     except Exception:
@@ -817,6 +842,7 @@ def _content_record_copy(record):
 
 
 def _content_gate(record, provider, operation, parameters):
+    _credential_require(record, provider)
     module = provider['module']
     try:
         capabilities = provider_capabilities(provider)
@@ -844,6 +870,8 @@ def _content_gate(record, provider, operation, parameters):
     if record.get('mode', 'managed') != 'managed' and 'authentication_required' not in observed:
         required = capabilities['capability.authentication_required'] if 'authentication_required' in getattr(module, 'LIBRARY_CAPABILITIES', {}) else 'unknown'
     required = _content_flag(required)
+    if _credential_bound(record) and required != '1':
+        _content_error('invalid_provider_response', 'Credential provider authentication state is invalid.')
     auth = observed.get('authentication_status', record.get('authentication_status', 'unknown'))
     if not isinstance(auth, str):
         _content_error('invalid_provider_response', 'Invalid provider authentication status.')
@@ -958,38 +986,55 @@ def _library_content(library_id, operation, parameters):
         record, provider, fingerprint = _content_resolve(root, library_id)
         if record.get('mode', 'managed') != initial.get('mode', 'managed'):
             _content_error('temporarily_unavailable', 'Library storage mode changed during the request.')
-        hook, policy = _content_gate(record, provider, operation, parameters)
-        managed = record.get('mode', 'managed') == 'managed'
+        completed = False
+        try:
+            with _credential_scope(record, provider):
+                result = _library_content_selected(root, record, provider, fingerprint, operation, parameters)
+                completed = True
+            return result
+        except _ContentError as error:
+            if completed and operation in {'add_entry', 'remove_entry'}:
+                # Scope exit/revalidation follows a potentially committed call.
+                error.details['mutation_outcome'] = 'unknown'
+            raise
+
+
+def _library_content_selected(root, record, provider, fingerprint, operation, parameters):
+    # Scope is entered for THIS actual selected module, not the earlier
+    # discovery import that _library_content intentionally discards.
+    library_id = record['library_id']
+    hook, policy = _content_gate(record, provider, operation, parameters)
+    managed = record.get('mode', 'managed') == 'managed'
+    if managed:
+        try:
+            _verify_managed_record(root, record, provider)
+        except Exception:
+            _content_error('integrity_failure', 'Managed Library content failed integrity verification.')
+    provider_record = _content_record_copy(record)
+    provider_parameters = _content_value(parameters, 'invalid_request', limit=1024 * 1024)
+    try:
+        result = _content_provider_call(hook, provider_record, provider_parameters, FRAMEWORK)
+        normalized = _content_result(record, provider, operation, parameters, result, policy)
         if managed:
             try:
                 _verify_managed_record(root, record, provider)
             except Exception:
-                _content_error('integrity_failure', 'Managed Library content failed integrity verification.')
-        provider_record = _content_record_copy(record)
-        provider_parameters = _content_value(parameters, 'invalid_request', limit=1024 * 1024)
+                _content_error('integrity_failure', 'Managed Library changed while content was read.')
         try:
-            result = _content_provider_call(hook, provider_record, provider_parameters, FRAMEWORK)
-            normalized = _content_result(record, provider, operation, parameters, result, policy)
-            if managed:
-                try:
-                    _verify_managed_record(root, record, provider)
-                except Exception:
-                    _content_error('integrity_failure', 'Managed Library changed while content was read.')
-            try:
-                current_registry, current_fingerprint = registry_snapshot(root)
-            except (ValueError, OSError, TypeError, AttributeError):
-                _content_error('integrity_failure', 'Library registry cannot be read after the content operation.')
-            current = current_registry['libraries'].get(library_id)
-            if current != record or (managed and current_fingerprint != fingerprint):
-                _content_error('temporarily_unavailable', 'Library registration changed; a mutation may already have committed.')
-            return normalized
-        except _ContentError as exc:
-            if operation in {'add_entry', 'remove_entry'}:
-                # Every failure after dispatch may follow a provider commit,
-                # including a later registry read/identity failure. Do not infer
-                # rollback even from a typed provider error without such proof.
-                exc.details['mutation_outcome'] = 'unknown'
-            raise
+            current_registry, current_fingerprint = registry_snapshot(root)
+        except (ValueError, OSError, TypeError, AttributeError):
+            _content_error('integrity_failure', 'Library registry cannot be read after the content operation.')
+        current = current_registry['libraries'].get(library_id)
+        if current != record or (managed and current_fingerprint != fingerprint):
+            _content_error('temporarily_unavailable', 'Library registration changed; a mutation may already have committed.')
+        return normalized
+    except _ContentError as exc:
+        if operation in {'add_entry', 'remove_entry'}:
+            # Every failure after dispatch may follow a provider commit,
+            # including a later registry read/identity failure. Do not infer
+            # rollback even from a typed provider error without such proof.
+            exc.details['mutation_outcome'] = 'unknown'
+        raise
 
 
 def _library_content_response(library_id, operation, parameters):
@@ -1082,6 +1127,698 @@ def emit_list(values):
         print(f"L\t{b64(value)}")
 
 
+_CREDENTIAL_RAW_LIMIT = 32768
+_CREDENTIAL_MESSAGES = {
+    'invalid_request': 'Credential request is invalid.',
+    'library_not_found': 'Credential library is unavailable.',
+    'unsupported_operation': 'Protected credential support is unavailable.',
+    'credentials_locked': 'Credential grant is locked.',
+    'authentication_required': 'Credential profile is not configured.',
+    'authentication_failed': 'Credential unlock failed.',
+    'provider_unavailable': 'Credential provider is unavailable.',
+    'temporarily_unavailable': 'Credential operation is busy.',
+    'invalid_provider_configuration': 'Credential provider configuration is invalid.',
+    'integrity_failure': 'Credential profile is unavailable.',
+    'policy_restricted': 'Credential operation is not permitted.',
+    'provider_failure': 'Credential provider operation failed.',
+    'invalid_provider_response': 'Credential result is invalid.',
+    'rate_limited': 'Credential operation is temporarily limited.',
+    'read_only': 'Credential library is read-only.',
+    'entry_not_found': 'Credential library entry is unavailable.',
+}
+
+
+def _credential_message(code):
+    return _CREDENTIAL_MESSAGES.get(code, _CREDENTIAL_MESSAGES['provider_failure'])
+
+
+def _credential_error(code, *, unknown=False):
+    _content_error(code, _credential_message(code), **({'mutation_outcome': 'unknown'} if unknown else {}))
+
+
+def _credential_bound(record):
+    return record.get('authentication') == 'credential_profile' or bool(record.get('credential_profile_id'))
+
+
+def _credential_revision(record):
+    raw = json.dumps(record, ensure_ascii=False, sort_keys=True, allow_nan=False,
+                     separators=(',', ':')).encode('utf-8')
+    if len(raw) > 64 * 1024 * 1024:
+        _credential_error('integrity_failure')
+    return digest(raw)
+
+
+def _credential_provider_identity(provider):
+    source = Path(provider['module'].__file__)
+    if source.resolve() != source or not source.is_file() or source.stat().st_size > 8 * 1024 * 1024:
+        _credential_error('provider_unavailable')
+    descriptors = []
+    for path in provider_descriptors():
+        parser = configparser.ConfigParser(interpolation=None, strict=False)
+        parser.read(path, encoding='utf-8')
+        if parser.get('meta', 'id', fallback='') == provider['provider_id']:
+            descriptors.append(Path(path))
+    if len(descriptors) != 1:
+        _credential_error('provider_unavailable')
+    descriptor = descriptors[0]
+    if descriptor.resolve() != descriptor or descriptor.stat().st_size > 1048576:
+        _credential_error('provider_unavailable')
+    return (provider['provider_id'], provider['provider_version'], str(source), digest(source.read_bytes()),
+            str(descriptor), digest(descriptor.read_bytes()))
+
+
+def _credential_opt_in(provider):
+    declaration = getattr(provider['module'], 'LIBRARY_AUTHENTICATION', None)
+    if (type(declaration) is not dict or type(declaration.get('api_version')) is not int or declaration !=
+            {'api_version': 1, 'credential_kind': 'opaque_utf8', 'runtime': 'inline'}
+            or getattr(provider['module'], 'LIBRARY_CAPABILITIES', {}).get('authentication_required') is not True
+            or not callable(getattr(provider['module'], 'library_authentication_scope', None))):
+        _credential_error('unsupported_operation')
+
+
+def _credential_store(configuration_file):
+    # Private optional owner is imported only on protected calls; its crypto
+    # dependency must also remain lazy. No backend probe on legacy imports.
+    try:
+        from scientific_library_credentials_v1 import ProfileStore
+        return ProfileStore(Path(configuration_file))
+    except Exception:
+        _credential_error('unsupported_operation')
+
+
+def _credential_profile_call(function, *args):
+    try:
+        return function(*args)
+    except _ContentError:
+        raise
+    except Exception as error:
+        code = getattr(error, 'code', 'provider_failure')
+        code = code if isinstance(code, str) and code in _CREDENTIAL_MESSAGES else 'provider_failure'
+        _credential_error(code, unknown=getattr(error, 'mutation_outcome', None) == 'unknown')
+
+
+def _credential_require(record, provider):
+    if _credential_bound(record) or (_CREDENTIAL_CONTEXT is not None and _CREDENTIAL_CONTEXT.secret):
+        if _CREDENTIAL_CONTEXT is None:
+            _credential_error('credentials_locked')
+        _CREDENTIAL_CONTEXT.require(record, provider)
+
+
+@contextlib.contextmanager
+def _credential_scope(record, provider):
+    _credential_require(record, provider)
+    if not _credential_bound(record):
+        yield
+        return
+    with _CREDENTIAL_CONTEXT.scope(record, provider):
+        yield
+
+
+def _credential_status_call(provider, record, hook):
+    if _CREDENTIAL_CONTEXT is not None and _CREDENTIAL_CONTEXT.secret:
+        _CREDENTIAL_CONTEXT.require(record, provider)
+    if not _credential_bound(record):
+        return hook(dict(record), FRAMEWORK)
+    if _CREDENTIAL_CONTEXT is None or not _CREDENTIAL_CONTEXT.secret:
+        return {'authentication_required': '1', 'authentication_status': 'locked'}
+    with _credential_scope(record, provider):
+        result = _content_provider_call(hook, _content_record_copy(record), FRAMEWORK)
+        if isinstance(result, dict):
+            if ('authentication_required' in result and _content_flag(result['authentication_required']) != '1'
+                    or 'authentication_status' in result and result['authentication_status'] not in
+                    {'unknown', 'locked', 'unlocked', 'authenticated', 'failed', 'authentication_failed'}):
+                _credential_error('invalid_provider_response')
+            result.pop('reason', None)
+        return result
+
+
+def _credential_inspect_binding(store, library_id):
+    # CAS reconciliation reads only canonical registration/profile metadata.
+    # An unavailable provider must not prevent inspection or execute import
+    # side effects during this read-only administrative operation.
+    record = require_installed(load_registry(managed_root()), library_id)
+    if not isinstance(record, dict) or record.get('library_id') != library_id:
+        _credential_error('integrity_failure')
+    try:
+        provider_id = safe_id(record['provider_id'])
+    except (KeyError, TypeError, ValueError):
+        _credential_error('integrity_failure')
+    result = dict(library_id=library_id, provider_id=provider_id,
+                  authentication=record.get('authentication', 'unknown'),
+                  credential_profile_id=record.get('credential_profile_id', ''),
+                  library_revision=_credential_revision(record), profile_revision=None,
+                  profile_generation=None, profile_state='unconfigured')
+    if result['credential_profile_id']:
+        try:
+            metadata = store.inspect(result['credential_profile_id'])
+            result.update(profile_revision=metadata['revision'], profile_generation=metadata['generation'],
+                          profile_state='bound' if metadata['provider_id'] == provider_id else 'unavailable')
+        except Exception as error:
+            result['profile_state'] = 'unconfigured' if getattr(error, 'code', None) == 'authentication_required' else 'unavailable'
+    return result
+
+
+def _credential_bind(store, library_id, profile_id, expected_library, expected_profile):
+    # Credential-record and scientific-registry locks are distinct. Binding
+    # takes them in that order and never invokes network/status/content hooks.
+    initial, provider, _ = _content_resolve(managed_root(), library_id)
+    if initial.get('mode') not in {'external', 'remote'}:
+        _credential_error('unsupported_operation')
+    if _credential_revision(initial) != expected_library:
+        _credential_error('integrity_failure')
+    _credential_opt_in(provider)
+    identity = _credential_provider_identity(provider)
+    metadata = _credential_profile_call(store.inspect, profile_id) if profile_id else None
+    lock_id = profile_id
+    if not lock_id:
+        before = require_installed(load_registry(managed_root()), library_id)
+        lock_id = before.get('credential_profile_id', '')
+        if expected_profile != 'none':
+            _credential_error('invalid_request')
+    old_metadata = None
+    if lock_id and metadata is None:
+        try:
+            old_metadata = store.inspect(lock_id)
+        except Exception as error:
+            if getattr(error, 'code', None) != 'authentication_required':
+                raise
+    hold_metadata = metadata or old_metadata
+    hold = store.hold(lock_id, hold_metadata['revision']) if hold_metadata else contextlib.nullcontext()
+    with hold:
+        with locked(managed_root()):
+            registry = load_registry(managed_root())
+            record = require_installed(registry, library_id)
+            if _credential_revision(record) != expected_library:
+                _credential_error('integrity_failure')
+            # Only inert file hashes/record data are revalidated here. Provider
+            # discovery/import may execute code and MUST remain outside locks.
+            if _credential_provider_identity(provider) != identity:
+                _credential_error('provider_unavailable')
+            if metadata and (metadata['revision'] != expected_profile or metadata['provider_id'] != provider['provider_id']):
+                _credential_error('integrity_failure')
+            record = dict(record, authentication='credential_profile', credential_profile_id=profile_id,
+                          authentication_required='1', authentication_status='locked', updated_at=now())
+            registry['libraries'][library_id] = record
+            try:
+                save_registry(managed_root(), registry)
+            except Exception:
+                _credential_error('provider_failure', unknown=True)
+            return dict(library_id=library_id, credential_profile_id=profile_id,
+                        library_revision=_credential_revision(record))
+
+
+class _CredentialAccess:
+    """Private synchronous accessor; never a public record/serializer value."""
+    def __init__(self, context):
+        self.context = context
+        self.active = True
+        self.busy = False
+
+    def with_secret(self, callback):
+        if not self.active or self.busy or not self.context.in_scope or not callable(callback):
+            _credential_error('credentials_locked')
+        self.context.check_time()
+        self.busy = True
+        try:
+            return callback(bytes(self.context.secret))
+        finally:
+            self.busy = False
+
+
+class _CredentialRuntime:
+    """One finite Linux managed worker, scoped to actual parent and library."""
+    def __init__(self, specification):
+        import time
+        self.clock = time.monotonic
+        self.specification = specification
+        self.store = _credential_store(specification['configuration_file'])
+        self.secret = bytearray()
+        self.metadata = None
+        self.record_revision = None
+        self.provider_identity = None
+        self.deadline = None
+        self.call_deadline = None
+        self.in_scope = False
+        self.parent_identity = self._process_identity(specification['owner_pid'])
+        self.identities = {key: self._identity(Path(specification[key])) for key in
+                           ('session', 'library_root', 'configuration_file') if specification[key]}
+
+    @staticmethod
+    def _process_identity(pid):
+        try:
+            raw = Path('/proc', str(pid), 'stat').read_text(encoding='ascii')
+            return (pid, raw[raw.rfind(')') + 2:].split()[19])
+        except Exception:
+            _credential_error('credentials_locked')
+
+    @staticmethod
+    def _identity(path):
+        if not path.is_absolute() or path.resolve() != path:
+            _credential_error('integrity_failure')
+        try:
+            info = path.stat()
+            return (info.st_dev, info.st_ino)
+        except FileNotFoundError:
+            return None
+
+    def check_identity(self):
+        if (os.getppid() != self.specification['owner_pid'] or
+                self._process_identity(self.specification['owner_pid']) != self.parent_identity):
+            self.close()
+            _credential_error('credentials_locked')
+        if any(self._identity(Path(self.specification[key])) != identity for key, identity in self.identities.items()):
+            self.close()
+            _credential_error('credentials_locked')
+
+    def check_time(self):
+        self.check_identity()
+        if not self.secret or self.deadline is None or self.clock() >= self.deadline:
+            self.close()
+            _credential_error('credentials_locked')
+
+    def check_profile(self, *, allow_busy=False):
+        if not self.secret or self.metadata is None:
+            return
+        try:
+            current = self.store.inspect(self.metadata['profile_id'])
+        except Exception as error:
+            if getattr(error, 'code', None) == 'temporarily_unavailable':
+                if allow_busy:
+                    return
+                _credential_error('temporarily_unavailable')
+            self.close()
+            _credential_error('credentials_locked')
+        if current != self.metadata:
+            self.close()
+            _credential_error('credentials_locked')
+
+    def arm(self, maximum=None):
+        import signal
+        if signal.getsignal(signal.SIGALRM) != signal.SIG_DFL or signal.getsignal(signal.SIGTERM) != signal.SIG_DFL:
+            self.close()
+            _credential_error('unsupported_operation')
+        current = self.clock()
+        if maximum is not None:
+            proposed = current + maximum
+            self.call_deadline = min(self.call_deadline, proposed) if self.call_deadline is not None else proposed
+        until = self.deadline if self.deadline is not None else current + 15.0
+        if self.call_deadline is not None:
+            until = min(until, self.call_deadline)
+        # Re-arming a nested scope must never extend the ORIGINAL whole-call
+        # deadline established before discovery/import, nor the unlock TTL.
+        signal.setitimer(signal.ITIMER_REAL, max(0.001, until-current))
+
+    def finish_request(self):
+        self.call_deadline = None
+        self.arm()
+
+    def close(self):
+        # Best effort for this owned buffer only, not a zeroization claim for
+        # immutable crypto/Python/provider copies. Existing owner still drains.
+        self.secret[:] = b'\0' * len(self.secret)
+        self.secret.clear()
+        self.deadline = None
+        self.metadata = None
+
+    def require(self, record, provider):
+        self.require_record(record)
+        try:
+            same_provider = _credential_provider_identity(provider) == self.provider_identity
+        except Exception:
+            same_provider = False
+        if not same_provider:
+            self.close()
+            _credential_error('credentials_locked')
+
+    def require_record(self, record):
+        self.check_time()
+        try:
+            valid = (isinstance(record, dict) and record.get('library_id') == self.specification['library_id']
+                     and record.get('state') == 'installed' and _credential_bound(record)
+                     and record.get('credential_profile_id') == self.metadata['profile_id']
+                     and _credential_revision(record) == self.record_revision)
+        except Exception:
+            valid = False
+        if not valid:
+            self.close()
+            _credential_error('credentials_locked')
+
+    def check_registration(self):
+        # Reconcile the current canonical record and installed source bytes
+        # without importing/calling a provider or holding a registry lock.
+        try:
+            registry, _ = registry_snapshot(managed_root())
+            self.require_record(registry['libraries'].get(self.specification['library_id']))
+            _, _, source, source_hash, descriptor, descriptor_hash = self.provider_identity
+            for name, expected, limit in ((source, source_hash, 8 * 1024 * 1024),
+                                          (descriptor, descriptor_hash, 1048576)):
+                path = Path(name)
+                if (path.resolve() != path or not path.is_file() or path.stat().st_size > limit
+                        or digest(path.read_bytes()) != expected):
+                    self.close()
+                    _credential_error('credentials_locked')
+        except _ContentError:
+            self.close()
+            raise
+        except Exception:
+            self.close()
+            _credential_error('credentials_locked')
+
+    def unlock(self, library_id, password, lifetime):
+        if self.secret:
+            _credential_error('temporarily_unavailable')
+        if library_id != self.specification['library_id'] or type(lifetime) is not int or not 1 <= lifetime <= 900:
+            _credential_error('invalid_request')
+        self.arm(15)
+        record, provider, _ = _content_resolve(managed_root(), library_id)
+        _credential_opt_in(provider)
+        if not _credential_bound(record) or not record.get('credential_profile_id'):
+            _credential_error('authentication_required')
+        metadata, secret = _credential_profile_call(self.store.unlock, record['credential_profile_id'], password)
+        if (metadata['provider_id'] != provider['provider_id'] or type(secret) is not bytearray
+                or not 1 <= len(secret) <= 4096):
+            _credential_error('integrity_failure')
+        self.metadata = metadata
+        self.secret = secret
+        self.record_revision = _credential_revision(record)
+        self.provider_identity = _credential_provider_identity(provider)
+        self.deadline = self.clock() + lifetime
+        self.arm()
+        return self.status(library_id)
+
+    def status(self, library_id):
+        import math
+        if library_id != self.specification['library_id']:
+            _credential_error('invalid_request')
+        self.arm(10)
+        record, provider, _ = _content_resolve(managed_root(), library_id)
+        if self.secret:
+            self.require(record, provider)
+        required = getattr(provider['module'], 'LIBRARY_CAPABILITIES', {}).get('authentication_required')
+        result = dict(library_id=library_id, configured=False,
+                      authentication_required=required if type(required) is bool else None,
+                      authentication_status='unknown' if type(required) is not bool else 'not_required' if not required else 'unconfigured',
+                      expires_in_seconds=0, cleanup_pending=False)
+        profile_id = record.get('credential_profile_id')
+        if profile_id:
+            try:
+                metadata = self.store.inspect(profile_id)
+                if metadata['provider_id'] != provider['provider_id']:
+                    _credential_error('integrity_failure')
+                result.update(configured=True, authentication_required=True, authentication_status='locked')
+                if self.secret:
+                    self.require(record, provider)
+                    if metadata != self.metadata:
+                        self.close()
+                        _credential_error('credentials_locked')
+                    result.update(authentication_status='unlocked', expires_in_seconds=min(900, math.ceil(self.deadline-self.clock())))
+            except Exception as error:
+                self.close()
+                if getattr(error, 'code', None) == 'authentication_required':
+                    result.update(configured=False, authentication_required=True, authentication_status='unconfigured')
+                elif getattr(error, 'code', None) == 'credentials_locked':
+                    result.update(authentication_status='locked')
+                else:
+                    result.update(configured=None, authentication_required=True, authentication_status='unavailable')
+        return result
+
+    @contextlib.contextmanager
+    def scope(self, record, provider):
+        self.require(record, provider)
+        _credential_opt_in(provider)
+        if self.in_scope:
+            _credential_error('temporarily_unavailable')
+        access = _CredentialAccess(self)
+        self.arm(10)
+        try:
+            with self.store.hold(self.metadata['profile_id'], self.metadata['revision']) as metadata:
+                if metadata != self.metadata:
+                    _credential_error('credentials_locked')
+                self.in_scope = True
+                with provider['module'].library_authentication_scope(_content_record_copy(record), access, FRAMEWORK):
+                    yield
+                self.require(record, provider)
+        except _ContentError as error:
+            if error.code in {'credentials_locked', 'authentication_failed', 'integrity_failure'}:
+                self.close()
+            raise
+        except Exception as error:
+            code = getattr(error, 'code', 'provider_failure')
+            code = code if isinstance(code, str) and code in _CREDENTIAL_MESSAGES else 'provider_failure'
+            if code != 'temporarily_unavailable':
+                self.close()
+            _credential_error(code, unknown=getattr(error, 'mutation_outcome', None) == 'unknown')
+        finally:
+            access.active = False
+            self.in_scope = False
+            self.arm()
+
+
+_CREDENTIAL_MARKER = 'GXTXT_LIBRARY_RUNTIME_V1'
+
+
+def _credential_decode_secret(value, maximum=4096, minimum=1):
+    try:
+        raw = base64.b64decode(value, validate=True)
+        if base64.b64encode(raw).decode('ascii') != value or not minimum <= len(raw) <= maximum:
+            _credential_error('invalid_request')
+        return raw.decode('utf-8')
+    except Exception:
+        _credential_error('invalid_request')
+
+
+def _credential_admin(context, arguments):
+    if not arguments:
+        _credential_error('invalid_request')
+    action, *args = arguments
+    store = context.store
+    if action == 'list' and not args:
+        return _credential_profile_call(store.list_profiles)
+    if action == 'inspect' and len(args) == 1:
+        return _credential_profile_call(store.inspect, args[0])
+    if action == 'inspect_binding' and len(args) == 1:
+        return _credential_inspect_binding(store, args[0])
+    if action in {'create', 'replace'} and len(args) == 5:
+        profile_id, expected, provider_id, password, secret = args
+        return _credential_profile_call(getattr(store, action), profile_id, expected, provider_id,
+                                        _credential_decode_secret(password, 1024, 12), _credential_decode_secret(secret))
+    if action == 'delete' and len(args) == 2:
+        return _credential_profile_call(store.delete, *args)
+    _credential_error('invalid_request')
+
+
+def _credential_response(result):
+    # JSON is authoritative for bool/null/integer distinctions. The recursive
+    # Tcl value is convenience metadata, never a second secret serializer.
+    if isinstance(result, dict):
+        out = dict(result)
+    else:
+        out = {'records': result}
+    out['result_json'] = json.dumps(result, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
+    return {'ok': True, 'result': out}
+
+
+def _credential_runtime_main():
+    """Private source implementation only; no standalone/admin CLI adoption.
+
+    The current public Tcl owner must fail secret submission closed until the
+    separately reviewed F3 diagnostic boundary and owned drain are available.
+    """
+    global _CREDENTIAL_CONTEXT
+    import signal
+    import select
+    from gxtxt_job_supervisor import request_process_group, tcl_result
+    # Suppress import/discovery/fd diagnostics before any provider is loaded.
+    output_fd = os.dup(sys.stdout.fileno())
+    os.set_inheritable(output_fd, False)
+    with open(os.devnull, 'wb') as sink:
+        os.dup2(sink.fileno(), 1)
+        os.dup2(sink.fileno(), 2)
+    output = os.fdopen(output_fd, 'wb', buffering=0)
+    context = None
+    initialized = False
+    descriptors = None
+    failures = []
+
+    def emit(response):
+        if response.get('ok') and context is not None and context.secret:
+            context.check_registration()
+            context.check_profile()
+            context.check_time()
+        response = dict(response, schema='gxtxt.library_credential_response.v1')
+        line = (_CREDENTIAL_MARKER + '\t' + b64(tcl_result(response)) + '\n').encode('ascii')
+        if len(line) > 33554432:
+            _credential_error('invalid_provider_response')
+        output.write(line)
+
+    try:
+        if sys.platform != 'linux' or not hasattr(signal, 'setitimer'):
+            _credential_error('unsupported_operation')
+        import resource
+        import ctypes
+        import time
+        resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+        request_process_group()
+        parent = os.getppid()
+        libc = ctypes.CDLL(None, use_errno=True)
+        if libc.prctl(1, signal.SIGKILL, 0, 0, 0) != 0 or os.getppid() != parent:
+            _credential_error('unsupported_operation')
+        signal.signal(signal.SIGALRM, signal.SIG_DFL)
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        signal.pthread_sigmask(signal.SIG_UNBLOCK, {signal.SIGALRM, signal.SIGTERM})
+        import tkinter
+        interpreter = tkinter.Tcl()
+        stream = sys.stdin.buffer
+        while True:
+            # Expiry is armed during idle as well as bounded provider calls.
+            if context is not None:
+                try:
+                    context.check_identity()
+                    if context.secret:
+                        context.check_time()
+                        context.check_profile(allow_busy=True)
+                        context.arm()
+                except _ContentError:
+                    # Idle invalidation closes quietly. There is no unsolicited
+                    # protocol response to confuse a later operation callback.
+                    break
+            if not select.select([stream], [], [], 0.1)[0]:
+                continue
+            raw = stream.readline(65537)
+            if not raw:
+                break
+            mutation = False
+            try:
+                if len(raw) > 65536 or not raw.endswith(b'\n') or b'\r' in raw or b'\0' in raw:
+                    _credential_error('invalid_request')
+                marker, encoded = raw[:-1].decode('ascii').split('\t')
+                if marker != _CREDENTIAL_MARKER:
+                    _credential_error('invalid_request')
+                decoded = base64.b64decode(encoded, validate=True)
+                if base64.b64encode(decoded).decode('ascii') != encoded:
+                    _credential_error('invalid_request')
+                parts = interpreter.splitlist(decoded.decode('utf-8'))
+                if len(parts) != 6:
+                    _credential_error('invalid_request')
+                request = dict(zip(parts[::2], parts[1::2]))
+                if set(request) != {'operation', 'arguments', 'provider_descriptors'}:
+                    _credential_error('invalid_request')
+                operation = request['operation']
+                args = list(interpreter.splitlist(request['arguments']))
+                # Bound all raw serialized application arguments before B64,
+                # not merely a chosen query field. Final line bounded above.
+                if len(request['arguments'].encode('utf-8')) > _CREDENTIAL_RAW_LIMIT:
+                    _credential_error('invalid_request')
+                incoming_descriptors = tuple(interpreter.splitlist(request['provider_descriptors']))
+                if operation == 'runtime_init' and not initialized and len(args) == 1:
+                    spec_parts = interpreter.splitlist(args[0])
+                    if len(spec_parts) != 16:
+                        _credential_error('invalid_request')
+                    spec = dict(zip(spec_parts[::2], spec_parts[1::2]))
+                    if (set(spec) != {'protocol_version', 'role', 'owner_id', 'owner_pid', 'session',
+                                     'library_id', 'configuration_file', 'library_root'}
+                            or spec['protocol_version'] != '1' or spec['role'] not in {'runtime', 'admin'}
+                            or not re.fullmatch(r'[0-9a-f]{32}', spec['owner_id'])
+                            or not re.fullmatch(r'[1-9][0-9]*', spec['owner_pid'])):
+                        _credential_error('invalid_request')
+                    spec['owner_pid'] = int(spec['owner_pid'])
+                    if spec['owner_pid'] != parent or Path(spec['library_root']) != managed_root():
+                        _credential_error('integrity_failure')
+                    if spec['role'] == 'runtime':
+                        safe_id(spec['library_id'])
+                        if not spec['session'] or not Path(spec['session']).is_dir():
+                            _credential_error('invalid_request')
+                    elif spec['library_id'] or spec['session']:
+                        _credential_error('invalid_request')
+                    if any(not Path(path).is_absolute() or Path(path).resolve() != Path(path) for path in incoming_descriptors):
+                        _credential_error('invalid_request')
+                    descriptors = incoming_descriptors
+                    os.environ['GXTXT_LIBRARY_PROVIDER_DESCRIPTORS'] = os.pathsep.join(descriptors)
+                    context = _CredentialRuntime(spec)
+                    _CREDENTIAL_CONTEXT = context
+                    initialized = True
+                    emit(_credential_response(dict(ready=True, protocol_version=1, protected_input_max_bytes=32768)))
+                    continue
+                if not initialized or incoming_descriptors != descriptors:
+                    _credential_error('invalid_request')
+                context.check_identity()
+                if operation == 'close' and not args:
+                    context.close()
+                    emit(_credential_response({'closed': True}))
+                    break
+                if context.secret:
+                    context.arm(10)
+                    context.check_registration()
+                if context.specification['role'] == 'admin':
+                    if len(request['arguments'].encode('utf-8')) > 16384:
+                        _credential_error('invalid_request')
+                    mutation = operation == 'bind' or operation == 'profile_admin' and bool(args) and args[0] in {'create', 'replace', 'delete'}
+                    context.arm(15)
+                    if operation == 'profile_admin':
+                        result = _credential_admin(context, args)
+                    elif operation == 'bind' and len(args) == 4:
+                        result = _credential_bind(context.store, *args)
+                    else:
+                        _credential_error('invalid_request')
+                    emit(_credential_response(result))
+                elif operation == 'credential_unlock' and len(args) == 3:
+                    if len(request['arguments'].encode('utf-8')) > 16384 or not re.fullmatch(r'[1-9][0-9]*', args[2]):
+                        _credential_error('invalid_request')
+                    failures[:] = [stamp for stamp in failures if time.monotonic()-stamp < 60]
+                    if len(failures) >= 5:
+                        _credential_error('temporarily_unavailable')
+                    try:
+                        result = context.unlock(args[0], _credential_decode_secret(args[1], 1024, 12), int(args[2]))
+                    except Exception:
+                        failures.append(time.monotonic())
+                        raise
+                    emit(_credential_response(result))
+                elif operation == 'credential_status' and len(args) == 1:
+                    emit(_credential_response(context.status(args[0])))
+                elif operation == 'library_capabilities' and args == [context.specification['library_id']]:
+                    context.arm(10)
+                    context.check_time()
+                    captured = io.StringIO()
+                    with contextlib.redirect_stdout(captured):
+                        emit_info(library_capabilities(args[0]))
+                    emit({'ok': True, 'result': {'wire': captured.getvalue()}})
+                elif operation == 'content' and len(args) == 3 and args[0] == context.specification['library_id']:
+                    context.arm(10)
+                    context.check_time()
+                    mutation = args[1] in {'add_entry', 'remove_entry'}
+                    response = _content_arguments_response(args)
+                    if not response['ok']:
+                        detail = response['error']
+                        detail['message'] = _credential_message(detail['code'])
+                        detail.pop('provider_code', None)
+                    wire, _ = _content_wire(response)
+                    emit({'ok': True, 'result': {'wire': wire}})
+                else:
+                    _credential_error('invalid_request')
+            except BaseException as error:
+                code = getattr(error, 'code', 'provider_failure')
+                code = code if isinstance(code, str) and code in _CREDENTIAL_MESSAGES else 'provider_failure'
+                response = dict(ok=False, code=code, message=_credential_message(code))
+                if mutation or getattr(error, 'details', {}).get('mutation_outcome') == 'unknown':
+                    response['mutation_outcome'] = 'unknown'
+                emit(response)
+            finally:
+                # Never leave request/secret frames in a diagnostic map/closure.
+                raw = decoded = encoded = request = args = None
+                if context is not None:
+                    context.finish_request()
+    except BaseException:
+        try:
+            emit(dict(ok=False, code='unsupported_operation', message=_credential_message('unsupported_operation')))
+        except BaseException:
+            pass
+    finally:
+        if context is not None:
+            context.close()
+        _CREDENTIAL_CONTEXT = None
+        output.close()
+
+
 def main(argv):
     if not argv:
         fail("missing Scientific Library Manager operation")
@@ -1172,6 +1909,9 @@ def main(argv):
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ['--runtime']:
+        _credential_runtime_main()
+        raise SystemExit(0)
     try:
         if sys.argv[1:] in (['--request'], ['--request-sync']):
             # Same existing finite manager request for sync and managed async.

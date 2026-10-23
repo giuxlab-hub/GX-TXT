@@ -28,6 +28,7 @@ proc ::GX::defaults_v052_api {} {
     array unset moduleCfg *
     array unset moduleEnabled *
     array unset moduleRun *
+    _modulePreviewRestoreDefaults
 }
 
 proc ::GX::descriptorValue {d section key {default ""}} {
@@ -151,14 +152,215 @@ proc ::GX::moduleConfigKeys {id} {
     return $keys
 }
 
+# Preview activation remains the ordinary Module selection, not provider admission.
+# The first supported Preview storage is the exact per-ID moduleEnabled owner;
+# arbitrary legacy cfg aliases cannot prove exclusive ownership of their field.
+proc ::GX::_modulePreviewSelectionIds {} {
+    variable moduleOrder
+    set ids {}
+    foreach id $moduleOrder {
+        if {[moduleField $id kind {}] ne {preview}} continue
+        set selectable [moduleField $id selectable 1]
+        if {![string is boolean -strict $selectable] || !$selectable ||
+            [moduleField $id enabled_key {}] ne {} || [moduleField $id run_key {}] ne {}} {
+            return -code error -errorcode {GX MODULE PREVIEW_STORAGE} \
+                "Preview '$id' requires selectable1 and empty enabled_key/run_key."
+        }
+        lappend ids $id
+    }
+    return [lsort -unique $ids]
+}
+proc ::GX::_moduleDefaultEnabled {id} {
+    if {[moduleField $id kind {}] eq {preview}} {return 0}
+    return [expr {[moduleField $id default_enabled 0] ? 1 : 0}]
+}
+
+# Finite inert dependency projection. Stop at always-available modules exactly
+# as moduleSetEnabled does; their optional dependencies are not activation seeds.
+proc ::GX::_modulePreviewDependencyPaths {root} {
+    set paths {};set cycles {};set stack [list [list $root {}]]
+    while {[llength $stack]} {
+        lassign [lindex $stack end] id trail
+        set stack [lreplace $stack end end]
+        if {$id in $trail} {lappend cycles [concat $trail [list $id]];continue}
+        if {[dict exists $paths $id]} continue
+        set path [concat $trail [list $id]]
+        dict set paths $id $path
+        if {[moduleIsAlwaysAvailable $id]} continue
+        foreach dep [splitList [moduleField $id depends {}]] {
+            lappend stack [list $dep $path]
+        }
+    }
+    return [dict create paths $paths cycles $cycles]
+}
+proc ::GX::_modulePreviewValidateSelection {raw} {
+    variable moduleOrder
+    set previews [_modulePreviewSelectionIds]
+    if {![llength $previews]} {return $raw}
+    set selected [splitList $raw]
+    foreach root $selected {
+        if {$root ni $moduleOrder || [moduleIsAlwaysAvailable $root]} continue
+        set graph [_modulePreviewDependencyPaths $root]
+        set relevant 0
+        foreach id $previews {if {[dict exists $graph paths $id]} {set relevant 1;break}}
+        if {!$relevant} continue
+        if {[llength [dict get $graph cycles]]} {
+            return -code error -errorcode {GX MODULE PREVIEW_DEPENDENCY} \
+                "Cyclic dependency involving Preview selection from '$root'."
+        }
+        dict for {id path} [dict get $graph paths] {
+            if {$id in $previews && $id ni $selected} {
+                return -code error -errorcode {GX MODULE PREVIEW_DEPENDENCY} \
+                    "Selected '$root' requires explicitly selected Preview '$id' ([join $path { -> }])."
+            }
+            if {$id ni $moduleOrder} {
+                foreach preview $previews {
+                    if {$preview in $path} {
+                        return -code error -errorcode {GX MODULE PREVIEW_DEPENDENCY} \
+                            "Preview dependency is not installed: [join $path { -> }]."
+                    }
+                }
+            }
+        }
+    }
+    return $raw
+}
+proc ::GX::_modulePreviewReset {} {
+    set ids [_modulePreviewSelectionIds]
+    foreach id $ids {moduleSetEnabled $id 0}
+}
+proc ::GX::_modulePreviewOpenPreflight {sessionPath} {
+    # With no Preview installed, preserve the historical Manifest-error handling
+    # at the actual open owner instead of turning it into a new preflight error.
+    if {![llength [_modulePreviewSelectionIds]]} {return {}}
+    set path [file join $sessionPath metadata manifest.ini]
+    if {![file isfile $path]} {return {}}
+    set data [parseIni $path]
+    _modulePreviewLoadProjection session $data
+    return $data
+}
+
+# Pure preflight is shared by real Session open and direct/configuration loads.
+# No defaults or Module/Session mutation may precede these compatibility guards.
+proc ::GX::_modulePreviewLoadProjection {purpose data} {
+    variable moduleOrder
+    if {$purpose ni {session configuration}} {error {Invalid private Module load purpose}}
+    set ids [_modulePreviewSelectionIds]
+    set mode off;set expected {}
+    if {[dict exists $data module_state.enabled]} {
+        set selected [splitList [_modulePreviewValidateSelection [dict get $data module_state.enabled]]]
+        set mode selection
+    } elseif {$purpose eq {configuration}} {set mode preserve}
+    foreach id $ids {
+        switch -- $mode {
+            selection {dict set expected $id [expr {$id in $selected}]}
+            preserve {dict set expected $id [moduleIsEnabled $id]}
+            off {dict set expected $id 0}
+        }
+    }
+    set legacy [expr {![dict exists $data pipeline.format] || [dict get $data pipeline.format] ne {2}}]
+    if {$legacy && [dict exists $data modules.selected]} {
+        set earlier [splitList [_modulePreviewValidateSelection [dict get $data modules.selected]]]
+        dict for {id on} $expected {
+            if {($id in $earlier) != $on} {
+                return -code error -errorcode {GX MODULE PREVIEW_LEGACY_SELECTION} \
+                    "Legacy modules.selected conflicts with authoritative Preview '$id' selection."
+            }
+        }
+    }
+    set resetsActivation $legacy
+    if {$mode eq {preserve} && [dict size $expected] && !$resetsActivation &&
+        [dict exists $data experiment_preparation.definitions]} {
+        set preparation [dict get $data experiment_preparation.definitions]
+        if {[dict exists $preparation policy_api] && [dict exists $preparation policy_version] &&
+            [dict get $preparation policy_api] eq {EXPERIMENT_DUPLICATION_POLICY_API_v1} &&
+            [dict get $preparation policy_version] eq {1}} {set resetsActivation 1}
+    }
+    if {$mode eq {preserve} && $resetsActivation && [dict size $expected]} {
+        dict for {id on} $expected {
+            if {!$on} continue
+            set graph [_modulePreviewDependencyPaths $id]
+            dict for {dep depPath} [dict get $graph paths] {
+                if {$dep ne $id && ![moduleIsAlwaysAvailable $dep]} {
+                    return -code error -errorcode {GX MODULE PREVIEW_IMPORT_DEPENDENCY} \
+                        "Resetting configuration cannot preserve ON Preview with selectable dependency: [join $depPath { -> }]."
+                }
+            }
+        }
+    }
+    if {$mode eq {preserve} && [dict size $expected]} {
+        foreach consumer $moduleOrder {
+            if {[moduleIsAlwaysAvailable $consumer]} continue
+            set key [moduleField $consumer enabled_key {}]
+            if {$key eq {} && (!$resetsActivation || ![_moduleDefaultEnabled $consumer])} continue
+            set graph [_modulePreviewDependencyPaths $consumer]
+            dict for {id on} $expected {
+                if {!$on && [dict exists $graph paths $id]} {
+                    if {$key ne {}} {
+                        return -code error -errorcode {GX MODULE PREVIEW_IMPORT_DEPENDENCY} \
+                            "Configuration without selection cannot project cfg-aliased consumer '$consumer' requiring preserved-OFF Preview '$id'."
+                    }
+                    return -code error -errorcode {GX MODULE PREVIEW_IMPORT_DEPENDENCY} \
+                        "Resetting configuration default consumer '$consumer' requires preserved-OFF Preview '$id' ([join [dict get $graph paths $id] { -> }])."
+                }
+            }
+        }
+    }
+    return [dict create mode $mode expected $expected]
+}
+
+# Dynamic loader context, always restored in finally. This is neither persisted
+# activation nor an execution grant. The continuation is a fixed CORE prefix.
+proc ::GX::_modulePreviewWithLoadContext {path purpose data script} {
+    variable modulePreviewLoadContext
+    set projection [_modulePreviewLoadProjection $purpose $data]
+    set mode [dict get $projection mode];set expected [dict get $projection expected]
+    set existed [info exists modulePreviewLoadContext]
+    if {$existed} {set previous $modulePreviewLoadContext}
+    set modulePreviewLoadContext [dict create path [file normalize $path] purpose $purpose data $data mode $mode expected $expected]
+    try {return [uplevel 1 $script]} finally {
+        if {$existed} {set modulePreviewLoadContext $previous} else {unset -nocomplain modulePreviewLoadContext}
+    }
+}
+proc ::GX::_modulePreviewPreservedDefaults {} {
+    variable modulePreviewLoadContext
+    if {[info exists modulePreviewLoadContext] && [dict get $modulePreviewLoadContext mode] eq {preserve}} {
+        return [dict get $modulePreviewLoadContext expected]
+    }
+    return {}
+}
+proc ::GX::_modulePreviewRestoreDefaults {} {
+    variable moduleEnabled
+    dict for {id state} [_modulePreviewPreservedDefaults] {set moduleEnabled($id) $state}
+}
+proc ::GX::_modulePreviewSelectionLoaded {} {
+    variable modulePreviewLoadContext
+    if {[dict get $modulePreviewLoadContext mode] eq {off}} {
+        # A legacy defaults reset can seed a consumer again. The ordinary OFF
+        # cascade reconciles just those consumers without full Run reapplication.
+        _modulePreviewReset
+    }
+    foreach id [_modulePreviewSelectionIds] {
+        set expected 0
+        if {[dict exists $modulePreviewLoadContext expected $id]} {set expected [dict get $modulePreviewLoadContext expected $id]}
+        if {[moduleIsEnabled $id] != $expected} {
+            return -code error -errorcode {GX MODULE PREVIEW_SELECTION_CHANGED} \
+                "Loaded Preview selection differs for '$id'."
+        }
+    }
+    _modulePreviewValidateSelection [join [selectedModuleIds] ,]
+}
+
 proc ::GX::ensureModuleConfigDefaults {} {
     variable moduleOrder
     variable moduleCfg
     variable moduleEnabled
     variable moduleRun
+    _modulePreviewSelectionIds
+    set preserved [_modulePreviewPreservedDefaults]
     foreach id $moduleOrder {
         if {![info exists moduleEnabled($id)]} {
-            set moduleEnabled($id) [expr {[moduleField $id default_enabled 0] ? 1 : 0}]
+            set moduleEnabled($id) [expr {[dict exists $preserved $id] ? [dict get $preserved $id] : [_moduleDefaultEnabled $id]}]
         }
         if {![info exists moduleRun($id)]} { set moduleRun($id) 0 }
         configurationModuleDiscover $id
@@ -200,6 +402,7 @@ proc ::GX::moduleOperationalInfo {id} {
 proc ::GX::moduleIsEnabled {id} {
     variable cfg
     variable moduleEnabled
+    if {[moduleField $id kind {}] eq {preview}} {_modulePreviewSelectionIds}
     set selectable [moduleField $id selectable 1]
     if {[moduleIsAlwaysAvailable $id]} { return 1 }
     set key [moduleField $id enabled_key ""]
@@ -208,7 +411,7 @@ proc ::GX::moduleIsEnabled {id} {
         return [expr {$cfg($key) ? 1 : 0}]
     }
     if {[info exists moduleEnabled($id)]} { return [expr {$moduleEnabled($id) ? 1 : 0}] }
-    return [expr {[moduleField $id default_enabled 0] ? 1 : 0}]
+    return [_moduleDefaultEnabled $id]
 }
 
 proc ::GX::moduleRunIsSelected {id} {
@@ -225,6 +428,7 @@ proc ::GX::moduleRunIsSelected {id} {
 proc ::GX::moduleSetRunSelected {id state} {
     variable cfg
     variable moduleRun
+    if {[moduleField $id kind {}] eq {preview}} {_modulePreviewSelectionIds}
     set v [expr {[moduleAnalysisEligible $id]&&$state ? 1 : 0}]
     set key [moduleField $id run_key ""]
     if {$key ne ""} { set cfg($key) $v } else { set moduleRun($id) $v }
@@ -254,6 +458,7 @@ proc ::GX::moduleSetEnabled_v081_before_contract_registry {id state {cascade 1}}
     variable cfg
     variable moduleEnabled
     variable moduleOrder
+    if {[moduleField $id kind {}] eq {preview}} {_modulePreviewSelectionIds}
     if {[moduleIsAlwaysAvailable $id]} { return }
     set v [expr {$state ? 1 : 0}]
     set key [moduleField $id enabled_key ""]
@@ -276,6 +481,7 @@ proc ::GX::moduleSetEnabled_v081_before_contract_registry {id state {cascade 1}}
 
 proc ::GX::applyModuleSelection_v078_workspace {raw} {
     variable moduleOrder
+    _modulePreviewValidateSelection $raw
     foreach id $moduleOrder {
         if {[moduleField $id selectable 1]} { moduleSetEnabled $id 0 0 }
     }
@@ -1864,33 +2070,57 @@ proc ::GX::loadManifest {path} {
     set ::GX::sessionInstrumentLoading 1
     try {
         set d [parseIni $path]
-        if {[dict exists $d pipeline.format] && [dict get $d pipeline.format] eq "2"} {
-            loadManifestV2 $path
-        } else {
-            # Read-only compatibility for old manifests. Legacy modules cannot re-enter
-            # discovery because their descriptors are absent.
-            ::GX::loadManifest_v052_native $path
-            ensureModuleBindingDefaults
-        }
-        # Existing registered-script fields advertise this configuration contract;
-        # preserve legacy external-file values without branching on plugin IDs.
-        foreach id $::GX::moduleOrder {
-            if {[moduleConfigField $id registered_script type {}] ne "registered_script"} continue
-            if {"external_file" in [splitList [moduleConfigField $id source_mode values {}]] &&
-                [moduleConfigField $id script_file type {}] eq "file" &&
-                ![dict exists $d module_config.$id.source_mode] &&
-                [dict exists $d module_config.$id.script_file] &&
-                [string trim [dict get $d module_config.$id.script_file]] ne ""} {
-                set ::GX::moduleCfg($id,source_mode) external_file
+        if {[info exists ::GX::modulePreviewLoadContext] &&
+            [dict get $::GX::modulePreviewLoadContext path] eq [file normalize $path]} {
+            if {[dict get $::GX::modulePreviewLoadContext data] ne $d} {
+                return -code error -errorcode {GX MODULE PREVIEW_MANIFEST_CHANGED} {Manifest changed after Session selection preflight.}
             }
-            if {[llength [info commands ::GX::scriptAnalysisSyncRequiredApis]]} {
-                ::GX::scriptAnalysisSyncRequiredApis $id
-            }
+            return [_moduleLoadManifestPreviewBody $path $d]
         }
-        configurationSessionLoad $path
+        set purpose configuration
+        if {[info exists ::GX::currentSession] && $::GX::currentSession ne {} &&
+            [file normalize $path] eq [file normalize [file join $::GX::currentSession metadata manifest.ini]]} {
+            set purpose session
+        }
+        return [_modulePreviewWithLoadContext $path $purpose $d [list ::GX::_moduleLoadManifestPreviewBody $path $d]]
     } finally {
         if {$priorLoading eq {}} {unset ::GX::sessionInstrumentLoading} else {set ::GX::sessionInstrumentLoading $priorLoading}
     }
+}
+
+proc ::GX::_moduleLoadManifestPreviewBody {path d} {
+    # The ordinary loaders retain format-specific defaults and Analysis run flags.
+    # Prevalidate the positive list before the first loader/configuration write.
+    if {[dict exists $d module_state.enabled]} {
+        _modulePreviewValidateSelection [dict get $d module_state.enabled]
+    } elseif {[dict get $::GX::modulePreviewLoadContext mode] eq {off}} {
+        _modulePreviewReset
+    }
+    if {[dict exists $d pipeline.format] && [dict get $d pipeline.format] eq "2"} {
+        loadManifestV2 $path
+    } else {
+        # Read-only compatibility for old manifests. Legacy modules cannot re-enter
+        # discovery because their descriptors are absent.
+        ::GX::loadManifest_v052_native $path
+        ensureModuleBindingDefaults
+    }
+    # Existing registered-script fields advertise this configuration contract;
+    # preserve legacy external-file values without branching on plugin IDs.
+    foreach id $::GX::moduleOrder {
+        if {[moduleConfigField $id registered_script type {}] ne "registered_script"} continue
+        if {"external_file" in [splitList [moduleConfigField $id source_mode values {}]] &&
+            [moduleConfigField $id script_file type {}] eq "file" &&
+            ![dict exists $d module_config.$id.source_mode] &&
+            [dict exists $d module_config.$id.script_file] &&
+            [string trim [dict get $d module_config.$id.script_file]] ne ""} {
+            set ::GX::moduleCfg($id,source_mode) external_file
+        }
+        if {[llength [info commands ::GX::scriptAnalysisSyncRequiredApis]]} {
+            ::GX::scriptAnalysisSyncRequiredApis $id
+        }
+    }
+    _modulePreviewSelectionLoaded
+    configurationSessionLoad $path
 }
 
 # ----------------------------- Native GUI ------------------------------------

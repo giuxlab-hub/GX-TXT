@@ -1,0 +1,96 @@
+{
+  "content_id": "curve_digitizer.tutorial.02.en",
+  "reference_kind": "independent analytical design; not actual GUI results",
+  "source_baseline": "0.9.8.10-dev-110/e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68",
+  "vendor": "unchanged2.0.9",
+  "actual_measurements": null,
+  "source_image": "calibrated.family.image",
+  "source_size": [
+    1201,
+    1001
+  ],
+  "source_raw": "calibrated.family.raw",
+  "source_raw_rows": 15000,
+  "source_table": "calibrated.family.source",
+  "source_table_rows": 75000,
+  "source_table_groups": 250,
+  "source_curve_count": 50,
+  "source_points_per_curve": 300,
+  "design": {
+    "t": "i/299, i=0..299",
+    "px": "100+1000*t",
+    "py": "900-14*c-8*(2*t-1)**2",
+    "x": "(px-100)*(1+k/1000)/100+k/100",
+    "y": "(900-py)*(1-k/2000)/100-k/200"
+  },
+  "selected_source_curves": [
+    {
+      "c": 5,
+      "source_key": "curve-005",
+      "family_value": 5
+    },
+    {
+      "c": 15,
+      "source_key": "curve-015",
+      "family_value": 15
+    }
+  ],
+  "calibrations": [
+    {
+      "k": 0,
+      "x_range": [
+        -1,
+        11
+      ],
+      "y_range": [
+        -1,
+        9
+      ]
+    },
+    {
+      "k": 1,
+      "x_range": [
+        -0.991,
+        11.021
+      ],
+      "y_range": [
+        -1.0045,
+        8.9905
+      ]
+    },
+    {
+      "k": 4,
+      "x_range": [
+        -0.964,
+        11.084
+      ],
+      "y_range": [
+        -1.018,
+        8.962
+      ]
+    }
+  ],
+  "full_image_corner_order": [
+    [
+      0,
+      1000
+    ],
+    [
+      1200,
+      1000
+    ],
+    [
+      0,
+      0
+    ],
+    [
+      1200,
+      0
+    ]
+  ],
+  "combined_rows": "3*(actual_N5+actual_N15)",
+  "conditional_384_rows": "Only if actual_N5=actual_N15=64",
+  "expected_combined_groups_if_two_curves_three_maps": 6,
+  "log_input": "assets/log-reference.json",
+  "warning": "Alternative declared transforms are not independent physical replicates or an uncertainty distribution."
+}

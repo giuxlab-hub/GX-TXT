@@ -5,9 +5,10 @@ function identity=gxtxt_curve_source_dataset_identity_v1(session,dataset_id)
   bridge=fullfile(root,'core','tcl','curve_source_identity_bridge.tcl');
   [input,output,pid]=popen2('tclsh',{bridge,char(session),char(dataset_id)});
   if(pid<0),error('GXTXT:CurveSource','Cannot start CORE identity adapter');endif
+  bridge_status=[];
   unwind_protect
     fclose(input);input=-1;
-    line=gxtxt_persistent_bridge_readline(output,pid,'Curve Source identity');
+    [line,bridge_status]=gxtxt_persistent_bridge_readline(output,pid,'Curve Source identity');
     fields=strsplit(line,sprintf('\t'));
     if(numel(fields)==2&&strcmp(fields{1},'CURVE_SOURCE_IDENTITY_ERROR_V1'))
       error('GXTXT:CurveSource','%s',native2unicode(matlab.net.base64decode(fields{2}),'UTF-8'));
@@ -19,7 +20,12 @@ function identity=gxtxt_curve_source_dataset_identity_v1(session,dataset_id)
     identity=struct('dataset_id',fields{2},'sha256',fields{3},'schema_identity',fields{4});
   unwind_protect_cleanup
     if(input>=0),fclose(input);endif
-    fclose(output);[~,status]=waitpid(pid);
+    fclose(output);[waited,status]=waitpid(pid);
+    if(waited<0)
+      % A drained final record does not waive the adapter's actual exit code.
+      % Unknown/already-reaped status without a captured receipt fails closed.
+      if(isempty(bridge_status)),status=-1;else,status=bridge_status;endif
+    endif
   end_unwind_protect
   if(status!=0),error('GXTXT:CurveSource','CORE scientific identity adapter failed');endif
 endfunction

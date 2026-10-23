@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original GUIDE explanatory manuscript. -->
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curve Digitizer — coordinate and evidence concepts</title>
+<link rel="stylesheet" href="concepts.css">
+</head>
+<body>
+<main>
+<p class="label">Curve Digitizer 2.0.9 · reference · review draft</p>
+<h1>Keep pixels, calibration and scientific evidence distinct</h1>
+<p class="lead">A digitized curve links a position in a source raster to a scientific coordinate. Understanding that link helps you preserve point order, compare calibrations and interpret uncertainty honestly.</p>
+<p>This draft explains concepts using the independent <code>calibrated_digitizer</code> reference. Its source basis is the actual deposited dev110 and unchanged Digitizer2.0.9; installed/native GUI and scientific tutorial execution remain pending. The diagram below is an authored illustration, rather than a capture of GX-TXT Dataset Preview.</p>
+<nav aria-label="On this page"><ul><li><a href="#mapping">Pixel-to-scientific mapping</a></li><li><a href="#identity">Source identity</a></li><li><a href="#groups">Curves and calibrations</a></li><li><a href="#evidence">Quality and uncertainty</a></li><li><a href="#recovery">Practical interpretation</a></li></ul></nav>
+<section id="mapping">
+<h2>One position, two coordinate descriptions</h2>
+<p>The reference generator describes a 100 × 100 raster. Image pixel Y increases downward. The four calibration corners are (10, 90), (90, 90), (10, 10), and (90, 10). The scientific ranges are 0–8 seconds and −2–2 volts.</p>
+<p>For this particular linear, rectangular calibration, the reference equations are <code>x = (pixel_x − 10) / 10</code> seconds and <code>y = (50 − pixel_y) / 20</code> volts. They describe this reference only; a skewed quadrilateral or logarithmic axis needs its actual calibration transform.</p>
+<div class="grid">
+<figure class="panel" style="margin:0">
+<svg viewBox="0 0 120 120" role="img" aria-labelledby="plot-title plot-description">
+<title id="plot-title">Illustrative reference raster coordinates</title>
+<desc id="plot-description">The outlined calibration rectangle runs from image pixels 10 to 90 on each axis. Four blue crosses mark the independent reference points. An orange ring follows the selected illustrative pixel.</desc>
+<g transform="translate(10 10)">
+<rect width="99" height="99" fill="#fff" stroke="#415b7b" stroke-width=".5"/>
+<g stroke="#e0e8f2" stroke-width=".4"><path d="M10 0V99 M30 0V99 M50 0V99 M70 0V99 M90 0V99 M0 10H99 M0 30H99 M0 50H99 M0 70H99 M0 90H99"/></g>
+<rect x="10" y="10" width="80" height="80" fill="none" stroke="#1364aa" stroke-width=".8"/>
+<g stroke="#1d4fbd" stroke-width="1.1"><path d="M28 70h4 M30 68v4 M58 40h4 M60 38v4 M73 65h4 M75 63v4 M38 25h4 M40 23v4"/></g>
+<circle id="chosen-pixel" cx="30" cy="70" r="3" fill="none" stroke="#b65c00" stroke-width="1.1"/>
+<g fill="#17253b" font-size="3.2"><text x="11" y="8">(10, 10)</text><text x="78" y="8">(90, 10)</text><text x="11" y="95">(10, 90)</text><text x="78" y="95">(90, 90)</text></g>
+</g>
+</svg>
+<figcaption>Blue crosses: independent reference points. Orange ring: the selected illustrative location. The diagram does not create or modify a scientific Dataset.</figcaption>
+</figure>
+<div class="panel">
+<h3>Explore the reference mapping</h3>
+<label for="pixel-x">Original pixel X: <output id="read-x" for="pixel-x">30</output></label>
+<input id="pixel-x" type="range" min="0" max="99" step="1" value="30">
+<label for="pixel-y">Original pixel Y: <output id="read-y" for="pixel-y">70</output></label>
+<input id="pixel-y" type="range" min="0" max="99" step="1" value="70">
+<p id="mapped" role="status" aria-live="polite">Illustrative coordinate: 2 s, −1 V.</p>
+<p id="domain">The selected location is inside the calibration rectangle.</p>
+<button type="button" id="reset-reference">Return to reference point 1</button>
+<p>Moving the marker downward increases image Y and decreases voltage for this calibration. Enlarging the image on screen changes neither the original pixel location nor its calibrated value.</p>
+<noscript><p>The interactive marker requires JavaScript. The reference equations and table remain readable without it.</p></noscript>
+</div>
+</div>
+<table><caption>Exact generator references, before any operator digitization</caption><thead><tr><th scope="col">Traversal order</th><th scope="col">Original pixel (X, Y)</th><th scope="col">Time (s)</th><th scope="col">Voltage (V)</th></tr></thead><tbody><tr><td>point-1</td><td>(30, 70)</td><td>2</td><td>−1</td></tr><tr><td>point-2</td><td>(60, 40)</td><td>5</td><td>0.5</td></tr><tr><td>point-3</td><td>(75, 65)</td><td>6.5</td><td>−0.75</td></tr><tr><td>point-4</td><td>(40, 25)</td><td>3</td><td>1.25</td></tr></tbody></table>
+<p class="note">The reference traversal deliberately returns to a lower X at point-4. Sorting by X changes the traversal order. A matching set of coordinates alone does not establish matching point order.</p>
+</section>
+<section id="identity">
+<h2>A calibration belongs to an exact source</h2>
+<figure class="wide-figure"><img src="figures/source-lineage.svg" width="1000" height="690" alt="Conceptual flow from an original source raster through accepted pixel points and a selected calibration to a published scientific Dataset."><figcaption>Original diagram: source identity, accepted pixel positions and calibration remain traceable. Processed images carry their own lineage. This is an explanation of roles, not a product screenshot. <a href="figures/source-lineage.svg">Open source roles diagram at full size.</a></figcaption></figure>
+<p>A source Dataset ID identifies the registered source, while its SHA-256 identifies the image bytes used for calibration. A label or filename may remain familiar even when pixels change. Preserve the original source and recorded calibration together.</p>
+<p>If a source becomes stale, recover the verified original or establish a fresh configuration for the changed image through the supported workflow. Restoring a source cannot be replaced by assuming that a similarly named image has the same raster geometry.</p>
+<p>Image-processing operations may help an operator see a faint trace. A processed derivative needs traceable source identity and a verified coordinate relationship. A display opacity adjustment, a processed image and the canonical original serve different purposes.</p>
+</section>
+<section id="groups">
+<h2>Two grouping dimensions can coexist</h2>
+<figure class="wide-figure"><img src="figures/calibration-realizations.svg" width="1000" height="650" alt="Conceptual example of one curve with three raster points mapped under calibrations A and B into six separately grouped rows."><figcaption>Original diagram: the six illustrative combined rows retain three unique raster points and two calibration identities. The symbols are explanatory, rather than real Dataset IDs or measured values. <a href="figures/calibration-realizations.svg">Open calibration grouping diagram at full size.</a></figcaption></figure>
+<p>Several curves can share one raster. Several accepted calibration measurements can also map the same raster points into different scientific realizations. Keep curve identity and calibration identity visible when inspecting combined results.</p>
+<table><caption>Identity and interpretation</caption><thead><tr><th scope="col">Item</th><th scope="col">What it distinguishes</th><th scope="col">Interpretation to retain</th></tr></thead><tbody>
+<tr><td>Curve key</td><td>A curve within the published Dataset</td><td>An editable curve label is a display name.</td></tr>
+<tr><td>Point identity/order</td><td>A particular observation and its traversal position</td><td>X coordinates alone do not define traversal.</td></tr>
+<tr><td>Calibration measurement ID</td><td>An operator's particular calibration realization</td><td>Two IDs can have equal numerical transforms.</td></tr>
+<tr><td>Transform fingerprint</td><td>The numerical coordinate mapping</td><td>Equal fingerprints do not establish independent observations.</td></tr>
+<tr><td>Calibration key in combined output</td><td>The mapping responsible for a row's scientific coordinates</td><td>Group by curve and calibration where the contract requires both.</td></tr>
+</tbody></table>
+<p>Repeatedly digitizing or calibrating the same raster explores the raster measurement procedure. It does not create new independent physical measurements of the underlying specimen or device.</p>
+</section>
+<section id="evidence">
+<h2>State what each diagnostic establishes</h2>
+<p>Calibration verification asks whether a known coordinate agrees with the selected mapping at a chosen image point. Four fitted corner residuals alone cannot establish independent measurement accuracy. Local line contrast and width describe image evidence, with limitations from overlap, noise and rasterization.</p>
+<p>A standard uncertainty requires an explicit error model and evidence. Under a declared uniform interval with full width <em>w</em>, the standard uncertainty is <em>w</em>/√12. Under a declared normal model, an entered standard uncertainty already has that meaning. The same numeral has different consequences when it describes a full width or a standard uncertainty.</p>
+<p>For the reference's fixed calibration, the derivatives are 0.1 s per horizontal pixel and −0.05 V per vertical pixel. Declared independent rectangular full widths of 1 horizontal pixel and 2 vertical pixels therefore give analytical standard uncertainties of approximately 0.0288675 s and 0.0288675 V. These numbers follow stated reference assumptions; they are not measured operator precision or a GX-TXT execution result.</p>
+<p>Uncertain shared calibration inputs can correlate different points. Marginal standard uncertainties do not capture all cross-point covariance. Use the released public scientific interpretation and supported fitting route; preserve explicit limitations for combined calibrations, scale-bar models and unsupported covariance cases.</p>
+<p class="note">A raster stroke width does not by itself determine the probability distribution of a curve's centerline. The unchanged2.0.9 source includes per-curve stroke-width controls, described in the operational manual; actual workflow execution remains pending and this scientific qualification still applies.</p>
+</section>
+<section id="recovery">
+<h2>Interpret the published result before using it</h2>
+<ol><li>Identify the actual published Dataset and its units, source and calibration.</li><li>Check curve and calibration grouping, point order and retained raster coordinates.</li><li>Inspect available source-image and quality information in the real Dataset Preview.</li><li>Distinguish unknown uncertainty from an explicit justified zero and from a supported nonzero declaration.</li><li>Preserve the Session and reopen the configuration and Dataset through the normal framework workflow.</li></ol>
+<p>Use the three hands-on tutorials alongside these references. Preserve actual Session/Dataset identities and distinguish observed results from the analytical illustrations here.</p>
+</section>
+<footer><p><a href="index.html">Return to the complete manual</a> · <a href="api-reference.html">Public contract reference</a></p><p>GX210-GUIDE · GPL-3.0-or-later · Review draft for unchanged Curve Digitizer 2.0.9 on deposited dev110. Illustrations and analytical examples are identified explicitly; actual workflow validation remains pending.</p></footer>
+</main>
+<script src="coordinate-map.js" defer></script>
+</body>
+</html>

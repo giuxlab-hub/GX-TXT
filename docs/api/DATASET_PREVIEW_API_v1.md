@@ -131,7 +131,7 @@ A changed saved default invalidates an older derivative even when a caller still
 holds its resolved options. These are presentation choices; canonical values,
 row identities, calibration roles and source images remain unchanged.
 
-Sessions → Preview Cache shows Dataset, representation, generation date, source/render key, size, status and errors and offers refresh, regenerate, clear selected/all and policy. Standard automated previews and explicit custom Render have separate keys. Successful custom Render persists its exact options and cache key through Dataset Preview Configuration. Controls restore on reopen; changing axes, filters, grouping, calibration or ordering keeps the previous successful frame until explicit Render. Failed/cancelled preparation preserves that frame. Source changes are labelled stale rather than current.
+Sessions → Preview Cache shows Dataset, representation, generation date, source/render key, size, status and errors and offers refresh, regenerate, clear selected/all and policy. Standard automated previews and explicit custom Render have separate keys. Successful Render saves its exact captured options and cache key as `last_render` in the existing Dataset Preview private metadata. Completion preserves all saved scientific configuration and opaque fields; automatic discovery does not turn default controls into new saved scientific selections. Explicit Apply, axis and processed-image choices retain their existing persistence before requesting Render. Controls and the last-render receipt restore on reopen; changing axes, filters, grouping, calibration or ordering keeps the previous successful frame until explicit Render. Failed/cancelled preparation preserves that frame. Source changes are labelled stale rather than current. Automatic schema reconciliation requires both saved `selections` and `ordering` keys, including legitimate empty values; receipt-only, visibility-only and partial profiles do not acquire scientific defaults.
 
 Before any successful render exists, the Plot placeholder and Source pane show
 the same current preparation, cancellation or failure message as the 2D status.
@@ -142,6 +142,35 @@ the existing lifecycle receipt; it neither validates an unavailable source nor
 starts another preparation.
 
 The Digitalizer chart is a resizable retained Plot Dataset native viewport. Visibility changes affect existing XY objects and raster overlay primitives, retain camera/zoom/pan, and start no reader or Job. Visibility preferences are saved after a short idle period. Expensive scientific reads, raster decoding and Quality preparation run through the existing managed execution owner. Session lifetime, generation and source guards reject stale completions; asynchronous status polling does not block Tk. Processed-image choices require verified identity-preserving raster lineage and retain the original source alongside the chosen derivative.
+
+Retained visibility uses the same `_gxtxt.framework.dataset_preview` owner, in
+`retained_visibility {version 1 hidden_filters LIST}`. Each entry has exactly
+`filter_variable_id`, `predicate not_equal`, and `value`: the captured curve
+Variable ID and opaque text curve key must match literally (`01` and `1` differ).
+This field is excluded from scientific render options and does not change the
+scientific cache-key contract. If absent, the historical
+`selections.@hidden_filters` remains readable. A present valid empty list means
+show all and overrides that legacy value; reads do not migrate metadata.
+
+Only currently represented curves are patched by a visibility save. Well-formed
+hidden identities outside the current scientific subset are preserved as inactive
+preferences, without claiming complete publication membership or scanning rows.
+The field accepts at most 4096 unique entries, 16384 encoded Tcl string bytes per
+curve identity, 1024 per Variable ID, and 1 MiB for the complete preference.
+These are saved-preference limits, not canonical data or scientific curve limits.
+Malformed, unsupported or oversized preferences produce a local notice and are
+not applied or overwritten: the admitted scientific view remains available,
+with all its curves initially shown, and further visibility changes in that view
+are temporary. No silent truncation or legacy fallback occurs for a present
+invalid field.
+
+Toggle and the pending 750 ms save/Release flush compare the representation's
+original preparation source with the current source, together with its Session
+and widget lifetime. A restored previous representation is not certified using
+the source observed at display time. A stale refusal retires its pending timer;
+changing scientific settings alone does not invalidate a matching source's
+retained presentation. Private preference writes preserve scientific selections,
+ordering, axes, schema, types, processed-image choice and unrelated metadata.
 
 Array-only Datasets use a bounded exact storage plane (at most 128×128 original
 cells, with earlier dimensions fixed at zero). Canonical Dataset Access remains
@@ -256,3 +285,19 @@ old report and the host's old observation as previous-render data. A receipt is
 evidence at its preparation epoch, not continuous verification. Source/Session
 lifetime, linked identity and Preview cache remain owned by existing services.
 This is an internal representation extension, not another public data pipeline.
+
+
+TASK210 failure-inspection extension: each `datasetPreviewCacheInventory` row
+also contains `execution_kind`, `job_id` and `request_id`, with empty defaults.
+Error rows project only identities already retained by the same cache owner in
+its preparation-failure record or current terminal outcome. Execution kind is
+`durable_job` or `managed_request`; only a bounded ASCII Job token or a bounded
+`job-request-N` token is returned for its matching kind. Unknown kinds, missing
+or malformed identities remain empty. These fields support the existing public
+Job engineering inspection; they confer no Job authority and do not expose logs,
+parameters or scientific data. No additional cache file is read or written.
+A retained request ID is historical and does not imply a still-live request.
+The cache-owner fingerprint includes this source file: updated source can make
+previous prepared representations stale, following the existing normal source
+identity policy. This diagnostic change does not fix a failed Render or establish
+its cause, geometry support, native3D behavior or performance.

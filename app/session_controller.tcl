@@ -95,13 +95,21 @@ proc ::GX::openSessionPath_before_project_api_v1 {path} {
     if {![file isdirectory [file join $d channels]]} {
         error "The selected folder does not contain channels/: $d"
     }
+    # Real Session open includes folders without a Manifest. Reject inconsistent
+    # saved Preview dependencies before switching owners or refreshing consumers.
+    set selectionData [_modulePreviewOpenPreflight $d]
+    _modulePreviewReset
     # A preview image belongs to the Session that supplied its source PNG.
     # Clear it before loading the next Manifest or rebuilding graph discovery.
     catch {clearGraphPreview}
     set currentSession $d
     set mf [file join $d metadata manifest.ini]
     if {[file isfile $mf]} {
-        if {[catch {loadManifest $mf} err opts]} {
+        if {[catch {
+            if {[llength [_modulePreviewSelectionIds]]} {
+                _modulePreviewWithLoadContext $mf session $selectionData [list ::GX::loadManifest $mf]
+            } else {loadManifest $mf}
+        } err opts]} {
             if {[info exists ::GX::sessionCreationOpenTarget] && $::GX::sessionCreationOpenTarget eq $d} {
                 return -options $opts $err
             }

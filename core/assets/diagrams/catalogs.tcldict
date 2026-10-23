@@ -19,6 +19,32 @@ electrical.basic {
     ground {title Ground prefix G paths {{{0 0} {0 -12}} {{-15 -12} {15 -12}} {{-10 -18} {10 -18}} {{-5 -24} {5 -24}}} pins {g {0 0}} attributes {}}
     diode {title Diode prefix D paths {{{-30 0} {-12 0}} {{-12 -14} {-12 14} {12 0} {-12 -14}} {{12 -14} {12 14}} {{12 0} {30 0}}} pins {a {-30 0} k {30 0}} attributes {model {type choice default generic values {generic silicon}}}}
     npn {title {NPN transistor} prefix Q paths {{{-30 0} {-8 0}} {{-8 -15} {-8 15}} {{-8 8} {15 22} {30 22}} {{-8 -8} {15 -22} {30 -22}} {{15 -22} {5 -20}} {{15 -22} {12 -12}}} pins {b {-30 0} c {30 22} e {30 -22}} attributes {model {type choice default generic values {generic small_signal}}}}
+    nmos {
+      title {NMOS enhancement (educational)} prefix M
+      paths {{{-30 0} {-8 0}} {{-8 -15} {-8 15}} {{2 8} {2 18}} {{2 -5} {2 5}} {{2 -18} {2 -8}} {{2 16} {14 22} {30 22}} {{2 -16} {14 -22} {30 -22}} {{2 0} {30 0}} {{9 5} {2 0} {9 -5}}}
+      pins {d {30 22} g {-30 0} s {30 -22} b {30 0}}
+      attributes {model {type choice default educational_level1 values educational_level1 label {Educational model}} length {type number default 1e-5 min 1e-6 max 0.001 unit m label {Channel length}} width {type number default 1e-4 min 1e-6 max 0.001 unit m label {Channel width}}}
+    }
+    pmos {
+      title {PMOS enhancement (educational)} prefix M
+      paths {{{-30 0} {-8 0}} {{-8 -15} {-8 15}} {{2 8} {2 18}} {{2 -5} {2 5}} {{2 -18} {2 -8}} {{2 16} {14 22} {30 22}} {{2 -16} {14 -22} {30 -22}} {{2 0} {30 0}} {{2 5} {9 0} {2 -5}}}
+      pins {d {30 22} g {-30 0} s {30 -22} b {30 0}}
+      attributes {model {type choice default educational_level1 values educational_level1 label {Educational model}} length {type number default 1e-5 min 1e-6 max 0.001 unit m label {Channel length}} width {type number default 1e-4 min 1e-6 max 0.001 unit m label {Channel width}}}
+    }
+    spst {
+      title {SPST maintained (static finite contact)} prefix S
+      paths {{{-30 0} {-12 0}} {{12 0} {30 0}}}
+      variants {attribute position marks {open {{{-12 0} {8 12}}} closed {{{-12 0} {12 0}}}}}
+      pins {a {-30 0} b {30 0}}
+      attributes {position {type choice default open values {open closed} label {Static contact position}} ron {type number default 1 min 1e-6 max 1e6 unit Ohm label {Closed resistance}} roff {type number default 1e9 min 1 max 1e12 unit Ohm label {Open leakage resistance}}}
+    }
+    spdt {
+      title {SPDT maintained (static finite contact)} prefix S
+      paths {{{-30 0} {-12 0}} {{12 16} {30 16}} {{12 -16} {30 -16}}}
+      variants {attribute position marks {a {{{-12 0} {12 16}}} b {{{-12 0} {12 -16}}}}}
+      pins {c {-30 0} a {30 16} b {30 -16}}
+      attributes {position {type choice default a values {a b} label {Static contact position}} ron {type number default 1 min 1e-6 max 1e6 unit Ohm label {Selected resistance}} roff {type number default 1e9 min 1 max 1e12 unit Ohm label {Unselected leakage resistance}}}
+    }
   }
 }
 flow.basic {

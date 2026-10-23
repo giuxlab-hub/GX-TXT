@@ -64,7 +64,7 @@
   "code_generation_invoked": false,
   "compiler_sha256": "0a3c55936ac43954fbe4914e6e73b577ca9e35e75d89ef13d3e28c187f41ca1a",
   "compiler_version": "19.1.7",
-  "design_sha256": "3abcc2e8e7a8ed5595f70ee5544cc7919c45a9be00919381254e1271b09cdf86",
+  "design_sha256": "3b6a03574c5c4f67fe10bb6922c2b9278a28374bc4d92d97a79c097b1e312a21",
   "diagnostics": [],
   "functions": [
     "on_event"
@@ -93,7 +93,7 @@
   "policy_sha256": "b0b8115c624297c86e5eb390d46e5380f2c1494b225c5b8d24a1202dd2f49ca2",
   "profile": "cpp_view_v1",
   "project_profile": "synthetic_view_v1",
-  "project_sha256": "cffb4ef03fc36a4317c50e37203f29955e784f9a18e971543857ebec2bfe3653",
+  "project_sha256": "8039f22eeda2d271959c5cb28b8567ba3e0b42670ebc4a5a274215b8bac00ffb",
   "schema": "gxtxt.cpp_validation.v1",
   "sdk_calls": [
     "document_bind"
@@ -105,5 +105,5 @@
     "clang_resolved_ast"
   ],
   "status": "PASS",
-  "workspace_callback_contract_sha256": "0c006b55e67bdc6516b90c88d0ff75712f6e15269dd9bdad64cc8a9d5d4f225a"
+  "workspace_callback_contract_sha256": "b991c10ff0550247f9ed6b554605b07e016b6b568d011bcb6b276bd72dd3205f"
 }

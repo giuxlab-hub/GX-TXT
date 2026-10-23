@@ -1,0 +1,156 @@
+{
+  "record_type": "actual_GUI_current_canonical_display_transcription",
+  "packet": "T01 remaining004",
+  "dataset_id": "cd.tutorial01.measurement_1.curves",
+  "method": "NormalCurrent→Tablepages; ordinarywindowmaximize/columnresize; visuallyread015/016. Decimalstringspreserved asdisplayed; noCSVparse/privateextract/clipboard/API.",
+  "original_transcription_sha256": "28243f92271d3aa166b31a59a1d6c1a090ebe2f046be69477b51abf647549ead",
+  "source_rows_displayed": "1–4 of4",
+  "actual_stable_variable_ids": [
+    "x",
+    "y",
+    "curve_id",
+    "curve_label",
+    "point_index",
+    "point_id",
+    "pixel_x",
+    "pixel_y"
+  ],
+  "actual_schema_display": [
+    {
+      "id": "x",
+      "label": "Time",
+      "dtype": "float64",
+      "value_kind": "number",
+      "unit": "s",
+      "role": "independent",
+      "shape": 4
+    },
+    {
+      "id": "y",
+      "label": "Voltage",
+      "dtype": "float64",
+      "value_kind": "number",
+      "unit": "V",
+      "role": "measured",
+      "shape": 4
+    },
+    {
+      "id": "curve_id",
+      "label": "Curve ID",
+      "dtype": "string",
+      "value_kind": "text",
+      "unit": null,
+      "role": "curve_series_identifier",
+      "shape": 4
+    },
+    {
+      "id": "curve_label",
+      "label": "Curve label",
+      "dtype": "string",
+      "value_kind": "text",
+      "unit": null,
+      "role": "curve_series_label",
+      "shape": 4
+    },
+    {
+      "id": "point_index",
+      "label": "Point index",
+      "dtype": "int64",
+      "value_kind": "number",
+      "unit": null,
+      "role": "curve_point_index",
+      "shape": 4
+    },
+    {
+      "id": "point_id",
+      "label": "Original point ID",
+      "dtype": "string",
+      "value_kind": "text",
+      "unit": null,
+      "role": "curve_point_identifier",
+      "shape": 4
+    },
+    {
+      "id": "pixel_x",
+      "label": "Original raster X",
+      "dtype": "float64",
+      "value_kind": "number",
+      "unit": "px",
+      "role": "curve_raster_x",
+      "shape": 4
+    },
+    {
+      "id": "pixel_y",
+      "label": "Original raster Y",
+      "dtype": "float64",
+      "value_kind": "number",
+      "unit": "px",
+      "role": "curve_raster_y",
+      "shape": 4
+    }
+  ],
+  "undeclared_unit_meaning": "null denotes displayed (not declared), not zero or inferred physical dimensionlessness",
+  "unit_qualified_transcription_headings": [
+    "x_s",
+    "y_V",
+    "point_index",
+    "point_id",
+    "pixel_x_px",
+    "pixel_y_px"
+  ],
+  "heading_to_stable_id": {
+    "x_s": "x",
+    "y_V": "y",
+    "point_index": "point_index",
+    "point_id": "point_id",
+    "pixel_x_px": "pixel_x",
+    "pixel_y_px": "pixel_y"
+  },
+  "common_curve_id": "625c8a1d-5315-4cb8-80cd-11858e8a2cf5",
+  "common_curve_label": "Four reference points",
+  "displayed_decimal_and_UUID_strings_by_transcription_heading": [
+    [
+      "2.0032310177705983",
+      "-1.0032362459546924",
+      "0",
+      "ceb88584-5b21-4f57-b038-aee330b7e8f1",
+      "30.580645161290324",
+      "70.451612903225808"
+    ],
+    [
+      "5.0016155088852985",
+      "0.49838187702265424",
+      "1",
+      "f399858b-d0b9-4d01-bab8-ca8945e4916e",
+      "60.516129032258064",
+      "40.516129032258064"
+    ],
+    [
+      "6.5008077544426497",
+      "-0.75080906148867288",
+      "2",
+      "c7d27a68-4334-4281-b7c4-33a228cab0e6",
+      "75.483870967741936",
+      "65.41935483870968"
+    ],
+    [
+      "2.9983844911147011",
+      "1.2491909385113273",
+      "3",
+      "a4ac88e7-946b-43d1-917b-f14bb9581176",
+      "40.516129032258064",
+      "25.548387096774192"
+    ]
+  ],
+  "common_fields_scope": "curve_id and curve_label appear in every displayed row; common fields plus six values represent all8stablecolumns. Unit-qualified headings are not new VariableIDs.",
+  "independent_static_visual_review": {
+    "sha256": "adfcc19f6fc421e0d94229df6691969b9f95959c763cbf8486fff67dfd039d3a",
+    "scope": "Only screenshots015/016/017: all16displayeddecimalstrings, fourpointUUIDs/sharedcurveID/schema matched transcription. No file extraction/math/calibration or Preview acceptance."
+  },
+  "current_display_readback_observed": true,
+  "sameprocess_reopened_display_match": "Operator045 visuallymatches015; reviewerSUB2 compared015/016/017 only",
+  "preUndo_UUID_preservation_verified": false,
+  "mathematical_calibration_or_accuracy_accepted": false,
+  "numerical_tolerance": null,
+  "full_tutorial_quality_accepted": false
+}

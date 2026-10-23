@@ -442,6 +442,13 @@ proc ::GX::pluginUninstall {type id} {
     if {$regType ne $type} { error "Plugin '$id' is registered as type '$regType', not '$type'" }
     set target [pluginTargetPath $type $id]
     if {![file exists $target]} { error "Managed plugin directory is missing: $target" }
+    # Removal cannot retain the implementation/assets for an active provider.
+    # Apply the existing runtime gate before disabling or renaming anything.
+    pluginRuntimeCheckQuiescent $target
+    if {$type eq "module" && [pluginRuntimeModuleLoaded $id]} {
+        return -code error -errorcode {GX PLUGIN RESTART_REQUIRED} \
+            "Plugin '$id' has a loaded implementation. Close GX-TXT and uninstall it from a fresh instance before using the plugin."
+    }
     set parent [file dirname $target]
     set rollback [file join $parent ".gx-uninstall-[pid]-[clock clicks]"]
     if {$type eq "module"} { catch {moduleSetEnabled $id 0} }

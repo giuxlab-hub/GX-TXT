@@ -1,1 +1,7 @@
 Original GX-TXT dev108 vector icons. Copyright 2026 GX-TXT contributors. SPDX-License-Identifier: GPL-3.0-or-later. No third-party fonts or proprietary artwork.
+
+TASK210 dev111 additions: 70 original directly authored SVG sources, copyright
+2026 GX-TXT contributors, GPL-3.0-or-later. No third-party artwork, font glyphs,
+logos or AI-generated raster assets are incorporated. Existing 30 stock asset
+bytes and their rights are preserved. See catalog.json for exact source SHA256,
+semantic action and origin; PROVENANCE.md describes the source-only scope.

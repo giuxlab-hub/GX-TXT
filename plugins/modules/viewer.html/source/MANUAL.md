@@ -1,33 +1,99 @@
-# HTML Dataset Viewer
+# HTML Dataset Viewer 1.2.3
 
-Read registered HTML Datasets through GX-TXT's safe native document presenter. The source remains read-only.
+This Viewer consults canonical HTML Datasets from the current GX-TXT Session.
+The shared CORE document owner presents interactive HTML through the installed
+precompiled native HTML runtime. Authored Viewer code uses the existing typed
+`document_bind` operation; it does not read arbitrary files, implement a browser,
+compile code at runtime, publish Datasets or create scientific results.
 
-## Open a document
+## Open a canonical document
 
-Open **HTML** from Viewers. In an open Session, choose a source from **HTML Dataset**. The selector offers compatible HTML identities from that Session; choosing one renders its content. **Open HTML Dataset** explicitly opens the selected source again. A compatible source opened through **Open Dataset** uses the same Viewer.
+Open **HTML** from the Viewers catalog. Select a compatible source in **HTML
+Dataset** and choose **Open HTML Dataset**. The normal Open Dataset workflow uses
+the same Viewer. With no Session or compatible HTML source, the document area
+provides the corresponding selection guidance. An incompatible or stale source
+is unavailable; it is not silently relabelled or replaced by another Dataset.
 
-With no open Session, the document area explains that a Session is required. If the Session has no compatible HTML Dataset, it explains that none is available. Open or import an appropriate source through the ordinary Session/Dataset workflow, then reopen the Viewer. A missing or incompatible context reports a source diagnostic rather than becoming an editable file.
+The canonical Dataset ID, revision and SHA remain authoritative. Reading,
+selection, navigation, page interaction and zoom do not save to or rewrite the
+canonical source. Changing Session or replacing a source requires explicit
+selection/reopening. A changed or unavailable native presentation is reported as
+such; the interactive surface does not fall back to inert text while claiming
+that scripts or CSS ran.
 
-## Read and adjust text size
+## Shared interactive presentation
 
-The document uses the main window width. Reading hints and supported-format limits sit below it. Resize the window to reflow text; the scrollbar remains available for long documents.
+The isolated native surface enables ordinary HTML layout, CSS, JavaScript, DOM,
+SVG and canvas. Page forms and inputs affect the presented page; they provide no
+GX-TXT publication, Tcl, process or Script Bridge capability. The native profile
+is temporary and ordinary file access, uploads/downloads, privileged permissions,
+popups and unrestricted network requests are denied. This is not an assertion of
+absolute protection against hostile native code or every browser vulnerability.
 
-Use **Smaller**, **Larger** and **Reset** above the document to change text size. The range is **50–300%**, in **25%** steps; Reset returns to **100%**. Ctrl+plus or Ctrl+equal enlarges text, Ctrl+minus reduces it, and Ctrl+0 resets it. Reopening starts a new reading view at 100%. Text-size changes preserve the document content and canonical source identity.
+A canonical standalone HTML Dataset supplies only its exact HTML bytes, copied
+through CORE Resource Management into its own presentation allocation. Inline
+CSS/JavaScript can work within that document; paths next to the Session source
+are not thereby authorized. Indexed documentation packages use their separately
+admitted package root for confined relative web assets. Do not infer that an
+arbitrary HTML Dataset is a web-asset bundle.
 
-Use the mouse wheel, scrollbar or Page Up/Page Down to scroll. Ctrl+Home and Ctrl+End move to the start and end. Focus the document, then use Ctrl+A to select its rendered text and Ctrl+C to copy it. Copy returns the readable presentation, not the original HTML markup. Selection and Copy remain available while editing is disabled.
+Use the native document's ordinary selection and Copy workflow to copy readable
+content. Pointer focus, Tab traversal, scrolling and selection belong to the
+embedded native surface. These workflows still require actual integrated GUI
+verification for the current build; old inert-reader results are not evidence
+of native browser behavior.
 
-## Supported presentation
+## Navigation and zoom controls
 
-The safe native presenter supports headings, paragraphs, lists, simple tables, preformatted code and styled inert link text. It is a scientific document reader rather than a general browser.
+The shared document component has a navigation row with **Back**, **Forward**,
+**Home**, **Reload** and **Stop**, and a separate **Zoom** row with **Smaller**,
+a percentage choice, **Larger** and **Reset**. Zoom is bounded to **50–300%** in
+**25 percentage-point** steps; Reset requests **100%**. Controls wait for matching
+native request completion. A selected percentage is a request; the displayed
+percentage is the current observed native value. Unrelated resize or visibility
+notifications cannot stand in for the matching zoom completion. Closing,
+rebinding or source failure discards the old control request and native lifetime.
 
-JavaScript, forms, CSS and external/network resources are inactive. Links do not navigate or launch a browser. Images are omitted and may appear as an image-omitted notice. Complex browser layouts and rich media are not supported.
+Zoom affects the local native presentation, not canonical HTML bytes or global
+GX-TXT fonts. Actual narrow-window layout, native button input and close/reopen
+behavior remain integrated GUI verification items. Ctrl+plus/Ctrl+equal,
+Ctrl+minus and Ctrl+0 were explicit shortcuts in the former inert text reader;
+this release manual does not assert that they work in the new native surface
+before the current focus/keyboard behavior is observed. No native keyboard
+handler or focus repair is introduced by this footer/manual update.
 
-## Session and source integrity
+## Preserved inert public render operation
 
-The canonical Dataset ID, source revision and SHA remain with CORE. The selector follows the current Session; a source from another Session is not an eligible substitute. When a window reports that its Session has changed, reopen HTML for the current Session. Reading, resizing, text zoom and Copy do not publish or edit scientific data.
+`HTML_VIEWER_API_v1.render source` remains the existing headless native run-model
+operation. It interprets supported headings, paragraphs, lists, simple tables,
+code and styled inert links; JavaScript, forms, CSS and external resources remain
+inactive in that legacy operation, and images may be omitted. Its original
+`apiInfo` inactive fields describe that operation. They do not describe the
+separate shared interactive host selected by the document component.
 
-## Acceptance status of this staged guide
+The host-only attach/load/navigation/inspect/detach methods retain the existing
+public HTML owner. They do not grant arbitrary HTML execution through Script or
+restricted author APIs. Consult the current public owner documentation for exact
+source admission, state and lifetime receipts.
 
-Installed 1.2 native tests verified the full-width normal/narrow layout, actual zoom buttons and keyboard shortcuts, 50–300% bounds, scrolling/reflow, disabled editing, unchanged source SHA and identical copied text before/after zoom. Earlier native Dataset/Session A→B→A and Copy failures and same-author repairs remain preserved separately. MAIN verified the explicit no-Session and no-compatible-source prompts. New-view zoom reset was observed after normal close/reopen.
+## Media, platform and acceptance limits
 
-MAIN also verified that global UI fonts remained unchanged and document zoom/timer resources were released after normal closing. Subsequent installed native checks also verified resize-to-Session expiry, compatible and incompatible Dataset contexts, and normal catalog discovery. Their original failures and corrected evidence remain preserved. Independent integrated acceptance and final release deposition remain MAIN-owned release checks. This guide describes the observed reading workflows; it is not a whole-release acceptance claim.
+General remote browsing and arbitrary network access are unsupported. Intentional
+external HTTP(S) navigation uses the existing safe opener subject to current
+native-input policy. A bounded experimental YouTube media policy is not proof of
+playback: client identification, permitted service requests, codecs and actual
+video playback remain **unverified**. No Referer spoofing, media acceptance or
+YouTube compatibility is claimed by this package.
+
+The current prebuilt HTML host is staged for the reviewed Debian x86_64/Qt6
+WebEngine environment. Other platforms or missing/mismatched runtime dependencies
+must report unavailability until a supported matching prebuilt is supplied.
+
+Version1.2.3 changes the authored explanatory footer, version and this manual
+through the official Development Workspace/Builder owners. It preserves the
+C++ handlers, declared public capabilities and canonical source binding. Source,
+validation, developer Build and standard export receipts qualify that authoring
+work only. Native embedding/rendering, focus/keyboard, copy, layout/navigation,
+media, responsiveness, installation and final integrated acceptance are separate
+MAIN-owned checks. Historical 1.2 inert-reader GUI receipts remain preserved and
+are not relabelled as acceptance of this shared browser host.

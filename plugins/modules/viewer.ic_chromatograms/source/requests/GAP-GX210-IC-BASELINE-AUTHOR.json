@@ -1,0 +1,25 @@
+{
+  "ownership": "Project-associated request under VIEWER_DEVELOPMENT_API_v1; CORE owner adjudicates separately.",
+  "project_snapshot": {
+    "design.gxtxt-viewer": "70b1b1774771c6f9cb82282c8aa9cc5debf5655562ecb714a27517963c16e9b6",
+    "handlers.cpp": "85ffd582e60ef430295d16be05346e31b9bc87b96aaae0b3c34cfd92d73e20af",
+    "project.json": "eedfb69bd6edf331706122e944887e763ca9e1e7c99eeb7f22d0195bad164872"
+  },
+  "request": {
+    "desired_input_output": "Exact canonical source X/Y/source stamp plus explicit method/options -> inspectable baseline receipt and explicit create-only corrected Dataset with original units/lineage.",
+    "minimal_acceptance_test": "Real source-bound baseline/derived overlay with explicit parameters, nonconvergence/cancel/stale rejection, raw preservation and real GUI evidence.",
+    "missing_operation_or_contract": "Declared baseline form and typed responsive Transform publication route absent from the current restricted author profile.",
+    "public_api_inspected": [
+      "NUMERIC_API_v1",
+      "DATASET_TRANSFORM_API_v1",
+      "DATASET_PUBLICATION_API_v2"
+    ],
+    "reproduction": "Retained baseline_admission_negative official validate rejects the actual Transform capability request. No private engine or generic invoke is used.",
+    "request_id": "GAP-GX210-IC-BASELINE-AUTHOR",
+    "schema": "gxtxt.core_api_gap.v1",
+    "status": "REQUESTED",
+    "task": "TASK210 Section17",
+    "viewer_project": "viewer.ic_chromatograms",
+    "why_existing_api_fails": "Public host Numeric/Transform exist; current official SDK admits no baseline form or Transform operation. Direct Numeric baselineDataset is synchronous; responsive Transform owns publication/cancel."
+  }
+}

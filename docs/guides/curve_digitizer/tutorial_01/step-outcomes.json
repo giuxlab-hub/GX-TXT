@@ -1,0 +1,726 @@
+{
+  "content_id": "curve_digitizer.tutorial.01.en",
+  "content_version": "0.1.0",
+  "status": "PARTIAL_ACTUAL_PACKETS003_004; STABLE_PREVIEW_GUARD_AND_FINAL_QUALITY_OPEN",
+  "baseline": "deposited dev110; final installed111 acceptance pending",
+  "application_version": "0.9.8.10-dev-111",
+  "generator_library_actual_version": null,
+  "generator_actual_version": "1.0.0",
+  "module_actual_version": "2.0.9",
+  "session_path": "/srv/gxtxt/agents/scratch/task210/GX210-TUTORIAL1/digitizer_t01_manual_stage03/session/actor/Sessions/task210-digitizer-t01-003",
+  "reviewer": "TUTORIAL1 actual scoped packet003; sole final scientific/visual/organizational review remains pending",
+  "reading_reminders_are_execution_evidence": false,
+  "steps": [
+    {
+      "id": "T01-01",
+      "section": "prepare",
+      "title": "1. Start through the registered generator",
+      "status": "PARTIAL_OBSERVED_PACKET003",
+      "actual_action": "Normal New Session and registered calibrated_digitizer generation via allocated mouse/keyboard.",
+      "observed_outcome": "Actual Session generated with normal registered pair and generator1.0.0; library version not read in GUI, native Guides generator button omitted.",
+      "source_dataset_ids": [
+        "digitizer.calibration.image"
+      ],
+      "output_dataset_ids": [],
+      "configuration_ids": [
+        "idoc_0001"
+      ],
+      "calibration_ids": [],
+      "actual_values": {
+        "library_id": "org.giuxlab.gxtxt.numerical_examples",
+        "library_version_gui_readback": null,
+        "generator_version": "1.0.0",
+        "session_name": "task210-digitizer-t01-003"
+      },
+      "evidence_paths": [
+        "evidence/packet003.json",
+        "figures/actual-gui-003/010_selected_calibrated_digitizer.png",
+        "figures/actual-gui-003/012_generation_result.png"
+      ],
+      "expected_refusals_observed": [],
+      "unresolved_differences": [
+        "Native Guides/button not exercised; library GUI version unknown."
+      ],
+      "review": "Existing operator-scoped report transcribed by GUIDE; final sole TUTORIAL1 acceptance pending."
+    },
+    {
+      "id": "T01-02",
+      "section": "source",
+      "title": "2. Distinguish the image from its reference table",
+      "status": "PARTIAL_OBSERVED_PACKET003",
+      "actual_action": "Opened ordinary Viewer catalog, new configuration and canonical generated source image.",
+      "observed_outcome": "Source/configuration/100x100/hash observed; temporary Duplicate/Rename/Delete experiments not performed.",
+      "source_dataset_ids": [
+        "digitizer.calibration.image"
+      ],
+      "output_dataset_ids": [],
+      "configuration_ids": [
+        "idoc_0001"
+      ],
+      "calibration_ids": [],
+      "actual_values": {
+        "source_id": "digitizer.calibration.image",
+        "source_sha256": "ba9871e4cfe0b39827bdd6f89437076777d2f25e1c389d005d78a531689c5039",
+        "dimensions": [
+          100,
+          100
+        ],
+        "configuration_id": "idoc_0001"
+      },
+      "evidence_paths": [
+        "evidence/packet003.json"
+      ],
+      "expected_refusals_observed": [],
+      "unresolved_differences": [
+        "Optional configuration-management exercise remains untested."
+      ],
+      "review": "Existing operator-scoped report transcribed by GUIDE; final sole TUTORIAL1 acceptance pending."
+    },
+    {
+      "id": "T01-03",
+      "section": "calibrate",
+      "title": "3. Apply the four-corner calibration",
+      "status": "PARTIAL_OBSERVED_PACKET003",
+      "actual_action": "Set each corner through ordinary GUI, verified independent location, cleared marker and accepted intended map.",
+      "observed_outcome": "Actual calibration/verification observed; click/corner values differ from ideal and no tolerance/uncertainty was inferred.",
+      "source_dataset_ids": [
+        "digitizer.calibration.image"
+      ],
+      "output_dataset_ids": [],
+      "configuration_ids": [
+        "idoc_0001"
+      ],
+      "calibration_ids": [
+        "meas_73b415"
+      ],
+      "actual_values": {
+        "axes": {
+          "x": {
+            "quantity": "Time",
+            "unit": "s",
+            "minimum": 0,
+            "maximum": 8,
+            "scale": "linear",
+            "role": "independent"
+          },
+          "y": {
+            "quantity": "Voltage",
+            "unit": "V",
+            "minimum": -2,
+            "maximum": 2,
+            "scale": "linear",
+            "role": "measured"
+          }
+        },
+        "corners_status_rounded_3_decimals": {
+          "BL": [
+            10.581,
+            90.323
+          ],
+          "BR": [
+            90.452,
+            90.323
+          ],
+          "TL": [
+            10.581,
+            10.581
+          ],
+          "TR": [
+            90.452,
+            10.581
+          ]
+        },
+        "verification": {
+          "expected": [
+            2,
+            -1
+          ],
+          "actual_source_pixel_display": [
+            30.581,
+            70.452
+          ],
+          "actual_physical_display": [
+            2.003231018,
+            -1.003236246
+          ],
+          "delta_x_s_display": 0.003231017771,
+          "delta_y_V_display": -0.003236245955,
+          "cleared_marker_before_points": true,
+          "did_not_acquire_curve_point": true,
+          "not_measurement_uncertainty": true
+        },
+        "accepted_calibration_id": "meas_73b415"
+      },
+      "evidence_paths": [
+        "evidence/packet003.json",
+        "figures/actual-gui-003/032_actual_verification.png"
+      ],
+      "expected_refusals_observed": [],
+      "unresolved_differences": [
+        "Full canonical numerical/ID audit pending; corner RMS is not independent accuracy."
+      ],
+      "review": "Existing operator-scoped report transcribed by GUIDE; final sole TUTORIAL1 acceptance pending."
+    },
+    {
+      "id": "T01-04",
+      "section": "points",
+      "title": "4. Preserve the intended point order",
+      "status": "PARTIAL_OBSERVED_PACKET003",
+      "actual_action": "Applied None/Insertion order, snap off, acquired four points and exercised CtrlZ/Y, Move Undo and Delete Undo.",
+      "observed_outcome": "003 visible position/count/order history retained;004 later complete current UUID strings read through ordinary GUI table. PreUndo identity preservation is not established.",
+      "source_dataset_ids": [
+        "digitizer.calibration.image"
+      ],
+      "output_dataset_ids": [],
+      "configuration_ids": [
+        "idoc_0001"
+      ],
+      "calibration_ids": [
+        "meas_73b415"
+      ],
+      "actual_values": {
+        "packet003_history_and_acquisition": {
+          "ordering": {
+            "monotonicity": "None",
+            "ordering_source": "Insertion order",
+            "snap": false,
+            "apply_status": "Applied and saved to the selected configuration",
+            "reopened_readback_same": true
+          },
+          "point_acquisition_GUI_readouts": [
+            {
+              "teaching_label": "P1",
+              "source_pixel_display": [
+                30.581,
+                70.452
+              ],
+              "physical_display": [
+                2.003231018,
+                -1.003236246
+              ],
+              "independent_ideal_target": [
+                2,
+                -1
+              ],
+              "capture": "039_actual_point1.png"
+            },
+            {
+              "teaching_label": "P2",
+              "source_pixel_display": [
+                60.516,
+                40.516
+              ],
+              "physical_display": [
+                5.001615509,
+                0.498381877
+              ],
+              "independent_ideal_target": [
+                5,
+                0.5
+              ],
+              "capture": "040_actual_point2.png"
+            },
+            {
+              "teaching_label": "P3",
+              "source_pixel_display": [
+                75.484,
+                65.419
+              ],
+              "physical_display": [
+                6.500807754,
+                -0.7508090615
+              ],
+              "independent_ideal_target": [
+                6.5,
+                -0.75
+              ],
+              "capture": "041_actual_point3.png"
+            },
+            {
+              "teaching_label": "P4",
+              "source_pixel_display": [
+                40.516,
+                25.548
+              ],
+              "physical_display": [
+                2.998384491,
+                1.249190939
+              ],
+              "independent_ideal_target": [
+                3,
+                1.25
+              ],
+              "capture": "042_actual_point4.png"
+            }
+          ],
+          "history": {
+            "CtrlZ_four_to_three": "043",
+            "CtrlY_three_to_four": "044",
+            "Move_P2_changed": "045",
+            "Move_Undo_visible_restoration": "046",
+            "Delete_P2_four_to_three": "047",
+            "Delete_Undo_three_to_four": "048",
+            "counts_visible_positions_order_restored": true,
+            "immutable_ID_restore_independently_readback": false
+          },
+          "immutable_curve_id": null,
+          "immutable_point_ids": []
+        },
+        "packet004_current_identity_readback": {
+          "common_curve_id": "625c8a1d-5315-4cb8-80cd-11858e8a2cf5",
+          "point_ids": [
+            "ceb88584-5b21-4f57-b038-aee330b7e8f1",
+            "f399858b-d0b9-4d01-bab8-ca8945e4916e",
+            "c7d27a68-4334-4281-b7c4-33a228cab0e6",
+            "a4ac88e7-946b-43d1-917b-f14bb9581176"
+          ],
+          "first_known_after_original_history": true,
+          "preUndo_baseline_exists": false,
+          "identity_restoration_through_preceding_Undo_verified": false
+        }
+      },
+      "evidence_paths": [
+        "evidence/packet003.json",
+        "figures/actual-gui-003/042_actual_point4.png",
+        "figures/actual-gui-003/080_reopened_notes.png",
+        "evidence/packet004-canonical-display.json",
+        "figures/actual-gui-004/015_canonical_rows_full_ids.png"
+      ],
+      "expected_refusals_observed": [],
+      "unresolved_differences": [
+        "Current UUIDs were read later in004; no preUndo baseline, so earlier ID restoration remains unverified.",
+        "Optional complete menus/settings/snap/copy exercises not tested."
+      ],
+      "review": "Existing sole-operator scoped records003/004 +independent static displayed-string/frame corroboration; final sole TUTORIAL1 quality pending."
+    },
+    {
+      "id": "T01-05",
+      "section": "publish",
+      "title": "5. Publish a genuine Digitizer output",
+      "status": "PARTIAL_OBSERVED_PACKETS003_004",
+      "actual_action": "Published normally in separate layout with one accepted calibration and uncertainty none.",
+      "observed_outcome": "003 normal four-row publication;004 ordinary table exposed all current rows/eight columns/UUIDs, corroborated by static visual transcription review. Decimal strings retained, no mathematical accuracy/tolerance acceptance.",
+      "source_dataset_ids": [
+        "digitizer.calibration.image"
+      ],
+      "output_dataset_ids": [
+        "cd.tutorial01.measurement_1.curves"
+      ],
+      "configuration_ids": [
+        "idoc_0001"
+      ],
+      "calibration_ids": [
+        "meas_73b415"
+      ],
+      "actual_values": {
+        "packet003_normal_publication": {
+          "mode": "none",
+          "mode_status": "Uncertainty publication disabled; no sigmas will be invented.",
+          "layout": "separate",
+          "selected_accepted_calibrations": 1,
+          "actual_output_id": "cd.tutorial01.measurement_1.curves",
+          "reported_dataset_count": 1,
+          "actual_contract": "table.generic",
+          "actual_row_count": 4,
+          "actual_producer_version": "2.0.9",
+          "actual_schema_columns": [
+            "x",
+            "y",
+            "curve_id",
+            "curve_label",
+            "point_index",
+            "point_id",
+            "pixel_x",
+            "pixel_y"
+          ],
+          "x_unit": "s",
+          "y_unit": "V",
+          "pixel_units": "px",
+          "sha256": "b28616fc9c7feba75a4707ec3042acfe6dcebb5af97913c356f7acb493b9470f",
+          "capture_success": "055_publication_result.png",
+          "capture_info": "059_published_dataset_actual_info.png",
+          "reopened_schema": "085_reopened_output_variables.png",
+          "reopened_info": "086_reopened_output_identity.png",
+          "full_rows_ids_readback": "INCOMPLETE; Sessionfiletextpane clipped"
+        },
+        "packet004_complete_current_display_readback": {
+          "record_type": "actual_GUI_current_canonical_display_transcription",
+          "packet": "T01 remaining004",
+          "dataset_id": "cd.tutorial01.measurement_1.curves",
+          "method": "NormalCurrent→Tablepages; ordinarywindowmaximize/columnresize; visuallyread015/016. Decimalstringspreserved asdisplayed; noCSVparse/privateextract/clipboard/API.",
+          "original_transcription_sha256": "28243f92271d3aa166b31a59a1d6c1a090ebe2f046be69477b51abf647549ead",
+          "source_rows_displayed": "1–4 of4",
+          "actual_stable_variable_ids": [
+            "x",
+            "y",
+            "curve_id",
+            "curve_label",
+            "point_index",
+            "point_id",
+            "pixel_x",
+            "pixel_y"
+          ],
+          "actual_schema_display": [
+            {
+              "id": "x",
+              "label": "Time",
+              "dtype": "float64",
+              "value_kind": "number",
+              "unit": "s",
+              "role": "independent",
+              "shape": 4
+            },
+            {
+              "id": "y",
+              "label": "Voltage",
+              "dtype": "float64",
+              "value_kind": "number",
+              "unit": "V",
+              "role": "measured",
+              "shape": 4
+            },
+            {
+              "id": "curve_id",
+              "label": "Curve ID",
+              "dtype": "string",
+              "value_kind": "text",
+              "unit": null,
+              "role": "curve_series_identifier",
+              "shape": 4
+            },
+            {
+              "id": "curve_label",
+              "label": "Curve label",
+              "dtype": "string",
+              "value_kind": "text",
+              "unit": null,
+              "role": "curve_series_label",
+              "shape": 4
+            },
+            {
+              "id": "point_index",
+              "label": "Point index",
+              "dtype": "int64",
+              "value_kind": "number",
+              "unit": null,
+              "role": "curve_point_index",
+              "shape": 4
+            },
+            {
+              "id": "point_id",
+              "label": "Original point ID",
+              "dtype": "string",
+              "value_kind": "text",
+              "unit": null,
+              "role": "curve_point_identifier",
+              "shape": 4
+            },
+            {
+              "id": "pixel_x",
+              "label": "Original raster X",
+              "dtype": "float64",
+              "value_kind": "number",
+              "unit": "px",
+              "role": "curve_raster_x",
+              "shape": 4
+            },
+            {
+              "id": "pixel_y",
+              "label": "Original raster Y",
+              "dtype": "float64",
+              "value_kind": "number",
+              "unit": "px",
+              "role": "curve_raster_y",
+              "shape": 4
+            }
+          ],
+          "undeclared_unit_meaning": "null denotes displayed (not declared), not zero or inferred physical dimensionlessness",
+          "unit_qualified_transcription_headings": [
+            "x_s",
+            "y_V",
+            "point_index",
+            "point_id",
+            "pixel_x_px",
+            "pixel_y_px"
+          ],
+          "heading_to_stable_id": {
+            "x_s": "x",
+            "y_V": "y",
+            "point_index": "point_index",
+            "point_id": "point_id",
+            "pixel_x_px": "pixel_x",
+            "pixel_y_px": "pixel_y"
+          },
+          "common_curve_id": "625c8a1d-5315-4cb8-80cd-11858e8a2cf5",
+          "common_curve_label": "Four reference points",
+          "displayed_decimal_and_UUID_strings_by_transcription_heading": [
+            [
+              "2.0032310177705983",
+              "-1.0032362459546924",
+              "0",
+              "ceb88584-5b21-4f57-b038-aee330b7e8f1",
+              "30.580645161290324",
+              "70.451612903225808"
+            ],
+            [
+              "5.0016155088852985",
+              "0.49838187702265424",
+              "1",
+              "f399858b-d0b9-4d01-bab8-ca8945e4916e",
+              "60.516129032258064",
+              "40.516129032258064"
+            ],
+            [
+              "6.5008077544426497",
+              "-0.75080906148867288",
+              "2",
+              "c7d27a68-4334-4281-b7c4-33a228cab0e6",
+              "75.483870967741936",
+              "65.41935483870968"
+            ],
+            [
+              "2.9983844911147011",
+              "1.2491909385113273",
+              "3",
+              "a4ac88e7-946b-43d1-917b-f14bb9581176",
+              "40.516129032258064",
+              "25.548387096774192"
+            ]
+          ],
+          "common_fields_scope": "curve_id and curve_label appear in every displayed row; common fields plus six values represent all8stablecolumns. Unit-qualified headings are not new VariableIDs.",
+          "independent_static_visual_review": {
+            "sha256": "adfcc19f6fc421e0d94229df6691969b9f95959c763cbf8486fff67dfd039d3a",
+            "scope": "Only screenshots015/016/017: all16displayeddecimalstrings, fourpointUUIDs/sharedcurveID/schema matched transcription. No file extraction/math/calibration or Preview acceptance."
+          },
+          "current_display_readback_observed": true,
+          "sameprocess_reopened_display_match": "Operator045 visuallymatches015; reviewerSUB2 compared015/016/017 only",
+          "preUndo_UUID_preservation_verified": false,
+          "mathematical_calibration_or_accuracy_accepted": false,
+          "numerical_tolerance": null,
+          "full_tutorial_quality_accepted": false
+        }
+      },
+      "evidence_paths": [
+        "evidence/packet003.json",
+        "figures/actual-gui-003/055_publication_result.png",
+        "figures/actual-gui-003/059_published_dataset_actual_info.png",
+        "evidence/packet004-canonical-display.json",
+        "figures/actual-gui-004/015_canonical_rows_full_ids.png",
+        "figures/actual-gui-004/016_canonical_column_details.png",
+        "figures/actual-gui-004/017_canonical_schema_point_ids_pixels.png"
+      ],
+      "expected_refusals_observed": [],
+      "unresolved_differences": [
+        "Displayed values/UUIDs are complete current readback, not an independent calibration/physical-accuracy or full scientific acceptance.",
+        "No preUndo UUID baseline exists."
+      ],
+      "review": "Existing sole-operator scoped records003/004 +independent static displayed-string/frame corroboration; final sole TUTORIAL1 quality pending."
+    },
+    {
+      "id": "T01-06",
+      "section": "preview",
+      "title": "6. Inspect and manipulate the published Dataset",
+      "status": "PARTIAL_NATIVE_OBSERVED_PACKETS004_005_INITIAL_AUTO_GUARD_OPEN",
+      "actual_action": "003Previewfirstfailure retained;004remaining-only normalOpen/canonicalTable/automaticnativeattachment/onepermittedRender/Source-Quality/hide-restore/scopedZoom observations.",
+      "observed_outcome": "004missingfiltersdidnotrecurinboundedattachment.022nativevisiblewasPreviousrender;025Qualitycurrent/026sourceverified afteroneRender;027overlayhidden/028currentnativeempty.030restoredvisiblegeometryand031overlaymarkedPreviousrender;no currentvisiblelinecapture/fullPreviewPASS.",
+      "source_dataset_ids": [
+        "digitizer.calibration.image"
+      ],
+      "output_dataset_ids": [
+        "cd.tutorial01.measurement_1.curves"
+      ],
+      "configuration_ids": [
+        "idoc_0001"
+      ],
+      "calibration_ids": [
+        "meas_73b415"
+      ],
+      "actual_values": {
+        "packet003_preserved_failure": {
+          "status": "FAILED_OWNER_GAP_PACKET003",
+          "actual_action": "Selected the actual published Dataset and opened Preview once.",
+          "observed_outcome": "Preview unavailable: key \"filters\" not known in dictionary Select Render to retry.",
+          "actual_values": {
+            "status": "FAILED_OWNER_GAP",
+            "message": "Preview unavailable: key \"filters\" not known in dictionary Select Render to retry.",
+            "first_capture": "061_actual_published_preview_ready.png",
+            "Render_retry": false,
+            "Fit_zoom_pan_group_ShowHide_Source_Quality": "NOT_TESTED after firstfailure; no privatefallback",
+            "return_dataset_tab_after_reopen": "084 restored unavailablePreviewtab automatically; no Render/input retry, switchedVariables085"
+          },
+          "unresolved_differences": [
+            "Affected path stopped; no Render retry/fit/zoom/pan/group/ShowHide/Source/Quality proof. MAIN reports CORE sourcefix19b; fresh remaining004 outcome pending."
+          ]
+        },
+        "packet004_operator_preview": {
+          "row_filters_missing_key": "DID_NOT_RECUR boundedcorrectednativeattachment",
+          "auto_first_native": "022 actualvisibleconnectedgeometry, Previousrender guardstatus",
+          "one_explicit_normal_Render": "024 permittedR03 freshcandidatecurrentRender;025Quality Sessioncachehit/sourceverified,026sourceimagecurrent",
+          "visibility_hide": "027overlayremoved/028nativeempty withcurrentcachehitstatus",
+          "visibility_restore": "031checkboxon/overlayrestored,030nativegeometryvisiblebutPreviousrenderwarning",
+          "new_issue": "PersistentPreviousrender afternormalvisibilitycycle. Causeunestablished; retained047.",
+          "zoom": "030actualboundschanged; inputbatchedbefore029warningreview;qualifiedstale notfullPASS",
+          "Fit_pan": "NOT_TESTED; furtheraffectedworkstoppedafter031",
+          "after_SaveOpen": "042checkedvisibleoverlay/Previousrender; no furtherRender",
+          "current_visible_native_capture_limit": "022visible nativewasPreviousrender;025currentQuality/026currentSourceimage;028currentnativeempty;030restorednativevisiblebutstale. No mislabelledcurrentvisiblelinecapture."
+        },
+        "guard_finding_record": "evidence/packet004.json",
+        "current_visible_line_capture": false
+      },
+      "evidence_paths": [
+        "evidence/packet003.json",
+        "figures/actual-gui-003/061_actual_published_preview_ready.png",
+        "evidence/packet004.json",
+        "figures/actual-gui-004/022_candidate_preview_adoption.png",
+        "figures/actual-gui-004/025_after_single_render_current_status.png",
+        "figures/actual-gui-004/026_current_source_image_visibility.png",
+        "figures/actual-gui-004/027_curve_hidden_source_overlay.png",
+        "figures/actual-gui-004/028_curve_hidden_native_plot.png",
+        "figures/actual-gui-004/030_zoom_in_button.png",
+        "figures/actual-gui-004/031_restored_curve_stale_guard.png"
+      ],
+      "expected_refusals_observed": [],
+      "unresolved_differences": [
+        "New047staleguardfinding remains; warningdoesnotprovepayloadmutation/cause. MAINreportsfe393306sourcefix,runtimeuntested.",
+        "No currentvisiblelinecapture;Fit/pan/fullcurrent-sourcecontrols/parity/performance notaccepted.",
+        "Zoomdispatchwasbatchedbeforeintermediatewarningreview;changedticks/clippingonly,notexactbounds/factor/currentZoomPASS."
+      ],
+      "review": "Existing sole-operator scoped records003/004 +independent static displayed-string/frame corroboration; final sole TUTORIAL1 quality pending.",
+      "later_packet005": {
+        "status": "PARTIAL_CURRENT_EXPLICIT_RENDER_HIDE_SHOW_FIT_ZOOM_OBSERVED_INITIAL_AUTO_STALE_OPEN",
+        "record": "evidence/packet005.json",
+        "observations": {
+          "initial_auto_preview": "013 FINALIZING then014 nativegeometry withPreviousrender guard;015Quality explicitly previous, retained as separate unresolvedinitialattachment issue",
+          "explicit_Render": "ONE normal Render;016 currentSessioncachehit/sourceverifiedretained Preview,providerverified/read-onlyQuality;017 nativeconnectedTime(s)/Voltage(V);018 sourceoverlayFourreferencepoints4unique/4canonical/4display",
+          "hide": "One OFF;1200ms boundedidle BEFORE019sourceinspection.019checkboxoff,overlayremoved(originalblue rastercrossesremain),4canonical/4displaypoints;020currentproviderQuality021independentCOREsourcebyteverificationverified at preparation time2026-10-22T23:11:03Z;022empty native with unchanged axes/currentstatus BEFORE restoration",
+          "show": "One ON;1200ms idle BEFORE023sourceinspection.023samecheckboxon/overlayrestored/current;024currentQualityCOREverified;025nativevisible/current BEFORE Fit/Zoom; no batched Show+navigation",
+          "Fit": "ONE normalFit afterrestorationinspection;1200msidle026nativecurrent/fullcurve/ticksunchanged because alreadyfit;027Qualitycurrent",
+          "Zoom": "ONE normalZoomin afterFitstatusinspection;1200msidle028nativecurveviewportchanged,current. LabelledXticks2.5..6 versusbaseline2..6.5;Yticks-0.5..1 versusbaseline-1..1. These are visible ticks not exact viewportlimits.029Qualitycurrent,030sourceoverlayon/4canonical4display/current",
+          "Save": "031menu032intermediate033normalconfirmation exactfixture/metadata/manifest.ini",
+          "close": "NormalWMrootClose dispatched23:13:53UTC beforecap;actorMANUAL_ROOT_CLOSE_OBSERVED exit0/wrappercase0/ownouter0, WM0/Xephyr0,recordedsurvivors[],parentWM/resunchanged. No aftercloseinput/capture/relaunch"
+        },
+        "pan_cold_restart_performance_full_tutorial_accepted": false
+      }
+    },
+    {
+      "id": "T01-07",
+      "section": "reopen",
+      "title": "7. Save, reopen and test a recoverable error",
+      "status": "PARTIAL_OBSERVED_PACKETS003_004",
+      "actual_action": "Normal Save, closed old Viewer, supported Open exact Session and opened actual new Viewer/configuration.",
+      "observed_outcome": "003and004scopednormalSave/Open/newViewerreadbacks retained source/config/acceptedmap/Notes/count/order/outputmetadata.004currentcomplete rows/UUIDs visuallymatched aftersameprocessOpen;PreviewstillPreviousrender,no coldrestart.",
+      "source_dataset_ids": [
+        "digitizer.calibration.image"
+      ],
+      "output_dataset_ids": [
+        "cd.tutorial01.measurement_1.curves"
+      ],
+      "configuration_ids": [
+        "idoc_0001"
+      ],
+      "calibration_ids": [
+        "meas_73b415"
+      ],
+      "actual_values": {
+        "packet003_inprocess_reopen": {
+          "ordinary_save_confirmation": "070_save_confirmation.png",
+          "external_viewer_closed_before_session_Open": "073_digitizer_closed_before_open.png",
+          "normal_Open_exact_path": "075–077",
+          "actual_new_Viewer_opened": "078",
+          "source_config_hash_dimensions_retained": true,
+          "accepted_calibration_axes_retained": "079",
+          "notes_retained": "080",
+          "four_numbered_positions_count_retained": "081",
+          "ordering_retained": "083",
+          "output_identity_schema_rowcount_hash_retained": "085–086",
+          "full_numerical_ids_readback": false,
+          "application_cold_restart": false,
+          "preview_reopened_interaction": "BLOCKED bypreservedfirstfailure"
+        },
+        "packet004_inprocess_copy_reopen": {
+          "save_confirmation": "034",
+          "normal_sameprocess_open": "035–036",
+          "new_original_Viewer_source_config": "038idoc0001/source100x100/hash",
+          "accepted_calibration": "039meas73b415 Time/s0..8Voltage/V-2..2",
+          "notes": "040 exactdisplayedretained",
+          "four_point_curve": "041",
+          "fullcanonicalrowsUUIDs": "045",
+          "publication_identity_hash_producer209": "046",
+          "fresh_application_restart_afternewvisibilitysettings": "NOT_TESTED",
+          "hidden_preference_restart": "NOT_TESTED; finalvisibledefaultwasrestoredbeforeSave"
+        },
+        "complete_current_display_rows_UUIDs_match": "Operator045matches015; independenttranscriptionreviewcovered015/016/017only",
+        "cold_restart_tested": false
+      },
+      "evidence_paths": [
+        "evidence/packet003.json",
+        "figures/actual-gui-003/080_reopened_notes.png",
+        "figures/actual-gui-003/081_reopened_four_points.png",
+        "figures/actual-gui-003/086_reopened_output_identity.png",
+        "evidence/packet004.json",
+        "evidence/packet004-canonical-display.json",
+        "figures/actual-gui-004/045_reopened_canonical_full_rows_ids.png"
+      ],
+      "expected_refusals_observed": [],
+      "unresolved_differences": [
+        "StablecurrentPreview aftervisibility/reopen and fullcurrent-sourceinteraction remain unresolved.",
+        "Cold restart/hidden-preference restart and negative degenerate-corner exercise not tested; preUndo UUID history baseline absent."
+      ],
+      "review": "Existing sole-operator scoped records003/004 +independent static displayed-string/frame corroboration; final sole TUTORIAL1 quality pending."
+    }
+  ],
+  "overall_acceptance": null,
+  "actual_evidence_scope": {
+    "packets": [
+      "003",
+      "004",
+      "005"
+    ],
+    "original_generation_operator": "GX210-TUTORIAL1",
+    "normal_registered_generation_observed_in003": true,
+    "complete_current_GUI_rows_UUIDs_readback_observed_in004": true,
+    "independent_static_visual_transcription_corrob": true,
+    "preUndo_UUID_preservation_verified": false,
+    "mathematical_accuracy_tolerance_or_uncertainty_accepted": false,
+    "some_native_Quality_Source_hide_restore_observations": true,
+    "stable_current_full_Preview_accepted": false,
+    "cold_application_restart_tested": false,
+    "native_Guides_HTML_actions": "003OMITTED_contentabsent;004and005NOT_TESTED",
+    "parity_performance_accepted": false,
+    "optional_full_exercises": "NOT_TESTED",
+    "final_acceptance": null,
+    "later_packet005": {
+      "current_visible_native_line_after_explicit_Render_observed": true,
+      "bounded_Hide_Show_Fit_Zoom_observed": true,
+      "initial_auto_attachment_resolved": false,
+      "full_tutorial_accepted": false
+    },
+    "packet004_current_visible_native_line_capture": false,
+    "current_visible_native_line_capture_after_one_explicit_Render_in005": true,
+    "Fit_observed_in005": true,
+    "pan_tested": false
+  },
+  "actual_application_scopes": [
+    {
+      "packet": "003",
+      "version": "0.9.8.10-dev-110",
+      "source_commit": "e2f19dcc4c32bbc8aa7410683ecb87febe9c2e68",
+      "scope": "Original normal generation/calibration/history/publication/scopedSaveOpen; firstPreviewkeyfiltersfailure."
+    },
+    {
+      "packet": "004",
+      "version": "0.9.8.10-dev-111",
+      "candidate_commit": "06ebcb958357322d5d6ccde15800e803f485de0a",
+      "classification": "FROZEN_COMMITTED_MAIN_CANDIDATE_NOT_INSTALLED",
+      "scope": "Remaining-only normal copiedSessionOpen/currenttable/Preview/save-reopen readback; no new generation/publication."
+    },
+    {
+      "packet": "005",
+      "version": "0.9.8.10-dev-111",
+      "candidate_commit": "d3e578c1e7b672a76e336f590a160180b1bb109d",
+      "classification": "FROZEN_COMMITTED_MAIN_CANDIDATE_NOT_INSTALLED",
+      "scope": "Bounded same-publication explicitRender/currentHideShowFitZoom; initialautoPreviousrender unresolved; no newgen/pub or rows retranscription."
+    }
+  ],
+  "continuation_session_path": "/srv/gxtxt/agents/scratch/GX210-MAIN1/digitizer_t01_continuation_fixture01/Session"
+}

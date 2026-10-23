@@ -143,7 +143,9 @@
         "raster_command",
         "tex_command",
         "em_command",
-        "workbench_command"
+        "workbench_command",
+        "transform_form",
+        "pcb_source_form"
       ]
     },
     "VIEWER_COMPONENT_DEMO_API_v1": {
@@ -228,6 +230,10 @@
         "widgetCreate", "cellFieldProfileSpec", "upsertPlotFromSpec", "render", "widgetExport"
       ]
     },
+    "DATASET_TRANSFORM_API_v1": {
+      "version": 1,
+      "operations": ["execute_responsive", "cancel", "provenance"]
+    },
     "DATASET_PUBLICATION_API_v2": {
       "version": 2,
       "operations": [
@@ -267,6 +273,7 @@
       "DATASET_PUBLICATION_API_v2"
     ],
     "scientific_view_v1": [
+      "DATASET_TRANSFORM_API_v1",
       "WORKBENCH_3D_API_v1",
       "CONFIGURATION_API_v1",
       "FILE_PUBLICATION_API_v1",

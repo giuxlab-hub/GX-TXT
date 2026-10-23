@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original GUIDE explanatory manuscript. -->
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Curve Digitizer — publication identities and recovery</title>
+<link rel="stylesheet" href="concepts.css">
+</head>
+<body><main>
+<p class="label">Curve Digitizer 2.0.9 · reference · review draft</p>
+<h1>Publish a result you can identify and interpret</h1>
+<p class="lead">A saved digitizing configuration preserves your work. A published Dataset gives other GX-TXT tools a scientific result with its own identity, units and provenance. Choose its curve and calibration organization deliberately.</p>
+
+<nav aria-label="On this page"><ul><li><a href="concepts.html">Coordinate and evidence concepts</a></li><li><a href="#objects">What is being saved?</a></li><li><a href="#selection">Which calibration?</a></li><li><a href="#layout">How are rows grouped?</a></li><li><a href="#recovery">Publication and recovery</a></li></ul></nav>
+<section id="objects"><h2>Recognize the three work objects</h2>
+<table><caption>Source, saved configuration and published result</caption><thead><tr><th scope="col">Object</th><th scope="col">What it preserves</th><th scope="col">How to interpret it</th></tr></thead><tbody>
+<tr><td>Source Image Dataset</td><td>The canonical raster and its registered source identity.</td><td>Calibration and original pixel locations refer to these exact image bytes.</td></tr>
+<tr><td>Digitizer configuration</td><td>The source association, calibration measurements, curves, accepted points, notes and publication choices.</td><td>A named scientific work object saved with the Session. Its display name is distinct from its stable identity.</td></tr>
+<tr><td>Published curve Dataset</td><td>Scientific coordinates, curve/point/calibration identities where applicable, units, semantic schema and provenance.</td><td>A result that compatible Dataset, Preview, plotting and fitting consumers can inspect through supported interfaces.</td></tr>
+</tbody></table>
+<p>A change to a configuration does not mean that an existing published Dataset has already been updated. Review the publication target and publish deliberately when the result should reflect new work. Deleting a configuration does not silently delete previously published Datasets.</p>
+<p>Configuration notes can accompany publication as Dataset Notes. These readable notes complement structured scientific metadata; they do not replace curve grouping, axis units or source identity. Preserve any earlier published notes and report a notes-save failure separately from whether the scientific Dataset was published.</p>
+</section>
+<section id="selection"><h2>Active, accepted and selected have different meanings</h2>
+<p>The <strong>active calibration</strong> supplies the mapping used for the current view and verification. An <strong>accepted measurement</strong> is a valid calibration realization eligible for publication. The <strong>publication selection</strong> identifies which accepted measurement or measurements will produce output.</p>
+<p>Selecting a row and activating its mapping are separate operations in the documented calibration workflow. Before interpreting a verification result, identify the active measurement. Before interpreting a published Dataset, identify the calibration chosen for that output.</p>
+<p>Changing an active mapping recalculates scientific coordinates from the same original raster points. It does not move the raster observations. Renaming a measurement changes its readable label while retaining its stable identity. Two independently named realizations can have equal transform fingerprints.</p>
+<p class="note">Repeated calibration of the same raster explores the coordinate mapping procedure. It does not create independent physical measurements of the specimen or device.</p>
+</section>
+<section id="layout"><h2>Choose curve meaning and calibration layout separately</h2>
+<p><strong>Independent curves</strong> are distinct curves without a shared numerical family parameter. A <strong>numerical family</strong> requires an actual numerical quantity that parameterizes the curves, with consistent units and meaning. Sharing an image, color palette or legend is insufficient by itself to establish a numerical family.</p>
+<p>In either case, stable curve identity defines curve membership. A family value and an editable curve label do not replace the curve key. Point order remains an explicit property; an X coordinate alone is not a traversal index.</p>
+<table><caption>Separate and combined calibration layouts</caption><thead><tr><th scope="col">Layout</th><th scope="col">Result organization</th><th scope="col">Consumer requirement</th></tr></thead><tbody>
+<tr><td>Separate</td><td>One output Dataset per selected calibration, with coordinates calculated from that mapping.</td><td>Ordinary compatible curve consumers can use each result while preserving curve grouping and point order.</td></tr>
+<tr><td>Combined</td><td>One Dataset contains a realization of the original points for every selected calibration.</td><td>The consumer must retain calibration grouping as well as curve grouping. An unqualified X/Y reader may mix realizations.</td></tr>
+</tbody></table>
+<figure class="wide-figure"><img src="figures/calibration-realizations.svg" width="1000" height="650" alt="One illustrative curve has three raster points. Mapping those points under accepted calibrations A and B gives two separately grouped sets of three rows."><figcaption>Original explanatory diagram. Six illustrative combined rows represent three unique raster points under two calibrations. <a href="figures/calibration-realizations.svg">Open the diagram at full size.</a></figcaption></figure>
+<p>Inspect the actual output Dataset rather than inferring its organization from its name. Retain source, curve, point and calibration identities along with units. Keep the declared insertion or coordinate-ordering policy explicit; publication applies that policy in the selected calibration's scientific coordinates.</p>
+<p>Combined output must satisfy the implemented scientific compatibility rules. In the deposited manual, enabled uncertainty with multiple combined calibration realizations is explicitly limited. Do not disable a necessary scientific model merely to force a preferred storage layout; choose a supported result and retain its limitations.</p>
+</section>
+<section id="recovery"><h2>Read publication status one output at a time</h2>
+<p>Planned names and selected calibration mappings are validated before publication. The documented separate layout then commits each output Dataset individually. If a later output fails during publication, an earlier successfully committed Dataset remains available.</p>
+<figure class="wide-figure"><img src="figures/publication-boundaries.svg" width="1000" height="580" alt="A conceptual separate-output plan commits Dataset A, then a later output B fails. A remains available and B is reported as failed."><figcaption>Original conceptual failure-boundary diagram. It is not a captured incident or evidence that a particular publication failed. <a href="figures/publication-boundaries.svg">Open the diagram at full size.</a></figcaption></figure>
+<table><caption>Interpretation and deliberate recovery</caption><thead><tr><th scope="col">Situation</th><th scope="col">What to establish</th><th scope="col">Recovery principle</th></tr></thead><tbody>
+<tr><td>Two planned output names collide.</td><td>Which calibration labels or template tokens produced the same target ID?</td><td>Review the generated names and use a naming plan that distinguishes the intended outputs before publishing.</td></tr>
+<tr><td>An output ID belongs to another producer or configuration.</td><td>Which existing Dataset owns that identity?</td><td>Choose an appropriate distinct target. Preserve the existing scientific result.</td></tr>
+<tr><td>A later separate output fails.</td><td>Which earlier outputs completed and which output failed?</td><td>Inspect retained results, correct the reported cause and deliberately review the next publication selection and naming plan.</td></tr>
+<tr><td>Scientific publication completes but notes cannot be saved.</td><td>Which Dataset exists, and which descriptive notes update failed?</td><td>Keep the successful scientific result identifiable and repair the notes problem through the supported workflow.</td></tr>
+<tr><td>The source is missing or its bytes changed.</td><td>Does the source still match the recorded Dataset identity and SHA-256?</td><td>Restore the verified original or create appropriate new work for the changed raster. Preserve existing configurations and outputs.</td></tr>
+</tbody></table>
+<p>Same-owner replacement is subject to the existing producer/configuration ownership rules. Review the actual target IDs before repeating a publication; a familiar label does not authorize overwriting another configuration's output.</p>
+<p>After successful publication, select the actual output in Dataset tools and inspect the real Preview. Confirm curve/calibration grouping, axes and units, source information and point order before using the result downstream. Preserve the Session and verify reopening in the final real-GUI tutorial workflow.</p>
+</section>
+<footer><p><a href="index.html">Return to the complete manual</a> · <a href="api-reference.html">Public contract reference</a></p><p>GX210-GUIDE · GPL-3.0-or-later · Review draft for unchanged Curve Digitizer 2.0.9 on deposited dev110. Illustrations and analytical examples are identified explicitly; actual workflow validation remains pending.</p></footer>
+</main></body></html>

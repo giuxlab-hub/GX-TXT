@@ -77,3 +77,51 @@ raise/return the existing owner's explicit error. GUI `safe method args` catches
 callback errors, logs them and returns `{status FAILED message ...}`; public
 Viewer opening can still raise a Tcl error. This reference proves neither build,
 debugger, scientific correctness nor installed release acceptance.
+# Trusted source maintenance for existing Viewers
+
+Use **File → Maintain installed Viewer…**, select an approved registered Viewer
+and choose the parent of a fresh private maintenance project. The same route is
+available from **Viewer Interface Builder → Import Existing Viewer → Maintain
+original source…**. Both use the existing Development Workspace, Source Surface,
+managed request broker and standard package owner. Original installed files are
+read-only input; the editable browser shows only CORE-approved opaque targets
+and their source bounds. Reopen a saved maintenance project with Open project.
+Only Workbench's exact eight Tcl units and Replicate's one Tcl unit are admitted.
+Digitizer is absent from this policy and remains its protected AS-IS package.
+Replicate additionally exposes two exact Markdown IDs: existing MANUAL.md and
+the optional DIGITIZER_INTEROPERABILITY_API_v1.md. The same Source Surface uses
+the CORE-returned Tcl/Markdown language; no private editor or arbitrary path is
+accepted. Every source/document remains within64KiB.
+
+Save checks the inspected SHA256 before atomic replacement and advances the
+editor baseline only after an accepted backend response. Failed, stale or
+cancelled requests preserve unsaved text. Validate reports lexical completeness,
+source inventory and unchanged preserved files; no Tcl is evaluated. Export
+creates a reviewable preserved-payload candidate with a patch-version bump and
+checksum/readback receipt. Its status explicitly leaves real GUI/scientific
+validation untested. This is trusted maintainer source access, not arbitrary
+source-file import or a new restricted Tcl runtime.
+An optional document absent from the original is visibly marked not authored.
+Its inspection carries genuine absence/null SHA. Save creates only that exact
+approved document without replacement; a concurrent creation or stale SHA fails.
+Existing document/source modes are preserved; a new document has CORE-fixed0644.
+Schema-v2 records the original absence and rechecks it on reopen/save/export.
+Old prototype projects/evidence remain preserved and require fresh staging.
+Markdown validation means inert bounded UTF-8 only, not Tcl or document semantics.
+MAIN retains descriptor/public-contract changes and final candidate acceptance.
+Choose a parent folder: initialization reserves a new absent project path and
+does not adopt or delete an existing empty folder. A persistent owned mode0600
+derived lock serializes same-project cooperative requests; another active owner
+returns busy without waiting. This is not a hostile-process CAS guarantee.
+Source/lock checks use opened FDs and path identities. Save readback must confirm
+bytes/mode before accepting the editor baseline. A lost response means inspect
+first, not blind retry. If standard ZIP publication succeeds but checksum
+publication collides, both the ZIP and competing sidecar remain for inspection;
+no crash-atomic pair, automatic rollback or cleanup success is claimed.
+
+C++ Build, Run, Preview, Test and Debug are unavailable in this mode. Use the
+normal owner-approved candidate promotion and real GUI verification route.
+Builder declaration/import remains truthful about unrepresented controls;
+source editing alone does not prove original controls adopted a changed layout.
+Ordinary restricted C++ projects retain their existing editable source targets,
+limits, build/debug workflow and runtime policy.

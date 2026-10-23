@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="690" viewBox="0 0 1000 690" role="img" aria-labelledby="title desc">
+<!-- SPDX-License-Identifier: GPL-3.0-or-later; original GUIDE conceptual artwork. -->
+<title id="title">Image appearance and calibrated curve publication have distinct roles</title>
+<desc id="desc">The original canonical image supplies a decoded RGB processing preview and original raster point coordinates. An ordered non-geometric recipe can produce a separately published new RGB image with parent lineage. Original raster points plus an accepted calibration can produce a separately published numerical curve Dataset. Image publication alone does not publish a curve.</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="#465d79"/></marker></defs>
+<rect width="1000" height="690" rx="18" fill="#f5f8fc"/>
+<g font-family="sans-serif" fill="#172b47">
+<text x="42" y="48" font-size="27" font-weight="700">Preserve the source; identify each published result</text>
+<text x="42" y="82" font-size="18">Documented roles · illustrative diagram · no application output or GUI acceptance</text>
+<rect x="280" y="113" width="440" height="92" rx="12" fill="#e3efff" stroke="#31639b" stroke-width="2"/>
+<text x="500" y="149" text-anchor="middle" font-size="24" font-weight="700">Original canonical image</text>
+<text x="500" y="182" text-anchor="middle" font-size="20">Source Dataset ID and exact bytes</text>
+<g fill="none" stroke="#465d79" stroke-width="3" marker-end="url(#arrow)"><path d="M390 205L267 263"/><path d="M610 205L733 263"/></g>
+<rect x="50" y="277" width="420" height="144" rx="12" fill="#fff0ca" stroke="#926b13" stroke-width="2"/>
+<text x="260" y="315" text-anchor="middle" font-size="24" font-weight="700">Processing preview</text>
+<text x="260" y="350" text-anchor="middle" font-size="20">Decoded RGB + ordered recipe</text>
+<text x="260" y="384" text-anchor="middle" font-size="20">Dimensions and geometry preserved</text>
+<rect x="530" y="277" width="420" height="144" rx="12" fill="#e3efff" stroke="#31639b" stroke-width="2"/>
+<text x="740" y="315" text-anchor="middle" font-size="24" font-weight="700">Scientific coordinate mapping</text>
+<text x="740" y="350" text-anchor="middle" font-size="20">Original raster points</text>
+<text x="740" y="384" text-anchor="middle" font-size="20">+ accepted calibration</text>
+<g fill="none" stroke="#465d79" stroke-width="3" marker-end="url(#arrow)"><path d="M260 421V482"/><path d="M740 421V482"/></g>
+<text x="277" y="459" font-size="18">Publish image</text>
+<text x="757" y="459" font-size="18">Publish curves</text>
+<rect x="50" y="496" width="420" height="113" rx="12" fill="#e3f3e9" stroke="#307452" stroke-width="2"/>
+<text x="260" y="534" text-anchor="middle" font-size="24" font-weight="700">New RGB image Dataset</text>
+<text x="260" y="568" text-anchor="middle" font-size="20">Own ID, bytes and parent lineage</text>
+<rect x="530" y="496" width="420" height="113" rx="12" fill="#e3f3e9" stroke="#307452" stroke-width="2"/>
+<text x="740" y="534" text-anchor="middle" font-size="24" font-weight="700">Numerical curve Dataset</text>
+<text x="740" y="568" text-anchor="middle" font-size="20">Own ID, scientific rows and lineage</text>
+<text x="500" y="644" text-anchor="middle" font-size="21" font-weight="700">Previewing or publishing an image does not publish a curve.</text>
+<text x="42" y="676" font-size="15">GX210-GUIDE · GPL-3.0-or-later · original explanatory artwork; not a product screenshot</text>
+</g></svg>

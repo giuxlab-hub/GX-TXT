@@ -67,9 +67,12 @@ proc ::GX::CurveWorkbench::_compareToggle {w} {
     variable st;set st($w,compareVisible) [expr {!$st($w,compareVisible)}]
     if {$st($w,compareVisible)} {
         set st($w,residualPanelShown) -1;_residualLayout $w
-        pack $w.validation -side bottom -fill x -before $w.main
-        pack $w.metric -side bottom -fill x -before $w.validation
-    } else {foreach widget [list $w.right.residualLabel $w.right.residual $w.validation $w.metric] {pack forget $widget}}
+        grid $w.validation -in $w.upper -row 2 -column 0 -columnspan 2 -sticky ew
+        pack $w.metric -side bottom -fill x -before $w.main
+    } else {
+        grid remove $w.validation
+        foreach widget [list $w.right.residualLabel $w.right.residual $w.metric] {pack forget $widget}
+    }
     ::GX::native2DViewportPanelCollapse $w.right.viewport.canvas compare [expr {!$st($w,compareVisible)}]
     _viewportChanged $w
 }
@@ -240,7 +243,10 @@ proc ::GX::CurveWorkbench::_restoreViewportPreferences {w} {
     # saved-preference callback. Reapplying hidden state must be idempotent.
     if {!$st($w,leftVisible)&&"${w}.leftScroll" in [$w.main panes]} {$w.main forget $w.leftScroll}
     foreach {key widgets} {listVisible {active curveFrame renameRow} pointsVisible {pointFrame pager numeric interval} composeVisible {compose}} {if {!$st($w,$key)} {foreach name $widgets {set widget $w.leftScroll.viewport.content.$name;if {[winfo exists $widget]} {pack forget $widget}}}}
-    if {!$st($w,compareVisible)} {foreach widget [list $w.right.residualLabel $w.right.residual $w.validation $w.metric] {pack forget $widget}}
+    if {!$st($w,compareVisible)} {
+        grid remove $w.validation
+        foreach widget [list $w.right.residualLabel $w.right.residual $w.metric] {pack forget $widget}
+    }
 }
 proc ::GX::CurveWorkbench::_buildImages {w} {
     variable st

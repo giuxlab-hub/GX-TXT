@@ -11,13 +11,15 @@ proc ::GX::printStudioInit {} {
 }
 proc ::GX::printStudioCatalogChanged {receipt} {
     variable ::GX::PrintStudio::state
-    if {[dict get $receipt change_kind] eq {session}} {
-        printStudioSourceCancel
-        if {[info exists ::GX::ui(printSourceCanvas)] && [winfo exists $::GX::ui(printSourceCanvas)]} {printStudioSourceClear}
-        set state(selectedSource) {};set state(sourceDescriptor) {};set state(representation) {}
-        set state(sourceStatus) {Session changed. Select a source in the current Session.}
-    }
+    if {[dict get $receipt change_kind] eq {session}} {printStudioSourceSessionChanged}
     printStudioCatalogSchedule
+}
+proc ::GX::printStudioSourceSessionChanged {} {
+    variable ::GX::PrintStudio::state
+    printStudioSourceCancel
+    if {[info exists ::GX::ui(printSourceCanvas)] && [winfo exists $::GX::ui(printSourceCanvas)]} {printStudioSourceClear}
+    set state(selectedSource) {};set state(sourceDescriptor) {};set state(representation) {}
+    set state(sourceStatus) {Session changed. Select a source in the current Session.}
 }
 proc ::GX::printStudioScopeActive {} {return [expr {[winfo exists .top.nb.print] && [.top.nb select] eq {.top.nb.print}}]}
 proc ::GX::printStudioCommandCatalog {} {
@@ -232,14 +234,22 @@ proc ::GX::printStudioCatalogSchedule {args} {
 proc ::GX::printStudioCatalogRefresh {{refreshGraphCatalog 0}} {
     variable ::GX::PrintStudio::state;variable ui;variable currentSession
     if {![info exists ui(printContentTree)] || ![winfo exists $ui(printContentTree)]} return
-    # Rebind the public subscription to the current catalog Session token.
+    # Observe while the old subscription can still receive a Session change.
+    # The new subscriber is installed before the old one is removed; Subscribe
+    # takes its own current snapshot and does not replay a missed notification.
+    set snapshot [datasetCatalogSnapshot]
+    set token [dict get $snapshot session_token]
+    set changed [expr {[info exists state(catalogSessionToken)] && $state(catalogSessionToken) ne $token}]
+    set replacement [datasetCatalogSubscribe ::GX::printStudioCatalogChanged]
     if {[info exists state(catalogSubscription)]} {datasetCatalogUnsubscribe $state(catalogSubscription)}
-    set state(catalogSubscription) [datasetCatalogSubscribe ::GX::printStudioCatalogChanged]
+    set state(catalogSubscription) $replacement
+    set state(catalogSessionToken) $token
+    if {$changed} {printStudioSourceSessionChanged}
     if {$refreshGraphCatalog} {refreshGraphs}
-    set tree $ui(printContentTree);set selected [$tree selection];$tree delete [$tree children {}];set state(contentRows) {}
+    set tree $ui(printContentTree);set selected [expr {$changed ? {} : [$tree selection]}];$tree delete [$tree children {}];set state(contentRows) {}
     if {$currentSession eq {}} {set state(sourceStatus) {Open a Session to browse scientific content.};return}
     set query [string tolower [string trim $state(query)]]
-    foreach row [dict get [datasetCatalogSnapshot] datasets] {
+    foreach row [dict get $snapshot datasets] {
         set id [dict get $row dataset_id];set title [dict get $row display_name];if {$title eq {}} {set title $id}
         set namespace [dict get $row namespace];if {$namespace eq {}} {set namespace Ungrouped}
         if {$query ne {} && [string first $query [string tolower "$id $title $namespace [dict get $row kind]"]]<0} continue
