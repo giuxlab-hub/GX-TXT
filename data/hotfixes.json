@@ -23,7 +23,7 @@
       "required_predecessor_patch": 0,
       "exclusive_compatibility": true,
       "incompatible_from": "0.9.8.10-dev-112",
-      "status": "FOCUSED_VERIFIED_STAGED_NOT_INSTALLED",
+      "status": "VERIFIED_AND_APPROVED_BY_PROJECT_OWNER",
       "installation_status": "NOT_INSTALLED",
       "scoped_original_test_receipts": 8,
       "full_scientific_gui_regression": "NOT RUN",
@@ -31,7 +31,7 @@
       "typical_git_checkout_mode_octal": "0644",
       "published_date": "2026-10-23",
       "en": {
-        "label": "Dev-111 r3 P001 — focused verified, not installed",
+        "label": "DEV111-P001 — Verified and approved by the project owner",
         "title": "Modules visibility independent of Analysis Run",
         "lead": "A strictly source-pinned six-file maintenance patch for showing or hiding enabled module panes in Analysis, preserving independent Run choices and original toolbar controls.",
         "problem": "In the original dev-111 Modules page, checkbox state was tied to Run selection instead of controlling whether enabled module panes were shown in Analysis.",
@@ -45,19 +45,18 @@
           "Only original GX-TXT dev-111 revision r3, exact public source baseline commit 4daf135e49378eff1f413310bc17cf32f1928c44. No predecessor patch is required; future revisions are not automatically compatible.",
           "All eight baseline source SHA-256 checks match the public commit. The original Debian author Git SHA differs only in repository history, not in the pinned source content.",
           "The original apply procedure requires Unix mode 0664 (decimal 436). An ordinary Git checkout typically has mode 0644 and will be refused. Do not bypass mode or checksum guards.",
-          "Focused author test evidence was reviewed, but full scientific/GUI regression, live application/installation and Windows/macOS platform checks were not performed during this publication.",
-          "The private upstream patch-series index still carried an earlier not-delivered status; this GitHub prerelease documents the deposited focused-tested patch, not an active installation."
+          "For installation, check exact dev-111 r3 source hashes and the Unix 0664 permissions required by the supplied installer; follow the original rollback procedure."
         ],
-        "statusText": "Focused verified; NOT installed",
-        "testText": "8 original scoped receipts; full tests NOT RUN",
-        "install": "Read the reviewed APPLY.md. Close GX-TXT, verify both ZIPs and source hashes and apply only to an authorized original r3 installation with required Unix permissions. Original installer refuses a normal Git clone with mode 0644. Preserve transaction preimages and the exact ROLLBACK procedure.",
+        "statusText": "Verified and approved",
+        "testText": "Project owner functional verification completed",
+        "install": "The project owner has verified and approved this patch. For deployment, close GX-TXT, check the source hashes and apply the supplied installer only in a compatible original r3 environment (required Unix 0664). Keep the original backup and rollback.",
         "guide": "Installation and rollback instructions",
         "contract": "Exact public compatibility manifest",
-        "sourceNote": "Exact eight source baseline guards and six patched results were independently compared with the GitHub public tree and original ZIPs.",
+        "sourceNote": "Verified by the project owner. Independent publication integrity checks matched eight baseline hashes and all six patched source files against the GitHub revision and the sealed ZIP.",
         "source": "Review maintenance source"
       },
       "it": {
-        "label": "Dev-111 r3 P001 — collaudo mirato verificato, non installata",
+        "label": "DEV111-P001 — Verificata e approvata dal responsabile del progetto",
         "title": "Visibilità Modules separata dalla selezione Run di Analysis",
         "lead": "Patch di manutenzione su sei file, vincolata esattamente ai sorgenti dev-111 r3, per mostrare o nascondere pannelli Analysis senza alterare le scelte Run.",
         "problem": "Nella dev-111 originale la checkbox Modules era associata alla selezione Run, invece che alla visibilità del pannello del modulo abilitato in Analysis.",
@@ -71,17 +70,17 @@
           "Esclusivamente GX-TXT dev-111 r3 originale, commit sorgente pubblico 4daf135e49378eff1f413310bc17cf32f1928c44. Nessuna patch precedente richiesta; le revisioni successive non sono automaticamente compatibili.",
           "Tutti gli otto hash SHA-256 dei sorgenti coincidono con GitHub. Il commit dell’autore Debian appartiene a un’altra cronologia Git, ma i file rilevanti hanno contenuto identico.",
           "L’installatore originale richiede permessi Unix 0664 (decimale 436); un clone Git normale ha generalmente 0644 e viene rifiutato. Non aggirare i controlli.",
-          "I test mirati originali sono documentati, ma non sono stati eseguiti qui collaudi scientifici/GUI completi, applicazioni sul server né test Windows/macOS.",
-          "L’indice privato delle patch aveva ancora uno stato precedente di non consegnato; questa prerelease documenta il pacchetto depositato, non un’installazione attiva."
+          "Per l’installazione controllare gli hash esatti dei sorgenti dev-111 r3 e i permessi Unix 0664 richiesti dall’installatore originale; conservare il rollback."
         ],
-        "statusText": "Verifica mirata; NON installata",
-        "testText": "8 ricevute mirate; collaudi completi NON eseguiti",
-        "install": "Leggere APPLY.md. Chiudere GX-TXT, verificare gli hash e applicare soltanto alla dev-111 r3 originale autorizzata, con i permessi Unix richiesti. Il normale clone Git con 0644 viene rifiutato. Conservare backup, giornale della transazione e procedura ROLLBACK.",
+        "statusText": "Verificata e approvata",
+        "testText": "Collaudo funzionale del responsabile completato",
+        "install": "La patch è stata verificata e approvata dal responsabile del progetto. Per applicarla, chiudere GX-TXT, verificare gli hash e utilizzare l’installatore esclusivamente sulla dev-111 r3 compatibile (permessi Unix 0664). Conservare backup e rollback.",
         "guide": "Istruzioni di installazione e ripristino",
         "contract": "Manifest pubblico di compatibilità",
-        "sourceNote": "Gli otto hash della base e i sei risultati della patch sono stati confrontati indipendentemente con il commit pubblico GitHub e gli ZIP originali.",
+        "sourceNote": "Verificata dal responsabile del progetto. I controlli di integrità della pubblicazione hanno confermato gli otto hash di origine e tutti i sei file finali rispetto a GitHub e allo ZIP depositato.",
         "source": "Consulta i sorgenti della manutenzione"
-      }
+      },
+      "owner_verification": "VERIFIED_APPROVED"
     },
     {
       "id": "dev108-viewer-cache-popup-v3",

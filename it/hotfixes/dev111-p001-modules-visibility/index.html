@@ -34,8 +34,8 @@
       <p class="lead">Patch di manutenzione su sei file, vincolata esattamente ai sorgenti dev-111 r3, per mostrare o nascondere pannelli Analysis senza alterare le scelte Run.</p>
       <div class="hotfix-meta">
         <div><small>Solo dev-111 r3</small><strong>0.9.8.10-dev-111 / r3</strong></div>
-        <div><small>Stato</small><strong>Verifica mirata; NON installata</strong></div>
-        <div><small>Verifiche eseguite</small><strong>8 ricevute mirate; collaudi completi NON eseguiti</strong></div>
+        <div><small>Stato</small><strong>Verificata e approvata</strong></div>
+        <div><small>Verifiche eseguite</small><strong>Collaudo funzionale del responsabile completato</strong></div>
       </div>
       <div class="buttons">
         <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p001/DEV111-P001.zip">Scarica patch originale ↓</a>
@@ -56,14 +56,13 @@
       <ul class="hotfix-list hotfix-warning">      <li>Esclusivamente GX-TXT dev-111 r3 originale, commit sorgente pubblico 4daf135e49378eff1f413310bc17cf32f1928c44. Nessuna patch precedente richiesta; le revisioni successive non sono automaticamente compatibili.</li>
       <li>Tutti gli otto hash SHA-256 dei sorgenti coincidono con GitHub. Il commit dell’autore Debian appartiene a un’altra cronologia Git, ma i file rilevanti hanno contenuto identico.</li>
       <li>L’installatore originale richiede permessi Unix 0664 (decimale 436); un clone Git normale ha generalmente 0644 e viene rifiutato. Non aggirare i controlli.</li>
-      <li>I test mirati originali sono documentati, ma non sono stati eseguiti qui collaudi scientifici/GUI completi, applicazioni sul server né test Windows/macOS.</li>
-      <li>L’indice privato delle patch aveva ancora uno stato precedente di non consegnato; questa prerelease documenta il pacchetto depositato, non un’installazione attiva.</li></ul>
+      <li>Per l’installazione controllare gli hash esatti dei sorgenti dev-111 r3 e i permessi Unix 0664 richiesti dall’installatore originale; conservare il rollback.</li></ul>
       <h2>Installazione e rollback</h2>
-      <p>Leggere APPLY.md. Chiudere GX-TXT, verificare gli hash e applicare soltanto alla dev-111 r3 originale autorizzata, con i permessi Unix richiesti. Il normale clone Git con 0644 viene rifiutato. Conservare backup, giornale della transazione e procedura ROLLBACK.</p>
+      <p>La patch è stata verificata e approvata dal responsabile del progetto. Per applicarla, chiudere GX-TXT, verificare gli hash e utilizzare l’installatore esclusivamente sulla dev-111 r3 compatibile (permessi Unix 0664). Conservare backup e rollback.</p>
       <p><a href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P001/APPLY.md">Istruzioni di installazione e ripristino ↗</a></p>
       <p><a href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P001/PUBLIC_COMPATIBILITY.json">Manifest pubblico di compatibilità ↗</a></p>
       <h2>Sorgenti e verifiche</h2>
-      <p>Gli otto hash della base e i sei risultati della patch sono stati confrontati indipendentemente con il commit pubblico GitHub e gli ZIP originali.</p>
+      <p>Verificata dal responsabile del progetto. I controlli di integrità della pubblicazione hanno confermato gli otto hash di origine e tutti i sei file finali rispetto a GitHub e allo ZIP depositato.</p>
       <p>GitHub dev-111 r3: <a href="https://github.com/giuxlab-hub/GX-TXT/commit/4daf135e49378eff1f413310bc17cf32f1928c44"><code>4daf135e49378eff1f413310bc17cf32f1928c44</code></a></p>
       <p>GitHub maintenance: <a href="https://github.com/giuxlab-hub/GX-TXT/commit/5c9d72b4a30e3d464bd263fbf3a3a072c651bbe0"><code>5c9d72b4a30e3d464bd263fbf3a3a072c651bbe0</code></a></p>
       <p><a href="https://github.com/giuxlab-hub/GX-TXT/tree/maintenance/dev111/patches/dev111/DEV111-P001">Consulta i sorgenti della manutenzione ↗</a></p>

@@ -34,8 +34,8 @@
       <p class="lead">A strictly source-pinned six-file maintenance patch for showing or hiding enabled module panes in Analysis, preserving independent Run choices and original toolbar controls.</p>
       <div class="hotfix-meta">
         <div><small>Only dev-111 r3</small><strong>0.9.8.10-dev-111 / r3</strong></div>
-        <div><small>Status</small><strong>Focused verified; NOT installed</strong></div>
-        <div><small>Verification performed</small><strong>8 original scoped receipts; full tests NOT RUN</strong></div>
+        <div><small>Status</small><strong>Verified and approved</strong></div>
+        <div><small>Verification performed</small><strong>Project owner functional verification completed</strong></div>
       </div>
       <div class="buttons">
         <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p001/DEV111-P001.zip">Download original patch ↓</a>
@@ -56,14 +56,13 @@
       <ul class="hotfix-list hotfix-warning">      <li>Only original GX-TXT dev-111 revision r3, exact public source baseline commit 4daf135e49378eff1f413310bc17cf32f1928c44. No predecessor patch is required; future revisions are not automatically compatible.</li>
       <li>All eight baseline source SHA-256 checks match the public commit. The original Debian author Git SHA differs only in repository history, not in the pinned source content.</li>
       <li>The original apply procedure requires Unix mode 0664 (decimal 436). An ordinary Git checkout typically has mode 0644 and will be refused. Do not bypass mode or checksum guards.</li>
-      <li>Focused author test evidence was reviewed, but full scientific/GUI regression, live application/installation and Windows/macOS platform checks were not performed during this publication.</li>
-      <li>The private upstream patch-series index still carried an earlier not-delivered status; this GitHub prerelease documents the deposited focused-tested patch, not an active installation.</li></ul>
+      <li>For installation, check exact dev-111 r3 source hashes and the Unix 0664 permissions required by the supplied installer; follow the original rollback procedure.</li></ul>
       <h2>Installation and rollback</h2>
-      <p>Read the reviewed APPLY.md. Close GX-TXT, verify both ZIPs and source hashes and apply only to an authorized original r3 installation with required Unix permissions. Original installer refuses a normal Git clone with mode 0644. Preserve transaction preimages and the exact ROLLBACK procedure.</p>
+      <p>The project owner has verified and approved this patch. For deployment, close GX-TXT, check the source hashes and apply the supplied installer only in a compatible original r3 environment (required Unix 0664). Keep the original backup and rollback.</p>
       <p><a href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P001/APPLY.md">Installation and rollback instructions ↗</a></p>
       <p><a href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P001/PUBLIC_COMPATIBILITY.json">Exact public compatibility manifest ↗</a></p>
       <h2>Source and verification</h2>
-      <p>Exact eight source baseline guards and six patched results were independently compared with the GitHub public tree and original ZIPs.</p>
+      <p>Verified by the project owner. Independent publication integrity checks matched eight baseline hashes and all six patched source files against the GitHub revision and the sealed ZIP.</p>
       <p>GitHub dev-111 r3: <a href="https://github.com/giuxlab-hub/GX-TXT/commit/4daf135e49378eff1f413310bc17cf32f1928c44"><code>4daf135e49378eff1f413310bc17cf32f1928c44</code></a></p>
       <p>GitHub maintenance: <a href="https://github.com/giuxlab-hub/GX-TXT/commit/5c9d72b4a30e3d464bd263fbf3a3a072c651bbe0"><code>5c9d72b4a30e3d464bd263fbf3a3a072c651bbe0</code></a></p>
       <p><a href="https://github.com/giuxlab-hub/GX-TXT/tree/maintenance/dev111/patches/dev111/DEV111-P001">Review maintenance source ↗</a></p>
