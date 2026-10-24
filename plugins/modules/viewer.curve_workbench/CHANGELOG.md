@@ -1,3 +1,13 @@
+## 2.21.9 — DEV111-P010
+
+Embed comparison and geometric measurement controls in the existing scrollable
+Native2D compare panel. Remove the permanent upper row; keep the Plot v4 residual
+surface. Explicit Reference/Target path IDs replace implicit active targeting.
+Show current/stale/unavailable receipts and publication prerequisites without
+implicit comparison. Rename the numeric metric target Expected value. Reuse
+existing Native2D/Statistics/Publication services and Workspace/History payloads.
+P007–P009, Sketch palette and scientific algorithms remain unchanged.
+
 ## 2.21.8 — DEV111-P008
 
 Connect the bottom Description/History selector to the existing Viewer-bounded

@@ -22,7 +22,7 @@ formula `session.base * 3`, then enter `span` in a dimensional constraint. Formu
 changes recalculate geometry and save in the canonical Workspace. Session Parameters
 is managed in the Session page dropdown. Workspace Actions invokes this same editor.
 Core documentation: `docs/api/CORE_PARAMETER_SERVICE_v1.md` and
-`docs/api/NATIVE_2D_GEOMETRY_API_v1.md` in the installed framework.
+`docs/api/NATIVE2D_NETWORK_dev065.md` in the installed framework.
 
 <a id="curve-workbench--dev-063-square-grid-and-path-spline-arms"></a>
 ## Square grid and Path Spline arms
@@ -37,7 +37,7 @@ In Select, click an interior Spline knot to display its incoming and outgoing
 arms. Drag either arm to edit the exact retained shape. This works identically
 for a standalone Spline and a Spline inside a composed Path. The Path stays one
 object; Separate is unnecessary. Endpoint knots expose only their existing side.
-See the [Dataset navigation guide](../../../docs/help/datasets.md).
+See the [Session/Dataset navigation guide](../../../docs/guides/SESSION_DATASET_GRID_dev063.md).
 
 <a id="curve-workbench--dev-062-pivot-and-editable-path"></a>
 ## Pivot and editable Path
@@ -71,7 +71,7 @@ exact Polyline, Spline, Bézier, Arc or other supported constituent definitions.
 Internal coincident junctions become part of the Path topology; constraints to
 outside geometry prevent Join. Undo restores the source objects and internal
 relations. Separate exact constituents creates editable copies while preserving
-the Path.
+the Path. See [Path and selection guide](../../../docs/guides/WORKBENCH_DATASET_UI_dev060.md).
 
 <a id="curve-workbench--dev-059-consolidated-interaction"></a>
 ## Creation and interaction
@@ -84,8 +84,8 @@ Use **Modify → Split selected Path / entity…** or **Join Path…** (`j`).
 Heterogeneous endpoint-connected primitives retain exact definitions; disconnected
 or closed primitives use **Combine / Compound…** (`Shift+j`). Sources remain
 available. **Separate exact constituents** creates editable copies. See
-the current creation and Workspace controls for sampling, Dataset promotion,
-command configuration and the namespace browser.
+[Construction workflows](../../../docs/guides/WORKBENCH_dev059.md) for sampling,
+Dataset promotion, command configuration and the namespace browser.
 
 **Select** addresses every visible included curve, regardless of origin. The active
 row is the property focus. Fit Selected includes all semantically selected logical
@@ -113,10 +113,11 @@ leave blank to omit it. Closed endpoint repetition is explicit. Publication keep
 retained topology, direction and source/conversion provenance. Dataset source points
 are never resampled merely because the display is a spline.
 
-Residuals remain blank until you choose a reference and explicitly click **Compare**.
-The comparison records its reference and target; changing property focus does not
-retarget it. Editing the active comparison geometry updates it. Disable comparison
-to stop calculation. This explicit state survives save/reopen.
+Residuals remain blank until you explicitly choose both comparison paths and
+click **Compare**. The completed comparison records Reference, Target and Method
+in the existing Workspace/Undo payload; changing property focus does not retarget
+it. Editing either path or its coordinate presentation marks results stale and
+clears the current residual presentation. Select Compare again to refresh.
 
 Wheel zoom updates immediately, with one checkpoint after a burst. Pan draws at a
 coalesced frame cadence and checkpoints when released. Chrome only relayouts when
@@ -142,7 +143,7 @@ Badges use original GX-TXT symbols, enlarged hit regions, hover/name feedback, s
 
 Tangency supports finite line/circle/arc, circle/arc pairs (including internal branch), and supported Bézier/Spline endpoint joins with lines/curves/rounds. G2 uses actual endpoint curvature for quadratic/cubic Bézier and the existing Catmull-Rom Spline; it includes positional/tangent continuity. Equal supports straight segments and round radii; concentric includes ellipse centers. Symmetry supports points and compatible line/circle/Bézier/Spline/polyline objects about a selected straight axis. Unsupported arc/ellipse/rectangle object symmetry is rejected. Point-on-curve uses native retained evaluation. Legacy scientific Native point-curve relationships retain their validation behavior; reference measurements remain distinct from retained driving.
 
-The solver is local and bounded:64 objects,256 parameters,1024 residual slots and100 iterations. Singular, unsupported or nonconvergent cases reject atomically. Local rank is not a global uniqueness proof, and legacy/generic components are explicitly marked partial analysis. All Dataset rows, source bytes, retained definitions, conversion paths, publication, units, Undo/Redo and recovery continue to use their existing authorities. See the public [Native2D Geometry API](../../../docs/api/NATIVE_2D_GEOMETRY_API_v1.md) and [CORE implementation notes](../../../core/native2d/README.md).
+The solver is local and bounded:64 objects,256 parameters,1024 residual slots and100 iterations. Singular, unsupported or nonconvergent cases reject atomically. Local rank is not a global uniqueness proof, and legacy/generic components are explicitly marked partial analysis. All Dataset rows, source bytes, retained definitions, conversion paths, publication, units, Undo/Redo and recovery continue to use their existing authorities. See [architecture](../../../docs/architecture/SKETCH_dev054.md) and [acceptance](../../../docs/reports/SKETCH_dev054.md).
 
 The sections below also describe the advanced forms; the inline Dimension tool and retained component constraints above are the ordinary workflow.
 
@@ -253,14 +254,14 @@ acceptance. Bridge settings and accepted descriptors survive Save/reopen.
 
 **Linear from selection** and **Spline from selection** create separate simplified curves from at least two selected points. Spline uses Native2D Catmull–Rom geometric sampling, with editable controls and a continuously redrawn preview. Use Insert point, Delete points, mouse drag, numeric editing, or **Snap to reference** to adjust the controls. The reference curve remains separate. Dataset Curve Fit remains the tool for statistical/scientific fitting methods.
 
-Choose a reference curve and **x** or **path** in the validation row, then **Compare / residuals**. X comparison samples the derived curve at valid reference X positions and requires single-valued monotonic X for both curves. Path comparison aligns curves by normalized cumulative path position and handles folded profiles. The main view overlays both curves and marks the largest deviation; the lower panel plots signed residual against reference X or path distance. The status reports sample count, maximum absolute residual, mean absolute residual, and RMSE. Edits recalculate an available comparison after commit. Disconnected compositions must be compared by their separate fragments.
+Open the in-canvas **Compare / residuals** panel. Choose explicit **Reference path**, **Target path** and **x** or **path**, then **Compare**. X comparison samples the derived curve at valid reference X positions and requires single-valued monotonic X for both curves. Path comparison aligns curves by normalized cumulative path position and handles folded profiles. The main view overlays both curves and marks the largest deviation; the lower panel plots signed residual against reference X or path distance. The panel reports current status, sample count, maximum absolute residual, mean absolute residual and root mean squared residual (RMSE), with the existing physical units. Edits mark the receipt stale; only an explicit Compare calculates new results. Disconnected compositions must be compared by their separate fragments.
 
 Comparison summaries use every exact native reference point. CORE reduces only
 the residual presentation to a bounded ordered set, retaining the maximum and
 its exact original residual ordinal. View changes do not change scientific
 comparison results.
 
-The 2-D metric selector reports path length, X/Y span, length-to-X-span ratio, or signed enclosed area for a connected closed curve. Enter a target for a live signed error after edits. The **External downstream feedback** field records measurements from a separate geometry/CFD workflow; Curve Workbench does not calculate extrusion or 3-D surface metrics.
+The 2-D metric selector reports path length, X/Y span, length-to-X-span ratio, or signed enclosed area for a connected closed curve. In the panel's **Geometric Measurements** section, enter a numeric **Expected value** and select **Evaluate** to report the measured value and its signed difference. This numeric value is separate from **Target path** and uses the existing metric units/validation. The **External downstream feedback** field records measurements from a separate geometry/CFD workflow; Curve Workbench does not calculate extrusion or 3-D surface metrics.
 
 Enter a fresh Dataset ID and choose **Publish selected curve(s)**. A single curve publishes X/Y without an artificial Family column. A multiple-curve or disconnected result additionally includes `segment_id`; all outputs include source-row ordinal, point identity, and source-order fields. Dataset Publication v2 writes the canonical Dataset; metadata records source Datasets and variables, source names, filters, family/order information, parent/operation history, spline controls, residual summary, metric target, and external feedback. Existing Datasets cannot be overwritten. Published spline curves contain evaluated samples; controls remain in provenance and the saved workspace.
 
@@ -517,9 +518,9 @@ Export sketch… discovers the normal PNG/SVG providers and exports the live sce
 
 ### Geometric comparison and deviation reports
 
-Choose a different reference and the `geometry` method, then Compare. Native2D evaluates 257 scientific query positions independently of display caches. The view shows unsigned curve distance by sampled reference path, plus RMS, sampled bidirectional Hausdorff and closest distance. Retained mathematical definitions remain authoritative; the captured report records which target projections/closest pairs are exact and which use bounded scientific samples. These sampled metrics do not assert continuous Hausdorff extrema.
+Choose distinct **Reference path** and **Target path** and the `geometry` method, then Compare. Native2D uses the existing scientific sampling policy and 257-sample budget independently of display caches; the actual query count comes from its receipt. The view shows unsigned curve distance by sampled reference path, plus RMS, sampled bidirectional Hausdorff and closest distance. Retained mathematical definitions remain authoritative; the captured report records which target projections/closest pairs are exact and which use bounded scientific samples. These sampled metrics do not assert continuous Hausdorff extrema.
 
-Publish deviations… creates an explicitly named Dataset containing query/projected XY pairs, unsigned distances, sampled path and indices, with source/fingerprint/units/policy metadata. Geometry edits make the receipt stale and clear its presentation; Compare again before publishing. Measurements… also offers geometric RMS, sampled Hausdorff, length/closed-area difference and closest-curve distance with configurable 6–4096 scientific samples. Use its shared explicit Refresh, one Undo, stale/missing inspection and normal report publication.
+**Publish deviations…** is enabled only for a current, explicitly completed Geometry comparison of the selected pair. The adjacent explanation states why it is unavailable. Opening the panel never calculates or publishes. The original reviewed dialog creates an explicitly named Dataset containing query/projected XY pairs, unsigned distances, sampled path and indices, with source/fingerprint/units/policy metadata. Geometry edits make the receipt stale and clear its presentation; Compare again before publishing. Measurements… also offers geometric RMS, sampled Hausdorff, length/closed-area difference and closest-curve distance with configurable 6–4096 scientific samples. Use its shared explicit Refresh, one Undo, stale/missing inspection and normal report publication.
 
 
 <a id="task-9-dev-052-final-behavior"></a>
@@ -577,6 +578,8 @@ Fitting uses **complete explicitly selected input** (3..65536 points, one contin
 Use the unit chooser/Working units dialog and existing Unit Registry. Euclidean geometry requires one validated common proportional unit on both axes. Compatible non-length dimensions are supported; resolve ambiguous or mixed X/Y bindings explicitly. Complete-workspace conversion rescales geometry and dimensional relationships together. Angular labels use rad. One created object, accepted fit, control edit, relationship or dimension edit is one Undo; preview/cancel produces no history spam. Publication is an explicit Session operation and does not replace the document object.
 
 Save workspace and close normally. Existing Interactive Documents/owned resources/recovery persist mixed types, definitions/transforms, constraints/dimensions, Dataset bindings, roles, names and conversion provenance. Transient tool/hover/incomplete previews are excluded. Reopen in a fresh process and continue exact parameter editing. Keyboard focus, numeric forms, Enter/Space/Esc, scroll-to-focused controls and wrapping toolbars provide alternatives to mouse input.
+
+Illustrations: [mixed CAD workspace](../../../docs/evidence/dev053/mixed-cad.png), [fresh reopen](../../../docs/evidence/dev053/fresh-mixed-cad.png).
 
 <a id="dev-055-drawing-and-compact-controls"></a>
 ### Drawing and compact controls
@@ -708,8 +711,8 @@ nearest-curve distances. Those Euclidean modes require a common physical X/Y
 unit, including mm/m axes converted before distance evaluation. Reports distinguish directional and pooled results and preserve scientific
 sampling policy. They make no R-squared, DOF or parameter-uncertainty claim.
 Comparison publication includes the reusable CORE statistical records. Changing
-coordinate units invalidates cached comparisons. An older saved receipt gains
-current semantics on comparison refresh without changing its source geometry.
+coordinate units invalidates cached comparisons. An older or stale saved receipt requires an explicit Compare to obtain current
+semantics without changing its source geometry.
 <a id="dev097-scientific-coordinate-integration--development-checkpoint"></a>
 ## Scientific coordinate integration
 
@@ -753,7 +756,7 @@ ownership and coordinate policies described below.
 
 Comparisons use the target's selected axis display units for X matching; geometric
 comparisons use its X display unit on both compatible axes. Changing that display
-choice refreshes the comparison through CORE. Receipts/publication preserve both
+choice marks the comparison stale; select Compare explicitly to refresh it through CORE. Receipts/publication preserve both
 source units and actual evaluation matrices. Residual plots show those units;
 highlight points map back to each original Native frame. Selecting **Geometric
 length** on mm/m data normalizes both axes before the Native metric calculation.
@@ -956,3 +959,32 @@ the accepted planar stage committed, it remains retained and the draft offers
 it cannot silently accept a changed original. Save/reopen retains that pending
 context through the existing Workspace, without serializing worker tokens.
 See [the public planar-return contract](../../../docs/api/NATIVE_3D_PLANAR_RETURN_v1.md).
+
+## DEV111-P010 — embedded comparison controls
+
+The existing canvas **Compare / residuals** header opens a scrollable ViewportHost
+panel with two compact sections. There is no permanent comparison row above the
+canvas and no independent comparison window. Selectors show names plus stable
+logical curve IDs; active drawing/selection changes do not substitute another
+Target. Invalid, identical, missing and incompatible pairs receive an inline
+explanation through the existing validation services. Missing IDs remain visibly
+unavailable rather than silently selecting another object.
+
+**Curve Comparison** contains both path selectors, Method, Compare, current
+status, existing Statistics receipt values and Publish deviations with its
+prerequisite explanation. **Geometric Measurements** retains the existing active
+path metric, numeric Expected value, Evaluate and measured/difference output.
+Use the scrollbar or normal focus navigation to reach controls in a small panel.
+
+Click the header to collapse/reopen controls. The existing close button hides the
+panel; **View → Compare / residuals** reopens that same panel. A current residual
+graph stays with its original Plot v4 owner when controls are collapsed or hidden.
+Neither opening nor resizing/collapsing the panel evaluates a comparison.
+Publication rechecks the current pair/receipt and Session, including changes made
+while its reviewed dialog is open, then uses the original Dataset writer/schema/
+sampling/projection/provenance workflow.
+
+Completed definitions/receipts retain their existing Workspace and Undo/Redo
+format. Uncompared edits to the new Target selector are local to the open GUI;
+Compare commits the explicit pair through that existing owner. No persistent
+format, scientific engine, renderer, cache, module category or GUI system is added.

@@ -387,12 +387,7 @@ proc ::GX::CurveWorkbench::_curveList {w} {
     if {[lsort [$tree selection]] ne [lsort $st($w,curveTableSelection)]} {$tree selection set $st($w,curveTableSelection)}
     if {$st($w,active) in $rows&&$st($w,active) in $st($w,objectSelection)&&(![info exists st($w,curveTableFocus)]||$st($w,curveTableFocus) ne $st($w,active))} {$tree see $st($w,active)}
     set st($w,curveTableFocus) $st($w,active)
-    set names {};set map {}
-    dict for {id r} $st($w,curves) {set label "[dict get $r name]  ·  $id";lappend names $label;dict set map $label $id}
-    set st($w,referenceMap) $map
-    $w.validation.reference configure -values $names
-    set st($w,referenceLabel) {}
-    if {[dict exists $st($w,curves) $st($w,reference)]} {set st($w,referenceLabel) "[dict get [_record $w $st($w,reference)] name]  ·  $st($w,reference)"}
+    _comparisonRefresh $w
     _propertyFocusRefresh $w
     if {[winfo exists $w.cad.group]} {
         set values {};set map {};set st($w,cadGroupLabel) {}

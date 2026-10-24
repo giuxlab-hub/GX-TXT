@@ -142,12 +142,12 @@ proc ::GX::CurveWorkbench::_cadGui {w} {
     _buildExtensions $w
     _buildRoles $w
     _buildExport $w
-    _buildComparison $w
     _buildRecipe $w
     _buildConstruction $w
     _buildConstraintTools $w
     _buildCommandMenus $w
     _buildViewport $w
+    _buildComparison $w
     _buildWorkspace $w
     _buildImages $w
     _buildComparisonActivation $w
@@ -346,21 +346,6 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     canvas $w.right.viewport.canvas -background white -height 580 -highlightthickness 0;pack $w.right.viewport.canvas -fill both -expand 1
     ttk::label $w.right.residualLabel -text "Signed residual by reference X or path distance (maximum highlighted)";pack $w.right.residualLabel -fill x
     ttk::frame $w.right.residual -height 220;pack propagate $w.right.residual 0;pack $w.right.residual -in $w.right -fill x
-    ttk::frame $w.validation -padding 5
-    grid $w.validation -in $w.upper -row 1 -column 0 -sticky ew
-    ttk::label $w.validation.refLabel -text "Reference"
-    ttk::combobox $w.validation.reference -textvariable ::GX::CurveWorkbench::st($w,referenceLabel) -state readonly -width 32
-    ttk::combobox $w.validation.method -textvariable ::GX::CurveWorkbench::st($w,compareMethod) -values {x path} -state readonly -width 7
-    ttk::button $w.validation.compare -text "Compare / residuals" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_compare $w]]
-    ttk::label $w.validation.metricLabel -text "Metric"
-    ttk::combobox $w.validation.metric -textvariable ::GX::CurveWorkbench::st($w,metricLabel) -state readonly -width 20
-    bind $w.validation.metric <<ComboboxSelected>> [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_coordinateMetricSelect $w]]
-    ttk::label $w.validation.targetLabel -text "Target"
-    ttk::entry $w.validation.target -textvariable ::GX::CurveWorkbench::st($w,target) -width 12
-    ttk::button $w.validation.evaluate -text Evaluate -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_metrics $w]]
-    foreach key {refLabel reference method compare metricLabel metric targetLabel target evaluate} {pack $w.validation.$key -side left -padx 3}
-    bind $w.validation.reference <<ComboboxSelected>> [list ::GX::CurveWorkbench::_referenceSelect $w]
-    ttk::label $w.metric -textvariable ::GX::CurveWorkbench::st($w,metricText) -anchor w;pack $w.metric -fill x -padx 8
     ttk::frame $w.publish -padding 5
     # Keep original initialization/wiring order without allocating GUI space.
     # _installCommands transfers these callbacks to menus and removes the frame.
@@ -376,9 +361,8 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     pack $w.status -side bottom -fill x -padx 8 -pady 5
     # Only lightweight read-only feedback remains below the expanding pane.
     # Upper control frames retain their original widget paths and own layouts.
-    pack forget $w.main $w.metric $w.status
+    pack forget $w.main $w.status
     pack $w.status -side bottom -fill x -padx 8 -pady 5
-    pack $w.metric -side bottom -fill x -padx 8
     pack $w.main -side top -fill both -expand 1
     _cadGui $w
     bind $w.publish <Configure> [list ::GX::native2DToolbarLayout $w.publish %w]

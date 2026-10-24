@@ -8,16 +8,19 @@ proc ::GX::CurveWorkbench::_constraintPanel {w} {
 # scientific coordinate, spline arm, transform and semantic reference.
 proc ::GX::CurveWorkbench::_buildViewport {w} {
     variable st
-    foreach {key value} {leftVisible 1 listVisible 1 pointsVisible 1 composeVisible 1 compareVisible 1 utilityOverride 0 tangentDrag {} zoomBox {} viewportReady 0} {set st($w,$key) $value}
+    foreach {key value} {leftVisible 1 listVisible 1 pointsVisible 1 composeVisible 1 compareVisible 0 utilityOverride 0 tangentDrag {} zoomBox {} viewportReady 0} {set st($w,$key) $value}
     pack forget $w.right.viewport.canvas
     pack $w.right.viewport -fill both -expand 1 -before $w.right.residualLabel
     pack $w.right.viewport.canvas -in $w.right.viewport -fill both -expand 1
     ::GX::native2DViewportHostCreate $w.right.viewport $w.right.viewport.canvas $st($w,scene) [list ::GX::CurveWorkbench::_viewportChanged $w]
     set actions [dict create fit_all [list ::GX::CurveWorkbench::_fit $w 0] reset [list ::GX::CurveWorkbench::_fit $w 0] fit_selected [list ::GX::CurveWorkbench::_fit $w 1] pan [list ::GX::CurveWorkbench::_scienceTool $w pan] object_snap [list ::GX::CurveWorkbench::_objectSnapToggle $w] zoom_box [list ::GX::CurveWorkbench::_zoomBoxStart $w]]
     set st($w,viewportControls) [::GX::native2DViewportControls $w.right.viewport.canvas {select transform fit_all fit_selected zoom_in zoom_out zoom_box pan reset grid grid_snap object_snap} $actions]
-    set body [::GX::native2DViewportPanelCreate $w.right.viewport.canvas compare {Compare / residuals} bottom-right {max_width 200 max_height 45 priority 5}]
-    pack forget $body
-    [winfo parent $body].header.toggle configure -command [list ::GX::CurveWorkbench::_compareToggle $w]
+    set body [::GX::native2DViewportPanelCreate $w.right.viewport.canvas compare {Compare / residuals} bottom-right {max_width 360 max_height 480 min_width 220 priority 5 scroll 1 close 1}]
+    set st($w,comparisonControls) $body
+    set panel [::GX::native2DViewportPanelWidget $w.right.viewport.canvas compare]
+    $panel.header.toggle configure -command [list ::GX::CurveWorkbench::_compareToggle $w]
+    $panel.header.close configure -command [list ::GX::CurveWorkbench::_comparisonPanelHide $w]
+    ::GX::native2DViewportPanelCollapse $w.right.viewport.canvas compare 1
     ttk::menubutton $w.toolbar.settings -text Settings -menu $w.toolbar.settings.menu
     set menu $w.toolbar.settings.menu;menu $menu -tearoff 0
     foreach {key label} {leftVisible {Left utility area} listVisible {Objects list} pointsVisible {Defining handles / points} composeVisible {Ordered composition}} {
@@ -64,16 +67,23 @@ proc ::GX::CurveWorkbench::_utilityVisibility {w {automatic 0}} {
     _save $w
 }
 proc ::GX::CurveWorkbench::_compareToggle {w} {
-    variable st;set st($w,compareVisible) [expr {!$st($w,compareVisible)}]
-    if {$st($w,compareVisible)} {
-        set st($w,residualPanelShown) -1;_residualLayout $w
-        grid $w.validation -in $w.upper -row 1 -column 0 -sticky ew
-        pack $w.metric -side bottom -fill x -before $w.main
-    } else {
-        grid remove $w.validation
-        foreach widget [list $w.right.residualLabel $w.right.residual $w.metric] {pack forget $widget}
-    }
-    ::GX::native2DViewportPanelCollapse $w.right.viewport.canvas compare [expr {!$st($w,compareVisible)}]
+    variable st
+    ::GX::native2DViewportPanelToggle $w.right.viewport.canvas compare
+    set st($w,compareVisible) [expr {![dict get $::GX::ViewportHost::hosts $w.right.viewport.canvas panels compare collapsed]}]
+    _viewportChanged $w
+}
+proc ::GX::CurveWorkbench::_comparisonPanelOpen {w} {
+    variable st
+    set st($w,compareVisible) 1
+    ::GX::native2DViewportPanelShow $w.right.viewport.canvas compare 1
+    ::GX::native2DViewportPanelCollapse $w.right.viewport.canvas compare 0
+    _comparisonRefresh $w
+    _viewportChanged $w
+}
+proc ::GX::CurveWorkbench::_comparisonPanelHide {w} {
+    variable st
+    set st($w,compareVisible) 0
+    ::GX::native2DViewportPanelShow $w.right.viewport.canvas compare 0
     _viewportChanged $w
 }
 rename ::GX::CurveWorkbench::_constraintOpen ::GX::CurveWorkbench::_constraintOpen_viewport056_base
@@ -243,10 +253,7 @@ proc ::GX::CurveWorkbench::_restoreViewportPreferences {w} {
     # saved-preference callback. Reapplying hidden state must be idempotent.
     if {!$st($w,leftVisible)&&"${w}.leftScroll" in [$w.main panes]} {$w.main forget $w.leftScroll}
     foreach {key widgets} {listVisible {active curveFrame renameRow} pointsVisible {pointFrame pager numeric interval} composeVisible {compose}} {if {!$st($w,$key)} {foreach name $widgets {set widget $w.leftScroll.viewport.content.$name;if {[winfo exists $widget]} {pack forget $widget}}}}
-    if {!$st($w,compareVisible)} {
-        grid remove $w.validation
-        foreach widget [list $w.right.residualLabel $w.right.residual $w.metric] {pack forget $widget}
-    }
+    ::GX::native2DViewportPanelCollapse $w.right.viewport.canvas compare [expr {!$st($w,compareVisible)}]
 }
 proc ::GX::CurveWorkbench::_buildImages {w} {
     variable st
@@ -466,7 +473,7 @@ proc ::GX::CurveWorkbench::_responsiveCompare {w} {
     variable st
     if {![winfo exists $w.right.viewport.canvas]||![info exists st($w,viewportReady)]||!$st($w,viewportReady)} return
     if {[winfo width $w]<1000&&$st($w,leftVisible)&&!$st($w,utilityOverride)} {set st($w,leftVisible) 0;_utilityVisibility $w 1}
-    if {[winfo height $w.right.viewport.canvas]<170&&$st($w,compareVisible)} {_compareToggle $w}
+    if {[winfo height $w.right.viewport.canvas]<170&&$st($w,compareVisible)} {set st($w,compareVisible) 0;::GX::native2DViewportPanelCollapse $w.right.viewport.canvas compare 1}
 }
 
 proc ::GX::CurveWorkbench::_imagesRefresh {w} {

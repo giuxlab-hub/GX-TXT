@@ -44,12 +44,15 @@ proc ::GX::CurveWorkbench::_compare {w} {
 }
 proc ::GX::CurveWorkbench::_comparisonPublishOpen {w} {
     variable st
-    if {$st($w,lastGeometricComparison) eq {}} {error "Run a geometry comparison first"}
-    ::GX::uiFieldFormCreate $w.comparisonReport "Publish geometric deviation samples" {dataset_id {type string required 1 label {New public Dataset ID}}} {dataset_id curve_deviation_report} [list ::GX::CurveWorkbench::_comparisonPublishApply $w $st($w,token)] $w
+    set reason [_comparisonPublicationReason $w]
+    if {$reason ne {}} {set st($w,comparisonPublicationText) $reason;return {}}
+    ::GX::uiFieldFormCreate $w.comparisonReport "Publish geometric deviation samples" {dataset_id {type string required 1 label {New public Dataset ID}}} {dataset_id curve_deviation_report} [list ::GX::CurveWorkbench::_comparisonPublishCurrentApply $w $st($w,token) $st($w,lastGeometricComparison)] $w
 }
 proc ::GX::CurveWorkbench::_comparisonPublishApply {w token values} {
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen comparison publication"}
+    set reason [_comparisonPublicationReason $w]
+    if {$reason ne {}} {error $reason}
     set record $st($w,lastGeometricComparison)
     if {$record eq {}||[_measurementState $w $record] ne "current"||![dict exists $record receipt statistics]} {error "Comparison geometry or its statistical receipt is stale or missing; explicitly Compare again before publishing"}
     set receipt [dict get $record receipt];set unit [dict get $receipt unit];set rows [dict get $receipt rows]
@@ -100,7 +103,7 @@ proc ::GX::CurveWorkbench::_buildComparison {w} {
 proc ::GX::CurveWorkbench::_residualLayout {w} {
     variable st
     if {![winfo exists $w.right.residual]||![info exists st($w,residual)]} return
-    set show [expr {(![info exists st($w,compareVisible)]||$st($w,compareVisible))&&$st($w,residual) ne {}&&[llength [dict get $st($w,residual) rows]]>=2}]
+    set show [expr {$st($w,residual) ne {}&&[llength [dict get $st($w,residual) rows]]>=2}]
     if {[info exists st($w,residualPanelShown)]&&$st($w,residualPanelShown)==$show} return
     set st($w,residualPanelShown) $show
     # The scientific canvas stays in its dedicated viewport for its whole

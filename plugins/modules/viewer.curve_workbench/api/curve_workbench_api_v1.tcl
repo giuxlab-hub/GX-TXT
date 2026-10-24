@@ -603,7 +603,7 @@ proc ::GX::CurveWorkbench::_metrics {w} {
     set unit [expr {$metric eq "span_y"?$uy:$metric eq "length_span_ratio"?"1":$metric eq "signed_area"?"$ux^2":$ux}]
     if {$metric in {length signed_area length_span_ratio}} {set unit [expr {$metric eq "length_span_ratio"?"1":$metric eq "signed_area"?"[dict get $m unit]^2":[dict get $m unit]}]}
     set message "[dict get [_record $w $id] name]: $metric = [format %.7g $value] $unit (geometry coordinates) · [_pointCount [_record $w $id]] exact controls/points"
-    if {$target ne ""} {append message " · target error = [format %.7g [expr {$value-[_finite $target Target]}]]"}
+    if {$target ne ""} {append message " · difference from expected = [format %.7g [expr {$value-[_finite $target {Expected value}]}]]"}
     if {$st($w,residual) ne {}} {append message " · max residual [format %.5g [::GX::StatisticsV1::scalarValue [dict get $st($w,residual) statistics reference] max_abs_error]] · RMSE [format %.5g [::GX::StatisticsV1::scalarValue [dict get $st($w,residual) statistics reference] rmse]]"}
     if {[dict get $activeRecord breaks] ne {}} {append message " · disconnected fragments; gaps excluded from length"}
     set st($w,metricText) $message

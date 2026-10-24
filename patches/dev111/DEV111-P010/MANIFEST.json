@@ -1,0 +1,150 @@
+{
+  "patch": "P010",
+  "originalZipSha256": "d16d642a6491406d01963e4ae055563de75054d0413271ceca92607c749ad859",
+  "originalZipSize": 108226,
+  "requiredPredecessor": 9,
+  "framework": "0.9.8.10-dev-111",
+  "revision": "r3",
+  "frameworkFiles": [
+    {
+      "path": "plugins/modules/viewer.curve_workbench/CHANGELOG.md",
+      "authorBeforeSha256": "aba26f365aeaebd03900ac3f6e8b3a54efc864805fad8a870559e6fcc509265b",
+      "publicBeforeSha256": "aba26f365aeaebd03900ac3f6e8b3a54efc864805fad8a870559e6fcc509265b",
+      "authorAfterSha256": "ca28050bfdf24ba0da33236c8fa1b315a89cd90eac91a10974e62f3ed0984ae8",
+      "publicAfterSha256": "ca28050bfdf24ba0da33236c8fa1b315a89cd90eac91a10974e62f3ed0984ae8",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/MANUAL.md",
+      "authorBeforeSha256": "f97a7bce7779228440bc015df8d12e011e720b95952cfc357c0de602b88799bb",
+      "publicBeforeSha256": "c3d6d922ae21f9d7eccf217d0c64dc5f7cf6e48231ba0deb1386ed332b0f5eb8",
+      "authorAfterSha256": "5e88091f101f355fea6fe03c6d6d7b650a76cfe23a738d02b4927c6db78f3da5",
+      "publicAfterSha256": "5e88091f101f355fea6fe03c6d6d7b650a76cfe23a738d02b4927c6db78f3da5",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/README.md",
+      "authorBeforeSha256": "ceb91600753f82c22ff9b7b4338a3bd7e58ea18da7d0ea8de1d3d0324798b0c3",
+      "publicBeforeSha256": "550c91dde683dd83f9847ce3f84ff911773946a7386489c3461a55e58d8683c9",
+      "authorAfterSha256": "b27b27427133ac58d1fb8947a33a4fb22346627e49f19ca5c28c3c3224a4eb55",
+      "publicAfterSha256": "b27b27427133ac58d1fb8947a33a4fb22346627e49f19ca5c28c3c3224a4eb55",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_api_v1.tcl",
+      "authorBeforeSha256": "3993008d8cc6c144d4d7a535340521dcec4f4cdc58b59f319aac8b4078b6c59e",
+      "publicBeforeSha256": "3993008d8cc6c144d4d7a535340521dcec4f4cdc58b59f319aac8b4078b6c59e",
+      "authorAfterSha256": "cb5dbab2f03884a3664271e025a887d9c8968db761aeed78e49f294fc41f4cf2",
+      "publicAfterSha256": "cb5dbab2f03884a3664271e025a887d9c8968db761aeed78e49f294fc41f4cf2",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_comparison_v1.tcl",
+      "authorBeforeSha256": "601346d1544dff2096319f3c4b636ef60b8fe9a1c64a80b769f5ba0a1b27e406",
+      "publicBeforeSha256": "601346d1544dff2096319f3c4b636ef60b8fe9a1c64a80b769f5ba0a1b27e406",
+      "authorAfterSha256": "92e559a9c9b39bfee0ea173df8691371ba88dbf0a3beed0f2bd949dfb9d52a47",
+      "publicAfterSha256": "92e559a9c9b39bfee0ea173df8691371ba88dbf0a3beed0f2bd949dfb9d52a47",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_comparison_v4.tcl",
+      "authorBeforeSha256": "8deb9695fa055234926a1d1061da86322c3a3ec64bd25152a2a432972baff18c",
+      "publicBeforeSha256": "8deb9695fa055234926a1d1061da86322c3a3ec64bd25152a2a432972baff18c",
+      "authorAfterSha256": "6f14ef015fc21928cd86fe57e83ab590dffa39cdf5653ee23d516861a111149f",
+      "publicAfterSha256": "6f14ef015fc21928cd86fe57e83ab590dffa39cdf5653ee23d516861a111149f",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_coordinate_presentation_v1.tcl",
+      "authorBeforeSha256": "a282973eca4454f6b2ceb26a6cbf9e35c1f812e6dbec4197928e0ef27f984ad4",
+      "publicBeforeSha256": "a282973eca4454f6b2ceb26a6cbf9e35c1f812e6dbec4197928e0ef27f984ad4",
+      "authorAfterSha256": "bdb2e8895a1fbca8dc937a7a5d6236cd0ee59a8c12fac822cbe1203d334ccbfd",
+      "publicAfterSha256": "bdb2e8895a1fbca8dc937a7a5d6236cd0ee59a8c12fac822cbe1203d334ccbfd",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_selection.tcl",
+      "authorBeforeSha256": "f6cf9aac0b7429902f078035218c84b7e7762abf87fd77e4633372369b65b8a4",
+      "publicBeforeSha256": "f6cf9aac0b7429902f078035218c84b7e7762abf87fd77e4633372369b65b8a4",
+      "authorAfterSha256": "2d9559646c79bf60ffba29bdf2f0bf19f36c7adfa6154fb6eaa6f4dd055b3080",
+      "publicAfterSha256": "2d9559646c79bf60ffba29bdf2f0bf19f36c7adfa6154fb6eaa6f4dd055b3080",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_ui.tcl",
+      "authorBeforeSha256": "09240ae5ff0e1f04cfb233fbf903862c7a13880574860b75b5fa997c1f8bceb7",
+      "publicBeforeSha256": "09240ae5ff0e1f04cfb233fbf903862c7a13880574860b75b5fa997c1f8bceb7",
+      "authorAfterSha256": "5c11d8dbc6be09c8acbcf9ea34453128237b6741d19512c14cd8d5cc7247b242",
+      "publicAfterSha256": "5c11d8dbc6be09c8acbcf9ea34453128237b6741d19512c14cd8d5cc7247b242",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_viewport_v3.tcl",
+      "authorBeforeSha256": "9f22e92cf5401daf74495c4c6f6122252a1aefbe3e28d8a95247f86f40225c3d",
+      "publicBeforeSha256": "9f22e92cf5401daf74495c4c6f6122252a1aefbe3e28d8a95247f86f40225c3d",
+      "authorAfterSha256": "2a84bb7f1a0a078548fdad7f0324d03d79330edc017af1fcf3d27f02e319c502",
+      "publicAfterSha256": "2a84bb7f1a0a078548fdad7f0324d03d79330edc017af1fcf3d27f02e319c502",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/module.ini",
+      "authorBeforeSha256": "185a84b0d4e857863d3bba56a4a7fa9417bef7985893cb04324745931a6607ac",
+      "publicBeforeSha256": "185a84b0d4e857863d3bba56a4a7fa9417bef7985893cb04324745931a6607ac",
+      "authorAfterSha256": "5d79972d293d1846624d94edf45f5031e9f103af44737e1acfae1aad14369bf0",
+      "publicAfterSha256": "5d79972d293d1846624d94edf45f5031e9f103af44737e1acfae1aad14369bf0",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/plugin-package.ini",
+      "authorBeforeSha256": "55c1729fdf10c171a5a6aa716d1a02539ab1b757e243020c7603bb9a0bbb436e",
+      "publicBeforeSha256": "55c1729fdf10c171a5a6aa716d1a02539ab1b757e243020c7603bb9a0bbb436e",
+      "authorAfterSha256": "eed6cf2a44a7f731b2a5a87e2cd1d8b6b5918a63ba65f50461f1ede1c211b613",
+      "publicAfterSha256": "eed6cf2a44a7f731b2a5a87e2cd1d8b6b5918a63ba65f50461f1ede1c211b613",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+      "authorBeforeSha256": "26fda643083f8477d84ccdb9571b107a0f29217b0baa7c5bbac97dadcb42816c",
+      "publicBeforeSha256": "710af63b3475021c493eff04662509c74ea7203c5e61afd46cae4e5540ae93e5",
+      "authorAfterSha256": "c3f47901314b35c93b13960c1a060565bbbfd0793aeca317cfca69d96c493865",
+      "publicAfterSha256": "ac2470699d147bc35edcf558b1bba1699df52e10b5e2011f1eab38cf75c92822",
+      "sourceExact": false
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+      "authorBeforeSha256": "26fda643083f8477d84ccdb9571b107a0f29217b0baa7c5bbac97dadcb42816c",
+      "publicBeforeSha256": "710af63b3475021c493eff04662509c74ea7203c5e61afd46cae4e5540ae93e5",
+      "authorAfterSha256": "c3f47901314b35c93b13960c1a060565bbbfd0793aeca317cfca69d96c493865",
+      "publicAfterSha256": "ac2470699d147bc35edcf558b1bba1699df52e10b5e2011f1eab38cf75c92822",
+      "sourceExact": false
+    }
+  ],
+  "omittedOwnerInternalPaths": [],
+  "priorPublicSourceExceptions": [
+    {
+      "path": "plugins/modules/viewer.curve_workbench/MANUAL.md",
+      "actual": "c3d6d922ae21f9d7eccf217d0c64dc5f7cf6e48231ba0deb1386ed332b0f5eb8",
+      "expected": "f97a7bce7779228440bc015df8d12e011e720b95952cfc357c0de602b88799bb",
+      "excluded": false
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/README.md",
+      "actual": "550c91dde683dd83f9847ce3f84ff911773946a7386489c3461a55e58d8683c9",
+      "expected": "ceb91600753f82c22ff9b7b4338a3bd7e58ea18da7d0ea8de1d3d0324798b0c3",
+      "excluded": false
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+      "actual": "710af63b3475021c493eff04662509c74ea7203c5e61afd46cae4e5540ae93e5",
+      "expected": "26fda643083f8477d84ccdb9571b107a0f29217b0baa7c5bbac97dadcb42816c",
+      "excluded": false
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+      "actual": "710af63b3475021c493eff04662509c74ea7203c5e61afd46cae4e5540ae93e5",
+      "expected": "26fda643083f8477d84ccdb9571b107a0f29217b0baa7c5bbac97dadcb42816c",
+      "excluded": false
+    }
+  ],
+  "publicExecutableDataSameAsOwner": true
+}
