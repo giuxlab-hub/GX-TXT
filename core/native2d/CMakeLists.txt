@@ -18,7 +18,21 @@ endif()
 
 # Tcl adapter for viewers. The geometry engine remains a standalone C library.
 find_package(TCL QUIET)
+option(GXTXT_PREVIEW_PROVIDER_ONLY "Build the optional Preview adapter without rebuilding the GUI viewer" OFF)
 if(TCL_FOUND)
+  # Existing separate worker adapter; it only needs Tcl and the platform loader.
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|amd64)$")
+    add_library(gxpreviewprovider MODULE gx2d_preview_provider_v1.cpp gx2d_preview_provider_loader.cpp)
+    target_compile_features(gxpreviewprovider PRIVATE cxx_std_17)
+    target_include_directories(gxpreviewprovider PRIVATE ${TCL_INCLUDE_PATH})
+    target_compile_definitions(gxpreviewprovider PRIVATE GXTXT_PREVIEW_BRIDGE_BUILD_ID="gxtxt.preview.bridge.dev111.p002.v1")
+    target_link_libraries(gxpreviewprovider PRIVATE ${TCL_LIBRARY} ${CMAKE_DL_LIBS})
+    set_target_properties(gxpreviewprovider PROPERTIES PREFIX "")
+    install(TARGETS gxpreviewprovider LIBRARY DESTINATION core/native2d/bin)
+  endif()
+  if(GXTXT_PREVIEW_PROVIDER_ONLY)
+    return()
+  endif()
   # Device presentation is owned by Native2D and shares one painter between
   # virtual grids and native Plot projections. Cairo supplies real clipping,
   # alpha composition, dashed strokes and rotated text on the Tk drawable.

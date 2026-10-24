@@ -46,6 +46,13 @@ set status [catch {
     set ::GX::currentSession [file normalize $session]
     ::GX::loadDatasetRegistry $session
     if {[dict exists $request preview_activation]} {::GX::_datasetPreviewActivationApply [dict get $request preview_activation]}
+    # TASK210's existing native adapter belongs to the fixed worker bootstrap,
+    # independently of whether discovery happened to query a Preview component.
+    # This loads the bridge only; providers still require normal Module/package
+    # admission. Keep the existing CORE route if the optional bridge cannot load.
+    if {[catch {::GX::datasetPreviewNativeEnsure} nativeError]} {
+        puts stderr "Native Preview adapter unavailable; using CORE fallback: $nativeError"
+    }
     set id [::GX::datasetPublicationV2ValidateId dataset [dict get $request dataset_id]]
     set prepared [::GX::datasetPreviewCacheGenerate $id [dict get $request options] [dict get $request expected_key]]
     set result [dict create key [dict get $prepared key] dataset_id $id status ready kind [dict get $prepared kind]]

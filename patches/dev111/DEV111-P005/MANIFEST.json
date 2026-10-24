@@ -1,0 +1,71 @@
+{
+  "patch_id": "DEV111-P005",
+  "revision": "corrected-task210-integration",
+  "prerequisite_source_commit": "c9d14a04bf72aacad91ddea77d6a33424d24af14",
+  "required_predecessor_patch": 4,
+  "zip_sha256": "0869026cd0c3a4c001a801726b6422181f04b5ae8a3874dfbd6f8449fcb59368",
+  "superseded_zip_sha256": "d59d0223580c60e2dcf450a2838fa78c91b65732d6416df08472eddf73dc3849",
+  "created_utc": "2026-10-23T16:54:23.343132+00:00",
+  "status": "MINIMAL_NATIVE_SMOKE_PASS_NOT_INSTALLED",
+  "files": [
+    {
+      "path": "core/native2d/CMakeLists.txt",
+      "before_sha256": "21031dbca5d1dd0a55b2ae5082caadf6408ef7a496cc3f2e1f8910d96a6f0881",
+      "after_sha256": "f4b81b065c2a45e9bbd1296620b7e31148d3970dcf38d5fe7decd1daa6828a5f"
+    },
+    {
+      "path": "core/native2d/bin/gxpreviewprovider.so",
+      "before_sha256": "b413188d526d1c8251e52f0beb03ed2bf33f4eaae19fc64a7a6e861b6f3f1403",
+      "after_sha256": "5c80cd795703f420902115812a28ab195de3ed02c964515d57dda2c5318a509d"
+    },
+    {
+      "path": "core/tcl/dataset_preview_worker_v1.tcl",
+      "before_sha256": "4545b28c22feb2b9674f1e4cb1f6d7c0b2e36ef030729e19ab6f6ccd495ea92d",
+      "after_sha256": "c5c44c24933dd1914ec716b1b60ab72a378c579631ec8ce8c1d57119e7798401"
+    }
+  ],
+  "preserved_task210_sources": [
+    {
+      "path": "core/native2d/gx2d_preview_provider_v1.cpp",
+      "sha256": "8c460717a118c4707e7d53cfbc928ce4ebc06478f3dc6814874b81269649e8dc",
+      "source_commit": "01b9698f023b244b71c0d7947060b7b49d48452e",
+      "unchanged_from_p004": true
+    },
+    {
+      "path": "core/native2d/gx2d_preview_provider_v1.h",
+      "sha256": "fa1600fa7ce423611d1cffe88373aeb2841395893d5d1685bb9e93f909693336",
+      "source_commit": "e773c387ece259c727bad08a04e9748e77bef57e",
+      "unchanged_from_p004": true
+    },
+    {
+      "path": "core/native2d/gx2d_preview_categories_v1.cpp",
+      "sha256": "3b27c162c8c0eba2e52295905fea7d374a7c8ad1049a3b04181fa994ee000486",
+      "source_commit": "b42fedcd6abbfa8b67927909fc0b3168ca3519e0",
+      "unchanged_from_p004": true
+    },
+    {
+      "path": "core/native2d/gx2d_preview_batch_v1.cpp",
+      "sha256": "fcc214ff016290f9342fb0b545698ad2db1aa2b96a2f2f1bdacd3ae79ca79b3d",
+      "source_commit": "adc3d42f3dc3f6107cf8264bc133477b82c8087c",
+      "unchanged_from_p004": true
+    },
+    {
+      "path": "core/native2d/gx2d_preview_plane_v1.cpp",
+      "sha256": "5cdf1c2758e42e47bb3559a1a107118159210d88ff440f71ad5b1b681007b07f",
+      "source_commit": "5f161bac5a2a3049ffa2b09c1474cdef2939341b",
+      "unchanged_from_p004": true
+    },
+    {
+      "path": "core/native2d/gx2d_preview_overlay_v1.cpp",
+      "sha256": "c5b5054a6bac0e762595ae5c334f6976b6c9ba46882bd3ad0d72a92ff9444579",
+      "source_commit": "2f5110450ecec4c7f74781ae177fcf6ed25c9a45",
+      "unchanged_from_p004": true
+    },
+    {
+      "path": "core/native2d/gx2d_preview_coordinates_v1.cpp",
+      "sha256": "b332ebbb18381bcbcae691cda375a54f08a34f2294e2f045fee8a1b66bd0d7a7",
+      "source_commit": "d30b88957074b1a7e3947e29012df2b0977aba5e",
+      "unchanged_from_p004": true
+    }
+  ]
+}
