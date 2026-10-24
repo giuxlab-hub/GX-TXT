@@ -112,3 +112,28 @@ The deposited dev-110 source is explicitly an intermediate TASK210 snapshot, not
 Seven source-only Tcl/Python cases copied byte-for-byte from the official deposited r3 revision. They concern document source capture, the shared icon catalog, paired-source readback, scientific video error handling, typed Script Bridge values and managed Job worker behavior. Exact original file paths and SHA-256 hashes are in source-manifest-dev111.json.
 
 **No new tests were run by GitHub source publication.** Controlled scientific and native GUI fixtures remain necessary; case inclusion is not full Linux/Windows acceptance. Neither the historically version-bound dev-108 hotfix nor private user Sessions or confidential test generators are included.
+
+## DEV111 r3 maintenance patch validation — P001 to P005
+
+The branch includes seven exact-byte author Tcl test files for P001, P002, P003 and P004, under validation/official_dev111_patches, and a new independent validator for all five patches including corrected P005.
+
+The original test cases have exact provenance and SHA-256 in patch-manifest-dev111.json. Their code is archived as SOURCE ONLY, without importing internal development evidence, installed Sessions or testing claims.
+
+Read-only commands:
+
+~~~sh
+python3 tools/validate_suite.py verify
+python3 tools/validate_dev111_patches.py
+python3 tools/validate_dev111_patches.py --repository /path/to/GX-TXT-maintenance-checkout
+python3 tools/validate_dev111_patches.py --installed-final /path/to/gxtxt
+~~~
+
+--repository requires an independent Git checkout with annotated dev111 P001/P002/P001-r2/P003/P004/P005 tags and the public patch ZIPs. It checks source history, predecessor commits, exact changed files, ZIP contents, correct native ELF64 Linux x86_64 binary, P005 CMake target and worker bootstrap, CORE fallback, and seven native scientific sources preserved across P005.
+
+--installed-final only reads an existing final cumulative patched source and compares SHA-256; it does not launch a GUI, activate a provider, or write to the installation. Never confuse this with a new functional test.
+
+The regular tools/validate_suite.py run command remains limited to the existing dev102 opt-in scientific fixture runner. The archived patch Tcl helpers require separate deliberate execution in suitable isolated Linux/Tcl/Tk environments. P005 did not deposit an independent portable end-to-end Tcl GUI test; its native functional test requires an admitted Preview provider and a controlled disposable scientific Session.
+
+Two P003 SHA256SUMS.txt inventories differ from the author manifest because the public main source had already withheld internal documentation; the precise two SHA-256 reconciliations are declared in the patch manifest. No scientific source/binary changes are exempted.
+
+The user-reported functional testing is separate from independent publication-source checks. No original private test receipts or credentials have been redistributed.

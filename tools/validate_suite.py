@@ -311,15 +311,24 @@ def verify(announce=True):
             raise ValueError("Unverified or excluded dev-111 source file: " + name)
         recent111.add(name)
 
+    # Additional maintenance patch fixtures are byte-identical author sources.
+    # Static patch/package checks live in tools/validate_dev111_patches.py.
+    sys.path.insert(0, str(ROOT / "tools"))
+    from validate_dev111_patches import read_manifest as _read_patch_manifest
+    patch_data = _read_patch_manifest()
+    patch_sources = {x["publicPath"] for x in patch_data["originalFixtures"]}
+    if len(patch_sources) != 7:
+        raise ValueError("Wrong DEV111 patch fixture source count")
+
     for candidate in (ROOT / "validation").rglob("*"):
         if candidate.is_symlink():
             raise ValueError("Unexpected symlink: " + str(candidate))
-        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer | recent | recent106 | recent107 | recent108 | recent109 | recent110 | recent111):
+        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer | recent | recent106 | recent107 | recent108 | recent109 | recent110 | recent111 | patch_sources):
             raise ValueError("Unreviewed file inside validation tree: " + str(candidate))
     if not (ROOT / "LICENSE").is_file():
         raise ValueError("GPL license missing")
     if announce:
-        print("PASS: 129 verified original validation sources through dev-111 r3; all manifests and source hashes verified.")
+        print("PASS: 136 original validation sources through dev-111 r3 and the DEV111 P001–P004 maintenance fixture set; SHA-256 verified.")
         print("PASS: reviewed public inputs only, no private test PDFs or deployment scripts.")
         print("Runtime scientific/GUI tests: NOT RUN by source verification.")
     return info

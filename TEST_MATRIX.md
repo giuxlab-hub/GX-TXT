@@ -211,3 +211,22 @@ Verified original source bytes are copied only for independent controlled reprod
 | validation/task210/scriptjob_drain/worker.py | validation/official_dev111/task210/scriptjob_drain/worker.py | SHA256 identity PASS; execution NOT RUN |
 
 No Debian GUI, Clang/Octave or scientific runtime PASS is asserted by this source-only publication.
+
+## DEV111 r3 maintenance patch validation — P001 to P005
+
+| Patch | Byte-identical deposited test sources | Public static validation | Linux/runtime follow-up |
+| --- | --- | --- | --- |
+| P001 / P001-r2 | p001/contract.tcl; p001/negative.tcl | Same six source hashes across original P001 and installer r2; exact tags, archive and rollback | Modules/Analysis visibility and persistence; original installer source mode 0664 |
+| P002 | p002/config_checks.tcl; p002/provider_contract.tcl | Eighteen source/binary payloads, prerequisites, exact ZIP members | Tcl 8.6 native Preview provider registration and separate GUI |
+| P003 | p003/declarations.tcl; p003/regression.tcl | Fifteen original changed files, Registry/Workspace source checks; two public checksum inventory reconciliations | Real Octave Analysis selector/Session switching, Script Registry and Workspace |
+| P004 | p004/async_stderr.tcl | Thirteen exact changed files, Preview descriptor/cache/worker source boundaries | Metadata-aware Preview selection, asynchronous stderr, cancelled/failed managed Jobs |
+| P005 corrected | Original end-to-end test source not portable in deposit | Three after-patch bytes, x86_64 ELF64, CMake gxpreviewprovider target, Tcl worker native bootstrap and CORE fallback, seven preserved native algorithms | Native provider admitted, complete entry/probe/open/create/push/seal/result/close, scientific curves and real GUI |
+
+Source-only fixture hashes are stored in patch-manifest-dev111.json; no new run is asserted. The standalone script tools/validate_dev111_patches.py can be run against the tagged Git maintenance checkout independently of Debian application state.
+
+### P005 controlled follow-up
+
+On a compatible disposable Linux dev111 r3 installation containing P001 through the corrected P005, close all real Sessions before testing. Create a scratch scientific Session and a controlled scientific curve source; enable an already compatible native Preview provider through normal Configuration > Modules > Preview Components. Confirm admitted provider, normal managed Worker execution and nonempty native curves with unchanged original Dataset identity. Then test disable/failed-provider fallback, cancellation, handle cleanup and Session switching. Log actual steps and evidence separately. These are required future native/GUI operations, not claimed results from the static validator.
+
+The original P005 corrected ZIP contains exactly CMakeLists.txt, gxpreviewprovider.so and dataset_preview_worker_v1.tcl. It does not supply an end-user synthetic provider fixture, so the above full native integration cannot be asserted by artifact inspection alone.
+
