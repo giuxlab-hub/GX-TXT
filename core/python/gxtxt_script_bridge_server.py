@@ -331,6 +331,22 @@ class Host:
                     self.tcl.call("::GX::loadManifest", str(manifest))
                 self.tcl.call("::GX::loadDatasetRegistry", self.session)
             self.tcl.call("set", "::GX::currentSession", self.session)
+            if self.config.has_section("preview_activation"):
+                # Private runtime transport written only by the installed CORE
+                # Preview request preparer. Public cache arguments grant none.
+                if (self.config.get("job_origin", "classification", fallback="") != "core_service" or
+                        self.config.get("job_origin", "service_id", fallback="") != "dataset-preview" or
+                        self.config.get("config", "source_mode", fallback="") != "core_service" or
+                        self.config.get("config", "registered_script", fallback="") != "core-service:dataset-preview"):
+                    raise BridgeError("GXTXT:ScriptBridge:Ownership", "Preview activation requires the private CORE Preview runtime")
+                from gxtxt_script_inspection import result_origin, run_directory
+                runtime = {section: dict(self.config[section]) for section in self.config.sections()}
+                with run_directory(self.session, self.run_id) as (directory, _):
+                    origin = result_origin(directory, runtime.get("config", {}), runtime)
+                if origin != "core_service":
+                    raise BridgeError("GXTXT:ScriptBridge:Ownership", "Preview activation source identity changed")
+                snapshot = self.tcl.call("::GX::iniUnescape", self.config.get("preview_activation", "snapshot"))
+                self.tcl.call("::GX::_datasetPreviewActivationApply", snapshot)
             # Tcl writes to the process descriptor directly; Python's
             # redirect_stdout cannot protect the JSON response channel.
             self.tcl.eval('''

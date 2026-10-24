@@ -25,11 +25,19 @@ proc ::GX::datasetPreviewLiveShell {} {
     ttk::button $f.live.actions.cancel -text {Cancel preparation} -command ::GX::datasetPreviewLiveCancel
     ttk::label $f.live.actions.status -text {Preparing a source-verified scientific view…} -anchor w
     pack $f.live.actions.cancel -side right -padx 4;pack $f.live.actions.status -fill x -expand 1 -padx 8
+    ttk::frame $f.live.selection
+    ttk::label $f.live.selection.label -text Preview
+    ttk::combobox $f.live.selection.choice -state readonly -width 42 -textvariable ::GX::ui(previewPrimaryChoice)
+    ttk::label $f.live.selection.reason -anchor w -wraplength 680
+    pack $f.live.selection.label -side left -padx 4
+    pack $f.live.selection.choice -side left -padx 4
+    pack $f.live.selection.reason -side left -fill x -expand 1 -padx 6
+    bind $f.live.selection.choice <<ComboboxSelected>> ::GX::datasetPreviewLivePrimarySelected
     ttk::notebook $f.live.panes;pack $f.live.panes -fill both -expand 1
-    ttk::frame $f.live.panes.plot;ttk::frame $f.live.panes.source;ttk::frame $f.live.panes.quality
-    $f.live.panes add $f.live.panes.plot -text Plot
-    $f.live.panes add $f.live.panes.source -text {Source image}
-    $f.live.panes add $f.live.panes.quality -text Quality
+    foreach name {plot source quality table details choice} {ttk::frame $f.live.panes.$name}
+    $f.live.panes add $f.live.panes.details -text Preview
+    ttk::label $f.live.panes.details.loading -text {Preparing Dataset Preview…} -padding 12
+    pack $f.live.panes.details.loading -fill both -expand 1
     ttk::label $f.live.panes.plot.loading -text {Loading canonical curves asynchronously…} -anchor center -justify left -wraplength 600 -padding 12
     pack $f.live.panes.plot.loading -fill both -expand 1
     bind $f.live.panes.plot.loading <Configure> [list $f.live.panes.plot.loading configure -wraplength %w]
@@ -40,6 +48,50 @@ proc ::GX::datasetPreviewLiveShell {} {
     grid $f.live.panes.source.sy -row 0 -column 1 -sticky ns;grid $f.live.panes.source.sx -row 1 -column 0 -sticky ew
     grid columnconfigure $f.live.panes.source 0 -weight 1;grid rowconfigure $f.live.panes.source 0 -weight 1
     return $f.live
+}
+proc ::GX::datasetPreviewLivePrimarySelected {} {
+    variable ::GX::PreviewLive::active
+    if {![dict exists $active id] || ![info exists ::GX::ui(previewPrimaryChoices)] || ![dict exists $::GX::ui(previewPrimaryChoices) $::GX::ui(previewPrimaryChoice)]} return
+    set component [dict get $::GX::ui(previewPrimaryChoices) $::GX::ui(previewPrimaryChoice)]
+    if {$component eq {}} return
+    dict set active primary_component $component
+    # Existing preparation/cache owners admit native providers; the selection
+    # widget never loads a renderer or creates a second provider registry.
+    datasetPreviewLiveActivate [dict get $active id] 1
+    datasetPreviewLiveSetStatus {Preparing selected Preview; the previous successful view remains until preparation completes.}
+}
+proc ::GX::datasetPreviewLiveStandardTabs {id representation} {
+    set notebook .top.nb.preview.live.panes
+    set context [_datasetPreviewProviderContext $id $representation]
+    set available [dict get $context availability]
+    set current [$notebook select]
+    set previous {};foreach pane [$notebook tabs] {if {[$notebook tab $pane -state] ne {hidden}} {lappend previous $pane}}
+    foreach name {plot source quality table details choice} {
+        if {"$notebook.$name" in [$notebook tabs]} {$notebook hide $notebook.$name}
+    }
+    set panes {}
+    if {[dict get $available native_model]} {$notebook add $notebook.plot -text Plot;lappend panes $notebook.plot}
+    if {[dict get $available table]} {
+        foreach child [winfo children $notebook.table] {destroy $child}
+        if {![catch {datasetPreviewCreateTable $notebook.table.inspector $::GX::currentSession $id}]} {
+            pack $notebook.table.inspector -fill both -expand 1
+            $notebook add $notebook.table -text Table;lappend panes $notebook.table
+        }
+    }
+    set curveControls [datasetPublicationV2DictDefault $available curve_controls 0]
+    if {[dict get $available source_image] || $curveControls || [dict get $available media_artifact]} {
+        set label [expr {[dict get $available source_image]?{Source image}:($curveControls?{Curve details}:{Preview})}]
+        $notebook add $notebook.source -text $label;lappend panes $notebook.source
+    }
+    if {[dict get $available quality]} {$notebook add $notebook.quality -text Quality;lappend panes $notebook.quality}
+    if {![llength $panes]} {
+        foreach child [winfo children $notebook.details] {destroy $child}
+        ttk::label $notebook.details.summary -text [datasetPublicationV2DictDefault $representation description {No graphical Preview is available for this Dataset. Standard Dataset inspection remains available.}] -padding 12 -wraplength 700 -justify left
+        pack $notebook.details.summary -fill x -anchor nw
+        $notebook add $notebook.details -text Details;lappend panes $notebook.details
+    }
+    if {$current in $panes && $current in $previous} {$notebook select $current} else {$notebook select [lindex $panes 0]}
+    return $context
 }
 proc ::GX::datasetPreviewLiveDestroyed {expected actual} {
     if {$expected eq $actual} {datasetPreviewLiveRelease 0}
@@ -52,6 +104,7 @@ proc ::GX::datasetPreviewLiveRelease {{restore 1}} {
     if {[info exists ::GX::ui(previewCacheWatch)]} {after cancel $::GX::ui(previewCacheWatch);unset ::GX::ui(previewCacheWatch)}
     native3DPreviewRelease .top.nb.preview.live.panes.plot
     set active {}
+    unset -nocomplain ::GX::ui(previewExtensionTabs) ::GX::ui(previewPrimaryChoices) ::GX::ui(previewPrimaryChoice)
     datasetDigitizerPreviewClear
     if {!$restore} return
     set f .top.nb.preview
@@ -66,6 +119,7 @@ proc ::GX::datasetPreviewLiveCancel {} {
     variable ::GX::PreviewLive::active;variable ::GX::PreviewLive::epoch
     incr epoch
     if {[dict exists $active key]} {datasetPreviewCacheCancel [dict get $active key]}
+    if {[dict exists $active id] && [dict exists $active token] && ![datasetPreviewLiveRetainSelection [dict get $active id] [dict get $active token] $epoch]} return
     datasetPreviewLiveSetStatus {Preparation cancelled; the last successful view is retained.}
 }
 proc ::GX::datasetPreviewLiveOptions {id} {
@@ -73,6 +127,7 @@ proc ::GX::datasetPreviewLiveOptions {id} {
     set options [dict remove $options last_render version schema_identity types retained_visibility]
     foreach axis {x y z} {if {[info exists ::GX::ui(previewMap,$axis)]} {dict set options $axis $::GX::ui(previewMap,$axis)}}
     if {[info exists ::GX::ui(previewMap,filters)]} {dict set options selections $::GX::ui(previewMap,filters)}
+    if {[dict exists $::GX::PreviewLive::active primary_component]} {dict set options primary_component [dict get $::GX::PreviewLive::active primary_component]}
     return $options
 }
 proc ::GX::datasetPreviewLiveWatchStamp {} {
@@ -106,7 +161,8 @@ proc ::GX::datasetPreviewLiveCheck {{force 0}} {
     if {!$force && !$failed && [dict exists $active watch_stamp] && $stamp eq [dict get $active watch_stamp]} return
     if {!$failed} {dict set active watch_stamp $stamp}
     set id [dict get $active id]
-    if {[dict exists $active representation]} {
+    set sameSource [expr {[dict exists $active representation source] && ![catch {datasetPreviewCacheSource $id} currentSource] && [dict get $active representation source] eq $currentSource}]
+    if {[dict exists $active representation] && $sameSource} {
         set notebook .top.nb.preview.live.panes
         set windowId [winfo id $notebook]
         set owner [list [dict get $active id] [dict get $active token] $::GX::PreviewLive::epoch $reason]
@@ -200,19 +256,21 @@ proc ::GX::_datasetPreviewLiveReady {id token generation explicit response} {
     }
     if {$token ne $current} return
     if {[dict get $response status] eq "preparing"} {datasetPreviewLiveSetStatus "Preview preparation: [dict get $response state] — scientific data remain in CORE";return}
-    if {[dict get $response status] ne "ready"} {datasetPreviewLiveSetStatus "Preview unavailable: [dict get $response message]";return}
+    if {[dict get $response status] ne "ready"} {if {![datasetPreviewLiveRetainSelection $id $token $generation]} return;datasetPreviewLiveSetStatus "Preview unavailable: [dict get $response message] The previous successful view is retained.";return}
     if {[catch {datasetPreviewCacheRead $id [dict get $response key]} result]} {
         # Ready means preparation finished, not that the source is still
         # available at this callback. Keep strict read errors local to this
         # asynchronous consumer, just as for later widget admission errors.
+        if {![datasetPreviewLiveRetainSelection $id $token $generation]} return
         datasetPreviewLiveSetStatus "Preview unavailable: $result Select Render to retry."
         return
     }
-    if {$result eq {}} {datasetPreviewLiveSetStatus {Source changed or prepared Preview failed integrity validation; Render again.};return}
+    if {$result eq {}} {if {![datasetPreviewLiveRetainSelection $id $token $generation]} return;datasetPreviewLiveSetStatus {Source changed or prepared Preview failed integrity validation; Render again.};return}
     if {[catch {datasetPreviewLiveAdopt $id $result [dict get $response cache_hit]} reason]} {
         # A prepared source can change between cache admission and widget
         # admission. Report this asynchronous failure without publishing it as
         # the last render or surfacing a repeated Tk background exception.
+        if {![datasetPreviewLiveRetainSelection $id $token $generation]} return
         datasetPreviewLiveSetStatus "Preview unavailable: $reason Select Render to retry."
         return
     }
@@ -222,6 +280,31 @@ proc ::GX::_datasetPreviewLiveReady {id token generation explicit response} {
             datasetPreviewLiveSetStatus {The prepared view is retained; its saved render receipt was not updated. Select Render to refresh.}
         }
     }
+}
+proc ::GX::datasetPreviewLiveRecoveryCurrent {id token generation} {
+    variable ::GX::PreviewLive::active;variable ::GX::PreviewLive::epoch
+    expr {$generation==$epoch && [dict exists $active id] && [dict exists $active token] && [dict get $active id] eq $id && [dict get $active token] eq $token && [winfo exists .top.nb.preview.live.panes] && ![catch {interactiveDocumentSessionToken} current] && $current eq $token}
+}
+proc ::GX::datasetPreviewLiveRetainSelection {id token generation} {
+    variable ::GX::PreviewLive::active
+    if {![datasetPreviewLiveRecoveryCurrent $id $token $generation]} {return 0}
+    if {![dict exists $active representation] || ![dict exists $active rendered_key]} {return 1}
+    set successful [datasetPublicationV2DictDefault $active successful_primary_component {}]
+    if {$successful eq {}} {dict unset active primary_component} else {dict set active primary_component $successful}
+    dict set active key [dict get $active rendered_key]
+    dict unset active selection_applied
+    # Reconcile the control against the retained successful presentation. A
+    # failed requested provider is never displayed as the active result.
+    if {[dict exists $active representation source] && ![catch {datasetPreviewCacheSource $id} currentSource] && [dict get $active representation source] eq $currentSource} {
+        catch {datasetPreviewLiveExtensionTabs $id [dict get $active representation]}
+    } else {
+        # Never join an old model/Quality report with freshly read scientific
+        # metadata. Keep its existing previous-render qualification and restore
+        # the control without calling any provider against that stale frame.
+        if {[info exists ::GX::ui(previewPrimaryChoices)]} {dict for {label component} $::GX::ui(previewPrimaryChoices) {if {$component eq $successful} {set ::GX::ui(previewPrimaryChoice) $label;break}}}
+        catch {datasetPreviewLiveCheck 1}
+    }
+    return [datasetPreviewLiveRecoveryCurrent $id $token $generation]
 }
 proc ::GX::datasetPreviewLiveAdopt {id result cacheHit} {
     variable ::GX::PreviewLive::active
@@ -267,7 +350,6 @@ proc ::GX::datasetPreviewLiveAdopt {id result cacheHit} {
         datasetDigitizerPreviewRender $w $id $digitizer
     }
     if {[dict exists $result native_model]} {
-        $f.live.panes tab $f.live.panes.plot -state normal
         foreach button {fit zoomIn zoomOut} {$f.live.actions.$button state !disabled}
         if {!$reused && ![datasetDigitizerPreviewAttachNative $id $w $model $f.live.panes.plot]} {
             ::GX::PlotDatasetAPIv4::widgetCreate $path $model {prepared_model 1 retain_presentation 1}
@@ -275,8 +357,6 @@ proc ::GX::datasetPreviewLiveAdopt {id result cacheHit} {
         }
         $w insert end "[dict get $result row_count] canonical rows; [dict get $result displayed_points] display points. Full scientific data remain canonical.\nWheel zooms; middle drag pans; Fit restores the complete bounds.\n"
     } else {
-        $f.live.panes tab $f.live.panes.plot -state disabled
-        $f.live.panes select $f.live.panes.source
         foreach button {fit zoomIn zoomOut} {$f.live.actions.$button state disabled}
         if {[dict exists $result media_artifact]} {
             set directory [datasetPreviewCachePath $::GX::currentSession [dict get $result key]]
@@ -287,6 +367,8 @@ proc ::GX::datasetPreviewLiveAdopt {id result cacheHit} {
     $w configure -state disabled
     raise $w
     datasetPreviewLiveQuality $id $result
+    datasetPreviewLiveStandardTabs $id $result
+    if {![dict exists $active primary_component] && [dict exists $result options primary_component]} {dict set active primary_component [dict get $result options primary_component]}
     set notebook $f.live.panes
     set windowId [winfo id $notebook]
     set owner [list [datasetPublicationV2DictDefault $active id {}] [datasetPublicationV2DictDefault $active token {}] $::GX::PreviewLive::epoch [interactiveDocumentSessionToken]]
@@ -494,7 +576,8 @@ proc ::GX::datasetPreviewLiveExtensionTabs {id representation} {
     foreach pane $priorPanes {if {[winfo exists $pane]} {destroy $pane}}
     set ::GX::ui(previewExtensionTabs) {}
     set diagnostics [dict get $contributions diagnostics]
-    set ordinal 0;set dependencies {}
+    set selection [datasetPublicationV2DictDefault $contributions selection {}]
+    set ordinal 0;set dependencies {};set componentPanes {};set primaryPanes {}
     foreach tab [dict get $contributions tabs] {
         set pane $notebook.extension[incr ordinal]
         ttk::frame $pane
@@ -513,6 +596,9 @@ proc ::GX::datasetPreviewLiveExtensionTabs {id representation} {
         $notebook add $pane -text [dict get $tab label]
         set identity [list [dict get $tab component_id] [dict get $tab id]]
         dict set ::GX::ui(previewExtensionTabs) $pane $identity
+        set component [dict get $tab component_id]
+        if {![dict exists $componentPanes $component] || ([datasetPublicationV2DictDefault $tab role complementary] eq {primary} && $component ni $primaryPanes)} {dict set componentPanes $component $pane}
+        if {[datasetPublicationV2DictDefault $tab role complementary] eq {primary}} {lappend primaryPanes $component}
         if {$identity eq $previous} {$notebook select $pane}
     }
     if {![datasetPreviewLiveExtensionCurrent $notebook $windowId $owner]} return
@@ -531,4 +617,60 @@ proc ::GX::datasetPreviewLiveExtensionTabs {id representation} {
         $notebook add $pane -text {Component status}
         dict set ::GX::ui(previewExtensionTabs) $pane status
     }
+    datasetPreviewLiveSelection $id $representation $selection $componentPanes
+}
+proc ::GX::datasetPreviewLiveSelection {id representation selection componentPanes} {
+    variable ::GX::PreviewLive::active
+    set frame .top.nb.preview.live.selection;set notebook .top.nb.preview.live.panes
+    set components [datasetPublicationV2DictDefault $selection primary_components {}]
+    set core [datasetPublicationV2DictDefault $selection core_specialized 0]
+    set conflict [datasetPublicationV2DictDefault $selection conflict 0]
+    set chosen [datasetPublicationV2DictDefault $active primary_component {}]
+    set default [datasetPublicationV2DictDefault $selection default_component {}]
+    set actualNative {}
+    if {[dict exists $representation native_provider component_id] && ![catch {datasetPreviewNativeReceiptCurrent $id [dict get $representation native_provider]} valid] && $valid} {set actualNative [dict get $representation native_provider component_id]}
+    set pending [expr {[dict exists $active key] && [dict get $active key] ne [datasetPublicationV2DictDefault $representation key {}]}]
+    set fallback 0
+    if {$chosen ne {} && $chosen ne {generic} && $chosen ni $components} {
+        dict unset active primary_component;set chosen {};set fallback 1
+    } elseif {!$pending && !$core && $chosen ne {} && $chosen ne {generic} && ![dict exists $componentPanes $chosen] && $chosen ne $actualNative} {
+        dict set active primary_component generic;set chosen generic;set fallback 1
+    }
+    if {$default ne {} && ![dict exists $componentPanes $default] && $default ne $actualNative} {set default {};set fallback 1}
+    set choices {};set labels {}
+    if {$conflict && $chosen eq {}} {lappend labels {Choose a Preview…};dict set choices {Choose a Preview…} {}}
+    lappend labels Standard;dict set choices Standard generic
+    foreach component [lsort -dictionary $components] {
+        set label [moduleField $component name $component]
+        set base $label;set ordinal 1
+        while {[dict exists $choices $label]} {set label "$base ([incr ordinal])"}
+        lappend labels $label;dict set choices $label $component
+    }
+    set ::GX::ui(previewPrimaryChoices) $choices
+    set displayed [expr {$chosen ne {}?$chosen:($default ne {}?$default:($conflict?{}:{generic}))}]
+    set ::GX::ui(previewPrimaryChoice) Standard
+    dict for {label component} $choices {if {$component eq $displayed} {set ::GX::ui(previewPrimaryChoice) $label;break}}
+    $frame.choice configure -values $labels
+    $frame.reason configure -text [expr {$fallback?{Selected Preview unavailable; standard inspection remains available.}:($conflict?{Several compatible previews are available; choose one.}:($default ne {}?{Specialized view for this Dataset.}:{Standard view for this Dataset.}))}]
+    if {[llength $components] && !$core} {pack $frame -fill x -before $notebook -padx 3 -pady 3} else {pack forget $frame}
+    set signature [list $id [interactiveDocumentSessionToken] [datasetPublicationV2DictDefault $representation key {}] $chosen $components $default $core $conflict]
+    set apply [expr {![dict exists $active selection_applied] || [dict get $active selection_applied] ne $signature}]
+    dict set active selection_applied $signature
+    if {!$pending} {dict set active successful_primary_component [expr {$core?{}:$displayed}]}
+    if {$conflict && $chosen eq {} && !$core} {
+        if {![winfo exists $notebook.choice.message]} {
+            ttk::label $notebook.choice.message -text {Several equally suitable Preview components are available. Select a Preview above. Generic Plot and Table inspection remain available in their tabs.} -wraplength 700 -justify left -padding 16
+            pack $notebook.choice.message -fill x -anchor nw
+        }
+        $notebook add $notebook.choice -text {Choose Preview}
+        if {$apply} {$notebook select $notebook.choice}
+    } elseif {"$notebook.choice" in [$notebook tabs]} {$notebook hide $notebook.choice}
+    if {!$apply} return
+    if {$core || $chosen eq {generic}} {
+        foreach name [expr {$core && $chosen eq {generic}?{table plot source details}:{plot table source details}}] {
+            set pane $notebook.$name
+            if {$pane in [$notebook tabs] && [$notebook tab $pane -state] ne {hidden}} {$notebook select $pane;break}
+        }
+    } elseif {$displayed ne {} && [dict exists $componentPanes $displayed]} {$notebook select [dict get $componentPanes $displayed]
+    } elseif {$displayed ne {} && $displayed eq $actualNative && "$notebook.plot" in [$notebook tabs]} {$notebook select $notebook.plot}
 }

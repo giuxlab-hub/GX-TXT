@@ -15,6 +15,11 @@ if {[catch {
     ::GX::loadDatasetRegistry $session
     if {[dict exists $request module_config]} {dict for {key value} [dict get $request module_config] {set ::GX::moduleCfg($key) $value}}
     set reference [dict get $request reference]
+    set service [::GX::datasetPublicationV2DictDefault $request core_service {}]
+    if {[dict exists $request preview_activation]} {
+        if {$service ne {dataset-preview} || $reference ne {core-service:dataset-preview}} {error {Preview activation transport requires the private CORE Preview service}}
+        ::GX::_datasetPreviewActivationApply [dict get $request preview_activation]
+    }
     set inputs [dict get $request inputs]
     set namespace [::GX::datasetNamespaceCurrentGet $session]
     if {[dict exists $request namespace]} {set namespace [dict get $request namespace]}
@@ -93,7 +98,11 @@ if {[catch {
     dict set envelope script_version [dict get $m version]
     dict set envelope session_name [::GX::currentSessionDisplayName]
     if {$service ne {}} {
-        set ch [open $runtime a];try {puts $ch "\n\[job_origin\]";::GX::putKV $ch classification core_service;::GX::putKV $ch service_id $service} finally {close $ch}
+        set ch [open $runtime a]
+        try {
+            puts $ch "\n\[job_origin\]";::GX::putKV $ch classification core_service;::GX::putKV $ch service_id $service
+            if {[dict exists $request preview_activation]} {puts $ch "\n\[preview_activation\]";::GX::putKV $ch snapshot [dict get $request preview_activation]}
+        } finally {close $ch}
     }
     set response [exec {*}[::GX::scriptJobCommand submit] << $envelope]
     if {![dict get $response ok]} {error [dict get $response error]}

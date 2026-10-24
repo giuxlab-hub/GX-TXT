@@ -2,7 +2,7 @@
 # CORE local durable Job API. UI callbacks use nonblocking fileevents only.
 namespace eval ::GX {variable scriptJobRequests {};variable scriptJobCounter 0;variable scriptJobShutdownHook 0}
 proc ::GX::scriptJobApiInfo {} {
-    return [dict create api_name SCRIPT_JOB_API_v1 api_version 1 scope {local remote_references} authority core operations {submit wait list describe inspect log_read inspect_run run_log_read run_summaries cancel recover configure debug_submit debug_read debug_control debug_capabilities stream_read stream_publish view_list history_hide history_restore history_candidates workspace_save workspace_open workspace_rename workspace_delete view_remember} persistence durable gui_lifetime independent presentation_scope user_configuration auxiliary_operations {scriptJobAsync scriptJobRequestCancel scriptJobRequestExchange scriptJobRequestSend scriptJobRequestDrain} auxiliary_limits {timeout_ms max_bytes process_group ui_lifetime label duplex} auxiliary_exchange_timeout_ms {default 12000 min 1 max 120000} auxiliary_send_pending_bytes 65536 auxiliary_drain_maximum {default 16 min 1 max 16}]
+    return [dict create api_name SCRIPT_JOB_API_v1 api_version 1 scope {local remote_references} authority core operations {submit wait list describe inspect log_read inspect_run run_log_read run_summaries cancel recover configure debug_submit debug_read debug_control debug_capabilities stream_read stream_publish view_list history_hide history_restore history_candidates workspace_save workspace_open workspace_rename workspace_delete view_remember} persistence durable gui_lifetime independent presentation_scope user_configuration auxiliary_operations {scriptJobAsync scriptJobRequestCancel scriptJobRequestExchange scriptJobRequestSend scriptJobRequestDrain} auxiliary_limits {timeout_ms max_bytes process_group ui_lifetime label duplex separate_stderr} auxiliary_exchange_timeout_ms {default 12000 min 1 max 120000} auxiliary_send_pending_bytes 65536 auxiliary_drain_maximum {default 16 min 1 max 16}]
 }
 proc ::GX::scriptJobRoot {} {
     if {[info exists ::env(GXTXT_JOB_ROOT)]} {return [file normalize $::env(GXTXT_JOB_ROOT)]}
@@ -19,19 +19,26 @@ proc ::GX::scriptJobCall {operation args} {
 }
 proc ::GX::scriptJobAsync {command payload callback {options {}}} {
     variable scriptJobRequests;variable scriptJobCounter
-    foreach key [dict keys $options] {if {$key ni {timeout_ms max_bytes process_group ui_lifetime label duplex}} {error {Unknown managed request option.}}}
-    set options [dict merge {timeout_ms 0 max_bytes 0 process_group 0 ui_lifetime 0 label {Managed request} duplex 0} $options]
+    foreach key [dict keys $options] {if {$key ni {timeout_ms max_bytes process_group ui_lifetime label duplex separate_stderr}} {error {Unknown managed request option.}}}
+    set options [dict merge {timeout_ms 0 max_bytes 0 process_group 0 ui_lifetime 0 label {Managed request} duplex 0 separate_stderr 0} $options]
     foreach key {timeout_ms max_bytes} {if {![string is integer -strict [dict get $options $key]] || [dict get $options $key]<0} {error {Managed request limits must be nonnegative integers.}}}
-    foreach key {process_group ui_lifetime duplex} {if {![string is boolean -strict [dict get $options $key]]} {error {Managed request lifetime options must be boolean.}}}
+    foreach key {process_group ui_lifetime duplex separate_stderr} {if {![string is boolean -strict [dict get $options $key]]} {error {Managed request lifetime options must be boolean.}}}
     if {[dict get $options process_group] && [auto_execok kill] eq {}} {error {Owned process-group cancellation is unavailable on this host.}}
+    if {[dict get $options separate_stderr] && [dict get $options duplex]} {error {Separate diagnostics require a non-duplex managed request}}
     set request job-request-[incr scriptJobCounter]
-    set pipe [open [list | {*}$command 2>@1] r+]
+    set pipe {};set diagnostics {};set diagnosticWrite {}
     try {
+        if {[dict get $options separate_stderr]} {
+            lassign [chan pipe] diagnostics diagnosticWrite
+            fconfigure $diagnostics -blocking 0 -buffering none -encoding utf-8 -translation lf
+            set pipe [open [list | {*}$command 2>@ $diagnosticWrite] r+]
+            close $diagnosticWrite;set diagnosticWrite {}
+        } else {set pipe [open [list | {*}$command 2>@1] r+]}
         fconfigure $pipe -blocking 0 -buffering none -encoding utf-8 -translation lf
         puts -nonewline $pipe $payload
         if {![dict get $options duplex]} {chan close $pipe write}
-    } on error {message context} {catch {close $pipe};return -options $context $message}
-    dict set scriptJobRequests $request [dict create pipe $pipe callback $callback data {} options $options pids [pid $pipe] started_ms [clock milliseconds] timer {} kill_timer {} cancelled {}]
+    } on error {message context} {foreach channel [list $pipe $diagnostics $diagnosticWrite] {if {$channel ne {}} {catch {close $channel}}};return -options $context $message}
+    dict set scriptJobRequests $request [dict create pipe $pipe callback $callback data {} options $options pids [pid $pipe] started_ms [clock milliseconds] timer {} kill_timer {} cancelled {} stderr_pipe $diagnostics stderr_eof [expr {$diagnostics eq {}}] stderr_bytes 0 stderr_data {}]
     set timeout [dict get $options timeout_ms]
     if {$timeout>0} {dict set scriptJobRequests $request timer [after $timeout [list ::GX::scriptJobRequestCancel $request timeout]]}
     if {[dict get $options ui_lifetime] && !$::GX::scriptJobShutdownHook && [llength [info commands winfo]] && [winfo exists .]} {
@@ -39,6 +46,7 @@ proc ::GX::scriptJobAsync {command payload callback {options {}}} {
         set ::GX::scriptJobShutdownHook 1
     }
     fileevent $pipe readable [list ::GX::scriptJobReadable $request]
+    if {$diagnostics ne {}} {fileevent $diagnostics readable [list ::GX::_scriptJobStderrReadable $request]}
     return $request
 }
 proc ::GX::_scriptJobRequestReadResume {request} {
@@ -94,6 +102,31 @@ proc ::GX::_scriptJobRequestFrame {request} {
     dict set scriptJobRequests $request $entry
     return 1
 }
+# The same managed request owns both channels and their combined byte budget.
+proc ::GX::_scriptJobStderrReadable {request} {
+    variable scriptJobRequests
+    if {![dict exists $scriptJobRequests $request]} return
+    set entry [dict get $scriptJobRequests $request]
+    if {[dict get $entry stderr_eof]} return
+    set pipe [dict get $entry stderr_pipe]
+    set failed [catch {read $pipe 8192} chunk]
+    if {$failed} {
+        catch {fileevent $pipe readable {}}
+        dict set entry stderr_eof 1
+    } else {
+        dict incr entry stderr_bytes [string bytelength $chunk]
+        if {[dict get $entry cancelled] eq {}} {
+            dict append entry stderr_data $chunk
+            if {[string bytelength [dict get $entry stderr_data]]>8192} {dict set entry stderr_data [string range [dict get $entry stderr_data] end-2047 end]}
+        }
+        if {[eof $pipe]} {fileevent $pipe readable {};dict set entry stderr_eof 1}
+    }
+    dict set scriptJobRequests $request $entry
+    set maximum [dict get $entry options max_bytes]
+    if {$failed} {scriptJobRequestCancel $request read_error
+    } elseif {$maximum>0 && [dict get $entry stderr_bytes]+[string bytelength [dict get $entry data]]>$maximum} {scriptJobRequestCancel $request output_limit}
+    if {[dict exists $entry eof]} {after idle [list ::GX::scriptJobReadable $request]}
+}
 proc ::GX::scriptJobReadable {request} {
     variable scriptJobRequests
     if {![dict exists $scriptJobRequests $request]} return
@@ -133,7 +166,7 @@ proc ::GX::scriptJobReadable {request} {
         set entry [dict get $scriptJobRequests $request]
         }
     }
-    if {![dict get $entry options duplex] && $maximum>0 && [string bytelength [dict get $entry data]]>$maximum} {
+    if {![dict get $entry options duplex] && $maximum>0 && [string bytelength [dict get $entry data]]+[dict get $entry stderr_bytes]>$maximum} {
         dict set entry data [string range [dict get $entry data] 0 [expr {max(0,$maximum/8-1)}]]
         dict set scriptJobRequests $request $entry
         scriptJobRequestCancel $request output_limit
@@ -152,6 +185,11 @@ proc ::GX::scriptJobReadable {request} {
             return
         }
     }
+    if {![dict get $entry stderr_eof]} {
+        catch {fileevent $pipe readable {}}
+        dict set scriptJobRequests $request eof 1
+        return
+    }
     if {[dict get $entry options duplex] && [dict get $entry cancelled] eq {}} {
         # A persistent native leader can crash after fork while a descendant
         # redirects stdout. Retain ownership until the whole group is reaped.
@@ -166,11 +204,18 @@ proc ::GX::scriptJobReadable {request} {
         return
     }
     catch {fileevent $pipe readable {}};catch {close $pipe}
+    if {[dict get $entry stderr_pipe] ne {}} {catch {fileevent [dict get $entry stderr_pipe] readable {}};catch {close [dict get $entry stderr_pipe]}}
     foreach key {timer kill_timer} {if {[dict get $entry $key] ne {}} {after cancel [dict get $entry $key]}}
     dict unset scriptJobRequests $request
     set response [string trim [dict get $entry data]]
     if {[dict get $entry cancelled] ne {}} {set response [dict create ok 0 error "[dict get $entry options label]: [dict get $entry cancelled]" error_type [dict get $entry cancelled]]}
     if {[catch {dict get $response ok}]} {set response [dict create ok 0 error $response]}
+    if {[dict get $entry stderr_data] ne {}} {
+        set tail [datasetPublicationV2DictDefault $response diagnostic_tail {}]
+        append tail \n [dict get $entry stderr_data]
+        if {[string bytelength $tail]>8192} {set tail [string range $tail end-2047 end]}
+        dict set response diagnostic_tail $tail
+    }
     if {[dict get $entry callback] ne {}} {uplevel #0 [list {*}[dict get $entry callback] $response]}
 }
 proc ::GX::scriptJobRequestExchange {request payload {timeout_ms 12000}} {

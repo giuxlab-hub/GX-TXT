@@ -142,7 +142,9 @@ proc ::GX::previewDescriptorTabNormalize {tab previewDir} {
     set id [dict get $tab id];set label [string trim [dict get $tab label]];set kind [dict get $tab kind]
     if {![regexp {^[A-Za-z][A-Za-z0-9_.-]{0,63}$} $id]} {error {Invalid Preview tab ID}}
     if {$label eq {} || [string length $label]>96 || [regexp {[\x00\r\n]} $label]} {error {Invalid Preview tab label}}
-    set out [dict create id $id label $label kind $kind]
+    set role [datasetPublicationV2DictDefault $tab role complementary]
+    if {$role ni {primary complementary}} {error {Preview tab role must be primary or complementary}}
+    set out [dict create id $id label $label kind $kind role $role]
     switch -- $kind {
         metadata {
             if {![dict exists $tab metadata] || [catch {dict size [dict get $tab metadata]} size]} {error {Preview tab metadata must be a dictionary}}

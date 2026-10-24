@@ -216,7 +216,7 @@ proc ::GX::scientificDatasetPreviewFiltered {id x y output requests {options {}}
         set request [dict create dataset_id $id x_variable_id $x y_variable_id $y display_budget 4096 filters [dict get $plan filters]]
         if {$ordering ne {}} {dict set request order_variable_id $ordering}
         set batchOptions [dict create group_variable_ids [dict get $plan group_variable_ids]]
-        if {[llength [info commands ::GX::datasetPreviewNativeBatch]]} {dict set batchOptions preview_provider [dict create cache_key [file tail [file dirname $output]]]}
+        if {[llength [info commands ::GX::datasetPreviewNativeBatch]]} {dict set batchOptions preview_provider [dict create cache_key [file tail [file dirname $output]] primary_component [datasetPublicationV2DictDefault $options primary_component {}]]}
         set batch [curveSourceDisplayBatch $::GX::currentSession $request $batchOptions]
         if {[dict exists $batch diagnostics native_provider]} {set nativeProvider [dict get $batch diagnostics native_provider]}
         set nativeOverlay [datasetPublicationV2DictDefault $batch native_overlay {}]

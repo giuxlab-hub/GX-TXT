@@ -27,7 +27,7 @@ set status [catch {
     if {[encoding convertto utf-8 $request] ne $raw} {error {Preview worker request is not canonical UTF-8}}
     if {[catch {dict size $request}]} {error {Preview worker request must be a dictionary}}
     foreach key {schema session dataset_id options expected_key} {if {![dict exists $request $key]} {error "Preview worker request needs $key"}}
-    foreach key [dict keys $request] {if {$key ni {schema session dataset_id options expected_key}} {error "Unknown Preview worker request field '$key'"}}
+    foreach key [dict keys $request] {if {$key ni {schema session dataset_id options expected_key preview_activation}} {error "Unknown Preview worker request field '$key'"}}
     if {[dict get $request schema] ne "gxtxt.preview_worker.v1"} {error {Unsupported Preview worker request version}}
     set session [dict get $request session]
     if {[file pathtype $session] ne "absolute" || ![file isdirectory $session] || ![file isfile [file join $session metadata manifest.ini]]} {error {Preview worker needs an existing canonical Session}}
@@ -45,6 +45,7 @@ set status [catch {
     ::GX::loadManifest [file join $session metadata manifest.ini]
     set ::GX::currentSession [file normalize $session]
     ::GX::loadDatasetRegistry $session
+    if {[dict exists $request preview_activation]} {::GX::_datasetPreviewActivationApply [dict get $request preview_activation]}
     set id [::GX::datasetPublicationV2ValidateId dataset [dict get $request dataset_id]]
     set prepared [::GX::datasetPreviewCacheGenerate $id [dict get $request options] [dict get $request expected_key]]
     set result [dict create key [dict get $prepared key] dataset_id $id status ready kind [dict get $prepared kind]]

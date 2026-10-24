@@ -42,7 +42,7 @@ proc ::GX::datasetPreviewNativeIdentity {datasetId} {
     set library [file join $::GX::scriptDir core native2d bin gxpreviewprovider.so]
     if {[file isfile $library]} {lappend identity bridge [sha256File $library]}
     set actual [datasetField $datasetId contract [datasetField $datasetId kind]]
-    foreach id $::GX::moduleOrder {
+    foreach id [lsort $::GX::moduleOrder] {
         if {[moduleField $id kind {}] ne {preview} || ![moduleIsEnabled $id]} continue
         if {[catch {set declaration [_datasetPreviewProviderDescriptor $id]}] ||
             [dict exists $declaration profile] && [dict get $declaration profile] eq {presentation}} continue
@@ -108,14 +108,9 @@ proc ::GX::_pluginPreviewProviderRetire {lease reason} {
 proc ::GX::_datasetPreviewNativeSource {id key} {
     return [dict create session $::GX::currentSession session_origin [sessionOriginRead $::GX::currentSession] session_token [interactiveDocumentSessionToken] source [_curveSourceIdentity $::GX::currentSession $id] coordinate_context [datasetCoordinateRead $::GX::currentSession $id] cache_key $key]
 }
-proc ::GX::_datasetPreviewNativeCandidate {id capability} {
-    foreach provider [datasetPreviewProviders $id] {
-        if {![dict get $provider descriptor_valid] || ![dict get $provider enabled] || [dict get $provider pending_version] ne {} || [dict get $provider compatibility_status] eq {incompatible}} continue
-        if {[dict exists $provider profile] && [dict get $provider profile] eq {presentation}} continue
-        set compatible 1
-        foreach requested $capability {if {$requested ni [dict get $provider capabilities]} {set compatible 0;break}}
-        if {$compatible} {return [dict get $provider component_id]}
-    }
+proc ::GX::_datasetPreviewNativeCandidate {id capability {preferred {}}} {
+    set selection [datasetPreviewProviderSelect $id $capability $preferred]
+    if {[dict get $selection status] eq {candidate}} {return [dict get $selection component_id]}
     return {}
 }
 proc ::GX::datasetPreviewNativeOverlayPlan {id} {
@@ -136,7 +131,7 @@ proc ::GX::datasetPreviewNativeBatch {operation args} {
         lassign $args config id options
         set failure {}
         if {[_datasetPreviewNativeWorker]} {
-            if {[catch {set candidate [_datasetPreviewNativeCandidate $id [expr {[dict exists $options overlay] ? {grouped_curves raster_overlay} : {grouped_curves}}]]} failure]} {set candidate {}}
+            if {[catch {set candidate [_datasetPreviewNativeCandidate $id [expr {[dict exists $options overlay] ? {grouped_curves raster_overlay} : {grouped_curves}}] [datasetPublicationV2DictDefault $options primary_component {}]]} failure]} {set candidate {}}
             if {$candidate ne {}} {
                 set token {}
                 if {![catch {
@@ -202,9 +197,9 @@ proc ::GX::datasetPreviewNativeReceiptCurrent {id receipt} {
     }]} {return 0}
     return 1
 }
-proc ::GX::datasetPreviewNativePlane {id variable starts counts column nx ny output} {
+proc ::GX::datasetPreviewNativePlane {id variable starts counts column nx ny output {preferred {}}} {
     if {![_datasetPreviewNativeWorker]} {return [::gx::native2d::_preview_plane $column $nx $ny]}
-    if {[catch {set candidate [_datasetPreviewNativeCandidate $id bounded_array_plane]}]} {set candidate {}}
+    if {[catch {set candidate [_datasetPreviewNativeCandidate $id bounded_array_plane $preferred]}]} {set candidate {}}
     if {$candidate eq {}} {return [::gx::native2d::_preview_plane $column $nx $ny]}
     set token {};set result {};set nativeReceipt {}
     try {

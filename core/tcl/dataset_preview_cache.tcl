@@ -210,11 +210,11 @@ proc ::GX::_datasetPreviewCachePrepare {id options key source dir} {
                 if {[dict exists $options ordering]} {dict set result ordering [dict get $options ordering]}
                 set nativeOverlay [datasetPublicationV2DictDefault $receipt native_overlay {}]
                 if {$nativeOverlay ne {} && ([catch {dict get $nativeOverlay native_provider receipt source_receipt cache_key} overlayKey] || $overlayKey ne $key)} {set nativeOverlay {}}
-                if {![catch {set digitizer [datasetDigitizerPreviewPrepare $id $selections $dimensions $dir [datasetPublicationV2DictDefault $options processed_image {}] $nativeOverlay]} message]} {dict set result digitizer $digitizer} else {dict set result description "Source raster/Quality unavailable: $message"}
+                if {![catch {set digitizer [datasetDigitizerPreviewPrepare $id $selections $dimensions $dir [datasetPublicationV2DictDefault $options processed_image {}] $nativeOverlay]} message]} {if {$digitizer ne {}} {dict set result digitizer $digitizer}} else {dict set result description "Source raster/Quality unavailable: $message"}
             } else {
                 if {!$mesh && ![dict exists $result media_artifact]} {
                     set arrayPath [file join $dir array-standard.png]
-                    if {![catch {set arrayDescription [scientificDatasetArrayPreview $id $arrayPath nativeReceipt]}] && $arrayDescription ne {}} {
+                    if {![catch {set arrayDescription [scientificDatasetArrayPreview $id $arrayPath nativeReceipt $options]}] && $arrayDescription ne {}} {
                         dict set result media_artifact [dict create path $arrayPath media_type image/png label {Bounded original array cells}]
                         dict set result kind array;dict set result description $arrayDescription
                         if {$nativeReceipt ne {}} {dict set result native_provider $nativeReceipt}
@@ -237,7 +237,7 @@ proc ::GX::_datasetPreviewCachePrepare {id options key source dir} {
 }
 proc ::GX::datasetPreviewCacheRequest {id {options {}} {callback {}}} {
     variable ::GX::PreviewCache::tasks;variable ::GX::PreviewCache::misses
-    set session $::GX::currentSession;set key [datasetPreviewCacheKey $id $options]
+    set session $::GX::currentSession;set activation [_datasetPreviewActivationSnapshot];set key [datasetPreviewCacheKey $id $options]
     set cached [datasetPreviewCacheRead $id $key]
     if {$cached ne {}} {
         if {[datasetField $id storage_provider {}] eq "remote" && [llength [info commands ::winfo]]} {
@@ -265,12 +265,13 @@ proc ::GX::datasetPreviewCacheRequest {id {options {}} {callback {}}} {
     }
     incr misses
     dict unset ::GX::PreviewCache::outcomes $key
-    dict set tasks $key [dict create session $session session_token [interactiveDocumentSessionToken] id $id options $options callbacks [expr {$callback eq {}?{}:[list $callback]}] job_id {} creator [expr {$::GX::PreviewCache::watchCalling ? {watch} : {legacy}}] legacy_joined [expr {!$::GX::PreviewCache::watchCalling}]]
-    if {$::GX::PreviewCache::watchCalling && [auto_execok setsid] ne {} && [auto_execok tclsh] ne {}} {
+    dict set tasks $key [dict create session $session session_token [interactiveDocumentSessionToken] id $id options $options preview_activation $activation callbacks [expr {$callback eq {}?{}:[list $callback]}] job_id {} creator [expr {$::GX::PreviewCache::watchCalling ? {watch} : {legacy}}] legacy_joined [expr {!$::GX::PreviewCache::watchCalling}]]
+    set native [datasetPreviewProviderSelect $id standard [datasetPublicationV2DictDefault $options primary_component {}]]
+    if {($::GX::PreviewCache::watchCalling || [dict get $native status] eq {candidate}) && [auto_execok setsid] ne {} && [auto_execok tclsh] ne {}} {
         _datasetPreviewCacheManagedStart $key
     } else {
         dict set tasks $key execution_kind durable_job
-        _scriptJobSubmitCore dataset-preview [dict create dataset_id $id options $options expected_key $key] [dict create session $session] [list ::GX::_datasetPreviewCacheSubmitted $key]
+        _scriptJobSubmitCore dataset-preview [dict create dataset_id $id options $options expected_key $key] [dict create session $session preview_activation $activation] [list ::GX::_datasetPreviewCacheSubmitted $key]
     }
     return $key
 }
@@ -281,11 +282,11 @@ proc ::GX::_datasetPreviewCacheManagedStart {key} {
     dict set tasks $key execution_kind managed_request
     dict set tasks $key managed_generation $generation
     dict set tasks $key request_id {}
-    set payload [dict create schema gxtxt.preview_worker.v1 session [dict get $entry session] dataset_id [dict get $entry id] options [dict get $entry options] expected_key $key]
+    set payload [dict create schema gxtxt.preview_worker.v1 session [dict get $entry session] dataset_id [dict get $entry id] options [dict get $entry options] expected_key $key preview_activation [dict get $entry preview_activation]]
     set command [list [auto_execok setsid] [auto_execok tclsh] [file join $::GX::scriptDir core tcl dataset_preview_worker_v1.tcl] $::GX::scriptDir]
     if {[catch {
         if {[string bytelength $payload]>1048576} {error {Preview worker request exceeds1MiB}}
-        set request [scriptJobAsync $command $payload [list ::GX::_datasetPreviewCacheManagedDone $key $generation] {timeout_ms 120000 max_bytes 65536 process_group 1 ui_lifetime 1 label {Dataset Preview preparation}}]
+        set request [scriptJobAsync $command $payload [list ::GX::_datasetPreviewCacheManagedDone $key $generation] {timeout_ms 120000 max_bytes 65536 process_group 1 ui_lifetime 1 separate_stderr 1 label {Dataset Preview preparation}}]
     } reason]} {
         after idle [list ::GX::_datasetPreviewCacheFinish $key [dict create status error key $key execution_kind managed_request job_id {} request_id {} message $reason]]
         return

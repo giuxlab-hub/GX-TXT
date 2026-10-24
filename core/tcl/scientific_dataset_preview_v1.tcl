@@ -65,7 +65,7 @@ proc ::GX::scientificDatasetPreviewControls {id axes {preparedDimensions @discov
     set ui(previewMap,status) [scientificDatasetFilterMode $ui(previewMap,dimensions) $ui(previewMap,filters) $ui(previewMap,separate)]
     return $axes
 }
-proc ::GX::scientificDatasetArrayPreview {id output {receiptVar {}}} {
+proc ::GX::scientificDatasetArrayPreview {id output {receiptVar {}} {options {}}} {
     if {$receiptVar ne {}} {upvar 1 $receiptVar nativeReceipt;set nativeReceipt {}}
     foreach variable [datasetVariableSchemaV3 $id] {
         if {[dict get $variable enabled]&&[dict get $variable rank]>=2&&[dict get $variable value_kind] ne "text"} {set v $variable;break}
@@ -93,7 +93,7 @@ proc ::GX::scientificDatasetArrayPreview {id output {receiptVar {}}} {
             set chunk [datasetAccessReadHyperslab $handle [dict get $v variable_id] $starts $counts]
             set column [dict create dtype [dict get $chunk dtype] values [dict get $chunk values]]
         }
-        set plane [datasetPreviewNativePlane $id $v $starts $counts $column $nx $ny $output]
+        set plane [datasetPreviewNativePlane $id $v $starts $counts $column $nx $ny $output [datasetPublicationV2DictDefault $options primary_component {}]]
         if {$receiptVar ne {} && [dict exists $plane native_provider]} {set nativeReceipt [dict get $plane native_provider]}
     } finally {datasetAccessClose $handle}
     set lo [dict get $plane minimum];set hi [dict get $plane maximum]

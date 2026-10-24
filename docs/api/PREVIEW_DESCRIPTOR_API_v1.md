@@ -162,3 +162,20 @@ role map, filters, source/provider identity and Preview key; otherwise the
 existing CORE collector remains the fallback. A shared canonical stream retains
 opaque curve identities and point order; Preview never invents uncertainty or
 source-image availability. No runtime compiler is introduced.
+
+DEV111-P004 keeps the same notebook and descriptor renderers. Standard numerical
+Datasets expose Plot and bounded Table inspection. Source image appears only
+for an applicable prepared, verified source image; published Digitizer Quality
+appears only when its report is available. A validated Curve Digitizer
+publication without an image retains its existing curve controls in Curve
+details. These controls do not imply image or Quality availability.
+
+Normalized component tabs additionally carry `role=primary|complementary`;
+omission retains the P002 complementary behavior. The installed component
+declaration and validated Dataset match determine whether it can be primary.
+A sole specialized match can be selected by default after specialized CORE
+views have precedence. Equally suitable primary alternatives require an
+explicit choice in the existing Preview notebook. Standard inspection remains
+available. Selecting a native alternative goes through existing Render/cache
+preparation; a pending or failed request retains and qualifies the previous
+successful presentation.

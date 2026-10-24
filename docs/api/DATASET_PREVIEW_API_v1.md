@@ -321,3 +321,83 @@ and activation, in addition to the existing canonical source/metadata/settings
 identity. Changed or pending components cannot silently reuse an incompatible
 prepared result. Native processing and tab presentation remain separate: a
 presentation-only component is not reported as native-admitted.
+
+## Metadata-aware component choice (DEV111-P004)
+
+The shared Preview first retains an applicable specialized CORE owner. Curve
+Digitizer compatibility uses the existing `datasetPreviewCurveManifest` / Dataset
+Schema API, including semantic variable mappings and mode/contract validation.
+Existing media, geometry and remote Preview routes also retain their owners.
+Generic numerical plots and bounded table inspection remain available.
+
+Ordinary Preview modules may add these optional `[preview_provider]` declarations:
+
+- `view_role=primary|complementary`: presentation defaults to complementary;
+  the existing native processing profile defaults to primary.
+- `match_producer_modules`, `match_source_modules`, `match_producer_versions`:
+  semicolon-separated exact canonical identities or versions.
+- `match_provenance`: exact canonical publication provenance text.
+- `match_metadata`: a Tcl dictionary of exact structured metadata key/value pairs.
+  Scientific matching requires current, verified module contributor attribution;
+  user-only or unclassified opaque metadata does not acquire scientific priority.
+- `match_semantic_roles`: semicolon-separated roles present in enabled, validated
+  canonical Variable Schema records.
+- `match_source_contracts`: semicolon-separated contracts represented by current,
+  registered canonical `source_dataset_ids`. Missing lineage IDs reject the match.
+
+All specified constraints must match, in addition to `dataset_contracts`.
+Canonical producer/source module identity, attributed metadata, semantic roles,
+non-generic exact Dataset contracts or non-generic linked source contracts establish
+specialization. Version, provenance or generic linked-contract constraints alone
+only narrow compatibility. No installation order or arbitrary priority number
+sets scientific precedence. Equally suitable alternatives require an explicit
+choice; the standard CORE renderer remains the fallback until that choice.
+
+The existing Preview context additionally exposes `producer_module`, `source_module`,
+`producer_version`, `provenance`, `source_dataset_ids`, `core_specialized` and
+`core_id`. Prepared source-image and Quality availability follow the existing
+verified source receipt and successfully parsed published Quality report. A host
+verification receipt is not a published Quality report. Empty Digitizer records
+are not attached to generic numerical representations.
+
+`datasetPreviewProviderTabs` retains `tabs` and `diagnostics`, adding a derived
+`selection` dictionary: `core_specialized`, `core_id`, `primary_components`,
+`specialized_components`, `default_component`, `conflict`, `generic_available`
+and `reason`. Each normalized tab has `role=primary|complementary`. Existing P002
+`{tabs ...}` responses remain complementary. A callback may mark an additional
+view complementary, but cannot promote itself beyond its descriptor's match or
+replace a specialized CORE view. Failed/empty contributions do not become defaults.
+
+The existing render option `primary_component` is additive: absent means automatic,
+`generic` explicitly retains standard CORE rendering, and an eligible component ID
+requests that native alternative. It is part of the existing cache option identity,
+not Dataset scientific metadata or a separate preference registry. Native candidates
+use the same matching/conflict policy and existing byte/ABI admission; invalid
+assets never create an equal-suitability conflict. Missing, disabled or failing
+components leave standard Preview available.
+
+Preview preparation captures current ON and OFF states through the existing Module
+owner when a request starts. The derived private snapshot binds the Session,
+complete Preview catalog, descriptor bytes/versions and declared dependency closure.
+Both the fixed managed worker and durable CORE Preview Job apply it only in their
+child-local Module state after loading the Session. Unsaved Configuration changes
+therefore affect the next Preview without saving the Session Manifest. An OFF
+component cannot be resurrected from an older saved Manifest. Catalog/Session drift
+is refused before applying the snapshot; unrelated module IDs are not accepted.
+
+The durable runtime transport is restricted to the installed CORE Preview service
+and its existing verified Script Execution origin/snapshot classifier. It is separate
+from public render options; ordinary registered scripts receive no activation grant.
+Optional fields remain absent-compatible for previous worker/runtime envelopes.
+A native processing candidate, automatic or explicit, uses the existing fixed
+managed worker so its original package/ABI/native admission boundary remains intact.
+Ordinary presentation/generic requests retain the durable route where applicable.
+
+The existing managed request owner has optional `separate_stderr=1` for non-duplex
+requests (default0 preserves merged behavior). Preview uses it to retain strict
+stdout control dictionaries while native diagnostics remain a bounded tail. Both
+pipes share `max_bytes`, timeout, cancellation, process-group escalation and cleanup;
+completion waits for both EOFs. No unbounded diagnostic file or second manager is
+introduced. A cached representation whose source changed cannot invoke new component
+callbacks; the user can render the current Dataset again. Source-less P002 minimal
+contexts remain supported.
