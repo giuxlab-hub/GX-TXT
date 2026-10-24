@@ -104,6 +104,9 @@ proc ::GX::openSessionPath_before_project_api_v1 {path} {
     # A preview image belongs to the Session that supplied its source PNG.
     # Clear it before loading the next Manifest or rebuilding graph discovery.
     catch {clearGraphPreview}
+    # Reset previous-Session script source projections before loading target
+    # Manifest bindings. Identical script IDs/SHA do not identify a Session.
+    scriptAnalysisResetSessionState $d
     set currentSession $d
     set mf [file join $d metadata manifest.ini]
     if {[file isfile $mf]} {

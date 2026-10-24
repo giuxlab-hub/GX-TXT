@@ -7,6 +7,18 @@ namespace eval ::GX {
     variable scriptSourceDeclarationError
 }
 
+proc ::GX::scriptAnalysisResetSessionState {session} {
+    variable scriptSourceDeclarationSignature
+    variable scriptSourceDeclarationRows
+    variable scriptSourceDeclarationError
+    foreach id {analysis.python_script analysis.octave_script} {
+        set scriptSourceDeclarationSignature($id) [list [file normalize $session] ""]
+        set scriptSourceDeclarationRows($id) {}
+        set scriptSourceDeclarationError($id) ""
+        analysisSourcesResetModule $id
+    }
+}
+
 proc ::GX::scriptSourceDeclarationDiscover {sourcePath} {
     set parser [file join $::GX::scriptDir core python script_source_declaration_v1.py]
     set output [exec [runtimeToolResolve python] -B $parser --tsv $sourcePath]
@@ -45,22 +57,27 @@ proc ::GX::scriptAnalysisApplyDeclarations {id} {
     variable scriptSourceDeclarationError
     if {$id ni {analysis.python_script analysis.octave_script}} { return 0 }
     set reference [expr {[info exists moduleCfg($id,registered_script)] ? [string trim $moduleCfg($id,registered_script)] : ""}]
-    set signature $reference
+    set session [expr {[info exists ::GX::currentSession] && $::GX::currentSession ne "" ? [file normalize $::GX::currentSession] : ""}]
+    set signature [list $session $reference]
     set rows {}
     set scriptSourceDeclarationError($id) ""
     if {$reference ne ""} {
         if {[catch {
             set metadata [scriptRegistryDescribe $reference]
-            append signature "|[dict get $metadata sha256]"
+            lappend signature [dict get $metadata sha256]
             set rows [scriptSourceDeclarationDiscover [dict get $metadata source_path]]
         } reason]} {
             set scriptSourceDeclarationError($id) $reason
-            return 0
+            lappend signature unavailable
         }
     }
     if {[info exists scriptSourceDeclarationSignature($id)] && $scriptSourceDeclarationSignature($id) eq $signature} { return 0 }
     set previous [dict create]
-    if {[info exists moduleAnalysisSourceCount($id)]} {
+    # Dataset bindings belong to a Session even when two Sessions own identical
+    # script references and source bytes.
+    if {[info exists moduleAnalysisSourceCount($id)] &&
+        [info exists scriptSourceDeclarationSignature($id)] &&
+        [lindex $scriptSourceDeclarationSignature($id) 0] eq $session} {
         for {set r 1} {$r <= $moduleAnalysisSourceCount($id)} {incr r} {
             if {[info exists moduleAnalysisSource($id,$r,id)] && [info exists moduleAnalysisSource($id,$r,dataset_id)]} {
                 dict set previous $moduleAnalysisSource($id,$r,id) $moduleAnalysisSource($id,$r,dataset_id)

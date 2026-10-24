@@ -1,0 +1,262 @@
+{
+  "schema": "gxtxt.incremental_patch.v1",
+  "patch_id": "DEV111-P003",
+  "patch_number": 3,
+  "required_predecessor_patch": 2,
+  "baseline": {
+    "version": "0.9.8.10-dev-111",
+    "artifact_revision": "r3",
+    "source_commit": "83b391de4b81a87e4e76f477491371b58cdc3a40",
+    "archive_sha256": "c31721b84e8f66cd385c1df4d82fae76e32ca816f2bec7f74c434ac720d26cfe"
+  },
+  "prerequisite_source_commit": "893634c4fbb4b2dd9d6923172d744c71640f3d11",
+  "files": [
+    {
+      "path": "app/gui/documentation_module_window.tcl",
+      "before_sha256": "7a734164dd0b39f20aeebe3e1dfc542d4c989830677033dbeb3855c7b00c39c7",
+      "after_sha256": "55726a02c92346a8f85a3c5d19d6a87758854f4087ca747664d5b3eb9d6d96d7",
+      "mode": 436
+    },
+    {
+      "path": "app/gui/script_library_dialog.tcl",
+      "before_sha256": "302cf0c901255ec4be298e6e37794a13e43585a5f6f44411f15ea7e6dabfeb77",
+      "after_sha256": "c6e3ce5b07741d379ace5d48550f71167e96ea60834306e3f86cb23ad9920629",
+      "mode": 436
+    },
+    {
+      "path": "app/script_workspace_surface.tcl",
+      "before_sha256": "703aa47985d7d21b6713bf2c0b7cf339e779f5311bf33a4cb4b9f9345754a159",
+      "after_sha256": "28269558b4aacdc039ecc75636176452847059e26d5175ef8d80c4b8c0a1ba03",
+      "mode": 436
+    },
+    {
+      "path": "app/session_controller.tcl",
+      "before_sha256": "304e34ef1c2f54ffcec37e8152723acf6c06c41053491e2c79523795eb88bdc0",
+      "after_sha256": "ff2bf721c38c09c66910bb17e3712716b6c79daf129b177f0faba161510ba5b7",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/script_execution_api_v1.tcl",
+      "before_sha256": "3c79f473799d5b757c70acb4beb0ec05fd741932386008d2419dc2880c30f0ff",
+      "after_sha256": "9c02371bca0f19a5be55e7feb72aa4974998a9e9a4b7a92f82286fd2e0eedad4",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/script_source_declaration_api_v1.tcl",
+      "before_sha256": "7d9cdfc92c011371e46b8b923965de4e220ce4771afdc03d87ff1e3e95b5ede2",
+      "after_sha256": "50997c237d3d8658227bacad36e6a2b337e40acf6d75293aa9d2da737e57ffac",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/session_file_explorer_api_v1.tcl",
+      "before_sha256": "2821fe9b587e9ff9cef1d499e16233cb624f9f928163736886c6cc3ed08d8d33",
+      "after_sha256": "bb4eaa9de65a07042c4dc0e9c9de194c4e3d8b5235ae320348ec8c3e2199652c",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/viewer_development_api_browser_v1.tcl",
+      "before_sha256": "c33118d01caa608c945b2ffd3bb56df4a4fa299bd9b609bf8fa9d958aeae91c0",
+      "after_sha256": "50a47ec3b885c7477c35a81875b2bbdcdc2eae22b479c8f21d22c00de4b33179",
+      "mode": 436
+    },
+    {
+      "path": "docs/api/SCRIPT_EXECUTION_API_v1.md",
+      "before_sha256": "c14f3c9758ef8ea53ebd7268d404fef5c4a035e549347ae7393cc35eee0ae3e4",
+      "after_sha256": "76abae020e404a0a6050d565e6df7be6a5b09199792548f3e57ac3d75d888d87",
+      "mode": 436
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/OCTAVE_SCRIPT_EDITOR_API_v1.md",
+      "before_sha256": "3c60464ff3a87bcef4386ff0705bf6c27b5b6969acd6a37b3cc28e5c96169b63",
+      "after_sha256": "c05ecaba4a20c630cfea4b02650d163a8e276b0d7651df034f5fa1764a4d511f",
+      "mode": 436
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/SHA256SUMS.txt",
+      "before_sha256": "1afbab807dc1c1ff49da7233a8bbc4581e601a3041bd965063ad1610f336ab7c",
+      "after_sha256": "4fb14eff578857ce729d91228444656a6e6ad27100f8b83cb2eff6cfde356428",
+      "mode": 436
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/api/octave_script_editor_api_v1.tcl",
+      "before_sha256": "0b83b70b1e90680afe90c6a3e01bdec4955aae3b73d4554b95b0cf9a7174500c",
+      "after_sha256": "977a2e7b9cc95d5281219dea5a1e2e345b6f4beb1cd2581d33acbe50593529ea",
+      "mode": 436
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/ui/octave_script_editor_ui.tcl",
+      "before_sha256": "263ae9ba2b0fb77073a1f6b8633f86dca2eca6e7d63006a3d3fb73cb6b05fda1",
+      "after_sha256": "a28b9be9a4dd31c9166479989fdd1c5792d1b212e2087c76d57a8fc6f605493f",
+      "mode": 436
+    },
+    {
+      "path": "plugins/modules/analysis.python_script/SHA256SUMS.txt",
+      "before_sha256": "f9cbb7d829d0bb4f3fb4da0ef1bbc288de5d608a5ebc8b177f474aafaf8d92a4",
+      "after_sha256": "ff9a87732a9a9e03dc17d5e185f1a4dd6c9303f5e496ada880145722ca691265",
+      "mode": 436
+    },
+    {
+      "path": "plugins/modules/analysis.python_script/ui/python_script_editor_ui.tcl",
+      "before_sha256": "3d4c484bd1365746bd246aaa13cc1181129b14170834dc7812eb987326d5a3a8",
+      "after_sha256": "406db1f89458ac2fc4698a2a4dd028252098d76657f4545ecc4480555b6ac6f5",
+      "mode": 436
+    }
+  ],
+  "prerequisites": [
+    {
+      "path": "app/gui/configuration_module_editor.tcl",
+      "sha256": "a7b18cbdb96d3937d11878f448ebbdc6e764dd9c1d45ff0787868f8ccdc0bfb8"
+    },
+    {
+      "path": "app/gui/configuration_modules.tcl",
+      "sha256": "2651f1ba6411ea22f868bec2d01052bf95d44b7c40840945e5390f5d7352f5f8"
+    },
+    {
+      "path": "app/gui/configuration_preview_components.tcl",
+      "sha256": "aac2310c5fb2c67fccb6e313c961cb4f91663b4d82f763108ea3c5291e00d392"
+    },
+    {
+      "path": "app/gui/dataset_preview_live.tcl",
+      "sha256": "a71e2a7bc49c2c3aa33d5b5130e5249d5b6ac4470df33af31ea42dc991fbef34"
+    },
+    {
+      "path": "app/gui/documentation_module_window.tcl",
+      "sha256": "7a734164dd0b39f20aeebe3e1dfc542d4c989830677033dbeb3855c7b00c39c7"
+    },
+    {
+      "path": "app/gui/modules_page.tcl",
+      "sha256": "20dd48c0a053b697f95bdc74f8c0e043f6e10b0fdd59cd94a19a9b0c55b76094"
+    },
+    {
+      "path": "app/gui/script_library_dialog.tcl",
+      "sha256": "302cf0c901255ec4be298e6e37794a13e43585a5f6f44411f15ea7e6dabfeb77"
+    },
+    {
+      "path": "app/modules_page_controller.tcl",
+      "sha256": "d0a87881c86ce160a38cf2103aae4df1e5a90dc4639c7ef72561fb7372288e16"
+    },
+    {
+      "path": "app/run_page_redesign.tcl",
+      "sha256": "f49e3f0efefbf9273474e286d8e8600245bee98fb1f49806510dc76264b2314c"
+    },
+    {
+      "path": "app/script_workspace_surface.tcl",
+      "sha256": "703aa47985d7d21b6713bf2c0b7cf339e779f5311bf33a4cb4b9f9345754a159"
+    },
+    {
+      "path": "app/session_controller.tcl",
+      "sha256": "304e34ef1c2f54ffcec37e8152723acf6c06c41053491e2c79523795eb88bdc0"
+    },
+    {
+      "path": "core/native2d/bin/gxpreviewprovider.so",
+      "sha256": "b413188d526d1c8251e52f0beb03ed2bf33f4eaae19fc64a7a6e861b6f3f1403"
+    },
+    {
+      "path": "core/native2d/gx2d_preview_provider_loader.cpp",
+      "sha256": "270678ce357bdb3f8dfdf2d0a8e644fff174ab2604ee334e24ec3d42beba3521"
+    },
+    {
+      "path": "core/tcl/curve_source_api_v1.tcl",
+      "sha256": "213a53b59a1ab4e0d7cc9b3fbf76ab7e8f8c0e72b913f59f259864d302127b46"
+    },
+    {
+      "path": "core/tcl/dataset_digitizer_preview_v1.tcl",
+      "sha256": "bafaca21b1e806bf5cd5c217e2db151f214021a4b42cb3b115be54c5e2c843a8"
+    },
+    {
+      "path": "core/tcl/dataset_preview_cache.tcl",
+      "sha256": "bf7887508852e5287018757662aab94de8e532b13955cb7cc5f5c6a88f1dfeaf"
+    },
+    {
+      "path": "core/tcl/dataset_preview_native_v1.tcl",
+      "sha256": "b5d5b9e1597774ab8dacc58573c8eb1481e86b893299e998503b4784b2a8b578"
+    },
+    {
+      "path": "core/tcl/dataset_preview_provider_v1.tcl",
+      "sha256": "2235ea9062f18b01535fb798af1d39c793bf74506eb07030dbde510df847e18f"
+    },
+    {
+      "path": "core/tcl/dataset_preview_worker_v1.tcl",
+      "sha256": "17823db72d1ac4738c71f41cba41990923a85ca4ba54b091fd2bc9ae0ea7c4c7"
+    },
+    {
+      "path": "core/tcl/module_api_v1.tcl",
+      "sha256": "664a3b89edc44e9a1d24b5e5ff959a7747b2e69d2d79b4213cf12a6e714db03f"
+    },
+    {
+      "path": "core/tcl/plot_module_variants.tcl",
+      "sha256": "6d0a6557a531188aac02ce6767e64c58a94fe12841e8677b8334a890040df8ff"
+    },
+    {
+      "path": "core/tcl/preview_descriptor_api_v1.tcl",
+      "sha256": "ff09325302e3fb4531a953b6ec5f93a025dff1e1ace8556b4d734589ba2eaf5e"
+    },
+    {
+      "path": "core/tcl/scientific_dataset_filters_v1.tcl",
+      "sha256": "f1b12dbbb222fb2e0592b1049af98218d56edfe09a8bf8b0170940de2a831299"
+    },
+    {
+      "path": "core/tcl/scientific_dataset_preview_v1.tcl",
+      "sha256": "c508b0d6d31463a770789d41078b642d67d01738fca958fd83130ecba25368de"
+    },
+    {
+      "path": "core/tcl/script_execution_api_v1.tcl",
+      "sha256": "3c79f473799d5b757c70acb4beb0ec05fd741932386008d2419dc2880c30f0ff"
+    },
+    {
+      "path": "core/tcl/script_source_declaration_api_v1.tcl",
+      "sha256": "7d9cdfc92c011371e46b8b923965de4e220ce4771afdc03d87ff1e3e95b5ede2"
+    },
+    {
+      "path": "core/tcl/session_file_explorer_api_v1.tcl",
+      "sha256": "2821fe9b587e9ff9cef1d499e16233cb624f9f928163736886c6cc3ed08d8d33"
+    },
+    {
+      "path": "core/tcl/viewer_development_api_browser_v1.tcl",
+      "sha256": "c33118d01caa608c945b2ffd3bb56df4a4fa299bd9b609bf8fa9d958aeae91c0"
+    },
+    {
+      "path": "docs/api/DATASET_PREVIEW_API_v1.md",
+      "sha256": "ccb2065a39a9f49d8b03c1c31ee473e106bcf44331ab2a6af2e5dcec504d2d76"
+    },
+    {
+      "path": "docs/api/PREVIEW_DESCRIPTOR_API_v1.md",
+      "sha256": "3a3a11878ba93ed95bff0b0261e07eb9edb19fdf6866154b4c04329833b2d123"
+    },
+    {
+      "path": "docs/api/SCRIPT_EXECUTION_API_v1.md",
+      "sha256": "c14f3c9758ef8ea53ebd7268d404fef5c4a035e549347ae7393cc35eee0ae3e4"
+    },
+    {
+      "path": "gxtxt_pipeline.tcl",
+      "sha256": "bea5353fd1daf1fde1b6ca7de1dce0143276e75ab69a51240be69876cf2307ec"
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/OCTAVE_SCRIPT_EDITOR_API_v1.md",
+      "sha256": "3c60464ff3a87bcef4386ff0705bf6c27b5b6969acd6a37b3cc28e5c96169b63"
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/SHA256SUMS.txt",
+      "sha256": "1afbab807dc1c1ff49da7233a8bbc4581e601a3041bd965063ad1610f336ab7c"
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/api/octave_script_editor_api_v1.tcl",
+      "sha256": "0b83b70b1e90680afe90c6a3e01bdec4955aae3b73d4554b95b0cf9a7174500c"
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/ui/octave_script_editor_ui.tcl",
+      "sha256": "263ae9ba2b0fb77073a1f6b8633f86dca2eca6e7d63006a3d3fb73cb6b05fda1"
+    },
+    {
+      "path": "plugins/modules/analysis.python_script/SHA256SUMS.txt",
+      "sha256": "f9cbb7d829d0bb4f3fb4da0ef1bbc288de5d608a5ebc8b177f474aafaf8d92a4"
+    },
+    {
+      "path": "plugins/modules/analysis.python_script/ui/python_script_editor_ui.tcl",
+      "sha256": "3d4c484bd1365746bd246aaa13cc1181129b14170834dc7812eb987326d5a3a8"
+    }
+  ],
+  "status": "FOCUSED_TESTED_STAGED_NOT_INSTALLED",
+  "installed_modified": false,
+  "created_utc": "2026-10-23T15:03:56.343360+00:00"
+}

@@ -72,6 +72,20 @@ Run invoke the same path. The Octave module retains its explicit standalone
 `external_file` `.m` compatibility mode; registered Session scripts are the
 normal reproducible workflow for both languages.
 
+## Typed parameter editing
+
+Script Library and both Script Workspaces edit one Registry schema, separately
+from Default arguments. Each row is `name | type | required | default | description`;
+for example, `dataset_prefix | string | 1 | | Base name for four temperature Datasets`.
+Existing validation facets such as choice values and numeric limits remain attached
+to unchanged parameter names. Source variables are not parameter declarations.
+
+The text editor uses `\\` for a literal backslash, `\|` for a literal pipe,
+`\n`, `\r` and `\t` for control characters, and `\s` for a significant space.
+Formatting escapes padded defaults so source-only saves preserve their exact value.
+Descriptions retain the Registry's single-line validation. Duplicate names and
+unsupported types are rejected through the existing Registry schema validation.
+
 ## Local asynchronous GUI execution (dev093)
 
 Run and registered Analysis now use the durable [CORE Script Job API](SCRIPT_JOB_API_v1.md).

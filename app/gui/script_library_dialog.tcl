@@ -89,6 +89,8 @@ proc ::GX::scriptLibraryNew {scope} {
     variable scriptLibraryUi
     set scriptLibraryUi(reference) ""
     set scriptLibraryUi(sha256) ""
+    set scriptLibraryUi(parameterDefinitions) {}
+    set scriptLibraryUi(session) $::GX::currentSession
     foreach {key value} [list scope $scope language Octave id "" name "" version 1.0.0 description "" required_apis "" identity {New registered script} status "Enter script metadata and source, then Save."] {
         set scriptLibraryUi($key) $value
     }
@@ -144,6 +146,10 @@ proc ::GX::scriptLibraryRefresh {} {
     variable scriptLibraryUi
     set w .gxtxtScriptLibrary.body.left.tree
     if {![winfo exists $w]} return
+    if {[info exists scriptLibraryUi(reference)] && [string match session:* $scriptLibraryUi(reference)] &&
+        [info exists scriptLibraryUi(session)] && $scriptLibraryUi(session) ne $::GX::currentSession} {
+        set scriptLibraryUi(status) {Session changed; draft retained. Select a script from the current Session before saving.}
+    }
     set search [string tolower [string trim $scriptLibraryUi(search)]]
     $w delete [$w children {}]
     foreach m [scriptRegistryList] {
@@ -172,6 +178,7 @@ proc ::GX::scriptLibrarySelect {} {
         return
     }
     set scriptLibraryUi(reference) $reference
+    set scriptLibraryUi(session) $::GX::currentSession
     foreach key {scope language id name version description sha256} { set scriptLibraryUi($key) [dict get $m $key] }
     set scriptLibraryUi(required_apis) [dict get $m explicit_apis]
     set scriptLibraryUi(identity) "Revision [dict get $m revision] | SHA-256 [dict get $m sha256] | required APIs [dict get $m required_apis] | [dict get $m source_scope]:[dict get $m source_id]"
@@ -180,9 +187,8 @@ proc ::GX::scriptLibrarySelect {} {
     $f.e_id state disabled
     $f.e_language state disabled
     $f.parameters delete 1.0 end
-    dict for {name descriptor} [dict get $m parameters] {
-        $f.parameters insert end "$name | [dict get $descriptor type] | [dict get $descriptor required] | [dict get $descriptor default] | [dict get $descriptor description]\n"
-    }
+    set scriptLibraryUi(parameterDefinitions) [dict get $m parameters]
+    $f.parameters insert 1.0 [scriptParameterDefinitionsFormat $scriptLibraryUi(parameterDefinitions)]
     set ch [open [dict get $m source_path] r]
     fconfigure $ch -encoding utf-8
     try { set code [read $ch] } finally { close $ch }
@@ -194,30 +200,23 @@ proc ::GX::scriptLibrarySelect {} {
 
 proc ::GX::scriptLibraryParametersFromEditor {} {
     set t .gxtxtScriptLibrary.body.right.parameters
-    set params [dict create]
-    foreach line [split [$t get 1.0 end-1c] "\n"] {
-        if {[string trim $line] eq ""} continue
-        set parts [split $line |]
-        if {[llength $parts] < 2 || [llength $parts] > 5} { error "Each parameter needs name | type | required | default | description." }
-        while {[llength $parts] < 5} { lappend parts "" }
-        lassign [lmap part $parts {string trim $part}] name type required default description
-        if {$required eq ""} { set required 0 }
-        dict set params $name [dict create type $type required $required default $default description $description]
-    }
-    return $params
+    variable scriptLibraryUi
+    set base [expr {[info exists scriptLibraryUi(parameterDefinitions)] ? $scriptLibraryUi(parameterDefinitions) : {}}]
+    return [scriptParameterDefinitionsParse [$t get 1.0 end-1c] $base]
 }
 
 proc ::GX::scriptLibrarySave {} {
     variable scriptLibraryUi
     set f .gxtxtScriptLibrary.body.right
     set code [$f.code get 1.0 end-1c]
-    if {$scriptLibraryUi(reference) ne ""} {
-        set registered [scriptRegistryDescribe $scriptLibraryUi(reference)]
-        set scriptLibraryUi(language) [dict get $registered language]
-    }
-    set options [dict create language $scriptLibraryUi(language) version $scriptLibraryUi(version) description $scriptLibraryUi(description) \
-        required_apis $scriptLibraryUi(required_apis)]
     if {[catch {
+        if {$scriptLibraryUi(scope) eq "session" && $scriptLibraryUi(session) ne $::GX::currentSession} {error {Session changed; reload the script before saving.}}
+        if {$scriptLibraryUi(reference) ne ""} {
+            set registered [scriptRegistryDescribe $scriptLibraryUi(reference)]
+            set scriptLibraryUi(language) [dict get $registered language]
+        }
+        set options [dict create language $scriptLibraryUi(language) version $scriptLibraryUi(version) description $scriptLibraryUi(description) \
+            required_apis $scriptLibraryUi(required_apis)]
         dict set options parameters [scriptLibraryParametersFromEditor]
         if {$scriptLibraryUi(reference) eq ""} {
             set result [scriptRegistrySave $scriptLibraryUi(scope) $scriptLibraryUi(id) $scriptLibraryUi(name) $code $options]
@@ -231,6 +230,7 @@ proc ::GX::scriptLibrarySave {} {
     }
     set scriptLibraryUi(reference) "[dict get $result scope]:[dict get $result id]"
     set scriptLibraryUi(sha256) [dict get $result sha256]
+    set scriptLibraryUi(parameterDefinitions) [dict get $result parameters]
     set scriptLibraryUi(identity) "Revision [dict get $result revision] | SHA-256 [dict get $result sha256] | required APIs [dict get $result required_apis]"
     set scriptLibraryUi(status) "Saved $scriptLibraryUi(reference)"
     scriptLibraryRefresh

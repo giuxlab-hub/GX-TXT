@@ -36,7 +36,7 @@ proc ::GX::scriptAnalysisSelectorWidget {parent id key row} {
     variable scriptAnalysisWidgets
     ttk::label $parent.l$row -text "Session registered script"
     ttk::frame $parent.w$row
-    ttk::combobox $parent.w$row.choice -textvariable ::GX::moduleCfg($id,$key) -state readonly -width 42
+    ttk::combobox $parent.w$row.choice -textvariable ::GX::moduleCfg($id,$key) -state readonly -width 42 -postcommand ::GX::scriptAnalysisRefresh
     ttk::button $parent.w$row.library -text "Script Library..." -command ::GX::scriptLibraryDialog
     ttk::label $parent.w$row.info -wraplength 640 -anchor w
     grid $parent.l$row -row $row -column 0 -sticky e -padx 4 -pady 2
@@ -312,6 +312,10 @@ proc ::GX::scriptWorkspaceViewMenu {editor menu language} {
     $menu add separator
     set state($editor,properties) 1
     $menu add checkbutton -label {Script properties / parameters} -variable ::GX::WorkspaceAssist::state($editor,properties) -command [list ::GX::scriptWorkspacePropertiesToggle $editor 1]
+    foreach {key label value} {version Version 1 requiredApis {Additional required APIs} 0} {
+        set state($editor,$key) $value
+        $menu add checkbutton -label $label -variable ::GX::WorkspaceAssist::state($editor,$key) -command [list ::GX::scriptWorkspacePropertiesToggle $editor 1]
+    }
     $menu configure -postcommand [list ::GX::scriptWorkspaceViewRefresh $editor]
 }
 proc ::GX::scriptWorkspaceFindLayout {editor width} {
@@ -353,7 +357,8 @@ proc ::GX::scriptWorkspaceLayoutInit {editor} {
     ttk::notebook $center.work.tools
     ttk::button $center.propertiesToggle -text {Show script properties / parameters} -command [list ::GX::scriptWorkspacePropertiesToggle $editor]
     set state($editor,propertyPack) {}
-    foreach name {props desc params} {if {[winfo exists $center.$name]} {dict set state($editor,propertyPack) $center.$name [pack info $center.$name]}}
+    foreach name {props version requiredApis desc params} {if {[winfo exists $center.$name]} {dict set state($editor,propertyPack) $center.$name [pack info $center.$name]}}
+    scriptWorkspacePropertiesToggle $editor 1 0
     set state($editor,focus) {}
     set state($editor,restoreSides) {}
     set state($editor,fractions) {.19 .78};set state($editor,sourceFraction) .40
@@ -541,7 +546,7 @@ proc ::GX::scriptWorkspaceLayoutRemember {editor} {
     set key scripts.editor_layout.[string tolower $state($editor,language)]
     set prior [configurationGet $key]
     if {[catch {dict size $prior}]} {set prior {}}
-    set value [dict merge $prior [dict create properties $state($editor,properties) left [expr {"$editor.p.left" in [$editor.p panes]}] right [expr {"$editor.p.right" in [$editor.p panes]}] fractions $state($editor,fractions) source_fraction $state($editor,sourceFraction)]]
+    set value [dict merge $prior [dict create properties $state($editor,properties) version $state($editor,version) requiredApis $state($editor,requiredApis) left [expr {"$editor.p.left" in [$editor.p panes]}] right [expr {"$editor.p.right" in [$editor.p panes]}] fractions $state($editor,fractions) source_fraction $state($editor,sourceFraction)]]
     configurationSet $key $value;configurationSave [list $key]
 }
 proc ::GX::scriptWorkspaceLayoutRestore {editor} {
@@ -550,14 +555,17 @@ proc ::GX::scriptWorkspaceLayoutRestore {editor} {
     set key scripts.editor_layout.[string tolower $state($editor,language)]
     set saved [configurationGet $key]
     if {![dict exists $saved properties]} {dict set saved properties 1}
+    foreach {field default} {version 1 requiredApis 0} {
+        if {![dict exists $saved $field] || ![string is boolean -strict [dict get $saved $field]]} {dict set saved $field $default}
+    }
     if {[catch {
         foreach side {left right properties} {if {![string is boolean -strict [dict get $saved $side]]} {error {Invalid side visibility}}}
         foreach value [concat [dict get $saved fractions] [dict get $saved source_fraction]] {if {![string is double -strict $value] || $value<=.05 || $value>=.95} {error {Invalid splitter fraction}}}
         if {[llength [dict get $saved fractions]]!=2} {error {Two horizontal splitter fractions required}}
         lassign [dict get $saved fractions] savedLeft savedRight
         if {$savedRight-$savedLeft<.10} {error {Source pane requires usable width}}
-    }]} {set saved {left 1 right 1 properties 1 fractions {.19 .78} source_fraction .40}}
-    set state($editor,properties) [dict get $saved properties]
+    }]} {set saved {left 1 right 1 properties 1 version 1 requiredApis 0 fractions {.19 .78} source_fraction .40}}
+    foreach field {properties version requiredApis} {set state($editor,$field) [dict get $saved $field]}
     scriptWorkspacePropertiesToggle $editor 1 0
     set state($editor,fractions) [dict get $saved fractions];set state($editor,sourceFraction) [dict get $saved source_fraction]
     foreach side {left right} {
@@ -588,12 +596,15 @@ proc ::GX::scriptWorkspacePropertiesToggle {editor {fromMenu 0} {persist 1}} {
     variable ::GX::WorkspaceAssist::state
     if {!$fromMenu} {set state($editor,properties) [expr {!$state($editor,properties)}]}
     set center $editor.p.center
-    if {$state($editor,properties)} {
-        pack forget $center.propertiesToggle
-        dict for {widget options} $state($editor,propertyPack) {pack $widget {*}$options -before $center.find}
-    } else {
-        dict for {widget options} $state($editor,propertyPack) {pack forget $widget}
-        pack $center.propertiesToggle -side top -fill x -before $center.find
+    pack forget $center.propertiesToggle
+    dict for {widget options} $state($editor,propertyPack) {pack forget $widget}
+    # The Version and manual requirements rows are independent of the lower
+    # properties/arguments area; restoring any row keeps the same editor panes.
+    dict for {widget options} $state($editor,propertyPack) {
+        set name [lindex [split $widget .] end]
+        set key [expr {$name in {version requiredApis} ? $name : {properties}}]
+        if {$state($editor,$key)} {pack $widget {*}$options -before $center.find}
     }
+    if {!$state($editor,properties)} {pack $center.propertiesToggle -side top -fill x -before $center.find}
     if {$persist} {scriptWorkspaceLayoutRemember $editor}
 }

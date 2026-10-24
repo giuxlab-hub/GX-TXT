@@ -89,9 +89,62 @@ proc ::GX::scriptRegistryHash {path} {
     return [string trim [exec [runtimeToolResolve python] -c $code $path]]
 }
 
+# Shared text projection of the Registry parameter schema. Keep validation
+# facets which are not among the five editable columns on existing parameters.
+proc ::GX::scriptParameterDefinitionsFormat {parameters} {
+    set lines {}
+    dict for {name descriptor} $parameters {
+        set fields [list $name]
+        foreach key {type required default description} {lappend fields [dict get $descriptor $key]}
+        set escaped [lmap field $fields {
+            set mapping [list \\ \\\\ | \\| \n \\n \r \\r \t \\t]
+            if {[string trim $field] ne $field} {lappend mapping { } {\s}}
+            string map $mapping $field
+        }]
+        lappend lines [join $escaped { | }]
+    }
+    return [join $lines \n]
+}
+
+proc ::GX::scriptParameterDefinitionsParse {text {baseParameters {}}} {
+    set parameters {}
+    foreach line [split $text \n] {
+        if {[string trim $line] eq {}} continue
+        set fields {};set field {};set escaped 0
+        foreach char [split $line {}] {
+            if {$escaped} {
+                append field $char;set escaped 0
+            } elseif {$char eq "\\"} {
+                append field $char;set escaped 1
+            } elseif {$char eq {|}} {
+                lappend fields [string trim $field];set field {}
+            } else {append field $char}
+        }
+        lappend fields [string trim $field]
+        set fields [lmap field $fields {string map [list {\\} \\ {\|} | {\n} \n {\r} \r {\t} \t {\s} { }] $field}]
+        if {[llength $fields] < 2 || [llength $fields] > 5} {error {Each parameter needs name | type | required | default | description.}}
+        while {[llength $fields] < 5} {lappend fields {}}
+        lassign $fields name type required default description
+        if {[dict exists $parameters $name]} {error "Duplicate script parameter '$name'."}
+        if {$required eq {}} {set required 0}
+        set descriptor [expr {[dict exists $baseParameters $name] ? [dict get $baseParameters $name] : {}}]
+        dict set parameters $name [dict merge $descriptor [dict create type $type required $required default $default description $description]]
+    }
+    return [dict get [scriptRegistryValidate [dict create id parameter_editor name {Parameter editor} scope user parameters $parameters]] parameters]
+}
+
 proc ::GX::scriptRegistryDeclaredApis {language source} {
     set parser [file join $::GX::scriptDir core python script_api_declarations.py]
     return [string trim [exec [runtimeToolResolve python] -B $parser $language $source]]
+}
+
+proc ::GX::_scriptRegistryRefresh {} {
+    # Optional GUI projections all read from the same Registry. Registration
+    # also occurs through CORE import/API callers which do not own a Library.
+    if {![llength [info commands ::winfo]]} return
+    foreach command {scriptWorkspaceRefreshChoices scriptLibraryRefresh sessionScriptExplorerPopulate} {
+        if {[llength [info commands ::GX::$command]]} {catch {::GX::$command}}
+    }
 }
 
 proc ::GX::scriptRegistryWrite {metadata code {session ""}} {
@@ -140,6 +193,7 @@ proc ::GX::scriptRegistryWrite {metadata code {session ""}} {
     } finally { close $ch }
     file rename -force -- $temp $path
     if {$isNew} {if {[file exists $target]} {error {Script identity appeared during registration}};file rename -- $dir $target}
+    after idle ::GX::_scriptRegistryRefresh
     return $m
     } on error {reason options} {if {$isNew} {catch {file delete -force -- $dir}};return -options $options $reason}
 }
@@ -191,7 +245,7 @@ proc ::GX::scriptRegistrySave {scope id name code {options {}} {session ""}} {
     set dir [scriptRegistryPath $scope $id $session]
     if {[file exists $dir]} { error "Registered script '$scope:$id' already exists; update it explicitly." }
     set m [dict merge [scriptRegistryDefaults] $options [dict create id $id name $name scope $scope]]
-    dict set m explicit_apis [dict get $m required_apis]
+    if {![dict exists $options explicit_apis]} {dict set m explicit_apis [dict get $m required_apis]}
     return [scriptRegistryWrite $m $code $session]
 }
 
@@ -205,7 +259,7 @@ proc ::GX::scriptRegistryUpdate {scope id expectedSha metadata code {session ""}
         }
     }
     set m [dict merge $current $metadata]
-    if {[dict exists $metadata required_apis]} { dict set m explicit_apis [dict get $metadata required_apis] }
+    if {[dict exists $metadata required_apis] && ![dict exists $metadata explicit_apis]} { dict set m explicit_apis [dict get $metadata required_apis] }
     dict set m revision [expr {[dict get $current revision] + 1}]
     return [scriptRegistryWrite $m $code $session]
 }
@@ -269,6 +323,7 @@ proc ::GX::scriptRegistryRemove {reference {session ""}} {
     }
     file delete -- [file join $dir script.ini] [file join $dir $sourceName]
     file delete -- $dir
+    after idle ::GX::_scriptRegistryRefresh
 }
 
 proc ::GX::scriptExecutionParameters {metadata supplied} {

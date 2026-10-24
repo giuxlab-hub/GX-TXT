@@ -120,9 +120,8 @@ proc ::GX::PythonScriptEditorUI::_loadDocument {documentId} {
     set ui(requiredApis) [dict get $full explicit_apis]
     set ui(description) [dict get $full description]
     $ui(parameters) delete 1.0 end
-    dict for {param descriptor} [dict get $full parameters] {
-        $ui(parameters) insert end "$param | [dict get $descriptor type] | [dict get $descriptor required] | [dict get $descriptor default] | [dict get $descriptor description]\n"
-    }
+    set ui(parameterDefinitions) [dict get $full parameters]
+    $ui(parameters) insert 1.0 [::GX::scriptParameterDefinitionsFormat $ui(parameterDefinitions)]
     $ui(parameters) edit reset
     $ui(parameters) edit modified 0
     $ui(text) delete 1.0 end
@@ -176,6 +175,7 @@ proc ::GX::PythonScriptEditorUI::_new {} {
     set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(scriptId) ""
     set ui(name) "Untitled script"
+    set ui(parameterDefinitions) {}
     set ui(version) "1.0.0"
     set ui(requiredApis) ""
     set ui(description) ""
@@ -194,19 +194,9 @@ proc ::GX::PythonScriptEditorUI::_new {} {
 
 proc ::GX::PythonScriptEditorUI::_parametersFromEditor {} {
     variable ui
-    set parameters [dict create]
-    foreach line [split [$ui(parameters) get 1.0 end-1c] "\n"] {
-        if {[string trim $line] eq ""} continue
-        set fields [split $line |]
-        if {[llength $fields] < 2 || [llength $fields] > 5} {
-            error "Each parameter needs name | type | required | default | description."
-        }
-        while {[llength $fields] < 5} {lappend fields ""}
-        lassign [lmap field $fields {string trim $field}] name type required default description
-        if {$required eq ""} {set required 0}
-        dict set parameters $name [dict create type $type required $required default $default description $description]
-    }
-    return $parameters
+    set text [$ui(parameters) get 1.0 end-1c]
+    if {$text eq [::GX::scriptParameterDefinitionsFormat $ui(parameterDefinitions)]} {return $ui(parameterDefinitions)}
+    return [::GX::scriptParameterDefinitionsParse $text $ui(parameterDefinitions)]
 }
 
 proc ::GX::PythonScriptEditorUI::_save {} {
@@ -229,6 +219,7 @@ proc ::GX::PythonScriptEditorUI::_save {} {
     set ui(currentId) [dict get $result reference]
     set ui(currentSha) [dict get $result sha256]
     set ui(revision) [dict get $result revision]
+    set ui(parameterDefinitions) [dict get $result parameters]
     _acceptBaseline
     _refreshDocuments
     _selectTreeId $ui(currentId)
@@ -260,6 +251,7 @@ proc ::GX::PythonScriptEditorUI::_saveAs {} {
     set ui(revision) [dict get $result revision]
     set ui(scriptId) $newId
     set ui(name) $copyName
+    set ui(parameterDefinitions) [dict get $result parameters]
     _acceptBaseline
     _refreshDocuments
     _selectTreeId $ui(currentId)
@@ -318,6 +310,7 @@ proc ::GX::PythonScriptEditorUI::_import {} {
     set ui(scope) [::GX::scriptWorkspaceDefaultScope]
     set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(name) [file tail [file rootname $path]]
+    set ui(parameterDefinitions) {}
     set ui(version) "1.0.0"
     set ui(requiredApis) ""
     set ui(description) "Imported from [file tail $path]. The registered script is independent of the original file."
@@ -560,6 +553,7 @@ proc ::GX::PythonScriptEditorUI::_build {} {
     set ui(scope) [::GX::scriptWorkspaceDefaultScope]
     set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(scriptId) ""
+    set ui(parameterDefinitions) {}
     set ui(version) "1.0.0"
     set ui(requiredApis) ""
     set ui(description) ""
@@ -612,13 +606,19 @@ proc ::GX::PythonScriptEditorUI::_build {} {
     grid $w.p.center.props.sl $w.p.center.props.se $w.p.center.props.il $w.p.center.props.ie -sticky ew -padx {0 6}
     ttk::label $w.p.center.props.nl -text "Name:"
     ttk::entry $w.p.center.props.ne -textvariable ::GX::PythonScriptEditorUI::ui(name) -width 30
-    ttk::label $w.p.center.props.vl -text "Version:"
-    ttk::entry $w.p.center.props.ve -textvariable ::GX::PythonScriptEditorUI::ui(version) -width 15
-    grid $w.p.center.props.nl $w.p.center.props.ne $w.p.center.props.vl $w.p.center.props.ve -sticky ew -padx {0 6}
-    ttk::label $w.p.center.props.rl -text "Additional APIs:"
-    ttk::entry $w.p.center.props.re -textvariable ::GX::PythonScriptEditorUI::ui(requiredApis)
-    grid $w.p.center.props.rl -row 2 -column 0 -sticky e -padx {0 6}
-    grid $w.p.center.props.re -row 2 -column 1 -columnspan 3 -sticky ew -padx {0 6}
+    grid $w.p.center.props.nl $w.p.center.props.ne -columnspan 1 -sticky ew -padx {0 6}
+    ttk::frame $w.p.center.version
+    pack $w.p.center.version -side top -fill x -pady {0 5}
+    ttk::label $w.p.center.version.l -text "Version:"
+    ttk::entry $w.p.center.version.e -textvariable ::GX::PythonScriptEditorUI::ui(version) -width 15
+    pack $w.p.center.version.l -side left -padx {0 6}
+    pack $w.p.center.version.e -side left -fill x -expand 1
+    ttk::frame $w.p.center.requiredApis
+    pack $w.p.center.requiredApis -side top -fill x -pady {0 5}
+    ttk::label $w.p.center.requiredApis.l -text "Additional required APIs:"
+    ttk::entry $w.p.center.requiredApis.e -textvariable ::GX::PythonScriptEditorUI::ui(requiredApis)
+    pack $w.p.center.requiredApis.l -side left -padx {0 6}
+    pack $w.p.center.requiredApis.e -side left -fill x -expand 1
     grid columnconfigure $w.p.center.props 1 -weight 1
     grid columnconfigure $w.p.center.props 3 -weight 1
 
@@ -700,7 +700,7 @@ The bridge is not a sandbox.}
     bind $w <F3> {::GX::PythonScriptEditorUI::_find forward; break}
     bind $w <Shift-F3> {::GX::PythonScriptEditorUI::_find backward; break}
 
-    ::GX::uiTextEditingAttach $w [list $ui(text) $w.p.center.props.ie $w.p.center.props.ne $w.p.center.desc.e $w.p.center.find.e $w.p.center.props.ve $w.p.center.props.re $w.p.center.params.t]
+    ::GX::uiTextEditingAttach $w [list $ui(text) $w.p.center.props.ie $w.p.center.props.ne $w.p.center.desc.e $w.p.center.find.e $w.p.center.version.e $w.p.center.requiredApis.e $w.p.center.params.t]
     bind $w.p.center.find.e <Escape> [list focus $ui(text)]
     ::GX::scriptWorkspaceLayoutInit $w
     _watchProperties

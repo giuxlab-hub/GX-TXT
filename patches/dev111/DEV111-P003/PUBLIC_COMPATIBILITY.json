@@ -1,0 +1,11 @@
+{
+  "patch": "P003",
+  "branch": "maintenance/dev111",
+  "base_framework": "0.9.8.10-dev-111 r3",
+  "requires_predecessor": 2,
+  "original_source_sha256": "1bf7d912685d2d6337d7ddcb6575f6522dcf0e5065f05cb738e32680734a74cf",
+  "public_package_sha256": "d9fae5dac740b412cda45128aa16484fd9a9dd6bc8ddbbca18d17c7937cd0fa6",
+  "public_package_size": 82826,
+  "installation": "P001-r2 uses bash apply.sh; P003, P004 and P005 are version-specific ZIP overlays",
+  "original_deposit_unmodified": true
+}

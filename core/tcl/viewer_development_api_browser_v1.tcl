@@ -242,7 +242,9 @@ proc ::GX::apiBrowserSelect {w} {
 proc ::GX::apiBrowserManual {w} {
     variable ::GX::ApiBrowser::state
     if {![info exists state($w,selectedApi)]} {set state($w,status) {Select an API family or operation first.};apiBrowserStatusShow $w 1;return}
-    if {[catch {documentationBrowserOpenApi $state($w,selectedApi)} reason]} {set state($w,status) "API manual unavailable: $reason";apiBrowserStatusShow $w 1}
+    set module viewer.interface_builder
+    if {$state($w,language) in {Octave Python}} {set module [scriptAnalysisModule $state($w,language)]}
+    if {[catch {documentationBrowserOpenApiWindow $state($w,selectedApi) $module [winfo toplevel $w]} reason]} {set state($w,status) "API manual unavailable: $reason";apiBrowserStatusShow $w 1}
 }
 proc ::GX::apiBrowserStatusShow {w visible} {
     if {![winfo exists $w.status]} return

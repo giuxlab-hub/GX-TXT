@@ -265,6 +265,10 @@ proc ::GX::augmentStandardGui_before_dataset_preview_v1 {} {
 proc ::GX::updateSessionUi_before_sessions_page {} {
     set r [::GX::updateSessionUi_v089_before_session_files]
     catch {sessionFileExplorerPopulate}
+    # The Analysis and Library projections also exist when this optional
+    # Explorer page has not been built.
+    catch {scriptWorkspaceRefreshChoices}
+    catch {scriptLibraryRefresh}
     return $r
 }
 

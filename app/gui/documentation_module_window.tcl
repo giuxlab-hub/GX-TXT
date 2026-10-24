@@ -2,6 +2,20 @@
 # Independent read-only hosts share the existing descriptor index and renderer.
 # This state contains widgets/navigation only, never a second document store.
 namespace eval ::GX::DocumentationManual {variable state;array set state {};variable htmlSerial;if {![info exists htmlSerial]} {set htmlSerial 0};variable generatorSerial;if {![info exists generatorSerial]} {set generatorSerial 0}}
+proc ::GX::documentationBrowserOpenApiWindow {api {module viewer.interface_builder} {parent {}}} {
+    documentationBrowserRefresh
+    set entry [documentationBrowserResolve api:$api]
+    set owner [dict get $entry owner]
+    # Provider-local references use their descriptor's existing containment
+    # rules. CORE references are opened in the requesting module's manual host.
+    if {[moduleField $owner descriptor {}] ne {}} {set module $owner}
+    set host [documentationBrowserOpenModuleWindow $module $parent]
+    $host.tabs select $host.tabs.manual
+    documentationBrowserManualShow $host [dict get $entry path]
+    raise $host
+    focus $host.search.entry
+    return $host
+}
 proc ::GX::documentationBrowserModuleManual {module} {
     set descriptor [moduleField $module descriptor {}]
     if {$descriptor eq {}} {error "Module '$module' is not installed; its manual is unavailable."}

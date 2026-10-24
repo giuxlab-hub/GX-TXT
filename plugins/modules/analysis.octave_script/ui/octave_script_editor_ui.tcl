@@ -20,7 +20,7 @@ proc ::GX::OctaveScriptEditorUI::_editorModified {} {variable ui;::GX::_sourceSu
 proc ::GX::OctaveScriptEditorUI::_propertyModified {name element operation} {
     variable ui
     variable propertyValues
-    if {$element ni {scope scriptId name description arguments}} return
+    if {$element ni {scope scriptId name description arguments version requiredApis}} return
     set value $ui($element)
     if {![dict exists $propertyValues $element] || [dict get $propertyValues $element] ne $value} {
         dict set propertyValues $element $value
@@ -31,9 +31,28 @@ proc ::GX::OctaveScriptEditorUI::_watchProperties {} {
     variable ui
     variable propertyValues
     set propertyValues {}
-    foreach key {scope scriptId name description arguments} {dict set propertyValues $key $ui($key)}
+    foreach key {scope scriptId name description arguments version requiredApis} {dict set propertyValues $key $ui($key)}
     catch {trace remove variable ui write ::GX::OctaveScriptEditorUI::_propertyModified}
     trace add variable ui write ::GX::OctaveScriptEditorUI::_propertyModified
+}
+
+proc ::GX::OctaveScriptEditorUI::_parametersModified {} {
+    variable ui
+    if {![info exists ui(parameters)] || ![winfo exists $ui(parameters)]} return
+    if {[$ui(parameters) edit modified]} {
+        $ui(parameters) edit modified 0
+        _setModified 1
+    }
+}
+proc ::GX::OctaveScriptEditorUI::_parametersFromEditor {} {
+    variable ui
+    set text [$ui(parameters) get 1.0 end-1c]
+    if {$text eq [::GX::scriptParameterDefinitionsFormat $ui(parameterDefinitions)]} {return $ui(parameterDefinitions)}
+    return [::GX::scriptParameterDefinitionsParse $text $ui(parameterDefinitions)]
+}
+proc ::GX::OctaveScriptEditorUI::_editableProperties {} {
+    variable ui
+    return [dict create version $ui(version) required_apis $ui(requiredApis) parameters [_parametersFromEditor]]
 }
 
 proc ::GX::OctaveScriptEditorUI::_scheduleRefresh {} {
@@ -105,6 +124,13 @@ proc ::GX::OctaveScriptEditorUI::_loadDocument {documentId} {
     set ui(scriptId) [dict get $full script_id]
     set ui(name) [dict get $full name]
     set ui(arguments) [dict get $full arguments]
+    set ui(version) [dict get $full version]
+    set ui(requiredApis) [dict get $full explicit_apis]
+    set ui(parameterDefinitions) [dict get $full parameters]
+    $ui(parameters) delete 1.0 end
+    $ui(parameters) insert 1.0 [::GX::scriptParameterDefinitionsFormat $ui(parameterDefinitions)]
+    $ui(parameters) edit reset
+    $ui(parameters) edit modified 0
     set ui(description) [dict get $full description]
     $ui(text) delete 1.0 end
     $ui(text) insert 1.0 [dict get $full code]
@@ -156,6 +182,14 @@ proc ::GX::OctaveScriptEditorUI::_new {} {
     set ui(scriptId) ""
     set ui(name) "Untitled script"
     set ui(arguments) ""
+    set ui(version) "1.0.0"
+    set ui(requiredApis) ""
+    set ui(parameterDefinitions) {}
+    if {[info exists ui(parameters)] && [winfo exists $ui(parameters)]} {
+        $ui(parameters) delete 1.0 end
+        $ui(parameters) edit reset
+        $ui(parameters) edit modified 0
+    }
     set ui(description) ""
     $ui(text) delete 1.0 end
     $ui(text) insert 1.0 [::GX::OctaveScriptEditor::defaultCode]
@@ -176,13 +210,13 @@ proc ::GX::OctaveScriptEditorUI::_save {} {
         return 0
     }
     set code [$ui(text) get 1.0 "end-1c"]
-    set command [list ::GX::OctaveScriptEditor::workspaceSave $ui(currentId) $ui(currentSha) $ui(scope) $ui(scriptId) $name $ui(description) $code $ui(arguments)]
-    if {[catch {set result [uplevel #0 $command]} failure]} {
+    if {[catch {set result [::GX::OctaveScriptEditor::workspaceSave $ui(currentId) $ui(currentSha) $ui(scope) $ui(scriptId) $name $ui(description) $code $ui(arguments) [_editableProperties]]} failure]} {
         tk_messageBox -parent $ui(window) -icon error -title "Save failed" -message $failure
         return 0
     }
     set ui(currentId) [dict get $result reference]
     set ui(currentSha) [dict get $result sha256]
+    set ui(parameterDefinitions) [dict get $result parameters]
     _acceptBaseline
     _refreshDocuments
     _selectTreeId $ui(currentId)
@@ -202,13 +236,14 @@ proc ::GX::OctaveScriptEditorUI::_saveCopy {} {
     set suffix 2
     while {[lsearch -exact [lmap m [::GX::scriptRegistryList $ui(scope)] {dict get $m id}] "${base}_$suffix"] >= 0} {incr suffix}
     set ui(scriptId) "${base}_$suffix"
-    if {[catch {set result [::GX::OctaveScriptEditor::workspaceSave "" "" $ui(scope) $ui(scriptId) $copyName $ui(description) $code $ui(arguments)]} failure]} {
+    if {[catch {set result [::GX::OctaveScriptEditor::workspaceSave "" "" $ui(scope) $ui(scriptId) $copyName $ui(description) $code $ui(arguments) [_editableProperties]]} failure]} {
         tk_messageBox -parent $ui(window) -icon error -title "Save copy failed" -message $failure
         return
     }
     set ui(currentId) [dict get $result reference]
     set ui(currentSha) [dict get $result sha256]
     set ui(name) $copyName
+    set ui(parameterDefinitions) [dict get $result parameters]
     _acceptBaseline
     _refreshDocuments
     _selectTreeId $ui(currentId)
@@ -276,6 +311,14 @@ proc ::GX::OctaveScriptEditorUI::_import {} {
     set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(name) [file tail [file rootname $path]]
     set ui(arguments) ""
+    set ui(version) "1.0.0"
+    set ui(requiredApis) ""
+    set ui(parameterDefinitions) {}
+    if {[info exists ui(parameters)] && [winfo exists $ui(parameters)]} {
+        $ui(parameters) delete 1.0 end
+        $ui(parameters) edit reset
+        $ui(parameters) edit modified 0
+    }
     set ui(description) "Imported from [file tail $path]. The registered script is independent of the original file."
     $ui(text) delete 1.0 end
     $ui(text) insert 1.0 $code
@@ -505,6 +548,14 @@ proc ::GX::OctaveScriptEditorUI::_build {} {
     set ui(sessionToken) [::GX::scriptWorkspaceSessionToken]
     set ui(scriptId) ""
     set ui(arguments) ""
+    set ui(version) "1.0.0"
+    set ui(requiredApis) ""
+    set ui(parameterDefinitions) {}
+    if {[info exists ui(parameters)] && [winfo exists $ui(parameters)]} {
+        $ui(parameters) delete 1.0 end
+        $ui(parameters) edit reset
+        $ui(parameters) edit modified 0
+    }
     set ui(description) ""
     set ui(find) ""
     set ui(snippet) "Context"
@@ -561,12 +612,34 @@ proc ::GX::OctaveScriptEditorUI::_build {} {
     grid columnconfigure $w.p.center.props 1 -weight 1
     grid columnconfigure $w.p.center.props 3 -weight 1
 
+    ttk::frame $w.p.center.version
+    pack $w.p.center.version -side top -fill x -pady {0 5}
+    ttk::label $w.p.center.version.l -text "Version:"
+    ttk::entry $w.p.center.version.e -textvariable ::GX::OctaveScriptEditorUI::ui(version) -width 15
+    pack $w.p.center.version.l -side left -padx {0 6}
+    pack $w.p.center.version.e -side left -fill x -expand 1
+    ttk::frame $w.p.center.requiredApis
+    pack $w.p.center.requiredApis -side top -fill x -pady {0 5}
+    ttk::label $w.p.center.requiredApis.l -text "Additional required APIs:"
+    ttk::entry $w.p.center.requiredApis.e -textvariable ::GX::OctaveScriptEditorUI::ui(requiredApis)
+    pack $w.p.center.requiredApis.l -side left -padx {0 6}
+    pack $w.p.center.requiredApis.e -side left -fill x -expand 1
+
     ttk::frame $w.p.center.desc
     pack $w.p.center.desc -side top -fill x -pady {0 5}
     ttk::label $w.p.center.desc.l -text "Description:"
     ttk::entry $w.p.center.desc.e -textvariable ::GX::OctaveScriptEditorUI::ui(description)
     pack $w.p.center.desc.l -side left -padx {0 6}
     pack $w.p.center.desc.e -side left -fill x -expand 1
+
+    ttk::frame $w.p.center.params
+    pack $w.p.center.params -side top -fill x -pady {0 5}
+    ttk::label $w.p.center.params.l -text "Typed parameters: name | type | required (0/1) | default | description"
+    pack $w.p.center.params.l -side top -anchor w
+    text $w.p.center.params.t -height 3 -wrap none -undo 1 -font TkFixedFont
+    set ui(parameters) $w.p.center.params.t
+    pack $ui(parameters) -side top -fill x
+    bind $ui(parameters) <<Modified>> ::GX::OctaveScriptEditorUI::_parametersModified
 
     set ui(text) [::GX::sourceSurfaceCreate $w.p.center.edit [dict create mode editable language octave change_command ::GX::OctaveScriptEditorUI::_sourceChanged]]
     pack $w.p.center.edit -side top -fill both -expand 1
@@ -630,7 +703,7 @@ The bridge is not a sandbox.}
     bind $w <F3> {::GX::OctaveScriptEditorUI::_find forward; break}
     bind $w <Shift-F3> {::GX::OctaveScriptEditorUI::_find backward; break}
 
-    ::GX::uiTextEditingAttach $w [list $ui(text) $w.p.center.props.ie $w.p.center.props.ne $w.p.center.desc.e $w.p.center.find.e $w.p.center.props.ae]
+    ::GX::uiTextEditingAttach $w [list $ui(text) $w.p.center.props.ie $w.p.center.props.ne $w.p.center.desc.e $w.p.center.find.e $w.p.center.props.ae $w.p.center.version.e $w.p.center.requiredApis.e $w.p.center.params.t]
     bind $w.p.center.find.e <Escape> [list focus $ui(text)]
     ::GX::scriptWorkspaceLayoutInit $w
     _watchProperties

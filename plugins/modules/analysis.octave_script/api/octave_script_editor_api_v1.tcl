@@ -152,6 +152,9 @@ proc ::GX::OctaveScriptEditor::workspaceRead {reference} {
         dict set d reference $reference
         dict set d scope legacy
         dict set d script_id ""
+        dict set d version 1.0.0
+        dict set d explicit_apis {}
+        dict set d parameters {}
         return $d
     }
     set m [::GX::scriptRegistryDescribe $reference]
@@ -167,14 +170,21 @@ proc ::GX::OctaveScriptEditor::workspaceRead {reference} {
     dict set m arguments [::GX::datasetPublicationV2DictDefault $m default_arguments {}]
     return $m
 }
-proc ::GX::OctaveScriptEditor::workspaceSave {reference expectedSha scope scriptId name description code {arguments {}}} {
+proc ::GX::OctaveScriptEditor::workspaceSave {reference expectedSha scope scriptId name description code {arguments {}} {properties {}}} {
     if {$scope ni {user session}} {error "Choose User or Session scope."}
     ::GX::scriptRegistryId $scriptId
+    # Keep the original call signature compatible; only supplied editable fields
+    # augment the Registry update, which retains unrelated registered metadata.
+    set metadata [dict create description $description default_arguments $arguments]
+    foreach key [dict keys $properties] {
+        if {$key ni {version required_apis parameters}} {error "Unsupported Workspace property '$key'."}
+        dict set metadata $key [dict get $properties $key]
+    }
     if {$reference eq "" || [string match legacy:* $reference]} {
-        set result [::GX::scriptRegistrySave $scope $scriptId $name $code [dict create language Octave description $description default_arguments $arguments]]
+        set result [::GX::scriptRegistrySave $scope $scriptId $name $code [dict merge $metadata [dict create language Octave]]]
     } else {
         if {$reference ne "$scope:$scriptId"} {error "Registered script scope and ID cannot change; use Save copy."}
-        set result [::GX::scriptRegistryUpdate $scope $scriptId $expectedSha [dict create name $name description $description default_arguments $arguments] $code]
+        set result [::GX::scriptRegistryUpdate $scope $scriptId $expectedSha [dict merge $metadata [dict create name $name]] $code]
     }
     dict set result reference "$scope:$scriptId"
     catch {::GX::sessionScriptExplorerPopulate}
