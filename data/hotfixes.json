@@ -2,6 +2,501 @@
   "schema": "gxtxt.pages.hotfix-registry/1",
   "entries": [
     {
+      "id": "dev111-p017-native-core-history",
+      "source_folder": "DEV111-P017",
+      "doc_name": "README.md",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "b6c0770286698c0c25eaa4b42baabe0b09169415",
+      "tag": "v0.9.8.10-dev-111-p017",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p017",
+      "asset_name": "DEV111-P017-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p017/DEV111-P017-PUBLIC.zip",
+      "asset_sha256": "8dcb21aa88cbec3d95e0799ca368c5b90252253fd288dac9fc6c7be6f782cff3",
+      "asset_bytes": 1133008,
+      "required_predecessor_patch": 16,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "en": {
+        "label": "DEV111-P017 — Native CORE History across scientific workspaces",
+        "title": "Native CORE History across scientific workspaces",
+        "intro": "DEV111-P017 is a cumulative GX-TXT dev-111 r3 update. Introduce a native C++ History engine with managed journals.",
+        "changes": [
+          "Introduce a native C++ History engine with managed journals",
+          "Integrate History hooks with Curve Workbench and other scientific consumers",
+          "Keep domain lifecycle and source publication in CORE services",
+          "Mark one of several milestones in the ongoing GX-TXT evolution"
+        ],
+        "requirement": "For GX-TXT 0.9.8.10-dev-111 r3; requires P001-r2 and all previous patches P002 through P016 applied in order. Close GX-TXT and preserve a backup.",
+        "details": "Extract DEV111-P017-PUBLIC.zip into the compatible framework root. Restore original files from the backup to roll back; remove new files introduced by this patch."
+      },
+      "it": {
+        "label": "DEV111-P017 — History nativa CORE nei workspace scientifici",
+        "title": "History nativa CORE nei workspace scientifici",
+        "intro": "DEV111-P017 è un aggiornamento cumulativo per GX-TXT dev-111 r3. Introduce il motore History nativo C++ con journal gestiti.",
+        "changes": [
+          "Introduce il motore History nativo C++ con journal gestiti",
+          "Integra History nel Curve Workbench e negli altri componenti scientifici",
+          "Mantiene ciclo di vita e pubblicazione nei servizi CORE",
+          "Segna uno dei traguardi del percorso evolutivo di GX-TXT"
+        ],
+        "requirement": "Per GX-TXT 0.9.8.10-dev-111 r3; richiede P001-r2 e tutte le patch dalla P002 alla P016 già applicate in ordine. Chiudere GX-TXT e conservare il backup.",
+        "details": "Estrarre DEV111-P017-PUBLIC.zip nella radice del framework compatibile. Ripristinare dal backup per tornare alla versione precedente; rimuovere eventuali file aggiunti."
+      }
+    },
+    {
+      "id": "dev111-p016-direct-native-presentation",
+      "source_folder": "DEV111-P016",
+      "doc_name": "README.md",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "c9e7e27fd32ab983cd1bae1e3c5abb242ec307e3",
+      "tag": "v0.9.8.10-dev-111-p016",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p016",
+      "asset_name": "DEV111-P016-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p016/DEV111-P016-PUBLIC.zip",
+      "asset_sha256": "8744ff84b81317b6ef582e466e4422e825831914e58689b6312222f95cf70c75",
+      "asset_bytes": 845319,
+      "required_predecessor_patch": 15,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "en": {
+        "label": "DEV111-P016 — Direct native presentation and shared CAD context",
+        "title": "Direct native presentation and shared CAD context",
+        "intro": "DEV111-P016 is a cumulative GX-TXT dev-111 r3 update. Reuse retained native geometry instead of repeated Tcl snapshots.",
+        "changes": [
+          "Reuse retained native geometry instead of repeated Tcl snapshots",
+          "Add reusable Native2D CAD interaction context",
+          "Keep Workbench scientific models and History ownership",
+          "Preserve the existing Cairo/Native2D engine"
+        ],
+        "requirement": "For GX-TXT 0.9.8.10-dev-111 r3; requires P001-r2 and all previous patches P002 through P015 applied in order. Close GX-TXT and preserve a backup.",
+        "details": "Extract DEV111-P016-PUBLIC.zip into the compatible framework root. Restore original files from the backup to roll back; remove new files introduced by this patch."
+      },
+      "it": {
+        "label": "DEV111-P016 — Presentazione nativa diretta e contesto CAD condiviso",
+        "title": "Presentazione nativa diretta e contesto CAD condiviso",
+        "intro": "DEV111-P016 è un aggiornamento cumulativo per GX-TXT dev-111 r3. Riutilizza la geometria nativa evitando snapshot Tcl ripetuti.",
+        "changes": [
+          "Riutilizza la geometria nativa evitando snapshot Tcl ripetuti",
+          "Aggiunge un contesto CAD Native2D riutilizzabile",
+          "Mantiene modelli scientifici e History del Workbench",
+          "Conserva il motore Cairo/Native2D esistente"
+        ],
+        "requirement": "Per GX-TXT 0.9.8.10-dev-111 r3; richiede P001-r2 e tutte le patch dalla P002 alla P015 già applicate in ordine. Chiudere GX-TXT e conservare il backup.",
+        "details": "Estrarre DEV111-P016-PUBLIC.zip nella radice del framework compatibile. Ripristinare dal backup per tornare alla versione precedente; rimuovere eventuali file aggiunti."
+      }
+    },
+    {
+      "id": "dev111-p015-native2d-sprites",
+      "source_folder": "DEV111-P015",
+      "doc_name": "README.md",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "e4bd78abb92d0d91b5d8661fb0e9489ada37dce4",
+      "tag": "v0.9.8.10-dev-111-p015",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p015",
+      "asset_name": "DEV111-P015-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p015/DEV111-P015-PUBLIC.zip",
+      "asset_sha256": "f5139d2204ef215e059cd2a91300ffac4e9ba7bbefea364f57773603444f04ae",
+      "asset_bytes": 760706,
+      "required_predecessor_patch": 14,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "en": {
+        "label": "DEV111-P015 — Native2D retained sprites",
+        "title": "Native2D retained sprites",
+        "intro": "DEV111-P015 is a cumulative GX-TXT dev-111 r3 update. Add retained native sprite composition.",
+        "changes": [
+          "Add retained native sprite composition",
+          "Support selective scientific geometry redraw",
+          "Extend optional shared tooltip presentation",
+          "Keep Dataset/History/constraints with existing owners"
+        ],
+        "requirement": "For GX-TXT 0.9.8.10-dev-111 r3; requires P001-r2 and all previous patches P002 through P014 applied in order. Close GX-TXT and preserve a backup.",
+        "details": "Extract DEV111-P015-PUBLIC.zip into the compatible framework root. Restore original files from the backup to roll back; remove new files introduced by this patch."
+      },
+      "it": {
+        "label": "DEV111-P015 — Sprite Native2D persistenti",
+        "title": "Sprite Native2D persistenti",
+        "intro": "DEV111-P015 è un aggiornamento cumulativo per GX-TXT dev-111 r3. Aggiunge la composizione di sprite nativi persistenti.",
+        "changes": [
+          "Aggiunge la composizione di sprite nativi persistenti",
+          "Supporta il ridisegno selettivo delle geometrie",
+          "Estende la presentazione opzionale dei tooltip",
+          "Mantiene Dataset, History e vincoli nei proprietari esistenti"
+        ],
+        "requirement": "Per GX-TXT 0.9.8.10-dev-111 r3; richiede P001-r2 e tutte le patch dalla P002 alla P014 già applicate in ordine. Chiudere GX-TXT e conservare il backup.",
+        "details": "Estrarre DEV111-P015-PUBLIC.zip nella radice del framework compatibile. Ripristinare dal backup per tornare alla versione precedente; rimuovere eventuali file aggiunti."
+      }
+    },
+    {
+      "id": "dev111-p014-native-grid-performance-help",
+      "source_folder": "DEV111-P014",
+      "doc_name": "README.md",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "dac35bf2222c8ae8c7e008ed7272c2660f006656",
+      "tag": "v0.9.8.10-dev-111-p014",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p014",
+      "asset_name": "DEV111-P014-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p014/DEV111-P014-PUBLIC.zip",
+      "asset_sha256": "d29b22e2d50d95d1b0026b85bcb01694cb34c0bbb45527e596b4076ecf77bf4f",
+      "asset_bytes": 736287,
+      "required_predecessor_patch": 13,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "en": {
+        "label": "DEV111-P014 — Native grid, performance and Help",
+        "title": "Native grid, performance and Help",
+        "intro": "DEV111-P014 is a cumulative GX-TXT dev-111 r3 update. Improve native grid and axis presentation.",
+        "changes": [
+          "Improve native grid and axis presentation",
+          "Extend the shared native drawing implementation",
+          "Update associated GUI controls and Help",
+          "Preserve scientific geometry and sources"
+        ],
+        "requirement": "For GX-TXT 0.9.8.10-dev-111 r3; requires P001-r2 and all previous patches P002 through P013 applied in order. Close GX-TXT and preserve a backup.",
+        "details": "Extract DEV111-P014-PUBLIC.zip into the compatible framework root. Restore original files from the backup to roll back; remove new files introduced by this patch."
+      },
+      "it": {
+        "label": "DEV111-P014 — Griglia nativa, prestazioni e Help",
+        "title": "Griglia nativa, prestazioni e Help",
+        "intro": "DEV111-P014 è un aggiornamento cumulativo per GX-TXT dev-111 r3. Migliora la presentazione di griglia e assi.",
+        "changes": [
+          "Migliora la presentazione di griglia e assi",
+          "Estende il disegno nativo condiviso",
+          "Aggiorna controlli GUI e guida",
+          "Preserva geometria e sorgenti scientifici"
+        ],
+        "requirement": "Per GX-TXT 0.9.8.10-dev-111 r3; richiede P001-r2 e tutte le patch dalla P002 alla P013 già applicate in ordine. Chiudere GX-TXT e conservare il backup.",
+        "details": "Estrarre DEV111-P014-PUBLIC.zip nella radice del framework compatibile. Ripristinare dal backup per tornare alla versione precedente; rimuovere eventuali file aggiunti."
+      }
+    },
+    {
+      "id": "dev111-p013-native2d-presentation",
+      "source_folder": "DEV111-P013",
+      "doc_name": "README.md",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "8c59efc9262a5359e602966032cf643004238a1b",
+      "tag": "v0.9.8.10-dev-111-p013",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p013",
+      "asset_name": "DEV111-P013-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p013/DEV111-P013-PUBLIC.zip",
+      "asset_sha256": "2573bce0643c7eb9018ea92e85e6757dc7c9d879980344acfb926a0ce764d0d6",
+      "asset_bytes": 602286,
+      "required_predecessor_patch": 12,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "en": {
+        "label": "DEV111-P013 — Native2D scientific presentation",
+        "title": "Native2D scientific presentation",
+        "intro": "DEV111-P013 is a cumulative GX-TXT dev-111 r3 update. Extend the Native2D presentation infrastructure.",
+        "changes": [
+          "Extend the Native2D presentation infrastructure",
+          "Connect existing scientific geometry to native drawing",
+          "Preserve source coordinates and publication",
+          "Reuse shared CORE rendering services"
+        ],
+        "requirement": "For GX-TXT 0.9.8.10-dev-111 r3; requires P001-r2 and all previous patches P002 through P012 applied in order. Close GX-TXT and preserve a backup.",
+        "details": "Extract DEV111-P013-PUBLIC.zip into the compatible framework root. Restore original files from the backup to roll back; remove new files introduced by this patch."
+      },
+      "it": {
+        "label": "DEV111-P013 — Presentazione scientifica Native2D",
+        "title": "Presentazione scientifica Native2D",
+        "intro": "DEV111-P013 è un aggiornamento cumulativo per GX-TXT dev-111 r3. Estende il livello di presentazione Native2D.",
+        "changes": [
+          "Estende il livello di presentazione Native2D",
+          "Collega la geometria scientifica al disegno nativo",
+          "Preserva coordinate e pubblicazione dei sorgenti",
+          "Riutilizza i servizi CORE di rendering"
+        ],
+        "requirement": "Per GX-TXT 0.9.8.10-dev-111 r3; richiede P001-r2 e tutte le patch dalla P002 alla P012 già applicate in ordine. Chiudere GX-TXT e conservare il backup.",
+        "details": "Estrarre DEV111-P013-PUBLIC.zip nella radice del framework compatibile. Ripristinare dal backup per tornare alla versione precedente; rimuovere eventuali file aggiunti."
+      }
+    },
+    {
+      "id": "dev111-p012-gui-update-scheduling",
+      "source_folder": "DEV111-P012",
+      "doc_name": "README.md",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "26cfaf902019e7df3069e9ea5640ee1ca553a441",
+      "tag": "v0.9.8.10-dev-111-p012",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p012",
+      "asset_name": "DEV111-P012-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p012/DEV111-P012-PUBLIC.zip",
+      "asset_sha256": "154c58cd7e8082adfc5ffdb6631a1572eb66718645be266a96de837276a2bef2",
+      "asset_bytes": 60561,
+      "required_predecessor_patch": 11,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "en": {
+        "label": "DEV111-P012 — Shared GUI update scheduling",
+        "title": "Shared GUI update scheduling",
+        "intro": "DEV111-P012 is a cumulative GX-TXT dev-111 r3 update. Introduce shared GUI update scheduling.",
+        "changes": [
+          "Introduce shared GUI update scheduling",
+          "Coordinate interactive redraw operations",
+          "Reduce unnecessary UI update work",
+          "Retain scientific state ownership"
+        ],
+        "requirement": "For GX-TXT 0.9.8.10-dev-111 r3; requires P001-r2 and all previous patches P002 through P011 applied in order. Close GX-TXT and preserve a backup.",
+        "details": "Extract DEV111-P012-PUBLIC.zip into the compatible framework root. Restore original files from the backup to roll back; remove new files introduced by this patch."
+      },
+      "it": {
+        "label": "DEV111-P012 — Scheduler condiviso di aggiornamento GUI",
+        "title": "Scheduler condiviso di aggiornamento GUI",
+        "intro": "DEV111-P012 è un aggiornamento cumulativo per GX-TXT dev-111 r3. Introduce lo scheduler GUI condiviso.",
+        "changes": [
+          "Introduce lo scheduler GUI condiviso",
+          "Coordina le operazioni di ridisegno",
+          "Limita gli aggiornamenti UI superflui",
+          "Mantiene la proprietà degli stati scientifici"
+        ],
+        "requirement": "Per GX-TXT 0.9.8.10-dev-111 r3; richiede P001-r2 e tutte le patch dalla P002 alla P011 già applicate in ordine. Chiudere GX-TXT e conservare il backup.",
+        "details": "Estrarre DEV111-P012-PUBLIC.zip nella radice del framework compatibile. Ripristinare dal backup per tornare alla versione precedente; rimuovere eventuali file aggiunti."
+      }
+    },
+    {
+      "id": "dev111-p011-curve-transform-recovery",
+      "source_folder": "DEV111-P011",
+      "doc_name": "README.md",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "ee679d15dd975f2c01369b98a46d27ea1a95ff25",
+      "tag": "v0.9.8.10-dev-111-p011",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p011",
+      "asset_name": "DEV111-P011-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p011/DEV111-P011-PUBLIC.zip",
+      "asset_sha256": "36b24a977c31cd59f2f5b55f4d541106d834ccd57415408661cbabe7c94f8f3f",
+      "asset_bytes": 30670,
+      "required_predecessor_patch": 10,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "en": {
+        "label": "DEV111-P011 — Curve transformation recovery",
+        "title": "Curve transformation recovery",
+        "intro": "DEV111-P011 is a cumulative GX-TXT dev-111 r3 update. Improve transformation recovery workflows.",
+        "changes": [
+          "Improve transformation recovery workflows",
+          "Maintain Workbench coordinate and state owners",
+          "Protect source and geometry identities",
+          "Retain editable History consistency"
+        ],
+        "requirement": "For GX-TXT 0.9.8.10-dev-111 r3; requires P001-r2 and all previous patches P002 through P010 applied in order. Close GX-TXT and preserve a backup.",
+        "details": "Extract DEV111-P011-PUBLIC.zip into the compatible framework root. Restore original files from the backup to roll back; remove new files introduced by this patch."
+      },
+      "it": {
+        "label": "DEV111-P011 — Recupero delle trasformazioni delle curve",
+        "title": "Recupero delle trasformazioni delle curve",
+        "intro": "DEV111-P011 è un aggiornamento cumulativo per GX-TXT dev-111 r3. Migliora il recupero delle trasformazioni.",
+        "changes": [
+          "Migliora il recupero delle trasformazioni",
+          "Conserva la proprietà delle coordinate nel CORE",
+          "Protegge identità sorgenti e geometrie",
+          "Mantiene la coerenza della History modificabile"
+        ],
+        "requirement": "Per GX-TXT 0.9.8.10-dev-111 r3; richiede P001-r2 e tutte le patch dalla P002 alla P010 già applicate in ordine. Chiudere GX-TXT e conservare il backup.",
+        "details": "Estrarre DEV111-P011-PUBLIC.zip nella radice del framework compatibile. Ripristinare dal backup per tornare alla versione precedente; rimuovere eventuali file aggiunti."
+      }
+    },
+    {
+      "id": "dev111-p010-curve-comparison-panel",
+      "source_folder": "DEV111-P010",
+      "doc_name": "README.md",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "efa9c975b08bdf4e8b55fb58595617d252d84675",
+      "tag": "v0.9.8.10-dev-111-p010",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p010",
+      "asset_name": "DEV111-P010-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p010/DEV111-P010-PUBLIC.zip",
+      "asset_sha256": "fde5860ecaf40fece6fb35be30b277372ab77a69abd872671987d924269db859",
+      "asset_bytes": 106230,
+      "required_predecessor_patch": 9,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "en": {
+        "label": "DEV111-P010 — Curve comparison panel",
+        "title": "Curve comparison panel",
+        "intro": "DEV111-P010 is a cumulative GX-TXT dev-111 r3 update. Add Curve Workbench comparison presentation.",
+        "changes": [
+          "Add Curve Workbench comparison presentation",
+          "Keep comparison controls in the existing workspace",
+          "Retain source-bound curve identities",
+          "Preserve canonical Dataset publication"
+        ],
+        "requirement": "For GX-TXT 0.9.8.10-dev-111 r3; requires P001-r2 and all previous patches P002 through P009 applied in order. Close GX-TXT and preserve a backup.",
+        "details": "Extract DEV111-P010-PUBLIC.zip into the compatible framework root. Restore original files from the backup to roll back; remove new files introduced by this patch."
+      },
+      "it": {
+        "label": "DEV111-P010 — Pannello confronto curve",
+        "title": "Pannello confronto curve",
+        "intro": "DEV111-P010 è un aggiornamento cumulativo per GX-TXT dev-111 r3. Aggiorna il confronto nel Curve Workbench.",
+        "changes": [
+          "Aggiorna il confronto nel Curve Workbench",
+          "Mantiene i controlli nel Workspace esistente",
+          "Conserva identità delle curve sorgenti",
+          "Preserva la pubblicazione canonica dei Dataset"
+        ],
+        "requirement": "Per GX-TXT 0.9.8.10-dev-111 r3; richiede P001-r2 e tutte le patch dalla P002 alla P009 già applicate in ordine. Chiudere GX-TXT e conservare il backup.",
+        "details": "Estrarre DEV111-P010-PUBLIC.zip nella radice del framework compatibile. Ripristinare dal backup per tornare alla versione precedente; rimuovere eventuali file aggiunti."
+      }
+    },
+    {
+      "id": "dev111-p009-native-tooltip-rendering",
+      "source_folder": "DEV111-P009",
+      "doc_name": "README.md",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "238c48288d2cab7a6bfc602ba962583bccad7583",
+      "tag": "v0.9.8.10-dev-111-p009",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p009",
+      "asset_name": "DEV111-P009-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p009/DEV111-P009-PUBLIC.zip",
+      "asset_sha256": "09251dbea6264a1170d26c42dc38511b66fa0eb2a9e86bc757a180c3c32ab90c",
+      "asset_bytes": 13784,
+      "required_predecessor_patch": 8,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "en": {
+        "label": "DEV111-P009 — Native viewport tooltip rendering",
+        "title": "Native viewport tooltip rendering",
+        "intro": "DEV111-P009 is a cumulative GX-TXT dev-111 r3 update. Correct native ViewportHost tooltip presentation.",
+        "changes": [
+          "Correct native ViewportHost tooltip presentation",
+          "Coordinate tooltip positioning with viewport display",
+          "Retain shared native rendering interfaces",
+          "Preserve existing Workbench scientific state"
+        ],
+        "requirement": "For GX-TXT 0.9.8.10-dev-111 r3; requires P001-r2 and all previous patches P002 through P008 applied in order. Close GX-TXT and preserve a backup.",
+        "details": "Extract DEV111-P009-PUBLIC.zip into the compatible framework root. Restore original files from the backup to roll back; remove new files introduced by this patch."
+      },
+      "it": {
+        "label": "DEV111-P009 — Presentazione nativa dei tooltip del ViewportHost",
+        "title": "Presentazione nativa dei tooltip del ViewportHost",
+        "intro": "DEV111-P009 è un aggiornamento cumulativo per GX-TXT dev-111 r3. Corregge i tooltip nativi del ViewportHost.",
+        "changes": [
+          "Corregge i tooltip nativi del ViewportHost",
+          "Coordina posizionamento e rendering dei tooltip",
+          "Mantiene le interfacce native condivise",
+          "Preserva lo stato scientifico del Workbench"
+        ],
+        "requirement": "Per GX-TXT 0.9.8.10-dev-111 r3; richiede P001-r2 e tutte le patch dalla P002 alla P008 già applicate in ordine. Chiudere GX-TXT e conservare il backup.",
+        "details": "Estrarre DEV111-P009-PUBLIC.zip nella radice del framework compatibile. Ripristinare dal backup per tornare alla versione precedente; rimuovere eventuali file aggiunti."
+      }
+    },
+    {
+      "id": "dev111-p008-history-selector-tooltips",
+      "source_folder": "DEV111-P008",
+      "doc_name": "README.md",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "5f13142d57a654d9cbec60f52455ec0d85c735a0",
+      "tag": "v0.9.8.10-dev-111-p008",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p008",
+      "asset_name": "DEV111-P008-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p008/DEV111-P008-PUBLIC.zip",
+      "asset_sha256": "603111d8b3e31b633a8c914915a3617cf692db97ff5718c594fb962e23f831a4",
+      "asset_bytes": 40460,
+      "required_predecessor_patch": 7,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "en": {
+        "label": "DEV111-P008 — History selectors and shared tooltips",
+        "title": "History selectors and shared tooltips",
+        "intro": "DEV111-P008 is a cumulative GX-TXT dev-111 r3 update. Improve History selector interaction.",
+        "changes": [
+          "Improve History selector interaction",
+          "Refine popup and tooltip behavior",
+          "Maintain interactive panel focus",
+          "Preserve Workbench operations and history"
+        ],
+        "requirement": "For GX-TXT 0.9.8.10-dev-111 r3; requires P001-r2 and all previous patches P002 through P007 applied in order. Close GX-TXT and preserve a backup.",
+        "details": "Extract DEV111-P008-PUBLIC.zip into the compatible framework root. Restore original files from the backup to roll back; remove new files introduced by this patch."
+      },
+      "it": {
+        "label": "DEV111-P008 — Selettori History e tooltip condivisi",
+        "title": "Selettori History e tooltip condivisi",
+        "intro": "DEV111-P008 è un aggiornamento cumulativo per GX-TXT dev-111 r3. Migliora l’interazione dei selettori History.",
+        "changes": [
+          "Migliora l’interazione dei selettori History",
+          "Affina popup e tooltip",
+          "Mantiene il focus dei pannelli",
+          "Preserva operazioni e History del Workbench"
+        ],
+        "requirement": "Per GX-TXT 0.9.8.10-dev-111 r3; richiede P001-r2 e tutte le patch dalla P002 alla P007 già applicate in ordine. Chiudere GX-TXT e conservare il backup.",
+        "details": "Estrarre DEV111-P008-PUBLIC.zip nella radice del framework compatibile. Ripristinare dal backup per tornare alla versione precedente; rimuovere eventuali file aggiunti."
+      }
+    },
+    {
+      "id": "dev111-p007-curve-workbench-layout",
+      "source_folder": "DEV111-P007",
+      "doc_name": "README.md",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "f0d8adc084a917b2aedf54700c44bfcf25480988",
+      "tag": "v0.9.8.10-dev-111-p007",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p007",
+      "asset_name": "DEV111-P007-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p007/DEV111-P007-PUBLIC.zip",
+      "asset_sha256": "af463e19f0727e50afceeb5991ad2194cf63f175b12a593b22c30570eace0fea",
+      "asset_bytes": 44685,
+      "required_predecessor_patch": 6,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "en": {
+        "label": "DEV111-P007 — Curve Workbench layout and native editing controls",
+        "title": "Curve Workbench layout and native editing controls",
+        "intro": "DEV111-P007 is a cumulative GX-TXT dev-111 r3 update. Refine the Workbench layout.",
+        "changes": [
+          "Refine the Workbench layout",
+          "Improve the shared editing panels",
+          "Preserve source Dataset identities",
+          "Retain existing scientific CORE services"
+        ],
+        "requirement": "For GX-TXT 0.9.8.10-dev-111 r3; requires P001-r2 and all previous patches P002 through P006 applied in order. Close GX-TXT and preserve a backup.",
+        "details": "Extract DEV111-P007-PUBLIC.zip into the compatible framework root. Restore original files from the backup to roll back; remove new files introduced by this patch."
+      },
+      "it": {
+        "label": "DEV111-P007 — Layout e controlli Curve Workbench",
+        "title": "Layout e controlli Curve Workbench",
+        "intro": "DEV111-P007 è un aggiornamento cumulativo per GX-TXT dev-111 r3. Riorganizza il layout del Workbench.",
+        "changes": [
+          "Riorganizza il layout del Workbench",
+          "Migliora i pannelli di editing condivisi",
+          "Conserva identità dei Dataset sorgente",
+          "Mantiene i servizi scientifici CORE esistenti"
+        ],
+        "requirement": "Per GX-TXT 0.9.8.10-dev-111 r3; richiede P001-r2 e tutte le patch dalla P002 alla P006 già applicate in ordine. Chiudere GX-TXT e conservare il backup.",
+        "details": "Estrarre DEV111-P007-PUBLIC.zip nella radice del framework compatibile. Ripristinare dal backup per tornare alla versione precedente; rimuovere eventuali file aggiunti."
+      }
+    },
+    {
       "id": "dev111-p006-preview-gui-api",
       "source_folder": "DEV111-P006",
       "doc_name": "README.md",
