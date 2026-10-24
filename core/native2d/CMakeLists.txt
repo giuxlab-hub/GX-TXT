@@ -39,7 +39,7 @@ if(TCL_FOUND)
   find_path(GXTXT_CAIRO_INCLUDE cairo.h PATH_SUFFIXES cairo REQUIRED)
   find_library(GXTXT_CAIRO_LIBRARY NAMES cairo libcairo.so.2 REQUIRED)
   find_package(X11 REQUIRED)
-  add_library(gx2dtcl MODULE gx2d_tcl.c gx2d.c gx2d_surface.cpp gx2d_presentation_batch.cpp)
+  add_library(gx2dtcl MODULE gx2d_tcl.c gx2d.c gx2d_surface.cpp gx2d_presentation_batch.cpp gx2d_grid_presenter_v1.cpp)
   target_sources(gx2dtcl PRIVATE
     gx2d_csv_provider_v1.cpp
     gx2d_preview_categories_v1.cpp

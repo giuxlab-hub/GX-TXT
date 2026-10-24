@@ -1,3 +1,13 @@
+## 2.21.13 — DEV111-P014
+
+Use one retained CORE Cairo grid/axes item, preserving scientific axis/unit owners,
+with native batching/reuse of defining-handle Tk items. CORE Appearance settings
+supply Low5/Medium10/Fast20 intensive update limits (Low default) and optional
+additional16pixel grid suppression. Wheel/pan/resize/viewport callbacks adopt the
+shared scheduler; point/geometry transactions remain authoritative. Restore Help
+immediately after Workspace with User Manual/F1 and metadata-derived About.
+No geometry engine, grid-generation or snapping algorithm changes.
+
 ## 2.21.12 — DEV111-P013
 
 Activate the matching CORE Native2D presentation batches through the existing

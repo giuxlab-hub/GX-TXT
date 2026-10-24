@@ -118,3 +118,29 @@ Other production Viewers and public scientific APIs are unchanged.
 Limits: callbacks run serially in the GUI loop; expensive rendering cannot be
 preempted. Requests coalesce presentations, not accepted scientific operations.
 Only wheel zoom is integrated in P012; future consumers choose their own policies.
+
+## DEV111-P014 CORE performance profiles
+
+Create/Configure additionally accepts `profile custom|global`. Default `custom`
+retains the original independent `adaptive_ms` contract. `global` subscribes the
+instance to the persistent CORE Appearance choice `ui.graphics_profile`:
+Low(default)=200ms/5FPS, Medium=100ms/10FPS, Fast=50ms/20FPS during intensive mode.
+`guiUpdateSchedulerGraphicsPolicy` returns `{profile NAME adaptive_ms INTERVAL}`.
+Each instance retains its own pending state and activity thresholds. Its normal
+interval remains authoritative if longer than the chosen global limit.
+
+Settings change live after Save without changing model state. Dispose removes
+the Configuration subscription. Reduced deadlines now use the microsecond
+callback-admission timestamp and upward rounding to Tk's millisecond timer,
+avoiding a frame arriving early because the previous timestamp was truncated.
+Describe also exposes `last_update_us`; `last_update` remains milliseconds.
+Normal coalescing and automatic/explicit final synchronization retain their
+existing semantics. Final synchronization occurs after leaving reduced mode and
+may be sooner than the intensive interval, as before.
+
+Workbench2.21.13 is the first global-profile consumer for viewport wheel, pan,
+resize and shared viewport-control updates. Every accepted scientific input is
+still processed by its original owner. Pan release finishes pending presentation;
+semantic point/geometry interactions retain their original scheduling. The
+retained Native2D Cairo presenter is a separate optional CORE host facility,
+`NATIVE2D_GRID_PRESENTER_API_v1`; no Native2D dependency enters this scheduler.

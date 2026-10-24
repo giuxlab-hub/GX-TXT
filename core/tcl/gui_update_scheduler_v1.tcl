@@ -2,13 +2,14 @@
 # Opt-in host scheduling only. Callers retain input, model and rendering ownership.
 namespace eval ::GX::GuiUpdateScheduler {variable instances;variable serial 0}
 proc ::GX::guiUpdateSchedulerApiInfo {} {
-    return [dict create api_id GUI_UPDATE_SCHEDULER_API_v1 api_version 1 host_only 1 operations {guiUpdateSchedulerCreate guiUpdateSchedulerConfigure guiUpdateSchedulerRequest guiUpdateSchedulerFlush guiUpdateSchedulerFinish guiUpdateSchedulerCancel guiUpdateSchedulerDispose guiUpdateSchedulerDescribe}]
+    return [dict create api_id GUI_UPDATE_SCHEDULER_API_v1 api_version 1 host_only 1 operations {guiUpdateSchedulerCreate guiUpdateSchedulerConfigure guiUpdateSchedulerRequest guiUpdateSchedulerFlush guiUpdateSchedulerFinish guiUpdateSchedulerCancel guiUpdateSchedulerDispose guiUpdateSchedulerDescribe guiUpdateSchedulerGraphicsPolicy}]
 }
 proc ::GX::GuiUpdateScheduler::options {base changes} {
     dict for {key value} $changes {
         if {![dict exists $base $key]} {error "Unknown GUI scheduling option '$key'"}
         dict set base $key $value
     }
+    if {[dict get $base profile] ni {custom global}} {error {Scheduling profile must be custom or global}}
     if {[dict get $base policy] ni {coalesced adaptive}} {error {Scheduling policy must be coalesced or adaptive}}
     foreach key {normal_ms adaptive_ms activity_window_ms quiet_ms} {
         set value [dict get $base $key]
@@ -16,6 +17,9 @@ proc ::GX::GuiUpdateScheduler::options {base changes} {
     }
     set count [dict get $base rapid_count]
     if {![string is integer -strict $count] || $count<2 || $count>512} {error {rapid_count must be 2..512}}
+    if {[dict get $base profile] eq {global}} {
+        dict set base adaptive_ms [expr {max([dict get $base normal_ms],[dict get [::GX::guiUpdateSchedulerGraphicsPolicy] adaptive_ms])}]
+    }
     if {[dict get $base adaptive_ms]<[dict get $base normal_ms]} {error {adaptive_ms must be at least normal_ms}}
     foreach key {guard error_callback} {llength [dict get $base $key]}
     return $base
@@ -29,13 +33,28 @@ proc ::GX::guiUpdateSchedulerCreate {owner callback {options {}}} {
     package require Tk
     if {![winfo exists $owner]} {error {GUI scheduler needs an existing owner widget}}
     if {![llength $callback]} {error {GUI scheduler needs an update callback prefix}}
-    set config [::GX::GuiUpdateScheduler::options [dict create policy coalesced normal_ms 16 adaptive_ms 100 activity_window_ms 80 rapid_count 8 quiet_ms 80 guard {} error_callback {}] $options]
+    set config [::GX::GuiUpdateScheduler::options [dict create profile custom policy coalesced normal_ms 16 adaptive_ms 100 activity_window_ms 80 rapid_count 8 quiet_ms 80 guard {} error_callback {}] $options]
     set id gui-update[incr ::GX::GuiUpdateScheduler::serial]
     set tag GXGuiUpdate:$id
-    set ::GX::GuiUpdateScheduler::instances($id) [dict create owner $owner incarnation [winfo id $owner] tag $tag callback $callback config $config frame {} quiet {} pending 0 running 0 force 0 mode normal activity {} last_update {} requests 0 updates 0 failures 0 mode_changes 0 last_error {}]
+    set ::GX::GuiUpdateScheduler::instances($id) [dict create owner $owner incarnation [winfo id $owner] tag $tag callback $callback config $config subscription {} frame {} quiet {} pending 0 running 0 force 0 mode normal activity {} last_update {} last_update_us {} requests 0 updates 0 failures 0 mode_changes 0 last_error {}]
     bindtags $owner [concat [bindtags $owner] [list $tag]]
     bind $tag <Destroy> [list ::GX::GuiUpdateScheduler::destroyed $id %W]
+    if {[dict get $config profile] eq {global}} {
+        dict set ::GX::GuiUpdateScheduler::instances($id) subscription [::GX::configurationSubscribe [list ::GX::GuiUpdateScheduler::profileChanged $id]]
+        ::GX::GuiUpdateScheduler::profileChanged $id ui.graphics_profile
+    }
     return $id
+}
+proc ::GX::guiUpdateSchedulerGraphicsPolicy {} {
+    set profile [::GX::configurationGet ui.graphics_profile]
+    return [dict create profile $profile adaptive_ms [dict get {Low 200 Medium 100 Fast 50} $profile]]
+}
+proc ::GX::GuiUpdateScheduler::profileChanged {id key} {
+    variable instances
+    if {$key ne {ui.graphics_profile} || ![info exists instances($id)]} return
+    dict set instances($id) config adaptive_ms [expr {max([dict get $instances($id) config normal_ms],[dict get [::GX::guiUpdateSchedulerGraphicsPolicy] adaptive_ms])}]
+    cancelTimer $id frame
+    arm $id
 }
 proc ::GX::GuiUpdateScheduler::destroyed {id widget} {
     variable instances
@@ -73,7 +92,10 @@ proc ::GX::GuiUpdateScheduler::arm {id} {
     if {[dict get $s force]} {
         set delay 0
     } elseif {[dict get $s mode] eq {reduced} && [dict get $s last_update] ne {}} {
-        set delay [expr {max(0,[dict get $s last_update]+[dict get $s config adaptive_ms]-[clock clicks -milliseconds])}]
+        # Round upward from the actual microsecond admission timestamp. Using
+        # truncated milliseconds can admit a frame almost1ms before its cap.
+        set remaining [expr {[dict get $s last_update_us]+1000*[dict get $s config adaptive_ms]-[clock clicks -microseconds]}]
+        set delay [expr {max(0,entier(ceil($remaining/1000.0)))}]
     }
     dict set instances($id) frame [after $delay [list ::GX::GuiUpdateScheduler::dispatch $id]]
 }
@@ -83,8 +105,16 @@ proc ::GX::guiUpdateSchedulerConfigure {id options} {
     ::GX::GuiUpdateScheduler::cancelTimer $id frame
     ::GX::GuiUpdateScheduler::normal $id
     dict set ::GX::GuiUpdateScheduler::instances($id) config $config
+    set sub [dict get $s subscription]
+    if {[dict get $config profile] eq {global}} {
+        if {$sub eq {}} {dict set ::GX::GuiUpdateScheduler::instances($id) subscription [::GX::configurationSubscribe [list ::GX::GuiUpdateScheduler::profileChanged $id]]}
+        ::GX::GuiUpdateScheduler::profileChanged $id ui.graphics_profile
+    } elseif {$sub ne {}} {
+        ::GX::configurationUnsubscribe $sub
+        dict set ::GX::GuiUpdateScheduler::instances($id) subscription {}
+    }
     ::GX::GuiUpdateScheduler::arm $id
-    return $config
+    return [dict get $::GX::GuiUpdateScheduler::instances($id) config]
 }
 proc ::GX::guiUpdateSchedulerRequest {id {activity auto}} {
     ::GX::GuiUpdateScheduler::get $id
@@ -125,9 +155,11 @@ proc ::GX::GuiUpdateScheduler::dispatch {id} {
     dict set instances($id) pending 0
     dict set instances($id) force 0
     dict set instances($id) running 1
-    dict set instances($id) last_update [clock clicks -milliseconds]
     dict incr instances($id) updates
     set callback [dict get $instances($id) callback]
+    set admitted [clock clicks -microseconds]
+    dict set instances($id) last_update_us $admitted
+    dict set instances($id) last_update [expr {$admitted/1000}]
     set code [catch {uplevel #0 $callback} message opts]
     if {![info exists instances($id)]} {
         if {$code} {return -options $opts $message}
@@ -169,6 +201,7 @@ proc ::GX::guiUpdateSchedulerDispose {id} {
     if {![info exists ::GX::GuiUpdateScheduler::instances($id)]} return
     set s $::GX::GuiUpdateScheduler::instances($id)
     ::GX::guiUpdateSchedulerCancel $id
+    if {[dict get $s subscription] ne {}} {::GX::configurationUnsubscribe [dict get $s subscription]}
     set owner [dict get $s owner];set tag [dict get $s tag]
     if {[winfo exists $owner]} {
         set tags [bindtags $owner];set index [lsearch -exact $tags $tag]

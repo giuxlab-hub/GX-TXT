@@ -1,4 +1,4 @@
-# viewer.curve_workbench 2.21.12
+# viewer.curve_workbench 2.21.13
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -20,3 +20,9 @@ Native zoom, normal editing timers and350ms view persistence remain unchanged.
 DEV111-P013 requires the matching CORE native adapter shipped with the patch.
 Existing shared grid/clipping calls use its C++ presentation batches automatically;
 no Viewer-specific algorithm or switch is needed. P012 scheduling is unchanged.
+
+DEV111-P014 uses the permanent CORE retained Cairo grid/axis presenter and native
+control-position batches. CORE Appearance owns Low/Medium/Fast intensive profiles
+and optional additional grid-density suppression. Help follows Workspace, using
+the existing manual viewer and metadata-derived About version. Restart after
+applying the cumulative patch; the matching compiled native adapter is required.

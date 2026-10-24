@@ -4,7 +4,7 @@ namespace eval ::GX { variable configurationUi;variable configurationGuiEditors 
 # Public GUI navigation: Configuration owns its pages and native widgets.
 # Callers request a finite page, never pass widget paths or Runtime values.
 proc ::GX::configurationOpenPage page {
-    if {$page ni {storage runtime computation execution libraries scripts viewers modules}} {error {Unknown Configuration page}}
+    if {$page ni {storage runtime computation execution libraries scripts viewers modules appearance}} {error {Unknown Configuration page}}
     set notebook .top.nb.configuration.sections
     if {![llength [info commands winfo]] || ![winfo exists $notebook.$page]} {error {Open the main GX-TXT interface before opening a Configuration page}}
     .top.nb select .top.nb.configuration
@@ -308,7 +308,7 @@ proc ::GX::configurationGuiSave {} {
         set configurationUi(status) "Configuration was not saved: $reason"
         return
     }
-    set configurationUi(status) "Saved user defaults. Theme/fonts: restart GX-TXT. Popup recovery: effective now."
+    set configurationUi(status) "Saved user defaults. Theme/fonts: restart GX-TXT. Graphics and popup settings: effective now."
     configurationAppearanceRefresh
     set configurationUi(native3d_guard) 1
     set configurationUi(viewers.native3d.preset) [configurationGet viewers.native3d.preset]
@@ -385,6 +385,17 @@ proc ::GX::configurationAppearanceBuild {} {
     ttk::label $p.effective.warning -textvariable ::GX::configurationUi(appearanceWarning) -justify left
     pack $p.effective.values $p.effective.warning -fill x
     pack $p.effective -fill x -padx 8 -pady 5
+    ttk::labelframe $p.graphics -text {Graphical interaction performance} -padding 8
+    set ::GX::configurationUi(ui.graphics_profile) [configurationGet ui.graphics_profile]
+    set ::GX::configurationUi(ui.adaptive_grid_density) [configurationGet ui.adaptive_grid_density]
+    ttk::label $p.graphics.label -text {Intensive GUI activity}
+    ttk::combobox $p.graphics.profile -state readonly -values {Low Medium Fast} -textvariable ::GX::configurationUi(ui.graphics_profile) -width 14
+    ttk::label $p.graphics.note -text {After Save: Low maximum 5 FPS (default); Medium 10 FPS; Fast 20 FPS. Normal isolated input and final synchronization remain responsive.}
+    ttk::checkbutton $p.graphics.density -text {Adaptive Grid Density (additional 16-pixel suppression)} -variable ::GX::configurationUi(ui.adaptive_grid_density)
+    pack $p.graphics.label $p.graphics.profile $p.graphics.note $p.graphics.density -anchor w -pady 3
+    pack $p.graphics -fill x -padx 8 -pady 5
+    dict set configurationGuiEditors ui.graphics_profile $p.graphics.profile
+    dict set configurationGuiEditors ui.adaptive_grid_density $p.graphics.density
     sourceSurfaceAppearanceBuild $p
     # The existing Source Surface owner supplies the palette chooser and typed
     # controls. Saved schemes commit through their own actions, not this draft.
@@ -407,7 +418,7 @@ proc ::GX::configurationAppearanceBuild {} {
 proc ::GX::configurationAppearanceResize {f width} {
     $f.canvas itemconfigure content -width $width
     set p $f.canvas.content
-    foreach w [list $p.theme.note $p.fonts.note $p.remote.note $p.remote.status $p.effective.values $p.effective.warning] {
+    foreach w [list $p.theme.note $p.fonts.note $p.remote.note $p.remote.status $p.effective.values $p.effective.warning $p.graphics.note] {
         $w configure -wraplength [expr {max(160,$width-50)}]
     }
 }

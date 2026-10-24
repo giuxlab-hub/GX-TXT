@@ -281,3 +281,14 @@ The reported 3–4 second user stall was not reproduced locally. Individual dens
 reference redraws improved measurably; see P013 test results for measured costs
 and instrumentation qualifications. Full Canvas reconstruction and object display
 sampling remain real costs. This patch does not claim to eliminate every stall.
+
+
+## DEV111-P014 retained native grid adoption
+
+`NATIVE2D_GRID_PRESENTER_API_v1` adds the permanent optional retained Cairo Canvas
+presenter, with native control-position batching and CORE Appearance policies.
+Curve Workbench2.21.13 adopts it; unrelated Viewers retain their existing path.
+Existing `native2DCanvasGrid` callers requesting16pixel suppression now honor the
+CORE adaptive-density setting (enabled by default). Snapshot/scientific export
+schemas, unit/axis authorities and geometry remain unchanged. See the dedicated
+API reference for lifecycle, public signatures, build and configuration details.

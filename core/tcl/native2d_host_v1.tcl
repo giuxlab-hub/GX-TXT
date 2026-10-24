@@ -208,6 +208,7 @@ proc ::GX::native2DGridReset {window scene changed parent {presentation {}}} {
 }
 proc ::GX::native2DCanvasGrid {scene canvas {tag construction_grid} {minimumSpacing 0}} {
     if {![string is double -strict $minimumSpacing] || $minimumSpacing<0 || $minimumSpacing>128} {error {Grid presentation spacing must be 0..128 pixels}}
+    if {$minimumSpacing==16 && ![configurationGet ui.adaptive_grid_density]} {set minimumSpacing 0}
     set grid [::GX::Native2D::core grid $scene]
     set background [uiFieldColorFromRGBA [::GX::Native2D::core background $scene]]
     set background [uiFieldColorComposite $background #FFFFFF]

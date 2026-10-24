@@ -149,6 +149,7 @@ proc ::GX::CurveWorkbench::_cadGui {w} {
     _buildViewport $w
     _buildComparison $w
     _buildWorkspace $w
+    _helpBuild $w
     _buildImages $w
     _buildComparisonActivation $w
 }
@@ -374,7 +375,7 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     bind $w.right.viewport.canvas <MouseWheel> [list ::GX::CurveWorkbench::_wheel $w %x %y %D]
     bind $w.right.viewport.canvas <Button-4> [list ::GX::CurveWorkbench::_wheel $w %x %y 120]
     bind $w.right.viewport.canvas <Button-5> [list ::GX::CurveWorkbench::_wheel $w %x %y -120]
-    bind $w.right.viewport.canvas <Configure> [list ::GX::CurveWorkbench::_draw $w]
+    bind $w.right.viewport.canvas <Configure> [list ::GX::CurveWorkbench::_viewportDrawLater $w]
     bind $w.publish.external <Return> [list ::GX::CurveWorkbench::_save $w]
     wm protocol $w WM_DELETE_WINDOW [list ::GX::CurveWorkbench::_close $w]
     _selectionScene $w

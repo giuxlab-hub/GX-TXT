@@ -194,11 +194,10 @@ proc ::GX::CurveWorkbench::_drawPointMarkers {w id sampled color} {
     variable st
     set record [_record $w $id]
     if {![dict exists $record sketch_definition]} {tailcall _drawPointMarkers_interaction_base $w $id $sampled $color}
-    foreach handle [::GX::Native2D::core interaction_controls $st($w,scene) [dict get $record native]] {
-        lassign [::GX::Native2D::core device $st($w,scene) [dict get $handle point]] x y
-        set selected 0;foreach ref $st($w,sketchSelection) {if {[dict get $ref logical] eq $id&&[dict get $ref index]==[dict get $handle index]} {set selected 1}}
-        $w.right.viewport.canvas create rectangle [expr {$x-5}] [expr {$y-5}] [expr {$x+5}] [expr {$y+5}] -fill [expr {$selected?"#ffbd3a":"white"}] -outline $color -width 2 -tags primitive_handle
-    }
+    set selected {}
+    foreach ref $st($w,sketchSelection) {if {[dict get $ref logical] eq $id} {lappend selected [dict get $ref index]}}
+    ::GX::native2DGridPresenterControls $w.right.viewport.canvas $st($w,scene) [dict get $record native] $selected $color
+
 }
 rename ::GX::CurveWorkbench::_pointList ::GX::CurveWorkbench::_pointList_interaction_base
 proc ::GX::CurveWorkbench::_pointList {w} {

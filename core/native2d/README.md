@@ -116,7 +116,7 @@ world distance per device pixel on both axes, without cropping requested data.
 
 `gx2d_tcl.c` is an optional portable C/Tcl adapter used by `viewer.dataset_curve_fit` and `viewer.curve_workbench`. CMake builds it as `gx2dtcl` when Tcl development files are present. Both bundled viewers load the single CORE-installed module without a compiler. Their separately installable packages require a compatible framework and contain no private adapter. The same C source and CMake target can produce a Windows DLL in a later platform build. The adapter marshals CORE scene, curve, point-set, style, enumeration, selection, geometry, residual and view calls without owning their algorithms. The `nearest` and `hit` bridge commands return a hit dictionary (`object`, `index`, `point`, `distance`) or an empty result for `GX2D_NOT_FOUND`; `rect` returns the CORE selection-block ID. Both viewers use a separate exact-point selection scene so a segment crossing a rectangle cannot add outside data points.
 
-The original release's five-curve visual, independent known-scene state and nonvisual API contract tests are retained in the private validation archive, not this public source tree. The Tk canvas was used only as a test renderer; these tests do not change this CORE API.
+The five-curve visual API validation, independent known-scene state test, and nonvisual public API contract test live in `../../validation/native2d/` and have a shared run guide. The Tk canvas is a test renderer; these tests do not change this CORE API.
 
 A scene owns all objects and allocates monotonic 64-bit IDs, never Canvas IDs. ID zero is invalid. IDs are stable until the object is deleted and are not reused within a scene. A new scene starts its own ID sequence. The caller owns the scene and must call `gx2d_destroy`.
 
@@ -350,3 +350,22 @@ companions, parameter and gap outputs remain intact. Row ordinals retain the
 existing0..INT64_MAX contract. The adapter retains the validated integer buffer
 through audit packing; no binary64 conversion or second Tcl value read is used.
 CORE streams these bounded chunks into owned temporary audit inputs.
+
+
+## DEV111-P014 retained grid presenter
+
+`gx2d_grid_presenter_v1.cpp/.h` belongs to the existing `gx2dtcl` CMake target.
+It provides one retained public-Tk Canvas item painted by Cairo, native-owned
+font/glyph/pixmap resources, and retained control-position batches. The C geometry,
+grid-generation and snapping sources remain unchanged. Public host documentation:
+`docs/api/NATIVE2D_GRID_PRESENTER_API_v1.md` at the framework root.
+The patch ships the matching Linux x86-64 `bin/gx2dtcl.so`; restart after applying.
+A normal source build remains:
+
+```sh
+cmake -S core/native2d -B /tmp/gxtxt-native2d-build -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build /tmp/gxtxt-native2d-build --target gx2dtcl -j2
+```
+
+Existing Tcl/Tk8.6, Cairo and X11 development headers/libraries are required.
+There is no new graphics plugin, background Tk thread or separate scientific engine.

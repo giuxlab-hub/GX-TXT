@@ -921,7 +921,7 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
         set currentMarker [::GX::Native2D::core direction_marker $st($w,scene) [dict get [_record $w $st($w,active)] native]]
         set st($w,directionShown) [dict get $currentMarker visible]
     }
-    $c delete all
+    ::GX::native2DGridPresenterBegin $c [list ::GX::CurveWorkbench::_viewportDrawLater $w]
     lassign [lrange $view 2 5] left top right bottom
     lassign [lindex $view 6] x0 y0 x1 y1
     set plotRight [expr {$width-$right}];set plotBottom [expr {$height-$bottom}]
@@ -930,28 +930,11 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
     set backgroundRgb [dict get $background rgb]
     set textRgb [::GX::uiFieldColorReadableText $background]
     $c configure -background $backgroundRgb
-    $c create rectangle $left $top $plotRight $plotBottom -fill $backgroundRgb -outline #9babbc -tags native_plot_background
     set grid [::GX::Native2D::core grid $st($w,scene)]
     set st($w,gridShown) [dict get $grid visible]
     set st($w,gridSnap) [dict get $grid snap_enabled]
-    ::GX::native2DCanvasGrid $st($w,scene) $c construction_grid 16
+    ::GX::native2DGridPresenterUpdate $c $st($w,scene) $plans [dict create background $backgroundRgb text_color $textRgb]
     set st($w,coordinateAxisPlans) $plans
-    foreach axis {x y} {
-        foreach tick [dict get $plans $axis ticks] {
-            set value [dict get $tick value]
-            if {$axis eq {x}} {
-                lassign [::GX::Native2D::core device $st($w,scene) [list $value $y0]] sx unused
-                if {[dict get $grid visible]} {$c create line $sx $top $sx $plotBottom -fill #d8e1e9 -dash {2 4} -tags coordinate_grid}
-                $c create line $sx $plotBottom $sx [expr {$plotBottom+4}] -fill $textRgb -tags {axis_graduation coordinate_x_graduation}
-                $c create text $sx [expr {$plotBottom+15}] -text [dict get $tick label] -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_x_tick}
-            } else {
-                lassign [::GX::Native2D::core device $st($w,scene) [list $x0 $value]] unused sy
-                if {[dict get $grid visible]} {$c create line $left $sy $plotRight $sy -fill #d8e1e9 -dash {2 4} -tags coordinate_grid}
-                $c create line [expr {$left-4}] $sy $left $sy -fill $textRgb -tags {axis_graduation coordinate_y_graduation}
-                $c create text [expr {$left-7}] $sy -text [dict get $tick label] -anchor e -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_y_tick}
-            }
-        }
-    }
     set index 0
     dict for {id r} $st($w,curves) {
         if {![_curveVisible $w $r]} continue
@@ -1004,9 +987,9 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
         }
     }
     if {$st($w,box) ne {}} {$c create rectangle {*}$st($w,box) -outline #234e9b -dash {4 3}}
+    ::GX::native2DGridPresenterEnd $c
     ::GX::native2DCanvasViewportClip $c $st($w,scene)
-    $c create text [expr {($left+$plotRight)/2}] [expr {$height-14}] -text [dict get $plans x label] -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_axis_label}
-    $c create text 13 [expr {($top+$plotBottom)/2}] -text [dict get $plans y label] -angle 90 -fill $textRgb -font TkSmallCaptionFont -tags {axis_label coordinate_axis_label}
+
 }
 # The residual is an actual derived comparison, never a canonical Dataset.
 proc ::GX::CurveWorkbench::_residualDispose {w} {

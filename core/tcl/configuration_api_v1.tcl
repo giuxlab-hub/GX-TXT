@@ -95,6 +95,9 @@ proc ::GX::_configurationNormalize {id value} {
         }
         default { set value [string trim $value] }
     }
+    if {$id eq "ui.graphics_profile" && $value ni {Low Medium Fast}} {
+        error {Graphics profile must be Low, Medium or Fast.}
+    }
     if {$id eq "ui.x11_popup_repair_delay_ms" && ($value < 25 || $value > 2000)} {
         error "Delay after popup mapping must be an integer from 25 to 2000 ms."
     }
@@ -227,6 +230,8 @@ proc ::GX::configurationRegisterBuiltins {} {
     set home [configurationHome]
     set threads [parallelExecutionHardwareThreads]
     foreach {id label type default} {
+        ui.graphics_profile {Intensive graphical update profile} string Low
+        ui.adaptive_grid_density {Adaptive Grid Density} boolean 1
         ui.theme {Theme} string system
         ui.font_family {Proportional GUI font family} string system
         ui.font_size {GUI font size (points)} string system

@@ -41,17 +41,23 @@ rename ::GX::CurveWorkbench::_commandLayout ::GX::CurveWorkbench::_commandLayout
 proc ::GX::CurveWorkbench::_commandLayout {w width} {
     variable st
     if {![winfo exists $w.toolbar.settings]} {tailcall _commandLayout_viewport056_base $w $width}
-    set children {};foreach key {add undo redo objects points view settings workspace} {if {[winfo exists $w.toolbar.$key]} {lappend children $w.toolbar.$key}}
+    set children {};foreach key {add undo redo objects points view settings workspace help} {if {[winfo exists $w.toolbar.$key]} {lappend children $w.toolbar.$key}}
     if {$st($w,moreControls)} {foreach key {duplicate split reverse visibility lock remove insert pan sourcePreview} {if {[winfo exists $w.toolbar.$key]} {lappend children $w.toolbar.$key}}}
     foreach child [winfo children $w.toolbar] {if {$child ni $children} {pack forget $child;grid forget $child}}
     ::GX::native2DToolbarLayout $w.toolbar $width $children
+    if {[winfo exists $w.toolbar.help] && [winfo manager $w.toolbar.workspace] eq {grid}} {
+        set pos [grid info $w.toolbar.workspace]
+        if {[dict get [grid info $w.toolbar.help] -row] != [dict get $pos -row]} {
+            grid configure $w.toolbar.help -row [dict get $pos -row] -column [expr {[dict get $pos -column]+[dict get $pos -columnspan]}]
+        }
+    }
 }
 rename ::GX::CurveWorkbench::_sketchBarLayout ::GX::CurveWorkbench::_sketchBarLayout_viewport056_base
 proc ::GX::CurveWorkbench::_sketchBarLayout {w width} {
     _sketchBarLayout_viewport056_base $w $width
 
 }
-proc ::GX::CurveWorkbench::_viewportChanged {w} {_draw $w;_viewPersistLater $w}
+proc ::GX::CurveWorkbench::_viewportChanged {w} {_viewportDrawLater $w;_viewPersistLater $w}
 proc ::GX::CurveWorkbench::_objectSnapToggle {w} {variable st;set st($w,cadObjectSnap) [expr {!$st($w,cadObjectSnap)}]}
 proc ::GX::CurveWorkbench::_utilityVisibility {w {automatic 0}} {
     variable st
@@ -495,4 +501,20 @@ proc ::GX::CurveWorkbench::_imageSummary {w} {
     if {![dict exists $st($w,images) $id]} return
     set image [::GX::Native2D::core image_get $st($w,scene) [dict get $st($w,images) $id native]]
     set st($w,imageSummary) "[expr {[dict get $image calibrated]?{Calibrated}:{Unscaled — calibrate before dimensioning}}]. Unit: [dict get $image length_unit]; uniform scale: [dict get $image scale] / pixel; rotation: [dict get $image rotation] rad; translation: [dict get $image translation]."
+}
+
+proc ::GX::CurveWorkbench::_helpBuild {w} {
+    if {![winfo exists $w.toolbar.help]} {
+        ttk::menubutton $w.toolbar.help -text Help -menu $w.toolbar.help.menu
+        menu $w.toolbar.help.menu -tearoff 0
+        $w.toolbar.help.menu add command -label {User Manual…} -accelerator F1 -command [list ::GX::CurveWorkbench::_helpManual $w]
+        $w.toolbar.help.menu add command -label {About Curve Workbench…} -command [list ::GX::CurveWorkbench::_helpAbout $w]
+    }
+    bind $w <F1> [list ::GX::CurveWorkbench::_helpManual $w]
+    _commandLayout $w [winfo width $w.toolbar]
+}
+proc ::GX::CurveWorkbench::_helpManual {w} {::GX::documentationBrowserOpenModuleWindow viewer.curve_workbench $w}
+proc ::GX::CurveWorkbench::_helpAbout {w} {
+    set version [::GX::moduleField viewer.curve_workbench version {}]
+    tk_messageBox -parent $w -title {About Curve Workbench} -type ok -icon info -message "Curve Workbench $version" -detail {GX-TXT scientific Curve Workbench. GPL-3.0-or-later.}
 }
