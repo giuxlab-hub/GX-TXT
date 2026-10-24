@@ -150,7 +150,7 @@ proc ::GX::_viewerGuiRasterBindDataset {window component dataset {binding {}}} {
         set installed 1
         viewerGuiSourceScopeAttach $window $component $canvas
         if {[dict exists $::GX::ViewerGui::instances $window demo_bindings $component]} {dict unset ::GX::ViewerGui::instances $window demo_bindings $component}
-        if {$created && ![dict get $instance restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Bind canonical raster $component"}
+        if {$created && ![dict get $instance restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Bind canonical raster $component"}
         viewerGuiTraceEmit $window $component source_bound [dict create status ready dataset_id $dataset source_sha256 [dict get $source source_sha256] coordinate_kind source_pixel]
         viewerGuiActionsRefresh $window
         return [viewerGuiDesignRasterDescribe $window $component]
@@ -246,7 +246,7 @@ proc ::GX::_viewerGuiRasterEvent {window component canvas event detail} {
                 dict set prior snapshot $snapshot
                 dict set prior document_receipt [dict remove $owner payload]
                 dict set ::GX::ViewerGui::instances $window bindings $component $prior
-                if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Raster [dict get $detail operation]"}
+                if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Raster [dict get $detail operation]"}
             } on error {message options} {
                 if {!$committed} {
                     # The canonical owner is unchanged. Restore the retained

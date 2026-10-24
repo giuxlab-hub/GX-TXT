@@ -60,13 +60,13 @@ proc ::GX::CurveWorkbench::_coordinateConfigurationApply {w token values} {
     set next [_coordinateConfigurationNormalize $values $relations]
     foreach field {x_unit y_unit} {if {![_coordinateWorkspaceEmpty $w] && [dict get $next $field] ne [dict get $st($w,coordinateConfiguration) $field]} {error {Configuration cannot reinterpret existing geometry; use an explicit working-coordinate conversion}}}
     if {![dict get $next allow_heterogeneous]} {dict for {id record} $st($w,curves) {set dimensions [_coordinateDimensions [_coordinateUnits $record] [_coordinateSourceRelations $record]];if {[lindex $dimensions 0] ne [lindex $dimensions 1]} {error {Existing heterogeneous geometry requires the explicit policy to remain enabled}}}}
-    set before [_snapshotIds $w {}];set undo $st($w,undo);set redo $st($w,redo)
+    set before [_snapshotIds $w {}];
     try {
         set st($w,coordinateConfiguration) $next
         set st($w,sketchUnit) [dict get $next x_unit]
         _history $w $before {}
         _draw $w;_save $w
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,coordinateConfigurationDraft) [_cadState $w]
 }
 proc ::GX::CurveWorkbench::_coordinateSourceRelations {record} {
@@ -284,13 +284,13 @@ proc ::GX::CurveWorkbench::_coordinateAlignOpen {w} {
 proc ::GX::CurveWorkbench::_coordinateAlignApply {w token id values} {
     variable st
     if {$token ne [::GX::interactiveDocumentSessionToken]||$token ne $st($w,token)||$id ne $st($w,active)||$st($w,coordinateAlignKey) ne [_coordinateKey $w $id]} {error {Source or coordinate context changed; reopen axis alignment}}
-    set before [_snapshotIds $w [list $id]];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w [list $id]];
     try {
         _coordinateNormalizeSource $w $id [list [dict get $values x] [dict get $values y]]
         _coordinateFrameSync $w 0
         _selectionScene $w;::GX::Native2D::core fit $st($w,scene);_coordinateMagnify $w 1
         _history $w $before [list $id]
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,coordinateAlignKey) [_coordinateKey $w $id]
     _curveList $w;_pointList $w;_draw $w;_save $w
 }

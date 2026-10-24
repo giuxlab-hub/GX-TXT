@@ -93,7 +93,7 @@ proc ::GX::CurveWorkbench::_constraintApply {w token id values} {
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen constraint parameters"}
     _cancelGesture $w;_pointSyncApply $w
-    set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w {}];
     if {[string trim [dict get $values name]] eq {}} {error "Enter a constraint name"}
     set definition [dict remove $values name]
     set refs {};foreach field {a b axis} {if {[dict exists $definition $field]&&[dict get $definition $field] ne {}} {lappend refs [dict get $definition $field]}}
@@ -105,15 +105,15 @@ proc ::GX::CurveWorkbench::_constraintApply {w token id values} {
     set spec [_constraintNativeSpec $w $definition]
     if {$id eq {}} {set receipt [[_cadController $w] relationship create $spec];set id "constraint[incr st($w,nextConstraint)]"} else {set receipt [[_cadController $w] relationship update [dict get $record native] $spec]}
     dict set st($w,constraints) $id [dict create id $id name [dict get $values name] native [dict get $receipt id] definition $definition]
-    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     _constraintRefresh $w;return $id
 }
 proc ::GX::CurveWorkbench::_constraintAction {w action} {
     variable st
     _cancelGesture $w;set id [_constraintSelected $w];set record [dict get $st($w,constraints) $id]
-    set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w {}];
     if {$action eq "remove"} {[_cadController $w] relationship remove [dict get $record native];dict unset st($w,constraints) $id} else {::GX::Native2D::core constraint_enable $st($w,scene) [dict get $record native] [dict get $record definition disabled]}
-    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     _constraintRefresh $w
 }
 rename ::GX::CurveWorkbench::_changed ::GX::CurveWorkbench::_changed_constraints_base
@@ -149,7 +149,7 @@ proc ::GX::CurveWorkbench::_joinApply {w token source index values} {
     set target [dict get $values target];set targetIndex [dict get $values target_index]
     _coordinatePlaneAdmit $w [lsort -unique [list $source $target]]
     _cancelGesture $w;_pointSyncApply $w
-    set before [_snapshotIds $w [list $source]];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w [list $source]];
     set receipt [[_cadController $w] relationship join [dict get [_record $w $source] native] $index [dict get [_record $w $target] native] $targetIndex [dict get $values merge] [dict get $values tolerance]]
     set id "constraint[incr st($w,nextConstraint)]"
     set definition [dict remove $receipt id valid geometry_supported measured_value residual angular_residual enforcement general_solver]
@@ -158,7 +158,7 @@ proc ::GX::CurveWorkbench::_joinApply {w token source index values} {
     _syncSamples $w $source
     set record [_record $w $source];dict lappend record operations [dict create operation native_join source_index $index target_curve $target target_index $targetIndex relationship $id merge [dict get $values merge]];dict set st($w,curves) $source $record
     set st($w,active) $source;set st($w,joinPending) {}
-    try {_selectionScene $w;::GX::Native2D::core selection_replace $st($w,selectionScene) $st($w,selectionObject) [list $index];_history $w $before [list $source]} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    try {_selectionScene $w;::GX::Native2D::core selection_replace $st($w,selectionScene) $st($w,selectionObject) [list $index];_history $w $before [list $source]} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,status) "Joined $source point $index to $target point $targetIndex; persistent Native coincidence $id."
     return $id
 }

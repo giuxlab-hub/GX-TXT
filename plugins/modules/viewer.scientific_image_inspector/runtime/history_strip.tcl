@@ -1,34 +1,14 @@
-# Scientific Image Inspector - Description/History bottom strip.
+# Scientific Image Inspector domain hooks for CORE-owned native History.
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Follows the Curve Workbench compact strip/popup model. Image/annotation
-# snapshots are *viewer recipes*, not a duplicate Dataset or Workspace registry.
 namespace eval ::GX::SII {}
-
-# Editing commands explicitly request a writable state. A historical step is
-# only a read-only visual inspection: return to Latest, never rewrite/truncate
-# past History without confirmation. Pending image adjustments remain locked.
-proc ::GX::SII::historyResumeForEditing {} {
+proc ::GX::SII::historyAttached {} {
     variable ui
-    if {[info exists ui(pending)] && $ui(pending)} {
-        set ui(status) {Accept or discard the image adjustment before editing.}
-        return 0
-    }
-    if {[info exists ui(historyBrowsing)] && $ui(historyBrowsing)} {
-        historyBrowse [expr {[llength $ui(historyTimeline)]-1}]
-        if {$ui(historyBrowsing)} {
-            set ui(status) {Could not return to the latest History state; editing is disabled.}
-            return 0
-        }
-    }
-    return 1
+    return [expr {[info exists ui(historyAttached)] && $ui(historyAttached)}]
 }
-proc ::GX::SII::historyReadOnly {} {
+proc ::GX::SII::historyGuard {} {
     variable ui
-    if {[info exists ui(historyBrowsing)] && $ui(historyBrowsing)} {
-        set ui(status) {History inspection is read-only. Click Latest to resume editing, or explicitly restart from a historical step.}
-        return 1
-    }
-    return 0
+    checkSession
+    return [expr {![info exists ui(pending)] || !$ui(pending)}]
 }
 proc ::GX::SII::historySnapshot {} {
     variable ui
@@ -36,196 +16,300 @@ proc ::GX::SII::historySnapshot {} {
     set composed $ui(figurePreviewActive)
     set image [expr {$composed ? $ui(imageAnnotations) : $ui(annotations)}]
     set figure [expr {$composed ? $ui(annotations) : $ui(figureAnnotations)}]
-    return [dict create steps $ui(steps) panels $ui(panels) \
-        image_annotations $image figure_annotations $figure \
-        canvas_mode [expr {$composed ? "figure" : "image"}] \
-        figure_settings [figureSettings]]
+    set value [dict create steps $ui(steps) panels $ui(panels) image_annotations $image figure_annotations $figure canvas_mode [expr {$composed ? "figure" : "image"}] figure_settings [figureSettings]]
+    set channels [dict create image [llength $ui(steps)] figure 0]
+    foreach channel {image figure} {if {[info exists ui(history-$channel)]} {dict set channels $channel [dict get [::GX::scientificHistoryViewerStatus $ui(history-$channel)] cursor]}}
+    dict set value history_channels $channels
+    if {[info exists ui(restoreSnapshot)]} {dict set value image_reset_previous $ui(restoreSnapshot)}
+    dict set value source_id $ui(sourceId)
+    dict set value source_sha [dict get $ui(info) sha256]
+    return $value
+}
+proc ::GX::SII::historyImageSnapshot {} {
+    variable ui
+    set value [dict create steps $ui(steps)]
+    if {[info exists ui(restoreSnapshot)]} {dict set value reset_previous $ui(restoreSnapshot);dict set value reset_state [dict remove [historySnapshot] history_channels source_id source_sha]}
+    return $value
+}
+proc ::GX::SII::historyFigureSnapshot {} {
+    return [dict remove [historySnapshot] steps history_channels figure_settings source_id source_sha image_reset_previous]
+}
+proc ::GX::SII::historyValidate {record} {
+    set state [dict get $record base]
+    if {[catch {dict size $state}]} {error {Image History state must be inert}}
+    foreach step [dict get $record steps] {if {[catch {dict size [dict get $step patch]}]} {error {Image History patch must be inert}}}
+    return 1
+}
+proc ::GX::SII::historyCaptureRecipe {context} {
+    variable ui
+    if {![historyAttached]} {error {No active Image Inspector History}}
+    return [::GX::scientificHistoryViewerRecord $ui(window)]
+}
+proc ::GX::SII::historyReplay {context record} {error {Image Inspector recipes open through their Workspace source validation}}
+proc ::GX::SII::historyNoCommit {record} {}
+proc ::GX::SII::historyError {receipt} {
+    variable ui
+    set ui(status) "History persistence failed; accepted edits remain in RAM: [dict get $receipt error]"
+}
+proc ::GX::SII::historyDomainAccepted {channel receipt} {
+    variable ui
+    if {![info exists ui(historyUpdating)] || !$ui(historyUpdating)} {
+        historyObserve
+    }
+}
+proc ::GX::SII::historyAccepted {receipt} {
+    variable ui
+    set ui(historyCursor) [dict get $receipt cursor]
+    set ui(historyBrowsing) 0
+    historyBrowsingLock 0
+    set transition [get $receipt transition {}]
+    set decreased [expr {[info exists ui(historyMainCount)] && [dict get $receipt count]<$ui(historyMainCount)}]
+    set ui(historyMainCount) [dict get $receipt count]
+    # A main restart explicitly clears the former figure Undo context while
+    # image Undo remains available for the retained accepted processing recipe.
+    # Clear resets both domains to the protected current scientific checkpoint.
+    if {$transition in {branch clear} || ($transition eq {} && $decreased)} {
+        set priorUpdating $ui(historyUpdating)
+        set ui(historyUpdating) 1
+        try {
+            foreach channel {image figure} {
+                if {![info exists ui(history-$channel)]} continue
+                if {$transition eq "clear"} {::GX::scientificHistoryViewerReset $ui(history-$channel) [history[string totitle $channel]Snapshot]} else {historyResetDomain $channel}
+            }
+            if {$transition eq "clear"} {
+                # Cursor markers are small control state. Keep Clear at zero
+                # steps after subordinate contexts have reached their bases.
+                ::GX::scientificHistoryViewerReset $ui(window) [historySnapshot]
+            } elseif {[historySnapshot] ne [::GX::scientificHistoryViewerState $ui(window)]} {
+                ::GX::scientificHistoryViewerRecordOperation $ui(window) {Restart domain Undo controls} [historySnapshot]
+            }
+        } finally {set ui(historyUpdating) $priorUpdating}
+    }
+}
+proc ::GX::SII::historyRestore {state} {
+    variable ui
+    set mode [dict get [::GX::scientificHistoryViewerRestoreContext $ui(window)] mode]
+    set priorUpdating $ui(historyUpdating)
+    set ui(historyUpdating) 1
+    try {
+        historyDisplayState $state
+        if {$mode ni {browse latest recovery}} {
+            foreach channel {image figure} {
+                if {![info exists ui(history-$channel)] || ![dict exists $state history_channels $channel]} continue
+                set key $ui(history-$channel)
+                set index [dict get $state history_channels $channel]
+                # An earlier domain branch can no longer be addressed by its
+                # numeric cursor. Keep the selected full scientific checkpoint;
+                # the explicit main restart will reset those domain contexts.
+                if {[catch {::GX::scientificHistoryViewerSeek $key $index 0}]} {historyResetDomain $channel}
+            }
+        }
+    } finally {set ui(historyUpdating) $priorUpdating}
+    set ui(historyBrowsing) [expr {$mode eq "browse"}]
+    historyBrowsingLock $ui(historyBrowsing)
+}
+proc ::GX::SII::historyResetDomain {channel} {
+    variable ui
+    set key $ui(history-$channel)
+    if {$channel eq "figure"} {::GX::scientificHistoryViewerReset $key [historyFigureSnapshot];return}
+    set snapshot [historyImageSnapshot]
+    ::GX::scientificHistoryViewerReset $key [dict create steps {}]
+    set steps [dict get $snapshot steps]
+    if {[dict exists $snapshot reset_previous]} {set steps [dict get $snapshot reset_previous steps]}
+    set retained {}
+    foreach step $steps {lappend retained $step;::GX::scientificHistoryViewerRecordOperation $key {Retained image recipe operation} [dict create steps $retained]}
+    if {[dict exists $snapshot reset_previous]} {::GX::scientificHistoryViewerRecordOperation $key {Restore original image} $snapshot}
+}
+proc ::GX::SII::historyImageRestore {value} {
+    variable ui
+    set mode [dict get [::GX::scientificHistoryViewerRestoreContext $ui(history-image)] mode]
+    set current [::GX::scientificHistoryViewerState $ui(history-image)]
+    if {$mode eq "undo" && [dict exists $current reset_previous]} {
+        set state [dict get $current reset_previous]
+        if {[dict exists $state annotations]} {
+            dict set state [expr {[dict get $state canvas_mode] eq "figure" ? "figure_annotations" : "image_annotations"}] [dict get $state annotations]
+            dict unset state annotations
+        }
+    } elseif {$mode eq "redo" && [dict exists $value reset_state]} {set state [dict get $value reset_state]} else {
+        set state [historySnapshot]
+        dict set state steps [dict get $value steps]
+    }
+    if {[dict exists $value reset_previous]} {dict set state image_reset_previous [dict get $value reset_previous]} elseif {[dict exists $state image_reset_previous]} {dict unset state image_reset_previous}
+    historyDisplayState $state
+}
+proc ::GX::SII::historyFigureRestore {value} {
+    set state [dict merge [historySnapshot] $value]
+    historyDisplayState $state
 }
 proc ::GX::SII::historyStripCreate {w} {
     variable ui
-    # Workbench pattern: status/description and a horizontal timeline occupy
-    # the same strip; the picture canvas loses only one short row.
-    ttk::frame $w.strip -height 36
-    pack propagate $w.strip 0
-    pack forget $w.footer
-    pack $w.strip -side bottom -fill x
-    # A ttk::combobox near the bottom of the screen can open its native
-    # drop-down *below* the Viewer (observed with Tk on Windows). Use a compact
-    # upward-opening menubutton, while retaining the same Description/History
-    # state and timeline API.
-    ttk::menubutton $w.strip.choice -textvariable ::GX::SII::ui(historyStripView) \
-        -width 13 -menu $w.strip.choice.menu
-    menu $w.strip.choice.menu -tearoff 0
-    foreach mode {Description History} {
-        $w.strip.choice.menu add radiobutton -label $mode -value $mode \
-            -variable ::GX::SII::ui(historyStripView) -command ::GX::SII::historyStripSwitch
+    set ui(historyAttached) 0
+    set ui(historyUpdating) 0
+}
+proc ::GX::SII::historyAttach {{record {}} {domains {}}} {
+    variable ui
+    if {![info exists ui(info)]} return
+    set ui(historyUpdating) 1
+    try {
+        set callbacks [dict create capture ::GX::SII::historySnapshot restore ::GX::SII::historyRestore commit ::GX::SII::historyCommit guard ::GX::SII::historyGuard document_id $ui(documentId) accepted ::GX::SII::historyAccepted error ::GX::SII::historyError]
+        ::GX::scientificHistoryViewerAttach $ui(window) viewer.scientific_image_inspector $callbacks $record
+        set ui(historyAttached) 1
+        set ui(projectionDirty) [expr {$ui(documentId) eq {}}]
+        foreach channel {image figure} {
+            set child [get $domains $channel {}]
+            if {$child eq {}} {
+                set snapshot [history[string totitle $channel]Snapshot]
+                if {$channel eq "image"} {
+                    set steps [dict get $snapshot steps]
+                    set child [::GX::scientificHistoryCreate viewer.scientific_image_inspector [dict create steps {}]]
+                    set retained {}
+                    foreach step $steps {lappend retained $step;set child [::GX::scientificHistoryAppend viewer.scientific_image_inspector $child [dict create steps $retained] {Imported image operation}]}
+                } else {set child [::GX::scientificHistoryCreate viewer.scientific_image_inspector $snapshot]}
+            }
+            set beforeDomain [history[string totitle $channel]Snapshot]
+            set beforeScientific [historySnapshot]
+            set hooks [dict create parent $ui(window) channel $channel document_id $ui(documentId) capture ::GX::SII::history[string totitle $channel]Snapshot restore ::GX::SII::history[string totitle $channel]Restore commit ::GX::SII::historyNoCommit guard ::GX::SII::historyGuard accepted [list ::GX::SII::historyDomainAccepted $channel] error ::GX::SII::historyError]
+            set ui(history-$channel) [::GX::scientificHistoryContextAttach viewer.scientific_image_inspector $hooks $child]
+            if {[history[string totitle $channel]Snapshot] ne $beforeDomain} {
+                set choice [tk_messageBox -parent $ui(window) -type yesnocancel -default cancel -icon warning -title {Reconcile Image History} -message "The recovered $channel Undo state differs from the selected general History checkpoint.\nYes: use the recovered $channel state and record the reconciliation.\nNo: keep the general checkpoint and explicitly restart this domain's Undo controls.\nCancel: preserve both journals without accepting further edits."]
+                if {$choice eq "cancel"} {error {Image History reconciliation cancelled; journals retained}}
+                if {$choice eq "no"} {historyDisplayState $beforeScientific;historyResetDomain $channel}
+            }
+        }
+        if {[historySnapshot] ne [::GX::scientificHistoryViewerState $ui(window)]} {::GX::scientificHistoryViewerRecordOperation $ui(window) {Reconcile recovered domain History} [historySnapshot]}
+        set ui(historyMainCount) [dict get [::GX::scientificHistoryViewerStatus $ui(window)] count]
+        set frame [::GX::scientificHistoryViewerStrip $ui(window) $ui(window) $ui(window).footer {} {-side bottom -fill x}]
+        ::GX::scientificHistoryViewerStripSet $ui(window) [dict create visible $ui(historyStripVisible) mode $ui(historyStripView)]
+    } on error {message options} {
+        foreach channel {image figure} {if {[info exists ui(history-$channel)]} {catch {::GX::scientificHistoryContextClose $ui(history-$channel) 0};unset ui(history-$channel)}}
+        if {[historyAttached]} {catch {::GX::scientificHistoryViewerDetach $ui(window) 0}}
+        set ui(historyAttached) 0
+        set ui(historyBrowsing) 1
+        historyBrowsingLock 1
+        return -options $options $message
+    } finally {set ui(historyUpdating) 0}
+}
+proc ::GX::SII::historyDetach {{project 1}} {
+    variable ui
+    if {![historyAttached]} return
+    if {$project} {historySaveExplicit}
+    set presentation [::GX::scientificHistoryViewerStripGet $ui(window)]
+    set ui(historyStripVisible) [dict get $presentation visible]
+    set ui(historyStripView) [dict get $presentation mode]
+    foreach channel {image figure} {if {[info exists ui(history-$channel)]} {::GX::scientificHistoryContextClose $ui(history-$channel) 0;unset ui(history-$channel)}}
+    ::GX::scientificHistoryViewerDetach $ui(window) 0
+    if {[winfo exists $ui(window).historyStrip]} {destroy $ui(window).historyStrip}
+    set ui(historyAttached) 0
+    pack $ui(window).footer -side bottom -fill x
+}
+proc ::GX::SII::historyStripReset {} {variable ui;if {[info exists ui(historyLoading)] && $ui(historyLoading)} return;historyDetach 0;historyAttach}
+proc ::GX::SII::historyStripRestore {saved {record {}} {domains {}}} {
+    variable ui
+    historyDetach 0
+    if {$record eq {} && $saved ne {}} {
+        set first [lindex $saved 0]
+        set record [::GX::scientificHistoryCreate viewer.scientific_image_inspector [dict get $first state]]
+        foreach item [lrange $saved 1 end] {set record [::GX::scientificHistoryAppend viewer.scientific_image_inspector $record [dict get $item state] [dict get $item label]]}
+        if {[dict remove [::GX::scientificHistoryState $record] history_channels source_id source_sha] ne [dict remove [historySnapshot] history_channels source_id source_sha]} {error {Saved image timeline does not match its scientific Workspace state}}
     }
-    bind $w.strip.choice <Button-1> {::GX::SII::historyChoicePopup; break}
-    bind $w.strip.choice <Return> {::GX::SII::historyChoicePopup; break}
-    bind $w.strip.choice <space> {::GX::SII::historyChoicePopup; break}
-    pack $w.strip.choice -side left -fill y -padx 3
-    pack $w.footer -in $w.strip -side left -fill x -expand 1
-    canvas $w.strip.timeline -height 28 -highlightthickness 0 -background #edf1f5 \
-        -xscrollincrement 20
-    bind $w.strip.timeline <Button-1> {::GX::SII::historyStripClick %x %y}
-    bind $w.strip.timeline <Button-3> {::GX::SII::guardEvent {History context menu} [list ::GX::SII::historyStripContext %x %y %X %Y]}
-    bind $w.strip.timeline <MouseWheel> {::GX::SII::historyStripWheel %D}
-    bind $w.strip.timeline <Button-4> {%W xview scroll -3 units}
-    bind $w.strip.timeline <Button-5> {%W xview scroll 3 units}
-    historyStripSwitch
-}
-# Always place the two-option popup ABOVE its control. Clamping occurs in
-# tk_popup as well, so moving/resizing the Viewer does not strand the menu.
-proc ::GX::SII::historyChoicePopup {} {
-    variable ui
-    set button $ui(window).strip.choice
-    if {![winfo exists $button]} return
-    set menu $button.menu
-    update idletasks
-    set height [expr {max(60,[winfo reqheight $menu]+12)}]
-    set x [winfo rootx $button]
-    set y [expr {[winfo rooty $button] - $height - 2}]
-    tk_popup $menu $x [expr {max(0,$y)}]
-}
-proc ::GX::SII::historyStripShow {} {
-    variable ui
-    set w $ui(window)
-    if {$ui(historyStripVisible)} {pack $w.strip -side bottom -fill x} else {pack forget $w.strip}
-}
-proc ::GX::SII::historyStripSwitch {} {
-    variable ui
-    set w $ui(window)
-    if {![winfo exists $w.strip]} return
-    pack forget $w.footer $w.strip.timeline
-    if {$ui(historyStripView) eq "History"} {
-        pack $w.strip.timeline -side left -fill both -expand 1
-        historyStripRender
-    } else {pack $w.footer -in $w.strip -side left -fill x -expand 1}
-}
-proc ::GX::SII::historyStripWheel {delta} {
-    variable ui
-    if {$delta==0} return
-    $ui(window).strip.timeline xview scroll [expr {$delta>0?-3:3}] units
-}
-proc ::GX::SII::historyStripReset {} {
-    variable ui
-    set ui(historyBrowsing) 0
-    unset -nocomplain ui(historyLive)
-    set ui(historyTimeline) {}
-    if {[info exists ui(info)]} {
-        lappend ui(historyTimeline) [dict create kind base label {Original image} state [historySnapshot]]
-    }
-    set ui(historyCursor) 0
-    historyStripRender
-}
-proc ::GX::SII::historyStripRestore {saved} {
-    variable ui
-    set ui(historyBrowsing) 0
-    unset -nocomplain ui(historyLive)
-    if {[catch {llength $saved} n] || $n>80 || $n<1} {
-        historyStripReset
-        return
-    }
-    foreach record $saved {
-        foreach key {kind label state} {if {![dict exists $record $key]} {historyStripReset;return}}
-        if {[catch {dict size [dict get $record state]}]} {historyStripReset;return}
-    }
-    set ui(historyTimeline) $saved
-    set ui(historyCursor) [expr {[llength $saved]-1}]
-    # Older Workspaces have no timeline: their current state is the base.
-    # For consistent saved recipes, the last timeline state is identical to
-    # the persisted authoritative working project state.
-    if {[dict get [lindex $saved end] state] ne [historySnapshot]} {
-        set ui(historyTimeline) [list [dict create kind base label {Loaded Workspace} state [historySnapshot]]]
-        set ui(historyCursor) 0
-    }
-    historyStripRender
-}
-proc ::GX::SII::historyChangeKind {previous current} {
-    if {[dict get $previous steps] ne [dict get $current steps]} {return image}
-    if {[dict get $previous panels] ne [dict get $current panels] ||
-        [dict get $previous figure_settings] ne [dict get $current figure_settings] ||
-        [dict get $previous canvas_mode] ne [dict get $current canvas_mode]} {return figure}
-    if {[dict get $previous image_annotations] ne [dict get $current image_annotations] ||
-        [dict get $previous figure_annotations] ne [dict get $current figure_annotations]} {return annotation}
-    return edit
+    historyAttach $record $domains
 }
 proc ::GX::SII::historyObserve {} {
     variable ui
-    if {![info exists ui(info)] || $ui(historyBrowsing)} return
-    if {![llength $ui(historyTimeline)]} {historyStripReset}
-    set state [historySnapshot]
-    set previous [dict get [lindex $ui(historyTimeline) end] state]
-    if {$state eq $previous} return
-    set kind [historyChangeKind $previous $state]
-    switch $kind {
-        image {
-            set steps [dict get $state steps]
-            if {[llength $steps]>[llength [dict get $previous steps]]} {
-                set op [dict get [lindex $steps end] op]
-                set label "Image: $op"
-            } elseif {![llength $steps]} {set label {Restore original}} else {set label {Edit image recipe}}
+    if {![historyAttached] || $ui(historyUpdating) || $ui(historyBrowsing)} return
+    if {![::GX::scientificHistoryViewerPrepareEdit $ui(window)]} {return 0}
+    set ui(historyUpdating) 1
+    try {
+        set description {Edit image Workspace}
+        foreach channel {image figure} {
+            set key $ui(history-$channel)
+            set snapshot [history[string totitle $channel]Snapshot]
+            if {$snapshot ne [::GX::scientificHistoryViewerState $key]} {
+                if {![::GX::scientificHistoryViewerPrepareEdit $key]} {return 0}
+                set description [expr {$channel eq "image" ? "Edit image recipe" : "Edit figure or annotation"}]
+                ::GX::scientificHistoryViewerRecordOperation $key $description $snapshot
+            }
         }
-        figure {set label {Update article figure}}
-        annotation {set label {Edit annotation overlay}}
-        default {set label {Edit project}}
-    }
-    lappend ui(historyTimeline) [dict create kind $kind label $label state $state]
-    # Bound historical snapshots, retaining the earliest state while trimming
-    # old intermediate edits. No retained source pixels enter this structure.
-    if {[llength $ui(historyTimeline)]>80} {
-        set ui(historyTimeline) [linsert [lrange $ui(historyTimeline) end-78 end] 0 [lindex $ui(historyTimeline) 0]]
-    }
-    set ui(historyCursor) [expr {[llength $ui(historyTimeline)]-1}]
-    historyStripRender
+        ::GX::scientificHistoryViewerRecordOperation $ui(window) $description [historySnapshot]
+    } finally {set ui(historyUpdating) 0}
+    return 1
 }
-proc ::GX::SII::historyStripRender {} {
+proc ::GX::SII::historyResumeForEditing {} {
     variable ui
-    if {![info exists ui(window)] || ![winfo exists $ui(window).strip.timeline]} return
-    set c $ui(window).strip.timeline
-    $c delete all
-    set n [llength $ui(historyTimeline)]
-    set x 3
-    for {set i 0} {$i<$n} {incr i} {
-        set record [lindex $ui(historyTimeline) $i]
-        set kind [dict get $record kind]
-        set tag step$i
-        set fill [expr {$i==$ui(historyCursor) ? "#c5dff4" : "#edf1f5"}]
-        set color [expr {$i>$ui(historyCursor) ? "#a8b0ba" : "#213c57"}]
-        $c create rectangle $x 2 [expr {$x+47}] 26 -fill $fill -outline #c7cdd5 -tags $tag
-        switch $kind {
-            base {set glyph O}
-            image {set glyph I}
-            figure {set glyph F}
-            annotation {set glyph A}
-            default {set glyph +}
-        }
-        $c create text [expr {$x+24}] 14 -text "$glyph $i" -fill $color -tags $tag
-        $c bind $tag <Enter> [list ::GX::SII::historyStripHint $i]
-        incr x 51
-    }
-    $c configure -scrollregion [list 0 0 $x 28]
+    if {![historyGuard]} {set ui(status) {Accept or discard the image adjustment before editing.};return 0}
+    if {$ui(historyBrowsing)} {::GX::scientificHistoryViewerNavigate $ui(window) latest}
+    if {[historyAttached]} {return [::GX::scientificHistoryViewerPrepareEdit $ui(window)]}
+    return 1
 }
-proc ::GX::SII::historyStripHint {index} {
+proc ::GX::SII::historyReadOnly {} {
     variable ui
-    if {$index<0 || $index>=[llength $ui(historyTimeline)]} return
-    set ui(status) "History $index: [dict get [lindex $ui(historyTimeline) $index] label]. Click to inspect; right-click for actions."
+    if {$ui(historyBrowsing)} {set ui(status) {History inspection is read-only; return to Latest or explicitly restart here.};return 1}
+    return 0
 }
-proc ::GX::SII::historyStripHit {x y} {
+proc ::GX::SII::historyStripShow {} {variable ui;if {[historyAttached]} {::GX::scientificHistoryViewerStripSet $ui(window) [dict create visible $ui(historyStripVisible)]}}
+proc ::GX::SII::historyStripSwitch {} {variable ui;if {[historyAttached]} {::GX::scientificHistoryViewerStripSet $ui(window) [dict create mode $ui(historyStripView)]}}
+proc ::GX::SII::historyStripRender {} {variable ui;if {[historyAttached]} {::GX::scientificHistoryViewerRefresh $ui(window)}}
+proc ::GX::SII::historyBrowse {index} {variable ui;::GX::scientificHistoryViewerBrowse $ui(window) $index}
+proc ::GX::SII::historyDomainAvailable {channel direction} {
     variable ui
-    set c $ui(window).strip.timeline
-    set cx [$c canvasx $x];set cy [$c canvasy $y]
-    set hit [lindex [$c find overlapping $cx $cy $cx $cy] end]
-    if {$hit eq {}} {return -1}
-    foreach tag [$c gettags $hit] {if {[regexp {^step([0-9]+)$} $tag -> i]} {return $i}}
-    return -1
+    if {![historyAttached] || ![info exists ui(history-$channel)]} {return 0}
+    set status [::GX::scientificHistoryViewerStatus $ui(history-$channel)]
+    return [expr {$direction eq "undo" ? [dict get $status cursor]>0 : [dict get $status cursor]<[dict get $status count]}]
 }
-proc ::GX::SII::historyStripClick {x y} {
-    set index [historyStripHit $x $y]
-    if {$index>=0} {historyBrowse $index}
+proc ::GX::SII::historyUndoRedo {channel direction} {
+    variable ui
+    if {[historyReadOnly] || ![historyGuard] || ![historyAttached]} return
+    if {![::GX::scientificHistoryViewerPrepareEdit $ui(window)]} return
+    ::GX::scientificHistoryViewerNavigate $ui(history-$channel) $direction
 }
+proc ::GX::SII::historyRecords {} {
+    variable ui
+    set records {}
+    foreach channel {image figure} {dict set records $channel [::GX::scientificHistoryViewerRecord $ui(history-$channel)]}
+    return $records
+}
+proc ::GX::SII::historyCommit {record} {
+    variable ui
+    foreach channel {image figure} {::GX::scientificHistoryViewerFlush $ui(history-$channel) 30000 0}
+    set payload [workspacePayload $record [historyRecords]]
+    if {$ui(documentId) eq {}} {
+        set name [expr {$ui(workspaceName) eq {} ? "Image Inspector — $ui(sourceId) [clock format [clock seconds] -format {%Y-%m-%d %H:%M:%S}]" : $ui(workspaceName)}]
+        set receipt [::GX::sessionWorkspaceCreate scientific_image_inspector $name $payload]
+        set ui(documentId) [dict get $receipt workspace_id]
+    } else {set receipt [::GX::sessionWorkspaceUpdate $ui(documentId) $payload]}
+    set ui(workspaceName) [dict get $receipt name]
+    set ui(workspaceDraft) 0
+    set ui(projectionDirty) 0
+}
+proc ::GX::SII::historySaveExplicit {} {
+    variable ui
+    if {![historyAttached]} {return 1}
+    if {$ui(historyBrowsing)} {error {Return to Latest before saving the Workspace}}
+    historyObserve
+    # Explicit Save includes presentation/sidebar changes even if no scientific
+    # snapshot delta was needed. Domains are materialized only at this boundary.
+    ::GX::scientificHistoryViewerFlush $ui(window)
+    if {$ui(documentId) eq {} || $ui(projectionDirty)} {historyCommit [::GX::scientificHistoryViewerRecord $ui(window)]}
+    foreach key [list $ui(window) $ui(history-image) $ui(history-figure)] {::GX::scientificHistoryViewerBindDocument $key $ui(documentId)}
+    if {[llength [info commands ::GX::sessionWorkspaceViewerTitlesRefresh]]} {::GX::sessionWorkspaceViewerTitlesRefresh}
+    set ui(status) "Workspace saved: $ui(workspaceName)"
+    return 1
+}
+::GX::scientificRecipeHostRegister viewer.scientific_image_inspector [dict create capture ::GX::SII::historyCaptureRecipe validate ::GX::SII::historyValidate replay ::GX::SII::historyReplay]
+
 proc ::GX::SII::historyDisplayState {state} {
     variable ui
+    if {[dict exists $state source_id] && [dict get $state source_id] ne $ui(sourceId)} {
+        set info [inspect [dict get $state source_id]]
+        if {[dict get $info sha256] ne [dict get $state source_sha]} {error {History source Dataset fingerprint changed}}
+        set ui(sourceId) [dict get $state source_id]
+        set ui(info) $info
+        set ui(originalFile) [dict get $info path]
+        set ui(workingFile) $ui(originalFile)
+        set ui(processedFile) $ui(originalFile)
+    }
+    if {[dict exists $state source_sha] && [dict get $state source_sha] ne [dict get $ui(info) sha256]} {error {History source fingerprint mismatch}}
+    if {[dict exists $state image_reset_previous]} {set ui(restoreSnapshot) [dict get $state image_reset_previous]} else {unset -nocomplain ui(restoreSnapshot)}
     set mode [dict get $state canvas_mode]
     # Exactly the same non-destructive source/recipe/overlay separation as the
     # normal editor. No sessionWorkspaceUpdate is called during inspection.
@@ -258,72 +342,4 @@ proc ::GX::SII::historyBrowsingLock {enabled} {
     }
     pendingSetChildren $w.layout.inspector.tabs $enabled
     if {$enabled} {set ui(annotating) 0;set ui(canvasMode) view;set ui(annotationTransform) none}
-}
-proc ::GX::SII::historyBrowse {index} {
-    variable ui
-    if {$ui(pending)} {set ui(status) {Accept or discard the processing preview before viewing History.};return}
-    set count [llength $ui(historyTimeline)]
-    if {!$count || $index<0 || $index>=$count} return
-    if {!$ui(historyBrowsing)} {set ui(historyLive) [historySnapshot]}
-    set newest [expr {$count-1}]
-    set previous [historySnapshot]
-    set wasBrowsing $ui(historyBrowsing)
-    set previousCursor $ui(historyCursor)
-    if {$index==$newest} {
-        set desired [expr {[info exists ui(historyLive)] ? $ui(historyLive) : [dict get [lindex $ui(historyTimeline) end] state]}]
-    } else {set desired [dict get [lindex $ui(historyTimeline) $index] state]}
-    set ui(historyBrowsing) 1
-    if {[catch {historyDisplayState $desired} error]} {
-        catch {historyDisplayState $previous}
-        set ui(historyBrowsing) $wasBrowsing
-        set ui(historyCursor) $previousCursor
-        historyBrowsingLock $wasBrowsing
-        set ui(status) "History preview failed: $error"
-        return
-    }
-    set ui(historyCursor) $index
-    if {$index==$newest} {
-        set ui(historyBrowsing) 0
-        unset -nocomplain ui(historyLive)
-        historyBrowsingLock 0
-        set ui(status) "Latest state restored: $newest / $newest. Editing enabled."
-    } else {
-        historyBrowsingLock 1
-        set ui(status) "Inspecting History $index / $newest — read-only. Select Latest to edit."
-    }
-    historyStripRender
-}
-proc ::GX::SII::historyRestart {index} {
-    variable ui
-    set count [llength $ui(historyTimeline)]
-    if {!$count || $index<0 || $index>=$count-1} return
-    set remaining [expr {$count-1-$index}]
-    if {$remaining==0} {historyBrowse $index;return}
-    if {[tk_messageBox -parent $ui(window) -type okcancel -default cancel \
-        -icon warning -title {Restart from History} -message \
-        "Discard $remaining later editing steps and restart at step $index? This changes the Workspace recipe; the source Dataset will remain unchanged."] ne "ok"} return
-    set state [dict get [lindex $ui(historyTimeline) $index] state]
-    set ui(historyTimeline) [lrange $ui(historyTimeline) 0 $index]
-    set ui(historyCursor) $index
-    set ui(historyBrowsing) 0
-    unset -nocomplain ui(historyLive)
-    historyBrowsingLock 0
-    historyDisplayState $state
-    set ui(redo) {};set ui(figureRedo) {};set ui(figureUndo) {}
-    saveState
-    historyStripRender
-}
-proc ::GX::SII::historyStripContext {x y X Y} {
-    variable ui
-    set index [historyStripHit $x $y]
-    if {$index<0 || $index>=[llength $ui(historyTimeline)]} return
-    set record [lindex $ui(historyTimeline) $index]
-    set m $ui(window).strip.menu
-    if {![winfo exists $m]} {menu $m -tearoff 0}
-    $m delete 0 end
-    $m add command -label "Inspect step $index — [dict get $record label]" -command [list ::GX::SII::guardEvent {History inspection} [list ::GX::SII::historyBrowse $index]]
-    $m add command -label {Return to latest state} -command [list ::GX::SII::guardEvent {History latest} [list ::GX::SII::historyBrowse [expr {[llength $ui(historyTimeline)]-1}]]]
-    $m add separator
-    $m add command -label {Restart editing here; discard future...} -command [list ::GX::SII::guardEvent {History restart} [list ::GX::SII::historyRestart $index]]
-    if {[llength [info commands ::GX::uiMenuPopup]]} {::GX::uiMenuPopup $m $X $Y} else {tk_popup $m $X $Y}
 }

@@ -49,7 +49,7 @@ proc ::GX::CurveWorkbench::_commitDefinition {w definition unit name operation {
         set unit [lindex $coordinateUnits 0]
     }
     if {$unit ne [lindex $coordinateUnits 0]} {error {Creation unit differs from the current coordinate frame. Configure an empty workspace or explicitly convert existing geometry first.}}
-    set before [_snapshotIds $w {}];set undo $st($w,undo);set redo $st($w,redo);set native {}
+    set before [_snapshotIds $w {}];set native {}
     try {
         set native [::GX::Native2D::core sketch_create $st($w,scene) $definition 257]
         set record [_newRecord $w $name [_sketchSamples $w $native] {} x y {} {} {} {} $parents [list $operation]]
@@ -62,7 +62,7 @@ proc ::GX::CurveWorkbench::_commitDefinition {w definition unit name operation {
     } on error {message options} {
         _restoreSnapshot $w $before
         if {$native ne {}&&$native in [::GX::Native2D::core ids $st($w,scene)]} {::GX::Native2D::core delete $st($w,scene) $native}
-        set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message
+        return -options $options $message
     }
     set st($w,status) [_coordinatePlaneParameterLabel $coordinateUnits "$name — exact retained primitive committed"]
     return $id
@@ -183,8 +183,8 @@ proc ::GX::CurveWorkbench::_pointerUpControl {w x y} {
         _coordinatePlaneAdmit $w [list $id]
         [_cadController $w] control edit $ref [dict get $drag target]
     } message]} {_sketchIdle $w "Edit rejected: $message. Existing geometry and constraints preserved.";return 1}
-    set undo $st($w,undo);set redo $st($w,redo)
-    try {_syncSamples $w $id;_history $w [dict get $drag before] [list $id]} on error {message options} {_restoreSnapshot $w [dict get $drag before];set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+
+    try {_syncSamples $w $id;_history $w [dict get $drag before] [list $id]} on error {message options} {_restoreSnapshot $w [dict get $drag before];return -options $options $message}
     set st($w,status) "Defining handle edited; retained primitive and Native constraints preserved."
 
     return 1
@@ -248,9 +248,9 @@ proc ::GX::CurveWorkbench::_numericEdit {w} {
     variable st
     if {![dict exists [_record $w [_active $w]] sketch_definition]} {tailcall _numericEdit_interaction_base $w}
     if {[llength $st($w,sketchSelection)]!=1||[dict get [lindex $st($w,sketchSelection) 0] entity] ne "control"} {error "Select one defining handle"}
-    set before [_snapshotIds $w [list [_active $w]]];set undo $st($w,undo);set redo $st($w,redo)
+    set before [_snapshotIds $w [list [_active $w]]];
     [_cadController $w] control edit [lindex $st($w,sketchSelection) 0] [_coordinatePoint $w [_active $w] [list [_finite $st($w,editX) X] [_finite $st($w,editY) Y]] inverse]
-    try {_syncSamples $w [_active $w];_history $w $before [list [_active $w]]} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+    try {_syncSamples $w [_active $w];_history $w $before [list [_active $w]]} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
 }
 proc ::GX::CurveWorkbench::_drawCreationPreview {w} {
     variable st
@@ -384,7 +384,7 @@ proc ::GX::CurveWorkbench::_constraintCommit {w id spec} {
         } else {dict unset definition $field}
     }
     _cadUnits $w [lsort -unique $affected]
-    set before [_snapshotIds $w $affected];set undo $st($w,undo);set redo $st($w,redo)
+    set before [_snapshotIds $w $affected];
     set native 0;if {$id ne {}} {set native [dict get $st($w,constraints) $id native]}
     set receipt [[_cadController $w] relationship apply $native $spec]
     if {$id eq {}} {set id constraint[incr st($w,nextConstraint)]}
@@ -392,7 +392,7 @@ proc ::GX::CurveWorkbench::_constraintCommit {w id spec} {
     try {
         _syncSamples $w [dict get $definition a]
         _history $w $before $affected
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     _constraintRefresh $w;_draw $w
     set st($w,status) "[_constraintTitle [dict get $spec kind]] committed by Native2D; other active constraints validated."
     return $id

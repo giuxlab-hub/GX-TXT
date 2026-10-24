@@ -378,9 +378,9 @@ No general, fully color-managed ICC conversion workflow or high-precision 16-bit
 
 ### Bottom strip
 
-At the bottom of the Viewer the compact selector switches between **Description** (status text) and **History** (a horizontally scrolling timeline). Its choice menu opens **upward** to remain accessible near the bottom of the desktop. **View → Show Description / History strip** can show/hide the strip without changing scientific image data.
+At the bottom of the Viewer the compact selector switches between **Description** (status text) and **History** (a horizontally scrolling timeline). Its CORE-owned choice menu remains inside the application window. History context menus open **upward**; details appear near the top of the window. **View → Show Description / History strip** can show/hide the strip without changing scientific image data.
 
-The History timeline starts with a **source/base** checkpoint and tracks accepted changes. Image steps, annotation edits and figure/layout updates receive labeled snapshots; the Viewer keeps at most **80** timeline checkpoints (retaining the base). The strip is a recipe-level history, not a separate Dataset or GX-TXT CORE Scientific Recipe registry.
+The CORE History timeline starts with a **source/base** checkpoint and tracks accepted changes. Image steps, annotation edits and figure/layout updates receive descriptions. Complete History is retained up to the shared limit of **4096 operations / 8 MiB per context**; reaching a limit rejects further recording explicitly. The previous 80-checkpoint trimming is removed. CORE owns the active RAM state, journals, background disk writes, recovery, navigation and controls. Scientific image state remains a recipe referencing the canonical source Dataset.
 
 ### Inspect and resume without modifying
 
@@ -391,9 +391,9 @@ The History timeline starts with a **source/base** checkpoint and tracks accepte
 
 ### Undo and Redo
 
-**Edit → Undo / Redo** routes to the Viewer editing domain. **History → Undo/Redo** and the optional History sidebar expose accepted image-recipe operations; **History → Undo Figure Edit / Redo Figure Edit** operate on figure/annotation editing snapshots. These stacks and the visual timeline are **not yet one completely unified transaction engine**. Review the active mode before undoing and use the History timeline when you need to inspect chronology.
+**Edit → Undo / Redo** routes to the Viewer editing domain. **History → Undo/Redo** and the optional History sidebar expose accepted image-recipe operations; **History → Undo Figure Edit / Redo Figure Edit** operate on figure/annotation editing snapshots. Both editing domains and the general timeline use the same CORE native History service. Image Undo preserves later figure/annotation edits, and Figure Undo preserves accepted image processing. Returning to a general timeline checkpoint aligns the domain controls; an explicit restart retains the chosen image recipe and restarts later figure Undo. **Clear History** preserves current scientific state and resets all Undo controls. Use the general timeline to inspect complete chronology.
 
-**History → Restore original image** clears accepted processing/annotation edits in the working recipe; it **does not** overwrite or delete the canonical source. An Undo may recover prior state. **History → Save workspace** saves accepted project state; unaccepted ImageMagick candidates cannot become recorded processing steps by saving.
+**History → Restore original image** clears accepted processing/annotation edits in the working recipe; it **does not** overwrite or delete the canonical source. An Undo may recover prior state. **History → Save workspace** and **Workspace → Save** wait for pending native writes and save the accepted project with its general, image and figure History. Close and explicit source/Workspace changes do the same before releasing the old owner. Ordinary accepted gestures update RAM immediately while CORE writes journals in the background; acceptance alone does not assert crash durability. Unaccepted ImageMagick candidates cannot become recorded processing steps by saving. On reopening after an interrupted lifecycle, CORE asks whether to recover the verified journals or retain the saved Document; different domain checkpoints require an explicit reconciliation choice.
 
 ## 14. Session Workspaces and persistence
 
@@ -627,3 +627,7 @@ No consumer should parse private window paths, Tk canvas item numbers, internal 
 ---
 
 **End of manual.** The authoritative functionality is defined by the installed plugin's source code and validated catalogs; this guide is written to match those current commands without relying on promises of future features. Release history and bugfixes are recorded separately in `CHANGELOG.md`.
+
+### P017 Workspace History compatibility
+
+Existing `history_timeline` snapshot lists remain readable and are imported once, without replaying image processing during ordinary History recording. Saved Workspaces now carry the compatible optional `scientific_history` and `domain_history` fields; the existing recipe schema and canonical source fingerprint remain unchanged. Older Viewer versions cannot interpret the new History fields, so retain a P016 backup when rolling back a framework patch. The image processing recipe and current annotations remain in their existing fields.

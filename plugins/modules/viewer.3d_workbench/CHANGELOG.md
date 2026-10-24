@@ -1,4 +1,14 @@
-## 0.3.1
+## DEV111-P017 — shared native History
+
+Replace private Undo/Redo stacks, recipe recording and per-operation Document /
+recovery writes with the public CORE native History context. Preserve the
+manual scientific owner, exact geometry, existing operations and generated host
+delegation. Explicit Save/Close and legacy extension revision boundaries drain
+persistence; normal accepted operations and Undo/Redo use RAM. Import preserves
+old scientific recipes and private checkpoints, with an exact protected legacy
+payload resource. Shared timeline controls replace private History ownership.
+
+## 0.3.1 — 2026-10-17
 
 Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
 

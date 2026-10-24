@@ -28,7 +28,7 @@ proc ::GX::ScientificWorksheet::UI::historyCommit {w record} {
 }
 proc ::GX::ScientificWorksheet::UI::historyRestore {w state} {
  variable st
- set history [::GX::scientificHistoryViewerRecord $w]
+ set history [::GX::datasetPublicationV2DictDefault [book $w] history {}]
  set ::GX::ScientificWorksheet::ui($w,book) [model restoreBookIdentity $state [book $w]]
  dict set ::GX::ScientificWorksheet::ui($w,book) history $history
  set st($w,historySnapshot) [capture $w]
@@ -37,7 +37,7 @@ proc ::GX::ScientificWorksheet::UI::historyRestore {w state} {
 proc ::GX::ScientificWorksheet::UI::attachHistory {w} {
  variable st
  set history [::GX::datasetPublicationV2DictDefault [book $w] history {}]
- ::GX::scientificHistoryViewerAttach $w viewer.scientific_worksheet [dict create capture [list [namespace current]::capture $w] restore [list [namespace current]::historyRestore $w] commit [list [namespace current]::historyCommit $w] guard [list [namespace current]::historyGuard $w]] $history
+ ::GX::scientificHistoryViewerAttach $w viewer.scientific_worksheet [dict create document_id [dict get [book $w] document_id] accepted [list [namespace current]::historyAccepted $w] capture [list [namespace current]::capture $w] restore [list [namespace current]::historyRestore $w] commit [list [namespace current]::historyCommit $w] guard [list [namespace current]::historyGuard $w]] $history
  set st($w,historySnapshot) [capture $w]
 }
 proc ::GX::ScientificWorksheet::UI::historyGuard {w} {guard $w;return 1}
@@ -53,7 +53,7 @@ proc ::GX::ScientificWorksheet::UI::applyBook {w candidate description} {
  set before [book $w]
  try {
   set ::GX::ScientificWorksheet::ui($w,book) $candidate
-  ::GX::scientificHistoryViewerChanged $w $description
+  ::GX::scientificHistoryViewerRecordOperation $w $description
  } on error {e opts} {set ::GX::ScientificWorksheet::ui($w,book) $before;refresh $w {} 0;return -options $opts $e}
  refresh $w {} 0
  return 1
@@ -92,7 +92,7 @@ proc ::GX::ScientificWorksheet::UI::refresh {w {description {Worksheet edit}} {r
  variable st
  if {![winfo exists $w] || ![info exists st($w,generation)]} return
  if {[catch {guard $w} message]} {status $w $message;[grid $w] configure -generation [incr st($w,generation)];return}
- if {$record && [info exists st($w,historySnapshot)] && [capture $w] ne $st($w,historySnapshot)} {::GX::scientificHistoryViewerChanged $w $description}
+ if {$record && [info exists st($w,historySnapshot)] && [capture $w] ne $st($w,historySnapshot)} {::GX::scientificHistoryViewerRecordOperation $w $description}
  set labels {};dict for {col meta} [::GX::datasetPublicationV2DictDefault [book $w] column_metadata {}] {set label $col;if {[::GX::datasetPublicationV2DictDefault $meta name {}] ne {}} {append label " · [dict get $meta name]"};if {[::GX::datasetPublicationV2DictDefault $meta unit {}] ne {}} {append label " \[[dict get $meta unit]\]"};if {[::GX::datasetPublicationV2DictDefault $meta unit_state {}] eq {mixed}} {append label { [mixed units]}};dict set labels [model _columnNumber $col] $label}
  set extent [navigationExtent $w $::GX::ScientificWorksheet::ui($w,active)]
  [grid $w] configure -columnfilters 1 -rows [dict get $extent rows] -columns [dict get $extent columns] -rowheights [dict get [book $w] row_heights] -columnwidths [dict merge [setting column_widths] [dict get [book $w] column_widths]]
@@ -263,6 +263,7 @@ proc ::GX::ScientificWorksheet::UI::prepare {w action} {guard $w;if {$action ne 
 proc ::GX::ScientificWorksheet::UI::save {w} {
  variable st
  guard $w;if {![commit $w]} {error {Correct or cancel the active cell edit before saving}}
+ ::GX::scientificHistoryViewerFlush $w
  set b [model prepareSave [book $w]];set name [dict get $b name]
  if {[dict get $b document_id] eq {}} {
   set item [::GX::sessionWorkspaceCreate scientific_worksheet $name [model snapshot $b]]
@@ -270,6 +271,8 @@ proc ::GX::ScientificWorksheet::UI::save {w} {
  } else {::GX::sessionWorkspacePromote [dict get $b document_id] $name;set b [model refreshBookAuthority $b];set item [::GX::sessionWorkspaceUpdate [dict get $b document_id] [model snapshot $b]];set b [model load [dict get $item workspace_id]]}
  set ::GX::ScientificWorksheet::ui($w,book) $b;set st($w,saved) [model scientificComparison [book $w]]
  set st($w,historySnapshot) [capture $w];refresh $w {} 0;status $w {Workspace saved with complete retained History}
+ ::GX::scientificHistoryViewerBindDocument $w [dict get $b document_id]
+ ::GX::scientificHistoryViewerFlush $w 30000 0
  ::GX::sessionWorkspaceViewsChanged
  return [dict get $b document_id]
 }
@@ -646,3 +649,9 @@ proc ::GX::ScientificWorksheet::UI::paneWheel {pane widget direction} {
  return 1
 }
 proc ::GX::ScientificWorksheet::UI::paneWheelDelta {pane widget delta} {if {$delta==0} {return 0};return [paneWheel $pane $widget [expr {$delta>0?-1:1}]]}
+
+# Acceptance markers track CORE RAM, independently of explicit document saves.
+proc ::GX::ScientificWorksheet::UI::historyAccepted {w receipt} {
+ variable st
+ set st($w,historySnapshot) [::GX::scientificHistoryViewerState $w]
+}

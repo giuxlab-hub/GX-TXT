@@ -165,7 +165,7 @@ proc ::GX::CurveWorkbench::_initWorkbenchState {w} {
     set st($w,showConstraints) 1;set st($w,showDimensions) 1;set st($w,dimForced) {};set st($w,dimDriven) 0
     set st($w,canvasTool) select;set st($w,placements) {};set st($w,toolPreview) {};set st($w,previewDefinition) {};set st($w,handleDrag) {};set st($w,snapCandidate) {};set st($w,sketchSelection) {};set st($w,sketchUnit) mm
     set st($w,toolLabel) {Select — click geometry or defining handles. Ctrl adds; Shift subtracts.}
-    set st($w,scientificRecipe) {}
+    set st($w,historySeed) {};set st($w,historyAuxSeed) {};set st($w,historyReady) 0
     set st($w,lastGeometricComparison) {};set st($w,comparisonImplicit) 0;set st($w,residualPanelShown) -1
     set st($w,extensionBusy) 0
     set st($w,seriesContainers) {};set st($w,nextSeries) 0
@@ -201,12 +201,13 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     set st($w,pointSyncRunning) 0;set st($w,pointSyncCommits) 0;set st($w,pointTableSignature) {}
     set st($w,pointPageStart) 0;set st($w,pointPageLabel) "";set st($w,pointPageInput) 1
     set st($w,curves) [dict create];set st($w,active) "";set st($w,next) 0
+    set st($w,historyRecoveryChoice) [::GX::datasetPublicationV2DictDefault $context recovery_choice {}]
     set st($w,document) "";set st($w,token) [::GX::interactiveDocumentSessionToken]
     set st($w,publishBusy) 0;set st($w,publishCancelled) 0;set st($w,publishJob) ""
     set st($w,groups) {};set st($w,groupNative) {};set st($w,nextGroup) 0;set st($w,objectSelection) {}
     set st($w,cadGroup) "";set st($w,cadGroupName) Group;set st($w,cadTarget) selected;set st($w,cadTool) none;set st($w,cadDrag) {}
     set st($w,cadObjectSnap) 0
-    set st($w,undo) {};set st($w,redo) {};set st($w,fragments) {};set st($w,bridge) 0
+    set st($w,fragments) {};set st($w,bridge) 0
     set st($w,bridgeKind) none;set st($w,bridgeSubdivisions) 32;set st($w,bridgeTolerance) 1e-9
     set st($w,previewBuild) {};set st($w,previewSignature) {}
     set st($w,previewNative) "";set st($w,previewBreaks) {}
@@ -384,6 +385,7 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
         set st($w,restoreError) "Workspace restore failed: $err. Saved workspace preserved; restore the source and reopen."
         set st($w,status) $st($w,restoreError)
     }
+    if {![info exists st($w,restoreFailed)]} {_historyAttach $w}
     _curveList $w;_pointList $w;_draw $w
     _sidebarFocusBindings $w $w.leftScroll.viewport.content
     _sidebarFocusBindings $w $w.leftScroll.viewport.content.compose

@@ -52,7 +52,7 @@ proc ::GX::viewerGuiDesignDiagramSet {window component {document {}} {snapshot {
     }
     dict set ::GX::ViewerGui::instances $window bindings $component [dict create kind diagram document_id $document document_receipt [dict remove $owner payload] payload [dict get $owner payload]]
     viewerGuiActionsRefresh $window
-    if {$created && ![dict get $instance restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window {New diagram}}
+    if {$created && ![dict get $instance restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window {New diagram}}
     return $widget.diagram
 }
 proc ::GX::viewerGuiDesignDiagramCommand {window component operation args} {
@@ -81,6 +81,6 @@ proc ::GX::_viewerGuiDiagramEvent {window component widget event} {
         }
     }
     viewerGuiTraceEmit $window $component $kind [dict create status accepted document_id [dict get $owner id] revision [dict get $owner revision] detail [dict get $event detail]]
-    if {$kind eq {committed} && ![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Diagram [dict get $event detail operation]"}
+    if {$kind eq {committed} && ![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Diagram [dict get $event detail operation]"}
     viewerGuiActionsRefresh $window
 }

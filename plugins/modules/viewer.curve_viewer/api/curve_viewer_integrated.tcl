@@ -29,7 +29,7 @@ proc ::GX::CurveViewer::_enabled {w id} {
     if {$id eq "publish" && [::GX::workbenchExtensionProviderList viewer.curve_viewer utility] eq {}} {return 0}
     if {$id in {workspace_duplicate workspace_rename workspace_delete clear_history} && $st($w,document) eq {}} {return 0}
     if {$id eq "clear_history"} {
-        set record [::GX::scientificHistoryViewerRecord $w]
+        set record [::GX::scientificHistoryViewerSummary $w]
         return [expr {[dict get $record steps] ne {} && [dict get $record cursor]==[llength [dict get $record steps]]}]
     }
     return 1
@@ -207,7 +207,7 @@ proc ::GX::CurveViewer::_historyAttach {w} {
     variable st
     set record {}
     if {$st($w,document) ne {}} {set record [::GX::datasetPublicationV2DictDefault [dict get [::GX::interactiveDocumentRead $st($w,document)] payload] scientific_history {}]}
-    ::GX::scientificHistoryViewerAttach $w viewer.curve_viewer [dict create capture [list ::GX::CurveViewer::_payload $w] restore [list ::GX::CurveViewer::_historyRestore $w] commit [list ::GX::CurveViewer::_historyCommit $w] guard [list ::GX::CurveViewer::_historyGuard $w]] $record
+    ::GX::scientificHistoryViewerAttach $w viewer.curve_viewer [dict create document_id $st($w,document) capture [list ::GX::CurveViewer::_payload $w] restore [list ::GX::CurveViewer::_historyRestore $w] commit [list ::GX::CurveViewer::_historyCommit $w] guard [list ::GX::CurveViewer::_historyGuard $w]] $record
     if {![winfo exists $w.historyStrip]} {::GX::scientificHistoryViewerStrip $w $w $w.status modules.curve_viewer.history_strip [list -side bottom -fill x -before $w.coordinates]}
     set st($w,configurationSubscription) [::GX::configurationSubscribe [list ::GX::CurveViewer::_configurationChanged $w]]
     ::GX::viewerCommandMenusRefresh $w

@@ -3,7 +3,7 @@
 namespace eval ::GX::Workbench3D {
     variable module viewer.3d_workbench;variable provider workbench_3d
     variable document {};variable scene {};variable tokens {};variable profileTokens {}
-    variable model {};variable undo {};variable redo {};variable preview {};variable busy 0
+    variable model {};variable historyContext {};variable legacyHistoryArchive {};variable preview {};variable busy 0
     variable panel {};variable status Ready;variable selection {};variable dataset {};variable x {};variable y {}
     variable distance 1;variable mode new;variable target {};variable profile {};variable nextName Body
     variable primitive box;variable dimensions {1 1 1};variable radius 1;variable height 1
@@ -68,52 +68,48 @@ proc ::GX::Workbench3D::nextId {key prefix} {
     dict set model $key $value
     return "${prefix}_$value"
 }
-proc ::GX::Workbench3D::payload {} {
-    variable model;variable undo;variable redo;variable allocationCounters
-    return [dict create model $model undo $undo redo $redo allocation_counters [allocationMerge $allocationCounters $model]]
-}
-proc ::GX::Workbench3D::checkpoint {} {
-    variable scene;variable model;variable module;variable provider;variable allocationCounters
-    foreach key {dataset x y distance mode target profile nextName primitive dimensions radius height resultId exportFormat editAction closedProfile includeProfile convertProfileUnits assumeProfileUnit extrusionTargets keepExtrusionTool} {dict set model tool_settings $key [set ::GX::Workbench3D::$key]}
-    dict set model view [::GX::viewerSceneGet $module $provider]
-    set result [::GX::native3DGeometryCheckpoint $scene [payload]]
-    # Acknowledge only committed identities. Undo keeps these separate from
-    # model snapshots; failed uncommitted staging remains retryable.
-    set allocationCounters [allocationMerge $allocationCounters $model]
+proc ::GX::Workbench3D::payload {{history {}}} {
+    variable model;variable historyContext;variable allocationCounters;variable legacyHistoryArchive
+    set result [dict create model [dict remove $model scientific_recipe] undo {} redo {} allocation_counters [allocationMerge $allocationCounters $model]]
+    if {$history eq {} && $historyContext ne {}} {set history [::GX::scientificHistoryViewerRecord $historyContext]}
+    if {$history ne {}} {dict set result scientific_history $history}
+    if {$legacyHistoryArchive ne {}} {dict set result legacy_history_archive $legacyHistoryArchive}
     return $result
 }
-proc ::GX::Workbench3D::record {operation parameters targets results} {
-    variable model
-    dict lappend model recipe [dict create api_id NATIVE_3D_GEOMETRY_API_v1 api_version 1 provider native3d_geometry module_id viewer.3d_workbench module_version [::GX::moduleField viewer.3d_workbench version] operation $operation parameters $parameters targets $targets result_ids $results working_unit [dict get $model working_unit]]
-    dict set model recipe [lrange [dict get $model recipe] end-127 end]
+proc ::GX::Workbench3D::checkpoint {} {
+    variable historyContext;variable document;variable recoveryNotice
+    ::GX::scientificHistoryViewerRecordOperation $historyContext {Save Workbench settings} [historyCapture]
+    set result [::GX::scientificHistoryViewerFlush $historyContext]
+    if {[catch {::GX::workbenchRecoveryCheckpoint $document [dict create operation save_history module_id viewer.3d_workbench]} message]} {set recoveryNotice "Workspace saved; recovery checkpoint unavailable: $message"} else {set recoveryNotice {}}
+    ::GX::interactiveDocumentResourceCollect $document
+    return $result
 }
 proc ::GX::Workbench3D::commit {before operation parameters targets results} {
-    variable model;variable undo;variable redo;variable document;variable preview;variable scene;variable module;variable provider;variable status;variable cleanupNotice
-    set oldUndo $undo;set oldRedo $redo
+    variable model;variable historyContext;variable scene;variable module;variable provider;variable status;variable cleanupNotice;variable allocationCounters
     set oldView [::GX::datasetPublicationV2DictDefault $before view [::GX::viewerSceneGet $module $provider]]
     set validated {}
-    lappend undo $before;set undo [lrange $undo end-31 end];set redo {}
-    record $operation $parameters $targets $results
     try {
+        if {![::GX::scientificHistoryViewerPrepareEdit $historyContext]} {error {3D operation cancelled before changing History}}
         set validated [::GX::native3DGeometrySceneInfo $scene]
-        # Complete presentation/cache staging before the authoritative write.
-        # A failed display/import can then roll back without a committed Doc.
+        # Scientific presentation staging remains affine to this owning thread.
+        # CORE accepts the isolated state/semantic delta and owns persistence.
         refresh
-        checkpoint
+        set after [historyCapture]
+        set prior [::GX::scientificHistoryViewerState $historyContext]
+        set semantic [dict create api_id SCIENTIFIC_RECIPE_API_v1 geometry_api_id NATIVE_3D_GEOMETRY_API_v1 api_version 1 provider native3d_geometry module_id viewer.3d_workbench module_version [::GX::moduleField viewer.3d_workbench version] operation geometry_state semantic_operation $operation parameters $parameters targets $targets result_ids $results working_unit [dict get $model working_unit] group $operation]
+        set receipt [::GX::scientificHistoryViewerSubmitPatch $historyContext [historyDifference $prior $after] $operation $semantic]
     } on error {message options} {
-        set model $before;set undo $oldUndo;set redo $oldRedo
+        set model $before
         if {$validated ne {}&&[dict get $validated session_token] eq [::GX::interactiveDocumentSessionToken]} {
             ::GX::viewerSceneSet $module $provider $oldView
             if {[catch {refresh} rollback]} {append message "; presentation rollback failed: $rollback"}
         }
         return -options $options $message
     }
-    # Garbage collection follows a successful commit. Its failure cannot turn
-    # that committed action into an apparent rollback or discard its undo.
-    set cleanup ok
-    if {[catch {::GX::interactiveDocumentResourceCollect $document $preview} message]} {set cleanup $message;set cleanupNotice $message;set status "Action committed. Resource cleanup failed: $message"}
-    guiPresentationChanged
-    return [dict create status committed cleanup_status $cleanup]
+    # Allocated logical IDs stay monotonic even when navigating older state.
+    set allocationCounters [allocationMerge $allocationCounters $model]
+    if {[catch {guiPresentationChanged} message]} {set cleanupNotice "History accepted; presentation notification failed: $message"}
+    return [dict merge $receipt [dict create status committed history $receipt cleanup_status deferred_to_explicit_save]]
 }
 proc ::GX::Workbench3D::resourceToFile {reference path} {
     set reader [::GX::interactiveDocumentResourceOpenReader $reference];set f {}
@@ -974,37 +970,12 @@ proc ::GX::Workbench3D::hostEdit {action id fields} {
     commit $before $action [dict remove $fields object_token] [list $id] [list $id]
 }
 proc ::GX::Workbench3D::undoRedo {direction} {
-    variable model;variable undo;variable redo;variable module;variable provider;variable scene
-    variable tokens;variable profileTokens;variable groupTokens;variable cleanupNotice;variable selection
+    variable historyContext
     if {$direction ni {undo redo}} {error "Unknown history direction"}
-    if {![llength [set $direction]]} return
-    set scope [::GX::native3DGeometrySceneInfo $scene]
     cancelPreview
-    set before $model;set oldUndo $undo;set oldRedo $redo;set oldScene $scene
-    set oldTokens $tokens;set oldProfiles $profileTokens;set oldGroups $groupTokens;set oldSelection $selection
-    set oldView [::GX::viewerSceneGet $module $provider];set oldSettings {}
-    foreach key {dataset x y distance mode target profile nextName primitive dimensions radius height resultId exportFormat editAction closedProfile includeProfile convertProfileUnits assumeProfileUnit extrusionTargets keepExtrusionTool requestedUnit} {dict set oldSettings $key [set ::GX::Workbench3D::$key]}
-    if {$direction eq "undo"} {lappend redo $model;set model [lindex $undo end];set undo [lrange $undo 0 end-1]} else {lappend undo $model;set model [lindex $redo end];set redo [lrange $redo 0 end-1]}
-    try {
-        if {[dict exists $model tool_settings]} {dict for {key value} [dict get $model tool_settings] {if {[dict exists $oldSettings $key]} {set ::GX::Workbench3D::$key $value}}}
-        set ::GX::Workbench3D::requestedUnit [dict get $model working_unit]
-        # Keep the current retained scene alive until the complete replacement
-        # has hydrated and the authoritative history write succeeds.
-        restoreStage
-        checkpoint
-    } on error {message options} {
-        if {$scene ne $oldScene&&$scene ne {}&&[catch {::GX::native3DGeometryClose $scene} cleanup]} {append message "; staged history cleanup failed: $cleanup"}
-        set scene $oldScene;set tokens $oldTokens;set profileTokens $oldProfiles;set groupTokens $oldGroups
-        set model $before;set undo $oldUndo;set redo $oldRedo;set selection $oldSelection
-        dict for {key value} $oldSettings {set ::GX::Workbench3D::$key $value}
-        if {[dict get $scope session_token] eq [::GX::interactiveDocumentSessionToken]} {
-            ::GX::viewerSceneSet $module $provider $oldView
-            if {[catch {refresh} rollback]} {append message "; history presentation rollback failed: $rollback"}
-        }
-        return -options $options $message
-    }
-    if {[catch {::GX::native3DGeometryClose $oldScene} cleanup]} {set cleanupNotice "history committed; previous scene cleanup failed: $cleanup"}
+    set result [::GX::scientificHistoryViewerNavigate $historyContext $direction]
     ::GX::Engine3D::rerender
+    return $result
 }
 proc ::GX::Workbench3D::publish {} {
     variable exportFormat;variable resultId
@@ -1025,7 +996,7 @@ proc ::GX::Workbench3D::safe {script} {
     try {set result [uplevel #0 $script];if {$status eq "Working"} {set status Ready};if {$cleanupNotice ne {}} {append status "; action committed, resource cleanup pending: $cleanupNotice"};return $result} on error {message options} {set status $message;tk_messageBox -parent $::GX::Engine3D::window -icon error -message $message} finally {set busy 0}
 }
 proc ::GX::Workbench3D::buildPanel {window} {
-    variable panel;variable subscription
+    variable panel;variable subscription;variable historyContext
     set panel $window.side.scroll.controls.workbench
     ttk::labelframe $panel -text "3D Workbench — unpublished geometry" -padding 5
     pack $panel -before [lindex [pack slaves $window.side.scroll.controls] 0] -fill x -pady 5
@@ -1069,6 +1040,11 @@ proc ::GX::Workbench3D::buildPanel {window} {
         ttk::button $panel.$key -text $label -command [list ::GX::Workbench3D::safe $script];pack $panel.$key -fill x -pady 1
     }
     ttk::label $panel.status -textvariable ::GX::Workbench3D::status -wraplength 425;pack $panel.status -fill x
+    ::GX::scientificHistoryContextSetParent $historyContext [winfo toplevel $window]
+    ttk::label $window.historyStatus -textvariable ::GX::Workbench3D::status -anchor w
+    ::GX::scientificHistoryViewerStrip $historyContext $window $window.historyStatus {} [list -side bottom -fill x -before $window.side]
+    ttk::button $panel.historyVisibility -text {Show / hide Description / History strip} -command [list ::GX::scientificHistoryViewerStripToggle $historyContext]
+    pack $panel.historyVisibility -fill x
     bind $window <Escape> {::GX::Engine3D::showError {::GX::Engine3D::cancelGesture {::GX::Workbench3D::safe {::GX::Workbench3D::cancelPreview;::GX::Engine3D::rerender}}}}
     set subscription [::GX::datasetCatalogSubscribe ::GX::Workbench3D::datasetChoices]
     datasetChoices;refresh
@@ -1082,13 +1058,22 @@ proc ::GX::Workbench3D::hostSelection {pick} {
     set status "Selected $id at [dict get $pick world_point]"
 }
 proc ::GX::Workbench3D::close {} {
-    variable scene;variable subscription;variable panel;variable preview
+    variable scene;variable subscription;variable panel;variable preview;variable historyContext;variable ownerSession;variable document
+    variable lifecycleSubscription;variable invalidationAfter
+    if {$historyContext ne {}} {
+        set project [expr {$ownerSession eq [::GX::interactiveDocumentSessionToken]}]
+        if {$project && $scene ne {}} {checkpoint;::GX::workbenchRecoveryMarkSaved $document}
+        ::GX::scientificHistoryContextClose $historyContext $project
+        set historyContext {}
+    }
+    if {$lifecycleSubscription ne {}} {::GX::interactiveDocumentLifecycleUnsubscribe $lifecycleSubscription;set lifecycleSubscription {}}
+    if {$invalidationAfter ne {}} {after cancel $invalidationAfter;set invalidationAfter {}}
     if {$subscription ne {}} {::GX::datasetCatalogUnsubscribe $subscription;set subscription {}}
     if {$scene ne {}} {::GX::native3DGeometryClose $scene;set scene {}}
     set panel {};set preview {}
 }
 proc ::GX::Workbench3D::activateDocument {{context {}}} {
-    variable module;variable provider;variable document;variable model;variable undo;variable redo;variable scene;variable allocationCounters;variable status;variable recoveryNotice
+    variable module;variable provider;variable document;variable model;variable historyContext;variable legacyHistoryArchive;variable scene;variable allocationCounters;variable status;variable recoveryNotice
     if {$::GX::currentSession eq {}} {error "Open a Session first"}
     package require Tk
     set requested [::GX::datasetPublicationV2DictDefault $context workspace_id {}]
@@ -1111,21 +1096,39 @@ proc ::GX::Workbench3D::activateDocument {{context {}}} {
     set docs [::GX::interactiveDocumentList $module $provider]
     if {!$forceNew && ($requested ne {} || [llength $docs])} {
         if {$requested ne {}} {set document $requested} else {set document [dict get [lindex $docs end] id]}
-        set recovery [::GX::workbenchRecoveryPrompt $document .]
+        if {[dict exists $context recovery_choice]} {
+            set choice [dict get $context recovery_choice]
+            if {$choice ni {recover saved cancel}} {error {Choose recover, saved or cancel explicitly}}
+            set recovery [::GX::workbenchRecoveryInspect $document]
+            if {[dict get $recovery recoverable]} {
+                if {$choice eq {cancel}} {error {3D Workbench recovery cancelled}}
+                ::GX::workbenchRecoveryResolve $document $choice
+            }
+        } else {set recovery [::GX::workbenchRecoveryPrompt $document .]}
         if {[dict get $recovery status] eq "corrupt"} {set ::GX::Workbench3D::recoveryNotice "Recovery journal is corrupt; normal document remains available: [dict get $recovery reason]"}
-        set payload [dict get [::GX::interactiveDocumentRead $document] payload];set model [dict get $payload model];set undo [dict get $payload undo];set redo [dict get $payload redo]
+        set payload [dict get [::GX::interactiveDocumentRead $document] payload];set model [dict get $payload model]
+        set oldUndo [::GX::datasetPublicationV2DictDefault $payload undo {}];set oldRedo [::GX::datasetPublicationV2DictDefault $payload redo {}]
         set allocationCounters [::GX::datasetPublicationV2DictDefault $payload allocation_counters {}]
         # Upgrade older documents using every retained semantic snapshot.
-        foreach snapshot [linsert [concat $undo $redo] 0 $model] {set allocationCounters [allocationMerge $allocationCounters $snapshot]}
+        foreach snapshot [linsert [concat $oldUndo $oldRedo] 0 $model] {set allocationCounters [allocationMerge $allocationCounters $snapshot]}
     } else {
-        set model [defaultModel];set undo {};set redo {};set allocationCounters {}
+        set model [defaultModel];set historyContext {};set legacyHistoryArchive {};set allocationCounters {}
         set document [dict get [::GX::interactiveDocumentCreate $module $provider workbench3d.document.v1 1 [payload]] id]
+        set payload [dict create model $model undo {} redo {}]
     }
     set ::GX::Workbench3D::extrusionTargets {};set ::GX::Workbench3D::keepExtrusionTool 0
     if {[dict exists $model tool_settings]} {dict for {key value} [dict get $model tool_settings] {if {$key in {dataset x y distance mode target profile nextName primitive dimensions radius height resultId exportFormat editAction closedProfile includeProfile convertProfileUnits assumeProfileUnit extrusionTargets keepExtrusionTool}} {set ::GX::Workbench3D::$key $value}}}
     set ::GX::Workbench3D::requestedUnit [dict get $model working_unit]
     if {[dict get [::GX::workbenchRecoveryInspect $document] status] ne "corrupt"&&[catch {::GX::workbenchRecoveryBegin $document} recoveryMessage]} {set ::GX::Workbench3D::recoveryNotice "Recovery journal unavailable: $recoveryMessage"}
     restore
+    set legacyHistoryArchive [::GX::datasetPublicationV2DictDefault $payload legacy_history_archive {}]
+    set history [historyImport $payload]
+    set callbacks [dict create capture ::GX::Workbench3D::historyCapture restore ::GX::Workbench3D::historyRestore commit ::GX::Workbench3D::historyProject guard ::GX::Workbench3D::historyGuard document_id $document parent . error ::GX::Workbench3D::historyError]
+    if {[dict exists $context recovery_choice]} {dict set callbacks recovery_choice [dict get $context recovery_choice]}
+    set historyContext [::GX::scientificHistoryContextAttach $module $callbacks $history]
+    set summary [::GX::scientificHistoryViewerSummary $historyContext]
+    if {[dict exists $summary legacy_history_archive]} {set legacyHistoryArchive [dict get $summary legacy_history_archive]}
+    if {[dict exists $model scientific_recipe]} {dict unset model scientific_recipe}
     set status [expr {$forceNew ? {New empty geometry Document.} : {Opened canonical geometry Document.}}]
     lifecycleAttach
     return $document
@@ -1142,7 +1145,7 @@ proc ::GX::Workbench3D::open {{context {}}} {
     return [::GX::Engine3D::backend open [::GX::viewerSceneResolve $module $provider]]
 }
 proc ::GX::Workbench3D::guiMount {parent {context {}}} {
-    variable module;variable provider;variable panel;variable document;variable guiHost
+    variable module;variable provider;variable panel;variable document;variable guiHost;variable historyContext
     if {![winfo exists $parent]} {error {The declared editable3D viewport no longer exists}}
     # Configure before hydration: switching the existing editable owner can
     # close its prior geometry, and must never close newly activated state.
@@ -1151,7 +1154,8 @@ proc ::GX::Workbench3D::guiMount {parent {context {}}} {
     activateDocument $context
     set panel {}
     set mounted [::GX::native3DGuiHostMount $parent $module $provider $callbacks]
-    set owner [::GX::interactiveDocumentRead $document]
+    ::GX::scientificHistoryContextSetParent $historyContext [winfo toplevel $parent]
+    set owner [::GX::interactiveDocumentMetadata $document]
     set guiHost [dict create parent $parent incarnation [winfo id $parent] session_token [::GX::interactiveDocumentSessionToken] document_id $document generation [dict get $owner generation]]
     # The component parent survives a planar handoff; the native child does not.
     # Forward changes to that stable presentation owner after every remount.
@@ -1160,14 +1164,15 @@ proc ::GX::Workbench3D::guiMount {parent {context {}}} {
     return $mounted
 }
 proc ::GX::Workbench3D::guiInspect {} {
-    variable document;variable scene;variable model;variable selection;variable undo;variable redo;variable preview;variable busy;variable status;variable recoveryNotice
+    variable document;variable scene;variable model;variable selection;variable historyContext;variable preview;variable busy;variable status;variable recoveryNotice
     if {$scene eq {}} {return [dict create status unbound owner viewer.3d_workbench/workbench_3d]}
     ::GX::native3DGeometrySceneInfo $scene
-    set owner [::GX::interactiveDocumentRead $document]
+    set owner [::GX::interactiveDocumentMetadata $document]
+    set history [::GX::scientificHistoryViewerStatus $historyContext]
     set objects {};set profiles {}
     dict for {id record} [dict get $model objects] {dict set objects $id [dict create name [dict get $record name] kind [dict get $record kind] visible [dict get $record visible] locked [dict get $record locked]]}
     dict for {id record} [dict get $model profiles] {dict set profiles $id [dict create name [dict get $record name] working_unit [dict get $record working_unit]]}
-    return [dict create status ready owner viewer.3d_workbench/workbench_3d document_id $document generation [dict get $owner generation] revision [dict get $owner revision] sha256 [dict get $owner sha256] working_unit [dict get $model working_unit] objects $objects profiles $profiles selected $selection undo_count [llength $undo] redo_count [llength $redo] preview_pending [expr {$preview ne {}}] busy $busy message $status recovery_notice $recoveryNotice]
+    return [dict create status ready owner viewer.3d_workbench/workbench_3d document_id $document generation [dict get $owner generation] revision [dict get $owner revision] sha256 [dict get $owner sha256] working_unit [dict get $model working_unit] objects $objects profiles $profiles selected $selection undo_count [dict get $history cursor] redo_count [expr {[dict get $history count]-[dict get $history cursor]}] history $history preview_pending [expr {$preview ne {}}] busy $busy message $status recovery_notice $recoveryNotice]
 }
 proc ::GX::Workbench3D::selectionSet ids {
     variable scene;variable model;variable selection;variable tokens
@@ -1273,6 +1278,7 @@ proc ::GX::Workbench3D::dispatch {action scene} {
     if {$action ne "open"} {error "Unsupported 3D Workbench action"}
     return [open [::GX::datasetPublicationV2DictDefault $scene open_context {}]]
 }
+source [file join [file dirname [info script]] workbench_3d_history_v1.tcl]
 source [file join [file dirname [info script]] workbench_3d_combine_v1.tcl]
 source [file join [file dirname [info script]] workbench_3d_mesh_v1.tcl]
 source [file join [file dirname [info script]] workbench_3d_extrusion_v1.tcl]

@@ -6,8 +6,10 @@ proc ::GX::_parameterEnsure {} {
     variable scriptDir
     if {![llength [info commands ::GX::Parameters::native]]} {load [file join $scriptDir core parameters gxparameters[info sharedlibextension]] Gxparameters}
     set token [interactiveDocumentSessionToken]
+    if {![info exists ::GX::Parameters::workspaceMetadataToken] || $::GX::Parameters::workspaceMetadataToken ne $token} {set ::GX::Parameters::workspaceMetadata {};set ::GX::Parameters::workspaceMetadataToken $token}
     if {$token ne $::GX::Parameters::sessionToken} {
         set ::GX::Parameters::sessionToken $token;set ::GX::Parameters::state {};set ::GX::Parameters::contexts {};set ::GX::Parameters::listeners {};set ::GX::Parameters::readViews {}
+        if {![info exists ::GX::Parameters::workspaceMetadataToken] || $::GX::Parameters::workspaceMetadataToken ne $token} {set ::GX::Parameters::workspaceMetadata {};set ::GX::Parameters::workspaceMetadataToken $token}
         if {$::GX::currentSession ne {}&&[file isfile [file join $::GX::currentSession metadata manifest.ini]]} {
             set ini [parseIni [file join $::GX::currentSession metadata manifest.ini]]
             set ::GX::Parameters::state [datasetPublicationV2DictDefault $ini core_parameters.state {}]
@@ -67,7 +69,7 @@ proc ::GX::_parameterContext {token} {
     set context [dict get $::GX::Parameters::contexts $token]
     if {$::GX::DatasetPrivate::activeContext ne {} && [dict get [datasetPrivateMetadataContext] module_id] ne [dict get $context module]} {error {Module cannot use another parameter context}}
     set workspace [dict get $context workspace]
-    if {$workspace ne {}&&[dict get [sessionWorkspaceGet $workspace] module_id] ne [dict get $context module]} {error {Parameter owner changed}}
+    if {$workspace ne {}&&[dict get [interactiveDocumentMetadata $workspace] module_id] ne [dict get $context module]} {error {Parameter owner changed}}
     return $context
 }
 namespace eval ::GX::Parameters {variable readViews {}}
@@ -81,7 +83,7 @@ proc ::GX::parameterDefinitions {token} {
     if {[dict exists $::GX::Parameters::readViews $token]} {return [dict get $::GX::Parameters::readViews $token definitions]}
     set context [_parameterContext $token];set module [dict get $context module];set workspace [dict get $context workspace]
     set defaults [datasetPublicationV2DictDefault $::GX::Parameters::declarations $module {}]
-    if {$workspace ne {}} {set metadata [dict get [interactiveDocumentRead $workspace] payload workspace_metadata];set stored [datasetPublicationV2DictDefault $metadata parameters {}]} else {set stored [datasetPublicationV2DictDefault $::GX::Parameters::state module.$module {}]}
+    if {$workspace ne {}} {set metadata [_parameterWorkspaceMetadata $workspace];set stored [datasetPublicationV2DictDefault $metadata parameters {}]} else {set stored [datasetPublicationV2DictDefault $::GX::Parameters::state module.$module {}]}
     return [dict merge $defaults $stored]
 }
 proc ::GX::parameterViewSessionDefinitions {token} {
@@ -195,4 +197,36 @@ proc ::GX::parameterBindingsSet {token bindings} {
     if {[datasetPublicationV2DictDefault [dict get $payload workspace_metadata] parameter_bindings {}] eq $bindings} return
     dict set payload workspace_metadata parameter_bindings $bindings
     interactiveDocumentUpdate $workspace $payload
+}
+
+# Parameter definitions are a small independently owned Workspace metadata view.
+# Cache by canonical Document revision; a geometry edit's RAM History does not
+# alter those definitions and must not force History projection/hash/replay.
+namespace eval ::GX::Parameters {variable workspaceMetadata {}}
+proc ::GX::_parameterWorkspaceMetadata {workspace} {
+    set item [interactiveDocumentMetadata $workspace]
+    set key [list [interactiveDocumentSessionToken] $workspace]
+    set stamp [list [dict get $item generation] [dict get $item revision] [dict get $item sha256]]
+    if {![dict exists $::GX::Parameters::workspaceMetadata $key] || [dict get $::GX::Parameters::workspaceMetadata $key stamp] ne $stamp} {
+        set metadata [dict get [interactiveDocumentRead $workspace stored] payload workspace_metadata]
+        dict set ::GX::Parameters::workspaceMetadata $key [dict create stamp $stamp value $metadata]
+    }
+    return [dict get $::GX::Parameters::workspaceMetadata $key value]
+}
+
+# Seed only from an already published or SHA-verified payload. This avoids a
+# full History-bearing Document read on the first edit after explicit Save.
+proc ::GX::_parameterWorkspaceMetadataSeed {session item payload} {
+    if {![info exists ::GX::currentSession] || $::GX::currentSession eq {} || [file normalize $::GX::currentSession] ne $session} return
+    set token [interactiveDocumentSessionToken]
+    if {![info exists ::GX::Parameters::workspaceMetadataToken] || $::GX::Parameters::workspaceMetadataToken ne $token} {
+        set ::GX::Parameters::workspaceMetadata {};set ::GX::Parameters::workspaceMetadataToken $token
+    }
+    set key [list $token [dict get $item id]]
+    if {[catch {dict get $payload workspace_metadata} metadata]} {
+        if {[dict exists $::GX::Parameters::workspaceMetadata $key]} {dict unset ::GX::Parameters::workspaceMetadata $key}
+        return
+    }
+    set stamp [list [dict get $item generation] [dict get $item revision] [dict get $item sha256]]
+    dict set ::GX::Parameters::workspaceMetadata $key [dict create stamp $stamp value $metadata]
 }

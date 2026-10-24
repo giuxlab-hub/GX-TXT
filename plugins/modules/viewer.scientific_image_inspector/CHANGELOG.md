@@ -1,4 +1,11 @@
-## 0.4.2
+## DEV111-P017 — CORE native History integration
+
+- Preserves the manually developed image/figure/annotation architecture while moving general and per-domain Undo state to CORE's shared native service.
+- Replaces private 80-checkpoint and figure Undo trimming with complete bounded CORE retention, asynchronous journals and explicit Save/Close projection.
+- Reuses shared bounded History controls, navigation, menus, grouping, Clear and recovery; retains independent image and figure Undo behavior and Restore Original rollback.
+- Reads prior Workspace timeline data and saves compatible optional scientific/domain History records without changing canonical Dataset ownership.
+
+## 0.4.2 — 2026-10-17
 
 Declare distinct native-resolution scientific catalog artwork, short title and semantic group through the existing Viewer Provider descriptor.
 
@@ -17,7 +24,7 @@ Declare distinct native-resolution scientific catalog artwork, short title and s
 - Visible sidebar sections dialog now has Apply/Close; Apply updates the stack immediately and persists `sidebar_sections` to the exact current CORE Session Workspace payload. No global User-default commit occurs; separate Workspace layouts remain independent.
 - Added context-aware right-click on the working canvas. A selected ROI exposes crop, statistics, histogram, inspect pixel, compatible presets, categorized ROI-safe operations with generic validated parameter dialogs, Advanced Editor and Clear ROI. Pending image edits expose Accept/Discard instead.
 - Added Edit source image to the composed-figure context and Image menu. A filter invoked on a figure now offers to switch to the individual image while preserving panels, figure annotations and current Workspace history. Missing `canvas_mode` on earlier alpha projects no longer infers figure mode merely from saved panels.
-- Expanded Debian/Xvfb Native2D regression tests for Workspace sidebar persistence, ROI context/preview and figure-to-image transition. No CORE or active Session modifications. Full Native2D layer compositing is deferred until CORE support is available.
+- Expanded Debian/Xvfb Native2D regression tests for Workspace sidebar persistence, ROI context/preview and figure-to-image handoff. No CORE or active Session modifications. Full Native2D layer compositing is deferred until CORE support is available.
 
 ## 0.3.9 — Basic/Advanced Editor tools and descriptive presets
 

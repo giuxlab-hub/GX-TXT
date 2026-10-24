@@ -3,7 +3,7 @@
 # Nothing in a recipe is evaluated as Tcl or interpreted as a filesystem path.
 namespace eval ::GX::ScientificRecipe {variable hosts {}}
 proc ::GX::scientificRecipeApiInfo {} {
-    return [dict create api_id SCIENTIFIC_RECIPE_API_v1 api_version 1 operations {inspect validate geometry_state proposal export_python rebase data_decode} host_operations {scientificHistoryCreate scientificHistoryValidate scientificHistoryState scientificHistoryAppend scientificHistoryNavigate scientificHistoryBranch scientificHistoryViewerAttach scientificHistoryViewerRecord scientificHistoryViewerState scientificHistoryViewerEditable scientificHistoryViewerPrepareEdit scientificHistoryViewerChanged scientificHistoryViewerNavigate scientificHistoryViewerBrowse scientificHistoryViewerClear scientificHistoryStripFields scientificHistoryStripValidate scientificHistoryViewerStripSet scientificHistoryViewerStripToggle scientificHistoryViewerStrip scientificHistoryGroupedEntries scientificHistoryViewerDetails scientificHistoryViewerRefresh} format gxtxt.scientific_recipe.v1 maximum_bytes 8388608 maximum_steps 4096 implicit_publication 0]
+    return [dict create api_id SCIENTIFIC_RECIPE_API_v1 api_version 1 operations {inspect validate geometry_state proposal export_python rebase data_decode} host_operations {scientificHistoryCreate scientificHistoryValidate scientificHistoryState scientificHistoryAppend scientificHistoryNavigate scientificHistoryBranch scientificHistoryContextAttach scientificHistoryContextClose scientificHistoryContextSetParent scientificHistoryViewerSeek scientificHistoryViewerDetach scientificHistoryViewerDiscard scientificHistoryViewerReset scientificHistoryViewerAttach scientificHistoryViewerRecord scientificHistoryViewerState scientificHistoryViewerStateAt scientificHistoryViewerOperation scientificHistoryViewerAuxiliary scientificHistoryViewerContextAction scientificHistoryViewerEditable scientificHistoryViewerPrepareEdit scientificHistoryViewerChanged scientificHistoryViewerRecordOperation scientificHistoryViewerSubmitPatch scientificHistoryDrafts scientificHistoryFailureRecord scientificHistoryViewerSummary scientificHistoryViewerRestoreContext scientificHistoryViewerGroupExpand scientificHistoryViewerStatus scientificHistoryViewerFlush scientificHistoryViewerBindDocument scientificHistoryViewerRequest scientificHistoryHookComplete scientificHistoryHookCancel scientificHistoryPopup scientificHistoryViewerNavigate scientificHistoryViewerBrowse scientificHistoryViewerClear scientificHistoryStripFields scientificHistoryStripValidate scientificHistoryViewerStripGet scientificHistoryViewerStripSet scientificHistoryViewerStripToggle scientificHistoryViewerStrip scientificHistoryGroupedEntries scientificHistoryViewerDetails scientificHistoryViewerRefresh} format gxtxt.scientific_recipe.v1 maximum_bytes 8388608 maximum_steps 4096 implicit_publication 0]
 }
 proc ::GX::scientificRecipeHostRegister {owner callbacks} {
     foreach key {capture validate replay} {if {![dict exists $callbacks $key]} {error "Recipe host requires $key"}}
@@ -11,9 +11,10 @@ proc ::GX::scientificRecipeHostRegister {owner callbacks} {
 }
 proc ::GX::scientificRecipeDataDecode {encoded expectedFormat} {
     if {![regexp {^gxtxt\.[a-z0-9_.]+\.v[1-9][0-9]*$} $expectedFormat]} {error {Invalid versioned scientific recipe format}}
-    if {[string length $encoded]>11184812} {error "Scientific recipe exceeds the 8 MiB limit"}
+    if {[string length $encoded]>11190272} {error "Scientific recipe exceeds the 8 MiB limit"}
     if {[catch {encoding convertfrom utf-8 [binary decode base64 -strict $encoded]} recipe]||[catch {dict size $recipe}]} {error "Malformed inert scientific recipe"}
-    if {[string bytelength $recipe]>8388608||![dict exists $recipe format]||[dict get $recipe format] ne $expectedFormat} {error {Scientific recipe format or size differs from its declared contract}}
+    set maximum [expr {[datasetPublicationV2DictDefault $recipe legacy_import 0] && $expectedFormat eq {gxtxt.scientific_recipe.v1} ? 8392704 : 8388608}]
+    if {[string bytelength $recipe]>$maximum||![dict exists $recipe format]||[dict get $recipe format] ne $expectedFormat} {error {Scientific recipe format or size differs from its declared contract}}
     return $recipe
 }
 proc ::GX::scientificRecipeDecode {encoded} {
@@ -24,7 +25,8 @@ proc ::GX::scientificRecipeDecode {encoded} {
     return $recipe
 }
 proc ::GX::scientificRecipeEncode {recipe} {
-    if {[string bytelength $recipe]>8388608} {error "Scientific recipe exceeds the 8 MiB limit; start a new recording"}
+    set maximum [expr {[datasetPublicationV2DictDefault $recipe legacy_import 0] ? 8392704 : 8388608}]
+    if {[string bytelength $recipe]>$maximum} {error "Scientific recipe exceeds the 8 MiB limit; start a new recording"}
     return [binary encode base64 -maxlen 0 [encoding convertto utf-8 $recipe]]
 }
 proc ::GX::scientificRecipeInspect {encoded} {

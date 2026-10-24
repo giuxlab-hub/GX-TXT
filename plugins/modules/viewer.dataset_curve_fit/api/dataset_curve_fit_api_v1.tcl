@@ -2260,6 +2260,7 @@ proc ::GX::DatasetCurveFit::_closeWindow {w {saveChanges 1}} {
     if {$saveChanges && ![catch {_assertSession $w}]} {
         if {[catch {
             _saveState $w
+            if {[dict exists $::GX::ScientificHistory::viewers $w]} {::GX::scientificHistoryViewerFlush $w}
             if {$state($w,documentId) ne ""} {::GX::interactiveDocumentResourceCollect $state($w,documentId)}
         } err]} {
             tk_messageBox -parent $w -icon error -type ok -title "Dataset Curve Fit" -message "Could not save viewer state: $err"

@@ -352,6 +352,13 @@ proc ::GX::native2DViewportLayout {host} {
         # pack state. Measure the existing header/body directly when reopening.
         set requestedWidth [expr {max([winfo reqwidth $widget.header],[winfo reqwidth $widget.body])+8}]
         set requestedHeight [expr {[winfo reqheight $widget.header]+[winfo reqheight $widget.body]+8}]
+        if {[dict get $panel force_open] && !$collapsed && [winfo exists $widget.body.scroll]} {
+            # A just-repacked body can still request one pixel until geometry
+            # propagation. Its existing scroll canvas already has the intended
+            # extent, so do not publish another header-only placement meanwhile.
+            set requestedWidth [expr {max($requestedWidth,[winfo reqwidth $widget.body.scroll]+8)}]
+            set requestedHeight [expr {max($requestedHeight,[winfo reqheight $widget.header]+[winfo reqheight $widget.body.scroll]+8)}]
+        }
         set pw [expr {min($limitWidth,[dict get $panel max_width]*$scale,max([dict get $panel min_width],$requestedWidth))}]
         set ph [expr {min($limitHeight,[dict get $panel max_height]*$scale,$requestedHeight)}]
         if {$collapsed&&$id ne "controls"} {
@@ -377,13 +384,41 @@ proc ::GX::native2DViewportLayout {host} {
             set x [expr {max($margin,min($width-$pw-$margin,$x))}]
             set y [expr {max($margin,min($height-$ph-$margin,$y))}]
         }
+        set preferred [list $x $y $pw $ph]
         # Deterministic stacking uses font-scaled lanes. If a lane cannot fit,
         # reduce to its header rather than obscure every scientific pixel.
         foreach rect $occupied {
             lassign $rect a b c d
             if {$x<$c&&$x+$pw>$a&&$y<$d&&$y+$ph>$b} {
                 if {$y<$b&&$b-$margin-$y>50} {set ph [expr {$b-$margin-$y}]} else {set y [expr {$d+$margin}];set ph [expr {min($ph,$height-$y-$margin)}]}
-                if {$ph<40||$y+$ph>$height-$margin} {pack forget $widget.body;set ph [winfo reqheight $widget.header];set y [expr {max($margin,$height-$ph-$margin)}];set x $margin}
+                if {$ph<40||$y+$ph>$height-$margin} {
+                    if {[dict get $panel force_open] && !$collapsed} {
+                        # An explicit inspect/open request must retain its
+                        # scrollable body. Find the largest free vertical lane
+                        # at its preferred horizontal position before using a
+                        # bounded overlay; automatic panels still use headers.
+                        lassign $preferred x y pw ph
+                        set intervals [list [list [expr {$height-$margin}] [expr {$height-$margin}]]]
+                        foreach used $occupied {
+                            lassign $used ua ub uc ud
+                            if {$x<$uc && $x+$pw>$ua} {lappend intervals [list $ub $ud]}
+                        }
+                        set edge $margin;set bestHeight 0;set bestY $margin
+                        foreach interval [lsort -real -index 0 $intervals] {
+                            lassign $interval start stop
+                            set gap [expr {$start-$margin-$edge}]
+                            if {$gap>$bestHeight} {set bestHeight $gap;set bestY $edge}
+                            set edge [expr {max($edge,$stop+$margin)}]
+                        }
+                        if {$bestHeight>[winfo reqheight $widget.header]+40} {set y $bestY;set ph [expr {min($ph,$bestHeight)}]} else {
+                            set ph [expr {min($ph,$limitHeight)}]
+                            set y [expr {max($margin,min($height-$ph-$margin,$y))}]
+                        }
+                        pack $widget.body -fill both -expand 1
+                        break
+                    }
+                    pack forget $widget.body;set ph [winfo reqheight $widget.header];set y [expr {max($margin,$height-$ph-$margin)}];set x $margin
+                }
             }
         }
         if {$targetPoint ne {} && [dict get $panel target kind] eq {annotation}} {

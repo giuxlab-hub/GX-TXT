@@ -34,7 +34,6 @@ proc ::GX::CurveWorkbench::_cadState {w} {
     dict set state next_series $st($w,nextSeries)
     dict set state geometric_comparison $st($w,lastGeometricComparison)
     dict set state comparison_method $st($w,compareMethod)
-    dict set state scientific_recipe [expr {[info exists st($w,scientificRecipe)] ? $st($w,scientificRecipe) : {}}]
     dict set state show_constraints $st($w,showConstraints)
     dict set state show_dimensions $st($w,showDimensions)
     foreach key {leftVisible listVisible pointsVisible composeVisible compareVisible} {

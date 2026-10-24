@@ -35,9 +35,9 @@ proc ::GX::CurveWorkbench::_compare {w} {
     set active [_active $w];set reference $st($w,reference)
     if {$reference eq {}||$reference eq $active} {error "Choose a different reference curve"}
     set record [_geometricComparisonEvaluate $w $reference $active 257]
-    set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w {}];
     set st($w,lastGeometricComparison) $record;set st($w,residual) [dict get $record receipt]
-    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set result [dict get $record receipt]
     set st($w,status) "[::GX::StatisticsV1::report [dict get $result statistics reference] {n rmse}]; [::GX::StatisticsV1::report [dict get $result statistics bidirectional] {sampled_hausdorff_distance}]"
     return $result

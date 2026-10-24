@@ -48,9 +48,14 @@ proc ::GX::sessionWorkspaceHostPrepare {context action} {
     if {$answer eq {cancel}} {return 0}
     if {$answer eq {yes}} {
         if {![dict exists $cb save]} {error {This Viewer cannot save the current draft.}}
-        uplevel #0 [dict get $cb save]
+        _historyWorkspaceSave $context
         if {[uplevel #0 [dict get $cb dirty]]} {error {Workspace changes remain unsaved. Continue editing before switching.}}
-    } elseif {![dict exists $cb discard]} {error {This Viewer has no safe discard callback. Continue editing or Save.}}
+    } elseif {![dict exists $cb discard]} {error {This Viewer has no safe discard callback. Continue editing or Save.}} else {
+        set window [dict get $context parent]
+        if {[dict exists $::GX::ScientificHistory::viewers $window]} {
+            scientificHistoryViewerDiscard $window
+        }
+    }
     } finally {if {[dict exists $cb review] && [winfo exists [dict get $context parent]]} {uplevel #0 [list {*}[dict get $cb review] 0]}}
 
     return 1
@@ -254,7 +259,7 @@ proc ::GX::sessionWorkspaceHostDispatch {context action {id {}} {receipt {}}} {
             set w [string trimright [dict get $context parent] .].workspaceName
             uiFieldFormCreate $w "[string totitle $action] Workspace" {name {type string required 1 label Name}} [dict create name $name] [list ::GX::sessionWorkspaceHostNamed $adapter $action $id $receipt $w] [dict get $context parent]
         }
-        save {uplevel #0 [dict get $cb save];sessionWorkspaceViewsChanged}
+        save {_historyWorkspaceSave $context;sessionWorkspaceViewsChanged}
         close {if {[sessionWorkspaceHostPrepare $adapter closing]} {_workspaceHostClose $adapter}}
         open {
             sessionWorkspaceValidate $id

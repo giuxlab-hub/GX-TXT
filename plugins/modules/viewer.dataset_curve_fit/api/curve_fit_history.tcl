@@ -54,7 +54,7 @@ proc ::GX::DatasetCurveFit::_historyAttach {w} {
     if {$state($w,sessionToken) eq {}} return
     set record {}
     if {$state($w,documentId) ne {}} {set record [::GX::datasetPublicationV2DictDefault [dict get [::GX::interactiveDocumentRead $state($w,documentId)] payload] scientific_history {}]}
-    ::GX::scientificHistoryViewerAttach $w viewer.dataset_curve_fit [dict create capture [list ::GX::DatasetCurveFit::_historyCapture $w] restore [list ::GX::DatasetCurveFit::_historyRestore $w] commit [list ::GX::DatasetCurveFit::_historyCommit $w] guard [list ::GX::DatasetCurveFit::_historyGuard $w]] $record
+    ::GX::scientificHistoryViewerAttach $w viewer.dataset_curve_fit [dict create document_id $state($w,documentId) capture [list ::GX::DatasetCurveFit::_historyCapture $w] restore [list ::GX::DatasetCurveFit::_historyRestore $w] commit [list ::GX::DatasetCurveFit::_historyCommit $w] guard [list ::GX::DatasetCurveFit::_historyGuard $w]] $record
     ::GX::scientificHistoryViewerStrip $w $w.footer $w.footer.status modules.dataset_curve_fit.history_strip [list -fill x -before $w.footer.coordinateReadout]
     ::GX::viewerCommandMenusRefresh $w
 }
@@ -103,7 +103,7 @@ proc ::GX::DatasetCurveFit::_commandEnabled {w id} {
     if {$id in {baseline_settings log_settings smooth_source}} {return [expr {$state($w,activeSource) ne {}&&$state($w,sourceKind) eq "dataset"&&$state($w,sourceTransformManifest) eq {}}]}
     if {$id in {preview accept}} {return [expr {[$w.actions.$id cget -state] ne "disabled"}]}
     if {$id eq "workspace_clear_history"} {
-        set record [::GX::scientificHistoryViewerRecord $w]
+        set record [::GX::scientificHistoryViewerSummary $w]
         return [expr {$state($w,documentId) ne {} && [dict get $record steps] ne {} && [dict get $record cursor]==[llength [dict get $record steps]]}]
     }
     if {$id in {workspace_duplicate workspace_rename workspace_delete workspace_clear_history}} {return [expr {$state($w,documentId) ne {}}]}

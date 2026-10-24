@@ -7,7 +7,7 @@ proc ::GX::ReplicateViewer::guard {w} {
     variable state
     if {![winfo exists $w] || $state($w,token) ne [::GX::interactiveDocumentSessionToken]} {error {Session changed; reopen the Replicate Viewer}}
     if {$state($w,id) ne {}} {
-        set current [::GX::sessionWorkspaceGet $state($w,id)]
+        set current [::GX::interactiveDocumentMetadata $state($w,id)]
         if {[dict get $current generation] ne $state($w,generation) || [dict get $current revision]!=$state($w,revision)} {error {Workspace changed in another editor; reopen it}}
     }
     return 1
@@ -71,7 +71,7 @@ proc ::GX::ReplicateViewer::change {w payload description {expectedSourcePayload
         unset -nocomplain state($w,ticket)
     }
     set state($w,payload) $payload
-    ::GX::scientificHistoryViewerChanged $w $description
+    ::GX::scientificHistoryViewerRecordOperation $w $description
     refresh $w
     return 1
 }
@@ -84,9 +84,12 @@ proc ::GX::ReplicateViewer::closeWorkspace {w} {::GX::sessionWorkspaceViewerActi
 proc ::GX::ReplicateViewer::callbacks {w} {return [dict create current [list [namespace current]::current $w] save [list [namespace current]::save $w] open [list [namespace current]::open] close [list [namespace current]::close $w] dirty [list [namespace current]::dirty $w] prepare [list [namespace current]::prepare $w] discard [list [namespace current]::discard $w]]}
 proc ::GX::ReplicateViewer::save {w} {
     variable state;guard $w
+    ::GX::scientificHistoryViewerFlush $w
     set payload [capture $w];dict set payload history [::GX::scientificHistoryViewerRecord $w]
     if {$state($w,id) eq {}} {set item [::GX::sessionWorkspaceCreate replicate_consensus [::GX::sessionWorkspaceAvailableName $state($w,workspaceName)] $payload]} else {set item [::GX::sessionWorkspaceUpdate $state($w,id) $payload]}
     set state($w,id) [dict get $item workspace_id];set state($w,generation) [dict get $item generation];set state($w,revision) [dict get $item revision]
+    ::GX::scientificHistoryViewerBindDocument $w $state($w,id)
+    ::GX::scientificHistoryViewerFlush $w 30000 0
     set state($w,saved) [capture $w]
     $w.footer.status configure -text {Workspace saved; scientific sources remain unchanged}
     return $state($w,id)
@@ -107,7 +110,7 @@ proc ::GX::ReplicateViewer::open {{context {}}} {
     ::GX::viewerCommandCatalogRegister viewer.replicate_curve_analysis $commands
     set handlers {}
     foreach {id method args} {sources sourceDialog {} analyze analyze {} cancel cancel {} publish publish {} graph publishGraph {} save save {} undo navigate undo redo navigate redo fit fit {} edit_source editSource {} remove_source removeSource {} zoom_in zoom 1.25 zoom_out zoom 0.8 digitizer_source digitizerDialog {}} {dict set handlers $id [dict create command [list [namespace current]::safe $w $method {*}$args] enabled [list [namespace current]::enabled $w $id]]}
-    set manifest [dict create schema gxtxt.viewer_gui_manifest.v1 viewer_id viewer.replicate_curve_analysis provider_id replicate_consensus window $w title {Replicate / Consensus Curves} handlers $handlers guard [list [namespace current]::guard $w] workspace [callbacks $w] history [dict create capture [list [namespace current]::capture $w] restore [list [namespace current]::restore $w] commit [list [namespace current]::historyCommit $w] guard [list [namespace current]::guard $w]]]
+    set manifest [dict create schema gxtxt.viewer_gui_manifest.v1 viewer_id viewer.replicate_curve_analysis provider_id replicate_consensus window $w title {Replicate / Consensus Curves} handlers $handlers guard [list [namespace current]::guard $w] workspace [callbacks $w] history [dict create document_id $state($w,id) capture [list [namespace current]::capture $w] restore [list [namespace current]::restore $w] commit [list [namespace current]::historyCommit $w] guard [list [namespace current]::guard $w]]]
     if {[dict exists $payload history]} {dict set manifest history_record [dict get $payload history]}
     dict set manifest canvas {api_id PLOT_DATASET_API_v4}
     dict set manifest toolbar_actions {sources analyze cancel undo redo fit zoom_in zoom_out save}
@@ -454,7 +457,7 @@ proc ::GX::ReplicateViewer::visibility {w id} {
     if {![::GX::scientificHistoryViewerPrepareEdit $w]} return
     ::GX::PlotDatasetAPIv4::widgetVisibility $w.body.canvas.plot main $id $input($w,visible,$id)
     if {$input($w,visible,$id)} {if {[dict exists $state($w,payload) hidden $id]} {dict unset state($w,payload) hidden $id}} else {dict set state($w,payload) hidden $id 1}
-    ::GX::scientificHistoryViewerChanged $w {Change retained curve visibility}
+    ::GX::scientificHistoryViewerRecordOperation $w {Change retained curve visibility}
 }
 proc ::GX::ReplicateViewer::pick {w x y} {
     set hit [::GX::PlotDatasetAPIv4::widgetHit $w.body.canvas.plot $x $y]
@@ -788,9 +791,10 @@ proc ::GX::ReplicateViewer::_validateSourceBinding {trace} {
 proc ::GX::ReplicateViewer::_validateRequestBindings {request} {foreach trace [dict get $request traces] {_validateSourceBinding $trace}}
 proc ::GX::ReplicateViewer::_hasSourceBinding {request} {foreach trace [dict get $request traces] {if {[dict exists $trace source_binding]} {return 1}};return 0}
 proc ::GX::ReplicateViewer::_boundHistoryLatest {w} {
-    set record [::GX::scientificHistoryViewerRecord $w]
+    set record [::GX::scientificHistoryViewerSummary $w]
     if {![::GX::scientificHistoryViewerEditable $w] || [dict get $record cursor]!=[llength [dict get $record steps]]} {_sourceFail UNAVAILABLE_BINDING {Return to the latest History checkpoint before editing a bound source}}
-    return $record
+    set status [::GX::scientificHistoryViewerStatus $w]
+    return [list [dict get $status revision] [dict get $status count] [dict get $status cursor]]
 }
 
 # Ordinary optional source-selection dialog. Prepared recipes are inert until Accept.

@@ -1,0 +1,13 @@
+{
+  "patch": "DEV111-P017",
+  "framework": "0.9.8.10-dev-111",
+  "revision": "r3",
+  "requiredPredecessorPatch": 16,
+  "originalArchiveSha256": "61ed6508050b7d39ce245c8034fa6586d9d1520c21cb3ddc92a6436a4508aad5",
+  "publicArchiveSha256": "8dcb21aa88cbec3d95e0799ca368c5b90252253fd288dac9fc6c7be6f782cff3",
+  "publicArchiveBytes": 1133008,
+  "functionalSourceFiles": 106,
+  "internalMaterialWithheld": 60,
+  "scientificBinaryAndCodeExact": true,
+  "oneOfSeveralMilestones": true
+}

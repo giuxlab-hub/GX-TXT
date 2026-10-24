@@ -46,11 +46,6 @@ rename ::GX::CurveWorkbench::_snapshotIds ::GX::CurveWorkbench::_snapshotIds_cad
 proc ::GX::CurveWorkbench::_snapshotIds {w ids} {
     set result [_snapshotIds_cad_base $w $ids];dict set result @cad [_cadState $w];return $result
 }
-rename ::GX::CurveWorkbench::_history ::GX::CurveWorkbench::_history_cad_base
-proc ::GX::CurveWorkbench::_history {w before ids} {
-    if {![dict exists $before @cad]} {dict set before @cad [_cadState $w]}
-    _history_cad_base $w $before $ids
-}
 rename ::GX::CurveWorkbench::_restoreSnapshot ::GX::CurveWorkbench::_restoreSnapshot_cad_base
 proc ::GX::CurveWorkbench::_restoreSnapshot {w snapshot} {
     _cadCloseGroups $w
@@ -306,6 +301,7 @@ proc ::GX::CurveWorkbench::_cadTransformOpen {w kind} {
     ::GX::uiFieldFormCreate $w.cadTransform "$kind — [llength $ids] curve(s) — X $xUnit / Y $yUnit" $fields $initial [list ::GX::CurveWorkbench::_cadTransformDisplayedApply $w $kind $ids $pivot [_coordinateControlKey $w $ids]] $w
 }
 proc ::GX::CurveWorkbench::_cadTransformApply {w kind ids pivot values} {
+    if {![_timelineEditable $w]} return
     variable st
     if {$st($w,token) ne [::GX::interactiveDocumentSessionToken]} {error "Session lifetime changed; reopen Curve Workbench"}
     if {$ids ne [_cadTargets $w]} {error "Transform targets changed; reopen the action form"}

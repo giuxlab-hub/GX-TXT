@@ -50,18 +50,18 @@ proc ::GX::CurveWorkbench::_savedViewApply {w token action id values} {
     _cancelGesture $w;_pointSyncApply $w
     set name [string trim [dict get $values name]];if {$name eq {}} {error "Enter a saved view name"}
     if {$action eq "create"&&[dict size $st($w,savedViews)]>=256} {error "Saved view limit is 256; remove unused bookmarks"}
-    set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w {}];
     if {$id eq {}} {set id "view[incr st($w,nextSavedView)]"}
     if {$action ne "rename"} {dict set st($w,savedViews) $id snapshot [_savedViewCapture $w]}
     dict set st($w,savedViews) $id name $name
-    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     _savedViewRefresh $w;return $id
 }
 proc ::GX::CurveWorkbench::_savedViewRestore {w} {
     variable st
     _cancelGesture $w;_pointSyncApply $w;set id [_savedViewSelected $w];set snapshot [dict get $st($w,savedViews) $id snapshot];set missing {}
     dict for {curve units} [dict get $snapshot coordinate_units] {if {[dict exists $st($w,curves) $curve]&&[_coordinateUnits [_record $w $curve]] ne $units} {error "Saved view coordinate units changed for $curve; explicitly update the view from the current frame before restoring"}}
-    set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w {}];
     try {
         set state [dict get $snapshot view_state]
         # Preserve the live widget size/margins while restoring logical bounds.
@@ -74,13 +74,13 @@ proc ::GX::CurveWorkbench::_savedViewRestore {w} {
         dict for {group visible} [dict get $snapshot group_visibility] {if {[dict exists $st($w,groups) $group]} {dict set st($w,groups) $group visible $visible} else {lappend missing $group}}
         dict for {layer visible} [dict get $snapshot layer_visibility] {if {[dict exists $st($w,layers) $layer]} {dict set st($w,layers) $layer properties visible $visible} else {lappend missing $layer}}
         _cadSyncGroups $w;_collectionSyncLayers $w;_history $w $before {}
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,status) "Restored saved view [dict get $st($w,savedViews) $id name]; geometry unchanged[expr {$missing eq {} ? {.} : "; missing presentation references: [join $missing {, }]."}]"
 }
 proc ::GX::CurveWorkbench::_savedViewRemove {w} {
     variable st
-    set id [_savedViewSelected $w];set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo);dict unset st($w,savedViews) $id
-    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    set id [_savedViewSelected $w];set before [_snapshotIds $w {}];dict unset st($w,savedViews) $id
+    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     _savedViewRefresh $w
 }
 rename ::GX::CurveWorkbench::_changed ::GX::CurveWorkbench::_changed_views_base

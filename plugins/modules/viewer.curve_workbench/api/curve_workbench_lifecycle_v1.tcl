@@ -35,6 +35,7 @@ proc ::GX::CurveWorkbench::_disposeInvalidated {w} {
     variable st
     if {![info exists st($w,ownerInvalidated)]} return
     if {$st($w,publishBusy)} {set st($w,disposeAfter) [after 50 [list ::GX::CurveWorkbench::_disposeInvalidated $w]];return}
+    if {[info exists st($w,historyReady)] && $st($w,historyReady)} {::GX::scientificHistoryViewerDetach $w 0;set st($w,historyReady) 0}
     set sources [_ownedSources $w];set failures {}
     if {[catch {_residualDispose $w} message]} {lappend failures $message}
     set disposed {}

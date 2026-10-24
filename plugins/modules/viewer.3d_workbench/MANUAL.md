@@ -267,3 +267,42 @@ See the [managed image, physical placement and limitations contract](../../../do
 and [managed raster composition](../../../docs/api/NATIVE2D_RASTER_COMPOSITION.md).
 Only one planar assignment per object is exposed here; curved wrapping and CAM
 are separate capabilities, not implied by this operation.
+
+### Native CORE History (DEV111-P017)
+
+The existing scientific Workbench owner now uses the public CORE History
+service. A successful operation is immediately accepted in RAM and available to
+Undo/Redo. Acceptance and durable persistence are distinct: the History status
+reports accepted and durable revisions, pending work and write errors. CORE
+persists ordered journals on its background worker. No Tcl/Tk or scientific
+Native3D callbacks run on that worker.
+
+The original manual Viewer places CORE's Description / History strip below its
+scientific view. It provides grouped operation rows, read-only browsing,
+Undo/Redo, return to latest, explicit branching, clear confirmation and Details.
+The sidebar visibility control restores a hidden strip. Generated scientific3D
+hosts retain their existing architecture and delegate scientific Undo/Redo to
+this same owner. The manual module does not own a second timeline or disk queue.
+
+Save and normal Close drain accepted work and project the compatible complete
+History into the existing Interactive Document. History retains every accepted
+step up to CORE's explicit 4,096-step / 8 MiB bound; it no longer drops steps at
+the former private 32-state Undo cap. Legacy checkpoints and recipe fields are
+imported, and the exact former payload is retained in a managed Document
+resource with its scientific dependencies. An import that exceeds the complete
+retention bound fails visibly while preserving the saved source; it never
+silently trims History. Explicit recovery can restore accepted journal state
+that was not yet projected into the saved Document.
+
+Native3D geometry hydration, scientific validation and current-state capture
+remain on their existing owning thread. Explicit recipe export, Save/Close,
+resource collection and legacy Workbench Extension revision handoffs can still
+perform synchronous work proportional to the retained data. These are explicit
+compatibility boundaries, rather than the ordinary GUI operation submission
+path. Executable recipe export follows the active cursor; full Workspace
+History still preserves Redo future steps.
+
+The public CORE integration uses `scientificHistoryContextAttach`,
+`scientificHistoryContextSetParent`, operation/state/status/navigation/flush
+APIs and `scientificHistoryContextClose`. See the framework's
+[CORE History service documentation](../../../docs/CORE_HISTORY_SERVICE_P017.md).

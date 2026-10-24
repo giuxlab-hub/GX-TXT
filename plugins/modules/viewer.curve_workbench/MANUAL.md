@@ -1,5 +1,22 @@
 # Curve Workbench
 
+## Shared History in DEV111-P017
+
+History is managed by CORE in native RAM. Accepted scientific edits are available
+immediately to Undo/Redo; disk persistence proceeds in order on a background
+worker. Save waits for durable persistence and projects the complete Workspace.
+A write failure remains visible and retains the accepted RAM state for retry or
+export. Do not close a failed save until its state has been preserved.
+
+Use the existing Description / History strip, Details and right-click menu for
+navigation, grouped operations, browsing, explicit restart and Clear. Browsing is
+read-only and preserves future steps; restart requires confirmation. Settings can
+hide or restore the shared strip. Constraint entries retain their direct inspect,
+restart/edit and restart/remove actions. View and tool changes remain separate
+from scientific Undo steps. Explicit Save and large Recipe exports can still take
+longer because they validate and serialize the complete scientific Workspace.
+
+
 <a id="workbench-2112-gx-txt-dev-067"></a>
 ## Continuous placement and protected restore
 
@@ -610,16 +627,15 @@ operation instructions. History shows the retained Scientific Recipe as a horizo
 timeline. The Settings menu can hide or show this strip. Use the mouse wheel over
 the timeline to reach earlier or later operations. Consecutive creations, constraint
 additions and matching transforms are grouped; right-click a group and choose
-**Expand individual operations** to see its steps. Clicking a step reconstructs its
+**Expand / collapse individual operations** to see its steps. Clicking a step reconstructs its
 geometry, constraints and parameter read view through CORE. It does not publish a
 Dataset or change the saved Workspace, and future steps remain retained.
 
 While browsing a past state, construction, constraint edits and publication are
 read-only. Undo/Redo moves through retained History in this mode. Choose **Return
-to latest state** to resume the current editable state. **Restart editing here;
-discard future…** explicitly confirms how many future steps will be discarded,
-restores the chosen state, and saves the restarted Workspace. Cancel leaves the
-future intact. Restart resets the previous editing Undo/Redo stacks. Subsequent
+to latest** to resume the current editable state. **Restart here / discard later local history…** explicitly confirms discarding
+later local steps and restores the chosen editable checkpoint. Cancel leaves the
+future intact. CORE preserves the retained prefix as the new Undo/Redo timeline. Subsequent
 edits have normal Undo/Redo and are recorded in the new retained History. Shared
 Session parameters must match the historical state; CORE rejects an unsafe restart
 instead of changing other Workspaces implicitly.
@@ -639,7 +655,7 @@ Saving a Workspace retains its Scientific Recipe, logical geometry/constraint ID
 parameters and working units. Reopening reconstructs the same current state and
 History. Older Workspaces without a complete recipe expose only the retained base
 and available operations. Discarded History cannot be recovered.
-The strip is a projection of the saved CORE recipe, not a second history
+The strip projects the native CORE timeline. It does not own another History
 database or a global Session Undo stack.
 
 
@@ -676,19 +692,19 @@ follow the active controller, including keyboard actions and History browsing.
 ## Clear History and shared configuration
 
 **Workspace → Clear History…** validates a checkpoint of the complete current
-scientific state before confirmation. Yes permanently discards old Timeline and
-Undo/Redo entries; No opens the official Workspace manager to export a protected
-copy first; Cancel changes nothing. Curves, retained definitions/parts/directions,
+scientific state before confirmation. Yes exports a protected Workspace backup
+first and then clears; No clears without backup; Cancel changes nothing. Curves, retained definitions/parts/directions,
 constraints, parameters, images/calibration, styles/groups/layers/selections,
 view, Dataset bindings and notes remain unchanged. New edits start fresh history
-at this base. The complete-retention limit remains8MiB/4096steps; no automatic
+at this base. The complete-retention limit remains 8 MiB / 4096 steps; no automatic
 clearing/pruning occurs. An oversized single base cannot be cleared safely.
 
 Finish active gestures/publication/restore and return to Latest first. A stale
 owner/revision/Session or precommit save failure rejects the operation and keeps
-old history recoverable. CORE Scientific Recipe creates the pure rebase candidate;
-existing Interactive Document/Workspace and Recovery authorities commit it.
-Recovery journals remain separate from the scientific Timeline.
+old History recoverable. CORE atomically resets its native timeline at the
+current state and projects the compatible Workspace through its scientific owner.
+Native journals protect accepted History; explicit Save also retains the existing
+protected saved-Workspace recovery choice.
 
 Command shortcuts are editable in **Configuration → Modules → Curve Workbench**
 before this Viewer opens, and in **Settings → Keyboard shortcuts…**. Both use the

@@ -59,6 +59,7 @@ proc ::GX::CurveWorkbench::_sketchReviewedApply {w token id frame values} {
     return [_sketchApply $w $token $id $values]
 }
 proc ::GX::CurveWorkbench::_sketchApply {w token id values} {
+    if {![_timelineEditable $w]} return
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen primitive parameters"}
     set frame [_sketchCoordinateContext $w $id]
@@ -74,7 +75,7 @@ proc ::GX::CurveWorkbench::_sketchApply {w token id values} {
     if {($required&&$n!=$required)||(!$required&&$n<2)} {error "The $family primitive requires [expr {$required ? $required : {at least 2}}] XY control pairs"}
     set samples [dict get $values samples];set name [string trim [dict get $values name]]
     if {$name eq {}} {error "Enter a geometry name"}
-    set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+
     if {$id eq {}} {
         set native [::GX::Native2D::core sketch_create $st($w,scene) $definition $samples]
         try {
@@ -101,7 +102,7 @@ proc ::GX::CurveWorkbench::_sketchApply {w token id values} {
     dict set st($w,curves) $id $record
     set st($w,active) $id;set st($w,objectSelection) [list $id]
     try {_selectionScene $w;_history $w $before [list $id]} on error {message options} {
-        _restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;_curveList $w;_pointList $w;_draw $w
+        _restoreSnapshot $w $before;_curveList $w;_pointList $w;_draw $w
         return -options $options $message
     }
     set st($w,status) "Retained primitive committed. Edit its parameters or explicitly explode an editable point curve."
@@ -168,7 +169,7 @@ proc ::GX::CurveWorkbench::_seriesApply {w token ids values} {
     set nativeIds {};set map {}
     foreach id $ids {set native [dict get [_record $w $id] native];lappend nativeIds $native;dict set map $native $id}
     set receipt [::GX::Native2D::core series $st($w,scene) $nativeIds $parameters]
-    set before [_snapshotIds $w {}];set results {};set oldUndo $st($w,undo);set oldRedo $st($w,redo);set ordinal 0
+    set before [_snapshotIds $w {}];set results {};set ordinal 0
     try {
         foreach native [dict get $receipt object_ids] sourceNative [dict get $receipt source_ids] {
             set parent [dict get $map $sourceNative];set source [_record $w $parent]
@@ -184,7 +185,7 @@ proc ::GX::CurveWorkbench::_seriesApply {w token ids values} {
         _restoreSnapshot $w $before
         set live [::GX::Native2D::core ids $st($w,scene)]
         foreach native [dict get $receipt object_ids] {if {$native in $live} {::GX::Native2D::core delete $st($w,scene) $native}}
-        set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;_curveList $w;_pointList $w;_draw $w
+        _curveList $w;_pointList $w;_draw $w
         return -options $options $message
     }
     set st($w,status) "Series committed: [llength $results] independent Native objects; originals preserved."
@@ -203,7 +204,7 @@ proc ::GX::CurveWorkbench::_sketchSampleApply {w token source values} {
     set original [_record $w $source];set first [dict get $values first];set last [dict get $values last];set total [dict get $values total]
     set native [::GX::Native2D::core sketch_materialize $st($w,scene) [dict get $original native] $first $last $total]
     set sampling [dict create method uniform_parameter first $first last $last total $total]
-    set oldUndo $st($w,undo);set oldRedo $st($w,redo);set before [_snapshotIds $w {}]
+    set before [_snapshotIds $w {}]
     try {
         set record [_newRecord $w [dict get $values name] [_sketchSamples $w $native] {} x y {} {} {} {} [list $source] [list [dict create operation explicit_sketch_materialization sampling $sampling definition [dict get $original sketch_definition]]]]
         dict set record sketch_attributes gx.geometry_role regular
@@ -214,7 +215,7 @@ proc ::GX::CurveWorkbench::_sketchSampleApply {w token source values} {
     } on error {message options} {
         _restoreSnapshot $w $before
         if {$native in [::GX::Native2D::core ids $st($w,scene)]} {::GX::Native2D::core delete $st($w,scene) $native}
-        set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;_curveList $w;_pointList $w;_draw $w
+        _curveList $w;_pointList $w;_draw $w
         return -options $options $message
     }
     set st($w,status) "Created complete explicit parameter sample. Publish it with a new Dataset ID when ready."

@@ -244,6 +244,7 @@ proc ::GX::_interactiveDocumentCreateWithOrigin {moduleId providerId format form
         catch {file delete -force -- [file join [_interactiveDocumentStorageDir $session] [dict get $stored storage_name]]}
         return -options $opts $err
     }
+    if {[llength [info commands _parameterWorkspaceMetadataSeed]]} {_parameterWorkspaceMetadataSeed $session $item $payload}
     return [_interactiveDocumentPublicMetadata $item]
 }
 
@@ -269,7 +270,9 @@ proc ::GX::interactiveDocumentList {{moduleId ""} {providerId ""}} {
     return $out
 }
 
-proc ::GX::interactiveDocumentRead {documentId} {
+proc ::GX::interactiveDocumentRead {documentId {historyPolicy stored}} {
+    if {$historyPolicy ni {current stored}} {error {Unknown Document History read policy}}
+    if {$historyPolicy eq {current} && [llength [info commands _historyDocumentBarrier]]} {_historyDocumentBarrier $documentId}
     if {![interactiveDocumentIdValid $documentId]} { error "Invalid Interactive Document ID '$documentId'." }
     set session [_interactiveDocumentRequireSession]
     set registry [_interactiveDocumentRegistryRead $session]
@@ -289,6 +292,7 @@ proc ::GX::interactiveDocumentRead {documentId} {
         catch {close $fd}
         return -options $opts "Interactive Document '$documentId' is unreadable: $err"
     }
+    if {[llength [info commands _parameterWorkspaceMetadataSeed]]} {_parameterWorkspaceMetadataSeed $session $item $payload}
     set out [_interactiveDocumentPublicMetadata $item]
     dict set out payload $payload
     return $out
@@ -308,7 +312,7 @@ proc ::GX::interactiveDocumentUpdate {documentId payload {format ""} {formatVers
     }
     set oldStorage [dict get $item storage_name]
     set stored [_interactiveDocumentWritePayload $session $documentId $payload]
-    if {[dict get $stored sha256] eq [dict get $prior sha256] && [dict get $item format] eq [dict get $prior format] && [dict get $item format_version] eq [dict get $prior format_version]} {return [_interactiveDocumentPublicMetadata $item]}
+    if {[dict get $stored sha256] eq [dict get $prior sha256] && [dict get $item format] eq [dict get $prior format] && [dict get $item format_version] eq [dict get $prior format_version]} {if {[llength [info commands _parameterWorkspaceMetadataSeed]]} {_parameterWorkspaceMetadataSeed $session $item $payload};return [_interactiveDocumentPublicMetadata $item]}
     dict incr item revision
     dict set item sha256 [dict get $stored sha256]
     dict set item storage_name [dict get $stored storage_name]
@@ -323,10 +327,12 @@ proc ::GX::interactiveDocumentUpdate {documentId payload {format ""} {formatVers
     if {$oldStorage ne [dict get $stored storage_name]} {
         catch {file delete -force -- [file join [_interactiveDocumentStorageDir $session] $oldStorage]}
     }
+    if {[llength [info commands _parameterWorkspaceMetadataSeed]]} {_parameterWorkspaceMetadataSeed $session $item $payload}
     return [_interactiveDocumentPublicMetadata $item]
 }
 
 proc ::GX::interactiveDocumentDelete {documentId} {
+    if {[llength [info commands _historyDocumentBarrier]]} {_historyDocumentBarrier $documentId}
     if {![interactiveDocumentIdValid $documentId]} { error "Invalid Interactive Document ID '$documentId'." }
     set session [_interactiveDocumentRequireSession]
     set registry [_interactiveDocumentRegistryRead $session]
@@ -360,4 +366,13 @@ proc ::GX::interactiveDocumentSessionToken {} {
     _interactiveDocumentRequireSession
     _interactiveDocumentSessionChanged
     return $::GX::DocumentSessionScope::token
+}
+
+# Ownership checks need registry metadata, not a hash of the full scientific
+# payload. Explicit payload reads continue to verify SHA-256 every time.
+proc ::GX::interactiveDocumentMetadata {documentId} {
+    if {![interactiveDocumentIdValid $documentId]} {error {Invalid Document ID}}
+    set registry [_interactiveDocumentRegistryRead [_interactiveDocumentRequireSession]]
+    if {![dict exists $registry $documentId]} {error {Document owner is unavailable}}
+    return [_interactiveDocumentPublicMetadata [dict get $registry $documentId]]
 }

@@ -186,7 +186,7 @@ proc ::GX::viewerGuiDesignAction {window id} {
     set statusMessage {}
     set navigate 0
     if {$id in {undo redo} && [dict exists $::GX::ScientificHistory::viewers $window]} {
-        set record [scientificHistoryViewerRecord $window]
+        set record [scientificHistoryViewerSummary $window]
         set navigate [expr {$id eq {undo} ? [dict get $record cursor]>0 : [dict get $record cursor]<[llength [dict get $record steps]]}]
     }
     try {
@@ -215,7 +215,7 @@ proc ::GX::viewerGuiDesignAction {window id} {
         } elseif {[dict exists [viewerGuiDesignVisibilityCommands [dict get $instance design]] $id]} {
             set target [dict get [viewerGuiDesignVisibilityCommands [dict get $instance design]] $id]
             viewerGuiDesignComponentVisible $window $target [expr {![viewerGuiDesignComponentVisibleGet $window $target]}]
-            if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Toggle pane $target"}
+            if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Toggle pane $target"}
             set status completed
         } elseif {$id in {fit zoom_in zoom_out}} {
             set navigationTargets [_viewerGuiPlotNavigationTargets [dict get $instance design]]
@@ -294,7 +294,7 @@ proc ::GX::viewerGuiDesignActionEnabled {window id} {
     if {[dict exists $instance design handlers $id available]} {return [dict get $instance design handlers $id available]}
     if {$id in {undo redo}} {
         if {![dict exists $::GX::ScientificHistory::viewers $window]} {return 0}
-        set record [scientificHistoryViewerRecord $window]
+        set record [scientificHistoryViewerSummary $window]
         return [expr {$id eq {undo} ? [dict get $record cursor]>0 : [dict get $record cursor]<[llength [dict get $record steps]]}]
     }
     if {$id in {fit zoom_in zoom_out}} {
@@ -410,6 +410,16 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
         } elseif {$type eq {menu}} {lappend menus $properties} elseif {$type eq {history}} {set history 1} elseif {$type eq {workspace}} {set workspace 1} elseif {$type eq {help}} {set help 1}
         set parent [dict get $component parent];if {$parent in {toolbar inspector footer} && ($type ni {menu context_menu workspace help}||$mode eq {demo})} {lappend regions $parent}
     }
+    # History is a declared CORE component. Older generated sources need no
+    # handwritten Undo handlers to receive the shared actions and shortcuts.
+    if {$history && $mode ne {demo}} {
+        foreach {action shortcut} {undo Ctrl+z redo Ctrl+y} {
+            if {![dict exists $catalog $action]} {
+                dict set catalog $action [dict create label [string totitle $action] default $shortcut]
+                dict set commands $action [dict create command [list ::GX::scientificHistoryViewerNavigate $window $action] enabled [list ::GX::viewerGuiDesignHistoryEnabled $window $action]]
+            }
+        }
+    }
     set commandCatalog [datasetPublicationV2DictDefault $context command_catalog $module.$provider.design_commands]
     set shortcutKey design_shortcuts_[format %08x [zlib crc32 [list [dict get $design module_id] [dict get $design provider_id]]]]
     viewerCommandCatalogRegister $commandCatalog $catalog {} $shortcutKey $module
@@ -512,15 +522,24 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
         dict set ::GX::ViewerGui::instances $window saved [viewerGuiDesignCapture $window]
         if {$history && $token ne {}} {
             scientificRecipeHostRegister $module [dict create capture [list ::GX::viewerGuiDesignCapture $window] validate ::GX::viewerGuiDesignHistoryValidate replay ::GX::scientificHistoryState]
-            scientificHistoryViewerAttach $window $module [dict create capture [list ::GX::viewerGuiDesignCapture $window] restore [list ::GX::viewerGuiDesignRestore $window] commit [list ::GX::viewerGuiDesignHistoryCommit $window] guard [list ::GX::viewerGuiDesignGuard $window]] [datasetPublicationV2DictDefault $payload history {}]
-            dict set ::GX::ViewerGui::instances $window saved_history [scientificHistoryViewerRecord $window]
+            set savedHistory [datasetPublicationV2DictDefault $payload history {}]
+            set activeHistory [scientificHistoryViewerAttach $window $module [dict create capture [list ::GX::viewerGuiDesignCapture $window] restore [list ::GX::viewerGuiDesignRestore $window] commit [list ::GX::viewerGuiDesignHistoryCommit $window] guard [list ::GX::viewerGuiDesignGuard $window] document_id $workspaceId] $savedHistory]
+            set savedRevision [dict get [scientificHistoryViewerStatus $window] revision]
+            if {$savedHistory ne {} && $activeHistory ne $savedHistory} {set savedRevision -1}
+            dict set ::GX::ViewerGui::instances $window saved_history_revision $savedRevision
             scientificHistoryViewerStrip $window [dict get $slots footer] [dict get $slots status]
+            menu $window.menus.history -tearoff 0 -postcommand [list ::GX::viewerCommandMenusRefresh $window]
+            foreach action {undo redo} {viewerCommandMenuAdd $window $window.menus.history $action}
+            $window.menus.history add separator
+            $window.menus.history add command -label {Show / hide Description / History strip} -command [list ::GX::scientificHistoryViewerStripToggle $window]
+            $window.menus.history add command -label {History details…} -command [list ::GX::scientificHistoryViewerDetails $window]
+            $window.menus add cascade -label History -menu $window.menus.history
         }
         if {$workspace && $token ne {}} {
             set wp [datasetPublicationV2DictDefault $context workspace_provider [string map {. _ - _} $module]_${provider}_interface_state]
             set open [datasetPublicationV2DictDefault $context workspace_open [list ::GX::viewerGuiDesignWorkspaceOpen $module $provider $design $mode $handlers]]
             sessionWorkspaceProviderRegister $wp [dict create module_id $module viewer_provider $provider type {Designed Viewer state} schema gxtxt.viewer_interface_state.v1 version 1 validate ::GX::viewerGuiDesignStateValidate open $open]
-            set callbacks [dict create current [list ::GX::viewerGuiDesignCurrent $window] save [list ::GX::viewerGuiDesignWorkspaceSave $window] dirty [list ::GX::viewerGuiDesignDirty $window] close [list ::GX::viewerGuiDesignWorkspaceClose $window] open $open discard [list destroy $window]]
+            set callbacks [dict create current [list ::GX::viewerGuiDesignCurrent $window] save [list ::GX::viewerGuiDesignWorkspaceSave $window] dirty [list ::GX::viewerGuiDesignDirty $window] close [list ::GX::viewerGuiDesignWorkspaceClose $window] open $open discard [list ::GX::viewerGuiDesignWorkspaceDiscard $window]]
             dict set ::GX::ViewerGui::instances $window workspace_provider $wp
             dict set ::GX::ViewerGui::instances $window workspace_callbacks $callbacks
             menu $window.menus.workspace -tearoff 0
@@ -555,13 +574,19 @@ proc ::GX::viewerGuiDesignCompose {design window module provider {mode preview} 
     } on error {message options} {destroy $window;return -options $options $message}
 }
 proc ::GX::viewerGuiDesignCurrent window {return [dict get $::GX::ViewerGui::instances $window workspace_id]}
+proc ::GX::viewerGuiDesignHistoryEnabled {window action} {
+    if {![dict exists $::GX::ScientificHistory::viewers $window] || ![viewerGuiDesignGuard $window] || ![scientificHistoryViewerEditable $window]} {return 0}
+    set status [scientificHistoryViewerStatus $window]
+    return [expr {$action eq {undo} ? [dict get $status cursor]>0 : [dict get $status cursor]<[dict get $status count]}]
+}
 proc ::GX::viewerGuiDesignDirty window {
     foreach form [dict keys [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] tex_forms {}]] {if {[_viewerGuiTeXDirty $window $form]} {return 1}}
     foreach form [dict keys [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] em_forms {}]] {if {[_viewerGuiEMDirty $window $form]} {return 1}}
     foreach form [dict keys [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] workbench_forms {}]] {if {[_viewerGuiWorkbenchDirty $window $form]} {return 1}}
     # A return to the saved visible state can still append meaningful History.
-    # Browsing is transient; compare the durable record, including its cursor.
-    if {[dict exists $::GX::ScientificHistory::viewers $window] && [scientificHistoryViewerRecord $window] ne [dict get $::GX::ViewerGui::instances $window saved_history]} {return 1}
+    # Browsing is transient. The accepted revision detects meaningful History
+    # edits without exporting or comparing the accumulated scientific log.
+    if {[dict exists $::GX::ScientificHistory::viewers $window] && [dict get [scientificHistoryViewerStatus $window] revision] != [dict get $::GX::ViewerGui::instances $window saved_history_revision]} {return 1}
     return [expr {[viewerGuiDesignCapture $window] ne [dict get $::GX::ViewerGui::instances $window saved]}]
 }
 proc ::GX::viewerGuiDesignDispose {window actual} {
@@ -602,6 +627,13 @@ proc ::GX::viewerGuiDesignFieldChanged {window id args} {
     # only the existing Select command changes authoritative geometry selection.
     _viewerGuiWorkbenchSelectionFieldChanged $window $id
     if {[dict exists $::GX::ViewerGui::instances $window committed_values $id] && [dict get $::GX::ViewerGui::instances $window committed_values $id] eq $value} {return}
+    if {[dict exists $::GX::ScientificHistory::viewers $window]} {
+        if {![scientificHistoryViewerEditable $window] || ![scientificHistoryViewerPrepareEdit $window]} {
+            if {[dict exists $::GX::ViewerGui::instances $window committed_values $id]} {set ::GX::ViewerGui::values($window,$id) [dict get $::GX::ViewerGui::instances $window committed_values $id]}
+            [dict get $::GX::ViewerGui::instances $window slots status] configure -text {History inspection or preparation is read-only. Return to latest before editing.}
+            return
+        }
+    }
     dict set ::GX::ViewerGui::instances $window committed_values $id $value
     if {[dict exists $component properties component_visibility] && [dict get $component type] in {toggle checkbutton}} {viewerGuiDesignComponentVisible $window [dict get $component properties component_visibility] $value}
     if {[dict exists $component properties plot_visibility]} {
@@ -614,7 +646,7 @@ proc ::GX::viewerGuiDesignFieldChanged {window id args} {
         }
     }
     viewerGuiTraceEmit $window $id changed [dict create status accepted value redacted]
-    if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Change $id"}
+    if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Change $id"}
     if {[dict exists $component properties change_action]} {viewerCommandInvoke $window [dict get $component properties change_action]}
     viewerGuiActionsRefresh $window
 }
@@ -876,7 +908,7 @@ proc ::GX::viewerGuiDesignPlotSet {window component spec {context {}}} {
     if {[dict exists $::GX::ViewerGui::instances $window demo_bindings $component]} {dict unset ::GX::ViewerGui::instances $window demo_bindings $component}
     dict set ::GX::ViewerGui::instances $window bindings $component [dict create kind plot spec $spec context $context]
     _viewerGuiPlotBindingChanged $window $component
-    if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Bind Plot $component"}
+    if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Bind Plot $component"}
     viewerGuiActionsRefresh $window
     return $plot
 }
@@ -1001,7 +1033,7 @@ proc ::GX::viewerGuiDesignSourceSet {window component request {expectedSource {}
     if {[dict exists $::GX::ViewerGui::instances $window slots context_menu]} {viewerGuiContextMount $window $canvas}
     if {[dict exists $::GX::ViewerGui::instances $window demo_bindings $component]} {dict unset ::GX::ViewerGui::instances $window demo_bindings $component}
     dict set ::GX::ViewerGui::instances $window bindings $component [dict create kind native2d request $request source_id [dict get $descriptor source_id]]
-    if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Bind scientific source $component"}
+    if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Bind scientific source $component"}
     viewerGuiTraceEmit $window $component source_bound [dict create status loading source_identity [dict get [native2DViewportCurveDescribe $canvas] source]]
     viewerGuiActionsRefresh $window
     return $canvas
@@ -1253,6 +1285,13 @@ proc ::GX::viewerGuiDesignWorkspaceClose window {
     set instance [dict get $::GX::ViewerGui::instances $window]
     sessionWorkspaceViewerAction [dict get $instance workspace_provider] [dict get $instance workspace_callbacks] $window close
 }
+proc ::GX::viewerGuiDesignWorkspaceDiscard window {
+    # Drain accepted bytes before Viewer widgets and scientific callbacks vanish.
+    # The journal retains recovery state; discard never projects into a saved
+    # Workspace or an unrelated Session.
+    if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerFlush $window 30000 0}
+    destroy $window
+}
 proc ::GX::viewerGuiDesignWorkspaceOpen {module provider design mode handlers context} {
     if {$context ne {} && ![catch {sessionWorkspaceGet $context} item]} {set context [dict create workspace_id [dict get $item workspace_id]]}
     set descriptor [viewerProviderDefinition $module $provider]
@@ -1267,6 +1306,7 @@ proc ::GX::viewerGuiDesignWorkspaceOpen {module provider design mode handlers co
 }
 proc ::GX::viewerGuiDesignWorkspaceSave window {
     if {![viewerGuiDesignGuard $window]} {error {Session changed; reopen this Viewer.}}
+    if {[dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerFlush $window}
     foreach form [dict keys [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] tex_forms {}]] {if {[_viewerGuiTeXDirty $window $form]} {_viewerGuiTeXSave $window $form}}
     foreach form [dict keys [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] em_forms {}]] {if {[_viewerGuiEMDirty $window $form]} {_viewerGuiEMSave $window $form}}
     foreach form [dict keys [datasetPublicationV2DictDefault [dict get $::GX::ViewerGui::instances $window] workbench_forms {}]] {if {[_viewerGuiWorkbenchDirty $window $form]} {_viewerGuiWorkbenchSave $window $form}}
@@ -1286,7 +1326,11 @@ proc ::GX::viewerGuiDesignWorkspaceSave window {
     dict set ::GX::ViewerGui::instances $window workspace_id [dict get $item workspace_id]
     dict set ::GX::ViewerGui::instances $window workspace_stamp [list [dict get $item generation] [dict get $item revision] [dict get $item sha256]]
     dict set ::GX::ViewerGui::instances $window saved [viewerGuiDesignCapture $window]
-    if {[dict exists $::GX::ScientificHistory::viewers $window]} {dict set ::GX::ViewerGui::instances $window saved_history [scientificHistoryViewerRecord $window]}
+    if {[dict exists $::GX::ScientificHistory::viewers $window]} {
+        scientificHistoryViewerBindDocument $window [dict get $item workspace_id]
+        scientificHistoryViewerFlush $window 30000 0
+        dict set ::GX::ViewerGui::instances $window saved_history_revision [dict get [scientificHistoryViewerStatus $window] revision]
+    }
     return [dict get $item workspace_id]
 }
 proc ::GX::viewerGuiHostInspect window {

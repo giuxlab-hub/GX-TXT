@@ -33,7 +33,6 @@ proc ::GX::SII::guiOpen {action scene} {
     set ui(workspaceName) ""
     set ui(workspaceDraft) 1
     set ui(steps) {}
-    set ui(redo) {}
     set ui(roi) {}
     set ui(scope) all
     set ui(op) ""
@@ -64,9 +63,6 @@ proc ::GX::SII::guiOpen {action scene} {
     set ui(canvasMode) view
     set ui(imageAnnotations) {}
     set ui(figureAnnotations) {}
-    set ui(figureUndo) {}
-    set ui(figureRedo) {}
-    set ui(historyTimeline) {}
     set ui(historyBrowsing) 0
     set ui(historyCursor) 0
     set ui(historyStripView) Description
@@ -247,7 +243,7 @@ proc ::GX::SII::createMenus {w} {
     # actions to GX-TXT's existing SESSION_WORKSPACE_API_v1.
     if {[llength [info commands ::GX::sessionWorkspaceViewerMenu]]} {
         ::GX::sessionWorkspaceViewerMenu $w.menu.workspace scientific_image_inspector \
-            [dict create current ::GX::SII::workspaceCurrent save ::GX::SII::saveState \
+            [dict create current ::GX::SII::workspaceCurrent save ::GX::SII::historySaveExplicit \
                          close ::GX::SII::workspaceClose open ::GX::SII::workspaceOpen] $w
     } else {
         $w.menu.workspace add command -label {Workspace API unavailable} -state disabled
@@ -256,7 +252,7 @@ proc ::GX::SII::createMenus {w} {
     $w.menu.history add command -label {Accept adjustment preview} -command ::GX::SII::acceptPreview
     $w.menu.history add command -label {Discard adjustment preview} -command ::GX::SII::discardPreview
     $w.menu.history add command -label {Restore original image} -command ::GX::SII::reset
-    $w.menu.history add command -label {Save workspace} -command ::GX::SII::saveState
+    $w.menu.history add command -label {Save workspace} -command ::GX::SII::historySaveExplicit
     $w.menu.configuration add command -label {Visible sidebar sections...} -command ::GX::SII::sidebarPreferencesDialog
     $w.menu.configuration add separator
     $w.menu.configuration add command -label {Viewer settings...} -command ::GX::SII::viewerSettingsDialog
@@ -397,6 +393,7 @@ proc ::GX::SII::sidebarPreferencesSave {} {
     # layout. CORE SESSION_WORKSPACE_API_v1 persists its editable payload.
     # Avoid changing the global GX-TXT User defaults or another Workspace.
     set ui(sidebarTabs) $selected
+    set ui(projectionDirty) 1
     set ui(sidebarTemporary) {}
     sidebarRefresh
     if {$ui(sourceId) ne {} && [info exists ui(info)]} {
@@ -404,7 +401,7 @@ proc ::GX::SII::sidebarPreferencesSave {} {
             set ui(status) {Sidebar changed in memory, but Workspace save failed. Use Workspace > Save after resolving the error.}
             return 0
         }
-        set ui(status) {Sidebar layout applied and saved to current Workspace.}
+        set ui(status) {Sidebar layout applied in RAM; use Workspace > Save to commit the Document.}
     } else {
         set ui(status) {Sidebar layout applied. It will be saved when an image Workspace is created.}
     }
@@ -493,7 +490,7 @@ proc ::GX::SII::buildHistoryTab {f} {
     pack $f.steps -fill both -expand yes -pady 6
     ttk::frame $f.buttons
     pack $f.buttons -fill x
-    foreach {key name cmd} {undo Undo undo redo Redo redo remove {Remove selected} removeStep reset Reset reset save Save saveState} {
+    foreach {key name cmd} {undo Undo undo redo Redo redo remove {Remove selected} removeStep reset Reset reset save Save historySaveExplicit} {
         ttk::button $f.buttons.$key -text $name -command ::GX::SII::$cmd
         pack $f.buttons.$key -side left -padx 2 -pady 3
     }
@@ -531,12 +528,17 @@ proc ::GX::SII::loadSource {} {
     variable ui
     if {[info exists ui(pending)] && $ui(pending)} {set ui(status) {Accept or discard pending adjustment first.};return}
     if {$ui(sourceId) eq ""} return
+    if {[historyAttached]} {
+        set requested $ui(sourceId)
+        set ui(sourceId) [dict get $ui(info) id]
+        try {historySaveExplicit;historyDetach 0} finally {set ui(sourceId) $requested}
+    }
     if {[catch {
         checkSession
         set ui(info) [inspect $ui(sourceId)]
         discardPreview
         unset -nocomplain ui(restoreSnapshot)
-        set ui(steps) {}; set ui(redo) {}; set ui(roi) {}; set ui(scope) all; set ui(documentId) ""
+        set ui(steps) {}; set ui(roi) {}; set ui(scope) all; set ui(documentId) ""
         set ui(roiLabel) {ROI: none (whole image)}
         lodReset
         foreach k {preview-original preview-processed scaled-original scaled-processed photo-original photo-processed processedInfo} {unset -nocomplain ui($k)}
@@ -727,7 +729,6 @@ proc ::GX::SII::acceptPreview {} {
     set ui(steps) $accepted
     set ui(editDomain) image
     unset -nocomplain ui(restoreSnapshot)
-    set ui(redo) {}
     discardPreview
     if {![renderImages]} {error {Unable to render accepted adjustment}}
     refreshSteps
@@ -1132,42 +1133,8 @@ proc ::GX::SII::refreshSteps {} {
         $w insert end "[incr number]. $label ([dict get $s scope]): [dict get $s params]"
     }
 }
-proc ::GX::SII::undo {} {
-    variable ui
-    if {[historyReadOnly]} {return}
-    if {[info exists ui(pending)] && $ui(pending)} {set ui(status) {Accept or discard pending adjustment first.};return}
-    if {$ui(pending)} {discardPreview;return}
-    if {![llength $ui(steps)] && [info exists ui(restoreSnapshot)]} {
-        set snapshot $ui(restoreSnapshot)
-        unset ui(restoreSnapshot)
-        set ui(steps) [dict get $snapshot steps]
-        set ui(annotations) [dict get $snapshot annotations]
-        set ui(imageAnnotations) [dict get $snapshot image_annotations]
-        set ui(figureAnnotations) [dict get $snapshot figure_annotations]
-        set priorMode [dict get $snapshot canvas_mode]
-        set ui(panels) [dict get $snapshot panels]
-        dict for {key value} [dict get $snapshot figure_settings] {set ui(figure-$key) $value}
-        set ui(figurePreviewActive) 0
-        renderImages
-        if {$priorMode eq "figure" && [llength $ui(panels)]} {previewFigure}
-        refreshSteps;refreshAnnotations;refreshPanels;saveState
-        return
-    }
-    if {![llength $ui(steps)]} return
-    lappend ui(redo) [lindex $ui(steps) end]
-    set ui(steps) [lrange $ui(steps) 0 end-1]
-    renderImages;refreshSteps;saveState
-}
-proc ::GX::SII::redo {} {
-    variable ui
-    if {[historyReadOnly]} {return}
-    if {[info exists ui(pending)] && $ui(pending)} {set ui(status) {Accept or discard pending adjustment first.};return}
-    if {$ui(pending)} {discardPreview;return}
-    if {![llength $ui(redo)]} return
-    lappend ui(steps) [lindex $ui(redo) end]
-    set ui(redo) [lrange $ui(redo) 0 end-1]
-    renderImages;refreshSteps;saveState
-}
+proc ::GX::SII::undo {} {historyUndoRedo image undo}
+proc ::GX::SII::redo {} {historyUndoRedo image redo}
 proc ::GX::SII::removeStep {} {
     variable ui
     if {[historyReadOnly]} {return}
@@ -1175,7 +1142,6 @@ proc ::GX::SII::removeStep {} {
     set sel [$ui(window).layout.inspector.tabs.history.steps curselection]
     if {[llength $sel] != 1} return
     set ui(steps) [lreplace $ui(steps) [lindex $sel 0] [lindex $sel 0]]
-    set ui(redo) {}
     renderImages; refreshSteps; saveState
 }
 proc ::GX::SII::reset {} {
@@ -1187,7 +1153,7 @@ proc ::GX::SII::reset {} {
         set ui(restoreSnapshot) [dict create steps $ui(steps) annotations $ui(annotations) image_annotations $ui(imageAnnotations) figure_annotations $ui(figureAnnotations) canvas_mode [expr {$ui(figurePreviewActive) ? "figure" : "image"}] panels $ui(panels) figure_settings [figureSettings]]
     }
     discardPreview
-    set ui(steps) {};set ui(redo) {};set ui(roi) {}
+    set ui(steps) {};set ui(roi) {}
     set ui(annotations) {};set ui(imageAnnotations) {};set ui(figureAnnotations) {}
     set ui(annotationActiveId) {};set ui(selectedAnnotationIds) {}
     set ui(scope) all;set ui(selectionMode) object;set ui(editDomain) image
@@ -1204,41 +1170,21 @@ proc ::GX::SII::workspaceDraftName {} {
     variable ui
     return [expr {[info exists ui(workspaceName)] ? $ui(workspaceName) : ""}]
 }
-proc ::GX::SII::workspacePayload {} {
+proc ::GX::SII::workspacePayload {{history {}} {domains {}}} {
     variable ui
     checkSession
     if {$ui(sourceId) eq ""} {error {Choose an image before saving a Workspace}}
     return [dict create schema scientific_image_inspector.recipe.v2 source_id $ui(sourceId) \
         source_sha [dict get $ui(info) sha256] steps [validateSteps $ui(steps)] \
-        panels $ui(panels) figure_settings [figureSettings] annotations $ui(annotations) annotation_layers_json [annotationsJson $ui(annotations)]         image_annotations [expr {$ui(figurePreviewActive) ? $ui(imageAnnotations) : $ui(annotations)}]         figure_annotations [expr {$ui(figurePreviewActive) ? $ui(annotations) : $ui(figureAnnotations)}]         canvas_mode [expr {$ui(figurePreviewActive) ? "figure" : "image"}] sidebar_sections $ui(sidebarTabs) history_timeline $ui(historyTimeline)]
+        panels $ui(panels) figure_settings [figureSettings] annotations $ui(annotations) annotation_layers_json [annotationsJson $ui(annotations)]         image_annotations [expr {$ui(figurePreviewActive) ? $ui(imageAnnotations) : $ui(annotations)}]         figure_annotations [expr {$ui(figurePreviewActive) ? $ui(annotations) : $ui(figureAnnotations)}]         canvas_mode [expr {$ui(figurePreviewActive) ? "figure" : "image"}] sidebar_sections $ui(sidebarTabs) scientific_history $history domain_history $domains]
 }
 proc ::GX::SII::saveState {} {
     variable ui
-    if {[info exists ui(pending)] && $ui(pending)} {set ui(status) {Finish adjustment preview before saving the Workspace.};return 0}
-    if {$ui(sourceId) eq ""} return
+    if {[info exists ui(pending)] && $ui(pending)} {set ui(status) {Finish adjustment preview before recording the Workspace.};return 0}
+    if {$ui(sourceId) eq ""} {return 1}
     if {$ui(historyBrowsing)} {set ui(status) {History browsing is read-only. Return to Latest before saving.};return 0}
-    if {[catch {
-        historyObserve
-        set payload [workspacePayload]
-        if {$ui(documentId) eq ""} {
-            set name [expr {$ui(workspaceName) eq "" ? "Image Inspector — $ui(sourceId) [clock format [clock seconds] -format {%Y-%m-%d %H:%M:%S}]" : $ui(workspaceName)}]
-            set receipt [::GX::sessionWorkspaceCreate scientific_image_inspector $name $payload]
-            set ui(documentId) [dict get $receipt workspace_id]
-        } else {
-            set receipt [::GX::sessionWorkspaceUpdate $ui(documentId) $payload]
-        }
-        set ui(workspaceName) [dict get $receipt name]
-        set ui(workspaceDraft) 0
-        if {[llength [info commands ::GX::sessionWorkspaceViewerTitlesRefresh]]} {::GX::sessionWorkspaceViewerTitlesRefresh}
-        set ui(status) "Workspace saved: [dict get $receipt name]"
-    } err options]} {
-        # Autosave runs after every annotation gesture. Never convert an
-        # invalid Native2D/History/Workspace receipt into a desktop-wide modal
-        # background error while the user is drawing; preserve the work in
-        # memory and report the rejected save in the status strip and stderr.
-        eventFailure {Workspace save} $err $options
-        return 0
-    }
+    if {[catch {historyObserve} err options]} {eventFailure {History recording} $err $options;return 0}
+    set ui(status) {Workspace edit accepted in RAM; CORE is persisting History. Use Save for a durable Document.}
     return 1
 }
 proc ::GX::SII::workspaceClose {} {
@@ -1246,12 +1192,12 @@ proc ::GX::SII::workspaceClose {} {
     if {[info exists ui(pending)] && $ui(pending)} {error {Finish adjustment preview before changing Workspace}}
     checkSession
     # Clearing the active recipe never deletes its registered Workspace.
-    if {$ui(documentId) ne "" && ![saveState]} {error {Save failed; current Workspace was not closed}}
+    if {[historyAttached]} {historySaveExplicit;historyDetach 0}
     set ui(documentId) "";set ui(workspaceName) "";set ui(workspaceDraft) 1
     set ui(sidebarTabs) [sidebarConfiguredTabs];set ui(sidebarTemporary) {};sidebarRefresh
     discardPreview
     unset -nocomplain ui(restoreSnapshot)
-    set ui(steps) {};set ui(redo) {};set ui(roi) {}
+    set ui(steps) {};set ui(roi) {}
     set ui(panels) {};set ui(annotations) {}
     set ui(annotationActiveId) {};set ui(selectedAnnotationIds) {}
     set ui(scope) all;set ui(selectionMode) object;set ui(editDomain) image
@@ -1271,7 +1217,7 @@ proc ::GX::SII::workspaceOpen {context} {
     if {$id eq "new"} {
         # Explicit New always switches away from the previous project.
         if {$ui(documentId) eq "" && ($ui(steps) ne {} || $ui(panels) ne {} || $ui(annotations) ne {})} {
-            if {![saveState]} {error {Save current edits before opening a new Workspace}}
+            if {![historySaveExplicit]} {error {Save current edits before opening a new Workspace}}
         }
         workspaceClose
         set ui(workspaceName) [get $context workspace_name ""]
@@ -1279,6 +1225,7 @@ proc ::GX::SII::workspaceOpen {context} {
         return
     }
     if {$id eq ""} {error {Workspace ID is required}}
+    if {[historyAttached] && $ui(documentId) eq $id} {historySaveExplicit;return $id}
     set record [::GX::sessionWorkspaceGet $id]
     if {[dict get $record provider_id] ne "scientific_image_inspector"} {
         error {Selected Workspace belongs to another Viewer}
@@ -1293,13 +1240,13 @@ proc ::GX::SII::workspaceOpen {context} {
     }
     # Preflight all external references before replacing the visible project.
     set steps [validateSteps [get $payload steps {}]]
-    if {$ui(documentId) ne "" && $ui(documentId) ne $id} {
-        if {![saveState]} {error {Save failed; current Workspace remains open}}
-    }
-    if {$ui(sourceId) ne $source} {set ui(sourceId) $source;loadSource}
+    if {[historyAttached]} {historySaveExplicit}
+    historyDetach 0
+    set ui(historyLoading) 1
+    try {if {$ui(sourceId) ne $source} {set ui(sourceId) $source;loadSource}} finally {set ui(historyLoading) 0}
     if {[llength [info commands ::GX::sessionWorkspacePromote]]} {::GX::sessionWorkspacePromote $id}
     set ui(steps) $steps
-    set ui(redo) {};set ui(roi) {};set ui(scope) all
+    set ui(roi) {};set ui(scope) all
     set ui(annotationActiveId) {};set ui(selectedAnnotationIds) {}
     set ui(selectionMode) object;set ui(editDomain) image
     set ui(panels) [get $payload panels {}]
@@ -1326,7 +1273,7 @@ proc ::GX::SII::workspaceOpen {context} {
     renderImages
     annotationMode 0
     if {$savedMode eq "figure" && [llength $ui(panels)]} {previewFigure}
-    historyStripRestore [get $payload history_timeline {}]
+    historyStripRestore [get $payload history_timeline {}] [get $payload scientific_history {}] [get $payload domain_history {}]
     if {[llength [info commands ::GX::sessionWorkspaceViewerTitlesRefresh]]} {::GX::sessionWorkspaceViewerTitlesRefresh}
     set ui(status) "Workspace opened: [dict get $record name]"
     return $id
@@ -1438,6 +1385,11 @@ proc ::GX::SII::manualFindNext {} {
 }
 proc ::GX::SII::guiClose {} {
     variable ui
+    if {[historyAttached]} {
+        set sameSession [expr {![catch {::GX::interactiveDocumentSessionToken} token] && $token eq $ui(sessionToken)}]
+        if {$sameSession} {if {$ui(historyBrowsing)} {::GX::scientificHistoryViewerNavigate $ui(window) latest};historySaveExplicit}
+        historyDetach 0
+    }
     discardPreview
     lodReset
     tooltipHide

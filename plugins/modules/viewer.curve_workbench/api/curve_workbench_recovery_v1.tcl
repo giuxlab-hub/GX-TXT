@@ -1,20 +1,4 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-proc ::GX::CurveWorkbench::_recoveryCheckpoint {w operation} {
-    variable st
-    if {$st($w,document) eq ""} return
-    if {[catch {::GX::workbenchRecoveryCheckpoint $st($w,document) [dict create operation $operation module_id viewer.curve_workbench module_version $::GX::CurveWorkbench::version api_id NATIVE2D_API_v1 api_version 1]} message]} {
-        set st($w,recoveryNotice) "Workspace committed; recovery checkpoint unavailable: $message"
-    } else {set st($w,recoveryNotice) ""}
-}
-rename ::GX::CurveWorkbench::_history ::GX::CurveWorkbench::_history_recovery_base
-proc ::GX::CurveWorkbench::_history {w before ids} {_history_recovery_base $w $before $ids;_recoveryCheckpoint $w edit}
-foreach action {undo redo} {
-    rename ::GX::CurveWorkbench::$action ::GX::CurveWorkbench::${action}_recovery_base
-    proc ::GX::CurveWorkbench::$action {w} [format {
-        %s_recovery_base $w
-        _recoveryCheckpoint $w %s
-    } $action $action]
-}
 rename ::GX::CurveWorkbench::_load ::GX::CurveWorkbench::_load_recovery_base
 proc ::GX::CurveWorkbench::_load {w} {
     variable st
@@ -25,7 +9,14 @@ proc ::GX::CurveWorkbench::_load {w} {
     }
     if {$docs ne {}} {
         set document [dict get [lindex $docs 0] id]
-        set info [::GX::workbenchRecoveryPrompt $document $w]
+        set choice $st($w,historyRecoveryChoice)
+        if {$choice eq {}} {set info [::GX::workbenchRecoveryPrompt $document $w]} else {
+            set info [::GX::workbenchRecoveryInspect $document]
+            if {[dict get $info status] ni {clean absent corrupt}} {
+                if {$choice eq {cancel}} {error {Workspace recovery cancelled}}
+                set info [::GX::workbenchRecoveryResolve $document [expr {$choice eq {recover} ? {recover} : {saved}}]]
+            }
+        }
         if {[dict get $info status] eq "corrupt"} {set st($w,recoveryNotice) "Recovery journal is corrupt; normal saved document remains available: [dict get $info reason]"}
     }
     set result [_load_recovery_base $w]

@@ -3,7 +3,9 @@
 namespace eval ::GX::CurveWorkbench {variable parameterCapability [::GX::parameterModuleRegister {}]}
 proc ::GX::CurveWorkbench::_parameterBind {w} {
     variable st;variable parameterCapability
-    if {$st($w,document) eq {}} return
+    if {$st($w,document) eq {}} {
+        if {[info exists st($w,historyReady)] && $st($w,historyReady)} {_flushWorkspace $w} else {return}
+    }
     if {[info exists st($w,parameterContext)]&&![catch {set info [::GX::parameterContextInfo $st($w,parameterContext)]}]&&[dict get $info workspace] eq $st($w,document)} {return $st($w,parameterContext)}
     set st($w,parameterContext) [::GX::parameterContext $parameterCapability $st($w,document)]
     set st($w,previousParameters) [::GX::parameterDefinitions $st($w,parameterContext)]
@@ -33,9 +35,8 @@ proc ::GX::CurveWorkbench::_parameterRecalculate {w token} {
         }
         _constraintCapture $w;_selectionScene $w
         if {(![info exists st($w,importTransaction)] || !$st($w,importTransaction)) && ![info exists st($w,historyRestoring)]} {
-            if {$st($w,scientificRecipe) ne {}} {
-                set previous [dict get $st($w,scientificRecipe) base]
-                foreach step [dict get $st($w,scientificRecipe) steps] {set previous [::GX::scientificRecipeApplyPatch $previous [dict get $step patch]]}
+            if {$st($w,historyReady)} {
+                set previous [::GX::scientificHistoryViewerState $w]
                 if {[dict exists $previous @cad parameter_definitions]} {dict set before @cad parameter_definitions [dict get $previous @cad parameter_definitions]}
             }
             if {$before ne [_snapshotIds $w [dict keys $st($w,curves)]]} {
@@ -47,7 +48,7 @@ proc ::GX::CurveWorkbench::_parameterRecalculate {w token} {
     return [list ::GX::CurveWorkbench::_restoreSnapshot $w $before]
 }
 proc ::GX::CurveWorkbench::_parametersOpen {w} {
-    variable st;_save $w
+    variable st;_flushWorkspace $w
     ::GX::sessionWorkspaceActionInvoke $st($w,document) parameters
 }
 proc ::GX::CurveWorkbench::parametersAction {workspace context} {

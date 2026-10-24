@@ -703,33 +703,10 @@ proc ::GX::SII::annotationEditApply {w} {
 proc ::GX::SII::recordFigureEdit {} {
     variable ui
     set ui(editDomain) annotations
-    lappend ui(figureUndo) [dict create panels $ui(panels) annotations $ui(annotations)]
-    if {[llength $ui(figureUndo)]>60} {set ui(figureUndo) [lrange $ui(figureUndo) end-59 end]}
-    set ui(figureRedo) {}
+    # CORE owns the before/after domain state. This hook is only a domain cue.
 }
-proc ::GX::SII::undoFigure {} {
-    variable ui
-    if {[annotationLocked]} return
-    if {![llength $ui(figureUndo)]} return
-    lappend ui(figureRedo) [dict create panels $ui(panels) annotations $ui(annotations)]
-    set state [lindex $ui(figureUndo) end]
-    set ui(figureUndo) [lrange $ui(figureUndo) 0 end-1]
-    set ui(panels) [dict get $state panels]
-    set ui(annotations) [dict get $state annotations]
-    refreshPanels;refreshAnnotations;nativeDisplay original;saveState
-}
-proc ::GX::SII::redoFigure {} {
-    variable ui
-    if {[annotationLocked]} return
-    if {![llength $ui(figureRedo)]} return
-    lappend ui(figureUndo) [dict create panels $ui(panels) annotations $ui(annotations)]
-    set state [lindex $ui(figureRedo) end]
-    set ui(figureRedo) [lrange $ui(figureRedo) 0 end-1]
-    set ui(panels) [dict get $state panels]
-    set ui(annotations) [dict get $state annotations]
-    refreshPanels;refreshAnnotations;nativeDisplay original;saveState
-}
-
+proc ::GX::SII::undoFigure {} {if {![annotationLocked]} {historyUndoRedo figure undo}}
+proc ::GX::SII::redoFigure {} {if {![annotationLocked]} {historyUndoRedo figure redo}}
 
 # Explicit editing mode: overlays remain visible after exit, whereas pointer
 # gestures revert to image ROI and normal browsing. CORE owns tool glyphs.

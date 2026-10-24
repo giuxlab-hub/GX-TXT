@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Camera state changes immediately in Native. Drawing is bounded to one pending
-# frame and persistence to one checkpoint after a burst, retaining close/save
-# and semantic-edit recovery behavior through the existing save authority.
+# Camera state changes immediately in Native. Existing UI timers coalesce
+# redraw and presentation capture after a burst. CORE owns auxiliary acceptance,
+# ordered background persistence and Save/Close durability; no disk work runs here.
 proc ::GX::CurveWorkbench::_viewDrawLater {w} {
     variable st
     if {[info exists st($w,drag)] && $st($w,drag) ne {} && [dict get $st($w,drag) mode] eq {pan}} {_viewportDrawLater $w;return}

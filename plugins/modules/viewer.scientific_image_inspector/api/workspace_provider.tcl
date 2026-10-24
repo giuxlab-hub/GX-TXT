@@ -25,6 +25,23 @@ proc ::GX::SII::workspaceValidate {payload} {
         foreach id $sections {if {$id ni $valid} {error "Unknown Workspace sidebar section: $id"}}
         if {[llength [lsort -unique $sections]] != [llength $sections]} {error {Duplicate Workspace sidebar section}}
     }
+    set histories {}
+    if {[dict exists $payload scientific_history] && [dict get $payload scientific_history] ne {}} {lappend histories [dict get $payload scientific_history]}
+    if {[dict exists $payload domain_history]} {
+        dict for {channel record} [dict get $payload domain_history] {
+            if {$channel ni {image figure}} {error {Unknown Image Inspector History channel}}
+            lappend histories $record
+        }
+    }
+    foreach record $histories {
+        foreach field {base steps cursor workbench_id} {if {![dict exists $record $field]} {error "Image History requires $field"}}
+        if {[dict get $record workbench_id] ne {viewer.scientific_image_inspector} || [catch {dict size [dict get $record base]}]} {error {Invalid Image History owner or base}}
+        set steps [dict get $record steps];set cursor [dict get $record cursor]
+        if {[llength $steps]>4096 || ![string is entier -strict $cursor] || $cursor<0 || $cursor>[llength $steps]} {error {Invalid Image History cursor or retained step limit}}
+        set allowance [expr {[dict exists $record legacy_import] && [dict get $record legacy_import] eq "1" ? 4096 : 0}]
+        if {[string bytelength $record]>8388608+$allowance} {error {Image History exceeds its bounded retained record contract}}
+        foreach step $steps {if {![dict exists $step patch] || [catch {dict size [dict get $step patch]}]} {error {Invalid Image History patch}}}
+    }
     return 1
 }
 proc ::GX::SII::workspaceProviderOpen {id} {

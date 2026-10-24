@@ -16,6 +16,8 @@ import shutil
 import stat
 import sys
 import tempfile
+import subprocess
+from scientific_history_portable_copy import history_read_locks
 import time
 import zipfile
 from dataclasses import dataclass
@@ -306,7 +308,7 @@ def write_package_manifest(
             fh.write(f"\n[external_dependency.{i}]\npath={path}\nkind={kind}\n")
 
 
-def export_session(session: Path, archive: Path, framework_root: Path, framework_version: str, carrier_installation: str = "unknown") -> dict[str, str]:
+def _export_session_snapshot(session: Path, archive: Path, framework_root: Path, framework_version: str, carrier_installation: str = "unknown") -> dict[str, str]:
     session = session.resolve()
     framework_root = framework_root.resolve()
     dirs, files, external_deps = scan_session(session)
@@ -379,6 +381,28 @@ def export_session(session: Path, archive: Path, framework_root: Path, framework
         "dependency_count": str(len(deps)),
         "external_dependency_count": str(len(external_deps)),
     }
+
+
+def export_session(session: Path, archive: Path, framework_root: Path, framework_version: str, carrier_installation: str = "unknown", history_owned=()) -> dict[str, str]:
+    # The Tcl owner drains its known active writers before this synchronous
+    # subprocess. Shared locks protect every other inactive native family.
+    with history_read_locks(session.resolve(), history_owned):
+        return _export_session_snapshot(session, archive, framework_root, framework_version, carrier_installation)
+
+
+def rescope_native_history(stage: Path, logical_destination: Path) -> int:
+    root = stage / "metadata" / "history"
+    if not root.exists() or not any(root.rglob("*.gxh*")):
+        return 0
+    framework = Path(__file__).resolve().parents[2]
+    helper = framework / "core" / "tcl" / "scientific_history_portable_worker.tcl"
+    runtime = shutil.which("tclsh")
+    if not runtime or not helper.is_file():
+        raise ValueError("Native History Session import requires its matching local CORE Tcl runtime")
+    result = subprocess.run([runtime, str(helper), str(framework), str(stage), str(logical_destination)], capture_output=True, text=True, timeout=120)
+    if result.returncode:
+        raise ValueError("Native History ownership rebind failed: " + result.stderr.strip())
+    return int(result.stdout.strip())
 
 
 def parse_package_manifest_bytes(data: bytes) -> dict[str, dict[str, str]]:
@@ -566,6 +590,7 @@ def import_session(archive: Path, destination: Path, current_worker_file: str = 
         if current_worker_file:
             updates[("runtime", "worker_file")] = current_worker_file
         ini_rewrite(mf, updates)
+        history_rebased = rescope_native_history(stage_session, logical_destination)
 
         # Commit is one rename on the same filesystem.  The destination was
         # checked before staging and is checked again immediately before commit.
@@ -587,6 +612,7 @@ def import_session(archive: Path, destination: Path, current_worker_file: str = 
     return {
         "session": str(destination),
         "source_framework_version": manifest.get("package", {}).get("source_framework_version", ""),
+        "history_rebased": str(history_rebased),
         "dependency_count": str(len(deps)),
         "external_dependency_count": str(len(external)),
     }
@@ -606,6 +632,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("framework_root")
     p.add_argument("framework_version")
     p.add_argument("--carrier-installation", default="unknown")
+    p.add_argument("--history-owned", action="append", default=[])
     p = sub.add_parser("validate")
     p.add_argument("archive")
     p = sub.add_parser("import")
@@ -616,7 +643,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         if args.command == "export":
-            emit(export_session(Path(args.session), Path(args.archive), Path(args.framework_root), args.framework_version, args.carrier_installation))
+            emit(export_session(Path(args.session), Path(args.archive), Path(args.framework_root), args.framework_version, args.carrier_installation, args.history_owned))
         elif args.command == "validate":
             manifest, _ = validate_archive(Path(args.archive))
             pkg = manifest.get("package", {})

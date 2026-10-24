@@ -219,7 +219,7 @@ proc ::GX::_viewerGuiEMRemember {window form model} {
     set before $context
     dict set context em_models $form $association
     viewerGuiDesignContextSet $window $context
-    if {$before ne $context && ![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window {Electromagnetic model association}}
+    if {$before ne $context && ![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window {Electromagnetic model association}}
 }
 proc ::GX::_viewerGuiEMPrepareEdit {window} {
     if {![dict get $::GX::ViewerGui::instances $window restoring] && [dict exists $::GX::ScientificHistory::viewers $window] && ![scientificHistoryViewerPrepareEdit $window]} {return -code error -errorcode {GX HISTORY EDIT_CANCELLED} {Model operation cancelled before changing the authoritative model}}

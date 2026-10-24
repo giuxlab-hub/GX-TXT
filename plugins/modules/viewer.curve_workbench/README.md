@@ -1,4 +1,4 @@
-# viewer.curve_workbench 2.21.15
+# viewer.curve_workbench 2.21.16
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -42,3 +42,9 @@ scientific sprite synchronization is active; CORE CAD contexts coordinate existi
 C selection/drag/control/constraint/component operations. Public contracts are
 `docs/api/NATIVE2D_SPRITE_SCENE_API_v1.md` and
 `docs/api/NATIVE2D_CAD_CONTROLLER_v1.md` in the framework. No other Viewer is migrated.
+
+DEV111-P017 requires the matching native CORE History binary and public service.
+The manual Workbench supplies scientific capture/restore and descriptive hooks;
+CORE owns RAM History, asynchronous persistence/recovery and the shared controls.
+No additional CAD migration is part of this patch. Final user GUI acceptance is
+required before subsequent CAD development.

@@ -20,7 +20,7 @@ proc ::GX::CurveWorkbench::_splineLine {w} {
     dict for {fragment entry} $st($w,sketchFragments) {
         if {[dict get $entry definition parent] eq $id} {error "Fragment $fragment depends on this Path's parameter intervals. Remove that fragment before changing Spline topology."}
     }
-    set before [_snapshotIds $w [list $id]];set undo $st($w,undo);set redo $st($w,redo)
+    set before [_snapshotIds $w [list $id]];
     try {
         if {[catch {set definition [::GX::Native2D::core spline_span_to_line $st($w,scene) [dict get $record native] [dict get $ref index]]} cause]} {error "Cannot convert this span without violating its geometry or constraints: $cause. No geometry changed."}
         dict set record sketch_definition $definition
@@ -32,7 +32,7 @@ proc ::GX::CurveWorkbench::_splineLine {w} {
         _constraintCapture $w
         _semanticApply $w {};_selectionScene $w
         _history $w $before [list $id]
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,status) {Selected span converted to retained Line; adjacent exact curves and shared nodes preserved.}
 }
 proc ::GX::CurveWorkbench::_sketchContent {w {all 0}} {
@@ -217,14 +217,25 @@ proc ::GX::CurveWorkbench::_datasetImport {w id} {
     variable st
     if {![_coordinateWorkspaceEmpty $w]} {error {Sketch import requires a genuinely empty Workspace.}}
     ::GX::sketchDatasetRead [_session] $id
-    set before [_recipeState $w];set prior $st($w,document);set original {}
+    set before [_recipeState $w];set prior $st($w,document);set original {};set accepted 0
     if {$prior ne {}} {set original [dict get [::GX::interactiveDocumentRead $prior] payload]}
     set st($w,importTransaction) 1
     try {
         _datasetImportApply $w $id
         unset st($w,importTransaction)
-        _save $w
+        set ids [dict keys $st($w,curves)]
+        foreach created $ids {if {![dict exists $before $created]} {dict set before $created {}}}
+        set recorded [_history $w $before $ids]
+        set accepted [expr {$recorded ne {} && [dict get $recorded accepted]}]
+        ::GX::scientificHistoryViewerBindDocument $w $st($w,document)
+        set st($w,historyDocument) $st($w,document)
+        _flushWorkspace $w
     } on error {message options} {
+        if {$accepted} {
+            set st($w,recoveryNotice) "Sketch imported in RAM; Workspace projection failed: $message. Retry Save; accepted History remains available."
+            set st($w,status) $st($w,recoveryNotice)
+            return [dict create status accepted accepted 1 projected 0 history [::GX::scientificHistoryViewerStatus $w] warning $message]
+        }
         set st($w,importTransaction) 1
         if {[info exists st($w,parameterContext)]} {catch {::GX::parameterUnsubscribe $st($w,parameterContext)};unset st($w,parameterContext)}
         if {$st($w,document) ne {}&&$st($w,document) ne $prior} {

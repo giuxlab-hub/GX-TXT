@@ -45,13 +45,13 @@ proc ::GX::native3DGeometryImportDataset {token datasetId workingUnit {assumedIn
 }
 proc ::GX::native3DGeometryOpen {document} {
     variable ::GX::Native3DGeometry::scenes;variable ::GX::Native3DGeometry::serial
-    set owner [interactiveDocumentRead $document]
+    set owner [interactiveDocumentMetadata $document]
     set sessionToken [interactiveDocumentSessionToken]
     ::GX::Engine3D::loadNative
     set token "native3d-scene#[pid]-[incr serial]-[clock clicks]"
     ::GX::Engine3D::rpc [list cad $token open {}]
     try {
-        if {$sessionToken ne [interactiveDocumentSessionToken]||[dict get [interactiveDocumentRead $document] generation] ne [dict get $owner generation]} {error "Document or Session lifetime changed while opening Native3D"}
+        if {$sessionToken ne [interactiveDocumentSessionToken]||[dict get [interactiveDocumentMetadata $document] generation] ne [dict get $owner generation]} {error "Document or Session lifetime changed while opening Native3D"}
     } on error {message options} {
         if {[catch {::GX::Engine3D::rpc [list cad $token close {}]} cleanup]} {append message "; Native3D cleanup failed: $cleanup"}
         return -options $options $message
@@ -64,7 +64,7 @@ proc ::GX::_native3DGeometryRequire {token} {
     if {![dict exists $scenes $token]} {error "Unknown or closed Native3D scene token"}
     set scene [dict get $scenes $token]
     if {[dict get $scene session_token] ne [interactiveDocumentSessionToken]} {error "Native3D scene belongs to another Session lifetime"}
-    set owner [interactiveDocumentRead [dict get $scene document_id]]
+    set owner [interactiveDocumentMetadata [dict get $scene document_id]]
     if {[dict get $scene generation] ne [dict get $owner generation]} {error "Native3D document owner was replaced"}
     if {[dict get $scene revision] ne [dict get $owner revision]} {error "Native3D document revision changed; reopen and restore its authoritative geometry"}
     if {$::GX::Engine3D::worker eq ""||[dict get $scene worker_generation]!=$::GX::Engine3D::workerGeneration} {error "Native3D worker lifetime changed; restore its document geometry"}

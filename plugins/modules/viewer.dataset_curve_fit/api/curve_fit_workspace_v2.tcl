@@ -358,7 +358,7 @@ proc ::GX::DatasetCurveFit::_saveState {key} {
     if {$state($key,sessionToken) ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen Curve Fit"}
     if {[dict exists $::GX::ScientificHistory::viewers $key]} {
         if {![::GX::scientificHistoryViewerEditable $key]} return
-        return [::GX::scientificHistoryViewerChanged $key [expr {[info exists state($key,historyDescription)] ? $state($key,historyDescription) : {Update Viewer state}}]]
+        return [::GX::scientificHistoryViewerRecordOperation $key [expr {[info exists state($key,historyDescription)] ? $state($key,historyDescription) : {Update Viewer state}}]]
     }
     _writePayload $key [_payload $key]
 }
@@ -589,4 +589,5 @@ proc ::GX::DatasetCurveFit::_workspaceSave {w} {
         # saves its one scientific History step. Do not invoke Save a second time.
         try {_uiBoundSetting $w $field} finally {if {[winfo exists $w]} {set state($w,hostReview) $was}}
     } else {_saveState $w}
+    if {[dict exists $::GX::ScientificHistory::viewers $w]} {::GX::scientificHistoryViewerFlush $w}
 }

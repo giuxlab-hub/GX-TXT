@@ -75,7 +75,7 @@ proc ::GX::viewerGuiDesignPlotBind {window component form {selection {}}} {
                 viewerGuiDesignValueSet $window [dict get $p $field] $value
             }
         } finally {dict set ::GX::ViewerGui::instances $window restoring $restoring}
-        if {!$restoring && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window "Select canonical waveform $y"}
+        if {!$restoring && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window "Select canonical waveform $y"}
     } else {set result [viewerGuiDesignPlotSet $window $component $spec]}
     if {[dict exists $p plot_probe]} {viewerGuiDesignTextSet $window [dict get $p plot_probe] "Dataset: $dataset\nX: $x; Y: $y\nRelease the pointer on an actual source point to inspect its canonical row and units."}
     return $result
@@ -152,7 +152,7 @@ proc ::GX::_viewerGuiPlotCursorAnnotations {window component receipt} {
         viewerGuiDesignPlotSet $window $component $spec [datasetPublicationV2DictDefault $binding context {}]
         ::GX::PlotDatasetAPIv4::widgetView $plot restore $axes
     } finally {dict set ::GX::ViewerGui::instances $window restoring $restoring}
-    if {!$restoring && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerChanged $window [expr {$receipt eq {}?{Clear source cursor}:{Select source cursor}}]}
+    if {!$restoring && [dict exists $::GX::ScientificHistory::viewers $window]} {scientificHistoryViewerRecordOperation $window [expr {$receipt eq {}?{Clear source cursor}:{Select source cursor}}]}
 }
 proc ::GX::viewerGuiDesignPlotCursor {window component x y} {
     # Display coordinates are supplied by the existing native Plot hit owner;

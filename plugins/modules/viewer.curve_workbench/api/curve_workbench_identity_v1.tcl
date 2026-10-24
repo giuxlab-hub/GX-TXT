@@ -57,7 +57,7 @@ proc ::GX::CurveWorkbench::_identityApply {w token values} {
     _cancelGesture $w
     set target [dict get $values target];set ids {}
     if {[dict exists $st($w,curves) $target]} {set ids [list $target]}
-    set before [_snapshotIds $w $ids];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w $ids];
     if {$target eq "document"} {set native 0} elseif {$ids ne {}} {set native [dict get [_record $w $target] native]} elseif {[dict exists $st($w,groups) $target]} {set native [dict get $st($w,groupNative) $target]} elseif {[dict exists $st($w,sketchFragments) $target native]} {set native [dict get $st($w,sketchFragments) $target native]} else {error "The selected entity is missing/stale; update its fragment interval first"}
     set name [string trim [dict get $values name]];set key [string trim [dict get $values key]]
     try {
@@ -72,7 +72,7 @@ proc ::GX::CurveWorkbench::_identityApply {w token values} {
             if {$name ne {}} {dict set st($w,$container) $target name $name}
         }
         _history $w $before $ids
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     _fragmentRefresh $w;return $target
 }
 proc ::GX::CurveWorkbench::_fragmentRefresh {w} {
@@ -120,7 +120,7 @@ proc ::GX::CurveWorkbench::_fragmentApply {w token id values} {
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]} {error "Session changed; reopen fragment parameters"}
     _cancelGesture $w;set name [string trim [dict get $values name]];if {$name eq {}} {error "Enter a fragment name"}
     set definition [dict remove $values name];set spec [_fragmentNativeSpec $w $definition]
-    set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    set before [_snapshotIds $w {}];
     if {$id eq {}||![dict exists $st($w,sketchFragments) $id native]} {
         set receipt [::GX::Native2D::core fragment_create $st($w,scene) $spec]
         if {$id eq {}} {set id "fragment[incr st($w,nextFragment)]"}
@@ -128,14 +128,14 @@ proc ::GX::CurveWorkbench::_fragmentApply {w token id values} {
     set attributes {};if {[dict exists $st($w,sketchFragments) $id sketch_attributes]} {set attributes [dict get $st($w,sketchFragments) $id sketch_attributes]};dict set attributes gx.name $name
     set native [dict get $receipt id];_identitySetAttributes $w $native $attributes
     dict set st($w,sketchFragments) $id [dict create id $id name $name definition $definition native $native state current sketch_attributes $attributes]
-    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     _fragmentRefresh $w;return $id
 }
 proc ::GX::CurveWorkbench::_fragmentRemove {w} {
     variable st
-    _cancelGesture $w;set id [_fragmentSelected $w];set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+    _cancelGesture $w;set id [_fragmentSelected $w];set before [_snapshotIds $w {}];
     if {[dict exists $st($w,sketchFragments) $id native]} {::GX::Native2D::core fragment_delete $st($w,scene) [dict get $st($w,sketchFragments) $id native]};dict unset st($w,sketchFragments) $id
-    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
+    try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     _fragmentRefresh $w
 }
 proc ::GX::CurveWorkbench::_fragmentSampleForm {w} {
@@ -154,11 +154,11 @@ proc ::GX::CurveWorkbench::_fragmentSampleApply {w token id values} {
     try {
         set record [_newRecord $w [dict get $values name] [_sketchSamples $w $native] {} x y {} {} {} {} [list $parent] [list [dict create operation fragment_materialization fragment_id $id definition [dict get $fragment definition]]]]
         dict set record sketch_attributes [dict get $fragment sketch_attributes];dict set record materialization_sampling [dict create method uniform_fragment total [dict get $values total] fragment_id $id definition [dict get $fragment definition]]
-        set created [dict get $record id];set before [_snapshotIds $w [list $created]];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
+        set created [dict get $record id];set before [_snapshotIds $w [list $created]];
         _addRecord $w $record $native;set st($w,active) $created;set st($w,objectSelection) [list $created]
         _identitySync $w;_selectionScene $w;_history $w $before [list $created]
     } on error {message options} {
-        if {[info exists before]} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo} elseif {$native in [::GX::Native2D::core ids $st($w,scene)]} {::GX::Native2D::core delete $st($w,scene) $native}
+        if {[info exists before]} {_restoreSnapshot $w $before;} elseif {$native in [::GX::Native2D::core ids $st($w,scene)]} {::GX::Native2D::core delete $st($w,scene) $native}
         return -options $options $message
     }
     return $created

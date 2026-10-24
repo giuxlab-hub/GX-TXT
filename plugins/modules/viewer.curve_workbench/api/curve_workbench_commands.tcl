@@ -10,19 +10,19 @@ proc ::GX::CurveWorkbench::_commandSelection {w} {
 proc ::GX::CurveWorkbench::_deleteCurve {w} {
     variable st
     set ids [_commandSelection $w];set before [_snapshotIds $w $ids]
-    set undo $st($w,undo);set redo $st($w,redo)
+
     try {
         foreach id $ids {_removeRecord $w $id}
         _semanticApply $w {} add
         if {$st($w,active) eq {}} {set st($w,active) [lindex [dict keys $st($w,curves)] 0]}
         _selectionScene $w;_history $w $before $ids
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,status) "Deleted [llength $ids] selected objects."
 }
 proc ::GX::CurveWorkbench::_duplicate {w} {
     variable st
     set parents [_commandSelection $w];set before [_snapshotIds $w {}]
-    set undo $st($w,undo);set redo $st($w,redo);set ids {};set members {}
+    set ids {};set members {}
     foreach parent $parents {_sourceSnapshotRequire $w [_record $w $parent]}
     try {
         foreach parent $parents {
@@ -40,7 +40,7 @@ proc ::GX::CurveWorkbench::_duplicate {w} {
         _semanticApply $w $members
         set st($w,active) [lindex $ids 0];_selectionScene $w
         _history $w $before $ids
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,status) "Duplicated [llength $ids] objects; exact retained definitions and Dataset bindings preserved."
 }
 proc ::GX::CurveWorkbench::_reverseSelection {w} {
@@ -50,7 +50,7 @@ proc ::GX::CurveWorkbench::_reverseSelection {w} {
         set record [_record $w $id]
         if {[dict exists $record sketch_definition]&&[dict get $record sketch_definition family] in {point construction_line}} {error {Select finite curves with a traversal direction. No objects changed.}}
     }
-    set before [_snapshotIds $w $ids];set undo $st($w,undo);set redo $st($w,redo)
+    set before [_snapshotIds $w $ids];
     try {
         foreach id $ids {
             set native [dict get [_record $w $id] native]
@@ -58,7 +58,7 @@ proc ::GX::CurveWorkbench::_reverseSelection {w} {
             ::GX::Native2D::core direction_marker $st($w,scene) $native [dict create forward [expr {![dict get $marker forward]}]]
         }
         _history $w $before $ids
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,status) "Reversed the intended traversal of [llength $ids] objects. Publication follows this direction; definitions and source data are preserved."
 }
 proc ::GX::CurveWorkbench::_setVisibility {w {visible {}}} {
@@ -83,7 +83,7 @@ proc ::GX::CurveWorkbench::_setLock {w {locked {}}} {
 }
 proc ::GX::CurveWorkbench::_objectFlag {w ids flag value} {
     variable st
-    set before [_snapshotIds $w $ids];set undo $st($w,undo);set redo $st($w,redo)
+    set before [_snapshotIds $w $ids];
     try {
         foreach id $ids {
             set record [_record $w $id]
@@ -91,7 +91,7 @@ proc ::GX::CurveWorkbench::_objectFlag {w ids flag value} {
             dict set record $flag $value;dict set st($w,curves) $id $record
         }
         _history $w $before $ids
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
 }
 proc ::GX::CurveWorkbench::_commandRegister {w id label shortcut requirement handler {icon {}}} {
     variable st
@@ -103,7 +103,15 @@ proc ::GX::CurveWorkbench::_commandEnabled {w id} {
     set requirement [dict get $st($w,commands) $id requirement]
     switch $requirement {
         selection {return [expr {[llength $st($w,objectSelection)]>0}]}
-        undo - redo {return [expr {[llength $st($w,$requirement)]>0}]}
+        undo - redo {
+            if {![info exists st($w,historyReady)] || !$st($w,historyReady)} {return 0}
+            set state [::GX::scientificHistoryViewerStatus $w]
+            if {[_historyBrowsing $w]} {
+                set index [dict get [::GX::scientificHistoryViewerRestoreContext $w] cursor]
+                return [expr {$requirement eq {undo} ? $index>0 : $index<[dict get $state count]}]
+            }
+            return [expr {$requirement eq {undo} ? [dict get $state cursor]>0 : [dict get $state cursor]<[dict get $state count]}]
+        }
         default {return 1}
     }
 }

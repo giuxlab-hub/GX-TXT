@@ -101,7 +101,7 @@ proc ::GX::CurveWorkbench::_sourceAdd {w} {
                 set st($w,sketchUnit) [lindex $targetFrame 0]
             }
             if {[dict get $descriptor row_count]>65536} {
-                _save $w
+                if {$st($w,document) eq {}} {_flushWorkspace $w}
                 dict set record source_token $source
                 set id [::GX::curveSourceWithNumericInput $source [list ::GX::CurveWorkbench::_ingestSource $w $record] {} [list ::GX::CurveWorkbench::_sourceLoadProgress $w $source]]
                 set source ""

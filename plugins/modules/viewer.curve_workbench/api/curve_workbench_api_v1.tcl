@@ -1,7 +1,7 @@
 # GX-TXT Curve Workbench. Native2D owns planar geometry, selection and view.
 # SPDX-License-Identifier: GPL-3.0-or-later
 namespace eval ::GX::CurveWorkbench {
-    variable version 2.20.0
+    variable version 2.21.16
     variable st
     variable root [file normalize [file join [file dirname [info script]] ../../../..]]
 }
@@ -173,15 +173,7 @@ proc ::GX::CurveWorkbench::_snapshotIds {w ids} {
     }
     return $result
 }
-proc ::GX::CurveWorkbench::_history {w before ids} {
-    variable st
-    set after [_snapshotIds $w $ids]
-    if {$before eq $after} return
-    lappend st($w,undo) [list $before $after]
-    if {[llength $st($w,undo)]>30} {set st($w,undo) [lrange $st($w,undo) end-29 end]}
-    set st($w,redo) {}
-    _changed $w
-}
+proc ::GX::CurveWorkbench::_history {w before ids} {return [_historySubmit $w $before $ids]}
 proc ::GX::CurveWorkbench::_restoreSnapshot {w snapshot} {
     variable st
     set previousActive $st($w,active)
@@ -193,18 +185,12 @@ proc ::GX::CurveWorkbench::_restoreSnapshot {w snapshot} {
     _selectionScene $w
 }
 proc ::GX::CurveWorkbench::undo {w} {
-    variable st
-    if {![llength $st($w,undo)]} return
-    lassign [lindex $st($w,undo) end] before after
-    set st($w,undo) [lrange $st($w,undo) 0 end-1]
-    _restoreSnapshot $w $before;lappend st($w,redo) [list $before $after];_changed $w
+    if {[_historyBrowsing $w]} {_cancelGesture $w;return [::GX::scientificHistoryViewerNavigate $w previous]}
+    _sketchIdle $w;_cancelGesture $w;return [::GX::scientificHistoryViewerNavigate $w undo]
 }
 proc ::GX::CurveWorkbench::redo {w} {
-    variable st
-    if {![llength $st($w,redo)]} return
-    lassign [lindex $st($w,redo) end] before after
-    set st($w,redo) [lrange $st($w,redo) 0 end-1]
-    _restoreSnapshot $w $after;lappend st($w,undo) [list $before $after];_changed $w
+    if {[_historyBrowsing $w]} {_cancelGesture $w;return [::GX::scientificHistoryViewerNavigate $w next]}
+    _sketchIdle $w;_cancelGesture $w;return [::GX::scientificHistoryViewerNavigate $w redo]
 }
 proc ::GX::CurveWorkbench::_load {w} {
     variable st

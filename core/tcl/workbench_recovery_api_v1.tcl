@@ -121,6 +121,7 @@ proc ::GX::workbenchRecoveryForget {document} {
 }
 proc ::GX::_workbenchRecoveryResourceReferences {document {excludeOwner 0}} {
     set result {}
+    if {[llength [info commands _historyResourceReferences]]} {lappend result {*}[ _historyResourceReferences]}
     foreach owner [interactiveDocumentList] {
         if {$excludeOwner&&[dict get $owner id] eq $document} continue
         # Corruption is already visible via Inspect; an unusable checkpoint
@@ -173,6 +174,7 @@ proc ::GX::workbenchRecoveryPrompt {document {parent .}} {
 }
 rename ::GX::saveCurrentSessionConfig ::GX::saveCurrentSessionConfig_before_workbench_recovery
 proc ::GX::saveCurrentSessionConfig {} {
+    if {[llength [info commands scientificHistoryFlushAll]]} {scientificHistoryFlushAll}
     set result [saveCurrentSessionConfig_before_workbench_recovery]
     if {$::GX::currentSession eq ""||![file isdirectory $::GX::currentSession]} {return $result}
     foreach owner [interactiveDocumentList] {

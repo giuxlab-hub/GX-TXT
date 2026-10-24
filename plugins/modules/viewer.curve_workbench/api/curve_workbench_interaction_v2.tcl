@@ -189,7 +189,7 @@ proc ::GX::CurveWorkbench::_createCommit {w} {
     set unit $st($w,sketchUnit)
     set placements $st($w,constructionPlaces);set chain $st($w,chainReferences)
     set parents {};dict for {id r} $st($w,curves) {foreach p $placements {if {[dict exists $p reference]&&[dict get $p reference object]==[dict get $r native]} {lappend parents $id}}}
-    set before [_snapshotIds $w [lsort -unique $parents]];set oldUndo $st($w,undo);set oldRedo $st($w,redo);set native {};set joined 0
+    set before [_snapshotIds $w [lsort -unique $parents]];set native {};set joined 0
     _toolPreviewClear $w
     try {
         set context [_sketchCoordinateContext $w {}]
@@ -265,7 +265,7 @@ proc ::GX::CurveWorkbench::_createCommit {w} {
         _restoreSnapshot $w $before
         if {[info exists receipt]&&[dict exists $receipt mirror_id]&&[dict get $receipt mirror_id] in [::GX::Native2D::core ids $st($w,scene)]} {::GX::Native2D::core delete $st($w,scene) [dict get $receipt mirror_id]}
         if {$native ne {}&&$native in [::GX::Native2D::core ids $st($w,scene)]} {::GX::Native2D::core delete $st($w,scene) $native}
-        set st($w,undo) $oldUndo;set st($w,redo) $oldRedo
+
         _sketchIdle $w
         if {$message eq "invalid input"} {set message "[string totitle [string map {_ { }} $family]] needs distinct defining points and a compatible attachment."}
         _notice $w "Construction rejected: $message"
@@ -292,10 +292,6 @@ proc ::GX::CurveWorkbench::_drawConstructionPlaces {w} {
     }
     ::GX::native2DCanvasViewportClip $w.right.viewport.canvas $st($w,scene)
 }
-rename ::GX::CurveWorkbench::undo ::GX::CurveWorkbench::undo_interaction055_base
-proc ::GX::CurveWorkbench::undo {w} {_sketchIdle $w;undo_interaction055_base $w}
-rename ::GX::CurveWorkbench::redo ::GX::CurveWorkbench::redo_interaction055_base
-proc ::GX::CurveWorkbench::redo {w} {_sketchIdle $w;redo_interaction055_base $w}
 proc ::GX::CurveWorkbench::_selectionTargets {w} {variable st;set ids [_cadSelected $w];if {$ids eq {}} {set ids [list [_active $w]]};return $ids}
 
 # Explicit multi-selection publication delegates to existing scientific/primitive

@@ -248,11 +248,11 @@ proc ::GX::CurveWorkbench::_newWorkspaceApply {w values} {
     _save $next
 }
 proc ::GX::CurveWorkbench::_renameWorkspace {w} {
-    variable st;_save $w
+    variable st;_flushWorkspace $w
     ::GX::uiFieldFormCreate $w.renameWorkspace {Rename Session workspace} {name {type string required 1 label Name}} [dict create name [dict get [::GX::sessionWorkspaceGet $st($w,document)] name]] [list ::GX::CurveWorkbench::_renameWorkspaceApply $w] $w
 }
 proc ::GX::CurveWorkbench::_renameWorkspaceApply {w values} {variable st;::GX::sessionWorkspaceRename $st($w,document) [dict get $values name];set st($w,workspaceName) [dict get $values name]}
-proc ::GX::CurveWorkbench::_workspaceNotes {w mode} {variable st;_save $w;::GX::noteDocumentOpen $st($w,document) $mode}
+proc ::GX::CurveWorkbench::_workspaceNotes {w mode} {variable st;_flushWorkspace $w;::GX::noteDocumentOpen $st($w,document) $mode}
 proc ::GX::CurveWorkbench::_restoreViewportPreferences {w} {
     variable st;if {![winfo exists $w]} return
     # Responsive layout may already have removed this pane before the idle
@@ -278,7 +278,7 @@ proc ::GX::CurveWorkbench::_imageAttach {w} {
     set file [::GX::workspaceOpenFile acquisition_dir -title {Attach calibrated reference image} -filetypes {{{Raster images} {.png .jpg .jpeg .gif .bmp .tif .tiff}} {{All files} *}}]
     if {$file eq {}} return
     ::GX::unitRegistryConversionPlan $st($w,sketchUnit) m
-    _save $w
+    _flushWorkspace $w
     set path [file normalize $file];lassign [::GX::_native2DRasterHelper info $path] width height
     set resource [::GX::interactiveDocumentResourceImportNumeric $st($w,document) $path {format image.raster}]
     set state [dict create resource_id [dict get $resource sha256] length_unit $st($w,sketchUnit) width $width height $height scale 1 rotation 0 translation {0 0} opacity .7 visible 1 locked 0]
@@ -358,7 +358,7 @@ proc ::GX::CurveWorkbench::_imageCalibrationApply {w id points before values} {
     set st($w,status) {Reference image uniformly calibrated. Its reference points are Native controls usable by snapping and construction.}
 }
 proc ::GX::CurveWorkbench::_workspacePreview {w} {
-    variable st;_save $w
+    variable st;_flushWorkspace $w
     set resource [::GX::native2DCanvasPreview $st($w,scene) $st($w,document) fit {width 480 height 300}]
     ::GX::sessionWorkspacePreviewSet $st($w,document) $resource
     set st($w,status) {Session workspace scene preview refreshed; UI chrome and transient feedback are excluded.}

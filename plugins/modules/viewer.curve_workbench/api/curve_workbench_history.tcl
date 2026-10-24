@@ -1,311 +1,285 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Timeline is a projection of Scientific Recipe patches. Native reconstruction,
-# CORE parameter contexts and Interactive Documents remain authoritative.
-proc ::GX::CurveWorkbench::_timelineState {w index} {
+# Curve supplies scientific hooks. CORE owns History state, workers and controls.
+proc ::GX::CurveWorkbench::_historyBrowsing {w} {
     variable st
-    set record $st($w,scientificRecipe)
-    if {$record eq {}} {return [_recipeState $w]}
-    set steps [dict get $record steps]
-    if {![string is integer -strict $index]||$index<0||$index>[llength $steps]} {error {History index is outside the retained timeline.}}
-    set state [dict get $record base]
-    for {set i 0} {$i<$index} {incr i} {set state [::GX::scientificRecipeApplyPatch $state [dict get [lindex $steps $i] patch]]}
-    return $state
+    return [expr {[info exists st($w,historyReady)] && $st($w,historyReady) && [dict get [::GX::scientificHistoryViewerRestoreContext $w] browsing]}]
 }
-proc ::GX::CurveWorkbench::_timelineBuild {w} {
+proc ::GX::CurveWorkbench::_historyGuard {w} {
     variable st
-    $w.toolbar.workspace.menu add command -label {Clear History…} -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_clearHistory $w]]
-    set st($w,historyBrowsing) 0;set st($w,historyCursor) -1;set st($w,historyExpanded) {};set st($w,stripVisible) 1;set st($w,stripView) Description
-    set height [expr {[winfo reqheight $w.status]+10}]
-    pack forget $w.status
-    ttk::frame $w.strip -height $height
-    pack propagate $w.strip 0
-    pack $w.strip -side bottom -fill x -before $w.main
-    ttk::combobox $w.strip.choice -values {Description History} -state readonly -width 12 -textvariable ::GX::CurveWorkbench::st($w,stripView)
-    ::GX::uiFieldSelectorWithinViewer $w.strip.choice $w
-    pack $w.strip.choice -side left -fill y
-    pack $w.status -in $w.strip -side left -fill x -expand 1;raise $w.status
-    bind $w.status <Configure> +[list ::GX::CurveWorkbench::_timelineDescriptionLayout $w]
-    bind $w.strip <Configure> +[list ::GX::CurveWorkbench::_timelineDescriptionLayout $w]
-    canvas $w.strip.timeline -height [expr {$height-2}] -highlightthickness 0 -background #edf1f5
-    bind $w.strip.choice <<ComboboxSelected>> [list ::GX::CurveWorkbench::_timelineSwitch $w]
-    bind $w.strip.timeline <Button-1> [list ::GX::CurveWorkbench::_timelineClick $w %x %y]
-    bind $w.strip.timeline <Button-3> [list ::GX::CurveWorkbench::_timelineContext $w %x %y %X %Y]
-    bind $w.strip.timeline <Button-4> [list $w.strip.timeline xview scroll -3 units]
-    bind $w.strip.timeline <Button-5> [list $w.strip.timeline xview scroll 3 units]
-    $w.strip.timeline configure -xscrollincrement 20
-    $w.toolbar.settings.menu add checkbutton -label {Show Description / History strip} -variable ::GX::CurveWorkbench::st($w,stripVisible) -command [list ::GX::CurveWorkbench::_timelineShow $w]
-    _timelineRender $w
-}
-proc ::GX::CurveWorkbench::_timelineShow {w} {
-    variable st
-    if {$st($w,stripVisible)} {
-        pack $w.strip -side bottom -fill x -before $w.main
-        _timelineRender $w
-    } else {pack forget $w.strip}
-}
-proc ::GX::CurveWorkbench::_timelineSwitch {w} {
-    variable st
-    pack forget $w.status $w.strip.timeline
-    if {$st($w,stripView) eq "History"} {pack $w.strip.timeline -fill both -expand 1;_timelineRender $w} else {pack $w.status -in $w.strip -fill both -expand 1;raise $w.status}
-    _timelineDescriptionLayout $w
-}
-proc ::GX::CurveWorkbench::_timelineDescriptionLayout {w} {
-    variable st
-    if {![winfo exists $w.strip] || $st($w,stripView) ne {Description}} return
-    set width [expr {max(80,[winfo width $w.strip]-[winfo reqwidth $w.strip.choice]-8)}]
-    if {[$w.status cget -wraplength]!=$width} {$w.status configure -wraplength $width}
-    set height [expr {max([winfo reqheight $w.status]+4,[winfo reqheight $w.strip.choice]+2)}]
-    if {[$w.strip cget -height]!=$height} {$w.strip configure -height $height}
-}
-proc ::GX::CurveWorkbench::_timelineKind {before after step} {
-    set old [::GX::datasetPublicationV2DictDefault [dict get $before @cad] constraints {}]
-    set new [::GX::datasetPublicationV2DictDefault [dict get $after @cad] constraints {}]
-    if {$old ne $new} {return [expr {[dict size $new]>[dict size $old]?"constraint_add":"constraint_edit"}]}
-    if {[::GX::datasetPublicationV2DictDefault [dict get $before @cad] parameter_definitions {}] ne [::GX::datasetPublicationV2DictDefault [dict get $after @cad] parameter_definitions {}]} {return parameter}
-    if {[dict size $after]>[dict size $before]} {return create}
-    if {[dict size $after]<[dict size $before]} {return delete}
-    set operations [dict get $step parameters];set names {}
-    dict for {id list} $operations {if {[llength $list]} {set last [lindex $list end];if {[catch {dict size $last}]} {lappend names [lindex $last 0]} else {lappend names [::GX::datasetPublicationV2DictDefault $last operation edit]}}}
-    set names [lsort -unique $names]
-    if {[llength $names]==1} {return [lindex $names 0]}
-    return edit
-}
-proc ::GX::CurveWorkbench::_timelineRender {w} {
-    variable st
-    if {![winfo exists $w.strip.timeline]} return
-    set record $st($w,scientificRecipe)
-    set st($w,historyCount) [expr {$record eq {}?0:[llength [dict get $record steps]]}]
-    if {!$st($w,historyBrowsing)} {set st($w,historyCursor) $st($w,historyCount)}
-    # Navigation remains current while hidden; replay/paint only on History.
-    if {$st($w,stripView) ne "History"||!$st($w,stripVisible)} {
-        _timelineDescriptionLayout $w
-        return
+    if {![info exists st($w,token)] || $st($w,token) ne [::GX::interactiveDocumentSessionToken] || $st($w,publishBusy) && ![info exists st($w,historySubmitting)]} {return 0}
+    foreach key {drag pointDrag directionDrag annotationDrag handleDrag tangentDrag cadDrag} {
+        if {[info exists st($w,$key)] && $st($w,$key) ne {}} {return 0}
     }
-    set c $w.strip.timeline;$c delete all
-    set groups {};set index 0;set previousKind {}
-    if {$record ne {}} {
-        set before [dict get $record base]
-        foreach step [dict get $record steps] {
-            incr index;set after [::GX::scientificRecipeApplyPatch $before [dict get $step patch]]
-            set kind [_timelineKind $before $after $step]
-            # Only consecutive operations with the same semantic class group.
-            if {$kind eq $previousKind&&$kind in {create constraint_add translate rotate scale}} {
-                set group [lindex $groups end];lappend group $index;lset groups end $group
-            } else {lappend groups [list $kind $index]}
-            set previousKind $kind;set before $after
-        }
-    }
-    set st($w,historyCount) $index
-    if {!$st($w,historyBrowsing)} {set st($w,historyCursor) $index}
-    set groups [linsert $groups 0 [list base 0]]
-    set lane [expr {max(24,[font metrics TkDefaultFont -linespace]+8)}]
-    $w.strip configure -height [expr {max($lane+4,[winfo reqheight $w.strip.choice]+2)}]
-    _timelineDescriptionLayout $w
-    set x 3
-    foreach group $groups {
-        set kind [lindex $group 0];set members [lrange $group 1 end]
-        set first [lindex $members 0];set last [lindex $members end]
-        if {$first in $st($w,historyExpanded)} {set sets [lmap member $members {list $member}]} else {set sets [list $members]}
-        foreach set $sets {
-            set target [lindex $set end]
-            set color [expr {$target>$st($w,historyCursor)?"#a8b0ba":"#213c57"}]
-            set fill [expr {$target==$st($w,historyCursor)?"#c5dff4":"#edf1f5"}]
-            set tag step$target
-            $c create rectangle $x 1 [expr {$x+47}] [expr {$lane-1}] -fill $fill -outline #c7cdd5 -tags [list $tag]
-            set symbol [expr {$kind eq "create"?"+":$kind eq "delete"?"−":$kind eq "constraint_add"?"⊥":$kind eq "parameter"?"ƒ":$kind eq "base"?"○":"↔"}]
-            $c create text [expr {$x+23}] [expr {$lane/2}] -text "$symbol [expr {[llength $set]>1?"[llength $set]×":$target}]" -fill $color -tags [list $tag]
-            set st($w,timeline,$target) [dict create kind $kind members $set group $first]
-            $c bind $tag <Enter> [list set ::GX::CurveWorkbench::st($w,status) "History $kind: steps [join $set {, }]. Click to inspect; right-click for members or explicit restart."]
-            incr x 51
-        }
-    }
-    $c configure -scrollregion [list 0 0 $x $lane]
+    return 1
 }
-proc ::GX::CurveWorkbench::_timelineHit {w x y} {
-    set c $w.strip.timeline
-    set item [$c find closest [$c canvasx $x] [$c canvasy $y]]
-    foreach tag [$c gettags $item] {if {[regexp {^step([0-9]+)$} $tag -> index]} {return $index}}
-    return -1
-}
-proc ::GX::CurveWorkbench::_timelineClick {w x y} {
-    set index [_timelineHit $w $x $y]
-    if {$index>=0} {_safe $w [list ::GX::CurveWorkbench::_timelineBrowse $w $index] 1}
-}
-proc ::GX::CurveWorkbench::_timelineBrowse {w index} {
+proc ::GX::CurveWorkbench::_historyCad {w} {return [dict get [_snapshotIds $w {}] @cad]}
+proc ::GX::CurveWorkbench::_historyAuxCapture {w} {
     variable st
-    _cancelGesture $w
-    set record $st($w,scientificRecipe);if {$record eq {}} return
-    set count [llength [dict get $record steps]]
-    if {!$st($w,historyBrowsing)} {set st($w,historyLive) [_recipeState $w]}
-    set wasBrowsing $st($w,historyBrowsing)
-    set previous [_recipeState $w];set oldCursor $st($w,historyCursor)
-    set st($w,historyBrowsing) 1;set st($w,historyRestoring) 1
-    set desired [_timelineState $w $index]
-    try {
-        _recipeValidate [dict create base $desired steps {}]
-        set token [_parameterBind $w]
-        set parameters [::GX::datasetPublicationV2DictDefault [dict get $desired @cad] parameter_definitions [::GX::parameterDefinitions $token]]
-        ::GX::parameterReadView $token $parameters [::GX::datasetPublicationV2DictDefault [dict get $desired @cad] session_parameters [::GX::parameterSessionDefinitions]]
-        _recipeApplyState $w [dict create base $desired steps {}]
-        set st($w,historyCursor) $index
-        if {$index==$count} {
-            _recipeApplyState $w [dict create base $st($w,historyLive) steps {}]
-            ::GX::parameterReadViewClose $token
-            set st($w,historyBrowsing) 0
-        }
-    } on error {message options} {
-        if {$wasBrowsing} {::GX::parameterReadView $token [dict get $previous @cad parameter_definitions] [::GX::datasetPublicationV2DictDefault [dict get $previous @cad] session_parameters {}]} else {::GX::parameterReadViewClose $token}
-        _recipeApplyState $w [dict create base $previous steps {}]
-        set st($w,historyBrowsing) $wasBrowsing
-        set st($w,historyCursor) $oldCursor
-        return -options $options $message
-    } finally {unset -nocomplain st($w,historyRestoring);set st($w,scientificRecipe) $record}
-    _curveList $w;_pointList $w;_draw $w;_timelineRender $w
-    set st($w,status) "History: $index / $count. Browsing preserves the saved Workspace and all future steps."
+    set auxiliary [dict create format gxtxt.curve_presentation.v1 fields {} native {} selection {}]
+    foreach key {next nextGroup nextConstraint nextMeasurement nextFragment nextSelectionSet nextLayer nextSavedView nextSeries nextImage active reference target externalFeedback bridgeKind bridgeSubdivisions bridgeTolerance fragments composeName resultId cadGroup cadTarget cadTool cadObjectSnap coordinatePresentation coordinateView coordinateFrameViews metric directionShown gridShown gridSnap leftVisible listVisible pointsVisible composeVisible compareVisible comparisonEnabled comparisonConfig comparisonRecord lastGeometricComparison publicationArrangement publicationRepresentation showConstraints showDimensions} {
+        if {[info exists st($w,$key)]} {dict set auxiliary fields $key $st($w,$key)}
+    }
+    foreach key {view_requested aspect background grid presentation gizmo} {dict set auxiliary native $key [::GX::Native2D::core $key $st($w,scene)]}
+    if {![catch {set pivot [::GX::Native2D::core pivot $st($w,scene)]}]} {dict set auxiliary native pivot $pivot}
+    set reverse [_logicalNativeMap $w]
+    foreach member [_semanticMembers $w] {
+        if {![dict get $member valid]} continue
+        set native [dict get $member id];set kind [dict get $member kind]
+        if {$kind eq {fragment}} {
+            dict for {logical record} $st($w,sketchFragments) {if {[dict exists $record native] && [dict get $record native]==$native} {dict lappend auxiliary selection [dict create logical $logical kind fragment index 0];break}}
+        } elseif {[dict exists $reverse $native]} {dict lappend auxiliary selection [dict create logical [dict get $reverse $native] kind $kind index [dict get $member index]]}
+    }
+    if {$st($w,active) ne {} && $st($w,selectionObject) ne {}} {dict set auxiliary point_selection [_pointSelectionDescriptor $w]}
+    return $auxiliary
 }
-proc ::GX::CurveWorkbench::_timelineRestart {w index} {
+proc ::GX::CurveWorkbench::_historyAuxRestore {w auxiliary} {
     variable st
-    if {$index>=$st($w,historyCount)} return
-    if {[tk_messageBox -parent $w -type okcancel -icon warning -title {Restart from History} -message "Discard all [expr {$st($w,historyCount)-$index}] future history steps and restart editing at step $index? The saved Workspace will change."] ne "ok"} return
-    set desired [_timelineState $w $index]
-    if {[dict exists $desired @cad session_parameters]&&[dict get $desired @cad session_parameters] ne [::GX::parameterSessionDefinitions]} {error {Historical Session parameters differ from the live shared scope. Restore or reconcile them explicitly before restarting; no other Workspace will be changed implicitly.}}
-    _timelineBrowse $w $index
-    set record $st($w,scientificRecipe);set desired [_timelineState $w $index]
-    set previous $st($w,historyLive)
-    set savedPayload [dict get [::GX::interactiveDocumentRead $st($w,document)] payload]
+    if {$auxiliary eq {}} return
+    if {![dict exists $auxiliary format] || [dict get $auxiliary format] ne {gxtxt.curve_presentation.v1}} {error {Unsupported Curve History presentation state}}
     set st($w,historyRestoring) 1
     try {
-        ::GX::parameterReadViewClose [_parameterBind $w]
-        dict set st($w,scientificRecipe) steps [lrange [dict get $record steps] 0 [expr {$index-1}]]
-        if {$index==0} {dict set st($w,scientificRecipe) steps {}}
-        set st($w,historyBrowsing) 0
-        ::GX::_parameterWrite [_parameterBind $w] [::GX::datasetPublicationV2DictDefault [dict get $desired @cad] parameter_definitions {}]
-        set st($w,undo) {};set st($w,redo) {}
-        _save $w
-    } on error {message options} {
-        set st($w,scientificRecipe) $record
-        set st($w,historyBrowsing) 0
-        ::GX::parameterReadViewClose [_parameterBind $w]
-        catch {::GX::interactiveDocumentUpdate $st($w,document) $savedPayload}
-        _recipeApplyState $w [dict create base $previous steps {}]
-        return -options $options $message
+        dict for {key value} [dict get $auxiliary fields] {
+            if {$key ni {next nextGroup nextConstraint nextMeasurement nextFragment nextSelectionSet nextLayer nextSavedView nextSeries nextImage active reference target externalFeedback bridgeKind bridgeSubdivisions bridgeTolerance fragments composeName resultId cadGroup cadTarget cadTool cadObjectSnap coordinatePresentation coordinateView coordinateFrameViews metric directionShown gridShown gridSnap leftVisible listVisible pointsVisible composeVisible compareVisible comparisonEnabled comparisonConfig comparisonRecord lastGeometricComparison publicationArrangement publicationRepresentation showConstraints showDimensions}} {error {Unknown Curve presentation field}}
+            if {$key in {next nextGroup nextConstraint nextMeasurement nextFragment nextSelectionSet nextLayer nextSavedView nextSeries nextImage}} {
+                if {![string is entier -strict $value] || $value<0} {error {Invalid recovered Curve allocation counter}}
+                set value [expr {max($st($w,$key),$value)}]
+            }
+            set st($w,$key) $value
+        }
+        if {![dict exists $st($w,curves) $st($w,active)]} {set st($w,active) [lindex [dict keys $st($w,curves)] 0]}
+        set members {}
+        foreach member [dict get $auxiliary selection] {
+            set logical [dict get $member logical]
+            if {[dict get $member kind] eq {fragment}} {
+                if {[dict exists $st($w,sketchFragments) $logical native]} {lappend members [dict create kind fragment id [dict get $st($w,sketchFragments) $logical native] index 0]}
+            } elseif {[dict exists $st($w,curves) $logical]} {lappend members [dict create kind [dict get $member kind] id [dict get $st($w,curves) $logical native] index [dict get $member index]]}
+        }
+        _semanticApply $w $members
+        _selectionScene $w
+        if {[dict exists $auxiliary point_selection] && $st($w,selectionObject) ne {}} {_restorePointSelectionDescriptor $w [dict get $auxiliary point_selection]}
+        set native [dict get $auxiliary native]
+        foreach key {aspect background grid presentation gizmo} {if {[dict exists $native $key]} {::GX::Native2D::core $key $st($w,scene) [dict get $native $key]}}
+        if {[dict exists $native pivot]} {set pivot [dict get $native pivot];if {[dict get $pivot mode] eq {custom}} {::GX::Native2D::core pivot $st($w,scene) custom [dict get $pivot point]} elseif {$members ne {}} {::GX::Native2D::core pivot $st($w,scene) [dict get $pivot mode]}}
+        if {[dict exists $native view_requested]} {::GX::Native2D::core view $st($w,scene) [dict get $native view_requested]}
+        _restoreViewportPreferences $w
+        _curveList $w;_pointList $w;_draw $w
     } finally {unset -nocomplain st($w,historyRestoring)}
-    _timelineRender $w
 }
-proc ::GX::CurveWorkbench::_timelineContext {w x y X Y} {
+proc ::GX::CurveWorkbench::_historyUndoAux {w before} {
+    set auxiliary [_historyAuxCapture $w]
+    if {![dict exists $before @cad]} {return $auxiliary}
+    set cad [dict get $before @cad]
+    foreach {field key} {active active cadGroup target_group cadTarget target_scope cadTool tool cadObjectSnap object_snap coordinatePresentation coordinate_presentation coordinateView coordinate_view coordinateFrameViews coordinate_frame_views metric coordinate_metric bridgeTolerance bridge_tolerance lastGeometricComparison geometric_comparison} {
+        if {[dict exists $cad $key]} {dict set auxiliary fields $field [dict get $cad $key]}
+    }
+    foreach key {grid presentation view_requested pivot gizmo} {if {[dict exists $cad $key]} {dict set auxiliary native $key [dict get $cad $key]}}
+    if {[dict exists $cad semantic_selection]} {dict set auxiliary selection [dict get $cad semantic_selection]}
+    if {[dict exists $cad point_selection]} {dict set auxiliary point_selection [dict get $cad point_selection]} else {dict unset auxiliary point_selection}
+    if {[dict exists $cad viewport_preferences]} {dict for {key value} [dict get $cad viewport_preferences] {dict set auxiliary fields $key $value}}
+    foreach {key field} {enabled comparisonEnabled config comparisonConfig record comparisonRecord} {if {[dict exists $cad explicit_comparison $key]} {dict set auxiliary fields $field [dict get $cad explicit_comparison $key]}}
+    return $auxiliary
+}
+proc ::GX::CurveWorkbench::_historyCapture {w} {
+    set snapshot [_recipeState $w]
+    dict set snapshot @cad [_historyCad $w]
+    return $snapshot
+}
+proc ::GX::CurveWorkbench::_historyDescribe {w row} {
     variable st
-    set index [_timelineHit $w $x $y];if {$index<0} return
-    set data $st($w,timeline,$index);set m $w.timelineMenu;catch {destroy $m};menu $m -tearoff 0
-    $m add command -label "Inspect step $index" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_timelineBrowse $w $index] 1]
-    $m add command -label {Return to latest state} -command [list ::GX::CurveWorkbench::_timelineBrowse $w $st($w,historyCount)]
-    if {[llength [dict get $data members]]>1} {$m add command -label {Expand individual operations} -command [list ::GX::CurveWorkbench::_timelineExpand $w [dict get $data group]]}
-    foreach member [dict get $data members] {$m add command -label "Step $member — [dict get $data kind]" -command [list ::GX::CurveWorkbench::_timelineBrowse $w $member]}
-    foreach member [dict get $data members] {
-        foreach id [_timelineConstraints $w $member] {
-            foreach {action title} {inspect {Select / inspect} edit {Restart here, then edit} remove {Restart here, then remove}} {
-                $m add command -label "$title constraint $id (step $member)…" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_timelineConstraint $w $member $id $action] 1]
+    set importedKind {}
+    if {[info exists st($w,descriptionProjection)] && [dict exists $row patch]} {
+        # A temporary UI projection during CORE's ordered import callback.
+        # Fold only metadata/identity membership; never replay scientific states.
+        set before $st($w,descriptionProjection);set next $before
+        if {[dict exists $row patch @cad]} {
+            set cad [dict get $row patch @cad]
+            dict set next constraints [::GX::datasetPublicationV2DictDefault $cad constraints {}]
+            dict set next parameters [::GX::datasetPublicationV2DictDefault $cad parameter_definitions {}]
+        }
+        dict for {id value} [dict remove [dict get $row patch] @cad] {
+            if {$value in {{} @gxtxt.recipe.delete}} {dict unset next ids $id} else {dict set next ids $id 1}
+        }
+        if {[dict get $before constraints] ne [dict get $next constraints]} {set importedKind [expr {[dict size [dict get $next constraints]]>[dict size [dict get $before constraints]] ? {constraint_add} : {constraint_edit}}]} elseif {[dict get $before parameters] ne [dict get $next parameters]} {set importedKind parameter} elseif {[dict size [dict get $next ids]]>[dict size [dict get $before ids]]} {set importedKind create} elseif {[dict size [dict get $next ids]]<[dict size [dict get $before ids]]} {set importedKind delete}
+        set st($w,descriptionProjection) $next
+    }
+    set names {}
+    if {[dict exists $row parameters]} {
+        dict for {id operations} [dict get $row parameters] {
+            if {![llength $operations]} continue
+            set last [lindex $operations end]
+            if {[catch {dict size $last}]} {lappend names [lindex $last 0]} else {lappend names [::GX::datasetPublicationV2DictDefault $last operation edit]}
+        }
+    }
+    set kind [::GX::datasetPublicationV2DictDefault $row kind {}]
+    if {$kind eq {}} {set kind $importedKind}
+    if {$kind eq {}} {set kind [expr {[llength [lsort -unique $names]]==1 ? [lindex $names 0] : {edit}}]}
+    set description [::GX::datasetPublicationV2DictDefault $row description {}]
+    if {$description eq {} || $description in {geometry_state update_logical_geometry}} {set description [string totitle [string map {_ { }} $kind]]}
+    set result [dict create description $description kind $kind]
+    if {$kind in {create create_primitive constraint_add translate rotate scale}} {dict set result group $kind;dict set result group_label $description}
+    return $result
+}
+proc ::GX::CurveWorkbench::_historyError {w receipt} {
+    variable st
+    if {[info exists st($w,recoveryNotice)]} {set st($w,recoveryNotice) "History warning: [dict get $receipt error]. Accepted RAM state remains available; retry Save or export before closing."}
+}
+proc ::GX::CurveWorkbench::_historyAccepted {w receipt} {
+    variable st
+    set st($w,historyDirty) 1
+}
+proc ::GX::CurveWorkbench::_historyAttach {w} {
+    variable st
+    set seed $st($w,historySeed)
+    if {$seed ne {} && (![dict exists $seed format] || ![dict exists $seed cursor] || ![dict exists $seed workbench_id])} {
+        set header [::GX::scientificHistoryCreate viewer.curve_workbench [dict get $seed base]]
+        set seed [dict merge $header $seed [dict create workbench_id viewer.curve_workbench retention complete legacy_import 1]]
+        if {![dict exists $st($w,historySeed) cursor]} {dict set seed cursor [llength [dict get $seed steps]]}
+    }
+    set callbacks [dict create document_id $st($w,document) capture [list ::GX::CurveWorkbench::_historyCapture $w] restore [list ::GX::CurveWorkbench::_historyRestore $w] commit [list ::GX::CurveWorkbench::_historyProject $w] guard [list ::GX::CurveWorkbench::_historyGuard $w] accepted [list ::GX::CurveWorkbench::_historyAccepted $w] error [list ::GX::CurveWorkbench::_historyError $w] describe [list ::GX::CurveWorkbench::_historyDescribe $w] context [list ::GX::CurveWorkbench::_historyContext $w] context_action [list ::GX::CurveWorkbench::_historyContextAction $w]]
+    dict set callbacks capture_aux [list ::GX::CurveWorkbench::_historyAuxCapture $w]
+    dict set callbacks restore_aux [list ::GX::CurveWorkbench::_historyAuxRestore $w]
+    if {$st($w,historyAuxSeed) ne {}} {dict set callbacks auxiliary $st($w,historyAuxSeed)}
+    if {$st($w,historyRecoveryChoice) ne {}} {dict set callbacks recovery_choice $st($w,historyRecoveryChoice)}
+    set base [expr {$seed eq {} ? [dict create @cad [_historyCad $w]] : [dict get $seed base]}]
+    set ids {};foreach id [expr {$seed eq {} ? [dict keys $st($w,curves)] : [dict keys [dict remove $base @cad]]}] {dict set ids $id 1}
+    set cad [::GX::datasetPublicationV2DictDefault $base @cad {}]
+    set st($w,descriptionProjection) [dict create constraints [::GX::datasetPublicationV2DictDefault $cad constraints {}] parameters [::GX::datasetPublicationV2DictDefault $cad parameter_definitions {}] ids $ids]
+    try {set attached [::GX::scientificHistoryViewerAttach $w viewer.curve_workbench $callbacks $seed]} finally {unset st($w,descriptionProjection)}
+    set st($w,historyReady) 1;set st($w,historyDirty) [expr {$seed eq {} ? [dict get [::GX::scientificHistoryViewerStatus $w] count]>0 : ($attached ne $seed || ($st($w,historyAuxSeed) ne {} && [::GX::scientificHistoryViewerAuxiliary $w] ne $st($w,historyAuxSeed)))}];set st($w,historyDocument) $st($w,document)
+    unset st($w,historySeed) st($w,historyAuxSeed)
+    ::GX::scientificHistoryViewerStrip $w $w $w.status {} [list -side bottom -fill x -before $w.main]
+}
+proc ::GX::CurveWorkbench::_historyScientificCad {cad} {
+    return [dict remove $cad active selection target_group target_scope tool object_snap pivot gizmo grid presentation view_requested coordinate_presentation coordinate_view coordinate_frame_views coordinate_metric point_selection viewport_preferences semantic_selection explicit_comparison geometric_comparison comparison_method bridge_tolerance publication_arrangement publication_representation show_constraints show_dimensions]
+}
+proc ::GX::CurveWorkbench::_historySubmit {w before ids} {
+    variable st
+    if {![info exists st($w,historyReady)] || !$st($w,historyReady)} {return}
+    set st($w,historySubmitting) 1;set accepted 0
+    try {
+        if {[_historyBrowsing $w]} {error {History is read-only. Return to Latest or explicitly restart here.}}
+        if {![::GX::scientificHistoryViewerPrepareEdit $w]} {_restoreSnapshot $w $before;_draw $w;return [dict create accepted 0 status cancelled]}
+        foreach id [_sketchAffected $w [dict keys [dict remove $before @cad]]] {
+            if {[dict exists $st($w,curves) $id] && [dict exists [_record $w $id] sketch_definition]} {_syncSamples $w $id}
+            if {$id ni $ids} {lappend ids $id}
+        }
+        set st($w,historyRecording) 1
+        try {_changed $w} finally {unset st($w,historyRecording)}
+        set after [_snapshotIds $w $ids];dict set after @cad [_historyCad $w]
+        if {[dict exists $before @cad] && [dict remove $before @cad] eq [dict remove $after @cad] && [_historyScientificCad [dict get $before @cad]] eq [_historyScientificCad [dict get $after @cad]]} {
+            return [_save $w]
+        }
+        set patch {};set operations {};set created 0;set deleted 0
+        dict for {id value} $after {
+            if {$id ne {@cad} && $value eq {}} {dict set patch $id @gxtxt.recipe.delete;incr deleted} else {dict set patch $id $value}
+            if {$id ne {@cad} && $value ne {}} {
+                if {[dict exists $value operations]} {dict set operations $id [dict get $value operations]}
+                if {[dict exists $before $id] && [dict get $before $id] eq {}} {incr created}
             }
         }
-    }
-    $m add separator
-    $m add command -label {Inspect constraints / dimensions…} -command [list ::GX::CurveWorkbench::_constraintOpen $w]
-    $m add command -label {Restart editing here; discard future…} -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_timelineRestart $w $index] 1]
-    ::GX::uiMenuPopup $m $X $Y
-}
-proc ::GX::CurveWorkbench::_timelineExpand {w first} {variable st;lappend st($w,historyExpanded) $first;_timelineRender $w}
-
-proc ::GX::CurveWorkbench::_clearHistoryPreflight {w} {
-    variable st
-    if {$st($w,token) ne [::GX::interactiveDocumentSessionToken]} {error {Session changed; reopen the Workspace}}
-    if {$st($w,publishBusy) || $st($w,document) eq {}} {error {Save the Workspace and finish publication before clearing History}}
-    foreach key {historyBrowsing restoreFailed importTransaction} {
-        if {[info exists st($w,$key)] && $st($w,$key)} {error {Return to Latest and finish source restore before clearing History}}
-    }
-    foreach key {drag pointDrag directionDrag annotationDrag handleDrag tangentDrag cadDrag toolPoints toolPreview calibrationPoints} {
-        if {[info exists st($w,$key)] && $st($w,$key) ne {}} {error {Finish or cancel the active gesture before clearing History}}
-    }
-    foreach scene [list $st($w,scene) $st($w,selectionScene)] {
-        if {$scene ne {} && [::GX::Native2D::core drag_active $scene]} {error {Finish the active drag before clearing History}}
-    }
-    set doc [::GX::interactiveDocumentRead $st($w,document)]
-    if {[dict get $doc module_id] ne "viewer.curve_workbench" || [dict get $doc generation] ne $st($w,ownerGeneration)} {error {Workspace owner was replaced}}
-    if {[info exists st($w,ownerRevision)] && [dict get $doc revision] ne $st($w,ownerRevision) && [dict remove [dict get $doc payload] workspace_metadata] ne $st($w,ownerPayload)} {error {Workspace changed in another editor; reopen before clearing History}}
-    set state [_recipeState $w]
-    set candidate [::GX::scientificRecipeRebase $st($w,scientificRecipe) $state [dict create owner viewer.curve_workbench document_id $st($w,document) retention complete]]
-    return [dict create candidate $candidate state $state document $doc]
-}
-proc ::GX::CurveWorkbench::_clearHistory {w} {
-    variable st
-    set preflight [_clearHistoryPreflight $w]
-    set answer [tk_messageBox -parent $w -type yesnocancel -default cancel -icon warning -title {Clear History} -message {Previous History navigation and Undo/Redo will be permanently discarded. All current curves, exact geometry, constraints, parameters, images, styles, selections, view, Dataset bindings and notes are preserved.
-
-Yes: clear History now.
-No: export a protected Workspace backup first, then return here.
-Cancel: leave everything unchanged.}]
-    if {$answer eq "cancel"} return
-    if {$answer eq "no"} {::GX::sessionWorkspaceDialog $w;set st($w,status) {Use Export to save a protected Workspace copy, then choose Clear History again.};return}
-    _clearHistoryCommit $w $preflight
-}
-proc ::GX::CurveWorkbench::_clearHistoryCommit {w preflight} {
-    variable st
-    set current [_clearHistoryPreflight $w]
-    foreach field {revision generation} {
-        if {[dict get $current document $field] ne [dict get $preflight document $field]} {error {Workspace changed while confirming; History was preserved}}
-    }
-    if {[dict get $current state] ne [dict get $preflight state]} {error {Scientific state changed while confirming; History was preserved}}
-    set previous $st($w,scientificRecipe);set undo $st($w,undo);set redo $st($w,redo)
-    try {
-        set st($w,scientificRecipe) [dict get $preflight candidate]
-        set st($w,undo) {};set st($w,redo) {}
-        _save $w
-    } on error {message options} {
-        set doc [::GX::interactiveDocumentRead $st($w,document)]
-        if {[dict get $doc revision] eq [dict get $preflight document revision]} {
-            set st($w,scientificRecipe) $previous;set st($w,undo) $undo;set st($w,redo) $redo
-            return -options $options $message
+        set kind edit
+        if {$created} {set kind create} elseif {$deleted} {set kind delete} elseif {[dict exists $before @cad]} {
+            set old [dict get $before @cad];set new [dict get $after @cad]
+            if {[::GX::datasetPublicationV2DictDefault $old constraints {}] ne [::GX::datasetPublicationV2DictDefault $new constraints {}]} {set kind [expr {[dict size [dict get $new constraints]]>[dict size [::GX::datasetPublicationV2DictDefault $old constraints {}]] ? {constraint_add} : {constraint_edit}}]} elseif {[::GX::datasetPublicationV2DictDefault $old parameter_definitions {}] ne [::GX::datasetPublicationV2DictDefault $new parameter_definitions {}]} {set kind parameter}
         }
-        # A postcommit auxiliary failure cannot roll back only the live history.
-        set st($w,status) "History reset committed; auxiliary save warning: $message"
+        set semantic [dict create api_id SCIENTIFIC_RECIPE_API_v1 geometry_api_id NATIVE_2D_GEOMETRY_API_v1 api_version 1 operation geometry_state semantic_operation update_logical_geometry parameters $operations targets $ids result_ids [dict keys $st($w,curves)] working_unit [_recipeUnit $after]]
+        dict set semantic undo_auxiliary [_historyUndoAux $w $before]
+        if {$kind ne {edit}} {dict set semantic kind $kind}
+        set presentation [_historyDescribe $w $semantic]
+        dict set semantic kind [dict get $presentation kind]
+        set receipt [::GX::scientificHistoryViewerSubmitPatch $w $patch [dict get $presentation description] $semantic]
+        set accepted 1
+        return $receipt
+    } on error {message options} {
+        if {!$accepted} {catch {_restoreSnapshot $w $before};catch {_draw $w}}
+        return -options $options $message
+    } finally {unset -nocomplain st($w,historySubmitting)}
+}
+proc ::GX::CurveWorkbench::_historyRestore {w desired} {
+    variable st
+    set context [::GX::scientificHistoryViewerRestoreContext $w];set mode [dict get $context mode]
+    set token [_parameterBind $w]
+    set st($w,historyRestoring) 1;set st($w,importTransaction) 1
+    try {
+        if {$token ne {}} {
+            set cad [dict get $desired @cad]
+            set definitions [::GX::datasetPublicationV2DictDefault $cad parameter_definitions {}]
+            set shared [::GX::datasetPublicationV2DictDefault $cad session_parameters [::GX::parameterSessionDefinitions]]
+            if {$mode eq {browse} || ($mode eq {rollback} && [dict get $context browsing])} {
+                ::GX::parameterReadView $token $definitions $shared
+            } else {
+                if {$mode eq {branch} && $shared ne [::GX::parameterSessionDefinitions]} {error {Historical Session parameters differ from the live shared scope. Reconcile them explicitly before restarting.}}
+                ::GX::parameterReadViewClose $token
+                if {$mode in {undo redo branch seek rollback} && [::GX::parameterDefinitions $token] ne $definitions} {::GX::_parameterWrite $token $definitions}
+            }
+        }
+        _recipeApplyState $w [dict create base $desired steps {}]
+        if {[dict exists $desired @cad history_presentation]} {
+            set display [dict get $desired @cad history_presentation]
+            dict for {key value} [dict remove $display native] {if {$key eq {next}} {set value [expr {max($st($w,next),$value)}]};set st($w,$key) $value}
+            if {[dict exists $display native]} {dict for {key value} [dict get $display native] {::GX::Native2D::core $key $st($w,scene) $value}}
+        }
+        if {$mode eq {undo} && [dict get $context cursor]>0} {
+            set operation [::GX::scientificHistoryViewerOperation $w [dict get $context cursor]]
+            if {[dict exists $operation undo_auxiliary]} {_historyAuxRestore $w [dict get $operation undo_auxiliary]}
+        }
+        _curveList $w;_pointList $w;_draw $w
+    } finally {unset -nocomplain st($w,historyRestoring) st($w,importTransaction)}
+}
+proc ::GX::CurveWorkbench::_timelineState {w index} {return [::GX::scientificHistoryViewerStateAt $w $index]}
+proc ::GX::CurveWorkbench::_timelineBuild {w} {
+    variable st
+    set st($w,stripVisible) 1;set st($w,stripView) Description
+    $w.toolbar.workspace.menu add command -label {Clear History…} -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_clearHistory $w]]
+    $w.toolbar.settings.menu add checkbutton -label {Show Description / History strip} -variable ::GX::CurveWorkbench::st($w,stripVisible) -command [list ::GX::CurveWorkbench::_timelineShow $w]
+    set previous [$w.toolbar.settings.menu cget -postcommand]
+    $w.toolbar.settings.menu configure -postcommand [list ::GX::CurveWorkbench::_timelineSettingsPost $w $previous]
+}
+proc ::GX::CurveWorkbench::_timelineSettingsPost {w previous} {
+    variable st
+    if {$previous ne {}} {uplevel #0 $previous}
+    if {[info exists st($w,historyReady)] && $st($w,historyReady)} {set st($w,stripVisible) [dict get [::GX::scientificHistoryViewerStripGet $w] visible]}
+}
+proc ::GX::CurveWorkbench::_timelineShow {w} {variable st;::GX::scientificHistoryViewerStripSet $w [dict create visible $st($w,stripVisible)]}
+proc ::GX::CurveWorkbench::_timelineSwitch {w} {variable st;::GX::scientificHistoryViewerStripSet $w [dict create mode $st($w,stripView)]}
+proc ::GX::CurveWorkbench::_timelineRender {w} {return}
+proc ::GX::CurveWorkbench::_timelineBrowse {w index {mode legacy}} {_cancelGesture $w;return [::GX::scientificHistoryViewerBrowse $w $index $mode]}
+proc ::GX::CurveWorkbench::_timelineRestart {w index} {_timelineBrowse $w $index index;return [::GX::scientificHistoryViewerNavigate $w branch]}
+proc ::GX::CurveWorkbench::_timelineExpand {w first} {::GX::scientificHistoryViewerGroupExpand $w $first}
+proc ::GX::CurveWorkbench::_clearHistory {w} {variable st;return [::GX::scientificHistoryViewerClear $w $st($w,document)]}
+proc ::GX::CurveWorkbench::_historyContext {w menu index} {
+    foreach id [_timelineConstraints $w $index] {
+        foreach {action title} {inspect {Select / inspect} edit {Restart here, then edit} remove {Restart here, then remove}} {
+            $menu add command -label "$title constraint $id (step $index)…" -command [list ::GX::scientificHistoryViewerContextAction $w constraint [list $index $id $action]]
+        }
     }
-    if {[catch {
-        ::GX::workbenchRecoveryCheckpoint $st($w,document) [dict create operation clear_history]
-        ::GX::workbenchRecoveryMarkSaved $st($w,document)
-    } message]} {set st($w,recoveryNotice) "History reset committed; recovery checkpoint warning: $message"}
-    set st($w,historyExpanded) {};set st($w,historyCursor) 0
-    unset -nocomplain st($w,historyLive)
-    _timelineRender $w
-    set st($w,status) {History cleared. Current scientific state preserved; new edits start at this checkpoint.}
-    return [dict create status committed retained_steps 0 document_id $st($w,document)]
+    $menu add command -label {Inspect constraints / dimensions…} -command [list ::GX::scientificHistoryViewerContextAction $w dimensions]
+}
+proc ::GX::CurveWorkbench::_historyContextAction {w action payload} {
+    switch $action {
+        constraint {_timelineConstraint $w {*}$payload}
+        dimensions {_constraintOpen $w}
+        default {error {Unknown Curve History domain action}}
+    }
 }
 proc ::GX::CurveWorkbench::_replaceDecision {w} {
     variable st
-    if {$st($w,historyBrowsing)} {_timelineBrowse $w $st($w,historyCount)}
-    if {$st($w,document) eq {}} {return 1}
-    set recovery [::GX::workbenchRecoveryInspect $st($w,document)]
-    if {[dict get $recovery status] eq "clean"} {return 1}
-    set answer [tk_messageBox -parent $w -type yesnocancel -default cancel -icon question -title {Save current Workspace?} -message {Yes: Save, then continue.
-No: discard unsaved changes and restore the last saved state.
-Cancel: keep the existing Workbench open.}]
-    if {$answer eq "cancel"} {return 0}
-    if {$answer eq "yes"} {_saveExplicit $w;return 1}
-    if {[tk_messageBox -parent $w -type okcancel -default cancel -icon warning -message {Discard the unsaved changes in this Workspace?}] ne "ok"} {return 0}
-    ::GX::workbenchRecoveryResolve $st($w,document) saved
-    set payload [dict get [::GX::interactiveDocumentRead $st($w,document)] payload]
-    set snapshot [dict get $payload curves];dict set snapshot @cad [dict get $payload cad_workspace]
-    foreach id [dict keys $st($w,curves)] {if {![dict exists $snapshot $id]} {dict set snapshot $id {}}}
-    _restoreSnapshot $w $snapshot
-    set st($w,scientificRecipe) [::GX::datasetPublicationV2DictDefault [dict get $payload cad_workspace] scientific_recipe {}]
+    if {[_historyBrowsing $w]} {::GX::scientificHistoryViewerNavigate $w latest}
+    if {![info exists st($w,historyDirty)] || !$st($w,historyDirty)} {return 1}
+    set answer [tk_messageBox -parent $w -type yesnocancel -default cancel -title {Save current Workspace?} -message {Yes: Save, then continue. No: discard unsaved changes. Cancel: keep editing.}]
+    if {$answer eq {cancel}} {return 0}
+    if {$answer eq {yes}} {_saveExplicit $w;return 1}
+    if {[tk_messageBox -parent $w -type okcancel -default cancel -icon warning -message {Discard the unsaved changes in this Workspace?}] ne {ok}} {return 0}
+    ::GX::scientificHistoryViewerDiscard $w
+    if {$st($w,document) ne {}} {::GX::workbenchRecoveryResolve $st($w,document) saved}
+    set st($w,historyDiscard) 1
     return 1
 }
-
-# Guard mutation entry points before Native state or document state changes.
 proc ::GX::CurveWorkbench::_timelineEditable {w} {
     variable st
-    if {[info exists st($w,historyBrowsing)]&&$st($w,historyBrowsing)&&![info exists st($w,historyRestoring)]} {
-        _notice $w {History is read-only. Return to Latest, or explicitly restart here to discard future steps.}
-        return 0
-    }
-    return 1
+    if {![info exists st($w,historyReady)] || !$st($w,historyReady) || [info exists st($w,historyRestoring)]} {return 1}
+    if {[_historyBrowsing $w]} {_notice $w {History is read-only. Return to Latest, or explicitly restart here.};return 0}
+    return [::GX::scientificHistoryViewerPrepareEdit $w]
 }
 foreach command {_sketchTool _sketchModifyTool _dimensionTool _dimensionEdit _transformStart _duplicate _operation _constraintAction _datasetCommit _datasetImport _parameterRecalculate} {
     if {[info commands ::GX::CurveWorkbench::$command] eq {}} continue
@@ -314,47 +288,6 @@ foreach command {_sketchTool _sketchModifyTool _dimensionTool _dimensionEdit _tr
         if {![_timelineEditable $w]} return
         tailcall %s_history_guard_base $w {*}$args
     } $command]
-}
-foreach command {undo redo} {
-    rename ::GX::CurveWorkbench::$command ::GX::CurveWorkbench::${command}_history_base
-    proc ::GX::CurveWorkbench::$command {w} [format {
-        variable st
-        if {$st($w,historyBrowsing)} {
-            _timelineBrowse $w [expr {max(0,min($st($w,historyCount),$st($w,historyCursor)+%d))}]
-            return
-        }
-        set before [_recipeState $w];set record $st($w,scientificRecipe)
-        set undo $st($w,undo);set redo $st($w,redo)
-        set stack [set st($w,%s)]
-        set target {}
-        if {[llength $stack]} {set target [lindex [lindex $stack end] %d]}
-        set token [_parameterBind $w];set priorDefinitions [::GX::parameterDefinitions $token]
-        set st($w,importTransaction) 1
-        try {
-            # Parameters are part of the same scientific snapshot as retained
-            # geometry. Restore through their existing transactional owner,
-            # then let the native snapshot restore exact geometry/constraints.
-            if {[dict exists $target @cad parameter_definitions]} {
-                set definitions [dict get $target @cad parameter_definitions]
-                if {[::GX::parameterDefinitions $token] ne $definitions} {
-                    ::GX::_parameterWrite $token $definitions
-                }
-            }
-            %s_history_base $w
-            set after [_recipeState $w]
-            if {$record eq {}} {set record [dict create base $before steps {} retention complete]}
-            dict set record retention complete
-            set st($w,scientificRecipe) [::GX::scientificRecipeAppend $record $before $after {api_id SCIENTIFIC_RECIPE_API_v1 api_version 1 operation %s parameters {} targets {} result_ids {} working_unit {}}]
-        } on error {message options} {
-            if {[::GX::parameterDefinitions $token] ne $priorDefinitions} {
-                ::GX::_parameterWrite $token $priorDefinitions
-            }
-            _recipeApplyState $w [dict create base $before steps {}]
-            set st($w,undo) $undo;set st($w,redo) $redo;set st($w,scientificRecipe) $record
-            return -options $options $message
-        } finally {unset -nocomplain st($w,importTransaction)}
-        _save $w;_timelineRender $w
-    } [expr {$command eq "undo"?-1:1}] $command [expr {$command eq "undo"?0:1}] $command $command]
 }
 
 # Direct identities are obtained from the immutable recipe patch, never guessed
@@ -370,12 +303,13 @@ proc ::GX::CurveWorkbench::_timelineConstraints {w index} {
 proc ::GX::CurveWorkbench::_timelineConstraint {w index id action} {
     variable st
     if {$action eq "inspect"} {
-        _timelineBrowse $w $index
+        _timelineBrowse $w $index index
     } else {
-        if {$index<$st($w,historyCount)} {
+        set current [::GX::scientificHistoryViewerStatus $w]
+        if {$index!=[dict get $current cursor] || $index<[dict get $current count] || [_historyBrowsing $w]} {
             _timelineRestart $w $index
-            if {$st($w,historyBrowsing) || $st($w,historyCount)!=$index} return
-        } elseif {$st($w,historyBrowsing)} {_timelineBrowse $w $st($w,historyCount)}
+            if {[_historyBrowsing $w] || [dict get [::GX::scientificHistoryViewerStatus $w] cursor]!=$index} return
+        }
         if {![_timelineEditable $w]} return
     }
     if {![dict exists $st($w,constraints) $id]} {error "Constraint $id is unavailable in this state."}

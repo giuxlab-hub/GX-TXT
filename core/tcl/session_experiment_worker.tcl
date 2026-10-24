@@ -2,9 +2,9 @@
 # Private isolated worker for sessionExperimentClone. No source Session writes.
 set ::experimentCloneArguments $argv
 set argv0 __experiment_clone__;source [file join [lindex $::experimentCloneArguments 0] gxtxt_pipeline.tcl]
-lassign $::experimentCloneArguments framework source target snapshot eid name
+lassign $::experimentCloneArguments framework source target snapshot eid name nativeDrainedPaths
 ::GX::defaults;::GX::loadModuleCatalog
-namespace eval ::GX::ExperimentClone {variable omitted {};variable paths {};variable ids {};variable source {};variable target {};variable diagnostics {};variable allowedFiles {};variable resources {}}
+namespace eval ::GX::ExperimentClone {variable omitted {};variable paths {};variable ids {};variable source {};variable target {};variable diagnostics {};variable allowedFiles {};variable resources {};variable nativeDrainedPaths $::nativeDrainedPaths}
 source [file join $framework core tcl session_experiment_ownership.tcl]
 proc ::GX::ExperimentClone::iniWrite {path data} {
     file mkdir [file dirname $path];set ch [open $path w];fconfigure $ch -encoding utf-8 -translation lf
@@ -96,7 +96,7 @@ proc ::GX::ExperimentClone::copyTree {from to {rel {}}} {
         }
         # Managed registries are copied separately by their active owners. Graph
         # authorities and canonical scientific storage never become preparation.
-        if {[regexp {^(metadata/(workbench_recovery(/|$)|plot.dataset(/|$)|graph_annotations(/|$)|graphs(/|$)|datasets(/|$)|dataset_selections\.ini|datasets\.ini|interactive_documents(/|$|\.ini$)|interactive_document_resources(/|$)|scientific_profiles(/|$)|dataset_profiles(/|$))|notes/(datasets|graphs)(/|$)|analysis/core.plot_clones(/|$)|cache/dataset_materializations(/|$)|datasets(/|$))} $relative]} {omit $relative;continue}
+        if {[regexp {^(metadata/(history(/|$)|workbench_recovery(/|$)|plot.dataset(/|$)|graph_annotations(/|$)|graphs(/|$)|datasets(/|$)|dataset_selections\.ini|datasets\.ini|interactive_documents(/|$|\.ini$)|interactive_document_resources(/|$)|scientific_profiles(/|$)|dataset_profiles(/|$))|notes/(datasets|graphs)(/|$)|analysis/core.plot_clones(/|$)|cache/dataset_materializations(/|$)|datasets(/|$))} $relative]} {omit $relative;continue}
         if {[regexp {^analysis/([^/]+)/variants(/|$)} $relative -> owner] && $owner in $::GX::moduleOrder} {omit $relative;continue}
         if {[regexp {^notes/workspaces/(idoc_[0-9]+)\.md$} $relative -> owner] && $owner in $::GX::ExperimentClone::removedDocuments} {omit $relative;continue}
         if {$path in $paths} {omit $relative;continue}

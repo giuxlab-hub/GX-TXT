@@ -1,3 +1,18 @@
+## 2.21.16 — DEV111-P017
+
+- Move scientific History, Undo/Redo, branching, recovery journals and timeline
+  controls to the shared native CORE History service. Keep the manual scientific
+  controllers, exact Native2D geometry and Dataset ownership contracts.
+- Record only affected logical records and current scientific workspace metadata;
+  ordinary transforms no longer replay, encode, hash or save the accumulated
+  History. RAM acceptance and verified asynchronous persistence are distinct.
+- Preserve non-timeline tool/view/selection recovery in CORE auxiliary state;
+  presentation autosaves do not create extra scientific Undo actions. Retain
+  pre-operation presentation metadata for exact Undo restoration.
+- Keep explicit Save/Close/export and extension interoperability barriers. Legacy
+  scientific Recipe steps and unknown metadata import without normalization or
+  truncation. Shared menus remain upward-posted within the application bounds.
+
 ## 2.21.15 — DEV111-P016
 
 - Obtain retained sprite geometry directly from the authoritative C scene through

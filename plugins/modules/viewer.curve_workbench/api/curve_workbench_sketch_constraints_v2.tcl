@@ -186,6 +186,7 @@ proc ::GX::CurveWorkbench::_unfix {w} {
     _history $w $before {};_constraintRefresh $w;_draw $w
 }
 proc ::GX::CurveWorkbench::_constraintCommit {w id spec} {
+    if {![_timelineEditable $w]} return
     variable st
     if {$id eq {}} {dict unset spec anchor}
     set unitsFor {};dict for {nativeId logical} [_logicalNativeMap $w] {
@@ -194,7 +195,7 @@ proc ::GX::CurveWorkbench::_constraintCommit {w id spec} {
     }
     foreach logical $unitsFor {if {[dict get [_record $w $logical] native]==[dict get $spec a]&&[dict get [_record $w $logical] locked]&&![::GX::datasetPublicationV2DictDefault $spec driven 0]} {error {Geometry is read-only. Unlock the retained primitive or use Representation to convert the Dataset first.}}}
     _constraintCoordinateGuard $w $spec
-    set affected [_sketchAffected $w [lsort -unique $unitsFor]];set before [_snapshotIds $w $affected];set undo $st($w,undo);set redo $st($w,redo)
+    set affected [_sketchAffected $w [lsort -unique $unitsFor]];set before [_snapshotIds $w $affected];
     set native [expr {$id eq {}?0:[dict get $st($w,constraints) $id native]}]
     if {[dict exists $spec annotation]&&[dict get $spec placed]} {
         set receipt [[_cadController $w] relationship dimension_apply $native $spec [dict get $spec driven] [dict get $spec annotation]]
@@ -207,7 +208,7 @@ proc ::GX::CurveWorkbench::_constraintCommit {w id spec} {
     try {
         foreach logical $affected {if {[dict exists [_record $w $logical] sketch_definition]} {_syncSamples $w $logical}}
         _history $w $before $affected
-    } on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
+    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
     set st($w,selectedRelationship) $id;set st($w,constraintTool) {};_constraintRefresh $w;_draw $w
     set st($w,status) "[_constraintTitle [dict get $spec kind]] — [expr {[dict get $receipt driven]?"reference measurement":"Native2D relationship committed"}]."
     return $id
@@ -588,14 +589,6 @@ proc ::GX::CurveWorkbench::_sketchAffected {w ids} {
 }
 rename ::GX::CurveWorkbench::_snapshotIds ::GX::CurveWorkbench::_snapshotIds_sketch054_base
 proc ::GX::CurveWorkbench::_snapshotIds {w ids} {_snapshotIds_sketch054_base $w [_sketchAffected $w $ids]}
-rename ::GX::CurveWorkbench::_history ::GX::CurveWorkbench::_history_sketch054_base
-proc ::GX::CurveWorkbench::_history {w before ids} {
-    variable st
-    foreach id [dict keys $before] {if {[dict exists $st($w,curves) $id]&&[dict exists [_record $w $id] sketch_definition]} {
-        _syncSamples $w $id;if {$id ni $ids} {lappend ids $id}
-    }}
-    _history_sketch054_base $w $before $ids
-}
 proc ::GX::CurveWorkbench::_constraintAction {w action} {
     variable st
     set id [_constraintSelected $w];set record [dict get $st($w,constraints) $id];set spec [dict get $record definition];set ids {}

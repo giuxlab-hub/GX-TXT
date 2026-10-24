@@ -26,6 +26,7 @@ proc ::GX::sessionExperimentClone {name {root ""}} {
         set executable [auto_execok tclsh]
         if {$executable eq {}} {error {Duplicate Experiment requires the Tcl runtime (tclsh).}}
         set cmd [lreplace $cmd 0 0 {*}$executable]
+        if {[llength [info commands scientificHistoryPortableDrain]]} {set historyDrained [scientificHistoryPortableDrain $source];lappend cmd [dict get $historyDrained owned]}
         exec {*}$cmd 2>@1
         # A validated promoted result is permanent even if organization fails.
         # The existing transaction owner reloads fresh registry state and holds
