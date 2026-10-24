@@ -467,13 +467,24 @@ proc ::GX::native2DViewportTooltipShow {widget text} {
     }
     # Position while withdrawn: the first visible frame must already belong to
     # the hovered control's window, rather than briefly mapping at the root.
-    toplevel .gxViewportTip;wm withdraw .gxViewportTip
+    # The override-redirect surface must own its opaque background, including
+    # the server-cleared area before the child receives its first Expose.
+    set background [ttk::style lookup TLabel -background]
+    if {$background eq {} || [catch {winfo rgb $widget $background}]} {set background #ffffe0}
+    set foreground [ttk::style lookup TLabel -foreground]
+    if {$foreground eq {} || [catch {winfo rgb $widget $foreground}]} {set foreground [uiFieldColorReadableText $background]}
+    toplevel .gxViewportTip -background $background;wm withdraw .gxViewportTip
     wm overrideredirect .gxViewportTip 1;wm transient .gxViewportTip $owner
     set left [winfo vrootx $widget];set top [winfo vrooty $widget]
     set width [winfo vrootwidth $widget];set height [winfo vrootheight $widget]
     set pad [expr {max(4,int(5*max(1.0,[tk scaling]/1.333333)))}]
-    ttk::label .gxViewportTip.text -text $text -padding $pad -wraplength [expr {max(40,min(int(480*max(1.0,[tk scaling]/1.333333)),$width-2*$pad))}]
-    pack .gxViewportTip.text
+    # One ordinary Tk label paints background, border, padding and text into
+    # the same drawable, independent of a theme's parent-background elements.
+    label .gxViewportTip.text -text $text -background $background -foreground $foreground \
+        -font TkDefaultFont -borderwidth 1 -relief solid -highlightthickness 0 \
+        -padx $pad -pady $pad -justify left \
+        -wraplength [expr {max(40,min(int(480*max(1.0,[tk scaling]/1.333333)),$width-2*$pad-2))}]
+    pack .gxViewportTip.text -fill both -expand 1
     update idletasks
     if {![winfo exists $widget] || ![winfo ismapped $widget] || ![winfo exists .gxViewportTip]} {native2DViewportTooltipHide;return}
     set tw [winfo reqwidth .gxViewportTip];set th [winfo reqheight .gxViewportTip]
@@ -481,7 +492,8 @@ proc ::GX::native2DViewportTooltipShow {widget text} {
     set y [expr {[winfo rooty $widget]+[winfo height $widget]+$pad}]
     if {$y+$th>$top+$height} {set y [expr {[winfo rooty $widget]-$th-$pad}]}
     set y [expr {max($top,min($top+$height-$th,$y))}]
-    wm geometry .gxViewportTip [format {%+d%+d} $x $y]
+    # Send the complete negotiated rectangle before mapping, not only position.
+    wm geometry .gxViewportTip [format {%dx%d%+d%+d} $tw $th $x $y]
     dict set tips current [dict create target $widget owner $owner]
     wm deiconify .gxViewportTip
     raise .gxViewportTip

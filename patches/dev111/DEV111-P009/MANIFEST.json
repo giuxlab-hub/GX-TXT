@@ -1,0 +1,21 @@
+{
+  "patch": "P009",
+  "originalZipSha256": "2a778027fbe71a140d5b1b0f29dcec0967a3793ac4e9c926d460c571991a6642",
+  "originalZipSize": 16831,
+  "requiredPredecessor": 8,
+  "framework": "0.9.8.10-dev-111",
+  "revision": "r3",
+  "frameworkFiles": [
+    {
+      "path": "core/tcl/native2d_viewport_host_v1.tcl",
+      "authorBeforeSha256": "2dbad5a806142a9415eb321627df5acdfd0ca56dceb52a9bc2214e77a2e9e801",
+      "publicBeforeSha256": "2dbad5a806142a9415eb321627df5acdfd0ca56dceb52a9bc2214e77a2e9e801",
+      "authorAfterSha256": "9883dc53d8276a22539f156636ab9eaf33b476691501959f26c0ff45b1569bdd",
+      "publicAfterSha256": "9883dc53d8276a22539f156636ab9eaf33b476691501959f26c0ff45b1569bdd",
+      "sourceExact": true
+    }
+  ],
+  "omittedOwnerInternalPaths": [],
+  "priorPublicSourceExceptions": [],
+  "publicExecutableDataSameAsOwner": true
+}
