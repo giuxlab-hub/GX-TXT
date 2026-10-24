@@ -19,7 +19,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parent.parent
 DATA_PATH = ROOT / "patch-manifest-dev111.json"
 EXPECTED_MAIN = "4daf135e49378eff1f413310bc17cf32f1928c44"
-EXPECTED_LAST = "6a59da41c2aa23fdc356e6f956238c02bdc6fff3"
+EXPECTED_LAST = "5a586abb20b6a43dea72ef5958df5f0fdaddf09e"
 HEX = re.compile(r"^[0-9a-f]{64}$")
 PRIVATE = ("/home/giu/", "/srv/gxtxt/", "github_pat_", "GXTXT_SCRIPT_WORKSPACE_DEBUGGER_GUIDE_WP_dev107")
 ALLOWED_EXCEPTION_PATHS = {
@@ -49,12 +49,18 @@ def read_manifest() -> dict:
     require(info.get("schema") == "gxtxt.patch-validation/1", "Wrong patch manifest schema")
     require(info.get("framework") == "0.9.8.10-dev-111" and info.get("revision") == "r3", "Wrong framework/revision")
     require(info.get("officialMain") == EXPECTED_MAIN and info.get("validatedMaintenanceHead") == EXPECTED_LAST, "Wrong public source identity")
-    expected = ["p001-r2", "p002", "p003", "p004", "p005"]
+    expected = ["p001-r2", "p002", "p003", "p004", "p005", "p006"]
     require([r["patch"] for r in info["patches"]] == expected, "Incomplete/out-of-order patch sequence")
-    require([p["requiredPredecessor"] for p in info["patches"]] == [0, 1, 2, 3, 4], "Invalid patch prerequisites")
+    require([p["requiredPredecessor"] for p in info["patches"]] == [0, 1, 2, 3, 4, 5], "Invalid patch prerequisites")
     require(set(info["publicManifestReconciliations"]) == ALLOWED_EXCEPTION_PATHS, "Unexpected source reconciliation exception")
     require(len(info["originalFixtures"]) == 7, "Wrong selected original fixture count")
     require(info["runnerScope"] == "STATIC_SOURCE_AND_PACKAGE_ONLY", "Incorrect validation scope")
+    p6 = info["patches"][-1]
+    require(p6["patch"] == "p006" and len(p6["files"]) == 16, "Incorrect P006 file scope")
+    require(info["p006OriginalArchiveSha256"] == "21b0df059c42b7d0ae535c7e759378325570d2047b11a26385c4e8de19b6b19d", "Wrong owner P006 original archive")
+    require(len(info["p006PublicPriorExceptions"]) == 6 and len(info["p006PublicAfterExceptions"]) == 5, "Wrong P006 public revision exclusions")
+    require(set(info["p006PublicAfterExceptions"]).issubset(info["p006PublicPriorExceptions"]), "P006 public-after exceptions must be documented prior exceptions")
+    require(info["p006OriginalFixtureStatus"] == "OWNER_DEPOSIT_CONTAINS_TEST_RESULTS_BUT_NO_EXECUTABLE_INDEPENDENT_GUI_FIXTURE", "Cannot claim original portable GUI fixture")
     for row in info["originalFixtures"]:
         rel = row["publicPath"]
         require(rel.startswith("validation/official_dev111_patches/"), "Unexpected original test location")
@@ -110,7 +116,7 @@ def validate_elf(blob: bytes) -> None:
 
 
 def validate_p005_integration(getblob, info: dict) -> int:
-    commit = info["patches"][-1]["commit"]
+    commit = next(p["commit"] for p in info["patches"] if p["patch"] == "p005")
     cmake = getblob(commit, "core/native2d/CMakeLists.txt")
     worker = getblob(commit, "core/tcl/dataset_preview_worker_v1.tcl")
     native = getblob(commit, "core/native2d/bin/gxpreviewprovider.so")
@@ -144,9 +150,65 @@ def validate_p005_integration(getblob, info: dict) -> int:
     return 3 + len(preserved)
 
 
+def validate_p006_gui_integration(getblob, info: dict) -> int:
+    """Read-only checks for actual P006 public API wiring. This does not create GUI widgets."""
+    p6 = next(x for x in info["patches"] if x["patch"] == "p006")
+    commit = p6["commit"]
+    expected = {
+        "core/tcl/dataset_preview_gui_v1.tcl": (
+            "proc ::GX::datasetPreviewGuiApiInfo",
+            "proc ::GX::_datasetPreviewGuiMount",
+            "proc ::GX::_datasetPreviewGuiDispose",
+            "::guiMount $host $context",
+            "guiDispose",
+            "uiFieldIconApply",
+            "datasetPreviewGuiControlCreate",
+            "datasetPreviewGuiPanelCreate",
+            "PlotDatasetAPIv4::widgetChrome",
+        ),
+        "core/tcl/dataset_preview_provider_v1.tcl": (
+            "gui_api_version",
+            "GUI panes require preview_provider.gui_api_version=1",
+        ),
+        "gxtxt_pipeline.tcl": (
+            "source [file join $::GX::scriptDir core tcl dataset_preview_gui_v1.tcl]",
+        ),
+        "core/tcl/native2d_viewport_host_v1.tcl": (
+            "proc ::GX::native2DViewportHostCreate",
+            "proc ::GX::native2DViewportPanelDestroy",
+            "presentation_bounds",
+        ),
+        "plugins/modules/plot.dataset/api/plot_dataset_api_v4.tcl": (
+            "proc ::GX::PlotDatasetAPIv4::widgetChrome",
+        ),
+        "docs/api/PREVIEW_COMPONENT_GUI_API_v1.md": (
+            "guiMount", "guiDispose", "gui_api_version",
+        ),
+    }
+    total = 0
+    for rel, terms in expected.items():
+        payload = getblob(commit, rel)
+        require(payload is not None, "Missing P006 GUI integration file " + rel)
+        text = payload.decode("utf-8")
+        for term in terms:
+            require(term in text, "P006 GUI API wiring missing " + rel + " -> " + term)
+            total += 1
+    # C++/worker/native provider remain unchanged through P006.
+    for rel in (
+        "core/native2d/bin/gxpreviewprovider.so",
+        "core/native2d/CMakeLists.txt",
+        "core/tcl/dataset_preview_worker_v1.tcl",
+    ):
+        p005 = getblob(info["patches"][-2]["commit"], rel)
+        p006 = getblob(commit, rel)
+        require(p005 is not None and p005 == p006, "P006 changed existing native provider ABI/worker: " + rel)
+        total += 1
+    return total
+
+
 def check_repo(info: dict, folder: Path) -> dict:
     g = Git(folder)
-    require(g.rev("refs/tags/v0.9.8.10-dev-111-p005^{}") == EXPECTED_LAST, "Wrong final patch tag")
+    require(g.rev("refs/tags/v0.9.8.10-dev-111-p006^{}") == EXPECTED_LAST, "Wrong final patch tag")
     checked_blobs = 0
     checked_zips = 0
     records = []
@@ -169,7 +231,11 @@ def check_repo(info: dict, folder: Path) -> dict:
                 rel, after, before = item["path"], item["after"], item["before"]
                 current = g.blob(commit, rel)
                 previous = g.blob(parent, rel)
-                cleaned = info["publicManifestReconciliations"].get(rel) if name == "p003" else None
+                cleaned = (info["publicManifestReconciliations"].get(rel) if name == "p003"
+                           else info["p006PublicAfterExceptions"].get(rel) if name == "p006"
+                           else None)
+                effective_before = (info["p006PublicPriorExceptions"].get(rel, before)
+                                    if name == "p006" else before)
                 expected_after = cleaned or after
                 require(current is not None and digest(current) == expected_after,
                         "Published scientific postimage mismatch " + name + ": " + rel)
@@ -179,6 +245,9 @@ def check_repo(info: dict, folder: Path) -> dict:
                     require(original_p001 == current, "P001-r2 differs from original P001 " + rel)
                 elif before is None:
                     require(previous is None, "Expected new file already exists: " + rel)
+                elif name == "p006":
+                    require(previous is not None and digest(previous) == effective_before,
+                            "P006 public source prerequisite mismatch: " + rel)
                 elif not cleaned:
                     require(previous is not None and digest(previous) == before, "Patch prerequisite differs " + name + ": " + rel)
                 else:
@@ -190,7 +259,7 @@ def check_repo(info: dict, folder: Path) -> dict:
                         require(nested.read(rel) == current, "P001 original six-file archive differs " + rel)
                 else:
                     require(member in members, "ZIP lacks functional payload: " + name + " " + rel)
-                    require(digest(z.read(member)) == after, "ZIP deposited scientific afterhash differs " + name + " " + rel)
+                    require(digest(z.read(member)) == (cleaned if name == "p006" and cleaned else after), "ZIP public scientific afterhash differs " + name + " " + rel)
                 checked_blobs += 1
             if name == "p001-r2":
                 require("apply.sh" in members and "ROLLBACK.zip" in members, "P001-r2 installer/rollback missing")
@@ -198,12 +267,14 @@ def check_repo(info: dict, folder: Path) -> dict:
             checked_zips += 1
         records.append({"patch": name, "tag": row["tag"], "files": len(row["files"]), "archiveSha256": row["zipSha256"]})
     native_checks = validate_p005_integration(g.blob, info)
+    gui_checks = validate_p006_gui_integration(g.blob, info)
     return {
-        "status": "DEV111_P001_TO_P005_STATIC_CHAIN_PASS",
+        "status": "DEV111_P001_TO_P006_STATIC_CHAIN_PASS",
         "patches": records,
         "checkedSourcePreimagesAndPostimages": checked_blobs,
         "verifiedPublicZips": checked_zips,
         "p005NativeIntegrationChecks": native_checks,
+        "p006GuiApiStaticChecks": gui_checks,
         "runtimeGuiTest": "NOT_EXECUTED_BY_THIS_TOOL",
     }
 
@@ -217,6 +288,7 @@ def check_final_tree(info: dict, root: Path) -> dict:
         for f in row["files"]:
             final[f["path"]] = (
                 info["publicManifestReconciliations"].get(f["path"], f["after"]) if row["patch"] == "p003"
+                else info["p006PublicAfterExceptions"].get(f["path"], f["after"]) if row["patch"] == "p006"
                 else f["after"]
             )
     for rel, expected in final.items():
@@ -231,7 +303,7 @@ def check_final_tree(info: dict, root: Path) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--repository", type=Path, help="Git checkout with version-bound dev111 P001-P005 tags; validates manifests, source history and binary")
+    parser.add_argument("--repository", type=Path, help="Git checkout with version-bound dev111 P001-P006 tags; validates manifests, source history and binary")
     parser.add_argument("--installed-final", type=Path, help="Optional READ-ONLY check of the final cumulative installed source (no GUI execution)")
     parser.add_argument("--json", action="store_true", help="Machine-readable result output")
     args = parser.parse_args()
@@ -247,7 +319,7 @@ def main() -> int:
         else:
             print("PASS: " + result["status"] + " (seven original author fixtures)")
             if args.repository:
-                print("PASS: " + result["repository"]["status"] + " (five patch releases, P005 native checks)")
+                print("PASS: " + result["repository"]["status"] + " (six patch releases, P005 native and P006 GUI API checks)")
             if args.installed_final:
                 print("PASS: " + result["installed"]["status"])
             print("Scientific GUI/native runtime acceptance is not inferred from static checks.")

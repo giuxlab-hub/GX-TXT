@@ -230,3 +230,13 @@ On a compatible disposable Linux dev111 r3 installation containing P001 through 
 
 The original P005 corrected ZIP contains exactly CMakeLists.txt, gxpreviewprovider.so and dataset_preview_worker_v1.tcl. It does not supply an end-user synthetic provider fixture, so the above full native integration cannot be asserted by artifact inspection alone.
 
+
+## DEV111-P006 — Optional Preview GUI API
+
+| Scope | Reproducible validation | Separate runtime test |
+| --- | --- | --- |
+| P006 source chain | Git tag/parent, 16 files, ZIP SHA, 6 exact public preimage exceptions, 5 public afterimage documentation/checksum normalizations | None required for source byte integrity |
+| P006 GUI/Preview API | New GUI Tcl module registration, guiMount/guiDispose, UI Field icon state, ViewportHost panel, Plot v4 chrome, GUI opt-in descriptor | Real control/icon callbacks and selected/disabled/hover state on X11 |
+| P005 native continuity | P005 Linux x86_64 ELF64, CMake and worker, seven preserved C++ sources; P006 leaves binary/worker/build unchanged | Real module-admitted native Preview, Session source identity, fallback/close on Debian |
+
+The P006 deposit contains TEST_RESULTS.md but no new portable executable test fixture to publish; no new real GUI acceptance is claimed by this source-checking branch.

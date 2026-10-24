@@ -137,3 +137,9 @@ The regular tools/validate_suite.py run command remains limited to the existing 
 Two P003 SHA256SUMS.txt inventories differ from the author manifest because the public main source had already withheld internal documentation; the precise two SHA-256 reconciliations are declared in the patch manifest. No scientific source/binary changes are exempted.
 
 The user-reported functional testing is separate from independent publication-source checks. No original private test receipts or credentials have been redistributed.
+
+## DEV111-P006 — Optional Preview GUI API source checks
+
+The latest dev111-r3 patch extends Preview with opt-in guiMount/guiDispose, shared UI Field icons and Plot v4 viewport chrome. The public validation manifest now contains six ordered version-specific patches. The independent read-only checker covers 16 P006 file entries, six precisely documented differences from the previously cleaned public source, five public output document/checksum reconciliations and P006 GUI API wiring, while preserving P005 binary/worker checks.
+
+This owner deposit contains a focused GUI test result description, but no portable independent P006 GUI test script. Therefore tools/validate_dev111_patches.py verifies public source, tags, hashes, API wiring and unchanged native ABI without fabricating a new test execution. Real P006 interaction requires a compatible isolated Tcl/Tk/X11 workspace and controlled synthetic Session.

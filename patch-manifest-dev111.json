@@ -1,454 +1,564 @@
 {
-    "schema":  "gxtxt.patch-validation/1",
-    "framework":  "0.9.8.10-dev-111",
-    "revision":  "r3",
-    "officialMain":  "4daf135e49378eff1f413310bc17cf32f1928c44",
-    "validatedMaintenanceHead":  "6a59da41c2aa23fdc356e6f956238c02bdc6fff3",
-    "runnerScope":  "STATIC_SOURCE_AND_PACKAGE_ONLY",
-    "originalRuntimeTests":  "SOURCE_ONLY_OWNER_DEPOSIT_NO_EXECUTION_BY_PUBLICATION",
-    "patches":  [
-                    {
-                        "patch":  "p001-r2",
-                        "tag":  "v0.9.8.10-dev-111-p001-r2",
-                        "commit":  "42e99115f6d57abbdd495ea9c0eea56b4bb13cb8",
-                        "parent":  "727ae98ed246b8b0c8c886201e9ee58d1723fad2",
-                        "requiredPredecessor":  0,
-                        "archivePath":  "patches/dev111/DEV111-P001-r2/DEV111-P001-r2-PUBLIC.zip",
-                        "zipSha256":  "936090cc8e7237430b4cfc6b93531fdd3c17e336e89720251b7968e0473c2731",
-                        "zipBytes":  212085,
-                        "files":  [
-                                      {
-                                          "path":  "app/gui/modules_page.tcl",
-                                          "before":  "23ddf23b9ece742c71d45cd34e3a030e826cc9079aa96044e11e80dc3804e919",
-                                          "after":  "20dd48c0a053b697f95bdc74f8c0e043f6e10b0fdd59cd94a19a9b0c55b76094"
-                                      },
-                                      {
-                                          "path":  "app/modules_page_controller.tcl",
-                                          "before":  "4abe8bad1422349fe9319c931fba766caf903286dd7e63770198f9a99bd67856",
-                                          "after":  "d0a87881c86ce160a38cf2103aae4df1e5a90dc4639c7ef72561fb7372288e16"
-                                      },
-                                      {
-                                          "path":  "app/run_page_redesign.tcl",
-                                          "before":  "19013249ce770a7f94903ec0cef14f1a60069170e40e8ade22c9ac7e3e62aafa",
-                                          "after":  "f49e3f0efefbf9273474e286d8e8600245bee98fb1f49806510dc76264b2314c"
-                                      },
-                                      {
-                                          "path":  "app/session_controller.tcl",
-                                          "before":  "e9e2b69e233823dd4394fcf6e54ad4ce638865711e39f076c46361f93cb4dc7c",
-                                          "after":  "304e34ef1c2f54ffcec37e8152723acf6c06c41053491e2c79523795eb88bdc0"
-                                      },
-                                      {
-                                          "path":  "core/tcl/module_api_v1.tcl",
-                                          "before":  "f7b8639c3dfcca3b0a623f8001c14f1888b3e45dbe96487b25473dff327270bf",
-                                          "after":  "664a3b89edc44e9a1d24b5e5ff959a7747b2e69d2d79b4213cf12a6e714db03f"
-                                      },
-                                      {
-                                          "path":  "core/tcl/plot_module_variants.tcl",
-                                          "before":  "cdb2d645beb43e63528413bb87d3c7f88973b1b29212ac22042122b316125f6f",
-                                          "after":  "6d0a6557a531188aac02ce6767e64c58a94fe12841e8677b8334a890040df8ff"
-                                      }
-                                  ],
-                        "manifestSha256":  "00513a0875b564eae33b08e3bcd6455e06ece136d694eb74fd37f508ab776009"
-                    },
-                    {
-                        "patch":  "p002",
-                        "tag":  "v0.9.8.10-dev-111-p002",
-                        "commit":  "1fa55c798ec35825c680ec1bdf2deac764db74d8",
-                        "parent":  "5c9d72b4a30e3d464bd263fbf3a3a072c651bbe0",
-                        "requiredPredecessor":  1,
-                        "archivePath":  "patches/dev111/DEV111-P002/DEV111-P002-PUBLIC.zip",
-                        "zipSha256":  "34944a5a945b7c3dc1ab3b8fd71614e1df322f69e59cc1ca8264650385371814",
-                        "zipBytes":  284633,
-                        "files":  [
-                                      {
-                                          "path":  "app/gui/configuration_module_editor.tcl",
-                                          "before":  "7909e8c0081c5dbb238fb59109cc69ab15d7bdedddfe235b0e205ee4c1dfd79a",
-                                          "after":  "a7b18cbdb96d3937d11878f448ebbdc6e764dd9c1d45ff0787868f8ccdc0bfb8"
-                                      },
-                                      {
-                                          "path":  "app/gui/configuration_modules.tcl",
-                                          "before":  "0d16edac9aea21f6159a20a2abe55928148ff1eac70323f22ccb753542de5fbc",
-                                          "after":  "2651f1ba6411ea22f868bec2d01052bf95d44b7c40840945e5390f5d7352f5f8"
-                                      },
-                                      {
-                                          "path":  "app/gui/configuration_preview_components.tcl",
-                                          "before":  "10b295998385947edf61b08308357f01abb1baa9d8c288fe09c27d3c3a616e78",
-                                          "after":  "aac2310c5fb2c67fccb6e313c961cb4f91663b4d82f763108ea3c5291e00d392"
-                                      },
-                                      {
-                                          "path":  "app/gui/dataset_preview_live.tcl",
-                                          "before":  "a8b431650068151e21733208ae951c95de0beaca709199d317e6db6d0f05f0ed",
-                                          "after":  "a71e2a7bc49c2c3aa33d5b5130e5249d5b6ac4470df33af31ea42dc991fbef34"
-                                      },
-                                      {
-                                          "path":  "core/native2d/bin/gxpreviewprovider.so",
-                                          "before":  null,
-                                          "after":  "b413188d526d1c8251e52f0beb03ed2bf33f4eaae19fc64a7a6e861b6f3f1403"
-                                      },
-                                      {
-                                          "path":  "core/native2d/gx2d_preview_provider_loader.cpp",
-                                          "before":  null,
-                                          "after":  "270678ce357bdb3f8dfdf2d0a8e644fff174ab2604ee334e24ec3d42beba3521"
-                                      },
-                                      {
-                                          "path":  "core/tcl/curve_source_api_v1.tcl",
-                                          "before":  "604166b4db47cb7be6238ba3db02346089b8f6063b8796238c4a86042e4c95bd",
-                                          "after":  "213a53b59a1ab4e0d7cc9b3fbf76ab7e8f8c0e72b913f59f259864d302127b46"
-                                      },
-                                      {
-                                          "path":  "core/tcl/dataset_digitizer_preview_v1.tcl",
-                                          "before":  "8cc29082d96af0218d61a77fa5fb57a2ee92e293b502fe1d5f63eb3a61d9464a",
-                                          "after":  "bafaca21b1e806bf5cd5c217e2db151f214021a4b42cb3b115be54c5e2c843a8"
-                                      },
-                                      {
-                                          "path":  "core/tcl/dataset_preview_cache.tcl",
-                                          "before":  "ca34789cfbb88ef16cd76d350f9cb5c8b6ede1e28a1bb473ace9eb2ea007ef0c",
-                                          "after":  "bf7887508852e5287018757662aab94de8e532b13955cb7cc5f5c6a88f1dfeaf"
-                                      },
-                                      {
-                                          "path":  "core/tcl/dataset_preview_native_v1.tcl",
-                                          "before":  null,
-                                          "after":  "b5d5b9e1597774ab8dacc58573c8eb1481e86b893299e998503b4784b2a8b578"
-                                      },
-                                      {
-                                          "path":  "core/tcl/dataset_preview_provider_v1.tcl",
-                                          "before":  "8916eb1a3264f8b928b86eb1dacd9c51130334e04e588da4d1926bd0efc112e0",
-                                          "after":  "2235ea9062f18b01535fb798af1d39c793bf74506eb07030dbde510df847e18f"
-                                      },
-                                      {
-                                          "path":  "core/tcl/dataset_preview_worker_v1.tcl",
-                                          "before":  "113b558831b1ecafd687a2db86a7edf1bec16a2d7ff989ec8ad1869b6ab8d7e5",
-                                          "after":  "17823db72d1ac4738c71f41cba41990923a85ca4ba54b091fd2bc9ae0ea7c4c7"
-                                      },
-                                      {
-                                          "path":  "core/tcl/preview_descriptor_api_v1.tcl",
-                                          "before":  "6fce31a5372be08e05c9dd0b23fe85e6da5a558fe31e973ac700603cf07fcc72",
-                                          "after":  "ff09325302e3fb4531a953b6ec5f93a025dff1e1ace8556b4d734589ba2eaf5e"
-                                      },
-                                      {
-                                          "path":  "core/tcl/scientific_dataset_filters_v1.tcl",
-                                          "before":  "92db6d5200d15e02d941baec7cbb579b32f097230669f19c3751520ca4d4b665",
-                                          "after":  "f1b12dbbb222fb2e0592b1049af98218d56edfe09a8bf8b0170940de2a831299"
-                                      },
-                                      {
-                                          "path":  "core/tcl/scientific_dataset_preview_v1.tcl",
-                                          "before":  "b3f6dd02cf9df83387b40e09f04eee0dbb39f5b8050e37769cb44fb6393b4f0d",
-                                          "after":  "c508b0d6d31463a770789d41078b642d67d01738fca958fd83130ecba25368de"
-                                      },
-                                      {
-                                          "path":  "docs/api/DATASET_PREVIEW_API_v1.md",
-                                          "before":  "7283194d07388e9d93db720cb281e7bd1ea93b131b61c79b2e016af1dc01ba48",
-                                          "after":  "ccb2065a39a9f49d8b03c1c31ee473e106bcf44331ab2a6af2e5dcec504d2d76"
-                                      },
-                                      {
-                                          "path":  "docs/api/PREVIEW_DESCRIPTOR_API_v1.md",
-                                          "before":  "5f92b376538cc6eed4822943cf872f26b12a82fcf0d09478564ca541487f3944",
-                                          "after":  "3a3a11878ba93ed95bff0b0261e07eb9edb19fdf6866154b4c04329833b2d123"
-                                      },
-                                      {
-                                          "path":  "gxtxt_pipeline.tcl",
-                                          "before":  "4da523227e941ddd0a27e942696c8df9f03447a12b02e08838a8832446a9d78f",
-                                          "after":  "bea5353fd1daf1fde1b6ca7de1dce0143276e75ab69a51240be69876cf2307ec"
-                                      }
-                                  ],
-                        "manifestSha256":  "f525a534ed814a82b0caecf7cdded8fa7e9c32f2b60b719b8fc13701eb2f7b79"
-                    },
-                    {
-                        "patch":  "p003",
-                        "tag":  "v0.9.8.10-dev-111-p003",
-                        "commit":  "c32421c0d4734fe5ab41787c145a69331dfd63ec",
-                        "parent":  "42e99115f6d57abbdd495ea9c0eea56b4bb13cb8",
-                        "requiredPredecessor":  2,
-                        "archivePath":  "patches/dev111/DEV111-P003/DEV111-P003-PUBLIC.zip",
-                        "zipSha256":  "d9fae5dac740b412cda45128aa16484fd9a9dd6bc8ddbbca18d17c7937cd0fa6",
-                        "zipBytes":  82826,
-                        "files":  [
-                                      {
-                                          "path":  "app/gui/documentation_module_window.tcl",
-                                          "before":  "7a734164dd0b39f20aeebe3e1dfc542d4c989830677033dbeb3855c7b00c39c7",
-                                          "after":  "55726a02c92346a8f85a3c5d19d6a87758854f4087ca747664d5b3eb9d6d96d7"
-                                      },
-                                      {
-                                          "path":  "app/gui/script_library_dialog.tcl",
-                                          "before":  "302cf0c901255ec4be298e6e37794a13e43585a5f6f44411f15ea7e6dabfeb77",
-                                          "after":  "c6e3ce5b07741d379ace5d48550f71167e96ea60834306e3f86cb23ad9920629"
-                                      },
-                                      {
-                                          "path":  "app/script_workspace_surface.tcl",
-                                          "before":  "703aa47985d7d21b6713bf2c0b7cf339e779f5311bf33a4cb4b9f9345754a159",
-                                          "after":  "28269558b4aacdc039ecc75636176452847059e26d5175ef8d80c4b8c0a1ba03"
-                                      },
-                                      {
-                                          "path":  "app/session_controller.tcl",
-                                          "before":  "304e34ef1c2f54ffcec37e8152723acf6c06c41053491e2c79523795eb88bdc0",
-                                          "after":  "ff2bf721c38c09c66910bb17e3712716b6c79daf129b177f0faba161510ba5b7"
-                                      },
-                                      {
-                                          "path":  "core/tcl/script_execution_api_v1.tcl",
-                                          "before":  "3c79f473799d5b757c70acb4beb0ec05fd741932386008d2419dc2880c30f0ff",
-                                          "after":  "9c02371bca0f19a5be55e7feb72aa4974998a9e9a4b7a92f82286fd2e0eedad4"
-                                      },
-                                      {
-                                          "path":  "core/tcl/script_source_declaration_api_v1.tcl",
-                                          "before":  "7d9cdfc92c011371e46b8b923965de4e220ce4771afdc03d87ff1e3e95b5ede2",
-                                          "after":  "50997c237d3d8658227bacad36e6a2b337e40acf6d75293aa9d2da737e57ffac"
-                                      },
-                                      {
-                                          "path":  "core/tcl/session_file_explorer_api_v1.tcl",
-                                          "before":  "2821fe9b587e9ff9cef1d499e16233cb624f9f928163736886c6cc3ed08d8d33",
-                                          "after":  "bb4eaa9de65a07042c4dc0e9c9de194c4e3d8b5235ae320348ec8c3e2199652c"
-                                      },
-                                      {
-                                          "path":  "core/tcl/viewer_development_api_browser_v1.tcl",
-                                          "before":  "c33118d01caa608c945b2ffd3bb56df4a4fa299bd9b609bf8fa9d958aeae91c0",
-                                          "after":  "50a47ec3b885c7477c35a81875b2bbdcdc2eae22b479c8f21d22c00de4b33179"
-                                      },
-                                      {
-                                          "path":  "docs/api/SCRIPT_EXECUTION_API_v1.md",
-                                          "before":  "c14f3c9758ef8ea53ebd7268d404fef5c4a035e549347ae7393cc35eee0ae3e4",
-                                          "after":  "76abae020e404a0a6050d565e6df7be6a5b09199792548f3e57ac3d75d888d87"
-                                      },
-                                      {
-                                          "path":  "plugins/modules/analysis.octave_script/OCTAVE_SCRIPT_EDITOR_API_v1.md",
-                                          "before":  "3c60464ff3a87bcef4386ff0705bf6c27b5b6969acd6a37b3cc28e5c96169b63",
-                                          "after":  "c05ecaba4a20c630cfea4b02650d163a8e276b0d7651df034f5fa1764a4d511f"
-                                      },
-                                      {
-                                          "path":  "plugins/modules/analysis.octave_script/SHA256SUMS.txt",
-                                          "before":  "1afbab807dc1c1ff49da7233a8bbc4581e601a3041bd965063ad1610f336ab7c",
-                                          "after":  "4fb14eff578857ce729d91228444656a6e6ad27100f8b83cb2eff6cfde356428"
-                                      },
-                                      {
-                                          "path":  "plugins/modules/analysis.octave_script/api/octave_script_editor_api_v1.tcl",
-                                          "before":  "0b83b70b1e90680afe90c6a3e01bdec4955aae3b73d4554b95b0cf9a7174500c",
-                                          "after":  "977a2e7b9cc95d5281219dea5a1e2e345b6f4beb1cd2581d33acbe50593529ea"
-                                      },
-                                      {
-                                          "path":  "plugins/modules/analysis.octave_script/ui/octave_script_editor_ui.tcl",
-                                          "before":  "263ae9ba2b0fb77073a1f6b8633f86dca2eca6e7d63006a3d3fb73cb6b05fda1",
-                                          "after":  "a28b9be9a4dd31c9166479989fdd1c5792d1b212e2087c76d57a8fc6f605493f"
-                                      },
-                                      {
-                                          "path":  "plugins/modules/analysis.python_script/SHA256SUMS.txt",
-                                          "before":  "f9cbb7d829d0bb4f3fb4da0ef1bbc288de5d608a5ebc8b177f474aafaf8d92a4",
-                                          "after":  "ff9a87732a9a9e03dc17d5e185f1a4dd6c9303f5e496ada880145722ca691265"
-                                      },
-                                      {
-                                          "path":  "plugins/modules/analysis.python_script/ui/python_script_editor_ui.tcl",
-                                          "before":  "3d4c484bd1365746bd246aaa13cc1181129b14170834dc7812eb987326d5a3a8",
-                                          "after":  "406db1f89458ac2fc4698a2a4dd028252098d76657f4545ecc4480555b6ac6f5"
-                                      }
-                                  ],
-                        "manifestSha256":  "4ffc572380dc7413e49cfabbf3e7896ca3091e6d961426f71c03598be8deae03"
-                    },
-                    {
-                        "patch":  "p004",
-                        "tag":  "v0.9.8.10-dev-111-p004",
-                        "commit":  "bb1d92106daeb30eb986866f699c47f6d8ed1d33",
-                        "parent":  "c32421c0d4734fe5ab41787c145a69331dfd63ec",
-                        "requiredPredecessor":  3,
-                        "archivePath":  "patches/dev111/DEV111-P004/DEV111-P004-PUBLIC.zip",
-                        "zipSha256":  "5ed96229e7ae59dd9879f3b3a68144d99c9f6c989f78dc1e69e55ed446a34300",
-                        "zipBytes":  91077,
-                        "files":  [
-                                      {
-                                          "path":  "app/gui/dataset_preview_live.tcl",
-                                          "before":  "a71e2a7bc49c2c3aa33d5b5130e5249d5b6ac4470df33af31ea42dc991fbef34",
-                                          "after":  "24f207c04da2c12a74c8bba5982cfc6fb3741df8c61a73a4d7a29e2e43017833"
-                                      },
-                                      {
-                                          "path":  "core/python/gxtxt_script_bridge_server.py",
-                                          "before":  "44737e4ec215e51d196725f60499f78501a7611e8c81ad2609503510af8a94fd",
-                                          "after":  "c0b334d294cfd12a4f1ff3faee24f595086a37922eb899f221a2a3b6ce08cb79"
-                                      },
-                                      {
-                                          "path":  "core/tcl/dataset_preview_cache.tcl",
-                                          "before":  "bf7887508852e5287018757662aab94de8e532b13955cb7cc5f5c6a88f1dfeaf",
-                                          "after":  "e6d2ea9428bf7b2ac504d9219403ee76cf9938f41be754b0e7585c0ceac74460"
-                                      },
-                                      {
-                                          "path":  "core/tcl/dataset_preview_native_v1.tcl",
-                                          "before":  "b5d5b9e1597774ab8dacc58573c8eb1481e86b893299e998503b4784b2a8b578",
-                                          "after":  "946ffff801d1b8282fe892ac3e1021ad988c85d9233b823780ff0637a9b5f56a"
-                                      },
-                                      {
-                                          "path":  "core/tcl/dataset_preview_provider_v1.tcl",
-                                          "before":  "2235ea9062f18b01535fb798af1d39c793bf74506eb07030dbde510df847e18f",
-                                          "after":  "d6cf35362372fe32f5dbbd1d6f969610f78872a3468e1faa7832d73db5f022f3"
-                                      },
-                                      {
-                                          "path":  "core/tcl/dataset_preview_worker_v1.tcl",
-                                          "before":  "17823db72d1ac4738c71f41cba41990923a85ca4ba54b091fd2bc9ae0ea7c4c7",
-                                          "after":  "4545b28c22feb2b9674f1e4cb1f6d7c0b2e36ef030729e19ab6f6ccd495ea92d"
-                                      },
-                                      {
-                                          "path":  "core/tcl/preview_descriptor_api_v1.tcl",
-                                          "before":  "ff09325302e3fb4531a953b6ec5f93a025dff1e1ace8556b4d734589ba2eaf5e",
-                                          "after":  "722bc331e33dd1d9c5045bedf83cc38804a06bd7ac699edc9c65dff740b50f85"
-                                      },
-                                      {
-                                          "path":  "core/tcl/scientific_dataset_filters_v1.tcl",
-                                          "before":  "f1b12dbbb222fb2e0592b1049af98218d56edfe09a8bf8b0170940de2a831299",
-                                          "after":  "75ca9e079b3c8bd398e35cfdb637fa9d3e3f0ed3b67cf71c592c738ad5fff0d2"
-                                      },
-                                      {
-                                          "path":  "core/tcl/scientific_dataset_preview_v1.tcl",
-                                          "before":  "c508b0d6d31463a770789d41078b642d67d01738fca958fd83130ecba25368de",
-                                          "after":  "e0c3b6957b1eb83faa0910f12ec4b160738e617d49d4f4290393c376f181fce0"
-                                      },
-                                      {
-                                          "path":  "core/tcl/script_job_api_v1.tcl",
-                                          "before":  "9426c950ffce9c22bb3d4ca76cc919d09b4815f79eaef26827eb73f324ff3934",
-                                          "after":  "092d728ada9e14dad1c9f36f34d1241270641f06a42888313c70a739d45992cf"
-                                      },
-                                      {
-                                          "path":  "core/tcl/script_job_request.tcl",
-                                          "before":  "99957bc07bb76edb5c254f980bc547668fcdd7bf237044b2a4db53fa4f73e31d",
-                                          "after":  "e8d6ae7a6a49a9a79c309e0bb1f1432ead66b46c3d7c5b4d9819f05f6eecac7e"
-                                      },
-                                      {
-                                          "path":  "docs/api/DATASET_PREVIEW_API_v1.md",
-                                          "before":  "ccb2065a39a9f49d8b03c1c31ee473e106bcf44331ab2a6af2e5dcec504d2d76",
-                                          "after":  "cbdeba25593bae352dda288065e9e70e9bf5416e6ac1cbec7c94a4bd96654cf2"
-                                      },
-                                      {
-                                          "path":  "docs/api/PREVIEW_DESCRIPTOR_API_v1.md",
-                                          "before":  "3a3a11878ba93ed95bff0b0261e07eb9edb19fdf6866154b4c04329833b2d123",
-                                          "after":  "42f724192841eab904c431e21ab54168e53a5299939085a2ca8d93718593aaab"
-                                      }
-                                  ],
-                        "manifestSha256":  "2f30bf3f124cfd468d0e9d1a1036d83b7eeba089b25ec710c01e42fce71b739c"
-                    },
-                    {
-                        "patch":  "p005",
-                        "tag":  "v0.9.8.10-dev-111-p005",
-                        "commit":  "6a59da41c2aa23fdc356e6f956238c02bdc6fff3",
-                        "parent":  "bb1d92106daeb30eb986866f699c47f6d8ed1d33",
-                        "requiredPredecessor":  4,
-                        "archivePath":  "patches/dev111/DEV111-P005/DEV111-P005-PUBLIC.zip",
-                        "zipSha256":  "3712cf052181561226e7c2657f8527b50223dda9035a072a554a90aee41649ad",
-                        "zipBytes":  86910,
-                        "files":  [
-                                      {
-                                          "path":  "core/native2d/CMakeLists.txt",
-                                          "before":  "21031dbca5d1dd0a55b2ae5082caadf6408ef7a496cc3f2e1f8910d96a6f0881",
-                                          "after":  "f4b81b065c2a45e9bbd1296620b7e31148d3970dcf38d5fe7decd1daa6828a5f"
-                                      },
-                                      {
-                                          "path":  "core/native2d/bin/gxpreviewprovider.so",
-                                          "before":  "b413188d526d1c8251e52f0beb03ed2bf33f4eaae19fc64a7a6e861b6f3f1403",
-                                          "after":  "5c80cd795703f420902115812a28ab195de3ed02c964515d57dda2c5318a509d"
-                                      },
-                                      {
-                                          "path":  "core/tcl/dataset_preview_worker_v1.tcl",
-                                          "before":  "4545b28c22feb2b9674f1e4cb1f6d7c0b2e36ef030729e19ab6f6ccd495ea92d",
-                                          "after":  "c5c44c24933dd1914ec716b1b60ab72a378c579631ec8ce8c1d57119e7798401"
-                                      }
-                                  ],
-                        "manifestSha256":  "198f61f58fa5e6fc8739889682e96348f85c0f0590ce4a4cec9023e9f1ca4bc6"
-                    }
-                ],
-    "originalFixtures":  [
-                             {
-                                 "patch":  "p001",
-                                 "publicPath":  "validation/official_dev111_patches/p001/contract.tcl",
-                                 "originalRelativePath":  "patches/0001-modules-analysis-visibility/revision-2/evidence/helpers/contract.tcl",
-                                 "sha256":  "350fc34585a2876654a39d63edc8aa05554f225f12c201f63010c112b27147a8",
-                                 "bytes":  3352,
-                                 "execution":  "ORIGINAL_SOURCE_ONLY_NOT_EXECUTED_BY_PUBLICATION"
-                             },
-                             {
-                                 "patch":  "p001",
-                                 "publicPath":  "validation/official_dev111_patches/p001/negative.tcl",
-                                 "originalRelativePath":  "patches/0001-modules-analysis-visibility/revision-2/evidence/helpers/negative.tcl",
-                                 "sha256":  "8dea7d01b59d32bac95d37fe02a29cf57c533955c391e969cdedd1c2d78525f5",
-                                 "bytes":  1569,
-                                 "execution":  "ORIGINAL_SOURCE_ONLY_NOT_EXECUTED_BY_PUBLICATION"
-                             },
-                             {
-                                 "patch":  "p002",
-                                 "publicPath":  "validation/official_dev111_patches/p002/config_checks.tcl",
-                                 "originalRelativePath":  "patches/0002-preview-configuration/evidence/helpers/config_checks.tcl",
-                                 "sha256":  "f74bc07a1c6de0caa1bb3d7ffe4577f59c6a0b79447a6eb9d41ba70f7cbe46e3",
-                                 "bytes":  5641,
-                                 "execution":  "ORIGINAL_SOURCE_ONLY_NOT_EXECUTED_BY_PUBLICATION"
-                             },
-                             {
-                                 "patch":  "p002",
-                                 "publicPath":  "validation/official_dev111_patches/p002/provider_contract.tcl",
-                                 "originalRelativePath":  "patches/0002-preview-configuration/evidence/helpers/provider_contract.tcl",
-                                 "sha256":  "4e9c7f969b00b698b82554f4f0b7fd2808ff691d1f31f25aa981fe359ddf1b20",
-                                 "bytes":  8637,
-                                 "execution":  "ORIGINAL_SOURCE_ONLY_NOT_EXECUTED_BY_PUBLICATION"
-                             },
-                             {
-                                 "patch":  "p003",
-                                 "publicPath":  "validation/official_dev111_patches/p003/declarations.tcl",
-                                 "originalRelativePath":  "patches/0003-script-management/evidence/helpers/dev111_p003_registry/declarations.tcl",
-                                 "sha256":  "473039124bcf67a375b4681c37d74c10108e2a755f11f4faeb5119e03386dfe5",
-                                 "bytes":  3859,
-                                 "execution":  "ORIGINAL_SOURCE_ONLY_NOT_EXECUTED_BY_PUBLICATION"
-                             },
-                             {
-                                 "patch":  "p003",
-                                 "publicPath":  "validation/official_dev111_patches/p003/regression.tcl",
-                                 "originalRelativePath":  "patches/0003-script-management/evidence/helpers/dev111_p003_registry/regression.tcl",
-                                 "sha256":  "89e3f0f4e5e3e90a409872058b67c670e66c9a3bbeb20931ea13115f0149e967",
-                                 "bytes":  9993,
-                                 "execution":  "ORIGINAL_SOURCE_ONLY_NOT_EXECUTED_BY_PUBLICATION"
-                             },
-                             {
-                                 "patch":  "p004",
-                                 "publicPath":  "validation/official_dev111_patches/p004/async_stderr.tcl",
-                                 "originalRelativePath":  "patches/0004-metadata-aware-preview/evidence/helpers/dev111_p004_core/async_stderr.tcl",
-                                 "sha256":  "a539e63b96382acdbe7079b94a4de31c735c327f3cc276370b75952944bd1b2a",
-                                 "bytes":  3073,
-                                 "execution":  "ORIGINAL_SOURCE_ONLY_NOT_EXECUTED_BY_PUBLICATION"
-                             }
-                         ],
-    "publicManifestReconciliations":  {
-                                          "plugins/modules/analysis.octave_script/SHA256SUMS.txt":  "01bed376138e03b75f74b11f8d38f48098f0847e972e44d79753164b42e46a98",
-                                          "plugins/modules/analysis.python_script/SHA256SUMS.txt":  "2c2adfdc701a90ac141b20b6c931a6353c289071accaafa69b7949cfa68c8ffc"
-                                      },
-    "p005Checks":  [
-                       "ELF64 Linux x86_64 shared object",
-                       "CMake preview-only build and install target",
-                       "worker explicit native bootstrap and controlled CORE fallback",
-                       "preserved canonical native provider source hashes"
-                   ],
-    "limitations":  [
-                        "No native GX-TXT/P005 GUI execution by this public verifier",
-                        "Owner supplied actual test acceptance is separate from this source distribution",
-                        "P003 public SHA256SUMS only two pre-existing cleaned-document manifests are normalized"
-                    ],
-    "p005PreservedSources":  [
-                                 {
-                                     "path":  "core/native2d/gx2d_preview_provider_v1.cpp",
-                                     "sha256":  "8c460717a118c4707e7d53cfbc928ce4ebc06478f3dc6814874b81269649e8dc"
-                                 },
-                                 {
-                                     "path":  "core/native2d/gx2d_preview_provider_v1.h",
-                                     "sha256":  "fa1600fa7ce423611d1cffe88373aeb2841395893d5d1685bb9e93f909693336"
-                                 },
-                                 {
-                                     "path":  "core/native2d/gx2d_preview_categories_v1.cpp",
-                                     "sha256":  "3b27c162c8c0eba2e52295905fea7d374a7c8ad1049a3b04181fa994ee000486"
-                                 },
-                                 {
-                                     "path":  "core/native2d/gx2d_preview_batch_v1.cpp",
-                                     "sha256":  "fcc214ff016290f9342fb0b545698ad2db1aa2b96a2f2f1bdacd3ae79ca79b3d"
-                                 },
-                                 {
-                                     "path":  "core/native2d/gx2d_preview_plane_v1.cpp",
-                                     "sha256":  "5cdf1c2758e42e47bb3559a1a107118159210d88ff440f71ad5b1b681007b07f"
-                                 },
-                                 {
-                                     "path":  "core/native2d/gx2d_preview_overlay_v1.cpp",
-                                     "sha256":  "c5b5054a6bac0e762595ae5c334f6976b6c9ba46882bd3ad0d72a92ff9444579"
-                                 },
-                                 {
-                                     "path":  "core/native2d/gx2d_preview_coordinates_v1.cpp",
-                                     "sha256":  "b332ebbb18381bcbcae691cda375a54f08a34f2294e2f045fee8a1b66bd0d7a7"
-                                 }
-                             ]
+  "schema": "gxtxt.patch-validation/1",
+  "framework": "0.9.8.10-dev-111",
+  "revision": "r3",
+  "officialMain": "4daf135e49378eff1f413310bc17cf32f1928c44",
+  "validatedMaintenanceHead": "5a586abb20b6a43dea72ef5958df5f0fdaddf09e",
+  "runnerScope": "STATIC_SOURCE_AND_PACKAGE_ONLY",
+  "originalRuntimeTests": "SOURCE_ONLY_OWNER_DEPOSIT_NO_EXECUTION_BY_PUBLICATION",
+  "patches": [
+    {
+      "patch": "p001-r2",
+      "tag": "v0.9.8.10-dev-111-p001-r2",
+      "commit": "42e99115f6d57abbdd495ea9c0eea56b4bb13cb8",
+      "parent": "727ae98ed246b8b0c8c886201e9ee58d1723fad2",
+      "requiredPredecessor": 0,
+      "archivePath": "patches/dev111/DEV111-P001-r2/DEV111-P001-r2-PUBLIC.zip",
+      "zipSha256": "936090cc8e7237430b4cfc6b93531fdd3c17e336e89720251b7968e0473c2731",
+      "zipBytes": 212085,
+      "files": [
+        {
+          "path": "app/gui/modules_page.tcl",
+          "before": "23ddf23b9ece742c71d45cd34e3a030e826cc9079aa96044e11e80dc3804e919",
+          "after": "20dd48c0a053b697f95bdc74f8c0e043f6e10b0fdd59cd94a19a9b0c55b76094"
+        },
+        {
+          "path": "app/modules_page_controller.tcl",
+          "before": "4abe8bad1422349fe9319c931fba766caf903286dd7e63770198f9a99bd67856",
+          "after": "d0a87881c86ce160a38cf2103aae4df1e5a90dc4639c7ef72561fb7372288e16"
+        },
+        {
+          "path": "app/run_page_redesign.tcl",
+          "before": "19013249ce770a7f94903ec0cef14f1a60069170e40e8ade22c9ac7e3e62aafa",
+          "after": "f49e3f0efefbf9273474e286d8e8600245bee98fb1f49806510dc76264b2314c"
+        },
+        {
+          "path": "app/session_controller.tcl",
+          "before": "e9e2b69e233823dd4394fcf6e54ad4ce638865711e39f076c46361f93cb4dc7c",
+          "after": "304e34ef1c2f54ffcec37e8152723acf6c06c41053491e2c79523795eb88bdc0"
+        },
+        {
+          "path": "core/tcl/module_api_v1.tcl",
+          "before": "f7b8639c3dfcca3b0a623f8001c14f1888b3e45dbe96487b25473dff327270bf",
+          "after": "664a3b89edc44e9a1d24b5e5ff959a7747b2e69d2d79b4213cf12a6e714db03f"
+        },
+        {
+          "path": "core/tcl/plot_module_variants.tcl",
+          "before": "cdb2d645beb43e63528413bb87d3c7f88973b1b29212ac22042122b316125f6f",
+          "after": "6d0a6557a531188aac02ce6767e64c58a94fe12841e8677b8334a890040df8ff"
+        }
+      ],
+      "manifestSha256": "00513a0875b564eae33b08e3bcd6455e06ece136d694eb74fd37f508ab776009"
+    },
+    {
+      "patch": "p002",
+      "tag": "v0.9.8.10-dev-111-p002",
+      "commit": "1fa55c798ec35825c680ec1bdf2deac764db74d8",
+      "parent": "5c9d72b4a30e3d464bd263fbf3a3a072c651bbe0",
+      "requiredPredecessor": 1,
+      "archivePath": "patches/dev111/DEV111-P002/DEV111-P002-PUBLIC.zip",
+      "zipSha256": "34944a5a945b7c3dc1ab3b8fd71614e1df322f69e59cc1ca8264650385371814",
+      "zipBytes": 284633,
+      "files": [
+        {
+          "path": "app/gui/configuration_module_editor.tcl",
+          "before": "7909e8c0081c5dbb238fb59109cc69ab15d7bdedddfe235b0e205ee4c1dfd79a",
+          "after": "a7b18cbdb96d3937d11878f448ebbdc6e764dd9c1d45ff0787868f8ccdc0bfb8"
+        },
+        {
+          "path": "app/gui/configuration_modules.tcl",
+          "before": "0d16edac9aea21f6159a20a2abe55928148ff1eac70323f22ccb753542de5fbc",
+          "after": "2651f1ba6411ea22f868bec2d01052bf95d44b7c40840945e5390f5d7352f5f8"
+        },
+        {
+          "path": "app/gui/configuration_preview_components.tcl",
+          "before": "10b295998385947edf61b08308357f01abb1baa9d8c288fe09c27d3c3a616e78",
+          "after": "aac2310c5fb2c67fccb6e313c961cb4f91663b4d82f763108ea3c5291e00d392"
+        },
+        {
+          "path": "app/gui/dataset_preview_live.tcl",
+          "before": "a8b431650068151e21733208ae951c95de0beaca709199d317e6db6d0f05f0ed",
+          "after": "a71e2a7bc49c2c3aa33d5b5130e5249d5b6ac4470df33af31ea42dc991fbef34"
+        },
+        {
+          "path": "core/native2d/bin/gxpreviewprovider.so",
+          "before": null,
+          "after": "b413188d526d1c8251e52f0beb03ed2bf33f4eaae19fc64a7a6e861b6f3f1403"
+        },
+        {
+          "path": "core/native2d/gx2d_preview_provider_loader.cpp",
+          "before": null,
+          "after": "270678ce357bdb3f8dfdf2d0a8e644fff174ab2604ee334e24ec3d42beba3521"
+        },
+        {
+          "path": "core/tcl/curve_source_api_v1.tcl",
+          "before": "604166b4db47cb7be6238ba3db02346089b8f6063b8796238c4a86042e4c95bd",
+          "after": "213a53b59a1ab4e0d7cc9b3fbf76ab7e8f8c0e72b913f59f259864d302127b46"
+        },
+        {
+          "path": "core/tcl/dataset_digitizer_preview_v1.tcl",
+          "before": "8cc29082d96af0218d61a77fa5fb57a2ee92e293b502fe1d5f63eb3a61d9464a",
+          "after": "bafaca21b1e806bf5cd5c217e2db151f214021a4b42cb3b115be54c5e2c843a8"
+        },
+        {
+          "path": "core/tcl/dataset_preview_cache.tcl",
+          "before": "ca34789cfbb88ef16cd76d350f9cb5c8b6ede1e28a1bb473ace9eb2ea007ef0c",
+          "after": "bf7887508852e5287018757662aab94de8e532b13955cb7cc5f5c6a88f1dfeaf"
+        },
+        {
+          "path": "core/tcl/dataset_preview_native_v1.tcl",
+          "before": null,
+          "after": "b5d5b9e1597774ab8dacc58573c8eb1481e86b893299e998503b4784b2a8b578"
+        },
+        {
+          "path": "core/tcl/dataset_preview_provider_v1.tcl",
+          "before": "8916eb1a3264f8b928b86eb1dacd9c51130334e04e588da4d1926bd0efc112e0",
+          "after": "2235ea9062f18b01535fb798af1d39c793bf74506eb07030dbde510df847e18f"
+        },
+        {
+          "path": "core/tcl/dataset_preview_worker_v1.tcl",
+          "before": "113b558831b1ecafd687a2db86a7edf1bec16a2d7ff989ec8ad1869b6ab8d7e5",
+          "after": "17823db72d1ac4738c71f41cba41990923a85ca4ba54b091fd2bc9ae0ea7c4c7"
+        },
+        {
+          "path": "core/tcl/preview_descriptor_api_v1.tcl",
+          "before": "6fce31a5372be08e05c9dd0b23fe85e6da5a558fe31e973ac700603cf07fcc72",
+          "after": "ff09325302e3fb4531a953b6ec5f93a025dff1e1ace8556b4d734589ba2eaf5e"
+        },
+        {
+          "path": "core/tcl/scientific_dataset_filters_v1.tcl",
+          "before": "92db6d5200d15e02d941baec7cbb579b32f097230669f19c3751520ca4d4b665",
+          "after": "f1b12dbbb222fb2e0592b1049af98218d56edfe09a8bf8b0170940de2a831299"
+        },
+        {
+          "path": "core/tcl/scientific_dataset_preview_v1.tcl",
+          "before": "b3f6dd02cf9df83387b40e09f04eee0dbb39f5b8050e37769cb44fb6393b4f0d",
+          "after": "c508b0d6d31463a770789d41078b642d67d01738fca958fd83130ecba25368de"
+        },
+        {
+          "path": "docs/api/DATASET_PREVIEW_API_v1.md",
+          "before": "7283194d07388e9d93db720cb281e7bd1ea93b131b61c79b2e016af1dc01ba48",
+          "after": "ccb2065a39a9f49d8b03c1c31ee473e106bcf44331ab2a6af2e5dcec504d2d76"
+        },
+        {
+          "path": "docs/api/PREVIEW_DESCRIPTOR_API_v1.md",
+          "before": "5f92b376538cc6eed4822943cf872f26b12a82fcf0d09478564ca541487f3944",
+          "after": "3a3a11878ba93ed95bff0b0261e07eb9edb19fdf6866154b4c04329833b2d123"
+        },
+        {
+          "path": "gxtxt_pipeline.tcl",
+          "before": "4da523227e941ddd0a27e942696c8df9f03447a12b02e08838a8832446a9d78f",
+          "after": "bea5353fd1daf1fde1b6ca7de1dce0143276e75ab69a51240be69876cf2307ec"
+        }
+      ],
+      "manifestSha256": "f525a534ed814a82b0caecf7cdded8fa7e9c32f2b60b719b8fc13701eb2f7b79"
+    },
+    {
+      "patch": "p003",
+      "tag": "v0.9.8.10-dev-111-p003",
+      "commit": "c32421c0d4734fe5ab41787c145a69331dfd63ec",
+      "parent": "42e99115f6d57abbdd495ea9c0eea56b4bb13cb8",
+      "requiredPredecessor": 2,
+      "archivePath": "patches/dev111/DEV111-P003/DEV111-P003-PUBLIC.zip",
+      "zipSha256": "d9fae5dac740b412cda45128aa16484fd9a9dd6bc8ddbbca18d17c7937cd0fa6",
+      "zipBytes": 82826,
+      "files": [
+        {
+          "path": "app/gui/documentation_module_window.tcl",
+          "before": "7a734164dd0b39f20aeebe3e1dfc542d4c989830677033dbeb3855c7b00c39c7",
+          "after": "55726a02c92346a8f85a3c5d19d6a87758854f4087ca747664d5b3eb9d6d96d7"
+        },
+        {
+          "path": "app/gui/script_library_dialog.tcl",
+          "before": "302cf0c901255ec4be298e6e37794a13e43585a5f6f44411f15ea7e6dabfeb77",
+          "after": "c6e3ce5b07741d379ace5d48550f71167e96ea60834306e3f86cb23ad9920629"
+        },
+        {
+          "path": "app/script_workspace_surface.tcl",
+          "before": "703aa47985d7d21b6713bf2c0b7cf339e779f5311bf33a4cb4b9f9345754a159",
+          "after": "28269558b4aacdc039ecc75636176452847059e26d5175ef8d80c4b8c0a1ba03"
+        },
+        {
+          "path": "app/session_controller.tcl",
+          "before": "304e34ef1c2f54ffcec37e8152723acf6c06c41053491e2c79523795eb88bdc0",
+          "after": "ff2bf721c38c09c66910bb17e3712716b6c79daf129b177f0faba161510ba5b7"
+        },
+        {
+          "path": "core/tcl/script_execution_api_v1.tcl",
+          "before": "3c79f473799d5b757c70acb4beb0ec05fd741932386008d2419dc2880c30f0ff",
+          "after": "9c02371bca0f19a5be55e7feb72aa4974998a9e9a4b7a92f82286fd2e0eedad4"
+        },
+        {
+          "path": "core/tcl/script_source_declaration_api_v1.tcl",
+          "before": "7d9cdfc92c011371e46b8b923965de4e220ce4771afdc03d87ff1e3e95b5ede2",
+          "after": "50997c237d3d8658227bacad36e6a2b337e40acf6d75293aa9d2da737e57ffac"
+        },
+        {
+          "path": "core/tcl/session_file_explorer_api_v1.tcl",
+          "before": "2821fe9b587e9ff9cef1d499e16233cb624f9f928163736886c6cc3ed08d8d33",
+          "after": "bb4eaa9de65a07042c4dc0e9c9de194c4e3d8b5235ae320348ec8c3e2199652c"
+        },
+        {
+          "path": "core/tcl/viewer_development_api_browser_v1.tcl",
+          "before": "c33118d01caa608c945b2ffd3bb56df4a4fa299bd9b609bf8fa9d958aeae91c0",
+          "after": "50a47ec3b885c7477c35a81875b2bbdcdc2eae22b479c8f21d22c00de4b33179"
+        },
+        {
+          "path": "docs/api/SCRIPT_EXECUTION_API_v1.md",
+          "before": "c14f3c9758ef8ea53ebd7268d404fef5c4a035e549347ae7393cc35eee0ae3e4",
+          "after": "76abae020e404a0a6050d565e6df7be6a5b09199792548f3e57ac3d75d888d87"
+        },
+        {
+          "path": "plugins/modules/analysis.octave_script/OCTAVE_SCRIPT_EDITOR_API_v1.md",
+          "before": "3c60464ff3a87bcef4386ff0705bf6c27b5b6969acd6a37b3cc28e5c96169b63",
+          "after": "c05ecaba4a20c630cfea4b02650d163a8e276b0d7651df034f5fa1764a4d511f"
+        },
+        {
+          "path": "plugins/modules/analysis.octave_script/SHA256SUMS.txt",
+          "before": "1afbab807dc1c1ff49da7233a8bbc4581e601a3041bd965063ad1610f336ab7c",
+          "after": "4fb14eff578857ce729d91228444656a6e6ad27100f8b83cb2eff6cfde356428"
+        },
+        {
+          "path": "plugins/modules/analysis.octave_script/api/octave_script_editor_api_v1.tcl",
+          "before": "0b83b70b1e90680afe90c6a3e01bdec4955aae3b73d4554b95b0cf9a7174500c",
+          "after": "977a2e7b9cc95d5281219dea5a1e2e345b6f4beb1cd2581d33acbe50593529ea"
+        },
+        {
+          "path": "plugins/modules/analysis.octave_script/ui/octave_script_editor_ui.tcl",
+          "before": "263ae9ba2b0fb77073a1f6b8633f86dca2eca6e7d63006a3d3fb73cb6b05fda1",
+          "after": "a28b9be9a4dd31c9166479989fdd1c5792d1b212e2087c76d57a8fc6f605493f"
+        },
+        {
+          "path": "plugins/modules/analysis.python_script/SHA256SUMS.txt",
+          "before": "f9cbb7d829d0bb4f3fb4da0ef1bbc288de5d608a5ebc8b177f474aafaf8d92a4",
+          "after": "ff9a87732a9a9e03dc17d5e185f1a4dd6c9303f5e496ada880145722ca691265"
+        },
+        {
+          "path": "plugins/modules/analysis.python_script/ui/python_script_editor_ui.tcl",
+          "before": "3d4c484bd1365746bd246aaa13cc1181129b14170834dc7812eb987326d5a3a8",
+          "after": "406db1f89458ac2fc4698a2a4dd028252098d76657f4545ecc4480555b6ac6f5"
+        }
+      ],
+      "manifestSha256": "4ffc572380dc7413e49cfabbf3e7896ca3091e6d961426f71c03598be8deae03"
+    },
+    {
+      "patch": "p004",
+      "tag": "v0.9.8.10-dev-111-p004",
+      "commit": "bb1d92106daeb30eb986866f699c47f6d8ed1d33",
+      "parent": "c32421c0d4734fe5ab41787c145a69331dfd63ec",
+      "requiredPredecessor": 3,
+      "archivePath": "patches/dev111/DEV111-P004/DEV111-P004-PUBLIC.zip",
+      "zipSha256": "5ed96229e7ae59dd9879f3b3a68144d99c9f6c989f78dc1e69e55ed446a34300",
+      "zipBytes": 91077,
+      "files": [
+        {
+          "path": "app/gui/dataset_preview_live.tcl",
+          "before": "a71e2a7bc49c2c3aa33d5b5130e5249d5b6ac4470df33af31ea42dc991fbef34",
+          "after": "24f207c04da2c12a74c8bba5982cfc6fb3741df8c61a73a4d7a29e2e43017833"
+        },
+        {
+          "path": "core/python/gxtxt_script_bridge_server.py",
+          "before": "44737e4ec215e51d196725f60499f78501a7611e8c81ad2609503510af8a94fd",
+          "after": "c0b334d294cfd12a4f1ff3faee24f595086a37922eb899f221a2a3b6ce08cb79"
+        },
+        {
+          "path": "core/tcl/dataset_preview_cache.tcl",
+          "before": "bf7887508852e5287018757662aab94de8e532b13955cb7cc5f5c6a88f1dfeaf",
+          "after": "e6d2ea9428bf7b2ac504d9219403ee76cf9938f41be754b0e7585c0ceac74460"
+        },
+        {
+          "path": "core/tcl/dataset_preview_native_v1.tcl",
+          "before": "b5d5b9e1597774ab8dacc58573c8eb1481e86b893299e998503b4784b2a8b578",
+          "after": "946ffff801d1b8282fe892ac3e1021ad988c85d9233b823780ff0637a9b5f56a"
+        },
+        {
+          "path": "core/tcl/dataset_preview_provider_v1.tcl",
+          "before": "2235ea9062f18b01535fb798af1d39c793bf74506eb07030dbde510df847e18f",
+          "after": "d6cf35362372fe32f5dbbd1d6f969610f78872a3468e1faa7832d73db5f022f3"
+        },
+        {
+          "path": "core/tcl/dataset_preview_worker_v1.tcl",
+          "before": "17823db72d1ac4738c71f41cba41990923a85ca4ba54b091fd2bc9ae0ea7c4c7",
+          "after": "4545b28c22feb2b9674f1e4cb1f6d7c0b2e36ef030729e19ab6f6ccd495ea92d"
+        },
+        {
+          "path": "core/tcl/preview_descriptor_api_v1.tcl",
+          "before": "ff09325302e3fb4531a953b6ec5f93a025dff1e1ace8556b4d734589ba2eaf5e",
+          "after": "722bc331e33dd1d9c5045bedf83cc38804a06bd7ac699edc9c65dff740b50f85"
+        },
+        {
+          "path": "core/tcl/scientific_dataset_filters_v1.tcl",
+          "before": "f1b12dbbb222fb2e0592b1049af98218d56edfe09a8bf8b0170940de2a831299",
+          "after": "75ca9e079b3c8bd398e35cfdb637fa9d3e3f0ed3b67cf71c592c738ad5fff0d2"
+        },
+        {
+          "path": "core/tcl/scientific_dataset_preview_v1.tcl",
+          "before": "c508b0d6d31463a770789d41078b642d67d01738fca958fd83130ecba25368de",
+          "after": "e0c3b6957b1eb83faa0910f12ec4b160738e617d49d4f4290393c376f181fce0"
+        },
+        {
+          "path": "core/tcl/script_job_api_v1.tcl",
+          "before": "9426c950ffce9c22bb3d4ca76cc919d09b4815f79eaef26827eb73f324ff3934",
+          "after": "092d728ada9e14dad1c9f36f34d1241270641f06a42888313c70a739d45992cf"
+        },
+        {
+          "path": "core/tcl/script_job_request.tcl",
+          "before": "99957bc07bb76edb5c254f980bc547668fcdd7bf237044b2a4db53fa4f73e31d",
+          "after": "e8d6ae7a6a49a9a79c309e0bb1f1432ead66b46c3d7c5b4d9819f05f6eecac7e"
+        },
+        {
+          "path": "docs/api/DATASET_PREVIEW_API_v1.md",
+          "before": "ccb2065a39a9f49d8b03c1c31ee473e106bcf44331ab2a6af2e5dcec504d2d76",
+          "after": "cbdeba25593bae352dda288065e9e70e9bf5416e6ac1cbec7c94a4bd96654cf2"
+        },
+        {
+          "path": "docs/api/PREVIEW_DESCRIPTOR_API_v1.md",
+          "before": "3a3a11878ba93ed95bff0b0261e07eb9edb19fdf6866154b4c04329833b2d123",
+          "after": "42f724192841eab904c431e21ab54168e53a5299939085a2ca8d93718593aaab"
+        }
+      ],
+      "manifestSha256": "2f30bf3f124cfd468d0e9d1a1036d83b7eeba089b25ec710c01e42fce71b739c"
+    },
+    {
+      "patch": "p005",
+      "tag": "v0.9.8.10-dev-111-p005",
+      "commit": "6a59da41c2aa23fdc356e6f956238c02bdc6fff3",
+      "parent": "bb1d92106daeb30eb986866f699c47f6d8ed1d33",
+      "requiredPredecessor": 4,
+      "archivePath": "patches/dev111/DEV111-P005/DEV111-P005-PUBLIC.zip",
+      "zipSha256": "3712cf052181561226e7c2657f8527b50223dda9035a072a554a90aee41649ad",
+      "zipBytes": 86910,
+      "files": [
+        {
+          "path": "core/native2d/CMakeLists.txt",
+          "before": "21031dbca5d1dd0a55b2ae5082caadf6408ef7a496cc3f2e1f8910d96a6f0881",
+          "after": "f4b81b065c2a45e9bbd1296620b7e31148d3970dcf38d5fe7decd1daa6828a5f"
+        },
+        {
+          "path": "core/native2d/bin/gxpreviewprovider.so",
+          "before": "b413188d526d1c8251e52f0beb03ed2bf33f4eaae19fc64a7a6e861b6f3f1403",
+          "after": "5c80cd795703f420902115812a28ab195de3ed02c964515d57dda2c5318a509d"
+        },
+        {
+          "path": "core/tcl/dataset_preview_worker_v1.tcl",
+          "before": "4545b28c22feb2b9674f1e4cb1f6d7c0b2e36ef030729e19ab6f6ccd495ea92d",
+          "after": "c5c44c24933dd1914ec716b1b60ab72a378c579631ec8ce8c1d57119e7798401"
+        }
+      ],
+      "manifestSha256": "198f61f58fa5e6fc8739889682e96348f85c0f0590ce4a4cec9023e9f1ca4bc6"
+    },
+    {
+      "patch": "p006",
+      "tag": "v0.9.8.10-dev-111-p006",
+      "commit": "5a586abb20b6a43dea72ef5958df5f0fdaddf09e",
+      "parent": "6a59da41c2aa23fdc356e6f956238c02bdc6fff3",
+      "requiredPredecessor": 5,
+      "archivePath": "patches/dev111/DEV111-P006/DEV111-P006-PUBLIC.zip",
+      "zipSha256": "8d064bc0eb24c86754f308f103988ddeb533d5363dfbfcdad91e8cb90c5d87b2",
+      "zipBytes": 151410,
+      "manifestSha256": "72cacb5de562b5f8ff41420ecc4922f7d58208412c6e39b7f420ac933f7f8e82",
+      "files": [
+        {
+          "path": "app/gui/dataset_preview_live.tcl",
+          "before": "24f207c04da2c12a74c8bba5982cfc6fb3741df8c61a73a4d7a29e2e43017833",
+          "after": "4a43ceea43372d7fde6dcf99f4c6b4b8d8cd065f38279cfc13ab701907e64c1e"
+        },
+        {
+          "path": "core/tcl/dataset_preview_gui_v1.tcl",
+          "before": null,
+          "after": "2ade95e0b987afd126fa6b4b2b53bd5dd4d1737d8538f11b8eb6dcf5d0ab114f"
+        },
+        {
+          "path": "core/tcl/dataset_preview_provider_v1.tcl",
+          "before": "d6cf35362372fe32f5dbbd1d6f969610f78872a3468e1faa7832d73db5f022f3",
+          "after": "0d419332f52b4ac8602aaad1e082108496ee08e961d610b6bcd8ac79c4c1555a"
+        },
+        {
+          "path": "core/tcl/native2d_viewport_host_v1.tcl",
+          "before": "b071040ba3f4484d0856c8a4d2e0c716658cfa720f5cd7a662d889450232bf8f",
+          "after": "dc178662b28f36a09a2e9e3967161129c1a1b59edc9d5320fc8255ed91475e69"
+        },
+        {
+          "path": "core/tcl/preview_descriptor_api_v1.tcl",
+          "before": "722bc331e33dd1d9c5045bedf83cc38804a06bd7ac699edc9c65dff740b50f85",
+          "after": "5b37b36b7d0976dbe76de12e1e8bc5948c765754d561bc04c87289efd1476752"
+        },
+        {
+          "path": "docs/api/DATASET_PREVIEW_API_v1.md",
+          "before": "cbdeba25593bae352dda288065e9e70e9bf5416e6ac1cbec7c94a4bd96654cf2",
+          "after": "b62e55f6a9fbea55e629d0589aedebe219e9b13ce4b876934d50fda5f438a0f0"
+        },
+        {
+          "path": "docs/api/NATIVE2D_VIEWPORT_HOST_v1.md",
+          "before": "85b0648d8d6c90fcff7b90805c8f701cc8561bb96844060fbeaca99aa9c3ab19",
+          "after": "644419d47cc16084e6ac0598e0d30e1c7c97cda58247902418b2cc2325d3cea3"
+        },
+        {
+          "path": "docs/api/PLOT_DATASET_API_v4.md",
+          "before": "334789e77ccfe0bd494e40202e28e01b58456a15396e244def5fdbd83cdd9259",
+          "after": "01e381f663981bfe6fd3d7c335fd38bb3908a9aa8f5f3f63e25099cdb16d0181"
+        },
+        {
+          "path": "docs/api/PREVIEW_COMPONENT_GUI_API_v1.md",
+          "before": null,
+          "after": "5579919bbce85add4df22a2198cf55ef7f5e9039c77633002d90de5f4e3fa9e1"
+        },
+        {
+          "path": "docs/api/PREVIEW_DESCRIPTOR_API_v1.md",
+          "before": "42f724192841eab904c431e21ab54168e53a5299939085a2ca8d93718593aaab",
+          "after": "c3a7b92b5d0ca20dbfc2217c7056a7c957558f814dbedd94ff034beade215d63"
+        },
+        {
+          "path": "docs/api/UI_FIELD_API_v1.md",
+          "before": "f9305f728f3f5fe9fed047de3cb39da8c092a481f3691cdf856a2729059824ba",
+          "after": "d6b3c828e3a2d34a65fb6a927ef27b2bd707e1c6fb010176e8c19a670a2c92a2"
+        },
+        {
+          "path": "docs/api/VIEWER_GUI_HOST_API_v1.md",
+          "before": "0d4391951e52933126a89d04c8bc37db0a2661a096cc3b17490b440cf568d39f",
+          "after": "8fd3536242dd828a312ea0234e20e6cc89131af4b238c2a8d0e14c6af02c2695"
+        },
+        {
+          "path": "gxtxt_pipeline.tcl",
+          "before": "4da523227e941ddd0a27e942696c8df9f03447a12b02e08838a8832446a9d78f",
+          "after": "e615679812268a4136c643c36150b620ee2f7bf0d28db3d401e85b7fe04df294"
+        },
+        {
+          "path": "plugins/modules/plot.dataset/SHA256SUMS",
+          "before": "5d2856dbc34f65371b04d3cde2d5a3fd04f186d15c865f635ee07ee5401b13e5",
+          "after": "a49c6b536cd97b39cd846568b39e8f4f777a3512a3ccb3054f4f6da9a20dfc78"
+        },
+        {
+          "path": "plugins/modules/plot.dataset/SHA256SUMS.txt",
+          "before": "5d2856dbc34f65371b04d3cde2d5a3fd04f186d15c865f635ee07ee5401b13e5",
+          "after": "a49c6b536cd97b39cd846568b39e8f4f777a3512a3ccb3054f4f6da9a20dfc78"
+        },
+        {
+          "path": "plugins/modules/plot.dataset/api/plot_dataset_api_v4.tcl",
+          "before": "68984332e55f2e6a629ac680ad87c15c26f1786996975ac9027b7c15e7033107",
+          "after": "bcb1746ba68fd0180b2290aa7ee09676fdc7d2d95162b8c3896945704e8655c6"
+        }
+      ]
+    }
+  ],
+  "originalFixtures": [
+    {
+      "patch": "p001",
+      "publicPath": "validation/official_dev111_patches/p001/contract.tcl",
+      "originalRelativePath": "patches/0001-modules-analysis-visibility/revision-2/evidence/helpers/contract.tcl",
+      "sha256": "350fc34585a2876654a39d63edc8aa05554f225f12c201f63010c112b27147a8",
+      "bytes": 3352,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_EXECUTED_BY_PUBLICATION"
+    },
+    {
+      "patch": "p001",
+      "publicPath": "validation/official_dev111_patches/p001/negative.tcl",
+      "originalRelativePath": "patches/0001-modules-analysis-visibility/revision-2/evidence/helpers/negative.tcl",
+      "sha256": "8dea7d01b59d32bac95d37fe02a29cf57c533955c391e969cdedd1c2d78525f5",
+      "bytes": 1569,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_EXECUTED_BY_PUBLICATION"
+    },
+    {
+      "patch": "p002",
+      "publicPath": "validation/official_dev111_patches/p002/config_checks.tcl",
+      "originalRelativePath": "patches/0002-preview-configuration/evidence/helpers/config_checks.tcl",
+      "sha256": "f74bc07a1c6de0caa1bb3d7ffe4577f59c6a0b79447a6eb9d41ba70f7cbe46e3",
+      "bytes": 5641,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_EXECUTED_BY_PUBLICATION"
+    },
+    {
+      "patch": "p002",
+      "publicPath": "validation/official_dev111_patches/p002/provider_contract.tcl",
+      "originalRelativePath": "patches/0002-preview-configuration/evidence/helpers/provider_contract.tcl",
+      "sha256": "4e9c7f969b00b698b82554f4f0b7fd2808ff691d1f31f25aa981fe359ddf1b20",
+      "bytes": 8637,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_EXECUTED_BY_PUBLICATION"
+    },
+    {
+      "patch": "p003",
+      "publicPath": "validation/official_dev111_patches/p003/declarations.tcl",
+      "originalRelativePath": "patches/0003-script-management/evidence/helpers/dev111_p003_registry/declarations.tcl",
+      "sha256": "473039124bcf67a375b4681c37d74c10108e2a755f11f4faeb5119e03386dfe5",
+      "bytes": 3859,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_EXECUTED_BY_PUBLICATION"
+    },
+    {
+      "patch": "p003",
+      "publicPath": "validation/official_dev111_patches/p003/regression.tcl",
+      "originalRelativePath": "patches/0003-script-management/evidence/helpers/dev111_p003_registry/regression.tcl",
+      "sha256": "89e3f0f4e5e3e90a409872058b67c670e66c9a3bbeb20931ea13115f0149e967",
+      "bytes": 9993,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_EXECUTED_BY_PUBLICATION"
+    },
+    {
+      "patch": "p004",
+      "publicPath": "validation/official_dev111_patches/p004/async_stderr.tcl",
+      "originalRelativePath": "patches/0004-metadata-aware-preview/evidence/helpers/dev111_p004_core/async_stderr.tcl",
+      "sha256": "a539e63b96382acdbe7079b94a4de31c735c327f3cc276370b75952944bd1b2a",
+      "bytes": 3073,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_EXECUTED_BY_PUBLICATION"
+    }
+  ],
+  "publicManifestReconciliations": {
+    "plugins/modules/analysis.octave_script/SHA256SUMS.txt": "01bed376138e03b75f74b11f8d38f48098f0847e972e44d79753164b42e46a98",
+    "plugins/modules/analysis.python_script/SHA256SUMS.txt": "2c2adfdc701a90ac141b20b6c931a6353c289071accaafa69b7949cfa68c8ffc"
+  },
+  "p005Checks": [
+    "ELF64 Linux x86_64 shared object",
+    "CMake preview-only build and install target",
+    "worker explicit native bootstrap and controlled CORE fallback",
+    "preserved canonical native provider source hashes"
+  ],
+  "limitations": [
+    "No native GX-TXT/P005 GUI execution by this public verifier",
+    "Owner supplied actual test acceptance is separate from this source distribution",
+    "P003 public SHA256SUMS only two pre-existing cleaned-document manifests are normalized"
+  ],
+  "p005PreservedSources": [
+    {
+      "path": "core/native2d/gx2d_preview_provider_v1.cpp",
+      "sha256": "8c460717a118c4707e7d53cfbc928ce4ebc06478f3dc6814874b81269649e8dc"
+    },
+    {
+      "path": "core/native2d/gx2d_preview_provider_v1.h",
+      "sha256": "fa1600fa7ce423611d1cffe88373aeb2841395893d5d1685bb9e93f909693336"
+    },
+    {
+      "path": "core/native2d/gx2d_preview_categories_v1.cpp",
+      "sha256": "3b27c162c8c0eba2e52295905fea7d374a7c8ad1049a3b04181fa994ee000486"
+    },
+    {
+      "path": "core/native2d/gx2d_preview_batch_v1.cpp",
+      "sha256": "fcc214ff016290f9342fb0b545698ad2db1aa2b96a2f2f1bdacd3ae79ca79b3d"
+    },
+    {
+      "path": "core/native2d/gx2d_preview_plane_v1.cpp",
+      "sha256": "5cdf1c2758e42e47bb3559a1a107118159210d88ff440f71ad5b1b681007b07f"
+    },
+    {
+      "path": "core/native2d/gx2d_preview_overlay_v1.cpp",
+      "sha256": "c5b5054a6bac0e762595ae5c334f6976b6c9ba46882bd3ad0d72a92ff9444579"
+    },
+    {
+      "path": "core/native2d/gx2d_preview_coordinates_v1.cpp",
+      "sha256": "b332ebbb18381bcbcae691cda375a54f08a34f2294e2f045fee8a1b66bd0d7a7"
+    }
+  ],
+  "p006OriginalArchiveSha256": "21b0df059c42b7d0ae535c7e759378325570d2047b11a26385c4e8de19b6b19d",
+  "p006OriginalFixtureStatus": "OWNER_DEPOSIT_CONTAINS_TEST_RESULTS_BUT_NO_EXECUTABLE_INDEPENDENT_GUI_FIXTURE",
+  "p006PublicPriorExceptions": {
+    "docs/api/NATIVE2D_VIEWPORT_HOST_v1.md": "a698ee76a2389665b757f9e62c1bb2d1fa0fa5ee3c3847ddc0b3a8fcf76b136a",
+    "docs/api/UI_FIELD_API_v1.md": "ec42a6fc0c42341280676b822132c8cf592bd06fa11256d7dcd67de38fc0cbc7",
+    "docs/api/VIEWER_GUI_HOST_API_v1.md": "c2f4abe8617f8ceab10185cdc01975e3119c902695bf112bf4a31b10690754ac",
+    "gxtxt_pipeline.tcl": "bea5353fd1daf1fde1b6ca7de1dce0143276e75ab69a51240be69876cf2307ec",
+    "plugins/modules/plot.dataset/SHA256SUMS": "ceceadb3d0243816ef25e4f88d12a9f2130683ca6bb95958c2af15cb9e4fc62d",
+    "plugins/modules/plot.dataset/SHA256SUMS.txt": "ceceadb3d0243816ef25e4f88d12a9f2130683ca6bb95958c2af15cb9e4fc62d"
+  },
+  "p006PublicAfterExceptions": {
+    "docs/api/NATIVE2D_VIEWPORT_HOST_v1.md": "1c8c91fa16bd721dffa88359aeda27868e15cff9cf2572d02f7d0f8a60e7edb7",
+    "docs/api/UI_FIELD_API_v1.md": "1eb610e8b84a105b85ed7856f1612fb0da6b81e338efb31a29ed702ed0903e62",
+    "docs/api/VIEWER_GUI_HOST_API_v1.md": "ebba6ad660729ff421f064bcc2586f45743923cae96298ec9f4a7dff7e5e90c4",
+    "plugins/modules/plot.dataset/SHA256SUMS": "c3339a2349f5574d2be6d8ae69a9d0f807aa66b076a7670aca6c442c3fb42982",
+    "plugins/modules/plot.dataset/SHA256SUMS.txt": "c3339a2349f5574d2be6d8ae69a9d0f807aa66b076a7670aca6c442c3fb42982"
+  }
 }

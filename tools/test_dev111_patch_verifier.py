@@ -17,9 +17,22 @@ class Dev111PatchVerifierTests(unittest.TestCase):
     def test_declared_chain_and_original_fixtures(self):
         info = MODULE.read_manifest()
         self.assertEqual([p["patch"] for p in info["patches"]],
-                         ["p001-r2", "p002", "p003", "p004", "p005"])
+                         ["p001-r2", "p002", "p003", "p004", "p005", "p006"])
         self.assertEqual(len(info["originalFixtures"]), 7)
         self.assertEqual(len(info["p005PreservedSources"]), 7)
+
+    def test_p006_public_exception_scope(self):
+        info = MODULE.read_manifest()
+        self.assertEqual(len(info["p006PublicPriorExceptions"]), 6)
+        self.assertEqual(len(info["p006PublicAfterExceptions"]), 5)
+        self.assertEqual(len(info["patches"][-1]["files"]), 16)
+
+    def test_rejects_incomplete_p006_gui_api(self):
+        info = MODULE.read_manifest()
+        def fake_blob(commit, name):
+            return b"proc ::GX::datasetPreviewGuiApiInfo {} {}" if name.endswith("dataset_preview_gui_v1.tcl") else b""
+        with self.assertRaises(ValueError):
+            MODULE.validate_p006_gui_integration(fake_blob, info)
 
     def test_rejects_unsafe_source_paths(self):
         for value in ("../escape", "/absolute/file", "dir/../../other", "C:\\secret", "dir\\file"):
