@@ -25,6 +25,7 @@ proc ::GX::workbenchExtensionCoreApis {} {
         SPECTRAL_FAMILY_API_v1 ::GX::SpectralFamilyAPIv1::apiInfo
         TABLE_EXTRACTOR_API_v1 ::GX::TableExtractorAPIv1::apiInfo
         WORKBENCH_RECOVERY_API_v1 ::GX::workbenchRecoveryApiInfo
+        GUI_UPDATE_SCHEDULER_API_v1 ::GX::guiUpdateSchedulerApiInfo
     }]
 }
 proc ::GX::workbenchExtensionRequireApi {api} {

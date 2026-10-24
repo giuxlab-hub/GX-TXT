@@ -1,4 +1,4 @@
-# viewer.curve_workbench 2.21.10
+# viewer.curve_workbench 2.21.11
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -12,3 +12,7 @@ See [MANUAL.md](MANUAL.md), [CHANGELOG.md](CHANGELOG.md) and
 [TEST_RESULTS.md](TEST_RESULTS.md). Install this normal module package through
 the existing Plugin Manager; dependencies and public API entrypoints are declared
 in module.ini.
+
+DEV111-P012 requires the cumulative framework through P012 and its public
+`GUI_UPDATE_SCHEDULER_API_v1`. Only wheel redraws adopt the opt-in CORE service;
+Native zoom, normal editing timers and350ms view persistence remain unchanged.

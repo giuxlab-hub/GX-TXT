@@ -2,6 +2,7 @@
 proc ::GX::CurveWorkbench::_documentOwnerInvalidated {w event} {
     variable st
     if {![info exists st($w,document)]||$st($w,document) ne [dict get $event document_id]||$st($w,token) ne [dict get $event session_token]} return
+    _wheelDrawDispose $w
     _pointSyncCancel $w
     set st($w,ownerInvalidated) 1
     set st($w,token) "invalidated:[dict get $event owner_generation]"

@@ -1,3 +1,12 @@
+## 2.21.11 — DEV111-P012
+
+Use the opt-in public CORE GUI update scheduler for wheel redraws only. Preserve
+immediate Native2D zoom and cursor anchoring, normal16ms scheduling and350ms view
+persistence. Rapid request activity can temporarily use100ms frame spacing;
+quiet recovery delivers the final state and restores normal scheduling. Transfer
+pending frame ownership when normal editing resumes, dispose on close/context
+invalidation. Preserve all P011 transaction fixes and comparison/scientific owners.
+
 ## 2.21.10 — DEV111-P011
 
 Defer coordinate-frame visibility/view reconciliation while Native2D owns an

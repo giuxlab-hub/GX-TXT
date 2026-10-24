@@ -68,6 +68,7 @@ proc ::GX::CurveWorkbench::_saveExplicit {w} {
 
 proc ::GX::CurveWorkbench::_close {w} {
     variable st
+    _wheelDrawDispose $w
     if {[info exists st($w,historyBrowsing)]&&$st($w,historyBrowsing)} {_timelineBrowse $w $st($w,historyCount)}
     if {[info exists st($w,restoreFailed)]&&$st($w,restoreFailed)} {set st($w,closingFailedRestore) 1}
     foreach key {viewDrawPending viewSavePending} {

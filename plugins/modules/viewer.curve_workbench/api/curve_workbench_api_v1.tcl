@@ -1202,7 +1202,7 @@ proc ::GX::CurveWorkbench::_pointerUpScientific {w x y} {
 proc ::GX::CurveWorkbench::_wheel {w x y delta} {
     variable st
     ::GX::Native2D::core zoom $st($w,scene) [expr {$delta>0?0.82:1.22}] [list $x $y]
-    _viewDrawLater $w;_viewPersistLater $w
+    _wheelDrawLater $w;_viewPersistLater $w
 }
 proc ::GX::CurveWorkbench::_fit {w {selected 0}} {
     variable st
