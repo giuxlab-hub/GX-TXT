@@ -143,3 +143,22 @@ The user-reported functional testing is separate from independent publication-so
 The latest dev111-r3 patch extends Preview with opt-in guiMount/guiDispose, shared UI Field icons and Plot v4 viewport chrome. The public validation manifest now contains six ordered version-specific patches. The independent read-only checker covers 16 P006 file entries, six precisely documented differences from the previously cleaned public source, five public output document/checksum reconciliations and P006 GUI API wiring, while preserving P005 binary/worker checks.
 
 This owner deposit contains a focused GUI test result description, but no portable independent P006 GUI test script. Therefore tools/validate_dev111_patches.py verifies public source, tags, hashes, API wiring and unchanged native ABI without fabricating a new test execution. Real P006 interaction requires a compatible isolated Tcl/Tk/X11 workspace and controlled synthetic Session.
+
+## DEV111 P007–P017 — cumulative scientific validation sources
+
+The independent validation branch now archives 31 additional exact-byte owner-deposited Tcl/Python sources: two from P016 and 29 from P017. These are source-only fixtures, not newly executed scientific tests. Source SHA-256 identities, original ZIP member names and the 11 version-bound patch release/checksum/commit identities are in patch-manifest-dev111-p007-p017.json.
+
+The new tools/validate_dev111_p007_p017.py verifies the cumulative P007–P017 published patch ZIP and Git chain, exact public source preimages/postimages and original author-file hashes (where not already sanitized for publication), exact compiled Linux native library architecture and the P015 sprite/P016 CAD/P017 History ownership sources. It is read-only and never starts GX-TXT.
+
+~~~sh
+python3 tools/validate_suite.py verify
+python3 tools/validate_dev111_p007_p017.py
+python3 tools/validate_dev111_p007_p017.py --repository /path/to/GX-TXT-maintenance-dev111
+python3 tools/validate_dev111_p007_p017.py --installed-final /path/to/gxtxt
+~~~
+
+The original dev102 opt-in runner is unchanged. The P016/P017 fixtures are not invoked automatically because their real Tcl/Tk, native and scientific Session prerequisites differ and some original fixtures contain environment-specific paths deliberately omitted from public distribution.
+
+P017 is **one of several milestones**, not the final milestone. Its native CORE History engine, Curve Workbench integration, and other scientific consumers can be tested further in isolated Debian Sessions. The original author’s performance and real GUI receipts remain distinct from this independent source-only publication; the static verifier does not invent a new runtime test result.
+
+P017 original SCRIPT_CATALOG, internal acceptance logs, private host details and unsuitable fixture files were not copied. The curated 31 files have reproducible exact SHA-256 hashes and are not registered as Session Generators. Scientific validators and generators remain independent deliverables.

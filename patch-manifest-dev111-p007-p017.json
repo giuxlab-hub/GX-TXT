@@ -1,0 +1,2512 @@
+{
+  "schema": "gxtxt.patch-validation-extension/1",
+  "framework": "0.9.8.10-dev-111",
+  "revision": "r3",
+  "officialMain": "4daf135e49378eff1f413310bc17cf32f1928c44",
+  "priorP006Commit": "5a586abb20b6a43dea72ef5958df5f0fdaddf09e",
+  "currentP017Commit": "b6c0770286698c0c25eaa4b42baabe0b09169415",
+  "originalRuntimeTests": "OWNER_DEPOSIT_ORIGINAL_SOURCE_ONLY_NOT_RERUN",
+  "patches": [
+    {
+      "patch": "P007",
+      "tag": "v0.9.8.10-dev-111-p007",
+      "commit": "f0d8adc084a917b2aedf54700c44bfcf25480988",
+      "parent": "5a586abb20b6a43dea72ef5958df5f0fdaddf09e",
+      "requiredPredecessor": 6,
+      "originalArchiveSha256": "0b1f88c74252ddf4daada7e93f74faea7442af79ef5eb9918f8f2453178f6044",
+      "archivePath": "patches/dev111/DEV111-P007/DEV111-P007-PUBLIC.zip",
+      "publicArchiveSha256": "af463e19f0727e50afceeb5991ad2194cf63f175b12a593b22c30570eace0fea",
+      "publicArchiveBytes": 44685,
+      "files": [
+        {
+          "path": "plugins/modules/viewer.curve_workbench/CHANGELOG.md",
+          "publicBefore": "81f9cf353778bdda5fbf6c288a131981e1a4ebdbf57ea40797feeb5daf51e89c",
+          "publicAfter": "d8c2c1539c44d39ad59eb41714579812a1f00966ec1fd19da930afb7f9c9f137",
+          "authorBefore": "341aefa631f677e2ce9451ca527e2c91be2db2ac36c04e68fa4214ffe0c27237",
+          "authorAfter": "d8c2c1539c44d39ad59eb41714579812a1f00966ec1fd19da930afb7f9c9f137",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_commands.tcl",
+          "publicBefore": "7318af1cf80d15b657e61ec78e1b750366350e54106086935aff03bd20f177fa",
+          "publicAfter": "97d86c64a3e5a140132d016509282a1f4b80853a790a2e64fa1a7555f6cd2534",
+          "authorBefore": "7318af1cf80d15b657e61ec78e1b750366350e54106086935aff03bd20f177fa",
+          "authorAfter": "97d86c64a3e5a140132d016509282a1f4b80853a790a2e64fa1a7555f6cd2534",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_history.tcl",
+          "publicBefore": "376267b249faa7a85b817fb63b899041ed9ed269aca07585cb0a1cb9092be3e8",
+          "publicAfter": "1aa638abc7575889787c0a14b14c10dd43d61766b6a09ddd93d1590cfc81ded5",
+          "authorBefore": "376267b249faa7a85b817fb63b899041ed9ed269aca07585cb0a1cb9092be3e8",
+          "authorAfter": "1aa638abc7575889787c0a14b14c10dd43d61766b6a09ddd93d1590cfc81ded5",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_ui.tcl",
+          "publicBefore": "ef0471226ad0e1854a2497fe9b5eb3a37191a5245f6521ee49b233485c5d4f2e",
+          "publicAfter": "09240ae5ff0e1f04cfb233fbf903862c7a13880574860b75b5fa997c1f8bceb7",
+          "authorBefore": "ef0471226ad0e1854a2497fe9b5eb3a37191a5245f6521ee49b233485c5d4f2e",
+          "authorAfter": "09240ae5ff0e1f04cfb233fbf903862c7a13880574860b75b5fa997c1f8bceb7",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_viewport_v3.tcl",
+          "publicBefore": "22c49bdd271ce7c02d99768e3c541e92dd0bcece81935c459e98641f447f54e5",
+          "publicAfter": "9f22e92cf5401daf74495c4c6f6122252a1aefbe3e28d8a95247f86f40225c3d",
+          "authorBefore": "22c49bdd271ce7c02d99768e3c541e92dd0bcece81935c459e98641f447f54e5",
+          "authorAfter": "9f22e92cf5401daf74495c4c6f6122252a1aefbe3e28d8a95247f86f40225c3d",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/module.ini",
+          "publicBefore": "1fda9e8d2907b2d910fb052dfb206f63e378327f01d0ee1b92becab50a25426d",
+          "publicAfter": "653b33b58c18e88aea4990cd764c5ca7246b671af7d01ba12de83ccb01084b70",
+          "authorBefore": "1fda9e8d2907b2d910fb052dfb206f63e378327f01d0ee1b92becab50a25426d",
+          "authorAfter": "653b33b58c18e88aea4990cd764c5ca7246b671af7d01ba12de83ccb01084b70",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/plugin-package.ini",
+          "publicBefore": "f8029d47b324dc87ec1c91b17c3f87555456e740989d34713023ee27f05d048d",
+          "publicAfter": "a2cd3bb33aba2ecd0e8f8028feceb1f9e7035e1abd35a35a3c5c81b6d63f9610",
+          "authorBefore": "f8029d47b324dc87ec1c91b17c3f87555456e740989d34713023ee27f05d048d",
+          "authorAfter": "a2cd3bb33aba2ecd0e8f8028feceb1f9e7035e1abd35a35a3c5c81b6d63f9610",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+          "publicBefore": "0f93f18c04674f0008c695648ab3bb5bb42939657a6f440d782c468a8ddb09cf",
+          "publicAfter": "1e4ea8c0f4143be85080b50eb2ebab99331320bbc7c354f1498b2e03b4b84a6a",
+          "authorBefore": "25446256c7952b363c22269449d54a3f230deeec71a8a714914c2e56233cf155",
+          "authorAfter": "31083edb4a2d2a4bfc2857fb12e54497055350164cf8f003e22d8e86ea14d4bd",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+          "publicBefore": "0f93f18c04674f0008c695648ab3bb5bb42939657a6f440d782c468a8ddb09cf",
+          "publicAfter": "1e4ea8c0f4143be85080b50eb2ebab99331320bbc7c354f1498b2e03b4b84a6a",
+          "authorBefore": "25446256c7952b363c22269449d54a3f230deeec71a8a714914c2e56233cf155",
+          "authorAfter": "31083edb4a2d2a4bfc2857fb12e54497055350164cf8f003e22d8e86ea14d4bd",
+          "sourceExact": false
+        }
+      ],
+      "originalChangedFiles": 9,
+      "excludedPrivateFiles": 0,
+      "omittedPrivateCount": 0
+    },
+    {
+      "patch": "P008",
+      "tag": "v0.9.8.10-dev-111-p008",
+      "commit": "5f13142d57a654d9cbec60f52455ec0d85c735a0",
+      "parent": "f0d8adc084a917b2aedf54700c44bfcf25480988",
+      "requiredPredecessor": 7,
+      "originalArchiveSha256": "4f837015c02ad94c80705890595d4e8d8b23881e3466cb06fa8cf6fca6c80322",
+      "archivePath": "patches/dev111/DEV111-P008/DEV111-P008-PUBLIC.zip",
+      "publicArchiveSha256": "603111d8b3e31b633a8c914915a3617cf692db97ff5718c594fb962e23f831a4",
+      "publicArchiveBytes": 40460,
+      "files": [
+        {
+          "path": "core/tcl/native2d_viewport_host_v1.tcl",
+          "publicBefore": "dc178662b28f36a09a2e9e3967161129c1a1b59edc9d5320fc8255ed91475e69",
+          "publicAfter": "2dbad5a806142a9415eb321627df5acdfd0ca56dceb52a9bc2214e77a2e9e801",
+          "authorBefore": "dc178662b28f36a09a2e9e3967161129c1a1b59edc9d5320fc8255ed91475e69",
+          "authorAfter": "2dbad5a806142a9415eb321627df5acdfd0ca56dceb52a9bc2214e77a2e9e801",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/CHANGELOG.md",
+          "publicBefore": "d8c2c1539c44d39ad59eb41714579812a1f00966ec1fd19da930afb7f9c9f137",
+          "publicAfter": "aba26f365aeaebd03900ac3f6e8b3a54efc864805fad8a870559e6fcc509265b",
+          "authorBefore": "d8c2c1539c44d39ad59eb41714579812a1f00966ec1fd19da930afb7f9c9f137",
+          "authorAfter": "aba26f365aeaebd03900ac3f6e8b3a54efc864805fad8a870559e6fcc509265b",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_commands.tcl",
+          "publicBefore": "97d86c64a3e5a140132d016509282a1f4b80853a790a2e64fa1a7555f6cd2534",
+          "publicAfter": "bec3193eb452907863a97d9e6dd2dd8dbc1ea047d0897af8e2bdd88ee3fba765",
+          "authorBefore": "97d86c64a3e5a140132d016509282a1f4b80853a790a2e64fa1a7555f6cd2534",
+          "authorAfter": "bec3193eb452907863a97d9e6dd2dd8dbc1ea047d0897af8e2bdd88ee3fba765",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_history.tcl",
+          "publicBefore": "1aa638abc7575889787c0a14b14c10dd43d61766b6a09ddd93d1590cfc81ded5",
+          "publicAfter": "757d43fedcdee32a66bef593c81bfae9e2f5f9103996f7d998fbd428b109a357",
+          "authorBefore": "1aa638abc7575889787c0a14b14c10dd43d61766b6a09ddd93d1590cfc81ded5",
+          "authorAfter": "757d43fedcdee32a66bef593c81bfae9e2f5f9103996f7d998fbd428b109a357",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/module.ini",
+          "publicBefore": "653b33b58c18e88aea4990cd764c5ca7246b671af7d01ba12de83ccb01084b70",
+          "publicAfter": "185a84b0d4e857863d3bba56a4a7fa9417bef7985893cb04324745931a6607ac",
+          "authorBefore": "653b33b58c18e88aea4990cd764c5ca7246b671af7d01ba12de83ccb01084b70",
+          "authorAfter": "185a84b0d4e857863d3bba56a4a7fa9417bef7985893cb04324745931a6607ac",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/plugin-package.ini",
+          "publicBefore": "a2cd3bb33aba2ecd0e8f8028feceb1f9e7035e1abd35a35a3c5c81b6d63f9610",
+          "publicAfter": "55c1729fdf10c171a5a6aa716d1a02539ab1b757e243020c7603bb9a0bbb436e",
+          "authorBefore": "a2cd3bb33aba2ecd0e8f8028feceb1f9e7035e1abd35a35a3c5c81b6d63f9610",
+          "authorAfter": "55c1729fdf10c171a5a6aa716d1a02539ab1b757e243020c7603bb9a0bbb436e",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+          "publicBefore": "1e4ea8c0f4143be85080b50eb2ebab99331320bbc7c354f1498b2e03b4b84a6a",
+          "publicAfter": "710af63b3475021c493eff04662509c74ea7203c5e61afd46cae4e5540ae93e5",
+          "authorBefore": "31083edb4a2d2a4bfc2857fb12e54497055350164cf8f003e22d8e86ea14d4bd",
+          "authorAfter": "26fda643083f8477d84ccdb9571b107a0f29217b0baa7c5bbac97dadcb42816c",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+          "publicBefore": "1e4ea8c0f4143be85080b50eb2ebab99331320bbc7c354f1498b2e03b4b84a6a",
+          "publicAfter": "710af63b3475021c493eff04662509c74ea7203c5e61afd46cae4e5540ae93e5",
+          "authorBefore": "31083edb4a2d2a4bfc2857fb12e54497055350164cf8f003e22d8e86ea14d4bd",
+          "authorAfter": "26fda643083f8477d84ccdb9571b107a0f29217b0baa7c5bbac97dadcb42816c",
+          "sourceExact": false
+        }
+      ],
+      "originalChangedFiles": 8,
+      "excludedPrivateFiles": 0,
+      "omittedPrivateCount": 0
+    },
+    {
+      "patch": "P009",
+      "tag": "v0.9.8.10-dev-111-p009",
+      "commit": "238c48288d2cab7a6bfc602ba962583bccad7583",
+      "parent": "5f13142d57a654d9cbec60f52455ec0d85c735a0",
+      "requiredPredecessor": 8,
+      "originalArchiveSha256": "2a778027fbe71a140d5b1b0f29dcec0967a3793ac4e9c926d460c571991a6642",
+      "archivePath": "patches/dev111/DEV111-P009/DEV111-P009-PUBLIC.zip",
+      "publicArchiveSha256": "09251dbea6264a1170d26c42dc38511b66fa0eb2a9e86bc757a180c3c32ab90c",
+      "publicArchiveBytes": 13784,
+      "files": [
+        {
+          "path": "core/tcl/native2d_viewport_host_v1.tcl",
+          "publicBefore": "2dbad5a806142a9415eb321627df5acdfd0ca56dceb52a9bc2214e77a2e9e801",
+          "publicAfter": "9883dc53d8276a22539f156636ab9eaf33b476691501959f26c0ff45b1569bdd",
+          "authorBefore": "2dbad5a806142a9415eb321627df5acdfd0ca56dceb52a9bc2214e77a2e9e801",
+          "authorAfter": "9883dc53d8276a22539f156636ab9eaf33b476691501959f26c0ff45b1569bdd",
+          "sourceExact": true
+        }
+      ],
+      "originalChangedFiles": 1,
+      "excludedPrivateFiles": 0,
+      "omittedPrivateCount": 0
+    },
+    {
+      "patch": "P010",
+      "tag": "v0.9.8.10-dev-111-p010",
+      "commit": "efa9c975b08bdf4e8b55fb58595617d252d84675",
+      "parent": "238c48288d2cab7a6bfc602ba962583bccad7583",
+      "requiredPredecessor": 9,
+      "originalArchiveSha256": "d16d642a6491406d01963e4ae055563de75054d0413271ceca92607c749ad859",
+      "archivePath": "patches/dev111/DEV111-P010/DEV111-P010-PUBLIC.zip",
+      "publicArchiveSha256": "fde5860ecaf40fece6fb35be30b277372ab77a69abd872671987d924269db859",
+      "publicArchiveBytes": 106230,
+      "files": [
+        {
+          "path": "plugins/modules/viewer.curve_workbench/CHANGELOG.md",
+          "publicBefore": "aba26f365aeaebd03900ac3f6e8b3a54efc864805fad8a870559e6fcc509265b",
+          "publicAfter": "ca28050bfdf24ba0da33236c8fa1b315a89cd90eac91a10974e62f3ed0984ae8",
+          "authorBefore": "aba26f365aeaebd03900ac3f6e8b3a54efc864805fad8a870559e6fcc509265b",
+          "authorAfter": "ca28050bfdf24ba0da33236c8fa1b315a89cd90eac91a10974e62f3ed0984ae8",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/MANUAL.md",
+          "publicBefore": "c3d6d922ae21f9d7eccf217d0c64dc5f7cf6e48231ba0deb1386ed332b0f5eb8",
+          "publicAfter": "5e88091f101f355fea6fe03c6d6d7b650a76cfe23a738d02b4927c6db78f3da5",
+          "authorBefore": "f97a7bce7779228440bc015df8d12e011e720b95952cfc357c0de602b88799bb",
+          "authorAfter": "5e88091f101f355fea6fe03c6d6d7b650a76cfe23a738d02b4927c6db78f3da5",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/README.md",
+          "publicBefore": "550c91dde683dd83f9847ce3f84ff911773946a7386489c3461a55e58d8683c9",
+          "publicAfter": "b27b27427133ac58d1fb8947a33a4fb22346627e49f19ca5c28c3c3224a4eb55",
+          "authorBefore": "ceb91600753f82c22ff9b7b4338a3bd7e58ea18da7d0ea8de1d3d0324798b0c3",
+          "authorAfter": "b27b27427133ac58d1fb8947a33a4fb22346627e49f19ca5c28c3c3224a4eb55",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_api_v1.tcl",
+          "publicBefore": "3993008d8cc6c144d4d7a535340521dcec4f4cdc58b59f319aac8b4078b6c59e",
+          "publicAfter": "cb5dbab2f03884a3664271e025a887d9c8968db761aeed78e49f294fc41f4cf2",
+          "authorBefore": "3993008d8cc6c144d4d7a535340521dcec4f4cdc58b59f319aac8b4078b6c59e",
+          "authorAfter": "cb5dbab2f03884a3664271e025a887d9c8968db761aeed78e49f294fc41f4cf2",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_comparison_v1.tcl",
+          "publicBefore": "601346d1544dff2096319f3c4b636ef60b8fe9a1c64a80b769f5ba0a1b27e406",
+          "publicAfter": "92e559a9c9b39bfee0ea173df8691371ba88dbf0a3beed0f2bd949dfb9d52a47",
+          "authorBefore": "601346d1544dff2096319f3c4b636ef60b8fe9a1c64a80b769f5ba0a1b27e406",
+          "authorAfter": "92e559a9c9b39bfee0ea173df8691371ba88dbf0a3beed0f2bd949dfb9d52a47",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_comparison_v4.tcl",
+          "publicBefore": "8deb9695fa055234926a1d1061da86322c3a3ec64bd25152a2a432972baff18c",
+          "publicAfter": "6f14ef015fc21928cd86fe57e83ab590dffa39cdf5653ee23d516861a111149f",
+          "authorBefore": "8deb9695fa055234926a1d1061da86322c3a3ec64bd25152a2a432972baff18c",
+          "authorAfter": "6f14ef015fc21928cd86fe57e83ab590dffa39cdf5653ee23d516861a111149f",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_coordinate_presentation_v1.tcl",
+          "publicBefore": "a282973eca4454f6b2ceb26a6cbf9e35c1f812e6dbec4197928e0ef27f984ad4",
+          "publicAfter": "bdb2e8895a1fbca8dc937a7a5d6236cd0ee59a8c12fac822cbe1203d334ccbfd",
+          "authorBefore": "a282973eca4454f6b2ceb26a6cbf9e35c1f812e6dbec4197928e0ef27f984ad4",
+          "authorAfter": "bdb2e8895a1fbca8dc937a7a5d6236cd0ee59a8c12fac822cbe1203d334ccbfd",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_selection.tcl",
+          "publicBefore": "f6cf9aac0b7429902f078035218c84b7e7762abf87fd77e4633372369b65b8a4",
+          "publicAfter": "2d9559646c79bf60ffba29bdf2f0bf19f36c7adfa6154fb6eaa6f4dd055b3080",
+          "authorBefore": "f6cf9aac0b7429902f078035218c84b7e7762abf87fd77e4633372369b65b8a4",
+          "authorAfter": "2d9559646c79bf60ffba29bdf2f0bf19f36c7adfa6154fb6eaa6f4dd055b3080",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_ui.tcl",
+          "publicBefore": "09240ae5ff0e1f04cfb233fbf903862c7a13880574860b75b5fa997c1f8bceb7",
+          "publicAfter": "5c11d8dbc6be09c8acbcf9ea34453128237b6741d19512c14cd8d5cc7247b242",
+          "authorBefore": "09240ae5ff0e1f04cfb233fbf903862c7a13880574860b75b5fa997c1f8bceb7",
+          "authorAfter": "5c11d8dbc6be09c8acbcf9ea34453128237b6741d19512c14cd8d5cc7247b242",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_viewport_v3.tcl",
+          "publicBefore": "9f22e92cf5401daf74495c4c6f6122252a1aefbe3e28d8a95247f86f40225c3d",
+          "publicAfter": "2a84bb7f1a0a078548fdad7f0324d03d79330edc017af1fcf3d27f02e319c502",
+          "authorBefore": "9f22e92cf5401daf74495c4c6f6122252a1aefbe3e28d8a95247f86f40225c3d",
+          "authorAfter": "2a84bb7f1a0a078548fdad7f0324d03d79330edc017af1fcf3d27f02e319c502",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/module.ini",
+          "publicBefore": "185a84b0d4e857863d3bba56a4a7fa9417bef7985893cb04324745931a6607ac",
+          "publicAfter": "5d79972d293d1846624d94edf45f5031e9f103af44737e1acfae1aad14369bf0",
+          "authorBefore": "185a84b0d4e857863d3bba56a4a7fa9417bef7985893cb04324745931a6607ac",
+          "authorAfter": "5d79972d293d1846624d94edf45f5031e9f103af44737e1acfae1aad14369bf0",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/plugin-package.ini",
+          "publicBefore": "55c1729fdf10c171a5a6aa716d1a02539ab1b757e243020c7603bb9a0bbb436e",
+          "publicAfter": "eed6cf2a44a7f731b2a5a87e2cd1d8b6b5918a63ba65f50461f1ede1c211b613",
+          "authorBefore": "55c1729fdf10c171a5a6aa716d1a02539ab1b757e243020c7603bb9a0bbb436e",
+          "authorAfter": "eed6cf2a44a7f731b2a5a87e2cd1d8b6b5918a63ba65f50461f1ede1c211b613",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+          "publicBefore": "710af63b3475021c493eff04662509c74ea7203c5e61afd46cae4e5540ae93e5",
+          "publicAfter": "ac2470699d147bc35edcf558b1bba1699df52e10b5e2011f1eab38cf75c92822",
+          "authorBefore": "26fda643083f8477d84ccdb9571b107a0f29217b0baa7c5bbac97dadcb42816c",
+          "authorAfter": "c3f47901314b35c93b13960c1a060565bbbfd0793aeca317cfca69d96c493865",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+          "publicBefore": "710af63b3475021c493eff04662509c74ea7203c5e61afd46cae4e5540ae93e5",
+          "publicAfter": "ac2470699d147bc35edcf558b1bba1699df52e10b5e2011f1eab38cf75c92822",
+          "authorBefore": "26fda643083f8477d84ccdb9571b107a0f29217b0baa7c5bbac97dadcb42816c",
+          "authorAfter": "c3f47901314b35c93b13960c1a060565bbbfd0793aeca317cfca69d96c493865",
+          "sourceExact": false
+        }
+      ],
+      "originalChangedFiles": 14,
+      "excludedPrivateFiles": 0,
+      "omittedPrivateCount": 0
+    },
+    {
+      "patch": "P011",
+      "tag": "v0.9.8.10-dev-111-p011",
+      "commit": "ee679d15dd975f2c01369b98a46d27ea1a95ff25",
+      "parent": "efa9c975b08bdf4e8b55fb58595617d252d84675",
+      "requiredPredecessor": 10,
+      "originalArchiveSha256": "76f48bdef405678547fc82112e39a7fa47f2aff01e52446d586b99710879c59b",
+      "archivePath": "patches/dev111/DEV111-P011/DEV111-P011-PUBLIC.zip",
+      "publicArchiveSha256": "36b24a977c31cd59f2f5b55f4d541106d834ccd57415408661cbabe7c94f8f3f",
+      "publicArchiveBytes": 30670,
+      "files": [
+        {
+          "path": "plugins/modules/viewer.curve_workbench/CHANGELOG.md",
+          "publicBefore": "ca28050bfdf24ba0da33236c8fa1b315a89cd90eac91a10974e62f3ed0984ae8",
+          "publicAfter": "3aee0a268e6aef01ca6879e7992e37910aacce3d191a91a5e97296349192d75f",
+          "authorBefore": "ca28050bfdf24ba0da33236c8fa1b315a89cd90eac91a10974e62f3ed0984ae8",
+          "authorAfter": "3aee0a268e6aef01ca6879e7992e37910aacce3d191a91a5e97296349192d75f",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/README.md",
+          "publicBefore": "b27b27427133ac58d1fb8947a33a4fb22346627e49f19ca5c28c3c3224a4eb55",
+          "publicAfter": "9a94f19def8cbc357bdf197be3b67c09678a4d1beb032978225e3ee3543f1678",
+          "authorBefore": "b27b27427133ac58d1fb8947a33a4fb22346627e49f19ca5c28c3c3224a4eb55",
+          "authorAfter": "9a94f19def8cbc357bdf197be3b67c09678a4d1beb032978225e3ee3543f1678",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_coordinate_frames_v1.tcl",
+          "publicBefore": "9f394bc9e02b4430284e5f18b335d03cf448804916aaa9618591f1fbd4c8177c",
+          "publicAfter": "87fb56caa8d10f2ce376fb9243c693cdab77268b1bfbccb116df4c3375ea9590",
+          "authorBefore": "9f394bc9e02b4430284e5f18b335d03cf448804916aaa9618591f1fbd4c8177c",
+          "authorAfter": "87fb56caa8d10f2ce376fb9243c693cdab77268b1bfbccb116df4c3375ea9590",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_selection.tcl",
+          "publicBefore": "2d9559646c79bf60ffba29bdf2f0bf19f36c7adfa6154fb6eaa6f4dd055b3080",
+          "publicAfter": "c17f02b07bdd66d5ad151154fd42edbf9ca7806f7cab06a0ddb31dd9ebbee2eb",
+          "authorBefore": "2d9559646c79bf60ffba29bdf2f0bf19f36c7adfa6154fb6eaa6f4dd055b3080",
+          "authorAfter": "c17f02b07bdd66d5ad151154fd42edbf9ca7806f7cab06a0ddb31dd9ebbee2eb",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/module.ini",
+          "publicBefore": "5d79972d293d1846624d94edf45f5031e9f103af44737e1acfae1aad14369bf0",
+          "publicAfter": "db03cbd9eb2b30fa347893f6a96b23b7ba03201a043e4477bf1c93796be05f4a",
+          "authorBefore": "5d79972d293d1846624d94edf45f5031e9f103af44737e1acfae1aad14369bf0",
+          "authorAfter": "db03cbd9eb2b30fa347893f6a96b23b7ba03201a043e4477bf1c93796be05f4a",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/plugin-package.ini",
+          "publicBefore": "eed6cf2a44a7f731b2a5a87e2cd1d8b6b5918a63ba65f50461f1ede1c211b613",
+          "publicAfter": "11cfa62981d940536c3dfe29b910b626673794e9a0e8480cffe72b36cb673be0",
+          "authorBefore": "eed6cf2a44a7f731b2a5a87e2cd1d8b6b5918a63ba65f50461f1ede1c211b613",
+          "authorAfter": "11cfa62981d940536c3dfe29b910b626673794e9a0e8480cffe72b36cb673be0",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+          "publicBefore": "ac2470699d147bc35edcf558b1bba1699df52e10b5e2011f1eab38cf75c92822",
+          "publicAfter": "ec9a3772ab9d9079ed00257cf74c518e6cf39c6ce97719edee9888c5c4913223",
+          "authorBefore": "c3f47901314b35c93b13960c1a060565bbbfd0793aeca317cfca69d96c493865",
+          "authorAfter": "29ef506722734c2f00d06a55b5cbbeb59d90194f8bbe5b5a9f388b2fbf993a86",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+          "publicBefore": "ac2470699d147bc35edcf558b1bba1699df52e10b5e2011f1eab38cf75c92822",
+          "publicAfter": "ec9a3772ab9d9079ed00257cf74c518e6cf39c6ce97719edee9888c5c4913223",
+          "authorBefore": "c3f47901314b35c93b13960c1a060565bbbfd0793aeca317cfca69d96c493865",
+          "authorAfter": "29ef506722734c2f00d06a55b5cbbeb59d90194f8bbe5b5a9f388b2fbf993a86",
+          "sourceExact": false
+        }
+      ],
+      "originalChangedFiles": 8,
+      "excludedPrivateFiles": 0,
+      "omittedPrivateCount": 0
+    },
+    {
+      "patch": "P012",
+      "tag": "v0.9.8.10-dev-111-p012",
+      "commit": "26cfaf902019e7df3069e9ea5640ee1ca553a441",
+      "parent": "ee679d15dd975f2c01369b98a46d27ea1a95ff25",
+      "requiredPredecessor": 11,
+      "originalArchiveSha256": "040bcdcc8d1f68296959e1ed609d45277c9aba3cdba782e1fff430c2d428b3a2",
+      "archivePath": "patches/dev111/DEV111-P012/DEV111-P012-PUBLIC.zip",
+      "publicArchiveSha256": "154c58cd7e8082adfc5ffdb6631a1572eb66718645be266a96de837276a2bef2",
+      "publicArchiveBytes": 60561,
+      "files": [
+        {
+          "path": "core/tcl/gui_update_scheduler_v1.tcl",
+          "publicBefore": null,
+          "publicAfter": "7aafa397b1381d6cea4e2ef50c77fb41068e6fdc922e31b1a0f197df05698413",
+          "authorBefore": null,
+          "authorAfter": "7aafa397b1381d6cea4e2ef50c77fb41068e6fdc922e31b1a0f197df05698413",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/workbench_extension_api_v1.tcl",
+          "publicBefore": "e1323ceb55a297e3a79af2d90b6ba61b14c7af6dfd0b4685916d6f0b40598883",
+          "publicAfter": "ed75fabd44d8d70c8a2ece0a6ed1c7c4d68326e2bf2feacb40f3fd8aa3d7b13e",
+          "authorBefore": "e1323ceb55a297e3a79af2d90b6ba61b14c7af6dfd0b4685916d6f0b40598883",
+          "authorAfter": "ed75fabd44d8d70c8a2ece0a6ed1c7c4d68326e2bf2feacb40f3fd8aa3d7b13e",
+          "sourceExact": true
+        },
+        {
+          "path": "docs/api/GUI_UPDATE_SCHEDULER_API_v1.md",
+          "publicBefore": null,
+          "publicAfter": "69bef40930dff77d05c418a9553caa07aad203c58932f45ae5fe9bd2e046a51d",
+          "authorBefore": null,
+          "authorAfter": "69bef40930dff77d05c418a9553caa07aad203c58932f45ae5fe9bd2e046a51d",
+          "sourceExact": true
+        },
+        {
+          "path": "gxtxt_pipeline.tcl",
+          "publicBefore": "e615679812268a4136c643c36150b620ee2f7bf0d28db3d401e85b7fe04df294",
+          "publicAfter": "b02b1016032c1a5edb383b1e7f854bd8494b0bc5b6976448b40c226694e7519f",
+          "authorBefore": "e615679812268a4136c643c36150b620ee2f7bf0d28db3d401e85b7fe04df294",
+          "authorAfter": "b02b1016032c1a5edb383b1e7f854bd8494b0bc5b6976448b40c226694e7519f",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/CHANGELOG.md",
+          "publicBefore": "3aee0a268e6aef01ca6879e7992e37910aacce3d191a91a5e97296349192d75f",
+          "publicAfter": "dc8da88f84c3a10919ebd3466eda01519b1cd97c3b17ea9c2f36aabbb70de347",
+          "authorBefore": "3aee0a268e6aef01ca6879e7992e37910aacce3d191a91a5e97296349192d75f",
+          "authorAfter": "dc8da88f84c3a10919ebd3466eda01519b1cd97c3b17ea9c2f36aabbb70de347",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/README.md",
+          "publicBefore": "9a94f19def8cbc357bdf197be3b67c09678a4d1beb032978225e3ee3543f1678",
+          "publicAfter": "66809d73a35445a87188c46731a0e1717a706e75fe13f0bc1568ab0fbb73f33a",
+          "authorBefore": "9a94f19def8cbc357bdf197be3b67c09678a4d1beb032978225e3ee3543f1678",
+          "authorAfter": "66809d73a35445a87188c46731a0e1717a706e75fe13f0bc1568ab0fbb73f33a",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_api_v1.tcl",
+          "publicBefore": "cb5dbab2f03884a3664271e025a887d9c8968db761aeed78e49f294fc41f4cf2",
+          "publicAfter": "ee45178b8247f15635d6485d0f2633c7113dff932971953b3410e9ecf851d364",
+          "authorBefore": "cb5dbab2f03884a3664271e025a887d9c8968db761aeed78e49f294fc41f4cf2",
+          "authorAfter": "ee45178b8247f15635d6485d0f2633c7113dff932971953b3410e9ecf851d364",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_fluidity_v4.tcl",
+          "publicBefore": "e173e2a3e0f2855173351e9821dbf776332e66425cb8b1800efb12ae366f7c1d",
+          "publicAfter": "ab80f8aade35a8e189c0200e011e02843650ff820c46444f3d488e1e10b98a62",
+          "authorBefore": "e173e2a3e0f2855173351e9821dbf776332e66425cb8b1800efb12ae366f7c1d",
+          "authorAfter": "ab80f8aade35a8e189c0200e011e02843650ff820c46444f3d488e1e10b98a62",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_lifecycle_v1.tcl",
+          "publicBefore": "d8f52b4a4d0ccc520d46db6579462da1b76c1c87f77a6cf100d7b57a0a5ca0ed",
+          "publicAfter": "a5392e7630c57e911a3785f0d2694e016539d6f940beca1d7690b266c17bb846",
+          "authorBefore": "d8f52b4a4d0ccc520d46db6579462da1b76c1c87f77a6cf100d7b57a0a5ca0ed",
+          "authorAfter": "a5392e7630c57e911a3785f0d2694e016539d6f940beca1d7690b266c17bb846",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_persistence.tcl",
+          "publicBefore": "2202146ac9dac0eb166140bc1023ffd9b5e8615b63b4a21b66045229f4854eac",
+          "publicAfter": "4d3ac09200c89afe2599097311ed05cbb5e0b91204e5ec4c76570d9fbcd637e0",
+          "authorBefore": "2202146ac9dac0eb166140bc1023ffd9b5e8615b63b4a21b66045229f4854eac",
+          "authorAfter": "4d3ac09200c89afe2599097311ed05cbb5e0b91204e5ec4c76570d9fbcd637e0",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/module.ini",
+          "publicBefore": "db03cbd9eb2b30fa347893f6a96b23b7ba03201a043e4477bf1c93796be05f4a",
+          "publicAfter": "32c0556ae874a924f8951f55d01c921d762d564cdc6b29ddf06ad8697adb9abe",
+          "authorBefore": "db03cbd9eb2b30fa347893f6a96b23b7ba03201a043e4477bf1c93796be05f4a",
+          "authorAfter": "32c0556ae874a924f8951f55d01c921d762d564cdc6b29ddf06ad8697adb9abe",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/plugin-package.ini",
+          "publicBefore": "11cfa62981d940536c3dfe29b910b626673794e9a0e8480cffe72b36cb673be0",
+          "publicAfter": "8de25ba9da2848fb1fb519b802cc3bee2fc3c3a7afeea30e250239f46dfb6961",
+          "authorBefore": "11cfa62981d940536c3dfe29b910b626673794e9a0e8480cffe72b36cb673be0",
+          "authorAfter": "8de25ba9da2848fb1fb519b802cc3bee2fc3c3a7afeea30e250239f46dfb6961",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+          "publicBefore": "ec9a3772ab9d9079ed00257cf74c518e6cf39c6ce97719edee9888c5c4913223",
+          "publicAfter": "fdfd49610518db0dfe4f5945f12088a130409f17837416958d65aaa7a9587328",
+          "authorBefore": "29ef506722734c2f00d06a55b5cbbeb59d90194f8bbe5b5a9f388b2fbf993a86",
+          "authorAfter": "28a6e3f346d266e5b3bb68e5e18896745505f8dbfd9e56a86a85ee5b60c983f3",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+          "publicBefore": "ec9a3772ab9d9079ed00257cf74c518e6cf39c6ce97719edee9888c5c4913223",
+          "publicAfter": "fdfd49610518db0dfe4f5945f12088a130409f17837416958d65aaa7a9587328",
+          "authorBefore": "29ef506722734c2f00d06a55b5cbbeb59d90194f8bbe5b5a9f388b2fbf993a86",
+          "authorAfter": "28a6e3f346d266e5b3bb68e5e18896745505f8dbfd9e56a86a85ee5b60c983f3",
+          "sourceExact": false
+        }
+      ],
+      "originalChangedFiles": 14,
+      "excludedPrivateFiles": 0,
+      "omittedPrivateCount": 0
+    },
+    {
+      "patch": "P013",
+      "tag": "v0.9.8.10-dev-111-p013",
+      "commit": "8c59efc9262a5359e602966032cf643004238a1b",
+      "parent": "26cfaf902019e7df3069e9ea5640ee1ca553a441",
+      "requiredPredecessor": 12,
+      "originalArchiveSha256": "a5342d5e0b6f0f777e9a8a90157b10f4e1a8cb3c7e6de5b636a425afc4f7a81c",
+      "archivePath": "patches/dev111/DEV111-P013/DEV111-P013-PUBLIC.zip",
+      "publicArchiveSha256": "2573bce0643c7eb9018ea92e85e6757dc7c9d879980344acfb926a0ce764d0d6",
+      "publicArchiveBytes": 602286,
+      "files": [
+        {
+          "path": "core/native2d/CMakeLists.txt",
+          "publicBefore": "f4b81b065c2a45e9bbd1296620b7e31148d3970dcf38d5fe7decd1daa6828a5f",
+          "publicAfter": "da943e8d3d140b1e17e739619344e76d5cb97fcb63d4ae1a127b37a6174105fc",
+          "authorBefore": "f4b81b065c2a45e9bbd1296620b7e31148d3970dcf38d5fe7decd1daa6828a5f",
+          "authorAfter": "da943e8d3d140b1e17e739619344e76d5cb97fcb63d4ae1a127b37a6174105fc",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/bin/gx2dtcl.so",
+          "publicBefore": "2676f87007bad677f3cf96a16702127a15ed45ab7cfffb743968988b0f79f86b",
+          "publicAfter": "db7897331b0e317939a9f27835181edde1426a6939cda79b777c76287e59478d",
+          "authorBefore": "2676f87007bad677f3cf96a16702127a15ed45ab7cfffb743968988b0f79f86b",
+          "authorAfter": "db7897331b0e317939a9f27835181edde1426a6939cda79b777c76287e59478d",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_presentation_batch.cpp",
+          "publicBefore": null,
+          "publicAfter": "55303ccd66a88e3dfe33350edee0d62253428f48b6081f0c7221ce17f54498ec",
+          "authorBefore": null,
+          "authorAfter": "55303ccd66a88e3dfe33350edee0d62253428f48b6081f0c7221ce17f54498ec",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_presentation_batch.h",
+          "publicBefore": null,
+          "publicAfter": "f29273945d7303cd185a75f259adf5097e922deabdb557e8b114db954429c714",
+          "authorBefore": null,
+          "authorAfter": "f29273945d7303cd185a75f259adf5097e922deabdb557e8b114db954429c714",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_tcl.c",
+          "publicBefore": "5b35d63a9462651c41d63f949d598c00b486c7f552aebca6fde3ba1db6c7a8ac",
+          "publicAfter": "ef26796ce1e5b987959a637f31ec36e3f4cb45daa300c872ed0e822b436a0e26",
+          "authorBefore": "5b35d63a9462651c41d63f949d598c00b486c7f552aebca6fde3ba1db6c7a8ac",
+          "authorAfter": "ef26796ce1e5b987959a637f31ec36e3f4cb45daa300c872ed0e822b436a0e26",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/native2d_host_v1.tcl",
+          "publicBefore": "44e42d4bca2ff249c5662193baecd23bb03547bb431c2886ef4762c38a7f7a0d",
+          "publicAfter": "9818837e9f64db549b974f7db3db478c53a7bad77e0adee750542bea19955dc6",
+          "authorBefore": "44e42d4bca2ff249c5662193baecd23bb03547bb431c2886ef4762c38a7f7a0d",
+          "authorAfter": "9818837e9f64db549b974f7db3db478c53a7bad77e0adee750542bea19955dc6",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/native2d_presentation_v1.tcl",
+          "publicBefore": "a71186503360088c047d48260974ec65bfc9d9db5cc397329451592de4dc7dfb",
+          "publicAfter": "8a67ee5bf20056780c5be421c5e6c7304b8bcd6d2372848693c8882fa179649c",
+          "authorBefore": "a71186503360088c047d48260974ec65bfc9d9db5cc397329451592de4dc7dfb",
+          "authorAfter": "8a67ee5bf20056780c5be421c5e6c7304b8bcd6d2372848693c8882fa179649c",
+          "sourceExact": true
+        },
+        {
+          "path": "docs/api/NATIVE2D_PRESENTATION_SNAPSHOT_v1.md",
+          "publicBefore": "f523fdc13956b0de70a789ee9a6a71511e4dbe82cc5c04add08c49a259443a1a",
+          "publicAfter": "4f58f81a3e80e92bf87cbce39f95e5c35e5c5678f66c0555bd03d4b2c7bcdfcb",
+          "authorBefore": "f523fdc13956b0de70a789ee9a6a71511e4dbe82cc5c04add08c49a259443a1a",
+          "authorAfter": "4f58f81a3e80e92bf87cbce39f95e5c35e5c5678f66c0555bd03d4b2c7bcdfcb",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/CHANGELOG.md",
+          "publicBefore": "dc8da88f84c3a10919ebd3466eda01519b1cd97c3b17ea9c2f36aabbb70de347",
+          "publicAfter": "0c0c057f7c24ddb755ac501f62cc9e798b377bd38cf356d22cd13d70eb03aaf8",
+          "authorBefore": "dc8da88f84c3a10919ebd3466eda01519b1cd97c3b17ea9c2f36aabbb70de347",
+          "authorAfter": "0c0c057f7c24ddb755ac501f62cc9e798b377bd38cf356d22cd13d70eb03aaf8",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/README.md",
+          "publicBefore": "66809d73a35445a87188c46731a0e1717a706e75fe13f0bc1568ab0fbb73f33a",
+          "publicAfter": "374fb66ed6d92001bec32b49dc8c2a02d6cc179f51ce6b1a19c0063ff511e012",
+          "authorBefore": "66809d73a35445a87188c46731a0e1717a706e75fe13f0bc1568ab0fbb73f33a",
+          "authorAfter": "374fb66ed6d92001bec32b49dc8c2a02d6cc179f51ce6b1a19c0063ff511e012",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/module.ini",
+          "publicBefore": "32c0556ae874a924f8951f55d01c921d762d564cdc6b29ddf06ad8697adb9abe",
+          "publicAfter": "eeddb3a3d681c38774f6e39a37c4e1fb98878a77c8bfce6dc3c1a3421d2f4217",
+          "authorBefore": "32c0556ae874a924f8951f55d01c921d762d564cdc6b29ddf06ad8697adb9abe",
+          "authorAfter": "eeddb3a3d681c38774f6e39a37c4e1fb98878a77c8bfce6dc3c1a3421d2f4217",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/plugin-package.ini",
+          "publicBefore": "8de25ba9da2848fb1fb519b802cc3bee2fc3c3a7afeea30e250239f46dfb6961",
+          "publicAfter": "0f65ac77f9c031e0b6815a10446b1c384cf308e252bbb8bdf0669ab4221a63b5",
+          "authorBefore": "8de25ba9da2848fb1fb519b802cc3bee2fc3c3a7afeea30e250239f46dfb6961",
+          "authorAfter": "0f65ac77f9c031e0b6815a10446b1c384cf308e252bbb8bdf0669ab4221a63b5",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+          "publicBefore": "fdfd49610518db0dfe4f5945f12088a130409f17837416958d65aaa7a9587328",
+          "publicAfter": "4795a68d8a1255086cb8fa2db28ddde1261eca44b733932ddea41eab50d524df",
+          "authorBefore": "28a6e3f346d266e5b3bb68e5e18896745505f8dbfd9e56a86a85ee5b60c983f3",
+          "authorAfter": "fb059f2c07e91fe6219f48da585e51f1f72705cb2da1f08983297f86a40671a4",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+          "publicBefore": "fdfd49610518db0dfe4f5945f12088a130409f17837416958d65aaa7a9587328",
+          "publicAfter": "4795a68d8a1255086cb8fa2db28ddde1261eca44b733932ddea41eab50d524df",
+          "authorBefore": "28a6e3f346d266e5b3bb68e5e18896745505f8dbfd9e56a86a85ee5b60c983f3",
+          "authorAfter": "fb059f2c07e91fe6219f48da585e51f1f72705cb2da1f08983297f86a40671a4",
+          "sourceExact": false
+        }
+      ],
+      "originalChangedFiles": 14,
+      "excludedPrivateFiles": 0,
+      "omittedPrivateCount": 0
+    },
+    {
+      "patch": "P014",
+      "tag": "v0.9.8.10-dev-111-p014",
+      "commit": "dac35bf2222c8ae8c7e008ed7272c2660f006656",
+      "parent": "8c59efc9262a5359e602966032cf643004238a1b",
+      "requiredPredecessor": 13,
+      "originalArchiveSha256": "f97c5ad1a012a09d37a215e86267817f96a80cbb572a2f53f1d70dc8d1c229b5",
+      "archivePath": "patches/dev111/DEV111-P014/DEV111-P014-PUBLIC.zip",
+      "publicArchiveSha256": "d29b22e2d50d95d1b0026b85bcb01694cb34c0bbb45527e596b4076ecf77bf4f",
+      "publicArchiveBytes": 736287,
+      "files": [
+        {
+          "path": "app/gui/configuration_page.tcl",
+          "publicBefore": "1bba9d0835b499cc9ab11dd83f88d554f0fb4a2877e9aae163ad3b0e5c42972a",
+          "publicAfter": "d1d7baf2fb115ce98e0ec560a6b13ac32e1064d1d95c80c016701eb8ccba53b0",
+          "authorBefore": "1bba9d0835b499cc9ab11dd83f88d554f0fb4a2877e9aae163ad3b0e5c42972a",
+          "authorAfter": "d1d7baf2fb115ce98e0ec560a6b13ac32e1064d1d95c80c016701eb8ccba53b0",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/CMakeLists.txt",
+          "publicBefore": "da943e8d3d140b1e17e739619344e76d5cb97fcb63d4ae1a127b37a6174105fc",
+          "publicAfter": "7260b39d413da8bd7f4f3fe3d0df78a00f8edbca8ea01595b8bf16e68a302051",
+          "authorBefore": "da943e8d3d140b1e17e739619344e76d5cb97fcb63d4ae1a127b37a6174105fc",
+          "authorAfter": "7260b39d413da8bd7f4f3fe3d0df78a00f8edbca8ea01595b8bf16e68a302051",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/README.md",
+          "publicBefore": "29637106700c86a61e0c3b4abab8044b9726f19172bec023bb071805c2579dd5",
+          "publicAfter": "345cc300dc7dcbc211fbfbc55d446f8f720efa37f1464313d69c159eb5dfa303",
+          "authorBefore": "c2b28132364e5945f5ac6e332d90c2d2f6b6152d06a57e697e79ef5bdbe49003",
+          "authorAfter": "345cc300dc7dcbc211fbfbc55d446f8f720efa37f1464313d69c159eb5dfa303",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/bin/gx2dtcl.so",
+          "publicBefore": "db7897331b0e317939a9f27835181edde1426a6939cda79b777c76287e59478d",
+          "publicAfter": "8d4eceb6b3259f6452b22d9feb52f6b3431c8880f361a75f9c99f818e1165f7d",
+          "authorBefore": "db7897331b0e317939a9f27835181edde1426a6939cda79b777c76287e59478d",
+          "authorAfter": "8d4eceb6b3259f6452b22d9feb52f6b3431c8880f361a75f9c99f818e1165f7d",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_grid_presenter_v1.cpp",
+          "publicBefore": null,
+          "publicAfter": "02304d9fe25eac028cfce90a50bad3b8db11e1b844baa96f4ab0f7f4d67451a7",
+          "authorBefore": null,
+          "authorAfter": "02304d9fe25eac028cfce90a50bad3b8db11e1b844baa96f4ab0f7f4d67451a7",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_grid_presenter_v1.h",
+          "publicBefore": null,
+          "publicAfter": "7b8796b80d5a61bcc5020e0203d8a19b909455656accdc19ca2182a8f9cd9436",
+          "authorBefore": null,
+          "authorAfter": "7b8796b80d5a61bcc5020e0203d8a19b909455656accdc19ca2182a8f9cd9436",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_tcl.c",
+          "publicBefore": "ef26796ce1e5b987959a637f31ec36e3f4cb45daa300c872ed0e822b436a0e26",
+          "publicAfter": "81c4845099be0b18dea0d498d305517aba93d2d6a00121b194be5885bd7e6db6",
+          "authorBefore": "ef26796ce1e5b987959a637f31ec36e3f4cb45daa300c872ed0e822b436a0e26",
+          "authorAfter": "81c4845099be0b18dea0d498d305517aba93d2d6a00121b194be5885bd7e6db6",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/configuration_api_v1.tcl",
+          "publicBefore": "ebd6c3fc8058489b002807460fba35e6122eb5c5a7c736e5f4c646c3c551aac2",
+          "publicAfter": "f07c9024900879d12ebe2e94c939607387d69f923ad8cbeaebc65e31f64479ac",
+          "authorBefore": "ebd6c3fc8058489b002807460fba35e6122eb5c5a7c736e5f4c646c3c551aac2",
+          "authorAfter": "f07c9024900879d12ebe2e94c939607387d69f923ad8cbeaebc65e31f64479ac",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/gui_update_scheduler_v1.tcl",
+          "publicBefore": "7aafa397b1381d6cea4e2ef50c77fb41068e6fdc922e31b1a0f197df05698413",
+          "publicAfter": "8f46e37b58ae6e0b7aaeaca84af535f2795b89d67ceb12562879eae7f6308e37",
+          "authorBefore": "7aafa397b1381d6cea4e2ef50c77fb41068e6fdc922e31b1a0f197df05698413",
+          "authorAfter": "8f46e37b58ae6e0b7aaeaca84af535f2795b89d67ceb12562879eae7f6308e37",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/native2d_grid_presenter_v1.tcl",
+          "publicBefore": null,
+          "publicAfter": "df7e368bb78e4ac7e70e847f03077fbb2697ebdad7b711f12fd20556964d66dc",
+          "authorBefore": null,
+          "authorAfter": "df7e368bb78e4ac7e70e847f03077fbb2697ebdad7b711f12fd20556964d66dc",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/native2d_host_v1.tcl",
+          "publicBefore": "9818837e9f64db549b974f7db3db478c53a7bad77e0adee750542bea19955dc6",
+          "publicAfter": "7015ed0c2f901f669a78d19d260dff7379cd5be16426d1349121005842d77168",
+          "authorBefore": "9818837e9f64db549b974f7db3db478c53a7bad77e0adee750542bea19955dc6",
+          "authorAfter": "7015ed0c2f901f669a78d19d260dff7379cd5be16426d1349121005842d77168",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/native2d_presentation_v1.tcl",
+          "publicBefore": "8a67ee5bf20056780c5be421c5e6c7304b8bcd6d2372848693c8882fa179649c",
+          "publicAfter": "04f4c719c77e12fae863f973d4678d4807dde5239b121a23c7504750921c6f6e",
+          "authorBefore": "8a67ee5bf20056780c5be421c5e6c7304b8bcd6d2372848693c8882fa179649c",
+          "authorAfter": "04f4c719c77e12fae863f973d4678d4807dde5239b121a23c7504750921c6f6e",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/workbench_extension_api_v1.tcl",
+          "publicBefore": "ed75fabd44d8d70c8a2ece0a6ed1c7c4d68326e2bf2feacb40f3fd8aa3d7b13e",
+          "publicAfter": "bfa2699577aa25d8f0d566c5461443460c2d621da7725ed8463218d46867591e",
+          "authorBefore": "ed75fabd44d8d70c8a2ece0a6ed1c7c4d68326e2bf2feacb40f3fd8aa3d7b13e",
+          "authorAfter": "bfa2699577aa25d8f0d566c5461443460c2d621da7725ed8463218d46867591e",
+          "sourceExact": true
+        },
+        {
+          "path": "docs/api/GUI_UPDATE_SCHEDULER_API_v1.md",
+          "publicBefore": "69bef40930dff77d05c418a9553caa07aad203c58932f45ae5fe9bd2e046a51d",
+          "publicAfter": "0f639b9c7ae1bdddb32639d4390cb89d7cc8667c3c41b5fda5c438c82d774345",
+          "authorBefore": "69bef40930dff77d05c418a9553caa07aad203c58932f45ae5fe9bd2e046a51d",
+          "authorAfter": "0f639b9c7ae1bdddb32639d4390cb89d7cc8667c3c41b5fda5c438c82d774345",
+          "sourceExact": true
+        },
+        {
+          "path": "docs/api/NATIVE2D_GRID_PRESENTER_API_v1.md",
+          "publicBefore": null,
+          "publicAfter": "5c427430bf789ed5b8df6584bf2e77a0e9d630cd47e4431aee3e825ffd266d2e",
+          "authorBefore": null,
+          "authorAfter": "5c427430bf789ed5b8df6584bf2e77a0e9d630cd47e4431aee3e825ffd266d2e",
+          "sourceExact": true
+        },
+        {
+          "path": "docs/api/NATIVE2D_PRESENTATION_SNAPSHOT_v1.md",
+          "publicBefore": "4f58f81a3e80e92bf87cbce39f95e5c35e5c5678f66c0555bd03d4b2c7bcdfcb",
+          "publicAfter": "79d9c0e57cd7f331f9eb6f28754c876d49510f8538670d992b6ebfa3e191bc52",
+          "authorBefore": "4f58f81a3e80e92bf87cbce39f95e5c35e5c5678f66c0555bd03d4b2c7bcdfcb",
+          "authorAfter": "79d9c0e57cd7f331f9eb6f28754c876d49510f8538670d992b6ebfa3e191bc52",
+          "sourceExact": true
+        },
+        {
+          "path": "gxtxt_pipeline.tcl",
+          "publicBefore": "b02b1016032c1a5edb383b1e7f854bd8494b0bc5b6976448b40c226694e7519f",
+          "publicAfter": "bde175dd8bc0ea4f3ab56e941cbb7abf6341151815358526bcb3d9ad19624f26",
+          "authorBefore": "b02b1016032c1a5edb383b1e7f854bd8494b0bc5b6976448b40c226694e7519f",
+          "authorAfter": "bde175dd8bc0ea4f3ab56e941cbb7abf6341151815358526bcb3d9ad19624f26",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/CHANGELOG.md",
+          "publicBefore": "0c0c057f7c24ddb755ac501f62cc9e798b377bd38cf356d22cd13d70eb03aaf8",
+          "publicAfter": "17c01b75395c74433cd35a0c6e0cadb46564d45197de661c47dc1f1b74045335",
+          "authorBefore": "0c0c057f7c24ddb755ac501f62cc9e798b377bd38cf356d22cd13d70eb03aaf8",
+          "authorAfter": "17c01b75395c74433cd35a0c6e0cadb46564d45197de661c47dc1f1b74045335",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/README.md",
+          "publicBefore": "374fb66ed6d92001bec32b49dc8c2a02d6cc179f51ce6b1a19c0063ff511e012",
+          "publicAfter": "690d16755ed26fe4e5341226b9201572c80ac6ef99a369a2fc16420e9d5ca95c",
+          "authorBefore": "374fb66ed6d92001bec32b49dc8c2a02d6cc179f51ce6b1a19c0063ff511e012",
+          "authorAfter": "690d16755ed26fe4e5341226b9201572c80ac6ef99a369a2fc16420e9d5ca95c",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_api_v1.tcl",
+          "publicBefore": "ee45178b8247f15635d6485d0f2633c7113dff932971953b3410e9ecf851d364",
+          "publicAfter": "16c2b720a2c668cd8153cfd17a90a05e437518bc111380dc362f472e82b70385",
+          "authorBefore": "ee45178b8247f15635d6485d0f2633c7113dff932971953b3410e9ecf851d364",
+          "authorAfter": "16c2b720a2c668cd8153cfd17a90a05e437518bc111380dc362f472e82b70385",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_fluidity_v4.tcl",
+          "publicBefore": "ab80f8aade35a8e189c0200e011e02843650ff820c46444f3d488e1e10b98a62",
+          "publicAfter": "373ea2ee14979f4a09b23ee1988b23051537f6177c4e9b3025b60163b80b1129",
+          "authorBefore": "ab80f8aade35a8e189c0200e011e02843650ff820c46444f3d488e1e10b98a62",
+          "authorAfter": "373ea2ee14979f4a09b23ee1988b23051537f6177c4e9b3025b60163b80b1129",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_interaction_v1.tcl",
+          "publicBefore": "5c2a0505b4755fe9b63beb6fefa579883f47f9d84a7b37226ebc5ab97f4e6f49",
+          "publicAfter": "f6acfee79694cc814c78b04cb854df260d4823c75518581d490827086d3e6bef",
+          "authorBefore": "5c2a0505b4755fe9b63beb6fefa579883f47f9d84a7b37226ebc5ab97f4e6f49",
+          "authorAfter": "f6acfee79694cc814c78b04cb854df260d4823c75518581d490827086d3e6bef",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_ui.tcl",
+          "publicBefore": "5c11d8dbc6be09c8acbcf9ea34453128237b6741d19512c14cd8d5cc7247b242",
+          "publicAfter": "62f8452a3830d56ad097e17c88423e3472df62c21da777213b24c743f62cd8bc",
+          "authorBefore": "5c11d8dbc6be09c8acbcf9ea34453128237b6741d19512c14cd8d5cc7247b242",
+          "authorAfter": "62f8452a3830d56ad097e17c88423e3472df62c21da777213b24c743f62cd8bc",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_viewport_v3.tcl",
+          "publicBefore": "2a84bb7f1a0a078548fdad7f0324d03d79330edc017af1fcf3d27f02e319c502",
+          "publicAfter": "fca7ad6e06b7aeba0b081a4d1145e0d310299c128b3b76d20d7dc0d9c8c03b54",
+          "authorBefore": "2a84bb7f1a0a078548fdad7f0324d03d79330edc017af1fcf3d27f02e319c502",
+          "authorAfter": "fca7ad6e06b7aeba0b081a4d1145e0d310299c128b3b76d20d7dc0d9c8c03b54",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/module.ini",
+          "publicBefore": "eeddb3a3d681c38774f6e39a37c4e1fb98878a77c8bfce6dc3c1a3421d2f4217",
+          "publicAfter": "b16e400f0609710bb210dcb30db8a526d242985360a82d65a733537e9c42c315",
+          "authorBefore": "eeddb3a3d681c38774f6e39a37c4e1fb98878a77c8bfce6dc3c1a3421d2f4217",
+          "authorAfter": "b16e400f0609710bb210dcb30db8a526d242985360a82d65a733537e9c42c315",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/plugin-package.ini",
+          "publicBefore": "0f65ac77f9c031e0b6815a10446b1c384cf308e252bbb8bdf0669ab4221a63b5",
+          "publicAfter": "7141973ad505ebb7be446f8379b32fa5a3a5354279ba3f1deb2f81cc26d2ac6a",
+          "authorBefore": "0f65ac77f9c031e0b6815a10446b1c384cf308e252bbb8bdf0669ab4221a63b5",
+          "authorAfter": "7141973ad505ebb7be446f8379b32fa5a3a5354279ba3f1deb2f81cc26d2ac6a",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+          "publicBefore": "4795a68d8a1255086cb8fa2db28ddde1261eca44b733932ddea41eab50d524df",
+          "publicAfter": "4dc9b4bb8f4fd58e902eaf3639570e0ca5dcdf892335e120c600daec8f95b122",
+          "authorBefore": "fb059f2c07e91fe6219f48da585e51f1f72705cb2da1f08983297f86a40671a4",
+          "authorAfter": "7a9b7e5e7ead38a49a9bf6b3a39e6aef72f563dd09d914b75bfe1e8855e0621b",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+          "publicBefore": "4795a68d8a1255086cb8fa2db28ddde1261eca44b733932ddea41eab50d524df",
+          "publicAfter": "4dc9b4bb8f4fd58e902eaf3639570e0ca5dcdf892335e120c600daec8f95b122",
+          "authorBefore": "fb059f2c07e91fe6219f48da585e51f1f72705cb2da1f08983297f86a40671a4",
+          "authorAfter": "7a9b7e5e7ead38a49a9bf6b3a39e6aef72f563dd09d914b75bfe1e8855e0621b",
+          "sourceExact": false
+        }
+      ],
+      "originalChangedFiles": 28,
+      "excludedPrivateFiles": 0,
+      "omittedPrivateCount": 0
+    },
+    {
+      "patch": "P015",
+      "tag": "v0.9.8.10-dev-111-p015",
+      "commit": "e4bd78abb92d0d91b5d8661fb0e9489ada37dce4",
+      "parent": "dac35bf2222c8ae8c7e008ed7272c2660f006656",
+      "requiredPredecessor": 14,
+      "originalArchiveSha256": "4a0f67e0d7d850c85482f6a524fbf8cd143a6b7d510bceff8c897f1acac6955c",
+      "archivePath": "patches/dev111/DEV111-P015/DEV111-P015-PUBLIC.zip",
+      "publicArchiveSha256": "f5139d2204ef215e059cd2a91300ffac4e9ba7bbefea364f57773603444f04ae",
+      "publicArchiveBytes": 760706,
+      "files": [
+        {
+          "path": "app/gui/configuration_page.tcl",
+          "publicBefore": "d1d7baf2fb115ce98e0ec560a6b13ac32e1064d1d95c80c016701eb8ccba53b0",
+          "publicAfter": "6855c94ee993a388badd5a95726b2aa2433f43158e25a01e66541102ac45bfa5",
+          "authorBefore": "d1d7baf2fb115ce98e0ec560a6b13ac32e1064d1d95c80c016701eb8ccba53b0",
+          "authorAfter": "6855c94ee993a388badd5a95726b2aa2433f43158e25a01e66541102ac45bfa5",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/CMakeLists.txt",
+          "publicBefore": "7260b39d413da8bd7f4f3fe3d0df78a00f8edbca8ea01595b8bf16e68a302051",
+          "publicAfter": "5bbe456cde399804e477cb3175e6f7bdf00c01c63e09f378fa57424c89c6eff8",
+          "authorBefore": "7260b39d413da8bd7f4f3fe3d0df78a00f8edbca8ea01595b8bf16e68a302051",
+          "authorAfter": "5bbe456cde399804e477cb3175e6f7bdf00c01c63e09f378fa57424c89c6eff8",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/README.md",
+          "publicBefore": "345cc300dc7dcbc211fbfbc55d446f8f720efa37f1464313d69c159eb5dfa303",
+          "publicAfter": "af57ca490ed0f9c9a1e9284791f01b3aa1ffcace68f7a429bc1b07ef8088b0e6",
+          "authorBefore": "345cc300dc7dcbc211fbfbc55d446f8f720efa37f1464313d69c159eb5dfa303",
+          "authorAfter": "af57ca490ed0f9c9a1e9284791f01b3aa1ffcace68f7a429bc1b07ef8088b0e6",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/bin/gx2dtcl.so",
+          "publicBefore": "8d4eceb6b3259f6452b22d9feb52f6b3431c8880f361a75f9c99f818e1165f7d",
+          "publicAfter": "7d61e52ed308a8c4c55eb6016b93613522f5feb571beb0da1fbc3975e522121e",
+          "authorBefore": "8d4eceb6b3259f6452b22d9feb52f6b3431c8880f361a75f9c99f818e1165f7d",
+          "authorAfter": "7d61e52ed308a8c4c55eb6016b93613522f5feb571beb0da1fbc3975e522121e",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_grid_presenter_v1.cpp",
+          "publicBefore": "02304d9fe25eac028cfce90a50bad3b8db11e1b844baa96f4ab0f7f4d67451a7",
+          "publicAfter": "2ec846691c7baab13acbb9d2429d254b476b6a85acd1ccc1ebb6fe95c1190d33",
+          "authorBefore": "02304d9fe25eac028cfce90a50bad3b8db11e1b844baa96f4ab0f7f4d67451a7",
+          "authorAfter": "2ec846691c7baab13acbb9d2429d254b476b6a85acd1ccc1ebb6fe95c1190d33",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_sprite_scene_v1.cpp",
+          "publicBefore": null,
+          "publicAfter": "57306888cef8ab75bc25bd0ab8173877ebc4ec1ca53bcadd2f092dcd543bafae",
+          "authorBefore": null,
+          "authorAfter": "57306888cef8ab75bc25bd0ab8173877ebc4ec1ca53bcadd2f092dcd543bafae",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_sprite_scene_v1.h",
+          "publicBefore": null,
+          "publicAfter": "af9175aa5ca8c7b6922ebaee191541d598db73c5d38aed565ddf4a9d5b8dcd8d",
+          "authorBefore": null,
+          "authorAfter": "af9175aa5ca8c7b6922ebaee191541d598db73c5d38aed565ddf4a9d5b8dcd8d",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_tcl.c",
+          "publicBefore": "81c4845099be0b18dea0d498d305517aba93d2d6a00121b194be5885bd7e6db6",
+          "publicAfter": "24bd07b6d0d4be6c26a13aa1b6c62c4e2fb4811599112c64d55d4738778937a9",
+          "authorBefore": "81c4845099be0b18dea0d498d305517aba93d2d6a00121b194be5885bd7e6db6",
+          "authorAfter": "24bd07b6d0d4be6c26a13aa1b6c62c4e2fb4811599112c64d55d4738778937a9",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/configuration_api_v1.tcl",
+          "publicBefore": "f07c9024900879d12ebe2e94c939607387d69f923ad8cbeaebc65e31f64479ac",
+          "publicAfter": "22d8fbcc8d1625df33bc842ae4952c6c42a7ef5aef0db9ce522e308d7f73c429",
+          "authorBefore": "f07c9024900879d12ebe2e94c939607387d69f923ad8cbeaebc65e31f64479ac",
+          "authorAfter": "22d8fbcc8d1625df33bc842ae4952c6c42a7ef5aef0db9ce522e308d7f73c429",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/native2d_presentation_v1.tcl",
+          "publicBefore": "04f4c719c77e12fae863f973d4678d4807dde5239b121a23c7504750921c6f6e",
+          "publicAfter": "e682331c2524b0db94f67d2ec34392953238ac2247063c7afc0e57b4bf5a94d6",
+          "authorBefore": "04f4c719c77e12fae863f973d4678d4807dde5239b121a23c7504750921c6f6e",
+          "authorAfter": "e682331c2524b0db94f67d2ec34392953238ac2247063c7afc0e57b4bf5a94d6",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/native2d_sprite_scene_v1.tcl",
+          "publicBefore": null,
+          "publicAfter": "29d743ae4ac595e658ee0e925eb49a1ad9dbf41bdbe98cde7ecd8279bc7a35ef",
+          "authorBefore": null,
+          "authorAfter": "29d743ae4ac595e658ee0e925eb49a1ad9dbf41bdbe98cde7ecd8279bc7a35ef",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/native2d_viewport_host_v1.tcl",
+          "publicBefore": "9883dc53d8276a22539f156636ab9eaf33b476691501959f26c0ff45b1569bdd",
+          "publicAfter": "37038d08d8c9f5eb14d987dd81427b86a7712057519262b1f805cafb2cf96882",
+          "authorBefore": "9883dc53d8276a22539f156636ab9eaf33b476691501959f26c0ff45b1569bdd",
+          "authorAfter": "37038d08d8c9f5eb14d987dd81427b86a7712057519262b1f805cafb2cf96882",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/workbench_extension_api_v1.tcl",
+          "publicBefore": "bfa2699577aa25d8f0d566c5461443460c2d621da7725ed8463218d46867591e",
+          "publicAfter": "c205d41d5c20d7752271348897f188af50124d5bacbd5bbbcac5444dd70d873b",
+          "authorBefore": "bfa2699577aa25d8f0d566c5461443460c2d621da7725ed8463218d46867591e",
+          "authorAfter": "c205d41d5c20d7752271348897f188af50124d5bacbd5bbbcac5444dd70d873b",
+          "sourceExact": true
+        },
+        {
+          "path": "docs/api/NATIVE2D_SPRITE_SCENE_API_v1.md",
+          "publicBefore": null,
+          "publicAfter": "3c9538ae19340562e3d73e7403c723c06e531b03a1e7c409b22a344e8b9b70d1",
+          "authorBefore": null,
+          "authorAfter": "3c9538ae19340562e3d73e7403c723c06e531b03a1e7c409b22a344e8b9b70d1",
+          "sourceExact": true
+        },
+        {
+          "path": "gxtxt_pipeline.tcl",
+          "publicBefore": "bde175dd8bc0ea4f3ab56e941cbb7abf6341151815358526bcb3d9ad19624f26",
+          "publicAfter": "d5176d7c600981114bbe10b7c4a8f48b72a7f462a255468019f0b0dc57bbe469",
+          "authorBefore": "bde175dd8bc0ea4f3ab56e941cbb7abf6341151815358526bcb3d9ad19624f26",
+          "authorAfter": "d5176d7c600981114bbe10b7c4a8f48b72a7f462a255468019f0b0dc57bbe469",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/CHANGELOG.md",
+          "publicBefore": "17c01b75395c74433cd35a0c6e0cadb46564d45197de661c47dc1f1b74045335",
+          "publicAfter": "aaaee23eebe16d4e9d03de5f4fa719d734f56a68199111a86199267150e800a1",
+          "authorBefore": "17c01b75395c74433cd35a0c6e0cadb46564d45197de661c47dc1f1b74045335",
+          "authorAfter": "aaaee23eebe16d4e9d03de5f4fa719d734f56a68199111a86199267150e800a1",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/README.md",
+          "publicBefore": "690d16755ed26fe4e5341226b9201572c80ac6ef99a369a2fc16420e9d5ca95c",
+          "publicAfter": "b519c26e6d12a3f241de2e260c9e69366486525cbc18bd3e66fc311a5be14ea4",
+          "authorBefore": "690d16755ed26fe4e5341226b9201572c80ac6ef99a369a2fc16420e9d5ca95c",
+          "authorAfter": "b519c26e6d12a3f241de2e260c9e69366486525cbc18bd3e66fc311a5be14ea4",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_api_v1.tcl",
+          "publicBefore": "16c2b720a2c668cd8153cfd17a90a05e437518bc111380dc362f472e82b70385",
+          "publicAfter": "d90bd30147da1c343767734f389d68e695e40ac37155f590eb4dafd2315e78d1",
+          "authorBefore": "16c2b720a2c668cd8153cfd17a90a05e437518bc111380dc362f472e82b70385",
+          "authorAfter": "d90bd30147da1c343767734f389d68e695e40ac37155f590eb4dafd2315e78d1",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_interaction_v1.tcl",
+          "publicBefore": "f6acfee79694cc814c78b04cb854df260d4823c75518581d490827086d3e6bef",
+          "publicAfter": "ea2330f9fea4ccf2eb1e62af33457a0c2d5a7d29375eea6abd05d18e7d4d8080",
+          "authorBefore": "f6acfee79694cc814c78b04cb854df260d4823c75518581d490827086d3e6bef",
+          "authorAfter": "ea2330f9fea4ccf2eb1e62af33457a0c2d5a7d29375eea6abd05d18e7d4d8080",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_source_v2.tcl",
+          "publicBefore": "fbdb721482e3f2830d7809789a5e210e335c74a3074c7172be30e841f80ae50c",
+          "publicAfter": "466b5546fae8eec9a025083374b02dbe475ccf52f305b56b1c6fcfbdc20946c1",
+          "authorBefore": "fbdb721482e3f2830d7809789a5e210e335c74a3074c7172be30e841f80ae50c",
+          "authorAfter": "466b5546fae8eec9a025083374b02dbe475ccf52f305b56b1c6fcfbdc20946c1",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/module.ini",
+          "publicBefore": "b16e400f0609710bb210dcb30db8a526d242985360a82d65a733537e9c42c315",
+          "publicAfter": "7e2a60695b110a464b84fce08fbb1bea1bf6b51c1e176d84247d7915d5c299f6",
+          "authorBefore": "b16e400f0609710bb210dcb30db8a526d242985360a82d65a733537e9c42c315",
+          "authorAfter": "7e2a60695b110a464b84fce08fbb1bea1bf6b51c1e176d84247d7915d5c299f6",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/plugin-package.ini",
+          "publicBefore": "7141973ad505ebb7be446f8379b32fa5a3a5354279ba3f1deb2f81cc26d2ac6a",
+          "publicAfter": "1f1233e6182ec3e4bc11d718a022874985e86bed1d4e665cdd9ceadfc2f166cd",
+          "authorBefore": "7141973ad505ebb7be446f8379b32fa5a3a5354279ba3f1deb2f81cc26d2ac6a",
+          "authorAfter": "1f1233e6182ec3e4bc11d718a022874985e86bed1d4e665cdd9ceadfc2f166cd",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+          "publicBefore": "4dc9b4bb8f4fd58e902eaf3639570e0ca5dcdf892335e120c600daec8f95b122",
+          "publicAfter": "43a8f7cf255f01dd0d187ae1531f41faf0a8a02f7a17f213b9eddfb2447ca67e",
+          "authorBefore": "7a9b7e5e7ead38a49a9bf6b3a39e6aef72f563dd09d914b75bfe1e8855e0621b",
+          "authorAfter": "737b5220a3e9dbf7d2a308a4443b112a555dd93fc400cd01e007f31f317033ff",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+          "publicBefore": "4dc9b4bb8f4fd58e902eaf3639570e0ca5dcdf892335e120c600daec8f95b122",
+          "publicAfter": "43a8f7cf255f01dd0d187ae1531f41faf0a8a02f7a17f213b9eddfb2447ca67e",
+          "authorBefore": "7a9b7e5e7ead38a49a9bf6b3a39e6aef72f563dd09d914b75bfe1e8855e0621b",
+          "authorAfter": "737b5220a3e9dbf7d2a308a4443b112a555dd93fc400cd01e007f31f317033ff",
+          "sourceExact": false
+        }
+      ],
+      "originalChangedFiles": 25,
+      "excludedPrivateFiles": 1,
+      "omittedPrivateCount": 1
+    },
+    {
+      "patch": "P016",
+      "tag": "v0.9.8.10-dev-111-p016",
+      "commit": "c9e7e27fd32ab983cd1bae1e3c5abb242ec307e3",
+      "parent": "e4bd78abb92d0d91b5d8661fb0e9489ada37dce4",
+      "requiredPredecessor": 15,
+      "originalArchiveSha256": "78632101e2bd0680c3292574faa046a3e28e9b9517d1c9f2074e4e41545e6238",
+      "archivePath": "patches/dev111/DEV111-P016/DEV111-P016-PUBLIC.zip",
+      "publicArchiveSha256": "8744ff84b81317b6ef582e466e4422e825831914e58689b6312222f95cf70c75",
+      "publicArchiveBytes": 845319,
+      "files": [
+        {
+          "path": "core/native2d/CMakeLists.txt",
+          "publicBefore": "5bbe456cde399804e477cb3175e6f7bdf00c01c63e09f378fa57424c89c6eff8",
+          "publicAfter": "33e5b923b7fa2d72c05fcae5a95b5c44caf7f121987a9ec37f8b74140ed56b21",
+          "authorBefore": "5bbe456cde399804e477cb3175e6f7bdf00c01c63e09f378fa57424c89c6eff8",
+          "authorAfter": "33e5b923b7fa2d72c05fcae5a95b5c44caf7f121987a9ec37f8b74140ed56b21",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/README.md",
+          "publicBefore": "af57ca490ed0f9c9a1e9284791f01b3aa1ffcace68f7a429bc1b07ef8088b0e6",
+          "publicAfter": "80fdb7f88bd0f569756a07d6b453a4214501d480d09361f71749f11309513859",
+          "authorBefore": "af57ca490ed0f9c9a1e9284791f01b3aa1ffcace68f7a429bc1b07ef8088b0e6",
+          "authorAfter": "80fdb7f88bd0f569756a07d6b453a4214501d480d09361f71749f11309513859",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/bin/gx2dtcl.so",
+          "publicBefore": "7d61e52ed308a8c4c55eb6016b93613522f5feb571beb0da1fbc3975e522121e",
+          "publicAfter": "77bc65dac820aecbdfacc1427aa25735f860c657170a1db343eab6366c1e66ab",
+          "authorBefore": "7d61e52ed308a8c4c55eb6016b93613522f5feb571beb0da1fbc3975e522121e",
+          "authorAfter": "77bc65dac820aecbdfacc1427aa25735f860c657170a1db343eab6366c1e66ab",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d.c",
+          "publicBefore": "1db52b212c763278252637f904933006d681c893f3f498d8cb8b257576004ea5",
+          "publicAfter": "f91c96ad540d9e1822d99c2726d4b62334bbe6d3aba4abaa02a89f2eb66f37fe",
+          "authorBefore": "1db52b212c763278252637f904933006d681c893f3f498d8cb8b257576004ea5",
+          "authorAfter": "f91c96ad540d9e1822d99c2726d4b62334bbe6d3aba4abaa02a89f2eb66f37fe",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_cad_controller_v1.cpp",
+          "publicBefore": null,
+          "publicAfter": "8b19b1fd1d219c60e23a83e3b89fe1de47fc8115c3c19d72f26d5bae69448bd8",
+          "authorBefore": null,
+          "authorAfter": "8b19b1fd1d219c60e23a83e3b89fe1de47fc8115c3c19d72f26d5bae69448bd8",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_cad_controller_v1.h",
+          "publicBefore": null,
+          "publicAfter": "adb8020d6f6dd4e8a0c71c8257f41ebe6a956535cb07d2746e5ec9a1c8b77f64",
+          "authorBefore": null,
+          "authorAfter": "adb8020d6f6dd4e8a0c71c8257f41ebe6a956535cb07d2746e5ec9a1c8b77f64",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_presentation_visit_v1.h",
+          "publicBefore": null,
+          "publicAfter": "95cbb588cab50851e517fe2c3335f251f4b9551fafd5489d0e5612db197917bc",
+          "authorBefore": null,
+          "authorAfter": "95cbb588cab50851e517fe2c3335f251f4b9551fafd5489d0e5612db197917bc",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_presentation_visit_v1.inc",
+          "publicBefore": null,
+          "publicAfter": "52d85cb54c5346a600c4d341e78fbc98b2cb4f98568db10ee5c98c982ede2249",
+          "authorBefore": null,
+          "authorAfter": "52d85cb54c5346a600c4d341e78fbc98b2cb4f98568db10ee5c98c982ede2249",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_sprite_scene_v1.cpp",
+          "publicBefore": "57306888cef8ab75bc25bd0ab8173877ebc4ec1ca53bcadd2f092dcd543bafae",
+          "publicAfter": "bfc86c856e3de455ab7168bf9159642f94069421934e75286535f9734b07a610",
+          "authorBefore": "57306888cef8ab75bc25bd0ab8173877ebc4ec1ca53bcadd2f092dcd543bafae",
+          "authorAfter": "bfc86c856e3de455ab7168bf9159642f94069421934e75286535f9734b07a610",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_sprite_scene_v1.h",
+          "publicBefore": "af9175aa5ca8c7b6922ebaee191541d598db73c5d38aed565ddf4a9d5b8dcd8d",
+          "publicAfter": "f78226ec48397fa75bb3302efd848ab08d40713033710fd47e07933b2ea31c97",
+          "authorBefore": "af9175aa5ca8c7b6922ebaee191541d598db73c5d38aed565ddf4a9d5b8dcd8d",
+          "authorAfter": "f78226ec48397fa75bb3302efd848ab08d40713033710fd47e07933b2ea31c97",
+          "sourceExact": true
+        },
+        {
+          "path": "core/native2d/gx2d_tcl.c",
+          "publicBefore": "24bd07b6d0d4be6c26a13aa1b6c62c4e2fb4811599112c64d55d4738778937a9",
+          "publicAfter": "1b8df4b5ee454051367878bc65ef285302d83dd3d3e80e717d638d1cf5b20600",
+          "authorBefore": "24bd07b6d0d4be6c26a13aa1b6c62c4e2fb4811599112c64d55d4738778937a9",
+          "authorAfter": "1b8df4b5ee454051367878bc65ef285302d83dd3d3e80e717d638d1cf5b20600",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/native2d_cad_v1.tcl",
+          "publicBefore": null,
+          "publicAfter": "a2a5f5a4ecd6b7304eb85806f8d0aed85b0db57d2a4288e77412de5928b95c1a",
+          "authorBefore": null,
+          "authorAfter": "a2a5f5a4ecd6b7304eb85806f8d0aed85b0db57d2a4288e77412de5928b95c1a",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/native2d_sprite_scene_v1.tcl",
+          "publicBefore": "29d743ae4ac595e658ee0e925eb49a1ad9dbf41bdbe98cde7ecd8279bc7a35ef",
+          "publicAfter": "2351167a72521321cb9293d31cb66431a43b4713ab7c45b9da384f4efcef75fb",
+          "authorBefore": "29d743ae4ac595e658ee0e925eb49a1ad9dbf41bdbe98cde7ecd8279bc7a35ef",
+          "authorAfter": "2351167a72521321cb9293d31cb66431a43b4713ab7c45b9da384f4efcef75fb",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/workbench_extension_api_v1.tcl",
+          "publicBefore": "c205d41d5c20d7752271348897f188af50124d5bacbd5bbbcac5444dd70d873b",
+          "publicAfter": "5edf08dd6a34503bbf9b3a9a41708b0a663c25ddf548dd6ef697ca4805d6b6e7",
+          "authorBefore": "c205d41d5c20d7752271348897f188af50124d5bacbd5bbbcac5444dd70d873b",
+          "authorAfter": "5edf08dd6a34503bbf9b3a9a41708b0a663c25ddf548dd6ef697ca4805d6b6e7",
+          "sourceExact": true
+        },
+        {
+          "path": "docs/api/NATIVE2D_CAD_CONTROLLER_v1.md",
+          "publicBefore": null,
+          "publicAfter": "f07c8c2def818e8febe561b1977dcce4f2560849bb37d83e33fb8990de340a04",
+          "authorBefore": null,
+          "authorAfter": "f07c8c2def818e8febe561b1977dcce4f2560849bb37d83e33fb8990de340a04",
+          "sourceExact": true
+        },
+        {
+          "path": "docs/api/NATIVE2D_SPRITE_SCENE_API_v1.md",
+          "publicBefore": "3c9538ae19340562e3d73e7403c723c06e531b03a1e7c409b22a344e8b9b70d1",
+          "publicAfter": "3f51f6aecf33b69b2f818999bc18d63421ffec0f4209ad82389075fe8c9bcca2",
+          "authorBefore": "3c9538ae19340562e3d73e7403c723c06e531b03a1e7c409b22a344e8b9b70d1",
+          "authorAfter": "3f51f6aecf33b69b2f818999bc18d63421ffec0f4209ad82389075fe8c9bcca2",
+          "sourceExact": true
+        },
+        {
+          "path": "gxtxt_pipeline.tcl",
+          "publicBefore": "d5176d7c600981114bbe10b7c4a8f48b72a7f462a255468019f0b0dc57bbe469",
+          "publicAfter": "942ed362ac93e657ecf84bbb434b7dad70c5db463312524a29b4f21f96dadbbd",
+          "authorBefore": "d5176d7c600981114bbe10b7c4a8f48b72a7f462a255468019f0b0dc57bbe469",
+          "authorAfter": "942ed362ac93e657ecf84bbb434b7dad70c5db463312524a29b4f21f96dadbbd",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/CHANGELOG.md",
+          "publicBefore": "aaaee23eebe16d4e9d03de5f4fa719d734f56a68199111a86199267150e800a1",
+          "publicAfter": "63b9e55d107be58b5f9fc3799b546d413edb12a357d9273bb0c3bdbd6dfff3aa",
+          "authorBefore": "aaaee23eebe16d4e9d03de5f4fa719d734f56a68199111a86199267150e800a1",
+          "authorAfter": "63b9e55d107be58b5f9fc3799b546d413edb12a357d9273bb0c3bdbd6dfff3aa",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/README.md",
+          "publicBefore": "b519c26e6d12a3f241de2e260c9e69366486525cbc18bd3e66fc311a5be14ea4",
+          "publicAfter": "9c1ac29d783b7335e3e3000adb0729c5f408d56e89ffc36b0b46fc416a681324",
+          "authorBefore": "b519c26e6d12a3f241de2e260c9e69366486525cbc18bd3e66fc311a5be14ea4",
+          "authorAfter": "9c1ac29d783b7335e3e3000adb0729c5f408d56e89ffc36b0b46fc416a681324",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_api_v1.tcl",
+          "publicBefore": "d90bd30147da1c343767734f389d68e695e40ac37155f590eb4dafd2315e78d1",
+          "publicAfter": "fcebeb9fc412aaed66006b289035cc677bf2b9d33a189c72790a4a389db8e0b5",
+          "authorBefore": "d90bd30147da1c343767734f389d68e695e40ac37155f590eb4dafd2315e78d1",
+          "authorAfter": "fcebeb9fc412aaed66006b289035cc677bf2b9d33a189c72790a4a389db8e0b5",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_cad_v2.tcl",
+          "publicBefore": "9716bd11d5f1ee7d5edf09c418e97fb7321372ecb2f1c4004e8f369cfe724160",
+          "publicAfter": "f806ac1aed7a59a0a5382cbbcace2bef6d2a9085cdfa30ebae7888b0fdad2a11",
+          "authorBefore": "9716bd11d5f1ee7d5edf09c418e97fb7321372ecb2f1c4004e8f369cfe724160",
+          "authorAfter": "f806ac1aed7a59a0a5382cbbcace2bef6d2a9085cdfa30ebae7888b0fdad2a11",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_constraints_v1.tcl",
+          "publicBefore": "11ee265c296b8dea0d0ac9208cff5b0aa127bd13166101ad242f899a7bc8992d",
+          "publicAfter": "61265e57e3414cc5a4d10e64b3a3752bd229cb9423c316ddae243579f076d710",
+          "authorBefore": "11ee265c296b8dea0d0ac9208cff5b0aa127bd13166101ad242f899a7bc8992d",
+          "authorAfter": "61265e57e3414cc5a4d10e64b3a3752bd229cb9423c316ddae243579f076d710",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_interaction_v1.tcl",
+          "publicBefore": "ea2330f9fea4ccf2eb1e62af33457a0c2d5a7d29375eea6abd05d18e7d4d8080",
+          "publicAfter": "52ebc99bb2d860cd3c9758fb4e0231d55b7af67a3cd9b1fbcb51d3674bb26283",
+          "authorBefore": "ea2330f9fea4ccf2eb1e62af33457a0c2d5a7d29375eea6abd05d18e7d4d8080",
+          "authorAfter": "52ebc99bb2d860cd3c9758fb4e0231d55b7af67a3cd9b1fbcb51d3674bb26283",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_parts.tcl",
+          "publicBefore": "625f3bc6bde6e08f28ea5b366fbe74f5cebc30384c22bf6110c6568826009c86",
+          "publicAfter": "0b9c64eff93f0f89fbc66334bba4e25d745cc932316bcd2db7751eccb2407085",
+          "authorBefore": "625f3bc6bde6e08f28ea5b366fbe74f5cebc30384c22bf6110c6568826009c86",
+          "authorAfter": "0b9c64eff93f0f89fbc66334bba4e25d745cc932316bcd2db7751eccb2407085",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_representation_v4.tcl",
+          "publicBefore": "5ac59c1092789df861ac7f7de929761d17f9d9ca238edf8b9188a9e6494d0f4c",
+          "publicAfter": "254e5f13129b297a42d4eae25ce7a4a2a311b70386d1b400e5eb3eb200e87a4e",
+          "authorBefore": "5ac59c1092789df861ac7f7de929761d17f9d9ca238edf8b9188a9e6494d0f4c",
+          "authorAfter": "254e5f13129b297a42d4eae25ce7a4a2a311b70386d1b400e5eb3eb200e87a4e",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_scene.tcl",
+          "publicBefore": "4d94a8073e302f3e7f3386d5436bb271ae7500a5f05fee48f9616aa92a365665",
+          "publicAfter": "3d13bb6609ebf9ccb3f7e80b0e1ff012d61c7102e59cddcccf10f504f19f5be3",
+          "authorBefore": "4d94a8073e302f3e7f3386d5436bb271ae7500a5f05fee48f9616aa92a365665",
+          "authorAfter": "3d13bb6609ebf9ccb3f7e80b0e1ff012d61c7102e59cddcccf10f504f19f5be3",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_selection.tcl",
+          "publicBefore": "c17f02b07bdd66d5ad151154fd42edbf9ca7806f7cab06a0ddb31dd9ebbee2eb",
+          "publicAfter": "d9a4f565d5654308e9a3ec7e9b24123e71a50796ece13ebf61d447846a61faa9",
+          "authorBefore": "c17f02b07bdd66d5ad151154fd42edbf9ca7806f7cab06a0ddb31dd9ebbee2eb",
+          "authorAfter": "d9a4f565d5654308e9a3ec7e9b24123e71a50796ece13ebf61d447846a61faa9",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_sketch_constraints_v2.tcl",
+          "publicBefore": "b38871a9525fb77abc6a2bdf8dc1924aae89820dacfc5d8c8171913fa30911fb",
+          "publicAfter": "3e3c43d63e9962849a74264dd2a1dee46cf7557dfe6c30aed3acfb155088cf54",
+          "authorBefore": "b38871a9525fb77abc6a2bdf8dc1924aae89820dacfc5d8c8171913fa30911fb",
+          "authorAfter": "3e3c43d63e9962849a74264dd2a1dee46cf7557dfe6c30aed3acfb155088cf54",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_source_v2.tcl",
+          "publicBefore": "466b5546fae8eec9a025083374b02dbe475ccf52f305b56b1c6fcfbdc20946c1",
+          "publicAfter": "62e01f1731f38e7f22d868629fd5ab28eac55c879df5791145c2e50233792d2b",
+          "authorBefore": "466b5546fae8eec9a025083374b02dbe475ccf52f305b56b1c6fcfbdc20946c1",
+          "authorAfter": "62e01f1731f38e7f22d868629fd5ab28eac55c879df5791145c2e50233792d2b",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/module.ini",
+          "publicBefore": "7e2a60695b110a464b84fce08fbb1bea1bf6b51c1e176d84247d7915d5c299f6",
+          "publicAfter": "567a67364b58c905cee111bdb754bd9a6e93986f892bd94868d6fd1790921e99",
+          "authorBefore": "7e2a60695b110a464b84fce08fbb1bea1bf6b51c1e176d84247d7915d5c299f6",
+          "authorAfter": "567a67364b58c905cee111bdb754bd9a6e93986f892bd94868d6fd1790921e99",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/plugin-package.ini",
+          "publicBefore": "1f1233e6182ec3e4bc11d718a022874985e86bed1d4e665cdd9ceadfc2f166cd",
+          "publicAfter": "6b3f0eb38c3001ddbfa47f17286432f6cc59cebee9b8da5447c05be45eb81ae2",
+          "authorBefore": "1f1233e6182ec3e4bc11d718a022874985e86bed1d4e665cdd9ceadfc2f166cd",
+          "authorAfter": "6b3f0eb38c3001ddbfa47f17286432f6cc59cebee9b8da5447c05be45eb81ae2",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+          "publicBefore": "43a8f7cf255f01dd0d187ae1531f41faf0a8a02f7a17f213b9eddfb2447ca67e",
+          "publicAfter": "8a672581d9e95b25ab1e8c9a5b0192e8ea2e5a79be7e8c0ff8d39df533de6748",
+          "authorBefore": "737b5220a3e9dbf7d2a308a4443b112a555dd93fc400cd01e007f31f317033ff",
+          "authorAfter": "b345d362467b50538cccc98c60ac7842a4ac286793b8f9ba52812a1493965c96",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+          "publicBefore": "43a8f7cf255f01dd0d187ae1531f41faf0a8a02f7a17f213b9eddfb2447ca67e",
+          "publicAfter": "8a672581d9e95b25ab1e8c9a5b0192e8ea2e5a79be7e8c0ff8d39df533de6748",
+          "authorBefore": "737b5220a3e9dbf7d2a308a4443b112a555dd93fc400cd01e007f31f317033ff",
+          "authorAfter": "b345d362467b50538cccc98c60ac7842a4ac286793b8f9ba52812a1493965c96",
+          "sourceExact": false
+        }
+      ],
+      "originalChangedFiles": 37,
+      "excludedPrivateFiles": 4,
+      "omittedPrivateCount": 4
+    },
+    {
+      "patch": "P017",
+      "tag": "v0.9.8.10-dev-111-p017",
+      "commit": "b6c0770286698c0c25eaa4b42baabe0b09169415",
+      "parent": "c9e7e27fd32ab983cd1bae1e3c5abb242ec307e3",
+      "requiredPredecessor": 16,
+      "originalArchiveSha256": "61ed6508050b7d39ce245c8034fa6586d9d1520c21cb3ddc92a6436a4508aad5",
+      "archivePath": "patches/dev111/DEV111-P017/DEV111-P017-PUBLIC.zip",
+      "publicArchiveSha256": "8dcb21aa88cbec3d95e0799ca368c5b90252253fd288dac9fc6c7be6f782cff3",
+      "publicArchiveBytes": 1133008,
+      "files": [
+        {
+          "path": "core/history/Makefile",
+          "publicBefore": null,
+          "publicAfter": "d2d1210f4d7216466b26ea437e21f84e0909290caf1ed41a9b48fb9617795037",
+          "authorBefore": null,
+          "authorAfter": "d2d1210f4d7216466b26ea437e21f84e0909290caf1ed41a9b48fb9617795037",
+          "sourceExact": true
+        },
+        {
+          "path": "core/history/README.md",
+          "publicBefore": null,
+          "publicAfter": "9136c23d163114981c514531413798cc52d4442261081c2d058aa0e9f851ce7e",
+          "authorBefore": null,
+          "authorAfter": "9136c23d163114981c514531413798cc52d4442261081c2d058aa0e9f851ce7e",
+          "sourceExact": true
+        },
+        {
+          "path": "core/history/history_engine.cpp",
+          "publicBefore": null,
+          "publicAfter": "89cfaaf28c4fae80f901a7755a034bd92f68d98ce50ecf3aedba04826b0b36c9",
+          "authorBefore": null,
+          "authorAfter": "89cfaaf28c4fae80f901a7755a034bd92f68d98ce50ecf3aedba04826b0b36c9",
+          "sourceExact": true
+        },
+        {
+          "path": "core/history/libgxtxt_history.so",
+          "publicBefore": null,
+          "publicAfter": "b85fecb74a8e369a4397eddd460f126ae0ee287dfbd4092d8a08fe6069ffb23f",
+          "authorBefore": null,
+          "authorAfter": "b85fecb74a8e369a4397eddd460f126ae0ee287dfbd4092d8a08fe6069ffb23f",
+          "sourceExact": true
+        },
+        {
+          "path": "core/python/scientific_history_portable_copy.py",
+          "publicBefore": null,
+          "publicAfter": "30218ef003d60bb90c0b085cb4d9c1bf52b20daba1b347c63ba593b33715282c",
+          "authorBefore": null,
+          "authorAfter": "30218ef003d60bb90c0b085cb4d9c1bf52b20daba1b347c63ba593b33715282c",
+          "sourceExact": true
+        },
+        {
+          "path": "core/python/session_portable_v1.py",
+          "publicBefore": "1a2eb286bbf1214671be5311a44a8bb54d5fbd2efed8c2a34cc25caaa25f5c71",
+          "publicAfter": "810897b930c33944d184497860964901026b7dddcded7566f1d227bfef4f201f",
+          "authorBefore": "1a2eb286bbf1214671be5311a44a8bb54d5fbd2efed8c2a34cc25caaa25f5c71",
+          "authorAfter": "810897b930c33944d184497860964901026b7dddcded7566f1d227bfef4f201f",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/interactive_document_api_v1.tcl",
+          "publicBefore": "c89e75dedacbf95dcde627d23abd141bbcd04efc5a63e045d327939a561d6a93",
+          "publicAfter": "125dc6df6bdb1ca1a68f50e57bc06330ac3bfb8390e629a8687607cf41a37128",
+          "authorBefore": "c89e75dedacbf95dcde627d23abd141bbcd04efc5a63e045d327939a561d6a93",
+          "authorAfter": "125dc6df6bdb1ca1a68f50e57bc06330ac3bfb8390e629a8687607cf41a37128",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/native2d_viewport_host_v1.tcl",
+          "publicBefore": "37038d08d8c9f5eb14d987dd81427b86a7712057519262b1f805cafb2cf96882",
+          "publicAfter": "f5bc9b7b5d2c9f8804059918c973d06f98107f37a6751c65eb034b0db4373d57",
+          "authorBefore": "37038d08d8c9f5eb14d987dd81427b86a7712057519262b1f805cafb2cf96882",
+          "authorAfter": "f5bc9b7b5d2c9f8804059918c973d06f98107f37a6751c65eb034b0db4373d57",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/native3d_geometry_api_v1.tcl",
+          "publicBefore": "4d5732055070a899cd138d067da85511a4b481275bdf7c04d0d74412b869f9b2",
+          "publicAfter": "e4988f3a95f9e1c947544c22f44cfc72be8a63c045822ae50e54abc148d4f700",
+          "authorBefore": "4d5732055070a899cd138d067da85511a4b481275bdf7c04d0d74412b869f9b2",
+          "authorAfter": "e4988f3a95f9e1c947544c22f44cfc72be8a63c045822ae50e54abc148d4f700",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/parameter_service_api_v1.tcl",
+          "publicBefore": "90d0d2400181e2b536e077497a0c729c344bc46e1fec179df61cd3cfb749d7d9",
+          "publicAfter": "9e8bc6ed917d5c9a28228be74dd98154c6348c560e08a97a4bb70e312b615087",
+          "authorBefore": "90d0d2400181e2b536e077497a0c729c344bc46e1fec179df61cd3cfb749d7d9",
+          "authorAfter": "9e8bc6ed917d5c9a28228be74dd98154c6348c560e08a97a4bb70e312b615087",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/scientific_history_native.tcl",
+          "publicBefore": null,
+          "publicAfter": "66ffc58436ac1338433949f794408ae7b5e91e287ea9d20aa9717b4ca13c1819",
+          "authorBefore": null,
+          "authorAfter": "66ffc58436ac1338433949f794408ae7b5e91e287ea9d20aa9717b4ca13c1819",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/scientific_history_portable.tcl",
+          "publicBefore": null,
+          "publicAfter": "8e4c57f438618f98665b85f7096a36efd10570e819955161a0bda844059cf2a9",
+          "authorBefore": null,
+          "authorAfter": "8e4c57f438618f98665b85f7096a36efd10570e819955161a0bda844059cf2a9",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/scientific_history_portable_worker.tcl",
+          "publicBefore": null,
+          "publicAfter": "ba183ba9f1e0fc295e9186a7f9c3a9f7588d82b85612ab6e7d1ca0b536cefb68",
+          "authorBefore": null,
+          "authorAfter": "ba183ba9f1e0fc295e9186a7f9c3a9f7588d82b85612ab6e7d1ca0b536cefb68",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/scientific_recipe_api_v1.tcl",
+          "publicBefore": "827a1d2877ffd5cb2f38389d285f70ace3d7fedd871f5b7314dcffaa79025d61",
+          "publicAfter": "4df7d41ac89736d7df3117a323a8f56ecd1926024106a193feb47c8418e774dd",
+          "authorBefore": "827a1d2877ffd5cb2f38389d285f70ace3d7fedd871f5b7314dcffaa79025d61",
+          "authorAfter": "4df7d41ac89736d7df3117a323a8f56ecd1926024106a193feb47c8418e774dd",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/scientific_recipe_history.tcl",
+          "publicBefore": "8eae5e77b1d56668b9fd9034edb47b3522dec2a9d3342f1a79f9a4d2d8d52ba2",
+          "publicAfter": "4fd2857e25e25eaad361e024187e2923ea75dc313c7f1d25ef229a97c0443ec3",
+          "authorBefore": "8eae5e77b1d56668b9fd9034edb47b3522dec2a9d3342f1a79f9a4d2d8d52ba2",
+          "authorAfter": "4fd2857e25e25eaad361e024187e2923ea75dc313c7f1d25ef229a97c0443ec3",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/session_experiment_api_v1.tcl",
+          "publicBefore": "ba88eda38e5fc1175ea72e2cfccb55dbd74e58a702bc7976e7a839de11e7eb65",
+          "publicAfter": "780b75d97620404674af3b59de42181d9789a3bcf676e02196dc21ee871518f3",
+          "authorBefore": "ba88eda38e5fc1175ea72e2cfccb55dbd74e58a702bc7976e7a839de11e7eb65",
+          "authorAfter": "780b75d97620404674af3b59de42181d9789a3bcf676e02196dc21ee871518f3",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/session_experiment_ownership.tcl",
+          "publicBefore": "ed4d8145201596e897ceb7ffc8aac55ff4667f0e19f075bbcff41a83c703c25a",
+          "publicAfter": "cbbd4d91d019f727589cf713e26e6cde554fad158fad4c08129f01e8d1c03ec2",
+          "authorBefore": "ed4d8145201596e897ceb7ffc8aac55ff4667f0e19f075bbcff41a83c703c25a",
+          "authorAfter": "cbbd4d91d019f727589cf713e26e6cde554fad158fad4c08129f01e8d1c03ec2",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/session_experiment_worker.tcl",
+          "publicBefore": "396dc115315edac6622787fac1fbd8f3d059a4ffdff71218a30a5bf2419608b8",
+          "publicAfter": "3dab02b59ff9b136de0a966d97b49d249d68b844a00e2e6781a347d62219177b",
+          "authorBefore": "396dc115315edac6622787fac1fbd8f3d059a4ffdff71218a30a5bf2419608b8",
+          "authorAfter": "3dab02b59ff9b136de0a966d97b49d249d68b844a00e2e6781a347d62219177b",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/session_portable_api_v1.tcl",
+          "publicBefore": "875aa084637dd88347f0c2dff6a43256cbcdcecc2f6c7a9d549214a67ad35398",
+          "publicAfter": "0080ddc397c9aecbe5245f69c1748bd4cf955d3e69ae7a32d6b4d00f9dc36cc5",
+          "authorBefore": "875aa084637dd88347f0c2dff6a43256cbcdcecc2f6c7a9d549214a67ad35398",
+          "authorAfter": "0080ddc397c9aecbe5245f69c1748bd4cf955d3e69ae7a32d6b4d00f9dc36cc5",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/session_workspace_gui_host.tcl",
+          "publicBefore": "75c730ec09fe19cc0ec8349c1afc9a43bcdd5a8194089cd6d9a03666ec778e98",
+          "publicAfter": "1bca625890278234a95a64b0d5708540749f91d4e86a81594c9d3156a0c82a79",
+          "authorBefore": "75c730ec09fe19cc0ec8349c1afc9a43bcdd5a8194089cd6d9a03666ec778e98",
+          "authorAfter": "1bca625890278234a95a64b0d5708540749f91d4e86a81594c9d3156a0c82a79",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/viewer_gui_design_v1.tcl",
+          "publicBefore": "2c0b169cc9306d152f0d948580cd15f63f1819d9bc5785226f5bf64a5b143bd0",
+          "publicAfter": "346ed9aea65ee496e510369735cae363cd608df5c566d8c5a3ac90057420c334",
+          "authorBefore": "2c0b169cc9306d152f0d948580cd15f63f1819d9bc5785226f5bf64a5b143bd0",
+          "authorAfter": "346ed9aea65ee496e510369735cae363cd608df5c566d8c5a3ac90057420c334",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/viewer_gui_diagrams_v1.tcl",
+          "publicBefore": "8fbb4799a57c8cf24f7af582f27ef99c23e8baf92f5240ad8968cdf3f7fbc61f",
+          "publicAfter": "81a77703b450522ec709899b808e800bf6a741b2e0117f931185355f9742cdf6",
+          "authorBefore": "8fbb4799a57c8cf24f7af582f27ef99c23e8baf92f5240ad8968cdf3f7fbc61f",
+          "authorAfter": "81a77703b450522ec709899b808e800bf6a741b2e0117f931185355f9742cdf6",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/viewer_gui_em_v1.tcl",
+          "publicBefore": "9b411187abc18e243e55e16403c4cda9dc9d416e1e7f1c8c2f86c3c0808add70",
+          "publicAfter": "12acd166b7816e56ff8233161107a152306559bd2b590e78f79f30c6c54f516e",
+          "authorBefore": "9b411187abc18e243e55e16403c4cda9dc9d416e1e7f1c8c2f86c3c0808add70",
+          "authorAfter": "12acd166b7816e56ff8233161107a152306559bd2b590e78f79f30c6c54f516e",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/viewer_gui_plot_bindings_v1.tcl",
+          "publicBefore": "2210393bfc225baa588859b6d48df2f984ec556d41c6e47817f06eece47a2bf9",
+          "publicAfter": "ecbe70a025cc397c2f197e2cc29f74f4f4cc15203d1c2e37ed4cb5238376e16d",
+          "authorBefore": "2210393bfc225baa588859b6d48df2f984ec556d41c6e47817f06eece47a2bf9",
+          "authorAfter": "ecbe70a025cc397c2f197e2cc29f74f4f4cc15203d1c2e37ed4cb5238376e16d",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/viewer_gui_plot_series_v1.tcl",
+          "publicBefore": "9eb6096d19e5dc5ef29180e6cb18116f4ce5e5391e619fdfc24d365ec38a9d86",
+          "publicAfter": "27449206db5d5ae08a30648f50cbe2545e56baa0e339732409844c3b3bfdd602",
+          "authorBefore": "9eb6096d19e5dc5ef29180e6cb18116f4ce5e5391e619fdfc24d365ec38a9d86",
+          "authorAfter": "27449206db5d5ae08a30648f50cbe2545e56baa0e339732409844c3b3bfdd602",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/viewer_gui_raster_v1.tcl",
+          "publicBefore": "bebecf320c7db3fd59bb1af1445da1bd45c2fb61d757923ce3bfa003cf45c58f",
+          "publicAfter": "cee1adb1adab5cfe02dba2eabfaf6cc67865be013fab02c6ef57337fef70c4e4",
+          "authorBefore": "bebecf320c7db3fd59bb1af1445da1bd45c2fb61d757923ce3bfa003cf45c58f",
+          "authorAfter": "cee1adb1adab5cfe02dba2eabfaf6cc67865be013fab02c6ef57337fef70c4e4",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/viewer_gui_scientific_netlist_v1.tcl",
+          "publicBefore": "6fabb856f1f5e72ddddb748c7fe9a3cf3f0f7a6e4b38179386347d702a4b0632",
+          "publicAfter": "cd99a5ee3c07c91cd9556cba302c5bb50b4c38b3dce49aa2edc6ae57bfd52bb7",
+          "authorBefore": "6fabb856f1f5e72ddddb748c7fe9a3cf3f0f7a6e4b38179386347d702a4b0632",
+          "authorAfter": "cd99a5ee3c07c91cd9556cba302c5bb50b4c38b3dce49aa2edc6ae57bfd52bb7",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/viewer_gui_scientific_v1.tcl",
+          "publicBefore": "3ffe5ddf7ec3b55d45c119a053b10ae70b6d55d4c065c1b78d4d94036ddfeaf7",
+          "publicAfter": "5fe160b121e0c7bd54e998128f8e8dd2e5636d35237086eae09afadd5aa11d8d",
+          "authorBefore": "3ffe5ddf7ec3b55d45c119a053b10ae70b6d55d4c065c1b78d4d94036ddfeaf7",
+          "authorAfter": "5fe160b121e0c7bd54e998128f8e8dd2e5636d35237086eae09afadd5aa11d8d",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/viewer_gui_tex_v1.tcl",
+          "publicBefore": "d758c79a72775176dfaf7f20b45fdd46d73c130dde30d2679a24b7f2e95974d1",
+          "publicAfter": "67490cb06b68094808a09dd1e3cf85377c088567bc644e29df52da2a438ee1ea",
+          "authorBefore": "d758c79a72775176dfaf7f20b45fdd46d73c130dde30d2679a24b7f2e95974d1",
+          "authorAfter": "67490cb06b68094808a09dd1e3cf85377c088567bc644e29df52da2a438ee1ea",
+          "sourceExact": true
+        },
+        {
+          "path": "core/tcl/workbench_recovery_api_v1.tcl",
+          "publicBefore": "8df03aa2cded53b6c8220e6d225bf499f8c0456b9554cb9a5c9cae1758a8f2e3",
+          "publicAfter": "5742a16a35868735eb6a3e770fcfb94acc87150635bdab9e5bea5d916a3eb032",
+          "authorBefore": "8df03aa2cded53b6c8220e6d225bf499f8c0456b9554cb9a5c9cae1758a8f2e3",
+          "authorAfter": "5742a16a35868735eb6a3e770fcfb94acc87150635bdab9e5bea5d916a3eb032",
+          "sourceExact": true
+        },
+        {
+          "path": "docs/CORE_HISTORY_SERVICE_P017.md",
+          "publicBefore": null,
+          "publicAfter": "072a2df0cec694de1b392b8f2a4a69a638330fe13ed2393ac37728c16b236d84",
+          "authorBefore": null,
+          "authorAfter": "072a2df0cec694de1b392b8f2a4a69a638330fe13ed2393ac37728c16b236d84",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.3d_workbench/CHANGELOG.md",
+          "publicBefore": "6fd70f52855d5ce7dbfd1371bd033964f587379d969fffde31971be134a26c91",
+          "publicAfter": "a720cd705d8be70b91536e37eb5fd4887ffa1d2081d19bf3dfa1891f69228368",
+          "authorBefore": "b07dfa2ffd9d672ed7122187403057c9a8e24e93f6f7b541bd328b849b6bd0e6",
+          "authorAfter": "a720cd705d8be70b91536e37eb5fd4887ffa1d2081d19bf3dfa1891f69228368",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.3d_workbench/MANUAL.md",
+          "publicBefore": "7bb02273d8a3a3598a1547e633e6baa643ecb7cb593285d063492f6cea690d36",
+          "publicAfter": "2f49466c8da1c93117d5f9f2da4f136dc9e214b61b6560d484b436391d48eb2d",
+          "authorBefore": "7bb02273d8a3a3598a1547e633e6baa643ecb7cb593285d063492f6cea690d36",
+          "authorAfter": "2f49466c8da1c93117d5f9f2da4f136dc9e214b61b6560d484b436391d48eb2d",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.3d_workbench/api/workbench_3d_api_v1.tcl",
+          "publicBefore": "3bcb95be65a09c542ccdbb15547db1cfa6b1a8f1d4575bf524d446d6b3d7da1f",
+          "publicAfter": "9a5600de5c2b1eb6a2c23f20c5f684116afc6f7567579def616d0f9d8ec511ea",
+          "authorBefore": "3bcb95be65a09c542ccdbb15547db1cfa6b1a8f1d4575bf524d446d6b3d7da1f",
+          "authorAfter": "9a5600de5c2b1eb6a2c23f20c5f684116afc6f7567579def616d0f9d8ec511ea",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.3d_workbench/api/workbench_3d_extensions_recipe_v1.tcl",
+          "publicBefore": "cc0bbc66f81be5c72be79116894c3604a87aef8fe66fd9ada4fde25ef0efbd8e",
+          "publicAfter": "7abe443627896973d2aa73bdddb795e0558e8e8ce34cc61973ffdafa9b0fef90",
+          "authorBefore": "cc0bbc66f81be5c72be79116894c3604a87aef8fe66fd9ada4fde25ef0efbd8e",
+          "authorAfter": "7abe443627896973d2aa73bdddb795e0558e8e8ce34cc61973ffdafa9b0fef90",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.3d_workbench/api/workbench_3d_history_v1.tcl",
+          "publicBefore": null,
+          "publicAfter": "656824279a658b41abe5df1fc1ee00dc33442f85c464acced36bddef7bcbb7d4",
+          "authorBefore": null,
+          "authorAfter": "656824279a658b41abe5df1fc1ee00dc33442f85c464acced36bddef7bcbb7d4",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.3d_workbench/api/workbench_3d_lifecycle_v1.tcl",
+          "publicBefore": "e32895689844ed1b0b4488a20b474f284348801c6061001d8261d1e2f0d7296c",
+          "publicAfter": "0604511d614b8af0fb5b268a61fff8f8b26223136d62e16ad422b33e21cf9a1b",
+          "authorBefore": "e32895689844ed1b0b4488a20b474f284348801c6061001d8261d1e2f0d7296c",
+          "authorAfter": "0604511d614b8af0fb5b268a61fff8f8b26223136d62e16ad422b33e21cf9a1b",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.3d_workbench/api/workbench_3d_recovery_v1.tcl",
+          "publicBefore": "14c7aa37ce03c19734606a3e30cd10632b6127b20ef56a413a74563c6efad088",
+          "publicAfter": "146bd70a3799125db975281be699c8ef692cfc318ecefb2f1b37da54b6edcdcd",
+          "authorBefore": "14c7aa37ce03c19734606a3e30cd10632b6127b20ef56a413a74563c6efad088",
+          "authorAfter": "146bd70a3799125db975281be699c8ef692cfc318ecefb2f1b37da54b6edcdcd",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.3d_workbench/api/workbench_3d_structural_v1.tcl",
+          "publicBefore": "b40ae01411ae2da5b7da7d2532d18a1c7c4ece5587a4803f97d3bb26282e01d7",
+          "publicAfter": "5e6640852d195f20dd4e22cff0434c6f70e72b719129d9457d29037d84b010da",
+          "authorBefore": "b40ae01411ae2da5b7da7d2532d18a1c7c4ece5587a4803f97d3bb26282e01d7",
+          "authorAfter": "5e6640852d195f20dd4e22cff0434c6f70e72b719129d9457d29037d84b010da",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_viewer/api/curve_viewer_api_v1.tcl",
+          "publicBefore": "68efd9c12967f81679128821337b3600d8442ae40a198f46c79aac6b5bea586d",
+          "publicAfter": "c4837752094ceb624e59225d0c2f5ff502d6f29d45477e441535d596dd7f74db",
+          "authorBefore": "68efd9c12967f81679128821337b3600d8442ae40a198f46c79aac6b5bea586d",
+          "authorAfter": "c4837752094ceb624e59225d0c2f5ff502d6f29d45477e441535d596dd7f74db",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_viewer/api/curve_viewer_integrated.tcl",
+          "publicBefore": "c9afd10132f609ed2ff3038e18251923556ab0382f17b17cd0c7e2e57283b281",
+          "publicAfter": "03651eb2257f32ff20448101d316c3526b960fa83dd54a90db69869436bcdaee",
+          "authorBefore": "c9afd10132f609ed2ff3038e18251923556ab0382f17b17cd0c7e2e57283b281",
+          "authorAfter": "03651eb2257f32ff20448101d316c3526b960fa83dd54a90db69869436bcdaee",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/CHANGELOG.md",
+          "publicBefore": "63b9e55d107be58b5f9fc3799b546d413edb12a357d9273bb0c3bdbd6dfff3aa",
+          "publicAfter": "905044567c1517d22d926b008e1c91518afb48bfecc3fe38688f001e9afc4c17",
+          "authorBefore": "63b9e55d107be58b5f9fc3799b546d413edb12a357d9273bb0c3bdbd6dfff3aa",
+          "authorAfter": "905044567c1517d22d926b008e1c91518afb48bfecc3fe38688f001e9afc4c17",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/MANUAL.md",
+          "publicBefore": "5e88091f101f355fea6fe03c6d6d7b650a76cfe23a738d02b4927c6db78f3da5",
+          "publicAfter": "5b7267ad4976bd434633c6f1e78a6b057b463e0064ed73d2f1379a806dd8a858",
+          "authorBefore": "5e88091f101f355fea6fe03c6d6d7b650a76cfe23a738d02b4927c6db78f3da5",
+          "authorAfter": "5b7267ad4976bd434633c6f1e78a6b057b463e0064ed73d2f1379a806dd8a858",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/README.md",
+          "publicBefore": "9c1ac29d783b7335e3e3000adb0729c5f408d56e89ffc36b0b46fc416a681324",
+          "publicAfter": "20a542f671a83c27601a924563ec2500494fe2218d3734a5e0dfd98fcd24c050",
+          "authorBefore": "9c1ac29d783b7335e3e3000adb0729c5f408d56e89ffc36b0b46fc416a681324",
+          "authorAfter": "20a542f671a83c27601a924563ec2500494fe2218d3734a5e0dfd98fcd24c050",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_api_v1.tcl",
+          "publicBefore": "fcebeb9fc412aaed66006b289035cc677bf2b9d33a189c72790a4a389db8e0b5",
+          "publicAfter": "98e04304dc710d7ebb77293e762fadf1d6e6001b5f272e63a15b69ce23209636",
+          "authorBefore": "fcebeb9fc412aaed66006b289035cc677bf2b9d33a189c72790a4a389db8e0b5",
+          "authorAfter": "98e04304dc710d7ebb77293e762fadf1d6e6001b5f272e63a15b69ce23209636",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_cad_v2.tcl",
+          "publicBefore": "f806ac1aed7a59a0a5382cbbcace2bef6d2a9085cdfa30ebae7888b0fdad2a11",
+          "publicAfter": "65c15711475e2061f85938672f096335eb5d2bd92946ece8b7d823807c451fc0",
+          "authorBefore": "f806ac1aed7a59a0a5382cbbcace2bef6d2a9085cdfa30ebae7888b0fdad2a11",
+          "authorAfter": "65c15711475e2061f85938672f096335eb5d2bd92946ece8b7d823807c451fc0",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_collections_v1.tcl",
+          "publicBefore": "3f8f16f68f16db3d798d2ba61bf7da6b5e1661d0108b7face71d3c490471e743",
+          "publicAfter": "b5406d65af4d58d3a2062a9cb81e96aee0462831139fec5e6fd31e0d4c8c9bf6",
+          "authorBefore": "3f8f16f68f16db3d798d2ba61bf7da6b5e1661d0108b7face71d3c490471e743",
+          "authorAfter": "b5406d65af4d58d3a2062a9cb81e96aee0462831139fec5e6fd31e0d4c8c9bf6",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_commands.tcl",
+          "publicBefore": "bec3193eb452907863a97d9e6dd2dd8dbc1ea047d0897af8e2bdd88ee3fba765",
+          "publicAfter": "77d5e59d3074233774addd8a1d07d0f9679aea6975363968189aa16a44db62d1",
+          "authorBefore": "bec3193eb452907863a97d9e6dd2dd8dbc1ea047d0897af8e2bdd88ee3fba765",
+          "authorAfter": "77d5e59d3074233774addd8a1d07d0f9679aea6975363968189aa16a44db62d1",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_comparison_v1.tcl",
+          "publicBefore": "92e559a9c9b39bfee0ea173df8691371ba88dbf0a3beed0f2bd949dfb9d52a47",
+          "publicAfter": "901c30f0360af1bab0927e2a59525f15ba3f8bb3191fe29b000f7a010f3e69dc",
+          "authorBefore": "92e559a9c9b39bfee0ea173df8691371ba88dbf0a3beed0f2bd949dfb9d52a47",
+          "authorAfter": "901c30f0360af1bab0927e2a59525f15ba3f8bb3191fe29b000f7a010f3e69dc",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_constraints_v1.tcl",
+          "publicBefore": "61265e57e3414cc5a4d10e64b3a3752bd229cb9423c316ddae243579f076d710",
+          "publicAfter": "4406aa96731b0ba9c6c57b33d4f0d0622de5660053fac98d198a9d3128c5cc69",
+          "authorBefore": "61265e57e3414cc5a4d10e64b3a3752bd229cb9423c316ddae243579f076d710",
+          "authorAfter": "4406aa96731b0ba9c6c57b33d4f0d0622de5660053fac98d198a9d3128c5cc69",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_coordinate_declaration_v1.tcl",
+          "publicBefore": "14e0223bd6e71e82b3e6d3f89d4ea1e16c9835cccc1a2c79c66db992c687a85e",
+          "publicAfter": "c8132b26708c03b05758408f4909ed502e4c3c1bda34df9c1ea2b59c3ab6f371",
+          "authorBefore": "14e0223bd6e71e82b3e6d3f89d4ea1e16c9835cccc1a2c79c66db992c687a85e",
+          "authorAfter": "c8132b26708c03b05758408f4909ed502e4c3c1bda34df9c1ea2b59c3ab6f371",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_coordinate_frames_v1.tcl",
+          "publicBefore": "87fb56caa8d10f2ce376fb9243c693cdab77268b1bfbccb116df4c3375ea9590",
+          "publicAfter": "e69e154aec3c9ce3f9a487ba6b58217961e918ecc826235728f084693c83d21c",
+          "authorBefore": "87fb56caa8d10f2ce376fb9243c693cdab77268b1bfbccb116df4c3375ea9590",
+          "authorAfter": "e69e154aec3c9ce3f9a487ba6b58217961e918ecc826235728f084693c83d21c",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_datasets.tcl",
+          "publicBefore": "1a453c3e1a4202a7892913bad6932b084f51030bdb85f8134d31fa7f2632f3d8",
+          "publicAfter": "e476f4a02559aeddcd13e9c00a13874fe7b8d7313558d5ec55a1f0703a799a98",
+          "authorBefore": "1a453c3e1a4202a7892913bad6932b084f51030bdb85f8134d31fa7f2632f3d8",
+          "authorAfter": "e476f4a02559aeddcd13e9c00a13874fe7b8d7313558d5ec55a1f0703a799a98",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_extensions_v1.tcl",
+          "publicBefore": "97e26e706e97150d735122a414cd3bdfb56575d39d4ac6d10c4ac069d731b423",
+          "publicAfter": "8e2ee357fe53020bac28a0174542ffdc87b9506ec19a6df98b3c9649059f79e3",
+          "authorBefore": "97e26e706e97150d735122a414cd3bdfb56575d39d4ac6d10c4ac069d731b423",
+          "authorAfter": "8e2ee357fe53020bac28a0174542ffdc87b9506ec19a6df98b3c9649059f79e3",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_fluidity_v4.tcl",
+          "publicBefore": "373ea2ee14979f4a09b23ee1988b23051537f6177c4e9b3025b60163b80b1129",
+          "publicAfter": "1913c96007055fac3e71daa5147c38357416f02b8ca0b7d72a12cc143df1a9d7",
+          "authorBefore": "373ea2ee14979f4a09b23ee1988b23051537f6177c4e9b3025b60163b80b1129",
+          "authorAfter": "1913c96007055fac3e71daa5147c38357416f02b8ca0b7d72a12cc143df1a9d7",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_geometry_v2.tcl",
+          "publicBefore": "167491b55a1236a3c9f4e7c9ebfcc0d27f3f2b6eca644e4b0592be68079c8b4f",
+          "publicAfter": "ee023fc2baa7d2051ef1dbdf7961113eef59401c17852898ddfc7b1a1e467032",
+          "authorBefore": "167491b55a1236a3c9f4e7c9ebfcc0d27f3f2b6eca644e4b0592be68079c8b4f",
+          "authorAfter": "ee023fc2baa7d2051ef1dbdf7961113eef59401c17852898ddfc7b1a1e467032",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_history.tcl",
+          "publicBefore": "757d43fedcdee32a66bef593c81bfae9e2f5f9103996f7d998fbd428b109a357",
+          "publicAfter": "59d8813817e85a2e6af1b8f65f41a4c5c7712282258e6644475e30cfe28c2b57",
+          "authorBefore": "757d43fedcdee32a66bef593c81bfae9e2f5f9103996f7d998fbd428b109a357",
+          "authorAfter": "59d8813817e85a2e6af1b8f65f41a4c5c7712282258e6644475e30cfe28c2b57",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_identity_v1.tcl",
+          "publicBefore": "4001693736072f8f8f92d521867f99fb38a8f72264fd7e8211736c7fc7dd9de0",
+          "publicAfter": "48c5f8ab93a0ceffd331b49ece5e598276ad92b58eaf75fcbaadcebca9932069",
+          "authorBefore": "4001693736072f8f8f92d521867f99fb38a8f72264fd7e8211736c7fc7dd9de0",
+          "authorAfter": "48c5f8ab93a0ceffd331b49ece5e598276ad92b58eaf75fcbaadcebca9932069",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_interaction_v1.tcl",
+          "publicBefore": "52ebc99bb2d860cd3c9758fb4e0231d55b7af67a3cd9b1fbcb51d3674bb26283",
+          "publicAfter": "09ced940cb72570dd7f6b0b4c4112ad0f22ed0d1e97b9f888e7310bf98fc5fd9",
+          "authorBefore": "52ebc99bb2d860cd3c9758fb4e0231d55b7af67a3cd9b1fbcb51d3674bb26283",
+          "authorAfter": "09ced940cb72570dd7f6b0b4c4112ad0f22ed0d1e97b9f888e7310bf98fc5fd9",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_interaction_v2.tcl",
+          "publicBefore": "9d2cae350f023131938dac5346ac2c9e83a499d9ec47a3b44e75b7d6650c637a",
+          "publicAfter": "d43ac70f6cd57d93ddc9771bd23f8de5b5a778c454a78d2a50d1d80bb09c2267",
+          "authorBefore": "9d2cae350f023131938dac5346ac2c9e83a499d9ec47a3b44e75b7d6650c637a",
+          "authorAfter": "d43ac70f6cd57d93ddc9771bd23f8de5b5a778c454a78d2a50d1d80bb09c2267",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_lifecycle_v1.tcl",
+          "publicBefore": "a5392e7630c57e911a3785f0d2694e016539d6f940beca1d7690b266c17bb846",
+          "publicAfter": "795307f5afb6176c30301b8e0602da7ea882213abeb5713adc8ff10693162a16",
+          "authorBefore": "a5392e7630c57e911a3785f0d2694e016539d6f940beca1d7690b266c17bb846",
+          "authorAfter": "795307f5afb6176c30301b8e0602da7ea882213abeb5713adc8ff10693162a16",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_measurements_v1.tcl",
+          "publicBefore": "7a6983a9c316a2aa1d3ed0192c6d470fa7ca795e7ba58e472d580ad8f6663baa",
+          "publicAfter": "22a268fabb9cf1f4ee8cdb69c59baca2030cf3fd688b1216e5c78f84bfe46d86",
+          "authorBefore": "7a6983a9c316a2aa1d3ed0192c6d470fa7ca795e7ba58e472d580ad8f6663baa",
+          "authorAfter": "22a268fabb9cf1f4ee8cdb69c59baca2030cf3fd688b1216e5c78f84bfe46d86",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_parameters.tcl",
+          "publicBefore": "e9d2804a4734463465fc907ae286e008384425ecf1636ffe0bc03725f01ab6d1",
+          "publicAfter": "59c4a4c6ae2d13767303b827a7498dc3e716a43b1c1c0b673597525d843103f6",
+          "authorBefore": "e9d2804a4734463465fc907ae286e008384425ecf1636ffe0bc03725f01ab6d1",
+          "authorAfter": "59c4a4c6ae2d13767303b827a7498dc3e716a43b1c1c0b673597525d843103f6",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_persistence.tcl",
+          "publicBefore": "4d3ac09200c89afe2599097311ed05cbb5e0b91204e5ec4c76570d9fbcd637e0",
+          "publicAfter": "58b773ff5743fc40965ce031cab0c2c49ae6a8aaa714c71d641ffa72a74e1db3",
+          "authorBefore": "4d3ac09200c89afe2599097311ed05cbb5e0b91204e5ec4c76570d9fbcd637e0",
+          "authorAfter": "58b773ff5743fc40965ce031cab0c2c49ae6a8aaa714c71d641ffa72a74e1db3",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_planar_v1.tcl",
+          "publicBefore": "b9816af7fc224088751ffc70477ff30dd83df5f86bffac1519dadb759763c13b",
+          "publicAfter": "2f8154bdaa51fd4a9401f75c57fe7a98a0d5d62f84c0d368d5b0af1ea65eedb3",
+          "authorBefore": "b9816af7fc224088751ffc70477ff30dd83df5f86bffac1519dadb759763c13b",
+          "authorAfter": "2f8154bdaa51fd4a9401f75c57fe7a98a0d5d62f84c0d368d5b0af1ea65eedb3",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_recipe_v1.tcl",
+          "publicBefore": "bbcd460970f527705bfb862b7f5b8cc756652585e2feb9d0c3fd2c2895a4f14f",
+          "publicAfter": "c6c3b962a2bfc2d917461711b265660faef0b08195d305fba8a5faa97afe2ef0",
+          "authorBefore": "bbcd460970f527705bfb862b7f5b8cc756652585e2feb9d0c3fd2c2895a4f14f",
+          "authorAfter": "c6c3b962a2bfc2d917461711b265660faef0b08195d305fba8a5faa97afe2ef0",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_recovery_v1.tcl",
+          "publicBefore": "29ac34ee81d04bcfcfaef6477fe77e49b6aea44089bac1b5fee52c00abe4cb2e",
+          "publicAfter": "c95d63075efacb2b09d387cd9606dd1efea534b5e0106a47f495189998e12233",
+          "authorBefore": "29ac34ee81d04bcfcfaef6477fe77e49b6aea44089bac1b5fee52c00abe4cb2e",
+          "authorAfter": "c95d63075efacb2b09d387cd9606dd1efea534b5e0106a47f495189998e12233",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_representation_v4.tcl",
+          "publicBefore": "254e5f13129b297a42d4eae25ce7a4a2a311b70386d1b400e5eb3eb200e87a4e",
+          "publicAfter": "34b7db9363af3d7b4ac6d692762c58912a876fc8f39df68a9a8865280e2f5d54",
+          "authorBefore": "254e5f13129b297a42d4eae25ce7a4a2a311b70386d1b400e5eb3eb200e87a4e",
+          "authorAfter": "34b7db9363af3d7b4ac6d692762c58912a876fc8f39df68a9a8865280e2f5d54",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_roles_v1.tcl",
+          "publicBefore": "e9b8d5b7b6323df581e21c2607b3ed6dc240bf2eeaea6f6fe97d2190ed659636",
+          "publicAfter": "139a8a0e5bb7ffd6800372eec44ee9c9022ef68fff6a2ccfca904b74bf1657d7",
+          "authorBefore": "e9b8d5b7b6323df581e21c2607b3ed6dc240bf2eeaea6f6fe97d2190ed659636",
+          "authorAfter": "139a8a0e5bb7ffd6800372eec44ee9c9022ef68fff6a2ccfca904b74bf1657d7",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_series_v1.tcl",
+          "publicBefore": "70a2d2ae34f8726a4fc702f4b37e50b499c5f381e001877ab4cfa56cd1cc6b32",
+          "publicAfter": "7ea5ba4474f16788aba417e2b063f27a32fe6143b1503128cd296a9a617ad33c",
+          "authorBefore": "70a2d2ae34f8726a4fc702f4b37e50b499c5f381e001877ab4cfa56cd1cc6b32",
+          "authorAfter": "7ea5ba4474f16788aba417e2b063f27a32fe6143b1503128cd296a9a617ad33c",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_sketch_constraints_v2.tcl",
+          "publicBefore": "3e3c43d63e9962849a74264dd2a1dee46cf7557dfe6c30aed3acfb155088cf54",
+          "publicAfter": "8148736a00cd7134266ed537b436a15fd50d67ed84f861c98808f57a799ed33b",
+          "authorBefore": "3e3c43d63e9962849a74264dd2a1dee46cf7557dfe6c30aed3acfb155088cf54",
+          "authorAfter": "8148736a00cd7134266ed537b436a15fd50d67ed84f861c98808f57a799ed33b",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_sketch_v1.tcl",
+          "publicBefore": "44d5826e0caf4650afd1ba366dedba6c272a346fbd2d9ac28bd35f042d883b48",
+          "publicAfter": "5bb48d704db68e2519fc1f272e7cc4bd4823d41ecfb092347ef2f3942989128d",
+          "authorBefore": "44d5826e0caf4650afd1ba366dedba6c272a346fbd2d9ac28bd35f042d883b48",
+          "authorAfter": "5bb48d704db68e2519fc1f272e7cc4bd4823d41ecfb092347ef2f3942989128d",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_source_v2.tcl",
+          "publicBefore": "62e01f1731f38e7f22d868629fd5ab28eac55c879df5791145c2e50233792d2b",
+          "publicAfter": "f4ddbaebb42d30961bf0eafdc779e673eac0fb7a7255c443252bfb4da5e908ed",
+          "authorBefore": "62e01f1731f38e7f22d868629fd5ab28eac55c879df5791145c2e50233792d2b",
+          "authorAfter": "f4ddbaebb42d30961bf0eafdc779e673eac0fb7a7255c443252bfb4da5e908ed",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_ui.tcl",
+          "publicBefore": "62f8452a3830d56ad097e17c88423e3472df62c21da777213b24c743f62cd8bc",
+          "publicAfter": "c5d3ecddf67961a9b5fef817dc41b9d5a20b8170ee137d501e8c9e5f210157be",
+          "authorBefore": "62f8452a3830d56ad097e17c88423e3472df62c21da777213b24c743f62cd8bc",
+          "authorAfter": "c5d3ecddf67961a9b5fef817dc41b9d5a20b8170ee137d501e8c9e5f210157be",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_units_v2.tcl",
+          "publicBefore": "596c78457f2e2a07c37789da2380c21f8b95361fbbcac05877959383f84aadae",
+          "publicAfter": "653dbadc116e33d135ef30e57d4198796f1995ad7477bc59f11b641a76425206",
+          "authorBefore": "596c78457f2e2a07c37789da2380c21f8b95361fbbcac05877959383f84aadae",
+          "authorAfter": "653dbadc116e33d135ef30e57d4198796f1995ad7477bc59f11b641a76425206",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_viewport_v3.tcl",
+          "publicBefore": "fca7ad6e06b7aeba0b081a4d1145e0d310299c128b3b76d20d7dc0d9c8c03b54",
+          "publicAfter": "9b7c6cddda165b23e6f6db6f6969519de679a1e4b291c20c1e7fbdea15753acf",
+          "authorBefore": "fca7ad6e06b7aeba0b081a4d1145e0d310299c128b3b76d20d7dc0d9c8c03b54",
+          "authorAfter": "9b7c6cddda165b23e6f6db6f6969519de679a1e4b291c20c1e7fbdea15753acf",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_views_v1.tcl",
+          "publicBefore": "5a2d0eae9400bbd0626b895038828d8d332e9a8919dab782eacca6850a739211",
+          "publicAfter": "2e05d66bce8e6bfdcd4a1a2ef4f3b0da58f4859c0505ab09a491d5f8b5d89e21",
+          "authorBefore": "5a2d0eae9400bbd0626b895038828d8d332e9a8919dab782eacca6850a739211",
+          "authorAfter": "2e05d66bce8e6bfdcd4a1a2ef4f3b0da58f4859c0505ab09a491d5f8b5d89e21",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_workspace_state.tcl",
+          "publicBefore": "2eb224135d2b65b83ae852ce84af6e7a3d7ce568d4554ef2b9d7ebbc1d3e3d86",
+          "publicAfter": "438e70526c5bec7175a22d6943a2a5ec865948063eb5a06b77a9718274219b29",
+          "authorBefore": "2eb224135d2b65b83ae852ce84af6e7a3d7ce568d4554ef2b9d7ebbc1d3e3d86",
+          "authorAfter": "438e70526c5bec7175a22d6943a2a5ec865948063eb5a06b77a9718274219b29",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/docs/api/CURVE_WORKBENCH_API_v1.md",
+          "publicBefore": "563ec01032ca66b1fb3e4db1c70c8f7cfff7da67c1e100e753b769f5619c9ff1",
+          "publicAfter": "535268cca2b3e856582762091e1719aa6ff28ad46e65d994356b906284728545",
+          "authorBefore": "563ec01032ca66b1fb3e4db1c70c8f7cfff7da67c1e100e753b769f5619c9ff1",
+          "authorAfter": "535268cca2b3e856582762091e1719aa6ff28ad46e65d994356b906284728545",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/module.ini",
+          "publicBefore": "567a67364b58c905cee111bdb754bd9a6e93986f892bd94868d6fd1790921e99",
+          "publicAfter": "a1f6f8598891393be087ef967daf63c35a48eef7bb7f7a44a76d74cbda46784c",
+          "authorBefore": "567a67364b58c905cee111bdb754bd9a6e93986f892bd94868d6fd1790921e99",
+          "authorAfter": "a1f6f8598891393be087ef967daf63c35a48eef7bb7f7a44a76d74cbda46784c",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/plugin-package.ini",
+          "publicBefore": "6b3f0eb38c3001ddbfa47f17286432f6cc59cebee9b8da5447c05be45eb81ae2",
+          "publicAfter": "c7843267e5e0ee1b82035518642906735c133d3fe5a392aeabb92791fee90403",
+          "authorBefore": "6b3f0eb38c3001ddbfa47f17286432f6cc59cebee9b8da5447c05be45eb81ae2",
+          "authorAfter": "c7843267e5e0ee1b82035518642906735c133d3fe5a392aeabb92791fee90403",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.dataset_curve_fit/api/curve_fit_history.tcl",
+          "publicBefore": "45797fa246aefa7a16a198ac262ae8fafcdd45f2025b651e12ee942d597872b8",
+          "publicAfter": "ccfd118359c1b222c45c14bc099726560e74123ac7db73ab1124645800dfaf5e",
+          "authorBefore": "45797fa246aefa7a16a198ac262ae8fafcdd45f2025b651e12ee942d597872b8",
+          "authorAfter": "ccfd118359c1b222c45c14bc099726560e74123ac7db73ab1124645800dfaf5e",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.dataset_curve_fit/api/curve_fit_workspace_v2.tcl",
+          "publicBefore": "4e0f45c294e7a1473ad9ff74bcc26cce68fb174860cbf6fc070ad84d3120d04d",
+          "publicAfter": "9f81ca3c43d26f2bc380412e6bf1c6a01c992147a22f606ded7dbe42dc501a1a",
+          "authorBefore": "4e0f45c294e7a1473ad9ff74bcc26cce68fb174860cbf6fc070ad84d3120d04d",
+          "authorAfter": "9f81ca3c43d26f2bc380412e6bf1c6a01c992147a22f606ded7dbe42dc501a1a",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.dataset_curve_fit/api/dataset_curve_fit_api_v1.tcl",
+          "publicBefore": "e0c0249f2639408d716a62daf55e24b6931c23993dfbe4e961cfab355a7adae2",
+          "publicAfter": "fe48a867df47151a6648da3843d18b4c2989516ba0a63718c0ab60cd3f051c41",
+          "authorBefore": "e0c0249f2639408d716a62daf55e24b6931c23993dfbe4e961cfab355a7adae2",
+          "authorAfter": "fe48a867df47151a6648da3843d18b4c2989516ba0a63718c0ab60cd3f051c41",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.replicate_curve_analysis/api/replicate_viewer.tcl",
+          "publicBefore": "b67da25f5fc98bbbb775c9aba127fcca7f33db8416f0663b94ed8bbf2c4e70f2",
+          "publicAfter": "c78d31920a8edb6d3cad2cb0e974159a008517e7a7d49741f7b151de1f57032f",
+          "authorBefore": "b67da25f5fc98bbbb775c9aba127fcca7f33db8416f0663b94ed8bbf2c4e70f2",
+          "authorAfter": "c78d31920a8edb6d3cad2cb0e974159a008517e7a7d49741f7b151de1f57032f",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.scientific_image_inspector/CHANGELOG.md",
+          "publicBefore": "11f5f038efd20d37d471cc5f27f27930a56077d8aa7bbfe78b7473903884abeb",
+          "publicAfter": "7c7f30c81e54e4af60ca392f4d6089d2edd26f6d1ecb0fad6ecc005cdc5b6994",
+          "authorBefore": "312bd4f08d06a122649e50e5cc28a8818754383588311f2380baa15237d676b9",
+          "authorAfter": "7c7f30c81e54e4af60ca392f4d6089d2edd26f6d1ecb0fad6ecc005cdc5b6994",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.scientific_image_inspector/MANUAL.md",
+          "publicBefore": "c74e6995d1f616e0ad242a9cc12cd4eabf3f32a503a4a7d45226607c17b81b6c",
+          "publicAfter": "82359ee5083bcb2a5f5abd419c7066835ea5707453fe817dd9b8f30d559fd785",
+          "authorBefore": "c74e6995d1f616e0ad242a9cc12cd4eabf3f32a503a4a7d45226607c17b81b6c",
+          "authorAfter": "82359ee5083bcb2a5f5abd419c7066835ea5707453fe817dd9b8f30d559fd785",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.scientific_image_inspector/README.md",
+          "publicBefore": "ad6c393ac762b59e8df4ef2ada309dacebf3f21e58eec27ad786acc889bcda80",
+          "publicAfter": "64c9ac24748cf0b8a97acfdca973e6516e90707160c66d2e4094ef036cad62fb",
+          "authorBefore": "ad6c393ac762b59e8df4ef2ada309dacebf3f21e58eec27ad786acc889bcda80",
+          "authorAfter": "64c9ac24748cf0b8a97acfdca973e6516e90707160c66d2e4094ef036cad62fb",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.scientific_image_inspector/api/workspace_provider.tcl",
+          "publicBefore": "fa7ab6708627d9bddd80baf95b88c1bf4c184c1858b9208e0e8f55c1ad5ac6b1",
+          "publicAfter": "d73eb3cdcb0322b170249656757b1d3b1f54dd1f7b81e73c62a71cd02e3b7eab",
+          "authorBefore": "fa7ab6708627d9bddd80baf95b88c1bf4c184c1858b9208e0e8f55c1ad5ac6b1",
+          "authorAfter": "d73eb3cdcb0322b170249656757b1d3b1f54dd1f7b81e73c62a71cd02e3b7eab",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.scientific_image_inspector/docs/API.md",
+          "publicBefore": "2c81f02b71b372af448cda054f384e8072371150a1c8a5579216ff95654e9b53",
+          "publicAfter": "babc0bbd8b2b33be835115134950fba6984dbc87f72c816ad8dcf8f29a2de883",
+          "authorBefore": "2c81f02b71b372af448cda054f384e8072371150a1c8a5579216ff95654e9b53",
+          "authorAfter": "babc0bbd8b2b33be835115134950fba6984dbc87f72c816ad8dcf8f29a2de883",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.scientific_image_inspector/runtime/article_gui.tcl",
+          "publicBefore": "ff6d416c3e13557e0c8326378074dae7724bb2b6dccfc217204485c110940b50",
+          "publicAfter": "ec2ffd2d00f82196ca0bc902a139be282371228d4b914404f92bca30b7c2c3c5",
+          "authorBefore": "ff6d416c3e13557e0c8326378074dae7724bb2b6dccfc217204485c110940b50",
+          "authorAfter": "ec2ffd2d00f82196ca0bc902a139be282371228d4b914404f92bca30b7c2c3c5",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.scientific_image_inspector/runtime/editor_controls.tcl",
+          "publicBefore": "a04a7f0aae883b3a1792ec0fedc36494eea17f52bd220c3505a784970379cb01",
+          "publicAfter": "781fef63e51c2862d5361cc77581ebb038ee9056495401f134bd3388d3839535",
+          "authorBefore": "a04a7f0aae883b3a1792ec0fedc36494eea17f52bd220c3505a784970379cb01",
+          "authorAfter": "781fef63e51c2862d5361cc77581ebb038ee9056495401f134bd3388d3839535",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.scientific_image_inspector/runtime/gui.tcl",
+          "publicBefore": "f400a3d06b14299fcd4a47f591a590e7003fff29bb35b64e5e70f874bc9d23e1",
+          "publicAfter": "bdbedc214ac82094d3373998e451306a0c54424d161606aaf04b3a54f84b5697",
+          "authorBefore": "f400a3d06b14299fcd4a47f591a590e7003fff29bb35b64e5e70f874bc9d23e1",
+          "authorAfter": "bdbedc214ac82094d3373998e451306a0c54424d161606aaf04b3a54f84b5697",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.scientific_image_inspector/runtime/history_strip.tcl",
+          "publicBefore": "9e32fa152f42629d8f2ac21027a8837814bedb57b1bdedd07f701d8d029b4d44",
+          "publicAfter": "d97ba832552ba0d6821b08fb61257a88d89645d7378dc7b39c7c432ac391c824",
+          "authorBefore": "9e32fa152f42629d8f2ac21027a8837814bedb57b1bdedd07f701d8d029b4d44",
+          "authorAfter": "d97ba832552ba0d6821b08fb61257a88d89645d7378dc7b39c7c432ac391c824",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.scientific_worksheet/ui/worksheet_ux_v3.tcl",
+          "publicBefore": "f353b842d2a8162d446d712655cf7f4b79f32207189ce6dd16b958f0eb52b3c1",
+          "publicAfter": "7f2f9133cc9f5e74db689dba4ab08be803433f04578d697ac55121f55fe40966",
+          "authorBefore": "f353b842d2a8162d446d712655cf7f4b79f32207189ce6dd16b958f0eb52b3c1",
+          "authorAfter": "7f2f9133cc9f5e74db689dba4ab08be803433f04578d697ac55121f55fe40966",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.3d_workbench/SHA256SUMS",
+          "publicBefore": "e2d18211d536d8125d7efe2efb2dd03fe6ce58d55dc35c6b7c9195289829c134",
+          "publicAfter": "de1688ff30ded3246e721fbcc4f4d943cb2df87095590a848cb112b2786f5481",
+          "authorBefore": "693318065bdb6e30704e307d823b4e0dac3a6418c3417e449ac5d3c2654e4833",
+          "authorAfter": "de1688ff30ded3246e721fbcc4f4d943cb2df87095590a848cb112b2786f5481",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.3d_workbench/SHA256SUMS.txt",
+          "publicBefore": "e2d18211d536d8125d7efe2efb2dd03fe6ce58d55dc35c6b7c9195289829c134",
+          "publicAfter": "de1688ff30ded3246e721fbcc4f4d943cb2df87095590a848cb112b2786f5481",
+          "authorBefore": "693318065bdb6e30704e307d823b4e0dac3a6418c3417e449ac5d3c2654e4833",
+          "authorAfter": "de1688ff30ded3246e721fbcc4f4d943cb2df87095590a848cb112b2786f5481",
+          "sourceExact": true
+        },
+        {
+          "path": "plugins/modules/viewer.curve_viewer/SHA256SUMS",
+          "publicBefore": "b821db115609f34f651c98891b4edbb080a491291e58373b977646b2870b9807",
+          "publicAfter": "1af713673c53ccbd560f528b942c3fd5b301d33e5686b78dc9bc284f02cf45a3",
+          "authorBefore": "4d7928999cf76ad22d6853dc516006abf06b0fca6fe88c0b8bb3a0138809ecae",
+          "authorAfter": "8f9eaca73678d8f15ec81f64f12ddd9145db6a9b9b08be929d44be60829790ed",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.curve_viewer/SHA256SUMS.txt",
+          "publicBefore": "b821db115609f34f651c98891b4edbb080a491291e58373b977646b2870b9807",
+          "publicAfter": "1af713673c53ccbd560f528b942c3fd5b301d33e5686b78dc9bc284f02cf45a3",
+          "authorBefore": "4d7928999cf76ad22d6853dc516006abf06b0fca6fe88c0b8bb3a0138809ecae",
+          "authorAfter": "8f9eaca73678d8f15ec81f64f12ddd9145db6a9b9b08be929d44be60829790ed",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+          "publicBefore": "8a672581d9e95b25ab1e8c9a5b0192e8ea2e5a79be7e8c0ff8d39df533de6748",
+          "publicAfter": "094cbe0b865d817e73bf2cf3cfb82ad239f5087dc18465abf8fa0d437d6f7ad4",
+          "authorBefore": "b345d362467b50538cccc98c60ac7842a4ac286793b8f9ba52812a1493965c96",
+          "authorAfter": "33535bb9ba5d19159a76bd2c55d407385eea161b0cdd35dcac10c5068b1f567e",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+          "publicBefore": "8a672581d9e95b25ab1e8c9a5b0192e8ea2e5a79be7e8c0ff8d39df533de6748",
+          "publicAfter": "094cbe0b865d817e73bf2cf3cfb82ad239f5087dc18465abf8fa0d437d6f7ad4",
+          "authorBefore": "b345d362467b50538cccc98c60ac7842a4ac286793b8f9ba52812a1493965c96",
+          "authorAfter": "33535bb9ba5d19159a76bd2c55d407385eea161b0cdd35dcac10c5068b1f567e",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.dataset_curve_fit/SHA256SUMS",
+          "publicBefore": "9849ea74da6df841dcb3a4bb03f3a52b78deecae2bc13eec1eacaccc73e55c9d",
+          "publicAfter": "09acb99c9e948e21ae5d40b4aa292f70146a0de5332029756ddf509bf21a58b1",
+          "authorBefore": "2d85351a410c150ccfa7ad407860faa498d3d8427fef72092592364732ffc373",
+          "authorAfter": "2881d98410cf791278f8eb3477f2d4085f2a7d72459f6473149f355ef7adc37f",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.dataset_curve_fit/SHA256SUMS.txt",
+          "publicBefore": "9849ea74da6df841dcb3a4bb03f3a52b78deecae2bc13eec1eacaccc73e55c9d",
+          "publicAfter": "09acb99c9e948e21ae5d40b4aa292f70146a0de5332029756ddf509bf21a58b1",
+          "authorBefore": "2d85351a410c150ccfa7ad407860faa498d3d8427fef72092592364732ffc373",
+          "authorAfter": "2881d98410cf791278f8eb3477f2d4085f2a7d72459f6473149f355ef7adc37f",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.replicate_curve_analysis/SHA256SUMS.txt",
+          "publicBefore": "5931b42b8dae8437b2b3e3ddd8c8febaa8148c9797ffdaafb9072e45e156dc73",
+          "publicAfter": "3ff81f4576442daf1d26ab5979a3613016e85dc046db7773d539521738088272",
+          "authorBefore": "e115203c692c44b39f9a0f275cce4e2f9f111b7553af1d4214109c5c9e10d2b0",
+          "authorAfter": "9036d3c32b5c2b42dc2321a8995aeb23fad6eac253dbdfd84aa523c10dd022a7",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.scientific_image_inspector/SHA256SUMS.txt",
+          "publicBefore": "8742bf3e5c08c511cc8705928acba903fcda5aed181590a3722c446ed2bc191f",
+          "publicAfter": "4715195f6e05e311ef395d4a019cf5ca696c30ae9a4ef0679c4058c3f65e2a32",
+          "authorBefore": "37bcc7504d6086930358a3de5cb5a9aa208b9389f3d87b6cb9ea495cade37b01",
+          "authorAfter": "5ba0f886fcac410475958721bdb191cf1602bc9e9dc01583abeeff0c3e12444f",
+          "sourceExact": false
+        },
+        {
+          "path": "plugins/modules/viewer.scientific_worksheet/SHA256SUMS.txt",
+          "publicBefore": "d12d64d1f13121faab805a5e86607144e708efff8865536e6758ad75948ef798",
+          "publicAfter": "47653eb32ded3d44642b322d10d92ba30d26958f237afb1007c10ca159216f60",
+          "authorBefore": "20b85098b4b1cc5d989e33573b2d24888da6b8b64db04050460c9fdcdfc91898",
+          "authorAfter": "b516879973ea1425e5233322ccb171304d88f9e11fc42d41df41d940ea0f2651",
+          "sourceExact": false
+        }
+      ],
+      "originalChangedFiles": 166,
+      "excludedPrivateFiles": 60,
+      "omittedPrivateCount": 60
+    }
+  ],
+  "selectedPortableSourceTests": [
+    {
+      "patch": "P016",
+      "path": "validation/official_dev111_patches/p016/cad.tcl",
+      "originalArchiveMember": "patch_notes/DEV111-P016/evidence/cad.tcl",
+      "bytes": 4205,
+      "sha256": "32d960459ba2d7b3efee110a2b47215ffb933e8de63a0d180fe8cfdb2fe6c695",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P016",
+      "path": "validation/official_dev111_patches/p016/native.tcl",
+      "originalArchiveMember": "patch_notes/DEV111-P016/evidence/native.tcl",
+      "bytes": 8047,
+      "sha256": "ea4181b08167ba2c8d656982278e41f65b86ad19b4de331ebc5c7fc1ec274b65",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/builder/gui.tcl",
+      "originalArchiveMember": "validation/dev111_p017/builder/gui.tcl",
+      "bytes": 16522,
+      "sha256": "44d37601af10fec7b0ffc9532db7935976a116fde0e2ee6a542fdb4010b70f29",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/core.tcl",
+      "originalArchiveMember": "validation/dev111_p017/core.tcl",
+      "bytes": 18158,
+      "sha256": "018c1bfa7097ed4ee02db07b79db865fede6951ce8fc8830c569739550e7fe09",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/curve/contract.tcl",
+      "originalArchiveMember": "validation/dev111_p017/curve/contract.tcl",
+      "bytes": 18314,
+      "sha256": "b81f879c69c4b9309223ea34cdfc6647fa82c12319190cf1c8dcfb0c53392158",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/curve/gui.tcl",
+      "originalArchiveMember": "validation/dev111_p017/curve/gui.tcl",
+      "bytes": 18372,
+      "sha256": "ce1c2a3ea5a9621e5a293e8dc300c30253f80f1189ba1a88d32b1af27af34ca1",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/deposit.py",
+      "originalArchiveMember": "validation/dev111_p017/deposit.py",
+      "bytes": 2070,
+      "sha256": "65aa69e7c222dd10b34a8f026173a4aafeb81838a73d86169a12f6b9f891f263",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/manual/auxiliary.tcl",
+      "originalArchiveMember": "validation/dev111_p017/manual/auxiliary.tcl",
+      "bytes": 14856,
+      "sha256": "3360a41ec9bbae084c27b6785e58f3128e6728d103f62ae5dd994fc77564b932",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/manual/common.tcl",
+      "originalArchiveMember": "validation/dev111_p017/manual/common.tcl",
+      "bytes": 5678,
+      "sha256": "2727a33a031390b1d20a9647a9d54e0e0020c38a77dc289821db86609bf66b12",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/manual/contexts.tcl",
+      "originalArchiveMember": "validation/dev111_p017/manual/contexts.tcl",
+      "bytes": 16827,
+      "sha256": "d47c49c2984f71c5fc0838b96ae5598bef8cc59ca5d136a7fb4de9a58f2ed17b",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/manual/curve.tcl",
+      "originalArchiveMember": "validation/dev111_p017/manual/curve.tcl",
+      "bytes": 4527,
+      "sha256": "fbc8711711cc444d2efa7e499fe7f07e9fe308d568a8c06aef7b3c999fe2eec3",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/manual/fit.tcl",
+      "originalArchiveMember": "validation/dev111_p017/manual/fit.tcl",
+      "bytes": 2974,
+      "sha256": "c2f585268ba938f3d5bbabe7aadb4e4c3dd61cdbb586d59915089a9a1c56f671",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/manual/gui.tcl",
+      "originalArchiveMember": "validation/dev111_p017/manual/gui.tcl",
+      "bytes": 3002,
+      "sha256": "617fdfadbec00fb8a38ab92df70faede64978998e62243eb5baa20155ee8e02a",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/manual/replicate.tcl",
+      "originalArchiveMember": "validation/dev111_p017/manual/replicate.tcl",
+      "bytes": 2932,
+      "sha256": "04e49c0fa0c7b966efcaeb2e0db13627d34fe3d7f9d7781b20d1a95d0b3d7779",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/manual/worksheet.tcl",
+      "originalArchiveMember": "validation/dev111_p017/manual/worksheet.tcl",
+      "bytes": 4096,
+      "sha256": "e2b5ef4bba1fabe7b05aba69f0d0e1e6e07ce1c6e64db33a8cdb69d24446d174",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/native/auxiliary.tcl",
+      "originalArchiveMember": "validation/dev111_p017/native/auxiliary.tcl",
+      "bytes": 14574,
+      "sha256": "406b1631c742685d5b278dc686fa0994a540c7f39e0c20ea221a950863d9c50b",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/native/contract.tcl",
+      "originalArchiveMember": "validation/dev111_p017/native/contract.tcl",
+      "bytes": 15655,
+      "sha256": "b3288f8646a5f1ac1169703f36cef333c77e0fc4094f930da9a8a18afd8a53bb",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/native/exit_writer.tcl",
+      "originalArchiveMember": "validation/dev111_p017/native/exit_writer.tcl",
+      "bytes": 747,
+      "sha256": "b4faff9d34f8b5b81be1a5e93c4b8e75e989ed4c3643cea009e90e8fc39cf537",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/native/frame_fixture.py",
+      "originalArchiveMember": "validation/dev111_p017/native/frame_fixture.py",
+      "bytes": 988,
+      "sha256": "fb24902d60cc2f5551a1c43621901e06f0155a1c1e923e33d0d00d2dd02e688d",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/native/interruption_writer.tcl",
+      "originalArchiveMember": "validation/dev111_p017/native/interruption_writer.tcl",
+      "bytes": 1081,
+      "sha256": "5ed97153fd822dd26b8c491971f19838e2082adf1031eaac1962539cb14c8238",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/package.py",
+      "originalArchiveMember": "validation/dev111_p017/package.py",
+      "bytes": 5342,
+      "sha256": "061ffd54890451f18c30e675042b21de7698eac4dec63b77b6f2327d5ed439a0",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/portable/contract.tcl",
+      "originalArchiveMember": "validation/dev111_p017/portable/contract.tcl",
+      "bytes": 13605,
+      "sha256": "7aba96677c7ee69de61ab99d1aaa235747d13cfbd9f9047de6795cce31dc9d55",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/portable/lock_holder.py",
+      "originalArchiveMember": "validation/dev111_p017/portable/lock_holder.py",
+      "bytes": 295,
+      "sha256": "d5e83d9d0c3a6e95eca04c70997251d3ffa1ef03bd355050da808738b1cea930",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/portable/mutate_package.py",
+      "originalArchiveMember": "validation/dev111_p017/portable/mutate_package.py",
+      "bytes": 1331,
+      "sha256": "a132443f2564948c2f02af778265487b2a7de071304dacc0d2451667c2dce59d",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/profile/curve_profile.tcl",
+      "originalArchiveMember": "validation/dev111_p017/profile/curve_profile.tcl",
+      "bytes": 5797,
+      "sha256": "336067975b34cadcfc0249d239b56a789e7b4700c8e7900e9d90ccac2161921c",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/profile/history_profile.tcl",
+      "originalArchiveMember": "validation/dev111_p017/profile/history_profile.tcl",
+      "bytes": 5082,
+      "sha256": "389a55b06a24fe7e663e50284f64c376b75388768b51a442b0fbb2cd8150ef51",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/profile/summarize.py",
+      "originalArchiveMember": "validation/dev111_p017/profile/summarize.py",
+      "bytes": 4382,
+      "sha256": "0b73d831302e1c7664f28a7838d8894ef85cfc57772c77e41cb6a10a16483683",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/sii/gui.tcl",
+      "originalArchiveMember": "validation/dev111_p017/sii/gui.tcl",
+      "bytes": 20882,
+      "sha256": "f4aecb8ec232ab511130561528df15da2cebcb3e9da43567bdf6d23d914bafc3",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/sii/syntax.tcl",
+      "originalArchiveMember": "validation/dev111_p017/sii/syntax.tcl",
+      "bytes": 150,
+      "sha256": "abae997baef5ae519573d99caecf66d63a8102878397665b98e34f6b1d8a51e6",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/three_d/contract.tcl",
+      "originalArchiveMember": "validation/dev111_p017/three_d/contract.tcl",
+      "bytes": 10642,
+      "sha256": "775f1e6da3acf7e49a13ee0c4c68f7692ee03374d9041991c56ec37305094915",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "patch": "P017",
+      "path": "validation/official_dev111_patches/p017/three_d/gui.tcl",
+      "originalArchiveMember": "validation/dev111_p017/three_d/gui.tcl",
+      "bytes": 10533,
+      "sha256": "28b971c64ffa6d589434b64aea77bfa7a7db134a3feefe0b1221840050d11263",
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    }
+  ],
+  "privacyRule": "Original evidence, SCRIPT_CATALOG, HANDOFF and private host-specific fixtures excluded; original archives preserved privately.",
+  "knownRuntimeFollowup": "Fresh Linux native History and P017 Curve Workbench GUI functional runs require compatible scientific Sessions.",
+  "p017MilestoneStatus": "ONE_OF_SEVERAL_MILESTONES_NOT_FINAL"
+}

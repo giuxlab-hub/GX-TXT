@@ -240,3 +240,18 @@ The original P005 corrected ZIP contains exactly CMakeLists.txt, gxpreviewprovid
 | P005 native continuity | P005 Linux x86_64 ELF64, CMake and worker, seven preserved C++ sources; P006 leaves binary/worker/build unchanged | Real module-admitted native Preview, Session source identity, fallback/close on Debian |
 
 The P006 deposit contains TEST_RESULTS.md but no new portable executable test fixture to publish; no new real GUI acceptance is claimed by this source-checking branch.
+
+## DEV111 P007–P017 — cumulative scientific validation sources
+
+| Patch group | Source/package checks now available | Independent live testing remains distinct |
+| --- | --- | --- |
+| P007–P011 | Exact cumulative Curve Workbench panel/History/tooltip/comparison/transformation source hashes, Git tags, published ZIPs | Real GUI interactions, Session changes, controls and Undo/Redo |
+| P012–P014 | Scheduler and Native2D source/API/binary hashes and dependency order | Controlled X11 redraw and scientific curve comparisons |
+| P015 | Sprite/Cairo native source and gx2dtcl.so SHA, original scientific contract | Performance/raster/tooltip user scenarios on compatible native display |
+| P016 | CAD/direct native presentation source and binary; 2 original test source scripts | Native object context and selected scientific editing with real Session |
+| P017 | Native CORE History ELF64 x86-64 and owner source, 29 original source-only test scripts; Curve Workbench History and other scientific consumers | Real native History journals/recovery/checkpoints, Curve Workbench operation/editing, portable Sessions and visual GUI acceptance |
+
+The 31 new source-only scripts preserve their original author bytes. Some original P017 validation and developer documents include private paths and are deliberately withheld. The scripts are not an auto-run suite and the presence of test sources is not a claim of a new PASS on an independent Debian installation.
+
+The P017 step represents an important **intermediate milestone among several**, rather than a final architecture freeze. Real statistical/scientific and performance checks remain governed by separately controlled acceptance environments.
+

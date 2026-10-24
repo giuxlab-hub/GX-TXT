@@ -320,15 +320,23 @@ def verify(announce=True):
     if len(patch_sources) != 7:
         raise ValueError("Wrong DEV111 patch fixture source count")
 
+    # DEV111 P016/P017 original owner test scripts are source-only and are
+    # independently checksum-bound to the P007–P017 patch manifest.
+    from validate_dev111_p007_p017 import load as _load_p017_sources
+    dev111_p017 = _load_p017_sources()
+    patch_p017_sources = {item["path"] for item in dev111_p017["selectedPortableSourceTests"]}
+    if len(patch_p017_sources) != 31:
+        raise ValueError("P016/P017 original source-only test inventory incomplete")
+
     for candidate in (ROOT / "validation").rglob("*"):
         if candidate.is_symlink():
             raise ValueError("Unexpected symlink: " + str(candidate))
-        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer | recent | recent106 | recent107 | recent108 | recent109 | recent110 | recent111 | patch_sources):
+        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer | recent | recent106 | recent107 | recent108 | recent109 | recent110 | recent111 | patch_sources | patch_p017_sources):
             raise ValueError("Unreviewed file inside validation tree: " + str(candidate))
     if not (ROOT / "LICENSE").is_file():
         raise ValueError("GPL license missing")
     if announce:
-        print("PASS: 136 original validation sources through dev-111 r3 and the DEV111 P001–P004 maintenance fixture set; SHA-256 verified.")
+        print("PASS: 167 original validation sources through dev-111 P017, including 31 curated P016/P017 cases; SHA-256 verified.")
         print("PASS: reviewed public inputs only, no private test PDFs or deployment scripts.")
         print("Runtime scientific/GUI tests: NOT RUN by source verification.")
     return info
