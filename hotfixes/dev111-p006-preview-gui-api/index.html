@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="P006 lets Preview modules add optional GUI panes through the existing host-owned controls, icons and Plot v4 display services.">
+  <title>GX-TXT dev-111 r3 — Optional Preview GUI API with shared icons</title>
+  <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p006-preview-gui-api/">
+  <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p006-preview-gui-api/">
+  <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p006-preview-gui-api/">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <link rel="stylesheet" href="../../assets/hotfixes.css">
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header><div class="wrap header">
+    <a class="brand" href="../../" aria-label="GX-TXT"><span class="logo" aria-hidden="true">GX</span><span><strong>GX-TXT</strong><small>Scientific workbench</small></span></a>
+    <nav><a href="../../releases/#dev-111">Releases</a><a href="https://github.com/giuxlab-hub/GX-TXT">GitHub ↗</a></nav>
+    <div class="lang"><a href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p006-preview-gui-api/">EN</a> / <a href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p006-preview-gui-api/">IT</a></div>
+  </div></header>
+  <main id="main">
+    <section class="wrap hotfix-hero">
+      <div class="tag">Patch available</div>
+      <h1>Optional Preview GUI API with shared icons</h1>
+      <p class="lead">P006 lets Preview modules add optional GUI panes through the existing host-owned controls, icons and Plot v4 display services.</p>
+      
+      <p>Close GX-TXT and back up the original files. Check the SHA-256 prerequisites and unpack DEV111-P006-PUBLIC.zip into the exact framework root. The package changes 16 paths, including two new API documents/source files. Restore previous files from backup and remove the two new API files to roll back.</p>
+      <ul class="hotfix-list"><li>Add optional kind=gui Preview descriptors and the guiMount / guiDispose lifecycle callbacks.</li><li>Reuse shared UI Field widgets, stock icons, tooltips, hover/disabled/selected states and sizing.</li><li>Allow hosted Preview panes, standard panel controls and Plot v4 viewport chrome without creating a new scientific scene.</li><li>Retain the existing managed worker, native provider admission, Dataset/Session source identity and CORE fallback.</li></ul>
+      <p>For GX-TXT dev-111 revision r3, after P001-r2, P002, P003, P004 and the corrected P005. Compatible Linux environment required.</p>
+      <div class="buttons">
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p006/DEV111-P006-PUBLIC.zip">Download patch ↓</a>
+        
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/blob/5a586abb20b6a43dea72ef5958df5f0fdaddf09e/patches/dev111/DEV111-P006/README.md">Installation and rollback ↗</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p006">GitHub ↗</a>
+      </div>
+      <p class="hotfix-digest">DEV111-P006-PUBLIC.zip SHA-256: <code>8d064bc0eb24c86754f308f103988ddeb533d5363dfbfcdad91e8cb90c5d87b2</code></p>
+    </section>
+  </main>
+  <footer><div class="wrap"><p>GX-TXT — Giux-Lab · GNU GPL-3.0-or-later</p></div></footer>
+</body>
+</html>

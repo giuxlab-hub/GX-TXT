@@ -2,6 +2,51 @@
   "schema": "gxtxt.pages.hotfix-registry/1",
   "entries": [
     {
+      "id": "dev111-p006-preview-gui-api",
+      "source_folder": "DEV111-P006",
+      "doc_name": "README.md",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "5a586abb20b6a43dea72ef5958df5f0fdaddf09e",
+      "tag": "v0.9.8.10-dev-111-p006",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p006",
+      "asset_name": "DEV111-P006-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p006/DEV111-P006-PUBLIC.zip",
+      "asset_sha256": "8d064bc0eb24c86754f308f103988ddeb533d5363dfbfcdad91e8cb90c5d87b2",
+      "asset_bytes": 151410,
+      "required_predecessor_patch": 5,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "en": {
+        "label": "DEV111-P006 — Preview GUI API",
+        "title": "Optional Preview GUI API with shared icons",
+        "intro": "P006 lets Preview modules add optional GUI panes through the existing host-owned controls, icons and Plot v4 display services.",
+        "changes": [
+          "Add optional kind=gui Preview descriptors and the guiMount / guiDispose lifecycle callbacks.",
+          "Reuse shared UI Field widgets, stock icons, tooltips, hover/disabled/selected states and sizing.",
+          "Allow hosted Preview panes, standard panel controls and Plot v4 viewport chrome without creating a new scientific scene.",
+          "Retain the existing managed worker, native provider admission, Dataset/Session source identity and CORE fallback."
+        ],
+        "requirement": "For GX-TXT dev-111 revision r3, after P001-r2, P002, P003, P004 and the corrected P005. Compatible Linux environment required.",
+        "details": "Close GX-TXT and back up the original files. Check the SHA-256 prerequisites and unpack DEV111-P006-PUBLIC.zip into the exact framework root. The package changes 16 paths, including two new API documents/source files. Restore previous files from backup and remove the two new API files to roll back."
+      },
+      "it": {
+        "label": "DEV111-P006 — API GUI Preview",
+        "title": "API GUI Preview opzionale con icone condivise",
+        "intro": "La P006 permette ai moduli Preview di aggiungere pannelli grafici opzionali usando controlli host, icone e servizi Plot v4 già esistenti.",
+        "changes": [
+          "Aggiunge descrittori Preview opzionali kind=gui e callback del ciclo di vita guiMount / guiDispose.",
+          "Riutilizza widget UI Field, icone condivise, tooltip e stati hover/disabilitato/selezionato con dimensioni gestite.",
+          "Aggiunge pannelli Preview e cornici ViewportHost con Plot v4 senza generare nuove scene scientifiche.",
+          "Mantiene worker gestito, ammissione provider nativi, identità Dataset/Session e fallback CORE."
+        ],
+        "requirement": "Per GX-TXT dev-111 revisione r3 dopo P001-r2, P002, P003, P004 e P005 corretta; richiede ambiente Linux compatibile.",
+        "details": "Chiudere GX-TXT e conservare il backup. Verificare gli SHA-256 prerequisiti ed estrarre DEV111-P006-PUBLIC.zip nella radice del framework. La patch aggiorna 16 percorsi, inclusi due nuovi file API. Per ripristinare recuperare i file precedenti dal backup e rimuovere le due nuove API."
+      }
+    },
+    {
       "id": "dev111-p005-native-preview-activation",
       "source_folder": "DEV111-P005",
       "doc_name": "README.md",
