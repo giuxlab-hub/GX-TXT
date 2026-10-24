@@ -99,6 +99,7 @@ proc ::GX::datasetPreviewLiveDestroyed {expected actual} {
 proc ::GX::datasetPreviewLiveRelease {{restore 1}} {
     variable ::GX::PreviewLive::active;variable ::GX::PreviewLive::epoch
     incr epoch
+    datasetPreviewGuiRelease
     if {[dict exists $active key]} {datasetPreviewCacheCancel [dict get $active key]}
     if {[dict exists $active subscription]} {datasetCatalogUnsubscribe [dict get $active subscription]}
     if {[info exists ::GX::ui(previewCacheWatch)]} {after cancel $::GX::ui(previewCacheWatch);unset ::GX::ui(previewCacheWatch)}
@@ -151,6 +152,7 @@ proc ::GX::datasetPreviewLiveWatchStamp {} {
 }
 proc ::GX::datasetPreviewLiveCheck {{force 0}} {
     variable ::GX::PreviewLive::active
+    datasetPreviewGuiRefresh
     if {![dict exists $active rendered_key] || ![winfo exists .top.nb.preview.live]} return
     if {[catch {interactiveDocumentSessionToken} reason]} {
         datasetPreviewLiveSetStatus "Previous render — $reason Reopen the Session to refresh."
@@ -582,7 +584,14 @@ proc ::GX::datasetPreviewLiveExtensionTabs {id representation} {
         set pane $notebook.extension[incr ordinal]
         ttk::frame $pane
         set paneId [winfo id $pane]
-        set failed [catch {set rendered [previewDescriptorTabRender $pane $tab $representation]} reason]
+        set failed [catch {
+            if {[dict get $tab kind] eq {gui}} {
+                set plot $notebook.plot.retainedXY
+                if {![winfo exists $plot]} {set plot {}}
+                _datasetPreviewGuiMount [dict get $tab component_id] $id $pane $representation $plot [list ::GX::datasetPreviewLiveExtensionCurrent $notebook $windowId $owner]
+                set rendered 1
+            } else {set rendered [previewDescriptorTabRender $pane $tab $representation]}
+        } reason]
         if {![datasetPreviewLiveExtensionCurrent $notebook $windowId $owner]} {
             if {[winfo exists $pane] && [winfo id $pane] eq $paneId} {destroy $pane}
             return

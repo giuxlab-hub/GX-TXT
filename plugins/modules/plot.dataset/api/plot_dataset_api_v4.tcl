@@ -37,7 +37,7 @@ proc ::GX::PlotDatasetAPIv4::apiInfo {} {
     _ready;set kinds {auto};foreach capability [::GX::PlotDatasetAPIv2::capabilities] {if {[string match series_kind_* $capability]} {lappend kinds [string range $capability 12 end]}}
     if {{native_cell_field} in [dict get [::GX::Native2D::core api_info] capabilities]} {lappend kinds cell_field}
     ::GX::modulePublicApiActivate plot.dataset PLOT_DATASET_3D_API_v1
-    return [dict replace [::GX::PlotDatasetAPIv2::apiInfo] api_name PLOT_DATASET_API_v4 api_version 4 capabilities [capabilities] host_operations {comparisonModel consultationSource consultationExportCommand consultationScene xyzConsultationSource xyzConsultationPrepare xyzConsultationChunk xyzCoordinatePresentation consultationReceipt scientificModel widgetPointer widgetRetain renderModel widgetValidateSources widgetCreate widgetConfigure widgetDraw widgetReceipt widgetView widgetHit widgetVisibility widgetExport widgetDestroy cellFieldSpec cellFieldProfileSpec cellFieldSourceIdentity cellFieldNativeScene} renderer_2d Native2D.C++ renderer_3d Native3D.C++.VTK supported_2d_kinds [lsort -unique $kinds] supported_3d_kinds [dict get [::GX::PlotDataset3DAPIv1::apiInfo] plot_types]]
+    return [dict replace [::GX::PlotDatasetAPIv2::apiInfo] api_name PLOT_DATASET_API_v4 api_version 4 capabilities [capabilities] host_operations {comparisonModel consultationSource consultationExportCommand consultationScene xyzConsultationSource xyzConsultationPrepare xyzConsultationChunk xyzCoordinatePresentation consultationReceipt scientificModel widgetPointer widgetRetain renderModel widgetValidateSources widgetCreate widgetConfigure widgetDraw widgetReceipt widgetView widgetChrome widgetHit widgetVisibility widgetExport widgetDestroy cellFieldSpec cellFieldProfileSpec cellFieldSourceIdentity cellFieldNativeScene} renderer_2d Native2D.C++ renderer_3d Native3D.C++.VTK supported_2d_kinds [lsort -unique $kinds] supported_3d_kinds [dict get [::GX::PlotDataset3DAPIv1::apiInfo] plot_types]]
 }
 # These delegates are persistence and specification authorities only. Every
 # rendering/interactive/export path below is explicitly native-owned.
@@ -353,7 +353,13 @@ proc ::GX::PlotDatasetAPIv4::_widget {path {validate 1}} {variable widgets;if {!
     return $record}
 proc ::GX::PlotDatasetAPIv4::_schedule {path} {variable widgets;if {![dict exists $widgets $path]||[dict exists $widgets $path interaction_error]} return;if {[dict exists $widgets $path pending]} {after cancel [dict get $widgets $path pending]};dict set widgets $path pending [after idle [list ::GX::PlotDatasetAPIv4::_drawSafe $path]]}
 proc ::GX::PlotDatasetAPIv4::_drawSafe {path} {variable widgets;if {![dict exists $widgets $path]||![winfo exists $path]} return;catch {dict unset widgets $path pending};if {[catch {widgetDraw $path} message]} {dict set widgets $path last_error $message}}
-proc ::GX::PlotDatasetAPIv4::widgetDraw {path} {set record [_widget $path];set result [::gx::native2d::plot_v4 draw [dict get $record token] [winfo width $path] [winfo height $path]];$path draw [dict get $result primitives];return [_scientificReceipt [dict get $record spec] [dict get $result receipt]]}
+proc ::GX::PlotDatasetAPIv4::widgetDraw {path} {
+    set record [_widget $path]
+    set result [::gx::native2d::plot_v4 draw [dict get $record token] [winfo width $path] [winfo height $path]]
+    $path draw [dict get $result primitives]
+    if {[dict exists $::GX::ViewportHost::hosts $path]} {::GX::native2DViewportInvalidate $path}
+    return [_scientificReceipt [dict get $record spec] [dict get $result receipt]]
+}
 proc ::GX::PlotDatasetAPIv4::widgetConfigure {path spec {context {}}} {variable widgets;set record [_widget $path 0];set model [modelFromSpec $spec $context];set checks [_modelChecks $model $context];::gx::native2d::plot_v4 configure [dict get $record token] $model;dict set widgets $path spec $spec;dict set widgets $path context $context;dict set widgets $path source_checks $checks;dict set widgets $path source_dirty 0;dict set widgets $path session_token [::GX::interactiveDocumentSessionToken];foreach field {interaction_error last_error drag} {if {[dict exists $widgets $path $field]} {dict unset widgets $path $field}};_schedule $path;return $path}
 # Native input is a notification boundary, not an explicit reconfiguration.
 # A rejected source/controller retains its last frame and stops accepting input
@@ -383,6 +389,27 @@ proc ::GX::PlotDatasetAPIv4::_fit {path} {
     _schedule $path
 }
 proc ::GX::PlotDatasetAPIv4::widgetHit {path x y} {::gx::native2d::plot_v4 hit [dict get [_widget $path] token] $x $y}
+proc ::GX::PlotDatasetAPIv4::widgetChrome {path} {
+    _widget $path
+    if {![dict exists $::GX::ViewportHost::hosts $path]} {
+        ::GX::native2DViewportHostCreate [winfo parent $path] $path {} {} [dict create presentation_bounds [list ::GX::PlotDatasetAPIv4::_chromeBounds $path]]
+        bind $path <Map> +[list ::GX::native2DViewportInvalidate $path]
+    }
+    return $path
+}
+proc ::GX::PlotDatasetAPIv4::_chromeBounds {path} {
+    set width [winfo width $path];set height [winfo height $path]
+    # First panel's actual native plot rectangle reserves title/graduation bands.
+    # Presentation-only inspection also allows teardown of a stale source view.
+    set record [_widget $path 0]
+    set receipt [::gx::native2d::plot_v4 receipt [dict get $record token]]
+    foreach axis [dict get $receipt axes] {
+        if {[dict get $axis axis] ne {x}} continue
+        lassign [dict get $axis plot_rect] left top right bottom
+        return [list $width $height $left $top [expr {$width-$right}] [expr {$height-$bottom}]]
+    }
+    return [list $width $height 0 0 0 0]
+}
 proc ::GX::PlotDatasetAPIv4::widgetEdit {path spec} {widgetConfigure $path $spec [dict get [_widget $path] context]}
 proc ::GX::PlotDatasetAPIv4::widgetView {path operation args} {set token [dict get [_widget $path] token];if {$operation eq {restore}} {if {[llength $args]!=1} {error {Expected receipt axes as restored view state}};::gx::native2d::plot_v4 restore $token [lindex $args 0]} elseif {$operation eq {fit}} {::gx::native2d::plot_v4 fit $token} else {::gx::native2d::plot_v4 view $token [lindex $args 0] $operation {*}[lrange $args 1 end]};_schedule $path}
 proc ::GX::PlotDatasetAPIv4::_panelReceipt {record x y {id {}}} {

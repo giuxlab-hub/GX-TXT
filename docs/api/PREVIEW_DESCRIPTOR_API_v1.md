@@ -179,3 +179,12 @@ explicit choice in the existing Preview notebook. Standard inspection remains
 available. Selecting a native alternative goes through existing Render/cache
 preparation; a pending or failed request retains and qualifies the previous
 successful presentation.
+
+## Optional GUI pane (DEV111-P006)
+
+`kind=gui` is an additive tab kind, requiring `[preview_provider] gui_api_version=1`.
+It names no callback/script or Viewer design. CORE invokes the module public
+namespace `guiMount host context` and `guiDispose host context reason` in its
+Preview-owned pane. Old descriptor-only modules need no changes. See
+[Preview Component GUI API v1](PREVIEW_COMPONENT_GUI_API_v1.md) for controls,
+shared icons, native Plot panels and lifecycle.

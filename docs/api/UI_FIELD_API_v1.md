@@ -382,3 +382,9 @@ this transition. Tab selection and disabled controls stay native; focus reveals
 the actual control, nested editors/plots retain their wheel behavior, and a
 scrolling tab owns its wheel rather than also scrolling the outer inspector.
 No Viewer-specific dimensions, scientific state or font reduction are involved.
+
+## Optional Preview host adapter (DEV111-P006)
+
+[Preview Component GUI API v1](PREVIEW_COMPONENT_GUI_API_v1.md) lets opted-in
+Preview modules use these same components/layout/values and `uiFieldIconApply`
+in host-owned panes and viewport panels. It adds no widget/icon system.

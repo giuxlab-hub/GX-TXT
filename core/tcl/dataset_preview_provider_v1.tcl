@@ -21,12 +21,15 @@ proc ::GX::_datasetPreviewProviderDescriptor {id} {
     if {$profile ni {native presentation}} {error {Unsupported Preview provider profile}}
     set allowed [linsert $::GX::PreviewProvider::descriptorKeys 0 profile]
     if {$profile eq {presentation}} {set allowed {profile api_version dataset_contracts gui_public_api}}
-    set allowed [concat $allowed $::GX::PreviewProvider::matchKeys]
+    set allowed [concat $allowed $::GX::PreviewProvider::matchKeys gui_api_version]
     set prefix preview_provider.
     foreach key [dict keys $data ${prefix}*] {
         if {[string range $key [string length $prefix] end] ni $allowed} {error {Unknown Preview provider descriptor field for its profile}}
     }
     set out [dict create component_id $id profile $profile]
+    set guiVersion [descriptorValue $data preview_provider gui_api_version 0]
+    if {$guiVersion ni {0 1}} {error {Unsupported optional Preview GUI API version}}
+    dict set out gui_api_version $guiVersion
     dict set out view_role [descriptorValue $data preview_provider view_role [expr {$profile eq {native} ? {primary} : {complementary}}]]
     if {[dict get $out view_role] ni {primary complementary}} {error {Invalid Preview view role}}
     foreach key [lrange $::GX::PreviewProvider::matchKeys 1 end] {
@@ -505,6 +508,7 @@ proc ::GX::datasetPreviewProviderTabs {datasetId {representation {}}} {
             if {[dict keys $response] ne {tabs} || [llength [dict get $response tabs]]>32} {error {Preview response requires at most32 tab descriptors}}
             set contribution {};set ids {}
             foreach tab [dict get $response tabs] {
+                if {[dict exists $tab kind] && [dict get $tab kind] eq {gui} && [dict get $declaration gui_api_version]!=1} {error {GUI panes require preview_provider.gui_api_version=1}}
                 if {[dict get $context core_specialized] && [datasetPublicationV2DictDefault $tab role [dict get $info view_role]] eq {primary}} continue
                 if {[dict exists $tab kind] && [dict get $tab kind] eq {native} && (![dict get $context availability native_model] || [dict get $context core_specialized] || ([dict get $info profile] eq {native} && !$preparedNative))} continue
                 if {[dict exists $tab kind] && [dict get $tab kind] eq {table}} {

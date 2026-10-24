@@ -165,7 +165,7 @@ proc ::GX::previewDescriptorTabNormalize {tab previewDir} {
             if {[llength $variables]>32} {error {Preview table supports at most 32 variables}}
             dict set out count $count;dict set out variable_ids $variables
         }
-        native {}
+        native - gui {}
         default {error "Unsupported Preview tab kind '$kind'"}
     }
     return $out

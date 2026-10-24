@@ -1043,7 +1043,7 @@ The basic local Fit/Delete/Finish context menu alone is not the complete declara
 semantic-context facility requested in GUI03. Existing Tcl PanelTarget mapping
 alone does not complete GUI04 Builder/SDK editor exposure. The complete declarations below provide those facilities; independent installed
 generic-Viewer evidence is recorded in
-the acceptance report.
+[the acceptance report](../reports/DEV109_RASTER_ACCEPTANCE210.md).
 
 ### Declared semantic raster menus
 
@@ -1128,3 +1128,10 @@ IDs remain ordinary captured values; model and Job bindings, other choices,
 scientific view limits, domain drafts and durable History remain compared. An
 additional available model therefore does not mark an untouched interface dirty.
 Existing saved payloads and History are read without rewriting their source.
+
+## Preview modules (DEV111-P006)
+
+Preview modules can use existing GUI/icon services through the optional
+[Preview Component GUI API v1](PREVIEW_COMPONENT_GUI_API_v1.md). This host-scoped
+operation set does not compose Viewer designs, alter viewer.* identity validation,
+or change Viewer Builder generation or the restricted native Viewer SDK.

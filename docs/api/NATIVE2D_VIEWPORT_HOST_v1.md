@@ -344,3 +344,16 @@ control. It is not a scientific source receipt. Both forms check the existing
 Session lifetime, and tool changes, edits and full descriptions retain their
 normal source validation. This adds no worker, compiler, independent tool state
 or persistent scientific cache.
+
+## Plot surface chrome (DEV111-P006)
+
+The backward-compatible signature is `native2DViewportHostCreate container surface
+scene changed ?options?`. Empty `scene` selects GUI-chrome-only layout; optional
+`presentation_bounds` is a trusted host callback returning width/height plus four
+nonnegative margins. Plot v4 supplies its actual native plot rectangle through
+`PlotDatasetAPIv4::widgetChrome path`. This reuses shared panel layout without
+creating a geometry scene or changing scientific navigation. Semantic geometry
+targets and stock scene controls still require a real native scene.
+`native2DViewportPanelDestroy host id` disposes one existing panel; host disposal
+also destroys its sibling panel widgets. Preview modules use the scoped adapter
+in [Preview Component GUI API v1](PREVIEW_COMPONENT_GUI_API_v1.md).

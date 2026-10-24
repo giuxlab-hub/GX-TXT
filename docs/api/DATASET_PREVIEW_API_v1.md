@@ -401,3 +401,11 @@ completion waits for both EOFs. No unbounded diagnostic file or second manager i
 introduced. A cached representation whose source changed cannot invoke new component
 callbacks; the user can render the current Dataset again. Source-less P002 minimal
 contexts remain supported.
+
+## Optional embedded GUI (DEV111-P006)
+
+Installed Preview modules may opt into host-owned controls, shared stock/project
+icons, callbacks and shared panels over the current Plot surface. Existing
+descriptor tabs, metadata selection, CORE precedence and native workers retain
+their contracts. See [Preview Component GUI API v1](PREVIEW_COMPONENT_GUI_API_v1.md)
+for exact operations, lifecycle and the native-provider/Tk host boundary.

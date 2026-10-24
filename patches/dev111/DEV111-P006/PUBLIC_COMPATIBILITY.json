@@ -1,0 +1,15 @@
+{
+  "framework": "0.9.8.10-dev-111",
+  "revision": "r3",
+  "patch": "DEV111-P006",
+  "requiredPredecessorPatch": 5,
+  "maintenanceParent": "6a59da41c2aa23fdc356e6f956238c02bdc6fff3",
+  "originalOwnerZipSha256": "21b0df059c42b7d0ae535c7e759378325570d2047b11a26385c4e8de19b6b19d",
+  "publicZipSha256": "8d064bc0eb24c86754f308f103988ddeb533d5363dfbfcdad91e8cb90c5d87b2",
+  "sanitizedDocumentPaths": 3,
+  "normalizedPlotDatasetInventories": 2,
+  "changedScientificExecutionFilesPreservedExact": true,
+  "originalPrivateDepositPreserved": true,
+  "install": "unzip -o DEV111-P006-PUBLIC.zip -d /path/to/gxtxt",
+  "rollback": "Restore exact pre-P006 file backups, remove two new API files"
+}

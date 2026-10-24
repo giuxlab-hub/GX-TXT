@@ -1,0 +1,133 @@
+{
+  "patch_id": "DEV111-P006",
+  "required_predecessor_patch": 5,
+  "official_source_commit": "83b391de4b81a87e4e76f477491371b58cdc3a40",
+  "prerequisite_p005_sha256": "0869026cd0c3a4c001a801726b6422181f04b5ae8a3874dfbd6f8449fcb59368",
+  "zip_sha256": "21b0df059c42b7d0ae535c7e759378325570d2047b11a26385c4e8de19b6b19d",
+  "files": [
+    {
+      "path": "app/gui/dataset_preview_live.tcl",
+      "before_sha256": "24f207c04da2c12a74c8bba5982cfc6fb3741df8c61a73a4d7a29e2e43017833",
+      "after_sha256": "4a43ceea43372d7fde6dcf99f4c6b4b8d8cd065f38279cfc13ab701907e64c1e"
+    },
+    {
+      "path": "core/tcl/dataset_preview_gui_v1.tcl",
+      "before_sha256": null,
+      "after_sha256": "2ade95e0b987afd126fa6b4b2b53bd5dd4d1737d8538f11b8eb6dcf5d0ab114f"
+    },
+    {
+      "path": "core/tcl/dataset_preview_provider_v1.tcl",
+      "before_sha256": "d6cf35362372fe32f5dbbd1d6f969610f78872a3468e1faa7832d73db5f022f3",
+      "after_sha256": "0d419332f52b4ac8602aaad1e082108496ee08e961d610b6bcd8ac79c4c1555a"
+    },
+    {
+      "path": "core/tcl/native2d_viewport_host_v1.tcl",
+      "before_sha256": "b071040ba3f4484d0856c8a4d2e0c716658cfa720f5cd7a662d889450232bf8f",
+      "after_sha256": "dc178662b28f36a09a2e9e3967161129c1a1b59edc9d5320fc8255ed91475e69"
+    },
+    {
+      "path": "core/tcl/preview_descriptor_api_v1.tcl",
+      "before_sha256": "722bc331e33dd1d9c5045bedf83cc38804a06bd7ac699edc9c65dff740b50f85",
+      "after_sha256": "5b37b36b7d0976dbe76de12e1e8bc5948c765754d561bc04c87289efd1476752"
+    },
+    {
+      "path": "docs/api/DATASET_PREVIEW_API_v1.md",
+      "before_sha256": "cbdeba25593bae352dda288065e9e70e9bf5416e6ac1cbec7c94a4bd96654cf2",
+      "after_sha256": "b62e55f6a9fbea55e629d0589aedebe219e9b13ce4b876934d50fda5f438a0f0"
+    },
+    {
+      "path": "docs/api/NATIVE2D_VIEWPORT_HOST_v1.md",
+      "before_sha256": "85b0648d8d6c90fcff7b90805c8f701cc8561bb96844060fbeaca99aa9c3ab19",
+      "after_sha256": "644419d47cc16084e6ac0598e0d30e1c7c97cda58247902418b2cc2325d3cea3"
+    },
+    {
+      "path": "docs/api/PLOT_DATASET_API_v4.md",
+      "before_sha256": "334789e77ccfe0bd494e40202e28e01b58456a15396e244def5fdbd83cdd9259",
+      "after_sha256": "01e381f663981bfe6fd3d7c335fd38bb3908a9aa8f5f3f63e25099cdb16d0181"
+    },
+    {
+      "path": "docs/api/PREVIEW_COMPONENT_GUI_API_v1.md",
+      "before_sha256": null,
+      "after_sha256": "5579919bbce85add4df22a2198cf55ef7f5e9039c77633002d90de5f4e3fa9e1"
+    },
+    {
+      "path": "docs/api/PREVIEW_DESCRIPTOR_API_v1.md",
+      "before_sha256": "42f724192841eab904c431e21ab54168e53a5299939085a2ca8d93718593aaab",
+      "after_sha256": "c3a7b92b5d0ca20dbfc2217c7056a7c957558f814dbedd94ff034beade215d63"
+    },
+    {
+      "path": "docs/api/UI_FIELD_API_v1.md",
+      "before_sha256": "f9305f728f3f5fe9fed047de3cb39da8c092a481f3691cdf856a2729059824ba",
+      "after_sha256": "d6b3c828e3a2d34a65fb6a927ef27b2bd707e1c6fb010176e8c19a670a2c92a2"
+    },
+    {
+      "path": "docs/api/VIEWER_GUI_HOST_API_v1.md",
+      "before_sha256": "0d4391951e52933126a89d04c8bc37db0a2661a096cc3b17490b440cf568d39f",
+      "after_sha256": "8fd3536242dd828a312ea0234e20e6cc89131af4b238c2a8d0e14c6af02c2695"
+    },
+    {
+      "path": "gxtxt_pipeline.tcl",
+      "before_sha256": "4da523227e941ddd0a27e942696c8df9f03447a12b02e08838a8832446a9d78f",
+      "after_sha256": "e615679812268a4136c643c36150b620ee2f7bf0d28db3d401e85b7fe04df294"
+    },
+    {
+      "path": "plugins/modules/plot.dataset/SHA256SUMS",
+      "before_sha256": "5d2856dbc34f65371b04d3cde2d5a3fd04f186d15c865f635ee07ee5401b13e5",
+      "after_sha256": "a49c6b536cd97b39cd846568b39e8f4f777a3512a3ccb3054f4f6da9a20dfc78"
+    },
+    {
+      "path": "plugins/modules/plot.dataset/SHA256SUMS.txt",
+      "before_sha256": "5d2856dbc34f65371b04d3cde2d5a3fd04f186d15c865f635ee07ee5401b13e5",
+      "after_sha256": "a49c6b536cd97b39cd846568b39e8f4f777a3512a3ccb3054f4f6da9a20dfc78"
+    },
+    {
+      "path": "plugins/modules/plot.dataset/api/plot_dataset_api_v4.tcl",
+      "before_sha256": "68984332e55f2e6a629ac680ad87c15c26f1786996975ac9027b7c15e7033107",
+      "after_sha256": "bcb1746ba68fd0180b2290aa7ee09676fdc7d2d95162b8c3896945704e8655c6"
+    }
+  ],
+  "public_exceptions": [
+    {
+      "path": "docs/api/NATIVE2D_VIEWPORT_HOST_v1.md",
+      "public_prior_sha256": "a698ee76a2389665b757f9e62c1bb2d1fa0fa5ee3c3847ddc0b3a8fcf76b136a",
+      "original_prior_sha256": "85b0648d8d6c90fcff7b90805c8f701cc8561bb96844060fbeaca99aa9c3ab19",
+      "public_after_sha256": "1c8c91fa16bd721dffa88359aeda27868e15cff9cf2572d02f7d0f8a60e7edb7",
+      "original_after_sha256": "644419d47cc16084e6ac0598e0d30e1c7c97cda58247902418b2cc2325d3cea3"
+    },
+    {
+      "path": "docs/api/UI_FIELD_API_v1.md",
+      "public_prior_sha256": "ec42a6fc0c42341280676b822132c8cf592bd06fa11256d7dcd67de38fc0cbc7",
+      "original_prior_sha256": "f9305f728f3f5fe9fed047de3cb39da8c092a481f3691cdf856a2729059824ba",
+      "public_after_sha256": "1eb610e8b84a105b85ed7856f1612fb0da6b81e338efb31a29ed702ed0903e62",
+      "original_after_sha256": "d6b3c828e3a2d34a65fb6a927ef27b2bd707e1c6fb010176e8c19a670a2c92a2"
+    },
+    {
+      "path": "docs/api/VIEWER_GUI_HOST_API_v1.md",
+      "public_prior_sha256": "c2f4abe8617f8ceab10185cdc01975e3119c902695bf112bf4a31b10690754ac",
+      "original_prior_sha256": "0d4391951e52933126a89d04c8bc37db0a2661a096cc3b17490b440cf568d39f",
+      "public_after_sha256": "ebba6ad660729ff421f064bcc2586f45743923cae96298ec9f4a7dff7e5e90c4",
+      "original_after_sha256": "8fd3536242dd828a312ea0234e20e6cc89131af4b238c2a8d0e14c6af02c2695"
+    },
+    {
+      "path": "gxtxt_pipeline.tcl",
+      "public_prior_sha256": "bea5353fd1daf1fde1b6ca7de1dce0143276e75ab69a51240be69876cf2307ec",
+      "original_prior_sha256": "4da523227e941ddd0a27e942696c8df9f03447a12b02e08838a8832446a9d78f",
+      "public_after_sha256": "e615679812268a4136c643c36150b620ee2f7bf0d28db3d401e85b7fe04df294",
+      "original_after_sha256": "e615679812268a4136c643c36150b620ee2f7bf0d28db3d401e85b7fe04df294"
+    },
+    {
+      "path": "plugins/modules/plot.dataset/SHA256SUMS",
+      "public_prior_sha256": "ceceadb3d0243816ef25e4f88d12a9f2130683ca6bb95958c2af15cb9e4fc62d",
+      "original_prior_sha256": "5d2856dbc34f65371b04d3cde2d5a3fd04f186d15c865f635ee07ee5401b13e5",
+      "public_after_sha256": "c3339a2349f5574d2be6d8ae69a9d0f807aa66b076a7670aca6c442c3fb42982",
+      "original_after_sha256": "a49c6b536cd97b39cd846568b39e8f4f777a3512a3ccb3054f4f6da9a20dfc78"
+    },
+    {
+      "path": "plugins/modules/plot.dataset/SHA256SUMS.txt",
+      "public_prior_sha256": "ceceadb3d0243816ef25e4f88d12a9f2130683ca6bb95958c2af15cb9e4fc62d",
+      "original_prior_sha256": "5d2856dbc34f65371b04d3cde2d5a3fd04f186d15c865f635ee07ee5401b13e5",
+      "public_after_sha256": "c3339a2349f5574d2be6d8ae69a9d0f807aa66b076a7670aca6c442c3fb42982",
+      "original_after_sha256": "a49c6b536cd97b39cd846568b39e8f4f777a3512a3ccb3054f4f6da9a20dfc78"
+    }
+  ]
+}

@@ -259,3 +259,12 @@ when the retained line style has no general markers. This keeps isolated finite
 observations visible between missing-data gaps without connecting those gaps,
 changing point/row identity or adding interpolated samples. Ordinary multi-point
 line runs retain their configured style.
+
+## Shared GUI chrome (DEV111-P006)
+
+Host-only `::GX::PlotDatasetAPIv4::widgetChrome path` returns an existing/shared
+Native2D ViewportHost for GUI panels over this Plot surface. It validates the
+ordinary Plot source/Session binding, uses native plot bounds and creates no
+scientific scene or controller. Zoom/pan/Fit remain Plot-owned. See
+[Preview Component GUI API v1](PREVIEW_COMPONENT_GUI_API_v1.md) for scoped use by
+Preview components. This adds no native provider or SDK operation.
