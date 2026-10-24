@@ -166,7 +166,7 @@ proc ::GX::CurveWorkbench::_compositionApply {w token ids arrangement values {re
     set consumes [expr {$arrangement ne "compound"}]
     set before [_snapshotIds $w [expr {$consumes?$ids:{}}]];set undo $st($w,undo);set redo $st($w,redo)
     set mode [expr {$arrangement eq "compound"?0:2}]
-    if {[catch {set native [::GX::Native2D::core composition_create $st($w,scene) $natives {} $mode [::GX::datasetPublicationV2DictDefault $values tolerance 0]]} message options]} {
+    if {[catch {set native [[_cadController $w] object join $natives {} $mode [::GX::datasetPublicationV2DictDefault $values tolerance 0]]} message options]} {
         if {$mode==2} {error {The selection is not one connected retained network within the selected tolerance. No objects changed.}}
         return -options $options $message
     }
@@ -175,7 +175,7 @@ proc ::GX::CurveWorkbench::_compositionApply {w token ids arrangement values {re
         set id [_adoptPath $w $native [dict get $values name] $ids [dict merge [dict create operation retained_$arrangement inputs $ids inputs_preserved [expr {!$consumes}]] $values]]
         dict set before $id {};set st($w,active) $id
         if {$consumes} {
-            ::GX::Native2D::core composition_retarget $st($w,scene) $native $natives
+            [_cadController $w] object retarget $native $natives
             foreach source $ids {_removeRecord $w $source}
             # Native2D deletes relations whose source geometry was deleted;
             # keep the logical constraint inventory in sync before history.
@@ -200,7 +200,7 @@ proc ::GX::CurveWorkbench::_compositionSeparate {w} {
     if {![dict exists $record sketch_definition]||[dict get $record sketch_definition family] ni {composite_path compound}} {error {Select a heterogeneous Path or Compound.}}
     _coordinatePlaneAdmit $w $ids
     set before [_snapshotIds $w {}];set undo $st($w,undo);set redo $st($w,redo);set members {};set created {}
-    set natives [::GX::Native2D::core composition_explode $st($w,scene) [dict get $record native]]
+    set natives [[_cadController $w] object separate [dict get $record native]]
     try {
         set ordinal 0
         foreach native $natives {
@@ -245,7 +245,8 @@ proc ::GX::CurveWorkbench::_pathSplitCommit {w token parent operation index} {
     _coordinatePlaneAdmit $w [list $parent]
     set record [_record $w $parent]
     set before [_snapshotIds $w {}];set undo $st($w,undo);set redo $st($w,redo)
-    set nativeIds [::GX::Native2D::core $operation $st($w,scene) [dict get $record native] $index]
+    set method [dict get {path_split split_path composition_split split_composition} $operation]
+    set nativeIds [[_cadController $w] object $method [dict get $record native] $index]
     set created {};set members {}
     try {
         foreach native $nativeIds suffix {A B} {

@@ -2,41 +2,38 @@
 # One Native selection set owns semantic membership across all logical curves.
 # Legacy controller lists below are derived adapters for established dimension,
 # constraint and tangent consumers; they never own a separate selection.
+proc ::GX::CurveWorkbench::_cadController {w} {
+    variable st
+    if {![info exists st($w,cadController)] || ![llength [info commands $st($w,cadController)]]} {
+        set st($w,cadController) [::GX::native2DCadCreate $st($w,scene) [expr {[info exists st($w,semanticSet)]?$st($w,semanticSet):0}] $w]
+    }
+    $st($w,cadController) selection adopt [expr {[info exists st($w,semanticSet)]?$st($w,semanticSet):0}]
+    return $st($w,cadController)
+}
 proc ::GX::CurveWorkbench::_semanticMembers {w} {
     variable st
-    if {![info exists st($w,semanticSet)]||!$st($w,semanticSet)} {return {}}
-    if {$st($w,semanticSet) ni [::GX::Native2D::core selection_set_list $st($w,scene)]} {set st($w,semanticSet) 0;return {}}
-    return [dict get [::GX::Native2D::core selection_set_get $st($w,scene) $st($w,semanticSet)] members]
+    set selection [[_cadController $w] selection get]
+    set st($w,semanticSet) [dict get $selection id]
+    return [dict get $selection members]
 }
 proc ::GX::CurveWorkbench::_semanticSync {w} {
     variable st
-    set refs {};set objects {};set reverse [_logicalNativeMap $w]
-    foreach member [_semanticMembers $w] {
-        set native [dict get $member id]
-        if {[dict get $member kind] eq "fragment"&&[dict get $member valid]} {
-            set parent [dict get [::GX::Native2D::core fragment_get $st($w,scene) $native] parent]
-            if {[dict exists $reverse $parent]} {lappend objects [dict get $reverse $parent]}
-            continue
-        }
-        if {![dict get $member valid]||![dict exists $reverse $native]} continue
-        set style [::GX::Native2D::core object_style $st($w,scene) $native]
-        if {[dict get $member kind] ne "object"&&(![dict get $style visible]||![dict get $style selectable])} continue
-        set logical [dict get $reverse $native];lappend objects $logical
-        set kind [dict get $member kind]
-        if {$kind eq "fragment"} continue
-        set index [expr {$kind eq "object"?3000000000:[dict get $member index]}]
-        set ref [_semanticReference $w $native [dict get $member kind] $index]
-        dict set ref logical $logical;dict set ref semantic_kind $kind;lappend refs $ref
+    set snapshot [[_cadController $w] selection snapshot]
+    set st($w,semanticSet) [dict get $snapshot id]
+    set reverse [_logicalNativeMap $w];set refs {};set objects {}
+    foreach ref [dict get $snapshot references] {
+        set native [dict get $ref object]
+        if {![dict exists $reverse $native]} continue
+        dict set ref logical [dict get $reverse $native];lappend refs $ref
     }
+    foreach native [dict get $snapshot objects] {if {[dict exists $reverse $native]} {lappend objects [dict get $reverse $native]}}
+    # Derived UI/Document adapters; the CORE native selection set owns membership.
     set st($w,sketchSelection) $refs;set st($w,objectSelection) [lsort -unique $objects]
 }
 proc ::GX::CurveWorkbench::_semanticApply {w members {mode replace}} {
     variable st
-    if {![info exists st($w,semanticSet)]} {set st($w,semanticSet) 0}
-    _semanticMembers $w
-    set st($w,semanticSet) [::GX::Native2D::core selection_set_apply $st($w,scene) $st($w,semanticSet) $members $mode]
-    _semanticSync $w
-    _planarSelectionChanged $w
+    set st($w,semanticSet) [[_cadController $w] selection apply $members $mode]
+    _semanticSync $w;_planarSelectionChanged $w
 }
 proc ::GX::CurveWorkbench::_semanticClear {w} {
     variable st
@@ -59,8 +56,8 @@ proc ::GX::CurveWorkbench::_selectionMode {state} {
 }
 proc ::GX::CurveWorkbench::_sketchPick {w x y {target detail}} {
     variable st
-    set member [::GX::Native2D::core selection_pick $st($w,scene) [_selectionScope $w] [list $x $y] 9 $target]
-    if {$member eq {}} {
+    set ref [[_cadController $w] selection pick [_selectionScope $w] [list $x $y] 9 $target]
+    if {$ref eq {}} {
         if {$st($w,constraintTool) eq "dimension"} {
             dict for {id record} $st($w,images) {
                 set ref [::GX::Native2D::core interaction_pick $st($w,scene) [dict get $record native] [list $x $y] 10]
@@ -69,10 +66,7 @@ proc ::GX::CurveWorkbench::_sketchPick {w x y {target detail}} {
         }
         return {}
     }
-    set index [expr {[dict get $member kind] eq "object"?3000000000:[dict get $member index]}]
-    set ref [_semanticReference $w [dict get $member id] [dict get $member kind] $index]
-    dict set ref logical [dict get [_logicalNativeMap $w] [dict get $member id]]
-    dict set ref semantic_kind [dict get $member kind]
+    dict set ref logical [dict get [_logicalNativeMap $w] [dict get $ref object]]
     return $ref
 }
 proc ::GX::CurveWorkbench::_selectReference {w ref additive} {
@@ -134,8 +128,8 @@ proc ::GX::CurveWorkbench::_pointerDownSelection {w x y state} {
             }
             _semanticApply $w $eligible
             set affected [lsort -unique $affected]
-            set st($w,semanticPointDrag) [dict create before [_snapshotIds $w $affected] ids $affected id $id start [::GX::Native2D::core world $st($w,scene) [list $x $y]] pivot [::GX::Native2D::core interaction_resolve $st($w,scene) $ref] moved 0]
-            ::GX::Native2D::core drag_begin $st($w,scene)
+            set st($w,semanticPointDrag) [dict create before [_snapshotIds $w $affected] ids $affected id $id moved 0]
+            [_cadController $w] gesture begin_points [list $x $y] [::GX::Native2D::core interaction_resolve $st($w,scene) $ref]
         }
     } else {
         set st($w,drag) [dict create mode semantic_box x $x y $y select_mode $mode]
@@ -147,12 +141,11 @@ proc ::GX::CurveWorkbench::_pointerDownSelection {w x y state} {
 proc ::GX::CurveWorkbench::_pointerMoveSelection {w x y} {
     variable st
     if {[info exists st($w,semanticPointDrag)]&&$st($w,semanticPointDrag) ne {}} {
-        set point [::GX::Native2D::core world $st($w,scene) [list $x $y]];lassign [dict get $st($w,semanticPointDrag) start] ax ay
-        set delta [list [expr {[lindex $point 0]-$ax}] [expr {[lindex $point 1]-$ay}]]
-        set grid [::GX::Native2D::core grid $st($w,scene)]
-        if {[dict get $grid enabled]&&[dict get $grid snap_enabled]} {set delta [::GX::Native2D::core grid_snap_delta $st($w,scene) [dict get $st($w,semanticPointDrag) pivot] $delta 3]}
-        if {[catch {::GX::Native2D::core drag_translate $st($w,scene) {*}$delta} message]} {
-            ::GX::Native2D::core drag_cancel $st($w,scene);set st($w,semanticPointDrag) {}
+        if {[catch {
+            [_cadController $w] gesture plan [list $x $y]
+            [_cadController $w] gesture apply
+        } message]} {
+            [_cadController $w] gesture cancel;set st($w,semanticPointDrag) {}
             set st($w,status) "Point move rejected: $message. Previous geometry restored.";_viewDrawLater $w;return 1
         }
         dict set st($w,semanticPointDrag) moved 1;_viewDrawLater $w;return 1
@@ -168,10 +161,10 @@ proc ::GX::CurveWorkbench::_pointerUpSelection {w x y} {
     variable st
     if {[info exists st($w,semanticPointDrag)]&&$st($w,semanticPointDrag) ne {}} {
         set drag $st($w,semanticPointDrag);set st($w,semanticPointDrag) {}
-        if {[catch {::GX::Native2D::core drag_commit $st($w,scene)} message]} {
+        if {[catch {[_cadController $w] gesture commit} message]} {
             # A rejected native commit restores coordinates but deliberately
             # leaves the transaction active for its owner to cancel or retry.
-            if {[::GX::Native2D::core drag_active $st($w,scene)]} {::GX::Native2D::core drag_cancel $st($w,scene)}
+            if {[::GX::Native2D::core drag_active $st($w,scene)]} {[_cadController $w] gesture cancel}
             _pointSyncApply $w;_pointList $w;_draw $w
             set st($w,status) "Point move rejected: $message. Previous geometry restored."
             return 1
@@ -186,7 +179,7 @@ proc ::GX::CurveWorkbench::_pointerUpSelection {w x y} {
         lassign [::GX::Native2D::core world $st($w,scene) [list [dict get $drag x] [dict get $drag y]]] ax ay
         lassign [::GX::Native2D::core world $st($w,scene) [list $x $y]] bx by
         if {hypot($x-[dict get $drag x],$y-[dict get $drag y])>3} {
-            set members [::GX::Native2D::core selection_region $st($w,scene) [_selectionScope $w] [list [list $ax $ay] [list $bx $ay] [list $bx $by] [list $ax $by]] 65536 object]
+            set members [[_cadController $w] selection region [_selectionScope $w] [list [list $ax $ay] [list $bx $ay] [list $bx $by] [list $ax $by]] 65536 object]
             _semanticApply $w $members [dict get $drag select_mode]
         } elseif {[dict get $drag select_mode] eq "replace"} {_semanticClear $w}
         _curveList $w;_pointList $w;_draw $w;return 1
@@ -205,7 +198,7 @@ proc ::GX::CurveWorkbench::_constructionFinish {w} {
     variable st
     if {[info exists st($w,polygonVertices)]&&$st($w,polygonVertices) ne {}} {
         if {[llength $st($w,polygonVertices)]<3} {set st($w,status) {Polygon selection needs at least three vertices.};return}
-        set members [::GX::Native2D::core selection_region $st($w,scene) [_selectionScope $w] $st($w,polygonVertices) 65536 object]
+        set members [[_cadController $w] selection region [_selectionScope $w] $st($w,polygonVertices) 65536 object]
         _semanticApply $w $members $st($w,polygonMode)
         set st($w,polygonVertices) {}
         _curveList $w;_pointList $w;_draw $w;set st($w,status) {Polygon selection committed.};return
@@ -219,7 +212,7 @@ proc ::GX::CurveWorkbench::_sketchIdle {w {message {}}} {
     # Polygon clicks do not mutate selection until Finish, so Escape restores
     # the exact previous semantic membership without synthesizing a replacement.
     set st($w,polygonVertices) {};set st($w,selectionShape) click
-    if {[info exists st($w,semanticPointDrag)]&&$st($w,semanticPointDrag) ne {}} {::GX::Native2D::core drag_cancel $st($w,scene);set st($w,semanticPointDrag) {}}
+    if {[info exists st($w,semanticPointDrag)]&&$st($w,semanticPointDrag) ne {}} {[_cadController $w] gesture cancel;set st($w,semanticPointDrag) {}}
     _sketchIdle_selection057_base $w $message
     _semanticSync $w;_pointList $w;_draw $w
 }
@@ -335,7 +328,7 @@ rename ::GX::CurveWorkbench::_cancelPointDrag ::GX::CurveWorkbench::_cancelPoint
 proc ::GX::CurveWorkbench::_cancelPointDrag {w} {
     variable st
     if {[info exists st($w,semanticPointDrag)]&&$st($w,semanticPointDrag) ne {}} {
-        if {[::GX::Native2D::core drag_active $st($w,scene)]} {::GX::Native2D::core drag_cancel $st($w,scene)}
+        if {[::GX::Native2D::core drag_active $st($w,scene)]} {[_cadController $w] gesture cancel}
         set st($w,semanticPointDrag) {};_pointSyncCancel $w;return
     }
     tailcall _cancelPointDrag_selection057_base $w
@@ -458,11 +451,7 @@ proc ::GX::CurveWorkbench::_objectListContext {w x y X Y} {
 # Point-backed segment ordinals overlap point ordinals. Preserve Native's
 # explicit semantic kind while adapting to an interaction reference.
 proc ::GX::CurveWorkbench::_semanticReference {w native kind index} {
-    variable st
-    if {$kind eq "segment"&&$index<1000000000} {
-        return [::GX::Native2D::core interaction_reference $st($w,scene) $native segment $index]
-    }
-    return [::GX::Native2D::core interaction_reference_index $st($w,scene) $native $index]
+    return [[_cadController $w] selection reference $native $kind $index]
 }
 
 # Presentation/input routing only: Native queries choose entities and the one

@@ -12,7 +12,7 @@ proc ::GX::CurveWorkbench::_constraintNativeSpec {w definition} {
 proc ::GX::CurveWorkbench::_constraintCapture {w} {
     variable st
     set reverse [_logicalNativeMap $w]
-    set native {};foreach receipt [::GX::Native2D::core constraint_list $st($w,scene)] {dict set native [dict get $receipt id] $receipt}
+    set native {};foreach receipt [[_cadController $w] relationship list] {dict set native [dict get $receipt id] $receipt}
     set result {}
     dict for {id record} $st($w,constraints) {
         if {![dict exists $native [dict get $record native]]} continue
@@ -31,7 +31,7 @@ proc ::GX::CurveWorkbench::_constraintCapture {w} {
 }
 proc ::GX::CurveWorkbench::_constraintCloseNative {w} {
     variable st
-    foreach receipt [::GX::Native2D::core constraint_list $st($w,scene)] {::GX::Native2D::core constraint_delete $st($w,scene) [dict get $receipt id]}
+    foreach receipt [[_cadController $w] relationship list] {[_cadController $w] relationship remove [dict get $receipt id]}
     set st($w,constraints) {}
 }
 rename ::GX::CurveWorkbench::_restoreSnapshot ::GX::CurveWorkbench::_restoreSnapshot_constraints_base
@@ -45,7 +45,7 @@ proc ::GX::CurveWorkbench::_constraintRefresh {w} {
     if {![winfo exists [::GX::CurveWorkbench::_constraintPanel $w].tree]} return
     set tree [::GX::CurveWorkbench::_constraintPanel $w].tree;set selected [$tree selection];$tree delete [$tree children {}]
     dict for {id record} $st($w,constraints) {
-        set receipt [::GX::Native2D::core constraint_get $st($w,scene) [dict get $record native]]
+        set receipt [[_cadController $w] relationship get [dict get $record native]]
         set kind [dict get $receipt kind];set unit [lindex [_coordinateUnits [_record $w [dict get $record definition a]]] 0]
         if {$kind in {angle parallel perpendicular}} {set unit rad}
         $tree insert {} end -id $id -values [list $id [dict get $record name] $kind [expr {[dict get $receipt valid] ? "valid" : "violated/unsupported"}] [expr {[dict get $receipt disabled] ? "disabled" : "enforced"}] [dict get $receipt value] [dict get $receipt residual] $unit]
@@ -103,7 +103,7 @@ proc ::GX::CurveWorkbench::_constraintApply {w token id values} {
         if {[dict exists $record definition anchor]} {dict set definition anchor [dict get $record definition anchor]}
     }
     set spec [_constraintNativeSpec $w $definition]
-    if {$id eq {}} {set receipt [::GX::Native2D::core constraint_create $st($w,scene) $spec];set id "constraint[incr st($w,nextConstraint)]"} else {set receipt [::GX::Native2D::core constraint_update $st($w,scene) [dict get $record native] $spec]}
+    if {$id eq {}} {set receipt [[_cadController $w] relationship create $spec];set id "constraint[incr st($w,nextConstraint)]"} else {set receipt [[_cadController $w] relationship update [dict get $record native] $spec]}
     dict set st($w,constraints) $id [dict create id $id name [dict get $values name] native [dict get $receipt id] definition $definition]
     try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
     _constraintRefresh $w;return $id
@@ -112,7 +112,7 @@ proc ::GX::CurveWorkbench::_constraintAction {w action} {
     variable st
     _cancelGesture $w;set id [_constraintSelected $w];set record [dict get $st($w,constraints) $id]
     set before [_snapshotIds $w {}];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
-    if {$action eq "remove"} {::GX::Native2D::core constraint_delete $st($w,scene) [dict get $record native];dict unset st($w,constraints) $id} else {::GX::Native2D::core constraint_enable $st($w,scene) [dict get $record native] [dict get $record definition disabled]}
+    if {$action eq "remove"} {[_cadController $w] relationship remove [dict get $record native];dict unset st($w,constraints) $id} else {::GX::Native2D::core constraint_enable $st($w,scene) [dict get $record native] [dict get $record definition disabled]}
     try {_history $w $before {}} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $oldUndo;set st($w,redo) $oldRedo;return -options $options $message}
     _constraintRefresh $w
 }
@@ -150,7 +150,7 @@ proc ::GX::CurveWorkbench::_joinApply {w token source index values} {
     _coordinatePlaneAdmit $w [lsort -unique [list $source $target]]
     _cancelGesture $w;_pointSyncApply $w
     set before [_snapshotIds $w [list $source]];set oldUndo $st($w,undo);set oldRedo $st($w,redo)
-    set receipt [::GX::Native2D::core constraint_join $st($w,scene) [dict get [_record $w $source] native] $index [dict get [_record $w $target] native] $targetIndex [dict get $values merge] [dict get $values tolerance]]
+    set receipt [[_cadController $w] relationship join [dict get [_record $w $source] native] $index [dict get [_record $w $target] native] $targetIndex [dict get $values merge] [dict get $values tolerance]]
     set id "constraint[incr st($w,nextConstraint)]"
     set definition [dict remove $receipt id valid geometry_supported measured_value residual angular_residual enforcement general_solver]
     dict set definition a $source;dict set definition b $target;dict unset definition axis

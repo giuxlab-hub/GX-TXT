@@ -6,7 +6,7 @@ set(GXTXT_NUMERIC_REDUCTION_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/../../plugins/mo
 if(NOT EXISTS "${GXTXT_NUMERIC_REDUCTION_HEADER}")
   message(FATAL_ERROR "Native2D requires the public NUMERIC_API_v1 C binding from the matching framework")
 endif()
-add_library(gx2d gx2d.c "${GXTXT_NUMERIC_REDUCTION_HEADER}")
+add_library(gx2d gx2d_presentation_visit_v1.h gx2d_presentation_visit_v1.inc gx2d.c "${GXTXT_NUMERIC_REDUCTION_HEADER}")
 target_compile_features(gx2d PUBLIC c_std_99)
 target_include_directories(gx2d PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 if(WIN32 AND BUILD_SHARED_LIBS)
@@ -39,7 +39,7 @@ if(TCL_FOUND)
   find_path(GXTXT_CAIRO_INCLUDE cairo.h PATH_SUFFIXES cairo REQUIRED)
   find_library(GXTXT_CAIRO_LIBRARY NAMES cairo libcairo.so.2 REQUIRED)
   find_package(X11 REQUIRED)
-  add_library(gx2dtcl MODULE gx2d_tcl.c gx2d.c gx2d_surface.cpp gx2d_presentation_batch.cpp gx2d_grid_presenter_v1.cpp gx2d_sprite_scene_v1.cpp)
+  add_library(gx2dtcl MODULE gx2d_presentation_visit_v1.h gx2d_presentation_visit_v1.inc gx2d_tcl.c gx2d.c gx2d_surface.cpp gx2d_presentation_batch.cpp gx2d_grid_presenter_v1.cpp gx2d_sprite_scene_v1.cpp gx2d_cad_controller_v1.cpp gx2d_cad_controller_v1.h)
   target_sources(gx2dtcl PRIVATE
     gx2d_csv_provider_v1.cpp
     gx2d_preview_categories_v1.cpp

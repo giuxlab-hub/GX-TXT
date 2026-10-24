@@ -126,6 +126,92 @@ set anchor [::GX::native2DSpriteSceneAnchor .viewer.canvas tool tip]
 set hits [::GX::native2DSpriteSceneHit .viewer.canvas {170 140} 3]
 ```
 
-Curve Workbench2.21.14 is the first production consumer. Other Viewers do not
+Curve Workbench2.21.15 is the first production consumer. Other Viewers do not
 adopt this layer automatically. For DEV112, retain these public contracts and the
 matching source/header/CMake/bootstrap/adapter files plus compiled native target.
+
+
+## P016: direct scientific scene synchronization
+
+Additive operations, same API version; the manual Batch/Object/Controls interface
+above remains available for consumers without a scientific scene.
+
+```tcl
+::GX::native2DSpriteSceneAttach canvas nativeScene
+set receipt [::GX::native2DSpriteSceneSync canvas nativeScene descriptors ?options?]
+::GX::native2DSpriteSceneDetach canvas
+::GX::native2DSpriteSceneDiagnostics on|off|reset|get
+```
+
+Sync attaches automatically. Native scene/object IDs come from public Native2D
+CORE, never raw pointers. Attach replaces a previous binding source and removes
+its scientific sprites, preserving unrelated manual sprites. Detach does the same
+without destroying the scientific scene or the retained presenter. Scene closure
+revokes all native observers synchronously before C geometry is released. Canvas
+closure releases observers, raster, sprites and the host command.
+
+Each descriptor contains `id` (stable presentation identity) and `object` (native
+scientific identity). Optional: `z` (default0), `visible` (default1), `style`
+(overrides `color` RGBA and `line_width`), `sample_markers` (default1; use0 when
+actual defining controls/rows have their own presentation), `controls` (default0),
+`point_markers` (default0), `selected` defining/row indices, `table_selected`
+explicit row indices, `skip_path` (default0, point-only display policy).
+Controls are actual native descriptors, not display samples; point markers use
+original C row indices. Bounds and marker anchors come from native projections.
+Options: `budget` (default4096,6..65536), `background` (Tk color, default white),
+`active` (optional descriptor ID for the small Flip-label receipt).
+
+Receipt: `locators` maps IDs to `{originalRowIndex deviceXY}` for selected row
+markers; optional `active_marker` contains `bounds` and composited `color` for the
+active marker's existing host label. No full geometry or sampled arrays return
+to Tcl. Curve Workbench submits one small descriptor per visible object and uses
+`sample_markers 0`, preserving its defining-control policy.
+
+Use Begin/Sync/End for reconciliation. A Sync touches only listed IDs; End retires
+untouched sprites/bindings. Manual and scientific IDs must be disjoint. Remove a
+native binding before using that ID in manual Batch. Presentational transforms on
+manual sprites never mutate scientific objects; scientific transformations use
+the native CAD/geometry APIs. Native-bound transforms are rebuilt from scientific
+geometry, not independently moved by manual Batch.
+
+C++ samples through existing `gx2d_curve_display`/`gx2d_object_display`, projects
+actual defining controls and native direction markers, then updates retained
+sprites directly. LOD/clipping, break handling and budgets remain unchanged.
+Unchanged bindings skip sampling, Tcl parsing of geometry and geometry copying.
+A view change reprojects natively; it does not request a Tcl snapshot.
+
+Invalidation observes **exact** presentation-affecting C state (including defining
+controls, tangents, path nodes/constituents, masks, marker state and layer style),
+not just topology epochs or collision-prone hashes. Existing topology epochs are
+intentionally preserved during some coordinate/drag/solver edits, so they cannot
+serve as sufficient visual revision keys. `native_revision` is an observer-local
+revision of encountered native state, not a journal/Document revision. Full exact
+bytes are copied only on change; unchanged checks scan borrowed byte slices.
+Viewport generation, small descriptor, budget and background are separate keys.
+Deleting/replacing objects, Undo/Redo restoration, constraint-driven geometry,
+source updates and Session/scene replacement cannot silently retain an old binding.
+
+Describe adds `scientific_object/native_revision` per binding and aggregate
+`native_bound_objects/native_syncs/native_cache_hits/native_cache_misses/`
+`native_sampled_points/native_viewport_generation/native_observed_revisions`.
+Diagnostics are disabled by default, interpreter-local and opt-in; native phase
+counters report calls/us/points/bytes without periodic callbacks. No ownership
+moves into GUI_UPDATE_SCHEDULER_API_v1: the scheduler still determines when the
+Viewer callback runs, while scientific geometry and retained presentation determine
+what to draw. Native grid/axes and Cairo rasterization are unchanged.
+
+Errors propagate as Tcl errors, including stale scientific IDs, invalid metadata,
+capacity and closed resources. Metadata identities are checked before per-object
+sync. Sync is a presentation reconciliation, not an atomic scientific edit: a
+later invalid row can fail after earlier valid rows updated. On failure, start a
+fresh Begin with corrected descriptors and finish End. No scientific state has
+been modified. Existing capacity limits apply; exact observation is bounded at
+128MiB per object. Source scans remain linear in original geometry size; this
+avoids instrumenting every scientific mutator and is a documented residual cost.
+
+Native build integration: matching gx2dtcl C++17 target, managed source declarations
+in gx2d_sprite_scene_v1.h, read-only C visitor in gx2d_presentation_visit_v1.h/.inc.
+Borrowed C slices are valid only inside their callback; observers must not mutate
+or reenter C. They are process-private revision observations, not a portable
+serialization format. No C scientific algorithm, grid/snapping rule, public POD
+layout or worker SDK permission is changed.

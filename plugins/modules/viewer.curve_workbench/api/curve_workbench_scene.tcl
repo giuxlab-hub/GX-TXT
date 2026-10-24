@@ -45,40 +45,8 @@ proc ::GX::CurveWorkbench::_draw {w} {
 
 proc ::GX::CurveWorkbench::_drawSemanticSelection {w} {
     variable st
-    set canvas $w.right.viewport.canvas
-    # Paint selected details last: coincident controls from another constituent
-    # or an image/annotation must not hide the actual selected point.
-    foreach ref $st($w,sketchSelection) {
-        if {[info exists st($w,partTarget)]&&$st($w,partTarget) ne {}&&[lindex $st($w,partTarget) 0] eq [dict get $ref logical]} continue
-        set record [_record $w [dict get $ref logical]]
-        if {![_curveVisible $w $record]} continue
-        if {[dict get $ref semantic_kind] eq "object"} {
-            # Active is property focus. Only actual object membership paints the
-            # whole geometry, using the existing Native presentation snapshot.
-            set object [::GX::native2DPresentationObjectSnapshot $st($w,scene) [dict get $ref object] 4096]
-            if {$object ne {}} {
-                dict set object style color {0.847 0.529 0 1};dict set object style line_width 5
-                if {[dict get $object kind] eq "curve"} {dict set object style marker 0}
-                if {[::GX::datasetPublicationV2DictDefault $record display_style straight] eq "points"} {
-                    set paths {};foreach path [dict get $object paths] {foreach point $path {lappend paths [list $point]}}
-                    dict set object paths $paths;dict set object style marker 2
-                }
-                dict unset object marker
-                dict unset object part_markers
-                ::GX::native2DCanvasDrawObject $canvas $object [$canvas cget -background] semantic_object_selection
-            }
-        } elseif {[dict get $ref semantic_kind] eq "segment"} {
-            set points [::GX::Native2D::core interaction_render $st($w,scene) $ref]
-            if {[llength $points]>=2} {$canvas create line {*}[concat {*}$points] -fill #d88700 -width 5 -tags semantic_segment_selection}
-        }
-    }
-    foreach ref $st($w,sketchSelection) {
-        if {[info exists st($w,partTarget)]&&$st($w,partTarget) ne {}&&[lindex $st($w,partTarget) 0] eq [dict get $ref logical]} continue
-        if {[dict get $ref semantic_kind] ni {control point}} continue
-        set record [_record $w [dict get $ref logical]]
-        if {![_curveVisible $w $record]} continue
-        lassign [::GX::Native2D::core device $st($w,scene) [::GX::Native2D::core interaction_resolve $st($w,scene) $ref]] x y
-        $canvas create rectangle [expr {$x-6}] [expr {$y-6}] [expr {$x+6}] [expr {$y+6}] -fill #ffbd3a -outline #573700 -width 2 -tags semantic_point_selection
-    }
-    ::GX::native2DCanvasViewportClip $canvas $st($w,scene)
+    set exclude {};set points {}
+    if {[info exists st($w,partTarget)] && $st($w,partTarget) ne {} && [dict exists $st($w,curves) [lindex $st($w,partTarget) 0]]} {lappend exclude [dict get [_record $w [lindex $st($w,partTarget) 0]] native]}
+    dict for {id record} $st($w,curves) {if {[::GX::datasetPublicationV2DictDefault $record display_style straight] eq {points}} {lappend points [dict get $record native]}}
+    ::GX::native2DCadSelectionPresent [_cadController $w] $w.right.viewport.canvas [dict create exclude_objects $exclude point_objects $points]
 }

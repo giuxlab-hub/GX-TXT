@@ -129,11 +129,7 @@ proc ::GX::CurveWorkbench::_cadCancel {w} {
     variable st
     if {![info exists st($w,cadDrag)]||$st($w,cadDrag) eq {}} return
     set drag $st($w,cadDrag);set st($w,cadDrag) {}
-    if {[dict get $drag handle] in {mirror_a mirror_b pivot}} {
-        set pivot [dict get $drag old_pivot]
-        if {[dict get $pivot mode] eq "custom"} {::GX::Native2D::core pivot $st($w,scene) custom [dict get $pivot point]} else {::GX::Native2D::core pivot $st($w,scene) [dict get $pivot mode]}
-        ::GX::Native2D::core gizmo $st($w,scene) [dict get $drag old_gizmo]
-    } else {::GX::Native2D::core drag_cancel $st($w,scene)}
+    [_cadController $w] gesture cancel
     _cadThaw $w [dict get $drag widgets]
     _cadApplyQueuedSelection $w
     set st($w,status) "Native CAD gesture cancelled; exact starting geometry restored."
@@ -172,9 +168,8 @@ proc ::GX::CurveWorkbench::_cadGestureBegin {w x y state} {
     }
     _pointSyncApply $w
     set before [_snapshotIds $w $ids]
-    set drag [dict create handle $handle ids $ids start [list $x $y] before $before active $st($w,active) selected_indices [_selected $w] old_pivot [::GX::Native2D::core pivot $st($w,scene)] old_gizmo [::GX::Native2D::core gizmo $st($w,scene)] delta {}]
-    if {$handle ni {pivot mirror_a mirror_b}} {::GX::Native2D::core drag_begin $st($w,scene)}
-    dict set drag native_ids [lmap id $ids {dict get [_record $w $id] native}]
+    set drag [dict create handle $handle ids $ids before $before active $st($w,active) selected_indices [_selected $w] delta {}]
+    [_cadController $w] gesture begin $handle [list $x $y] [lmap id $ids {dict get [_record $w $id] native}]
     dict set drag widgets [_cadFreeze $w];set st($w,cadDrag) $drag;set st($w,cadSelectionPending) {}
 }
 proc ::GX::CurveWorkbench::_pointerDownTransform {w x y state} {
@@ -199,34 +194,25 @@ proc ::GX::CurveWorkbench::_pointerMoveTransform {w x y} {
 proc ::GX::CurveWorkbench::_cadGestureMove {w x y} {
     variable st
     set handle [dict get $st($w,cadDrag) handle]
-    set delta [::GX::Native2D::core gizmo_parameters $st($w,scene) $handle [dict get $st($w,cadDrag) start] [list $x $y]]
-    if {$handle eq "pivot"} {::GX::Native2D::core pivot $st($w,scene) custom [dict get $delta world_point]} elseif {$handle in {mirror_a mirror_b}} {
-        if {[catch {::GX::Native2D::core gizmo $st($w,scene) [dict create $handle [dict get $delta world_point]]} message]} {set st($w,status) "Mirror axis needs two distinct points: $message";return}
-    } elseif {$handle eq "rotate"} {::GX::Native2D::core drag_rotate $st($w,scene) [dict get $delta pivot] [dict get $delta radians]} else {
-        set translation [dict get $delta translation];set grid [::GX::Native2D::core grid $st($w,scene)]
-        if {[dict get $grid enabled]&&[dict get $grid snap_enabled]} {set translation [::GX::Native2D::core grid_snap_delta $st($w,scene) [dict get $delta pivot] $translation 3]}
-        if {$st($w,cadObjectSnap)} {
-            set snapped [::GX::Native2D::core gizmo_snap_translation $st($w,scene) $handle [dict get $delta pivot] $translation 8 [dict get $st($w,cadDrag) native_ids] 0]
-            if {[dict get $snapped snapped]} {
-                set candidate [dict get $snapped target];set target {}
-                dict for {id record} $st($w,curves) {if {[dict get $record native]==[dict get $candidate object]} {set target $id;break}}
-                if {$target eq {}} {error "Object snap reference has no logical curve identity"}
-                _coordinatePlaneAdmit $w [concat [dict get $st($w,cadDrag) ids] [list $target]]
-                set translation [dict get $snapped translation];dict set delta snap_target [dict merge [dict remove $candidate object] [dict create curve_id $target]]
-                set st($w,status) "Object snap: [dict get [_record $w $target] name], original Native point [dict get $candidate index]"
-            }
-        }
-        ::GX::Native2D::core drag_translate $st($w,scene) {*}$translation;dict set delta translation $translation
+    set delta [[_cadController $w] gesture plan [list $x $y] $st($w,cadObjectSnap)]
+    if {[dict exists $delta snap_target]} {
+        set candidate [dict get $delta snap_target];set target {}
+        dict for {id record} $st($w,curves) {if {[dict get $record native]==[dict get $candidate object]} {set target $id;break}}
+        if {$target eq {}} {error {Object snap reference has no logical curve identity}}
+        # This scientific-frame admission belongs to the Workbench's explicit
+        # X/Y declaration workflow, before CORE applies its native proposal.
+        _coordinatePlaneAdmit $w [concat [dict get $st($w,cadDrag) ids] [list $target]]
+        dict set delta snap_target [dict merge [dict remove $candidate object] [dict create curve_id $target]]
+        set st($w,status) "Object snap: [dict get [_record $w $target] name], original Native point [dict get $candidate index]"
     }
+    [_cadController $w] gesture apply
     dict set st($w,cadDrag) delta $delta
     _draw $w
 }
 proc ::GX::CurveWorkbench::_cadGestureCommit {w} {
     variable st
     set drag $st($w,cadDrag);set handle [dict get $drag handle]
-    if {$handle ni {pivot mirror_a mirror_b}} {
-        if {[catch {::GX::Native2D::core drag_commit $st($w,scene)} message options]} {_cadCancel $w;_draw $w;return -options $options "Transform rejected: $message. Original geometry restored."}
-    }
+    if {[catch {[_cadController $w] gesture commit} message options]} {_cadCancel $w;_draw $w;return -options $options "Transform rejected: $message. Original geometry restored."}
     set st($w,cadDrag) {};_cadThaw $w [dict get $drag widgets]
     if {$handle in {pivot mirror_a mirror_b}} {
         _history $w [dict get $drag before] [dict get $drag ids]

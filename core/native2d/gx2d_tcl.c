@@ -3,6 +3,7 @@
 #include "gx2d_surface.h"
 #include "gx2d_grid_presenter_v1.h"
 #include "gx2d_sprite_scene_v1.h"
+#include "gx2d_cad_controller_v1.h"
 #include "gx2d_presentation_batch.h"
 #include "gx2d_csv_provider_v1.h"
 #include "gx2d_preview_categories_v1.h"
@@ -22,6 +23,7 @@
 typedef struct scene_node {
     uint64_t serial;
     gx2d_scene *scene;
+    gx2d_sprite_source_v1 *presentation_source;
     gx2d_display_accumulator *display;
     Tcl_Obj *axis_presentation;
     struct scene_node *next;
@@ -39,7 +41,7 @@ static int status(Tcl_Interp *ip, gx2d_status code) {
 static void free_bridge(ClientData data) {
     bridge *b = (bridge *)data;
     scene_node *p = b->head;
-    while (p) { scene_node *next = p->next; gx2d_display_destroy(p->display);gx2d_destroy(p->scene);if(p->axis_presentation)Tcl_DecrRefCount(p->axis_presentation); free(p); p = next; }
+    while (p) { scene_node *next = p->next; gx2d_display_destroy(p->display);gx2d_sprite_source_v1_close(p->presentation_source);gx2d_destroy(p->scene);if(p->axis_presentation)Tcl_DecrRefCount(p->axis_presentation); free(p); p = next; }
     free(b);
 }
 static scene_node *lookup(bridge *b, Tcl_Interp *ip, Tcl_Obj *value) {
@@ -395,7 +397,7 @@ static int command(ClientData data, Tcl_Interp *ip, int argc, Tcl_Obj *const arg
     op = Tcl_GetString(argv[1]);
     if (strcmp(op, "api_info") == 0) {
         if(argc!=2)return fail(ip,"Usage: core api_info");
-        Tcl_SetObjResult(ip,Tcl_NewStringObj("api_id NATIVE2D_API_v1 api_version 1 engine gx2d capabilities {retained_cairo_sprites retained_cairo_grid grid_presentation_batch canvas_clip_batch path_validate image_local_roi native_cell_field native_virtual_grid native_cairo_surface native_cairo_export axis_presentation stable_constituent_identity independent_part_direction truthful_composition_traversal compound_subentities retained_network_nodes network_subentity_constraints atomic_dimension_batch multi_object_semantic_selection polygon_region_selection retained_straight_path ordered_path_vertices retained_path_join_split retained_spline_tangents calibrated_reference_images scene_preview_views atomic_symmetric_construction atomic_attached_construction semantic_point_connectivity retained_component_solver graphical_dimensions driven_dimensions local_sketch_rank relationship_hit_regions retained_control_descriptors epoch_checked_references canvas_construction selection_constraint_compatibility atomic_constraint_driving native_viewport_clip defining_control_snap atomic_presentation_snapshots native_selection_sets native_layer_lifecycle native_identity_attributes parent_linked_fragments topology_epoch structured_scientific_measurements exact_supported_projection extended_constraint_lifecycle constraint_diagnostics native_constraint_enforcement rectangular_circular_series retained_sketch exact_sketch_evaluation paged_sketch_sampling coordinate_rescale exact_vertex_snap gizmo_snap_translation gizmo rotation_transaction pivot flat_group_lifecycle affine_objects copy_reflect endpoint_frame point_frame point_distance bridge_c0_c1 bounded_spline_range native_spline_object selection_replace selection_state selection_paged device_point_hit bounded_compare drag_active aspect requested_view direction_marker grid background polar display_sample numeric_pack numeric_companions numeric_row_audit numeric_gaps binary_points bounded_points object_sample render_lod curve_render object_style fit_selected}",-1));
+        Tcl_SetObjResult(ip,Tcl_NewStringObj("api_id NATIVE2D_API_v1 api_version 1 engine gx2d capabilities {cad_controller direct_scientific_sprites retained_cairo_sprites retained_cairo_grid grid_presentation_batch canvas_clip_batch path_validate image_local_roi native_cell_field native_virtual_grid native_cairo_surface native_cairo_export axis_presentation stable_constituent_identity independent_part_direction truthful_composition_traversal compound_subentities retained_network_nodes network_subentity_constraints atomic_dimension_batch multi_object_semantic_selection polygon_region_selection retained_straight_path ordered_path_vertices retained_path_join_split retained_spline_tangents calibrated_reference_images scene_preview_views atomic_symmetric_construction atomic_attached_construction semantic_point_connectivity retained_component_solver graphical_dimensions driven_dimensions local_sketch_rank relationship_hit_regions retained_control_descriptors epoch_checked_references canvas_construction selection_constraint_compatibility atomic_constraint_driving native_viewport_clip defining_control_snap atomic_presentation_snapshots native_selection_sets native_layer_lifecycle native_identity_attributes parent_linked_fragments topology_epoch structured_scientific_measurements exact_supported_projection extended_constraint_lifecycle constraint_diagnostics native_constraint_enforcement rectangular_circular_series retained_sketch exact_sketch_evaluation paged_sketch_sampling coordinate_rescale exact_vertex_snap gizmo_snap_translation gizmo rotation_transaction pivot flat_group_lifecycle affine_objects copy_reflect endpoint_frame point_frame point_distance bridge_c0_c1 bounded_spline_range native_spline_object selection_replace selection_state selection_paged device_point_hit bounded_compare drag_active aspect requested_view direction_marker grid background polar display_sample numeric_pack numeric_companions numeric_row_audit numeric_gaps binary_points bounded_points object_sample render_lod curve_render object_style fit_selected}",-1));
         return TCL_OK;
     }
     if (strcmp(op, "scene") == 0) {
@@ -633,6 +635,16 @@ static int command(ClientData data, Tcl_Interp *ip, int argc, Tcl_Obj *const arg
             if(status(ip,gx2d_grid_set(node->scene,&grid))!=TCL_OK)return TCL_ERROR;}
         Tcl_SetObjResult(ip,grid_obj(grid));return TCL_OK;
     }
+    if(strcmp(op,"cad_controller")==0){
+        Tcl_WideInt selection=0;if((argc!=3&&argc!=4)||(argc==4&&(Tcl_GetWideIntFromObj(ip,argv[3],&selection)!=TCL_OK||selection<0)))return fail(ip,"Usage: core cad_controller scene ?native_selection_set?");
+        if(!node->presentation_source){node->presentation_source=gx2d_sprite_source_v1_create(node->scene);if(!node->presentation_source)return fail(ip,"Native source allocation failed");}
+        return gx2d_cad_controller_v1_create(ip,node->presentation_source,node->serial,(gx2d_id)selection,command,data);
+    }
+    if(strcmp(op,"sprite_attach")==0||strcmp(op,"sprite_sync")==0){
+        if((strcmp(op,"sprite_attach")==0&&argc!=4)||(strcmp(op,"sprite_sync")==0&&argc!=6))return fail(ip,"Usage: core sprite_attach scene presenter | sprite_sync scene presenter descriptors options");
+        if(!node->presentation_source){node->presentation_source=gx2d_sprite_source_v1_create(node->scene);if(!node->presentation_source)return fail(ip,"Native presentation lease allocation failed");}
+        return strcmp(op,"sprite_attach")==0?gx2d_sprite_scene_v1_attach(ip,argv[3],node->presentation_source):gx2d_sprite_scene_v1_sync(ip,argv[3],node->presentation_source,argv[4],argv[5]);
+    }
     if(strcmp(op,"sprite_controls")==0) {
         if(argc!=6||object_id(ip,argv[3],&id)!=TCL_OK)return fail(ip,"Usage: core sprite_controls scene object selected_indices color");
         return gx2d_sprite_scene_v1_controls(ip,node->scene,id,argv[4],argv[5]);
@@ -734,7 +746,7 @@ static int command(ClientData data, Tcl_Interp *ip, int argc, Tcl_Obj *const arg
         scene_node **link = &b->head;
         if (argc != 3) return fail(ip, "Usage: core destroy scene");
         while (*link != node) link = &(*link)->next;
-        *link = node->next;gx2d_display_destroy(node->display); gx2d_destroy(node->scene);if(node->axis_presentation)Tcl_DecrRefCount(node->axis_presentation); free(node);
+        *link = node->next;gx2d_display_destroy(node->display);gx2d_sprite_source_v1_close(node->presentation_source); gx2d_destroy(node->scene);if(node->axis_presentation)Tcl_DecrRefCount(node->axis_presentation); free(node);
         return TCL_OK;
     }
     if (strcmp(op, "add") == 0 || strcmp(op, "pointset") == 0 || strcmp(op,"point")==0) {
@@ -1393,16 +1405,19 @@ series_invalid:free(input);free(objects);free(sources);return TCL_ERROR;
         if(argc!=5||index_arg(ip,argv[4],&budget)!=TCL_OK)return fail(ip,"Usage: core render_lod scene object point_budget");
         if(budget<6||budget>65536)return fail(ip,"Display budget must be between 6 and 65536");
         count=budget;ncuts=budget;
+        uint64_t diagnostic_start=gx2d_sprite_diagnostic_clock(ip);
         /* Interpolation can produce more display vertices than controls. */
         points=(gx2d_point *)calloc(count,sizeof(*points));indices=(uint64_t *)calloc(count,sizeof(*indices));cuts=(size_t *)calloc(ncuts,sizeof(*cuts));
         if(!points||!indices||!cuts){free(points);free(indices);free(cuts);return fail(ip,"Out of memory");}
         code=strcmp(op,"object_sample")==0?gx2d_object_sample(node->scene,id,budget,points,indices,count,&count,cuts,ncuts,&ncuts):strcmp(op,"render_curve_lod")==0?gx2d_curve_display(node->scene,id,budget,points,indices,count,&count,cuts,ncuts,&ncuts):gx2d_object_display(node->scene,id,budget,points,indices,count,&count,cuts,ncuts,&ncuts);
         if(code!=GX2D_OK){free(points);free(indices);free(cuts);return status(ip,code);}
+        gx2d_sprite_diagnostic_record(ip,"c_sampling_lod",diagnostic_start,1,count,0);
+        diagnostic_start=gx2d_sprite_diagnostic_clock(ip);
         mapped=Tcl_NewListObj(0,NULL);breaks=Tcl_NewListObj(0,NULL);coords=Tcl_NewListObj(0,NULL);
         for(i=0;i<count;++i){Tcl_ListObjAppendElement(ip,mapped,Tcl_NewWideIntObj((Tcl_WideInt)indices[i]));Tcl_ListObjAppendElement(ip,coords,point_obj(points[i]));}
         for(i=0;i<ncuts;++i)Tcl_ListObjAppendElement(ip,breaks,Tcl_NewWideIntObj((Tcl_WideInt)cuts[i]));free(points);free(indices);free(cuts);
         result=Tcl_NewDictObj();Tcl_DictObjPut(ip,result,Tcl_NewStringObj("points",-1),coords);Tcl_DictObjPut(ip,result,Tcl_NewStringObj("point_indices",-1),mapped);Tcl_DictObjPut(ip,result,Tcl_NewStringObj("breaks",-1),breaks);
-        Tcl_SetObjResult(ip,result);return TCL_OK;
+        Tcl_SetObjResult(ip,result);gx2d_sprite_diagnostic_record(ip,"c_to_tcl_lod",diagnostic_start,1,count,0);return TCL_OK;
     }
     if (strcmp(op, "style") == 0) {
         gx2d_style style;

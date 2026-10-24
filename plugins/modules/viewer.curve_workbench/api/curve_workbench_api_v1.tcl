@@ -936,36 +936,38 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
     ::GX::native2DGridPresenterUpdate $c $st($w,scene) $plans [dict create background $backgroundRgb text_color $textRgb]
     ::GX::native2DSpriteSceneBegin $c [list $left $top $plotRight $plotBottom]
     set st($w,coordinateAxisPlans) $plans
-    set index 0
+    set index 0;set descriptors {}
     dict for {id r} $st($w,curves) {
         if {![_curveVisible $w $r]} continue
-        set curveStyle [_coordinateCurveStyle $w $id $index $background];incr index
-        set color [dict get [::GX::uiFieldColorFromRGBA [dict get $curveStyle color]] rgb]
-        set sampled {} ;# Defining/row markers query their own Native authority.
-        # Shared Native presentation supports point objects as filled markers;
-        # a singleton is geometry even when it has no selected defining handle.
-        set object [::GX::native2DPresentationObjectSnapshot $st($w,scene) [dict get $r native] 4096]
-        if {$object ne {}&&[::GX::datasetPublicationV2DictDefault $r display_style straight] ne "points"} {
-            dict set object style [dict merge [dict get $object style] $curveStyle]
-            # Defining controls / Dataset points have their own semantic marker
-            # presenter. Drawing a marker at every retained display sample both
-            # implies false controls and creates thousands of redundant Tk items.
-            if {[dict get $object kind] eq "curve"} {dict set object style marker 0}
-            ::GX::native2DSpriteSceneObject $c $id $object $backgroundRgb
+        set curveStyle [_coordinateCurveStyle $w $id $index $background]
+        set retained [dict exists $r sketch_definition];set selected {};set table {}
+        if {$retained} {
+            foreach ref $st($w,sketchSelection) {if {[dict get $ref logical] eq $id} {lappend selected [dict get $ref index]}}
+        } else {
+            set selected [_semanticPointIndices $w $id]
+            if {$id eq $st($w,active)} {set table [_pointTableSelected $w]}
         }
-        set marker {}
-        if {![dict exists $r sketch_definition]||[dict get $r sketch_definition family] ni {compound composite_path}} {set marker [::GX::Native2D::core render_marker $st($w,scene) [dict get $r native]]}
-        if {$marker ne {}} {
-            set style [::GX::Native2D::core direction_marker $st($w,scene) [dict get $r native]]
-            set markerColor [::GX::uiFieldColorFromRGBA [dict get $style color]]
-            set rgb [dict get [::GX::uiFieldColorComposite $markerColor $background] rgb]
-            if {$id eq $st($w,active)} {
-                lassign [dict get $marker bounds] mx0 my0 mx1 my1
-                $c create text [expr {$mx1+8}] [expr {($my0+$my1)/2}] -text Flip -anchor w -fill $rgb -font TkDefaultFont -tags direction_flip
-            }
+        lappend descriptors [dict create id $id object [dict get $r native] z $index style $curveStyle sample_markers 0 controls $retained point_markers [expr {!$retained}] selected $selected table_selected $table skip_path [expr {[::GX::datasetPublicationV2DictDefault $r display_style straight] eq {points}}]]
+        incr index
+    }
+    set receipt [::GX::native2DSpriteSceneSync $c $st($w,scene) $descriptors [dict create active $st($w,active) background $backgroundRgb budget 4096]]
+    if {[dict exists $receipt active_marker]} {
+        set marker [dict get $receipt active_marker]
+        lassign [dict get $marker bounds] mx0 my0 mx1 my1
+        $c create text [expr {$mx1+8}] [expr {($my0+$my1)/2}] -text Flip -anchor w -fill [dict get $marker color] -font TkDefaultFont -tags direction_flip
+    }
+    # Source-row locators remain an existing Viewer overlay. Only selected
+    # indices and their small native position receipt cross this boundary.
+    dict for {id positions} [dict get $receipt locators] {
+        set record [_record $w $id]
+        if {[dict get $record source] eq {}} continue
+        foreach locator $positions {
+            lassign $locator index point
+            set row [dict get [_sampleAt $w $id $index] row]
+            if {$row<0} continue
+            lassign $point x y
+            $c create oval [expr {$x-9}] [expr {$y-9}] [expr {$x+9}] [expr {$y+9}] -outline #c51d24 -width 2 -tags [list dataset_row_locator dataset_locator_$id source_row_$row locator_point_$index]
         }
-        if {[dict get [::GX::Native2D::core object_style $st($w,scene) [dict get $r native]] selectable]||[::GX::datasetPublicationV2DictDefault $r display_style straight] eq "points"} {_drawPointMarkers $w $id $sampled $color}
-
     }
     if {$st($w,previewNative) ne ""} {
         foreach path [::GX::Native2D::core render_paths $st($w,scene) $st($w,previewNative)] {

@@ -1,0 +1,295 @@
+{
+  "patch": "P016",
+  "originalZipSha256": "78632101e2bd0680c3292574faa046a3e28e9b9517d1c9f2074e4e41545e6238",
+  "originalZipSize": 3399762,
+  "requiredPredecessor": 15,
+  "framework": "0.9.8.10-dev-111",
+  "revision": "r3",
+  "frameworkFiles": [
+    {
+      "path": "core/native2d/CMakeLists.txt",
+      "authorBeforeSha256": "5bbe456cde399804e477cb3175e6f7bdf00c01c63e09f378fa57424c89c6eff8",
+      "publicBeforeSha256": "5bbe456cde399804e477cb3175e6f7bdf00c01c63e09f378fa57424c89c6eff8",
+      "authorAfterSha256": "33e5b923b7fa2d72c05fcae5a95b5c44caf7f121987a9ec37f8b74140ed56b21",
+      "publicAfterSha256": "33e5b923b7fa2d72c05fcae5a95b5c44caf7f121987a9ec37f8b74140ed56b21",
+      "sourceExact": true
+    },
+    {
+      "path": "core/native2d/README.md",
+      "authorBeforeSha256": "af57ca490ed0f9c9a1e9284791f01b3aa1ffcace68f7a429bc1b07ef8088b0e6",
+      "publicBeforeSha256": "af57ca490ed0f9c9a1e9284791f01b3aa1ffcace68f7a429bc1b07ef8088b0e6",
+      "authorAfterSha256": "80fdb7f88bd0f569756a07d6b453a4214501d480d09361f71749f11309513859",
+      "publicAfterSha256": "80fdb7f88bd0f569756a07d6b453a4214501d480d09361f71749f11309513859",
+      "sourceExact": true
+    },
+    {
+      "path": "core/native2d/bin/gx2dtcl.so",
+      "authorBeforeSha256": "7d61e52ed308a8c4c55eb6016b93613522f5feb571beb0da1fbc3975e522121e",
+      "publicBeforeSha256": "7d61e52ed308a8c4c55eb6016b93613522f5feb571beb0da1fbc3975e522121e",
+      "authorAfterSha256": "77bc65dac820aecbdfacc1427aa25735f860c657170a1db343eab6366c1e66ab",
+      "publicAfterSha256": "77bc65dac820aecbdfacc1427aa25735f860c657170a1db343eab6366c1e66ab",
+      "sourceExact": true
+    },
+    {
+      "path": "core/native2d/gx2d.c",
+      "authorBeforeSha256": "1db52b212c763278252637f904933006d681c893f3f498d8cb8b257576004ea5",
+      "publicBeforeSha256": "1db52b212c763278252637f904933006d681c893f3f498d8cb8b257576004ea5",
+      "authorAfterSha256": "f91c96ad540d9e1822d99c2726d4b62334bbe6d3aba4abaa02a89f2eb66f37fe",
+      "publicAfterSha256": "f91c96ad540d9e1822d99c2726d4b62334bbe6d3aba4abaa02a89f2eb66f37fe",
+      "sourceExact": true
+    },
+    {
+      "path": "core/native2d/gx2d_cad_controller_v1.cpp",
+      "authorBeforeSha256": null,
+      "publicBeforeSha256": null,
+      "authorAfterSha256": "8b19b1fd1d219c60e23a83e3b89fe1de47fc8115c3c19d72f26d5bae69448bd8",
+      "publicAfterSha256": "8b19b1fd1d219c60e23a83e3b89fe1de47fc8115c3c19d72f26d5bae69448bd8",
+      "sourceExact": true
+    },
+    {
+      "path": "core/native2d/gx2d_cad_controller_v1.h",
+      "authorBeforeSha256": null,
+      "publicBeforeSha256": null,
+      "authorAfterSha256": "adb8020d6f6dd4e8a0c71c8257f41ebe6a956535cb07d2746e5ec9a1c8b77f64",
+      "publicAfterSha256": "adb8020d6f6dd4e8a0c71c8257f41ebe6a956535cb07d2746e5ec9a1c8b77f64",
+      "sourceExact": true
+    },
+    {
+      "path": "core/native2d/gx2d_presentation_visit_v1.h",
+      "authorBeforeSha256": null,
+      "publicBeforeSha256": null,
+      "authorAfterSha256": "95cbb588cab50851e517fe2c3335f251f4b9551fafd5489d0e5612db197917bc",
+      "publicAfterSha256": "95cbb588cab50851e517fe2c3335f251f4b9551fafd5489d0e5612db197917bc",
+      "sourceExact": true
+    },
+    {
+      "path": "core/native2d/gx2d_presentation_visit_v1.inc",
+      "authorBeforeSha256": null,
+      "publicBeforeSha256": null,
+      "authorAfterSha256": "52d85cb54c5346a600c4d341e78fbc98b2cb4f98568db10ee5c98c982ede2249",
+      "publicAfterSha256": "52d85cb54c5346a600c4d341e78fbc98b2cb4f98568db10ee5c98c982ede2249",
+      "sourceExact": true
+    },
+    {
+      "path": "core/native2d/gx2d_sprite_scene_v1.cpp",
+      "authorBeforeSha256": "57306888cef8ab75bc25bd0ab8173877ebc4ec1ca53bcadd2f092dcd543bafae",
+      "publicBeforeSha256": "57306888cef8ab75bc25bd0ab8173877ebc4ec1ca53bcadd2f092dcd543bafae",
+      "authorAfterSha256": "bfc86c856e3de455ab7168bf9159642f94069421934e75286535f9734b07a610",
+      "publicAfterSha256": "bfc86c856e3de455ab7168bf9159642f94069421934e75286535f9734b07a610",
+      "sourceExact": true
+    },
+    {
+      "path": "core/native2d/gx2d_sprite_scene_v1.h",
+      "authorBeforeSha256": "af9175aa5ca8c7b6922ebaee191541d598db73c5d38aed565ddf4a9d5b8dcd8d",
+      "publicBeforeSha256": "af9175aa5ca8c7b6922ebaee191541d598db73c5d38aed565ddf4a9d5b8dcd8d",
+      "authorAfterSha256": "f78226ec48397fa75bb3302efd848ab08d40713033710fd47e07933b2ea31c97",
+      "publicAfterSha256": "f78226ec48397fa75bb3302efd848ab08d40713033710fd47e07933b2ea31c97",
+      "sourceExact": true
+    },
+    {
+      "path": "core/native2d/gx2d_tcl.c",
+      "authorBeforeSha256": "24bd07b6d0d4be6c26a13aa1b6c62c4e2fb4811599112c64d55d4738778937a9",
+      "publicBeforeSha256": "24bd07b6d0d4be6c26a13aa1b6c62c4e2fb4811599112c64d55d4738778937a9",
+      "authorAfterSha256": "1b8df4b5ee454051367878bc65ef285302d83dd3d3e80e717d638d1cf5b20600",
+      "publicAfterSha256": "1b8df4b5ee454051367878bc65ef285302d83dd3d3e80e717d638d1cf5b20600",
+      "sourceExact": true
+    },
+    {
+      "path": "core/tcl/native2d_cad_v1.tcl",
+      "authorBeforeSha256": null,
+      "publicBeforeSha256": null,
+      "authorAfterSha256": "a2a5f5a4ecd6b7304eb85806f8d0aed85b0db57d2a4288e77412de5928b95c1a",
+      "publicAfterSha256": "a2a5f5a4ecd6b7304eb85806f8d0aed85b0db57d2a4288e77412de5928b95c1a",
+      "sourceExact": true
+    },
+    {
+      "path": "core/tcl/native2d_sprite_scene_v1.tcl",
+      "authorBeforeSha256": "29d743ae4ac595e658ee0e925eb49a1ad9dbf41bdbe98cde7ecd8279bc7a35ef",
+      "publicBeforeSha256": "29d743ae4ac595e658ee0e925eb49a1ad9dbf41bdbe98cde7ecd8279bc7a35ef",
+      "authorAfterSha256": "2351167a72521321cb9293d31cb66431a43b4713ab7c45b9da384f4efcef75fb",
+      "publicAfterSha256": "2351167a72521321cb9293d31cb66431a43b4713ab7c45b9da384f4efcef75fb",
+      "sourceExact": true
+    },
+    {
+      "path": "core/tcl/workbench_extension_api_v1.tcl",
+      "authorBeforeSha256": "c205d41d5c20d7752271348897f188af50124d5bacbd5bbbcac5444dd70d873b",
+      "publicBeforeSha256": "c205d41d5c20d7752271348897f188af50124d5bacbd5bbbcac5444dd70d873b",
+      "authorAfterSha256": "5edf08dd6a34503bbf9b3a9a41708b0a663c25ddf548dd6ef697ca4805d6b6e7",
+      "publicAfterSha256": "5edf08dd6a34503bbf9b3a9a41708b0a663c25ddf548dd6ef697ca4805d6b6e7",
+      "sourceExact": true
+    },
+    {
+      "path": "docs/api/NATIVE2D_CAD_CONTROLLER_v1.md",
+      "authorBeforeSha256": null,
+      "publicBeforeSha256": null,
+      "authorAfterSha256": "f07c8c2def818e8febe561b1977dcce4f2560849bb37d83e33fb8990de340a04",
+      "publicAfterSha256": "f07c8c2def818e8febe561b1977dcce4f2560849bb37d83e33fb8990de340a04",
+      "sourceExact": true
+    },
+    {
+      "path": "docs/api/NATIVE2D_SPRITE_SCENE_API_v1.md",
+      "authorBeforeSha256": "3c9538ae19340562e3d73e7403c723c06e531b03a1e7c409b22a344e8b9b70d1",
+      "publicBeforeSha256": "3c9538ae19340562e3d73e7403c723c06e531b03a1e7c409b22a344e8b9b70d1",
+      "authorAfterSha256": "3f51f6aecf33b69b2f818999bc18d63421ffec0f4209ad82389075fe8c9bcca2",
+      "publicAfterSha256": "3f51f6aecf33b69b2f818999bc18d63421ffec0f4209ad82389075fe8c9bcca2",
+      "sourceExact": true
+    },
+    {
+      "path": "gxtxt_pipeline.tcl",
+      "authorBeforeSha256": "d5176d7c600981114bbe10b7c4a8f48b72a7f462a255468019f0b0dc57bbe469",
+      "publicBeforeSha256": "d5176d7c600981114bbe10b7c4a8f48b72a7f462a255468019f0b0dc57bbe469",
+      "authorAfterSha256": "942ed362ac93e657ecf84bbb434b7dad70c5db463312524a29b4f21f96dadbbd",
+      "publicAfterSha256": "942ed362ac93e657ecf84bbb434b7dad70c5db463312524a29b4f21f96dadbbd",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/CHANGELOG.md",
+      "authorBeforeSha256": "aaaee23eebe16d4e9d03de5f4fa719d734f56a68199111a86199267150e800a1",
+      "publicBeforeSha256": "aaaee23eebe16d4e9d03de5f4fa719d734f56a68199111a86199267150e800a1",
+      "authorAfterSha256": "63b9e55d107be58b5f9fc3799b546d413edb12a357d9273bb0c3bdbd6dfff3aa",
+      "publicAfterSha256": "63b9e55d107be58b5f9fc3799b546d413edb12a357d9273bb0c3bdbd6dfff3aa",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/README.md",
+      "authorBeforeSha256": "b519c26e6d12a3f241de2e260c9e69366486525cbc18bd3e66fc311a5be14ea4",
+      "publicBeforeSha256": "b519c26e6d12a3f241de2e260c9e69366486525cbc18bd3e66fc311a5be14ea4",
+      "authorAfterSha256": "9c1ac29d783b7335e3e3000adb0729c5f408d56e89ffc36b0b46fc416a681324",
+      "publicAfterSha256": "9c1ac29d783b7335e3e3000adb0729c5f408d56e89ffc36b0b46fc416a681324",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_api_v1.tcl",
+      "authorBeforeSha256": "d90bd30147da1c343767734f389d68e695e40ac37155f590eb4dafd2315e78d1",
+      "publicBeforeSha256": "d90bd30147da1c343767734f389d68e695e40ac37155f590eb4dafd2315e78d1",
+      "authorAfterSha256": "fcebeb9fc412aaed66006b289035cc677bf2b9d33a189c72790a4a389db8e0b5",
+      "publicAfterSha256": "fcebeb9fc412aaed66006b289035cc677bf2b9d33a189c72790a4a389db8e0b5",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_cad_v2.tcl",
+      "authorBeforeSha256": "9716bd11d5f1ee7d5edf09c418e97fb7321372ecb2f1c4004e8f369cfe724160",
+      "publicBeforeSha256": "9716bd11d5f1ee7d5edf09c418e97fb7321372ecb2f1c4004e8f369cfe724160",
+      "authorAfterSha256": "f806ac1aed7a59a0a5382cbbcace2bef6d2a9085cdfa30ebae7888b0fdad2a11",
+      "publicAfterSha256": "f806ac1aed7a59a0a5382cbbcace2bef6d2a9085cdfa30ebae7888b0fdad2a11",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_constraints_v1.tcl",
+      "authorBeforeSha256": "11ee265c296b8dea0d0ac9208cff5b0aa127bd13166101ad242f899a7bc8992d",
+      "publicBeforeSha256": "11ee265c296b8dea0d0ac9208cff5b0aa127bd13166101ad242f899a7bc8992d",
+      "authorAfterSha256": "61265e57e3414cc5a4d10e64b3a3752bd229cb9423c316ddae243579f076d710",
+      "publicAfterSha256": "61265e57e3414cc5a4d10e64b3a3752bd229cb9423c316ddae243579f076d710",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_interaction_v1.tcl",
+      "authorBeforeSha256": "ea2330f9fea4ccf2eb1e62af33457a0c2d5a7d29375eea6abd05d18e7d4d8080",
+      "publicBeforeSha256": "ea2330f9fea4ccf2eb1e62af33457a0c2d5a7d29375eea6abd05d18e7d4d8080",
+      "authorAfterSha256": "52ebc99bb2d860cd3c9758fb4e0231d55b7af67a3cd9b1fbcb51d3674bb26283",
+      "publicAfterSha256": "52ebc99bb2d860cd3c9758fb4e0231d55b7af67a3cd9b1fbcb51d3674bb26283",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_parts.tcl",
+      "authorBeforeSha256": "625f3bc6bde6e08f28ea5b366fbe74f5cebc30384c22bf6110c6568826009c86",
+      "publicBeforeSha256": "625f3bc6bde6e08f28ea5b366fbe74f5cebc30384c22bf6110c6568826009c86",
+      "authorAfterSha256": "0b9c64eff93f0f89fbc66334bba4e25d745cc932316bcd2db7751eccb2407085",
+      "publicAfterSha256": "0b9c64eff93f0f89fbc66334bba4e25d745cc932316bcd2db7751eccb2407085",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_representation_v4.tcl",
+      "authorBeforeSha256": "5ac59c1092789df861ac7f7de929761d17f9d9ca238edf8b9188a9e6494d0f4c",
+      "publicBeforeSha256": "5ac59c1092789df861ac7f7de929761d17f9d9ca238edf8b9188a9e6494d0f4c",
+      "authorAfterSha256": "254e5f13129b297a42d4eae25ce7a4a2a311b70386d1b400e5eb3eb200e87a4e",
+      "publicAfterSha256": "254e5f13129b297a42d4eae25ce7a4a2a311b70386d1b400e5eb3eb200e87a4e",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_scene.tcl",
+      "authorBeforeSha256": "4d94a8073e302f3e7f3386d5436bb271ae7500a5f05fee48f9616aa92a365665",
+      "publicBeforeSha256": "4d94a8073e302f3e7f3386d5436bb271ae7500a5f05fee48f9616aa92a365665",
+      "authorAfterSha256": "3d13bb6609ebf9ccb3f7e80b0e1ff012d61c7102e59cddcccf10f504f19f5be3",
+      "publicAfterSha256": "3d13bb6609ebf9ccb3f7e80b0e1ff012d61c7102e59cddcccf10f504f19f5be3",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_selection.tcl",
+      "authorBeforeSha256": "c17f02b07bdd66d5ad151154fd42edbf9ca7806f7cab06a0ddb31dd9ebbee2eb",
+      "publicBeforeSha256": "c17f02b07bdd66d5ad151154fd42edbf9ca7806f7cab06a0ddb31dd9ebbee2eb",
+      "authorAfterSha256": "d9a4f565d5654308e9a3ec7e9b24123e71a50796ece13ebf61d447846a61faa9",
+      "publicAfterSha256": "d9a4f565d5654308e9a3ec7e9b24123e71a50796ece13ebf61d447846a61faa9",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_sketch_constraints_v2.tcl",
+      "authorBeforeSha256": "b38871a9525fb77abc6a2bdf8dc1924aae89820dacfc5d8c8171913fa30911fb",
+      "publicBeforeSha256": "b38871a9525fb77abc6a2bdf8dc1924aae89820dacfc5d8c8171913fa30911fb",
+      "authorAfterSha256": "3e3c43d63e9962849a74264dd2a1dee46cf7557dfe6c30aed3acfb155088cf54",
+      "publicAfterSha256": "3e3c43d63e9962849a74264dd2a1dee46cf7557dfe6c30aed3acfb155088cf54",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_source_v2.tcl",
+      "authorBeforeSha256": "466b5546fae8eec9a025083374b02dbe475ccf52f305b56b1c6fcfbdc20946c1",
+      "publicBeforeSha256": "466b5546fae8eec9a025083374b02dbe475ccf52f305b56b1c6fcfbdc20946c1",
+      "authorAfterSha256": "62e01f1731f38e7f22d868629fd5ab28eac55c879df5791145c2e50233792d2b",
+      "publicAfterSha256": "62e01f1731f38e7f22d868629fd5ab28eac55c879df5791145c2e50233792d2b",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/module.ini",
+      "authorBeforeSha256": "7e2a60695b110a464b84fce08fbb1bea1bf6b51c1e176d84247d7915d5c299f6",
+      "publicBeforeSha256": "7e2a60695b110a464b84fce08fbb1bea1bf6b51c1e176d84247d7915d5c299f6",
+      "authorAfterSha256": "567a67364b58c905cee111bdb754bd9a6e93986f892bd94868d6fd1790921e99",
+      "publicAfterSha256": "567a67364b58c905cee111bdb754bd9a6e93986f892bd94868d6fd1790921e99",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/plugin-package.ini",
+      "authorBeforeSha256": "1f1233e6182ec3e4bc11d718a022874985e86bed1d4e665cdd9ceadfc2f166cd",
+      "publicBeforeSha256": "1f1233e6182ec3e4bc11d718a022874985e86bed1d4e665cdd9ceadfc2f166cd",
+      "authorAfterSha256": "6b3f0eb38c3001ddbfa47f17286432f6cc59cebee9b8da5447c05be45eb81ae2",
+      "publicAfterSha256": "6b3f0eb38c3001ddbfa47f17286432f6cc59cebee9b8da5447c05be45eb81ae2",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+      "authorBeforeSha256": "737b5220a3e9dbf7d2a308a4443b112a555dd93fc400cd01e007f31f317033ff",
+      "publicBeforeSha256": "43a8f7cf255f01dd0d187ae1531f41faf0a8a02f7a17f213b9eddfb2447ca67e",
+      "authorAfterSha256": "b345d362467b50538cccc98c60ac7842a4ac286793b8f9ba52812a1493965c96",
+      "publicAfterSha256": "8a672581d9e95b25ab1e8c9a5b0192e8ea2e5a79be7e8c0ff8d39df533de6748",
+      "sourceExact": false
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+      "authorBeforeSha256": "737b5220a3e9dbf7d2a308a4443b112a555dd93fc400cd01e007f31f317033ff",
+      "publicBeforeSha256": "43a8f7cf255f01dd0d187ae1531f41faf0a8a02f7a17f213b9eddfb2447ca67e",
+      "authorAfterSha256": "b345d362467b50538cccc98c60ac7842a4ac286793b8f9ba52812a1493965c96",
+      "publicAfterSha256": "8a672581d9e95b25ab1e8c9a5b0192e8ea2e5a79be7e8c0ff8d39df533de6748",
+      "sourceExact": false
+    }
+  ],
+  "omittedOwnerInternalPaths": [
+    "docs/development/DEV111-P016/COMPARISON.json",
+    "docs/development/DEV111-P016/CURVE_WORKBENCH_CORE_RESPONSIBILITY_AUDIT.md",
+    "docs/development/DEV111-P016/PERFORMANCE_AUDIT.md",
+    "docs/development/DEV111-P016/TEST_RESULTS.md"
+  ],
+  "priorPublicSourceExceptions": [
+    {
+      "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+      "actual": "43a8f7cf255f01dd0d187ae1531f41faf0a8a02f7a17f213b9eddfb2447ca67e",
+      "expected": "737b5220a3e9dbf7d2a308a4443b112a555dd93fc400cd01e007f31f317033ff",
+      "excluded": false
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+      "actual": "43a8f7cf255f01dd0d187ae1531f41faf0a8a02f7a17f213b9eddfb2447ca67e",
+      "expected": "737b5220a3e9dbf7d2a308a4443b112a555dd93fc400cd01e007f31f317033ff",
+      "excluded": false
+    }
+  ],
+  "publicExecutableDataSameAsOwner": true
+}

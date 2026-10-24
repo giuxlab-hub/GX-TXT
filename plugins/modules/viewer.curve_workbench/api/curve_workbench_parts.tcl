@@ -2,36 +2,26 @@
 # remain authoritative; targets below are transient focus, not a topology store.
 proc ::GX::CurveWorkbench::_partHit {w x y} {
     variable st
-    dict for {logical r} $st($w,curves) {
-        if {![_curveVisible $w $r]||![dict exists $r sketch_definition]||[dict get $r sketch_definition family] ni {compound composite_path}} continue
-        foreach part [::GX::Native2D::core composition_states $st($w,scene) [dict get $r native]] {
-            if {![dict get $part direction visible]} continue
-            if {[::GX::Native2D::core part_marker_hit $st($w,scene) [dict get $r native] [dict get $part part_id] [list $x $y] 7]} {return [list $logical [dict get $part part_id]]}
-        }
-    }
-    return {}
+    set ids {};set reverse {}
+    dict for {logical r} $st($w,curves) {if {[_curveVisible $w $r]} {lappend ids [dict get $r native];dict set reverse [dict get $r native] $logical}}
+    set hit [[_cadController $w] component hit $ids [list $x $y] 7]
+    if {$hit eq {}} {return {}}
+    return [list [dict get $reverse [lindex $hit 0]] [lindex $hit 1]]
 }
 proc ::GX::CurveWorkbench::_partDraw {w} {
-    variable st;set canvas $w.right.viewport.canvas
-    dict for {logical r} $st($w,curves) {
-        if {![_curveVisible $w $r]||![dict exists $r sketch_definition]||[dict get $r sketch_definition family] ni {compound composite_path}} continue
-        foreach part [::GX::Native2D::core composition_states $st($w,scene) [dict get $r native]] {
-            set id [dict get $part part_id]
-            if {[info exists st($w,partTarget)]&&$st($w,partTarget) eq [list $logical $id]} {
-                set points [::GX::Native2D::core part_render $st($w,scene) [dict get $r native] $id]
-                if {[llength $points]>=2} {$canvas create line {*}[concat {*}$points] -fill #c97800 -width 4 -tags part_highlight}
-            }
-
-        }
-    }
+    variable st
+    if {![info exists st($w,partTarget)] || $st($w,partTarget) eq {}} return
+    lassign $st($w,partTarget) logical part
+    if {![dict exists $st($w,curves) $logical] || ![_curveVisible $w [_record $w $logical]]} return
+    ::GX::native2DCadComponentPresent [_cadController $w] $w.right.viewport.canvas [dict get [_record $w $logical] native] $part
 }
 proc ::GX::CurveWorkbench::_partMenu {w menu logical x y} {
     variable st;set native [dict get [_record $w $logical] native]
     set hit [_partHit $w $x $y]
-    if {$hit ne {}&&[lindex $hit 0] eq $logical} {set part [lindex $hit 1]} else {set part [::GX::Native2D::core part_pick $st($w,scene) $native [list $x $y] 10]}
+    if {$hit ne {}&&[lindex $hit 0] eq $logical} {set part [lindex $hit 1]} else {set part [[_cadController $w] component pick $native [list $x $y] 10]}
     if {$part eq {}} return
     set st($w,partTarget) [list $logical $part]
-    set direction [::GX::Native2D::core part_direction $st($w,scene) $native $part]
+    set direction [[_cadController $w] component direction $native $part]
     $menu add separator
     $menu add command -label "[expr {[dict get $direction visible]?"Hide":"Show"}] direction for this subpath" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_partAction $w $logical $part toggle]]
     $menu add command -label {Flip this subpath} -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_partAction $w $logical $part flip]]
@@ -42,13 +32,13 @@ proc ::GX::CurveWorkbench::_partAction {w logical part action} {
     variable st;if {![_partEditable $w]} return
     set native [dict get [_record $w $logical] native]
     set before [_snapshotIds $w [list $logical]]
-    set direction [::GX::Native2D::core part_direction $st($w,scene) $native $part]
+    set direction [[_cadController $w] component direction $native $part]
     set key [expr {$action eq "flip"?"forward":"visible"}]
-    ::GX::Native2D::core part_direction $st($w,scene) $native $part [dict create $key [expr {![dict get $direction $key]}]]
+    [_cadController $w] component direction $native $part [dict create $key [expr {![dict get $direction $key]}]]
     set st($w,partTarget) [list $logical $part];_history $w $before [list $logical];_draw $w
 }
 proc ::GX::CurveWorkbench::_partProperties {w logical part} {
-    variable st;set marker [::GX::Native2D::core part_direction $st($w,scene) [dict get [_record $w $logical] native] $part]
+    variable st;set marker [[_cadController $w] component direction [dict get [_record $w $logical] native] $part]
     set fields [dict create fraction {type number min 0 max 1 label {Position along subpath (0–1)}} offset_px {type number min -4096 max 4096 label {Normal offset (px)}} length_px {type number min 4 max 4096 label {Arrow length (px)}} line_width {type number min .1 max 64 label {Line width (px)}} head_scale {type number min .01 max 4 label {Arrowhead size}} color {type color alpha 1 label {Arrow color / opacity}}]
     dict set marker color [::GX::uiFieldColorFromRGBA [dict get $marker color]]
     ::GX::uiFieldFormCreate $w.partProperties {Subpath direction arrow} $fields $marker [list ::GX::CurveWorkbench::_partPropertiesApply $w $logical $part] $w
@@ -57,7 +47,7 @@ proc ::GX::CurveWorkbench::_partPropertiesApply {w logical part values} {
     variable st;if {![_partEditable $w]} return
     set before [_snapshotIds $w [list $logical]]
     dict set values color [::GX::uiFieldColorToRGBA [dict get $values color]]
-    ::GX::Native2D::core part_direction $st($w,scene) [dict get [_record $w $logical] native] $part $values
+    [_cadController $w] component direction [dict get [_record $w $logical] native] $part $values
     _history $w $before [list $logical];_draw $w
 }
 proc ::GX::CurveWorkbench::_pointerDownPart {w x y state} {
@@ -73,7 +63,7 @@ proc ::GX::CurveWorkbench::_pointerMovePart {w x y} {
     variable st
     if {[info exists st($w,partDrag)]&&$st($w,partDrag) ne {}} {
         set drag $st($w,partDrag)
-        ::GX::Native2D::core part_marker_place $st($w,scene) [dict get [_record $w [dict get $drag logical]] native] [dict get $drag part] [list $x $y]
+        [_cadController $w] component place [dict get [_record $w [dict get $drag logical]] native] [dict get $drag part] [list $x $y]
         _draw $w;return 1
     }
     set target [_partHit $w $x $y]
@@ -98,7 +88,7 @@ proc ::GX::CurveWorkbench::_partCancel {w} {
 proc ::GX::CurveWorkbench::_directionMenu {w menu logical x y} {
     variable st;set record [_record $w $logical]
     if {[dict exists $record sketch_definition]&&[dict get $record sketch_definition family] in {compound composite_path}} {tailcall _partMenu $w $menu $logical $x $y}
-    set marker [::GX::Native2D::core direction_marker $st($w,scene) [dict get $record native]]
+    set marker [[_cadController $w] object direction [dict get $record native]]
     $menu add separator
     $menu add command -label "[expr {[dict get $marker visible]?{Hide}:{Show}}] direction arrow" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_pathDirectionAction $w $logical visible]]
     $menu add command -label {Flip direction} -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_pathDirectionAction $w $logical forward]]
@@ -107,8 +97,8 @@ proc ::GX::CurveWorkbench::_directionMenu {w menu logical x y} {
 proc ::GX::CurveWorkbench::_pathDirectionAction {w logical key} {
     variable st;if {![_partEditable $w]} return
     set before [_snapshotIds $w [list $logical]];set native [dict get [_record $w $logical] native]
-    set marker [::GX::Native2D::core direction_marker $st($w,scene) $native]
-    ::GX::Native2D::core direction_marker $st($w,scene) $native [dict create $key [expr {![dict get $marker $key]}]]
+    set marker [[_cadController $w] object direction $native]
+    [_cadController $w] object direction $native [dict create $key [expr {![dict get $marker $key]}]]
     _history $w $before [list $logical];_draw $w
 }
 proc ::GX::CurveWorkbench::_pathDirectionProperties {w logical} {

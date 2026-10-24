@@ -1,3 +1,15 @@
+## 2.21.15 — DEV111-P016
+
+- Obtain retained sprite geometry directly from the authoritative C scene through
+  public CORE C++ synchronization, with exact change detection and managed lifetime.
+  Ordinary redraws no longer reconstruct every curve's Tcl snapshot/primitives.
+- Adopt the public CORE CAD context for semantic selection, native manipulation,
+  control/constraint coordination, retained components and topology operations.
+  Generic highlights and constituent picking move to CORE. Dataset/Session,
+  coordinate admission, History and publication remain with established owners.
+- Preserve Cairo, scientific C algorithms, native grid, scheduling and UI layout.
+  See the public API and responsibility audit for supported boundaries/limitations.
+
 ## 2.21.14 — DEV111-P015
 
 - Use the shared retained C++/Cairo sprite scene for scientific paths, defining

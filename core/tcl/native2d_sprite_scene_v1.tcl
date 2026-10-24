@@ -2,7 +2,7 @@
 # Optional GUI-host presentation. The C geometry engine remains authoritative.
 namespace eval ::GX::Native2DSprite {variable hosts {};variable pending {}}
 proc ::GX::native2DSpriteSceneApiInfo {} {
-    return [dict create api_id NATIVE2D_SPRITE_SCENE_API_v1 api_version 1 host_only 1 operations {native2DSpriteSceneCreate native2DSpriteSceneBegin native2DSpriteSceneBatch native2DSpriteSceneEnd native2DSpriteSceneDescribe native2DSpriteSceneAnchor native2DSpriteSceneHit native2DSpriteSceneRemove native2DSpriteSceneDispose native2DSpriteSceneObject native2DSpriteSceneAppend native2DSpriteSceneControls}]
+    return [dict create api_id NATIVE2D_SPRITE_SCENE_API_v1 api_version 1 host_only 1 operations {native2DSpriteSceneCreate native2DSpriteSceneBegin native2DSpriteSceneBatch native2DSpriteSceneEnd native2DSpriteSceneDescribe native2DSpriteSceneAnchor native2DSpriteSceneHit native2DSpriteSceneRemove native2DSpriteSceneDispose native2DSpriteSceneObject native2DSpriteSceneAppend native2DSpriteSceneControls native2DSpriteSceneAttach native2DSpriteSceneSync native2DSpriteSceneDetach native2DSpriteSceneDiagnostics}]
 }
 proc ::GX::native2DSpriteSceneCreate {canvas} {
     variable ::GX::Native2DSprite::hosts
@@ -46,7 +46,7 @@ proc ::GX::native2DSpriteSceneAppend {canvas id geometry {anchors {}}} {
 }
 proc ::GX::native2DSpriteSceneEnd {canvas} {
     set rows {};dict for {id row} [dict get $::GX::Native2DSprite::pending $canvas] {lappend rows $row}
-    set n [native2DSpriteSceneCreate $canvas];$n batch $rows;$n end
+    set n [native2DSpriteSceneCreate $canvas];if {$rows ne {}} {$n batch $rows};$n end
     dict unset ::GX::Native2DSprite::pending $canvas
 }
 proc ::GX::native2DSpriteSceneObject {canvas id object background} {
@@ -85,4 +85,20 @@ proc ::GX::native2DSpriteSceneObject {canvas id object background} {
 proc ::GX::native2DSpriteSceneControls {canvas scene object selected color id} {
     set geometry [::GX::Native2D::core sprite_controls $scene $object $selected $color]
     native2DSpriteSceneAppend $canvas $id $geometry
+}
+
+# Scientific source leases remain internal to the native bridge. Scripts pass
+# ordinary public scene/object IDs, never process addresses or borrowed arrays.
+proc ::GX::native2DSpriteSceneAttach {canvas scene} {
+    set n [native2DSpriteSceneCreate $canvas]
+    ::GX::Native2D::core sprite_attach $scene $n
+}
+proc ::GX::native2DSpriteSceneSync {canvas scene descriptors {options {}}} {
+    set n [native2DSpriteSceneCreate $canvas]
+    return [::GX::Native2D::core sprite_sync $scene $n $descriptors $options]
+}
+proc ::GX::native2DSpriteSceneDetach {canvas} {set n [native2DSpriteSceneCreate $canvas];$n detach}
+proc ::GX::native2DSpriteSceneDiagnostics {operation} {
+    if {$operation ni {on off reset get}} {error {Use on, off, reset or get}}
+    native2DEnsure;return [::gx::native2d::sprite_diagnostics $operation]
 }

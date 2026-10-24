@@ -128,7 +128,7 @@ proc ::GX::CurveWorkbench::_constraintRefresh {w} {
     set tree [::GX::CurveWorkbench::_constraintPanel $w].tree
     foreach id [$tree children {}] {if {![dict exists $st($w,constraints) $id]} {$tree delete $id}}
     dict for {id record} $st($w,constraints) {
-        set receipt [::GX::Native2D::core constraint_get $st($w,scene) [dict get $record native]]
+        set receipt [[_cadController $w] relationship get [dict get $record native]]
         set state [expr {[dict get $receipt disabled]?"off":[dict get $receipt driven]?"reference":[dict get $receipt valid]?"active":"invalid"}]
         set values [list [_constraintTitle [dict get $receipt kind]] $state]
         if {![$tree exists $id]} {$tree insert {} end -id $id -values $values} elseif {[$tree item $id -values] ne $values} {$tree item $id -values $values}
@@ -182,7 +182,7 @@ proc ::GX::CurveWorkbench::_unfix {w} {
     dict for {id r} $st($w,constraints) {if {[dict get $r definition kind] eq "fixed"&&[dict get $r definition a] in $ids} {lappend found $id}}
     if {$found eq {}} {error {Select Fixed geometry first.}}
     set before [_snapshotIds $w {}]
-    foreach id $found {::GX::Native2D::core constraint_delete $st($w,scene) [dict get $st($w,constraints) $id native];dict unset st($w,constraints) $id}
+    foreach id $found {[_cadController $w] relationship remove [dict get $st($w,constraints) $id native];dict unset st($w,constraints) $id}
     _history $w $before {};_constraintRefresh $w;_draw $w
 }
 proc ::GX::CurveWorkbench::_constraintCommit {w id spec} {
@@ -197,8 +197,8 @@ proc ::GX::CurveWorkbench::_constraintCommit {w id spec} {
     set affected [_sketchAffected $w [lsort -unique $unitsFor]];set before [_snapshotIds $w $affected];set undo $st($w,undo);set redo $st($w,redo)
     set native [expr {$id eq {}?0:[dict get $st($w,constraints) $id native]}]
     if {[dict exists $spec annotation]&&[dict get $spec placed]} {
-        set receipt [::GX::Native2D::core sketch_dimension_apply $st($w,scene) $native $spec [dict get $spec driven] [dict get $spec annotation]]
-    } else {set receipt [::GX::Native2D::core interaction_constraint_apply $st($w,scene) $native $spec]}
+        set receipt [[_cadController $w] relationship dimension_apply $native $spec [dict get $spec driven] [dict get $spec annotation]]
+    } else {set receipt [[_cadController $w] relationship apply $native $spec]}
     set reverse [_logicalNativeMap $w]
     set definition [dict remove $receipt id valid geometry_supported measured_value residual angular_residual enforcement general_solver]
     foreach key {a b axis} {if {[dict get $definition $key]==0} {dict unset definition $key} else {dict set definition $key [dict get $reverse [dict get $definition $key]]}}
@@ -229,13 +229,13 @@ proc ::GX::CurveWorkbench::_dimensionPreview {w x y} {
     # whole Splines and incomplete point pairs. Never leave an old preview active.
     set st($w,dimSpec) {}
     if {[catch {
-        if {$st($w,dimForced) eq {}} {set spec [::GX::Native2D::core sketch_dimension_infer $st($w,scene) $st($w,dimRefs) $p]} else {
-            set options [::GX::Native2D::core interaction_constraints $st($w,scene) $st($w,dimRefs)]
+        if {$st($w,dimForced) eq {}} {set spec [[_cadController $w] relationship dimension_infer $st($w,dimRefs) $p]} else {
+            set options [[_cadController $w] relationship options $st($w,dimRefs)]
             if {![dict exists $options $st($w,dimForced)]} {error {unsupported dimension selection}}
             set spec [dict get $options $st($w,dimForced)]
         }
         _constraintCoordinateGuard $w $spec
-        set g [::GX::Native2D::core sketch_dimension_preview $st($w,scene) $spec $p]
+        set g [[_cadController $w] relationship dimension_preview $spec $p]
     } reason]} {
         _draw $w
         set message {Dimension needs a straight segment, a circle/arc, a defining point, or two compatible points/segments. Select geometry again; Esc cancels.}
@@ -319,7 +319,7 @@ proc ::GX::CurveWorkbench::_inlineCommit {w {reference 0}} {
 }
 proc ::GX::CurveWorkbench::_dimensionEdit {w} {
     variable st;set id [_constraintSelected $w];set record [dict get $st($w,constraints) $id]
-    set receipt [::GX::Native2D::core constraint_get $st($w,scene) [dict get $record native]]
+    set receipt [[_cadController $w] relationship get [dict get $record native]]
     if {![_isDimension [dict get $receipt kind]]} {set st($w,status) [_constraintDescription $w $record];return}
     if {[dict get $receipt driven]} {set st($w,status) {Reference dimension is read-only. Use Toggle Driving to drive geometry.};return}
     _inlineOpen $w $receipt [dict get $receipt annotation] $id
@@ -328,15 +328,15 @@ proc ::GX::CurveWorkbench::_constraintMarkers {w} {
     variable st
     set st($w,markerRegions) {};set ordinals {}
     dict for {id record} $st($w,constraints) {
-        set receipt [::GX::Native2D::core constraint_get $st($w,scene) [dict get $record native]]
+        set receipt [[_cadController $w] relationship get [dict get $record native]]
         set kind [dict get $receipt kind];set dimensional [_isDimension $kind]
         if {$dimensional&&!$st($w,showDimensions)||!$dimensional&&!$st($w,showConstraints)} continue
         set selected [expr {$id eq $st($w,selectedRelationship)}];set hover [expr {$id eq $st($w,hoverRelationship)}]
         set color [expr {$selected?"#b45400":$hover?"#146d9b":[dict get $receipt disabled]?"#777777":"#744096"}]
         set tags [list constraint_marker constraint_$id]
         if {$dimensional} {
-            set g [::GX::Native2D::core sketch_dimension_geometry $st($w,scene) [dict get $record native]]
-            if {$st($w,annotationDrag) ne {}&&[dict get $st($w,annotationDrag) id] eq $id} {set g [::GX::Native2D::core sketch_dimension_preview $st($w,scene) $receipt [dict get $st($w,annotationDrag) target]]}
+            set g [[_cadController $w] relationship dimension_geometry [dict get $record native]]
+            if {$st($w,annotationDrag) ne {}&&[dict get $st($w,annotationDrag) id] eq $id} {set g [[_cadController $w] relationship dimension_preview $receipt [dict get $st($w,annotationDrag) target]]}
             _dimensionDraw $w $g $receipt $color $tags
             lassign [dict get $g label] labelX labelY
             set labelText [_dimensionText $w $receipt [dict get $g value] [dict get $g driven]]
@@ -344,7 +344,7 @@ proc ::GX::CurveWorkbench::_constraintMarkers {w} {
             set halfHeight [expr {max(14,([font metrics TkDefaultFont -linespace]+12)/2)}]
             dict set st($w,markerRegions) $id [list [expr {$labelX-$halfWidth}] [expr {$labelY-$halfHeight}] [expr {$labelX+$halfWidth}] [expr {$labelY+$halfHeight}]]
         } else {
-            set p [::GX::Native2D::core interaction_constraint_location $st($w,scene) [dict get $record native]]
+            set p [[_cadController $w] relationship location [dict get $record native]]
             lassign [::GX::Native2D::core device $st($w,scene) $p] x y
             set object [dict get $receipt a];set ordinal [::GX::datasetPublicationV2DictDefault $ordinals $object 0];dict incr ordinals $object
             set x [expr {$x+18+32*($ordinal%4)}];set y [expr {$y+22+30*($ordinal/4)}]
@@ -417,15 +417,15 @@ proc ::GX::CurveWorkbench::_relationshipAction {w action} {
     variable st
     if {$action in {edit details toggle remove}} {_paletteAction $w $action;return}
     set id [_constraintSelected $w];set record [dict get $st($w,constraints) $id];set native [dict get $record native]
-    set receipt [::GX::Native2D::core constraint_get $st($w,scene) $native]
+    set receipt [[_cadController $w] relationship get $native]
     if {![_isDimension [dict get $receipt kind]]} {error {This relationship is not a dimension.}}
     if {$action eq "driven"} {
         dict set receipt value [dict get $receipt measured_value];dict set receipt driven [expr {![dict get $receipt driven]}]
         _constraintCommit $w $id $receipt
     } else {
         set before [_snapshotIds $w {}]
-        set point [::GX::Native2D::core interaction_constraint_location $st($w,scene) $native]
-        ::GX::Native2D::core sketch_relationship $st($w,scene) $native [dict create annotation $point placed 1]
+        set point [[_cadController $w] relationship location $native]
+        [_cadController $w] relationship state $native [dict create annotation $point placed 1]
         _history $w $before {};_draw $w
     }
 }
@@ -509,7 +509,7 @@ proc ::GX::CurveWorkbench::_pointerUpConstraint {w x y} {
         set drag $st($w,annotationDrag);set st($w,annotationDrag) {}
         if {[dict get $drag moved]} {
             set id [dict get $drag id]
-            ::GX::Native2D::core sketch_relationship $st($w,scene) [dict get $st($w,constraints) $id native] [dict create placed 1 annotation [dict get $drag target]]
+            [_cadController $w] relationship state [dict get $st($w,constraints) $id native] [dict create placed 1 annotation [dict get $drag target]]
             _history $w [dict get $drag before] {}
         }
         _draw $w;return 1
@@ -602,7 +602,7 @@ proc ::GX::CurveWorkbench::_constraintAction {w action} {
     foreach key {a b axis} {if {[dict exists $spec $key]} {lappend ids [dict get $spec $key]}}
     _cancelGesture $w
     set before [_snapshotIds $w $ids]
-    if {$action eq "remove"} {::GX::Native2D::core constraint_delete $st($w,scene) [dict get $record native];dict unset st($w,constraints) $id} else {
+    if {$action eq "remove"} {[_cadController $w] relationship remove [dict get $record native];dict unset st($w,constraints) $id} else {
         ::GX::Native2D::core constraint_enable $st($w,scene) [dict get $record native] [dict get $spec disabled]
         set st($w,selectedRelationship) $id
     }

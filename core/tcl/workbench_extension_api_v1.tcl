@@ -27,6 +27,7 @@ proc ::GX::workbenchExtensionCoreApis {} {
         WORKBENCH_RECOVERY_API_v1 ::GX::workbenchRecoveryApiInfo
         GUI_UPDATE_SCHEDULER_API_v1 ::GX::guiUpdateSchedulerApiInfo
         NATIVE2D_SPRITE_SCENE_API_v1 ::GX::native2DSpriteSceneApiInfo
+        NATIVE2D_API_v1 ::GX::native2DCadApiInfo
         NATIVE2D_GRID_PRESENTER_API_v1 ::GX::native2DGridPresenterApiInfo
     }]
 }

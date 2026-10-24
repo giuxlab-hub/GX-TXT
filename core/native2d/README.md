@@ -380,3 +380,27 @@ contract is documented in `docs/api/NATIVE2D_SPRITE_SCENE_API_v1.md`.
 The target includes both the accepted P014 grid presenter and the new retained
 sprite scene; use the matching binary and complete cumulative sources together.
 No additional plugin, worker, renderer backend or event loop is required.
+
+### Direct scientific sprites and CAD context (DEV111-P016)
+
+The same target now includes `gx2d_cad_controller_v1.cpp/.h`, a managed host-side
+CAD context over the existing C scene/selection/constraints/drag operations, and
+the direct scientific binding in `gx2d_sprite_scene_v1.cpp/.h`. The small read-only
+`gx2d_presentation_visit_v1.h/.inc` observes exact native state; it is included at
+the end of gx2d.c without changing existing geometry algorithms or public PODs.
+C++ holds a revocable scene lease; scripts use public scene/object IDs, never raw
+pointers. This is not an additional scientific engine or worker SDK permission.
+
+Build with the same CMake commands/dependencies above. The delivered Linux x86-64
+`bin/gx2dtcl.so` matches these sources and contains grid, sprites, direct binding
+and CAD context together. Restart after applying. Public GUI contracts and the
+architectural boundary/remaining limitations are documented in:
+
+- `docs/api/NATIVE2D_CAD_CONTROLLER_v1.md`
+- `docs/api/NATIVE2D_SPRITE_SCENE_API_v1.md`
+- `docs/development/DEV111-P016/CURVE_WORKBENCH_CORE_RESPONSIBILITY_AUDIT.md`
+
+Opt-in `native2DSpriteSceneDiagnostics` counters are disabled by default. The
+scientific C→C++ direct path avoids ordinary Tcl geometry snapshots; manual sprite
+creation remains compatible. Cairo, grid, update scheduler and other Viewers keep
+their established owners.

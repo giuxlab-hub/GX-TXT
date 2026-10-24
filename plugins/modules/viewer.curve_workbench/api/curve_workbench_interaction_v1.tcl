@@ -166,7 +166,7 @@ proc ::GX::CurveWorkbench::_pointerMoveControl {w x y} {
     if {[dict get $st($w,snapCandidate) kind] eq "none"&&[dict exists $st($w,handleDrag) origin]} {
         set target [lmap now $target start [dict get $st($w,handleDrag) pointer] origin [dict get $st($w,handleDrag) origin] {expr {$origin+($now-$start)}}]
     }
-    if {[catch {set definition [::GX::Native2D::core interaction_edit_definition $st($w,scene) $ref $target]} message]} {set st($w,status) "Handle preview: $message";return 1}
+    if {[catch {set definition [[_cadController $w] control preview $ref $target]} message]} {set st($w,status) "Handle preview: $message";return 1}
     _toolPreview $w $definition;dict set st($w,handleDrag) target $target;_draw $w
 
     return 1
@@ -181,23 +181,13 @@ proc ::GX::CurveWorkbench::_pointerUpControl {w x y} {
     if {[catch {
         _coordinateControlCheck $w [list $id] [dict get $drag coordinate_key]
         _coordinatePlaneAdmit $w [list $id]
-        ::GX::Native2D::core interaction_edit $st($w,scene) $ref [dict get $drag target]
+        [_cadController $w] control edit $ref [dict get $drag target]
     } message]} {_sketchIdle $w "Edit rejected: $message. Existing geometry and constraints preserved.";return 1}
     set undo $st($w,undo);set redo $st($w,redo)
     try {_syncSamples $w $id;_history $w [dict get $drag before] [list $id]} on error {message options} {_restoreSnapshot $w [dict get $drag before];set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
     set st($w,status) "Defining handle edited; retained primitive and Native constraints preserved."
 
     return 1
-}
-rename ::GX::CurveWorkbench::_drawPointMarkers ::GX::CurveWorkbench::_drawPointMarkers_interaction_base
-proc ::GX::CurveWorkbench::_drawPointMarkers {w id sampled color} {
-    variable st
-    set record [_record $w $id]
-    if {![dict exists $record sketch_definition]} {tailcall _drawPointMarkers_interaction_base $w $id $sampled $color}
-    set selected {}
-    foreach ref $st($w,sketchSelection) {if {[dict get $ref logical] eq $id} {lappend selected [dict get $ref index]}}
-    ::GX::native2DSpriteSceneControls $w.right.viewport.canvas $st($w,scene) [dict get $record native] $selected $color $id
-
 }
 rename ::GX::CurveWorkbench::_pointList ::GX::CurveWorkbench::_pointList_interaction_base
 proc ::GX::CurveWorkbench::_pointList {w} {
@@ -219,7 +209,7 @@ proc ::GX::CurveWorkbench::_pointList {w} {
             $tree heading $axis -text "$key ($unit)"
             $w.leftScroll.viewport.content.numeric.ledit$key configure -text "$key ($unit)"
         }
-        set handles [::GX::Native2D::core interaction_controls $st($w,scene) [dict get $record native]]
+        set handles [[_cadController $w] control inspect [dict get $record native]]
         set signature [list handles $st($w,active) $handles [_coordinateKey $w $st($w,active)]]
         if {$signature ne $st($w,pointTableSignature)} {
             $tree delete [$tree children {}];set i 0
@@ -247,7 +237,7 @@ proc ::GX::CurveWorkbench::_pointTreeSelect {w} {
     if {$st($w,active) eq {}||![dict exists [_record $w $st($w,active)] sketch_definition]} {tailcall _pointTreeSelect_interaction_base $w}
     if {$st($w,pointSyncRunning)} return
     _pointSyncCancel $w
-    set handles [::GX::Native2D::core interaction_controls $st($w,scene) [dict get [_record $w $st($w,active)] native]]
+    set handles [[_cadController $w] control inspect [dict get [_record $w $st($w,active)] native]]
     set refs {};foreach row [$w.leftScroll.viewport.content.points selection] {set ref [lindex $handles [expr {[string range $row 1 end]-1}]];dict set ref logical $st($w,active);lappend refs $ref}
     set prior {};foreach ref $st($w,sketchSelection) {if {[dict get $ref logical] eq $st($w,active)&&[dict get $ref entity] eq "control"} {lappend prior [dict get $ref index]}}
     if {[lsort $prior] eq [lsort [lmap ref $refs {dict get $ref index}]]} return
@@ -259,7 +249,7 @@ proc ::GX::CurveWorkbench::_numericEdit {w} {
     if {![dict exists [_record $w [_active $w]] sketch_definition]} {tailcall _numericEdit_interaction_base $w}
     if {[llength $st($w,sketchSelection)]!=1||[dict get [lindex $st($w,sketchSelection) 0] entity] ne "control"} {error "Select one defining handle"}
     set before [_snapshotIds $w [list [_active $w]]];set undo $st($w,undo);set redo $st($w,redo)
-    ::GX::Native2D::core interaction_edit $st($w,scene) [lindex $st($w,sketchSelection) 0] [_coordinatePoint $w [_active $w] [list [_finite $st($w,editX) X] [_finite $st($w,editY) Y]] inverse]
+    [_cadController $w] control edit [lindex $st($w,sketchSelection) 0] [_coordinatePoint $w [_active $w] [list [_finite $st($w,editX) X] [_finite $st($w,editY) Y]] inverse]
     try {_syncSamples $w [_active $w];_history $w $before [list [_active $w]]} on error {message options} {_restoreSnapshot $w $before;set st($w,undo) $undo;set st($w,redo) $redo;return -options $options $message}
 }
 proc ::GX::CurveWorkbench::_drawCreationPreview {w} {
@@ -271,7 +261,7 @@ proc ::GX::CurveWorkbench::_drawCreationPreview {w} {
         dict set object style line_width 2;dict set object style line_style 2
         dict unset object marker
         ::GX::native2DCanvasDrawObject $w.right.viewport.canvas $object white tool_preview
-        set previewHandles [::GX::Native2D::core interaction_controls $st($w,scene) $st($w,toolPreview)]
+        set previewHandles [[_cadController $w] control inspect $st($w,toolPreview)]
         foreach handle $previewHandles {lassign [::GX::Native2D::core device $st($w,scene) [dict get $handle point]] x y;$w.right.viewport.canvas create rectangle [expr {$x-4}] [expr {$y-4}] [expr {$x+4}] [expr {$y+4}] -outline #159768 -tags tool_preview}
     }
     if {$st($w,previewDefinition) ne {}&&[dict get $st($w,previewDefinition) family] in {circle arc}&&[llength $previewHandles]>=2} {
@@ -349,7 +339,7 @@ proc ::GX::CurveWorkbench::_constraintOptions {w} {
     variable st
     set refs [_constraintReferences $w]
     if {[llength $refs]<1||[llength $refs]>3} {return {}}
-    return [::GX::Native2D::core interaction_constraints $st($w,scene) $refs]
+    return [[_cadController $w] relationship options $refs]
 }
 proc ::GX::CurveWorkbench::_constraintMenu {w} {
     set menu $w.sketchbar.constraints.menu;$menu delete 0 end
@@ -396,7 +386,7 @@ proc ::GX::CurveWorkbench::_constraintCommit {w id spec} {
     _cadUnits $w [lsort -unique $affected]
     set before [_snapshotIds $w $affected];set undo $st($w,undo);set redo $st($w,redo)
     set native 0;if {$id ne {}} {set native [dict get $st($w,constraints) $id native]}
-    set receipt [::GX::Native2D::core interaction_constraint_apply $st($w,scene) $native $spec]
+    set receipt [[_cadController $w] relationship apply $native $spec]
     if {$id eq {}} {set id constraint[incr st($w,nextConstraint)]}
     dict set st($w,constraints) $id [dict create id $id name [_constraintTitle [dict get $spec kind]] native [dict get $receipt id] definition $definition]
     try {
@@ -500,7 +490,7 @@ proc ::GX::CurveWorkbench::_joinSource {w} {
     if {[dict exists [_record $w [_active $w]] sketch_definition]} {
         set refs $st($w,sketchSelection)
         if {[llength $refs]!=1||[dict get [lindex $refs 0] entity] ne "control"} {error "Select one defining endpoint for Join"}
-        return [list [dict get [lindex $refs 0] logical] [::GX::Native2D::core interaction_point_index $st($w,scene) [lindex $refs 0]]]
+        return [list [dict get [lindex $refs 0] logical] [[_cadController $w] control point_index [lindex $refs 0]]]
     }
     return [_joinSource_interaction_base $w]
 }
@@ -512,7 +502,7 @@ proc ::GX::CurveWorkbench::_syncSamples {w id} {
     variable st
     _syncSamples_interaction_base $w $id
     if {![dict exists [_record $w $id] sketch_definition]} return
-    set handles [::GX::Native2D::core interaction_controls $st($w,scene) [dict get [_record $w $id] native]]
+    set handles [[_cadController $w] control inspect [dict get [_record $w $id] native]]
     set refreshed {}
     foreach ref $st($w,sketchSelection) {
         if {[dict get $ref logical] ne $id} {lappend refreshed $ref;continue}

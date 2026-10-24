@@ -1,4 +1,4 @@
-# viewer.curve_workbench 2.21.13
+# viewer.curve_workbench 2.21.15
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -35,3 +35,10 @@ picking, native edits, constraints, snapping, units, undo and publication retain
 their existing owners. Context/highlight/gizmo widgets remain existing overlays.
 Performance measurements and their limitations are recorded with the patch;
 fewer Tk items do not by themselves establish shorter complete redraw times.
+
+
+DEV111-P016 requires its matching CORE native binary and adapters. Direct native
+scientific sprite synchronization is active; CORE CAD contexts coordinate existing
+C selection/drag/control/constraint/component operations. Public contracts are
+`docs/api/NATIVE2D_SPRITE_SCENE_API_v1.md` and
+`docs/api/NATIVE2D_CAD_CONTROLLER_v1.md` in the framework. No other Viewer is migrated.
