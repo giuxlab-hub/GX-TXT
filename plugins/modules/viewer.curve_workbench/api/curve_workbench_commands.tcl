@@ -251,8 +251,8 @@ proc ::GX::CurveWorkbench::_installCommandTools {w} {
         $widget configure -command [list ::GX::CurveWorkbench::_commandInvoke $w $id]
         bind $widget <Button-3> [list ::GX::CurveWorkbench::_toolPopup $w $id %X %Y]
         bind $widget <Enter> [list ::GX::CurveWorkbench::_commandTooltip $w $widget $id]
-        bind $widget <Leave> {catch {destroy .gxViewportTip}}
-        bind $widget <ButtonPress> {catch {destroy .gxViewportTip}}
+        # native2DViewportTooltipShow installs the shared target lifecycle.
+        # Keep its ownership instead of destroying its window independently.
     }
     set pan [::GX::native2DViewportPanelWidget $w.right.viewport.canvas controls].body.pan
     bind $pan <Enter> [list ::GX::CurveWorkbench::_commandTooltip $w $pan view.pan]

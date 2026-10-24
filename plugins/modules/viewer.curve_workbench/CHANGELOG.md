@@ -1,3 +1,11 @@
+## 2.21.8 — DEV111-P008
+
+Connect the bottom Description/History selector to the existing Viewer-bounded
+UI Field selector. Retain the shared canvas tooltip lifecycle rather than
+destroying tooltip windows from Workbench bindings. The matching CORE correction
+distinguishes internal focus/harmless stacking from genuine tooltip dismissal.
+Preserve the P007 layout and menus; no scientific or performance change.
+
 ## 2.21.7 — DEV111-P007
 
 Restore the accepted bottom Description/History strip and remove its upper row.

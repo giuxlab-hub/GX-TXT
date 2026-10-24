@@ -21,6 +21,7 @@ proc ::GX::CurveWorkbench::_timelineBuild {w} {
     pack propagate $w.strip 0
     pack $w.strip -side bottom -fill x -before $w.main
     ttk::combobox $w.strip.choice -values {Description History} -state readonly -width 12 -textvariable ::GX::CurveWorkbench::st($w,stripView)
+    ::GX::uiFieldSelectorWithinViewer $w.strip.choice $w
     pack $w.strip.choice -side left -fill y
     pack $w.status -in $w.strip -side left -fill x -expand 1;raise $w.status
     bind $w.status <Configure> +[list ::GX::CurveWorkbench::_timelineDescriptionLayout $w]

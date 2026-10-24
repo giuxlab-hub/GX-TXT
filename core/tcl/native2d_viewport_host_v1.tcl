@@ -422,12 +422,31 @@ proc ::GX::native2DViewportTooltipHide {{widget {}}} {
 }
 proc ::GX::_native2DViewportTooltipTargetEvent {widget event actual} {
     if {$actual ne $widget} return
+    # Native toolbar reflow can queue Leave/Unmap before restoring the same
+    # control beneath an unchanged pointer. Consult current widget ownership.
+    if {$event in {Leave Unmap} && [_native2DViewportTooltipHovered $widget]} return
     native2DViewportTooltipHide $widget
     if {$event eq {Destroy}} {catch {dict unset ::GX::ViewportHost::tips targets $widget}}
 }
+proc ::GX::_native2DViewportTooltipHovered {widget} {
+    if {![winfo exists $widget] || ![winfo ismapped $widget]} {return 0}
+    set actual [winfo containing -displayof $widget [winfo pointerx $widget] [winfo pointery $widget]]
+    expr {$actual eq $widget || [string match ${widget}.* $actual]}
+}
 proc ::GX::_native2DViewportTooltipOwnerEvent {owner event actual} {
     if {$actual ne $owner} return
-    if {[dict exists $::GX::ViewportHost::tips current owner] && [dict get $::GX::ViewportHost::tips current owner] eq $owner} {native2DViewportTooltipHide}
+    if {[dict exists $::GX::ViewportHost::tips current owner] && [dict get $::GX::ViewportHost::tips current owner] eq $owner} {
+        # FocusOut/NotifyInferior is also sent when focus moves from the
+        # toplevel to its own canvas. It is not a Viewer deactivation.
+        if {$event eq {FocusOut}} {
+            set focused [focus -displayof $owner]
+            if {$focused ne {} && [winfo exists $focused] && [winfo toplevel $focused] eq $owner} return
+        }
+        # A real ConfigureNotify may describe stacking only (including raising
+        # a transient tooltip), not a move away from the hovered control.
+        if {$event eq {Configure} && [winfo ismapped $owner] && [_native2DViewportTooltipHovered [dict get $::GX::ViewportHost::tips current target]]} return
+        native2DViewportTooltipHide
+    }
     if {$event eq {Destroy}} {catch {dict unset ::GX::ViewportHost::tips owners $owner}}
 }
 proc ::GX::native2DViewportTooltipShow {widget text} {
@@ -443,7 +462,7 @@ proc ::GX::native2DViewportTooltipShow {widget text} {
         dict set tips owners $owner 1
     }
     if {![dict exists $tips targets $widget]} {
-        foreach event {Leave ButtonPress Destroy} {bind $widget <$event> +[list ::GX::_native2DViewportTooltipTargetEvent $widget $event %W]}
+        foreach event {Leave ButtonPress Unmap Destroy} {bind $widget <$event> +[list ::GX::_native2DViewportTooltipTargetEvent $widget $event %W]}
         dict set tips targets $widget 1
     }
     # Position while withdrawn: the first visible frame must already belong to
