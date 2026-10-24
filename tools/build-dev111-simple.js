@@ -13,7 +13,8 @@ module.exports=function renderPatch(id){
   if(!t||!Array.isArray(t.changes)||t.changes.length<4)throw Error('Incomplete public change description '+lang);
   const url=base+slug+'hotfixes/'+id+'/';
   const releasePage=depth+(it?'it/':'')+'releases/#dev-111';
-  const technical='https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/'+(id.includes('p001')?'DEV111-P001':'DEV111-P002')+'/APPLY.md';
+  const folder=p.source_folder || (id.includes('p001')?'DEV111-P001':'DEV111-P002');
+  const technical='https://github.com/giuxlab-hub/GX-TXT/blob/'+encodeURIComponent(p.hotfix_commit)+'/'+['patches','dev111',folder,(p.doc_name||'APPLY.md')].map(encodeURIComponent).join('/');
   const label=it?{download:'Scarica la patch',rollback:'Scarica il rollback',guide:'Installazione e ripristino',releases:'Release',published:'Patch disponibile'}:{download:'Download patch',rollback:'Download rollback',guide:'Installation and rollback',releases:'Releases',published:'Patch available'};
   const title='GX-TXT dev-111 r3 — '+t.title;
   const chunks=[
@@ -43,12 +44,13 @@ module.exports=function renderPatch(id){
 '      <div class="tag">'+label.published+'</div>',
 '      <h1>'+esc(t.title)+'</h1>',
 '      <p class="lead">'+esc(t.intro)+'</p>',
+'      '+(p.superseded_by?'<p><a href="'+base+slug+'hotfixes/'+p.superseded_by+'/">'+(it?'Installatore P001-r2 aggiornato ↗':'Updated P001-r2 installer ↗')+'</a></p>':'') ,
 '      <p>'+esc(t.details)+'</p>',
 '      <ul class="hotfix-list">'+t.changes.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul>',
 '      <p>'+esc(t.requirement)+'</p>',
 '      <div class="buttons">',
 '        <a class="button primary" href="'+esc(p.asset_url)+'">'+label.download+' ↓</a>',
-'        '+(id.includes('p001')?'<a class="button secondary" href="'+esc(p.rollback_url)+'">'+label.rollback+' ↓</a>':''),
+'        '+(p.rollback_url?'<a class="button secondary" href="'+esc(p.rollback_url)+'">'+label.rollback+' ↓</a>':''),
 '        <a class="button secondary" href="'+technical+'">'+label.guide+' ↗</a>',
 '        <a class="button secondary" href="'+esc(p.github_release)+'">GitHub ↗</a>',
 '      </div>',

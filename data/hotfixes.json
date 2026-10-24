@@ -2,6 +2,186 @@
   "schema": "gxtxt.pages.hotfix-registry/1",
   "entries": [
     {
+      "id": "dev111-p005-native-preview-activation",
+      "source_folder": "DEV111-P005",
+      "doc_name": "README.md",
+      "tag": "v0.9.8.10-dev-111-p005",
+      "hotfix_commit": "6a59da41c2aa23fdc356e6f956238c02bdc6fff3",
+      "asset_name": "DEV111-P005-PUBLIC.zip",
+      "asset_bytes": 86910,
+      "asset_sha256": "3712cf052181561226e7c2657f8527b50223dda9035a072a554a90aee41649ad",
+      "required_predecessor_patch": 4,
+      "en": {
+        "label": "DEV111-P005 — Native Preview activation",
+        "title": "Corrected native Preview provider activation",
+        "intro": "Completes the existing native Preview adapter build and worker loading path for GX-TXT dev-111 r3.",
+        "changes": [
+          "Include the existing gxpreviewprovider.so native adapter in the normal CMake build.",
+          "Load that native adapter explicitly from the managed Dataset Preview Tcl worker.",
+          "Preserve existing scientific Dataset owners, provider registration, enablement and fallback.",
+          "Distribute only the three corrected source/binary files, not the superseded first P005 package."
+        ],
+        "requirement": "Requires P001, P002, P003 and P004, in that order, on GX-TXT dev-111 r3 with compatible Linux x86_64 native libraries.",
+        "details": "This is the corrected P005 integration. Its three-file ZIP includes the rebuilt Linux Preview adapter and existing worker bridge. Extract to the compatible framework directory while GX-TXT is closed; retain the prepatch source/binary backup for rollback."
+      },
+      "it": {
+        "label": "DEV111-P005 — Attivazione Preview nativa",
+        "title": "Attivazione corretta del provider Preview nativo",
+        "intro": "Completa la compilazione dell’adattatore Preview nativo e il suo caricamento dal worker per GX-TXT dev-111 r3.",
+        "changes": [
+          "Integra il componente gxpreviewprovider.so già esistente nel normale build CMake.",
+          "Avvia il caricamento esplicito dell’adattatore dal worker Tcl gestito di Dataset Preview.",
+          "Conserva proprietà scientifica dei Dataset, registrazione, abilitazione e fallback dei provider.",
+          "Distribuisce soltanto i tre file corretti, senza la prima versione P005 superata."
+        ],
+        "requirement": "Richiede P001, P002, P003 e P004 applicate in ordine, su GX-TXT dev-111 r3 con librerie native Linux x86_64 compatibili.",
+        "details": "Questa è la P005 corretta. Il pacchetto include l’adattatore Preview Linux ricompilato e il bridge verso il worker esistente. Estrarlo nella directory del framework compatibile a programma chiuso, conservando il backup dei file per il ripristino."
+      },
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p005",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p005/DEV111-P005-PUBLIC.zip"
+    },
+    {
+      "id": "dev111-p004-metadata-preview",
+      "source_folder": "DEV111-P004",
+      "doc_name": "README.md",
+      "tag": "v0.9.8.10-dev-111-p004",
+      "hotfix_commit": "bb1d92106daeb30eb986866f699c47f6d8ed1d33",
+      "asset_name": "DEV111-P004-PUBLIC.zip",
+      "asset_bytes": 91077,
+      "asset_sha256": "5ed96229e7ae59dd9879f3b3a68144d99c9f6c989f78dc1e69e55ed446a34300",
+      "required_predecessor_patch": 3,
+      "en": {
+        "label": "DEV111-P004 — Metadata-aware Preview",
+        "title": "Metadata-aware Dataset Preview selection",
+        "intro": "Refines how Dataset Preview resolves scientific sources and chooses the relevant display through metadata.",
+        "changes": [
+          "Use Dataset provenance and typed scientific metadata when choosing Preview representation.",
+          "Extend Preview descriptors and bridge/worker source-bound selection.",
+          "Coordinate retained display caches and native Preview actions with exact source revision guards.",
+          "Preserve existing scientific Dataset ownership and publication services."
+        ],
+        "requirement": "Requires P001, P002 and P003 already applied to GX-TXT dev-111 revision r3.",
+        "details": "P004 updates 13 Tcl/Python/public API documentation files. With GX-TXT closed, check prerequisites listed in the patch notes and extract the ZIP into the framework root. Keep a previous-file backup for rollback."
+      },
+      "it": {
+        "label": "DEV111-P004 — Preview con metadati",
+        "title": "Selezione Dataset Preview basata sui metadati",
+        "intro": "Migliora l’individuazione dei sorgenti scientifici e la scelta della rappresentazione Preview mediante metadati.",
+        "changes": [
+          "Utilizza provenienza e metadati scientifici tipizzati per scegliere la rappresentazione di Preview.",
+          "Estende descrittori, bridge e worker nelle selezioni collegate alla sorgente.",
+          "Coordina cache e azioni Preview native rispettando le revisioni dei sorgenti.",
+          "Conserva i servizi canonici di proprietà e pubblicazione dei Dataset."
+        ],
+        "requirement": "Richiede P001, P002 e P003 già applicate su GX-TXT dev-111 revisione r3.",
+        "details": "P004 aggiorna 13 file Tcl/Python e documentazione API. A programma chiuso verificare i prerequisiti indicati nelle note ed estrarre lo ZIP nella radice del framework, mantenendo un backup dei file per il ripristino."
+      },
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p004",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p004/DEV111-P004-PUBLIC.zip"
+    },
+    {
+      "id": "dev111-p003-script-management",
+      "source_folder": "DEV111-P003",
+      "doc_name": "README.md",
+      "tag": "v0.9.8.10-dev-111-p003",
+      "hotfix_commit": "c32421c0d4734fe5ab41787c145a69331dfd63ec",
+      "asset_name": "DEV111-P003-PUBLIC.zip",
+      "asset_bytes": 82826,
+      "asset_sha256": "d9fae5dac740b412cda45128aa16484fd9a9dd6bc8ddbbca18d17c7937cd0fa6",
+      "required_predecessor_patch": 2,
+      "en": {
+        "label": "DEV111-P003 — Script Management",
+        "title": "Session script selection and Script Workspace controls",
+        "intro": "Restores Session-registered GNU Octave script selection and related metadata controls in the scientific Script Workspaces.",
+        "changes": [
+          "Populate GNU Octave Analysis selection from scripts registered in the active Session.",
+          "Refresh script selectors when opening, switching or updating Sessions.",
+          "Restore script version and related metadata controls in Script Workspace.",
+          "Preserve the existing Script Registry, execution and documentation APIs."
+        ],
+        "requirement": "Requires P001 and P002 already applied to GX-TXT dev-111 revision r3.",
+        "details": "P003 updates 15 script-management source and documentation paths. Check recorded SHA-256 prerequisites, then extract the package at the compatible framework root while GX-TXT is closed. Keep a backup for rollback."
+      },
+      "it": {
+        "label": "DEV111-P003 — Gestione Script",
+        "title": "Selezione degli script di Session e controlli Script Workspace",
+        "intro": "Ripristina la selezione degli script Octave registrati nella Session e i controlli dei metadati negli Script Workspace.",
+        "changes": [
+          "Mostra in GNU Octave Analysis gli script registrati nella Session attiva.",
+          "Aggiorna i selettori all’apertura, cambio o modifica della Session.",
+          "Ripristina versione e altri controlli metadati dello Script Workspace.",
+          "Conserva API di Script Registry, esecuzione e documentazione esistenti."
+        ],
+        "requirement": "Richiede P001 e P002 già applicate su GX-TXT dev-111 revisione r3.",
+        "details": "P003 aggiorna 15 percorsi fra sorgenti e documentazione degli script. Verificare gli SHA-256 prerequisiti ed estrarre il pacchetto nella radice del framework compatibile con GX-TXT chiuso. Conservare un backup per il ripristino."
+      },
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p003",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p003/DEV111-P003-PUBLIC.zip"
+    },
+    {
+      "id": "dev111-p001-r2-installer",
+      "source_folder": "DEV111-P001-r2",
+      "doc_name": "APPLY.md",
+      "tag": "v0.9.8.10-dev-111-p001-r2",
+      "hotfix_commit": "42e99115f6d57abbdd495ea9c0eea56b4bb13cb8",
+      "asset_name": "DEV111-P001-r2-PUBLIC.zip",
+      "asset_bytes": 212085,
+      "asset_sha256": "936090cc8e7237430b4cfc6b93531fdd3c17e336e89720251b7968e0473c2731",
+      "required_predecessor_patch": 0,
+      "en": {
+        "label": "DEV111-P001-r2 — Simplified installer",
+        "title": "Simplified installer for P001 Modules visibility patch",
+        "intro": "P001 installer revision 2 replaces the longer manual installation procedure without changing the six original functional source files.",
+        "changes": [
+          "Provide the original P001 six-file update and rollback archives unchanged.",
+          "Use one Bash installer command to check source identity and apply P001.",
+          "Preserve automatic original-file backups and the rollback command.",
+          "Maintain the same Modules visibility and Analysis toolbar behavior as P001."
+        ],
+        "requirement": "For GX-TXT 0.9.8.10-dev-111 r3. Apply P001-r2 before P002, P003, P004 or P005. The installer checks the original installed file modes and SHA-256 identities.",
+        "details": "Extract the self-contained P001-r2 ZIP to a separate folder and run bash apply.sh /path/to/gxtxt. Roll back with bash apply.sh --rollback /path/to/gxtxt, with GX-TXT closed. This installer revision does not change the P001 Tcl patch payload."
+      },
+      "it": {
+        "label": "DEV111-P001-r2 — Installatore semplificato",
+        "title": "Installatore semplificato per P001, visibilità Modules",
+        "intro": "La revisione 2 dell’installatore P001 sostituisce la procedura manuale più lunga senza modificare i sei file funzionali originali.",
+        "changes": [
+          "Include senza modifiche gli archivi P001 con sei file aggiornati e relativi file di rollback.",
+          "Consente di verificare e applicare P001 mediante un unico comando Bash.",
+          "Conserva backup automatici dei file originali e comando di ripristino.",
+          "Mantiene il comportamento di visibilità Modules e della toolbar Analysis previsto da P001."
+        ],
+        "requirement": "Per GX-TXT 0.9.8.10-dev-111 r3. Applicare P001-r2 prima di P002, P003, P004 o P005. L’installatore controlla i permessi e gli SHA-256 dei file installati originali.",
+        "details": "Estrarre lo ZIP autonomo P001-r2 fuori dal framework ed eseguire bash apply.sh /path/to/gxtxt. Per ripristinare usare bash apply.sh --rollback /path/to/gxtxt, con GX-TXT chiuso. Questa revisione non cambia il payload Tcl della P001."
+      },
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p001-r2",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p001-r2/DEV111-P001-r2-PUBLIC.zip"
+    },
+    {
       "id": "dev111-p002-preview-configuration",
       "framework": "0.9.8.10-dev-111",
       "target_release_id": "111",
@@ -94,7 +274,8 @@
         ],
         "requirement": "Compatibile con GX-TXT dev-111 revisione r3. Include sei file Tcl; ROLLBACK.zip contiene i relativi originali.",
         "details": "La checkbox di visibilità mostra o nasconde il pannello del modulo abilitato in Analysis, senza decidere se il modulo possa essere eseguito. Restano separate l’attivazione, le API registrate e la selezione Run. Il nome del modulo selezionato e i comandi Script Module Builder e Reset selected module runtime sono disponibili accanto alla ricerca, con adattamento alle finestre più strette."
-      }
+      },
+      "superseded_by": "dev111-p001-r2-installer"
     },
     {
       "id": "dev108-viewer-cache-popup-v3",

@@ -96,8 +96,7 @@ function render(h,lang){
 }
 for(const h of registry.entries){
  assert(!seen.has(h.id)&&/^[a-z0-9-]+$/.test(h.id),'Unsafe/duplicate hotfix identifier');seen.add(h.id);
- if(h.id==='dev111-p001-modules-visibility'){require('./build-dev111-p001.js')();continue;}
- if(h.id==='dev111-p002-preview-configuration'){require('./build-dev111-p002.js')();continue;}
+ if(h.id.startsWith('dev111-')){require('./build-dev111-simple.js')(h.id);continue;}
  assert(h.exclusive_compatibility&&h.framework==='0.9.8.10-dev-'+h.target_release_id,'Release scope mismatch');
  const known={'dev108-viewer-cache':{commit:'16a2dc488b393865fa85706a3b9d91bbc78b5387',sha:'4f90e0ed8b510e442a8d80db219e7abbe80ffd59098afa70e69cb4921fd89885'},'dev108-viewer-cache-popup-v3':{commit:'84dc3081feeebeb7997877fd3b03828dcc08c3c9',sha:'db482f071b9dad7e44f4eba3e34116d0f9b06e0a560ecda1fb2dcddd7b641f39'}};
  assert(h.original_commit==='6371001a219a4e611ce89c8b396c62294e6b979c'&&known[h.id]&&h.hotfix_commit===known[h.id].commit,'Unexpected source identities');

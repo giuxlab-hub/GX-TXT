@@ -24,13 +24,14 @@
       <div class="tag">Patch available</div>
       <h1>Preview Components and Acquisition configuration</h1>
       <p class="lead">DEV111-P002 expands Configuration in GX-TXT dev-111 r3 with dedicated Acquisition and Preview Components tabs and registered scientific Preview providers for several data representations.</p>
+      
       <p>Preview providers can contribute source-bound metadata, tabular data, scientific curves, native 2D planes and raster overlays while keeping Dataset and Session ownership in the existing framework services. The patch includes cache invalidation and controlled fallback handling, together with a bounded native Preview component. It contains 15 replacements and three additions, with the original replacement files included for rollback.</p>
       <ul class="hotfix-list"><li>Add dedicated Acquisition and Preview Components tabs to the Configuration interface.</li><li>Allow registered Preview providers to present metadata, scientific tables and curves, native 2D views and raster overlays.</li><li>Preserve Dataset/Session source identity and existing provider activation and data ownership.</li><li>Manage preview caching, source changes and controlled fallback when a provider cannot present data.</li><li>Include a Linux x86_64 native Preview component for Tcl 8.6, using the original provider loader and worker.</li></ul>
       <p>For GX-TXT dev-111 revision r3 on Linux x86_64 with Tcl 8.6. DEV111-P001 must already be applied; the same apply.sh handles P002 installation and rollback.</p>
       <div class="buttons">
         <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p002/DEV111-P002-PUBLIC.zip">Download patch ↓</a>
-        
-        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P002/APPLY.md">Installation and rollback ↗</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P002/APPLY.md">Download rollback ↓</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/blob/1fa55c798ec35825c680ec1bdf2deac764db74d8/patches/dev111/DEV111-P002/APPLY.md">Installation and rollback ↗</a>
         <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p002">GitHub ↗</a>
       </div>
       <p class="hotfix-digest">DEV111-P002-PUBLIC.zip SHA-256: <code>34944a5a945b7c3dc1ab3b8fd71614e1df322f69e59cc1ca8264650385371814</code></p>

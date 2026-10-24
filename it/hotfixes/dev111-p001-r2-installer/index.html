@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="La revisione 2 dell’installatore P001 sostituisce la procedura manuale più lunga senza modificare i sei file funzionali originali.">
+  <title>GX-TXT dev-111 r3 — Installatore semplificato per P001, visibilità Modules</title>
+  <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p001-r2-installer/">
+  <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p001-r2-installer/">
+  <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p001-r2-installer/">
+  <link rel="stylesheet" href="../../../assets/style.css">
+  <link rel="stylesheet" href="../../../assets/hotfixes.css">
+  <link rel="icon" type="image/svg+xml" href="../../../assets/favicon.svg">
+</head>
+<body>
+  <a class="skip" href="#main">Vai al contenuto</a>
+  <header><div class="wrap header">
+    <a class="brand" href="../../../it/" aria-label="GX-TXT"><span class="logo" aria-hidden="true">GX</span><span><strong>GX-TXT</strong><small>Scientific workbench</small></span></a>
+    <nav><a href="../../../it/releases/#dev-111">Release</a><a href="https://github.com/giuxlab-hub/GX-TXT">GitHub ↗</a></nav>
+    <div class="lang"><a href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p001-r2-installer/">EN</a> / <a href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p001-r2-installer/">IT</a></div>
+  </div></header>
+  <main id="main">
+    <section class="wrap hotfix-hero">
+      <div class="tag">Patch disponibile</div>
+      <h1>Installatore semplificato per P001, visibilità Modules</h1>
+      <p class="lead">La revisione 2 dell’installatore P001 sostituisce la procedura manuale più lunga senza modificare i sei file funzionali originali.</p>
+      
+      <p>Estrarre lo ZIP autonomo P001-r2 fuori dal framework ed eseguire bash apply.sh /path/to/gxtxt. Per ripristinare usare bash apply.sh --rollback /path/to/gxtxt, con GX-TXT chiuso. Questa revisione non cambia il payload Tcl della P001.</p>
+      <ul class="hotfix-list"><li>Include senza modifiche gli archivi P001 con sei file aggiornati e relativi file di rollback.</li><li>Consente di verificare e applicare P001 mediante un unico comando Bash.</li><li>Conserva backup automatici dei file originali e comando di ripristino.</li><li>Mantiene il comportamento di visibilità Modules e della toolbar Analysis previsto da P001.</li></ul>
+      <p>Per GX-TXT 0.9.8.10-dev-111 r3. Applicare P001-r2 prima di P002, P003, P004 o P005. L’installatore controlla i permessi e gli SHA-256 dei file installati originali.</p>
+      <div class="buttons">
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p001-r2/DEV111-P001-r2-PUBLIC.zip">Scarica la patch ↓</a>
+        
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/blob/42e99115f6d57abbdd495ea9c0eea56b4bb13cb8/patches/dev111/DEV111-P001-r2/APPLY.md">Installazione e ripristino ↗</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p001-r2">GitHub ↗</a>
+      </div>
+      <p class="hotfix-digest">DEV111-P001-r2-PUBLIC.zip SHA-256: <code>936090cc8e7237430b4cfc6b93531fdd3c17e336e89720251b7968e0473c2731</code></p>
+    </section>
+  </main>
+  <footer><div class="wrap"><p>GX-TXT — Giux-Lab · GNU GPL-3.0-or-later</p></div></footer>
+</body>
+</html>

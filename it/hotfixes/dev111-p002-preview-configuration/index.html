@@ -24,13 +24,14 @@
       <div class="tag">Patch disponibile</div>
       <h1>Configurazione di Preview Components e Acquisition</h1>
       <p class="lead">DEV111-P002 amplia Configuration in GX-TXT dev-111 r3 con le schede dedicate Acquisition e Preview Components e con provider registrati per diverse rappresentazioni di dati scientifici.</p>
+      
       <p>I provider Preview possono presentare metadati collegati ai sorgenti, dati tabellari, curve scientifiche, piani nativi 2D e overlay raster, lasciando ai servizi esistenti la proprietà dei Dataset e delle Session. La patch gestisce invalidazione delle cache e fallback controllati e include una componente Preview nativa a capacità limitate. Contiene 15 file sostituiti e tre aggiunti, con gli originali necessari al rollback.</p>
       <ul class="hotfix-list"><li>Aggiunge le schede Acquisition e Preview Components nell’interfaccia Configuration.</li><li>Permette ai provider Preview registrati di mostrare metadati, tabelle e curve scientifiche, viste native 2D e overlay raster.</li><li>Conserva identità dei sorgenti Dataset/Session, attivazione dei provider e proprietà dei dati nei servizi esistenti.</li><li>Gestisce le cache delle anteprime, i cambiamenti dei sorgenti e il fallback controllato in caso di indisponibilità.</li><li>Include una componente Preview nativa per Linux x86_64 con Tcl 8.6, utilizzando il loader e il worker originali.</li></ul>
       <p>Per GX-TXT dev-111 revisione r3 su Linux x86_64 con Tcl 8.6. DEV111-P001 deve essere già applicata; lo stesso apply.sh gestisce installazione e rollback della P002.</p>
       <div class="buttons">
         <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p002/DEV111-P002-PUBLIC.zip">Scarica la patch ↓</a>
-        
-        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P002/APPLY.md">Installazione e ripristino ↗</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P002/APPLY.md">Scarica il rollback ↓</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/blob/1fa55c798ec35825c680ec1bdf2deac764db74d8/patches/dev111/DEV111-P002/APPLY.md">Installazione e ripristino ↗</a>
         <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p002">GitHub ↗</a>
       </div>
       <p class="hotfix-digest">DEV111-P002-PUBLIC.zip SHA-256: <code>34944a5a945b7c3dc1ab3b8fd71614e1df322f69e59cc1ca8264650385371814</code></p>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Completa la compilazione dell’adattatore Preview nativo e il suo caricamento dal worker per GX-TXT dev-111 r3.">
+  <title>GX-TXT dev-111 r3 — Attivazione corretta del provider Preview nativo</title>
+  <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p005-native-preview-activation/">
+  <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p005-native-preview-activation/">
+  <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p005-native-preview-activation/">
+  <link rel="stylesheet" href="../../../assets/style.css">
+  <link rel="stylesheet" href="../../../assets/hotfixes.css">
+  <link rel="icon" type="image/svg+xml" href="../../../assets/favicon.svg">
+</head>
+<body>
+  <a class="skip" href="#main">Vai al contenuto</a>
+  <header><div class="wrap header">
+    <a class="brand" href="../../../it/" aria-label="GX-TXT"><span class="logo" aria-hidden="true">GX</span><span><strong>GX-TXT</strong><small>Scientific workbench</small></span></a>
+    <nav><a href="../../../it/releases/#dev-111">Release</a><a href="https://github.com/giuxlab-hub/GX-TXT">GitHub ↗</a></nav>
+    <div class="lang"><a href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p005-native-preview-activation/">EN</a> / <a href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p005-native-preview-activation/">IT</a></div>
+  </div></header>
+  <main id="main">
+    <section class="wrap hotfix-hero">
+      <div class="tag">Patch disponibile</div>
+      <h1>Attivazione corretta del provider Preview nativo</h1>
+      <p class="lead">Completa la compilazione dell’adattatore Preview nativo e il suo caricamento dal worker per GX-TXT dev-111 r3.</p>
+      
+      <p>Questa è la P005 corretta. Il pacchetto include l’adattatore Preview Linux ricompilato e il bridge verso il worker esistente. Estrarlo nella directory del framework compatibile a programma chiuso, conservando il backup dei file per il ripristino.</p>
+      <ul class="hotfix-list"><li>Integra il componente gxpreviewprovider.so già esistente nel normale build CMake.</li><li>Avvia il caricamento esplicito dell’adattatore dal worker Tcl gestito di Dataset Preview.</li><li>Conserva proprietà scientifica dei Dataset, registrazione, abilitazione e fallback dei provider.</li><li>Distribuisce soltanto i tre file corretti, senza la prima versione P005 superata.</li></ul>
+      <p>Richiede P001, P002, P003 e P004 applicate in ordine, su GX-TXT dev-111 r3 con librerie native Linux x86_64 compatibili.</p>
+      <div class="buttons">
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p005/DEV111-P005-PUBLIC.zip">Scarica la patch ↓</a>
+        
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/blob/6a59da41c2aa23fdc356e6f956238c02bdc6fff3/patches/dev111/DEV111-P005/README.md">Installazione e ripristino ↗</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p005">GitHub ↗</a>
+      </div>
+      <p class="hotfix-digest">DEV111-P005-PUBLIC.zip SHA-256: <code>3712cf052181561226e7c2657f8527b50223dda9035a072a554a90aee41649ad</code></p>
+    </section>
+  </main>
+  <footer><div class="wrap"><p>GX-TXT — Giux-Lab · GNU GPL-3.0-or-later</p></div></footer>
+</body>
+</html>
