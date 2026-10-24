@@ -19,7 +19,7 @@ proc ::GX::CurveWorkbench::_timelineBuild {w} {
     pack forget $w.status
     ttk::frame $w.strip -height $height
     pack propagate $w.strip 0
-    grid $w.strip -in $w.upper -row 1 -column 0 -columnspan 2 -sticky ew
+    pack $w.strip -side bottom -fill x -before $w.main
     ttk::combobox $w.strip.choice -values {Description History} -state readonly -width 12 -textvariable ::GX::CurveWorkbench::st($w,stripView)
     pack $w.strip.choice -side left -fill y
     pack $w.status -in $w.strip -side left -fill x -expand 1;raise $w.status
@@ -38,9 +38,9 @@ proc ::GX::CurveWorkbench::_timelineBuild {w} {
 proc ::GX::CurveWorkbench::_timelineShow {w} {
     variable st
     if {$st($w,stripVisible)} {
-        grid $w.strip -in $w.upper -row 1 -column 0 -columnspan 2 -sticky ew
+        pack $w.strip -side bottom -fill x -before $w.main
         _timelineRender $w
-    } else {grid remove $w.strip}
+    } else {pack forget $w.strip}
 }
 proc ::GX::CurveWorkbench::_timelineSwitch {w} {
     variable st

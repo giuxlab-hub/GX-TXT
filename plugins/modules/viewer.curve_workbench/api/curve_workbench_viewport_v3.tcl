@@ -67,7 +67,7 @@ proc ::GX::CurveWorkbench::_compareToggle {w} {
     variable st;set st($w,compareVisible) [expr {!$st($w,compareVisible)}]
     if {$st($w,compareVisible)} {
         set st($w,residualPanelShown) -1;_residualLayout $w
-        grid $w.validation -in $w.upper -row 2 -column 0 -columnspan 2 -sticky ew
+        grid $w.validation -in $w.upper -row 1 -column 0 -sticky ew
         pack $w.metric -side bottom -fill x -before $w.main
     } else {
         grid remove $w.validation

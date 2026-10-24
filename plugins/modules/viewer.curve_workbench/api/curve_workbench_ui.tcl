@@ -217,8 +217,8 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     set st($w,composeName) "Composed curve";set st($w,resultId) "edited_curve";set st($w,status) "Add an X/Y Dataset to begin."
     set st($w,preferredDataset) ""
     foreach key {dataset_id source_dataset_id} {if {[dict exists $context $key]} {set st($w,preferredDataset) [dict get $context $key]}}
-    # Keep the existing control frames and callbacks; share upper width with
-    # Workspace publication actions rather than reserving bottom toolbar rows.
+    # The existing menu controls use the full upper width. History stays below
+    # the expanding main pane; publication actions live in existing menus.
     ttk::frame $w.upper
     pack $w.upper -side top -fill x
     grid columnconfigure $w.upper 0 -weight 1
@@ -347,7 +347,7 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     ttk::label $w.right.residualLabel -text "Signed residual by reference X or path distance (maximum highlighted)";pack $w.right.residualLabel -fill x
     ttk::frame $w.right.residual -height 220;pack propagate $w.right.residual 0;pack $w.right.residual -in $w.right -fill x
     ttk::frame $w.validation -padding 5
-    grid $w.validation -in $w.upper -row 2 -column 0 -columnspan 2 -sticky ew
+    grid $w.validation -in $w.upper -row 1 -column 0 -sticky ew
     ttk::label $w.validation.refLabel -text "Reference"
     ttk::combobox $w.validation.reference -textvariable ::GX::CurveWorkbench::st($w,referenceLabel) -state readonly -width 32
     ttk::combobox $w.validation.method -textvariable ::GX::CurveWorkbench::st($w,compareMethod) -values {x path} -state readonly -width 7
@@ -362,7 +362,8 @@ proc ::GX::CurveWorkbench::_openWindow {{context {}}} {
     bind $w.validation.reference <<ComboboxSelected>> [list ::GX::CurveWorkbench::_referenceSelect $w]
     ttk::label $w.metric -textvariable ::GX::CurveWorkbench::st($w,metricText) -anchor w;pack $w.metric -fill x -padx 8
     ttk::frame $w.publish -padding 5
-    grid $w.publish -in $w.upper -row 0 -column 1 -sticky ne
+    # Keep original initialization/wiring order without allocating GUI space.
+    # _installCommands transfers these callbacks to menus and removes the frame.
     ttk::label $w.publish.idLabel -text "New Dataset ID"
     ttk::entry $w.publish.id -textvariable ::GX::CurveWorkbench::st($w,resultId) -width 22
     ttk::button $w.publish.go -text "Publish selected curve(s)" -command [list ::GX::CurveWorkbench::_safe $w [list ::GX::CurveWorkbench::_publishSelected $w]]

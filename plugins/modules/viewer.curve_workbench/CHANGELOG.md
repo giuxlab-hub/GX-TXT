@@ -1,3 +1,11 @@
+## 2.21.7 — DEV111-P007
+
+Restore the accepted bottom Description/History strip and remove its upper row.
+Place Save workspace in Workspace, all Publish selection choices in Objects,
+and Publication settings in Settings. Remove the upper publication button group
+and its width allocation. Preserve 2.21.6 command, publication, native viewport,
+History, workspace and scientific behavior; no performance change is claimed.
+
 ## 2.21.4 — dev109
 
 Offer informed, default-No axis review before ordinary canonical Sketch Open
@@ -35,7 +43,7 @@ Numerical comparison display uses public Plot v4 while retaining original geomet
 
 Focused acceptance receipts remain separate from this version declaration; final integrated release acceptance/deposition is pending.
 
-## 2.21.1
+## 2.21.1 — 2026-10-17
 
 Use shared CORE dialog lifecycle for source selection and declare native-resolution scientific catalog artwork.
 
@@ -69,7 +77,7 @@ Accepted-model Workbench transfer retains exact supported Native2D primitives,
 independent axis units, original parameter mappings and immutable model resources.
 Unsupported representations are explicitly sampled; no refit or statistics are
 computed. Public Numeric/Fitter operations and CORE nested resource adoption
-serve both scripting languages.
+serve both scripting languages. Targeted evidence is recorded in checkpoint157.
 Workbench/current API manual chronology is moved to existing release history;
 compatibility contracts and literal document paths remain unchanged.
 

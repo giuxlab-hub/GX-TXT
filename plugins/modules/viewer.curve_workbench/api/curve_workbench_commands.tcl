@@ -119,6 +119,10 @@ proc ::GX::CurveWorkbench::_commandMenu {w menu ids} {
     foreach id $ids {
         if {$id eq "-"} {$menu add separator;continue}
         set command [dict get $st($w,commands) $id]
+        if {[dict exists $command submenu]} {
+            $menu add cascade -label [dict get $command label] -menu [dict get $command submenu] -state [expr {[_commandEnabled $w $id]?"normal":"disabled"}]
+            continue
+        }
         $menu add command -label [dict get $command label] -accelerator [dict get $command shortcut] -state [expr {[_commandEnabled $w $id]?"normal":"disabled"}] -command [list ::GX::CurveWorkbench::_commandInvoke $w $id]
     }
 }
@@ -151,7 +155,21 @@ proc ::GX::CurveWorkbench::_installCommands {w} {
     foreach widget {undo redo} id {history.undo history.redo} {$w.toolbar.$widget configure -command [list ::GX::CurveWorkbench::_commandInvoke $w $id]}
     $w.sketchbar.select configure -command [list ::GX::CurveWorkbench::_commandInvoke $w select]
     $w.sketchbar.dimension configure -command [list ::GX::CurveWorkbench::_commandInvoke $w constraint.dimension]
-    $w.publish.save configure -command [list ::GX::CurveWorkbench::_commandInvoke $w workspace.save]
+    $w.toolbar.workspace.menu insert 0 command -label [dict get $st($w,commands) workspace.save label] -accelerator [dict get $st($w,commands) workspace.save shortcut] -command [list ::GX::CurveWorkbench::_commandInvoke $w workspace.save]
+    # Retain every existing publication choice/callback. The registered
+    # object.publish command remains the separate-output operation and its
+    # enabled-state owner; the menu entry now exposes all choices as a cascade.
+    set publication $w.toolbar.objects.menu.publish
+    menu $publication -tearoff 0
+    set source $w.publish.batch.menu
+    for {set i 0} {$i<=[$source index end]} {incr i} {
+        set callback [$source entrycget $i -command]
+        if {[lindex [lindex $callback end] 0] eq {::GX::CurveWorkbench::_publishBatchOpen}} {set callback [list ::GX::CurveWorkbench::_commandInvoke $w object.publish]}
+        $publication add command -label [$source entrycget $i -label] -command $callback
+    }
+    dict set st($w,commands) object.publish submenu $publication
+    $w.toolbar.settings.menu add command -label {Publication settings…} -command [$w.publish.options cget -command]
+    destroy $w.publish
     $w.sketchbar.create.menu configure -postcommand [list ::GX::CurveWorkbench::_commandMenu $w $w.sketchbar.create.menu {create.line create.rectangle create.circle create.arc create.spline create.quadratic_bezier create.cubic_bezier create.polyline create.ellipse create.point create.construction_line - create.numeric create.scientific}]
     $w.sketchbar.modify.menu configure -postcommand [list ::GX::CurveWorkbench::_commandMenu $w $w.sketchbar.modify.menu {transform.translate transform.rotate object.parameters object.units object.declare_axes object.spline_line - object.duplicate object.reverse object.split - object.join object.combine object.separate - object.native_tools}]
 }
