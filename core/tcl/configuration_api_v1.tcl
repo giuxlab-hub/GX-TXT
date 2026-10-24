@@ -235,6 +235,8 @@ proc ::GX::configurationRegisterBuiltins {} {
         ui.theme {Theme} string system
         ui.font_family {Proportional GUI font family} string system
         ui.font_size {GUI font size (points)} string system
+        ui.x11_tooltip_opaque {Opaque tooltip painting} boolean 1
+        ui.x11_tooltip_premap {Position tooltip before mapping} boolean 1
         ui.x11_popup_repair_enabled {Enable remote X11 popup recovery} boolean 1
         ui.x11_popup_repair_delay_ms {Delay after popup mapping (ms)} integer 150
     } {

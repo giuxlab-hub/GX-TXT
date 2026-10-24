@@ -369,3 +369,14 @@ cmake --build /tmp/gxtxt-native2d-build --target gx2dtcl -j2
 
 Existing Tcl/Tk8.6, Cairo and X11 development headers/libraries are required.
 There is no new graphics plugin, background Tk thread or separate scientific engine.
+
+
+### Retained sprite presentation (DEV111-P015)
+
+`gx2d_sprite_scene_v1.cpp/.h` is part of the existing `gx2dtcl` CMake target,
+C++17 with the existing Tk8.6/Cairo/X11 dependencies. The standalone C scientific
+engine, grid generator and snap algorithms are unchanged. The public GUI host
+contract is documented in `docs/api/NATIVE2D_SPRITE_SCENE_API_v1.md`.
+The target includes both the accepted P014 grid presenter and the new retained
+sprite scene; use the matching binary and complete cumulative sources together.
+No additional plugin, worker, renderer backend or event loop is required.

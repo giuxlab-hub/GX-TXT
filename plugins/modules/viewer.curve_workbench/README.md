@@ -26,3 +26,12 @@ control-position batches. CORE Appearance owns Low/Medium/Fast intensive profile
 and optional additional grid-density suppression. Help follows Workspace, using
 the existing manual viewer and metadata-derived About version. Restart after
 applying the cumulative patch; the matching compiled native adapter is required.
+
+
+DEV111-P015 / 2.21.14 uses the public NATIVE2D_SPRITE_SCENE_API_v1 in normal
+operation. Retained scientific curves, Dataset markers, defining controls and
+arrows share one C++/Cairo presentation layer above the P014 grid. Scientific
+picking, native edits, constraints, snapping, units, undo and publication retain
+their existing owners. Context/highlight/gizmo widgets remain existing overlays.
+Performance measurements and their limitations are recorded with the patch;
+fewer Tk items do not by themselves establish shorter complete redraw times.

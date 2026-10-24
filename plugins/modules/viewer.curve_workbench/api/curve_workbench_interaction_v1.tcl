@@ -196,7 +196,7 @@ proc ::GX::CurveWorkbench::_drawPointMarkers {w id sampled color} {
     if {![dict exists $record sketch_definition]} {tailcall _drawPointMarkers_interaction_base $w $id $sampled $color}
     set selected {}
     foreach ref $st($w,sketchSelection) {if {[dict get $ref logical] eq $id} {lappend selected [dict get $ref index]}}
-    ::GX::native2DGridPresenterControls $w.right.viewport.canvas $st($w,scene) [dict get $record native] $selected $color
+    ::GX::native2DSpriteSceneControls $w.right.viewport.canvas $st($w,scene) [dict get $record native] $selected $color $id
 
 }
 rename ::GX::CurveWorkbench::_pointList ::GX::CurveWorkbench::_pointList_interaction_base

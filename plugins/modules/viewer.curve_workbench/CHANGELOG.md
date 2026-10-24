@@ -1,3 +1,14 @@
+## 2.21.14 — DEV111-P015
+
+- Use the shared retained C++/Cairo sprite scene for scientific paths, defining
+  controls, Dataset point markers and direction arrows. The native C scientific
+  model, selection/constraint/gizmo transactions, units, History and publication
+  owners are preserved; existing Tk interaction overlays remain above the scene.
+- Keep the accepted native grid, graphics profiles, menu/History and comparison
+  interface. No other production Viewer adopts this rendering layer.
+- CORE provides independent optional P009 tooltip presentation switches and
+  idempotent tooltip registration. See the CORE audit and focused validation.
+
 ## 2.21.13 — DEV111-P014
 
 Use one retained CORE Cairo grid/axes item, preserving scientific axis/unit owners,

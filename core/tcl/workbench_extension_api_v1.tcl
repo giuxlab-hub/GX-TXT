@@ -26,6 +26,7 @@ proc ::GX::workbenchExtensionCoreApis {} {
         TABLE_EXTRACTOR_API_v1 ::GX::TableExtractorAPIv1::apiInfo
         WORKBENCH_RECOVERY_API_v1 ::GX::workbenchRecoveryApiInfo
         GUI_UPDATE_SCHEDULER_API_v1 ::GX::guiUpdateSchedulerApiInfo
+        NATIVE2D_SPRITE_SCENE_API_v1 ::GX::native2DSpriteSceneApiInfo
         NATIVE2D_GRID_PRESENTER_API_v1 ::GX::native2DGridPresenterApiInfo
     }]
 }

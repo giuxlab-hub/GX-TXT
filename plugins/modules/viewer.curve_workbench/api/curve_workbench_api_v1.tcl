@@ -934,6 +934,7 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
     set st($w,gridShown) [dict get $grid visible]
     set st($w,gridSnap) [dict get $grid snap_enabled]
     ::GX::native2DGridPresenterUpdate $c $st($w,scene) $plans [dict create background $backgroundRgb text_color $textRgb]
+    ::GX::native2DSpriteSceneBegin $c [list $left $top $plotRight $plotBottom]
     set st($w,coordinateAxisPlans) $plans
     set index 0
     dict for {id r} $st($w,curves) {
@@ -950,8 +951,7 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
             # presenter. Drawing a marker at every retained display sample both
             # implies false controls and creates thousands of redundant Tk items.
             if {[dict get $object kind] eq "curve"} {dict set object style marker 0}
-            dict unset object marker
-            ::GX::native2DCanvasDrawObject $c $object $backgroundRgb [list curve_$id]
+            ::GX::native2DSpriteSceneObject $c $id $object $backgroundRgb
         }
         set marker {}
         if {![dict exists $r sketch_definition]||[dict get $r sketch_definition family] ni {compound composite_path}} {set marker [::GX::Native2D::core render_marker $st($w,scene) [dict get $r native]]}
@@ -959,8 +959,6 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
             set style [::GX::Native2D::core direction_marker $st($w,scene) [dict get $r native]]
             set markerColor [::GX::uiFieldColorFromRGBA [dict get $style color]]
             set rgb [dict get [::GX::uiFieldColorComposite $markerColor $background] rgb]
-            $c create line {*}[dict get $marker tail] {*}[dict get $marker tip] -fill $rgb -width [dict get $style line_width] -tags [list direction_marker direction_$id]
-            $c create line {*}[dict get $marker head_left] {*}[dict get $marker tip] {*}[dict get $marker head_right] -fill $rgb -width [dict get $style line_width] -tags [list direction_marker direction_$id]
             if {$id eq $st($w,active)} {
                 lassign [dict get $marker bounds] mx0 my0 mx1 my1
                 $c create text [expr {$mx1+8}] [expr {($my0+$my1)/2}] -text Flip -anchor w -fill $rgb -font TkDefaultFont -tags direction_flip
@@ -987,6 +985,7 @@ proc ::GX::CurveWorkbench::_drawScene {w} {
         }
     }
     if {$st($w,box) ne {}} {$c create rectangle {*}$st($w,box) -outline #234e9b -dash {4 3}}
+    ::GX::native2DSpriteSceneEnd $c
     ::GX::native2DGridPresenterEnd $c
     ::GX::native2DCanvasViewportClip $c $st($w,scene)
 

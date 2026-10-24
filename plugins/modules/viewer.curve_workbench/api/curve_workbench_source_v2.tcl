@@ -145,11 +145,12 @@ proc ::GX::CurveWorkbench::_drawPointMarkers {w id ignored color} {
     set indices [dict get $sampled point_indices];set coords [dict get $sampled points]
     set selected {};foreach selectedIndex [_semanticPointIndices $w $id] {dict set selected $selectedIndex 1}
     set flags [lmap index $indices {dict exists $selected $index}]
-    set shown {};set selectedIndices {};set selectedCoords {}
+    set geometry {};set shown {};set selectedIndices {};set selectedCoords {}
     foreach index $indices point $coords chosen $flags {
         dict set shown $index 1
         if {$chosen} {lappend selectedIndices $index;lappend selectedCoords $point} else {
-            lassign $point x y;$canvas create oval [expr {$x-3}] [expr {$y-3}] [expr {$x+3}] [expr {$y+3}] -fill $color -outline white
+            lassign $point x y
+            lappend geometry [dict create kind ellipse points [list [list [expr {$x-3}] [expr {$y-3}]] [list [expr {$x+3}] [expr {$y+3}]]] fill $color stroke white]
         }
     }
     # A table-selected exact point must be located even when display LOD omits it.
@@ -158,13 +159,15 @@ proc ::GX::CurveWorkbench::_drawPointMarkers {w id ignored color} {
         set point [lindex [::GX::Native2D::core points_page $st($w,scene) [dict get $record native] $index 1] 0]
         lappend selectedIndices $index;lappend selectedCoords [::GX::Native2D::core device $st($w,scene) $point]
     }
+    ::GX::native2DSpriteSceneAppend $canvas $id $geometry
     set rows {}
     if {[_bulkRecord $record]&&$selectedIndices ne {}} {
         set ranges [lmap index $selectedIndices {list [expr {8*$index}] 8}]
         foreach bytes [::GX::interactiveDocumentResourceReadRanges [dict get $record row_resource] $ranges] {binary scan $bytes wu row;lappend rows $row}
     } else {set rows [lmap index $selectedIndices {dict get [lindex [dict get $record samples] $index] row}]}
     foreach index $selectedIndices point $selectedCoords row $rows {
-        lassign $point x y;$canvas create oval [expr {$x-5}] [expr {$y-5}] [expr {$x+5}] [expr {$y+5}] -fill #ffc83d -outline #1a2430
+        lassign $point x y
+        ::GX::native2DSpriteSceneAppend $canvas $id [list [dict create kind ellipse points [list [list [expr {$x-5}] [expr {$y-5}]] [list [expr {$x+5}] [expr {$y+5}]]] fill #ffc83d stroke #1a2430]]
         if {[dict get $record source] ne ""&&$row>=0} {
             $canvas create oval [expr {$x-9}] [expr {$y-9}] [expr {$x+9}] [expr {$y+9}] -outline #c51d24 -width 2 -tags [list dataset_row_locator dataset_locator_$id source_row_$row locator_point_$index]
         }

@@ -308,7 +308,7 @@ proc ::GX::configurationGuiSave {} {
         set configurationUi(status) "Configuration was not saved: $reason"
         return
     }
-    set configurationUi(status) "Saved user defaults. Theme/fonts: restart GX-TXT. Graphics and popup settings: effective now."
+    set configurationUi(status) "Saved user defaults. Theme/fonts: restart GX-TXT. Graphics, popup and tooltip settings: effective now."
     configurationAppearanceRefresh
     set configurationUi(native3d_guard) 1
     set configurationUi(viewers.native3d.preset) [configurationGet viewers.native3d.preset]
@@ -359,7 +359,7 @@ proc ::GX::configurationAppearanceBuild {} {
     grid $p.theme.note -row 1 -column 0 -columnspan 2 -sticky ew -padx 4 -pady 4
     ttk::label $p.fonts.note -text {System/default preserves interpreter fonts. Family affects proportional named GUI fonts; heading weight and monospace family stay distinct. Size preserves relative named-font sizes (8–24 pt). Explicit private fonts and PDF output fonts are unchanged.} -justify left
     grid $p.fonts.note -row 2 -column 0 -columnspan 2 -sticky ew -padx 4 -pady 4
-    foreach id {ui.x11_popup_repair_enabled ui.x11_popup_repair_delay_ms} {
+    foreach id {ui.x11_popup_repair_enabled ui.x11_popup_repair_delay_ms ui.x11_tooltip_opaque ui.x11_tooltip_premap} {
         set ::GX::configurationUi($id) [configurationGet $id]
     }
     ttk::checkbutton $p.remote.enabled -text {Enable remote X11 popup recovery} -variable ::GX::configurationUi(ui.x11_popup_repair_enabled)
@@ -378,6 +378,14 @@ proc ::GX::configurationAppearanceBuild {} {
     grid $p.remote.presets -row 2 -column 0 -columnspan 2 -sticky w -pady 3
     ttk::label $p.remote.status -textvariable ::GX::configurationUi(appearanceRecovery) -justify left
     grid $p.remote.status -row 3 -column 0 -columnspan 2 -sticky ew -padx 4 -pady 4
+    foreach {key title row} {ui.x11_tooltip_opaque {Use opaque tooltip painting (P009)} 5 ui.x11_tooltip_premap {Position complete tooltip before mapping} 6} {
+        set widget $p.remote.[string map {. _} $key]
+        ttk::checkbutton $widget -text $title -variable ::GX::configurationUi($key)
+        grid $widget -row $row -column 0 -columnspan 2 -sticky w -padx 4 -pady 4
+        dict set configurationGuiEditors $key $widget
+    }
+    ttk::label $p.remote.tooltipNote -text {Tooltip options apply to the next tooltip on all displays, independently of popup recovery. Keep enabled for the accepted P009 presentation; disabling restores theme painting or ordinary mapping. Hover and destruction safety always remain active.} -wraplength 700 -justify left
+    grid $p.remote.tooltipNote -row 7 -column 0 -columnspan 2 -sticky ew -padx 4 -pady 4
     ttk::label $p.remote.note -text {After Save, recovery changes apply to future popups immediately. Only the recognized HC-Consult/VcXsrv X11 server is affected. 150 ms is the tested baseline, not a universal minimum; longer is not necessarily better. Disabled means no new damage requests.} -justify left
     grid $p.remote.note -row 4 -column 0 -columnspan 2 -sticky ew -padx 4 -pady 4
     ttk::labelframe $p.effective -text {Current effective appearance} -padding 8
@@ -418,7 +426,7 @@ proc ::GX::configurationAppearanceBuild {} {
 proc ::GX::configurationAppearanceResize {f width} {
     $f.canvas itemconfigure content -width $width
     set p $f.canvas.content
-    foreach w [list $p.theme.note $p.fonts.note $p.remote.note $p.remote.status $p.effective.values $p.effective.warning $p.graphics.note] {
+    foreach w [list $p.theme.note $p.fonts.note $p.remote.note $p.remote.tooltipNote $p.remote.status $p.effective.values $p.effective.warning $p.graphics.note] {
         $w configure -wraplength [expr {max(160,$width-50)}]
     }
 }

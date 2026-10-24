@@ -490,7 +490,7 @@ proc ::GX::native2DCanvasClipItems {canvas scene items} {
 }
 proc ::GX::native2DCanvasViewportClip {canvas scene {textTags {axis_label}}} {
     set photos [datasetPublicationV2DictDefault $::GX::Native2DText::photos $canvas {}]
-    ::GX::Native2D::core canvas_clip $scene $canvas [concat $textTags {axis_graduation plot_border viewport_margin native_batch_item native_grid_presenter}] $photos
+    ::GX::Native2D::core canvas_clip $scene $canvas [concat $textTags {axis_graduation plot_border viewport_margin native_batch_item native_grid_presenter native_sprite_scene}] $photos
     native2DCanvasTextSweep $canvas
 }
 

@@ -412,7 +412,24 @@ proc ::GX::native2DViewportLayout {host} {
     }
 }
 proc ::GX::native2DViewportTooltip {widget text} {
-    bind $widget <Enter> +[list ::GX::native2DViewportTooltipShow $widget $text]
+    variable ::GX::ViewportHost::tips
+    # One dispatcher per widget; repeat registration updates only its content.
+    dict set tips texts $widget $text
+    set script [list ::GX::_native2DViewportTooltipEnter $widget]
+    if {$script ni [split [bind $widget <Enter>] \n]} {bind $widget <Enter> +$script}
+    _native2DViewportTooltipTargetBind $widget
+}
+proc ::GX::_native2DViewportTooltipEnter {widget} {
+    if {[dict exists $::GX::ViewportHost::tips texts $widget]} {
+        native2DViewportTooltipShow $widget [dict get $::GX::ViewportHost::tips texts $widget]
+    }
+}
+proc ::GX::_native2DViewportTooltipTargetBind {widget} {
+    variable ::GX::ViewportHost::tips
+    if {![dict exists $tips targets $widget]} {
+        foreach event {Leave ButtonPress Unmap Destroy} {bind $widget <$event> +[list ::GX::_native2DViewportTooltipTargetEvent $widget $event %W]}
+        dict set tips targets $widget 1
+    }
 }
 proc ::GX::native2DViewportTooltipHide {{widget {}}} {
     variable ::GX::ViewportHost::tips
@@ -426,7 +443,7 @@ proc ::GX::_native2DViewportTooltipTargetEvent {widget event actual} {
     # control beneath an unchanged pointer. Consult current widget ownership.
     if {$event in {Leave Unmap} && [_native2DViewportTooltipHovered $widget]} return
     native2DViewportTooltipHide $widget
-    if {$event eq {Destroy}} {catch {dict unset ::GX::ViewportHost::tips targets $widget}}
+    if {$event eq {Destroy}} {catch {dict unset ::GX::ViewportHost::tips targets $widget};catch {dict unset ::GX::ViewportHost::tips texts $widget}}
 }
 proc ::GX::_native2DViewportTooltipHovered {widget} {
     if {![winfo exists $widget] || ![winfo ismapped $widget]} {return 0}
@@ -456,15 +473,13 @@ proc ::GX::native2DViewportTooltipShow {widget text} {
     set focused [focus -displayof $widget]
     # A delayed legacy toolbar request must not reappear after a window switch.
     if {$focused eq {} || [winfo toplevel $focused] ne $owner} return
+    if {[dict exists $tips current] && [dict get $tips current target] eq $widget && [dict get $tips current text] eq $text && [winfo exists .gxViewportTip]} return
     native2DViewportTooltipHide
     if {![dict exists $tips owners $owner]} {
         foreach event {FocusOut Deactivate Unmap Destroy Configure} {bind $owner <$event> +[list ::GX::_native2DViewportTooltipOwnerEvent $owner $event %W]}
         dict set tips owners $owner 1
     }
-    if {![dict exists $tips targets $widget]} {
-        foreach event {Leave ButtonPress Unmap Destroy} {bind $widget <$event> +[list ::GX::_native2DViewportTooltipTargetEvent $widget $event %W]}
-        dict set tips targets $widget 1
-    }
+    _native2DViewportTooltipTargetBind $widget
     # Position while withdrawn: the first visible frame must already belong to
     # the hovered control's window, rather than briefly mapping at the root.
     # The override-redirect surface must own its opaque background, including
@@ -473,17 +488,25 @@ proc ::GX::native2DViewportTooltipShow {widget text} {
     if {$background eq {} || [catch {winfo rgb $widget $background}]} {set background #ffffe0}
     set foreground [ttk::style lookup TLabel -foreground]
     if {$foreground eq {} || [catch {winfo rgb $widget $foreground}]} {set foreground [uiFieldColorReadableText $background]}
-    toplevel .gxViewportTip -background $background;wm withdraw .gxViewportTip
+    set opaque [configurationGet ui.x11_tooltip_opaque]
+    set premap [configurationGet ui.x11_tooltip_premap]
+    toplevel .gxViewportTip -background $background
+    if {$premap} {wm withdraw .gxViewportTip}
     wm overrideredirect .gxViewportTip 1;wm transient .gxViewportTip $owner
     set left [winfo vrootx $widget];set top [winfo vrooty $widget]
     set width [winfo vrootwidth $widget];set height [winfo vrootheight $widget]
     set pad [expr {max(4,int(5*max(1.0,[tk scaling]/1.333333)))}]
     # One ordinary Tk label paints background, border, padding and text into
     # the same drawable, independent of a theme's parent-background elements.
+    if {$opaque} {
     label .gxViewportTip.text -text $text -background $background -foreground $foreground \
         -font TkDefaultFont -borderwidth 1 -relief solid -highlightthickness 0 \
         -padx $pad -pady $pad -justify left \
         -wraplength [expr {max(40,min(int(480*max(1.0,[tk scaling]/1.333333)),$width-2*$pad-2))}]
+    } else {
+        ttk::label .gxViewportTip.text -text $text -padding $pad -justify left \
+            -wraplength [expr {max(40,min(int(480*max(1.0,[tk scaling]/1.333333)),$width-2*$pad-2))}]
+    }
     pack .gxViewportTip.text -fill both -expand 1
     update idletasks
     if {![winfo exists $widget] || ![winfo ismapped $widget] || ![winfo exists .gxViewportTip]} {native2DViewportTooltipHide;return}
@@ -493,8 +516,9 @@ proc ::GX::native2DViewportTooltipShow {widget text} {
     if {$y+$th>$top+$height} {set y [expr {[winfo rooty $widget]-$th-$pad}]}
     set y [expr {max($top,min($top+$height-$th,$y))}]
     # Send the complete negotiated rectangle before mapping, not only position.
-    wm geometry .gxViewportTip [format {%dx%d%+d%+d} $tw $th $x $y]
-    dict set tips current [dict create target $widget owner $owner]
+    if {$premap} {wm geometry .gxViewportTip [format {%dx%d%+d%+d} $tw $th $x $y]
+    } else {wm geometry .gxViewportTip [format {%+d%+d} $x $y]}
+    dict set tips current [dict create target $widget owner $owner text $text]
     wm deiconify .gxViewportTip
     raise .gxViewportTip
 }
