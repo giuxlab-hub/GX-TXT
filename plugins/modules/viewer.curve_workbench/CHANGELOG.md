@@ -1,3 +1,12 @@
+## 2.21.12 — DEV111-P013
+
+Activate the matching CORE Native2D presentation batches through the existing
+shared grid and viewport clipping path. No Workbench rendering, scheduling,
+scientific, editing or publication callback is changed. CORE reduces redundant
+Canvas queries/clipping work and grid transfer/style preparation while preserving
+reference grid geometry, axes, labels, units and presentation. Measured local
+individual-redraw improvement; the reported3–4second user stall was not reproduced.
+
 ## 2.21.11 — DEV111-P012
 
 Use the opt-in public CORE GUI update scheduler for wheel redraws only. Preserve

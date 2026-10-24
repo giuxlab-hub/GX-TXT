@@ -482,51 +482,16 @@ proc ::GX::native2DLegendHit {canvas x y} {
     return [dict create hit 0]
 }
 proc ::GX::native2DCanvasClipItems {canvas scene items} {
-    lassign [::GX::Native2D::core view $scene] width height left top right bottom bounds
-    set x1 [expr {$width-$right}];set y1 [expr {$height-$bottom}]
-    foreach item $items {
-        set type [$canvas type $item];set tags [$canvas gettags $item]
-        set textImage 0
-        if {$type eq {image} && [dict exists $::GX::Native2DText::photos $canvas]} {
-            set photo [$canvas itemcget $item -image]
-            set textImage [expr {[dict exists $::GX::Native2DText::photos $canvas $photo] && [dict get $::GX::Native2DText::photos $canvas $photo]==$item}]
-        }
-        if {$type eq "line"} {
-            set xy {};foreach {x y} [$canvas coords $item] {lappend xy [list $x $y]}
-            set inset [expr {[$canvas itemcget $item -width]/2.0}]
-            set paths [::GX::Native2D::core interaction_clip $scene $xy $inset]
-            set options {};foreach option {-fill -width -dash -capstyle -joinstyle -stipple -arrow -arrowshape -state} {lappend options $option [$canvas itemcget $item $option]}
-            if {[llength $paths]==1} {
-                $canvas coords $item {*}[concat {*}[lindex $paths 0]]
-            } else {
-                $canvas delete $item
-                foreach path $paths {$canvas create line {*}[concat {*}$path] {*}$options -tags $tags}
-            }
-        } elseif {$type in {oval polygon text} || $textImage} {
-            # A marker/label crossing the viewport is omitted; never translate
-            # the geometry to make it appear on the viewport boundary.
-            lassign [$canvas bbox $item] a b c d
-            if {$a<$left||$b<$top||$c>$x1||$d>$y1} {$canvas delete $item}
-        } elseif {$type eq "rectangle"} {
-            lassign [$canvas coords $item] a b c d
-            set inset [expr {[$canvas itemcget $item -width]/2.0}]
-            set a [expr {max($a,$left+$inset)}];set b [expr {max($b,$top+$inset)}]
-            set c [expr {min($c,$x1-$inset)}];set d [expr {min($d,$y1-$inset)}]
-            if {$a>$c||$b>$d} {$canvas delete $item} else {$canvas coords $item $a $b $c $d}
-        }
-    }
+    # Batch actual Tk bounds/coordinates in CORE, reusing gx2d segment semantics.
+    # Managed alpha-text images retain their existing photo lifecycle owner.
+    set photos [datasetPublicationV2DictDefault $::GX::Native2DText::photos $canvas {}]
+    ::GX::Native2D::core canvas_clip $scene $canvas {} $photos $items
     native2DCanvasTextSweep $canvas
 }
 proc ::GX::native2DCanvasViewportClip {canvas scene {textTags {axis_label}}} {
-    # Actual clipping, using CORE segment semantics. No margin masks. Preserve
-    # axes labels explicitly; all other scientific presentation stays bounded.
-    set items {}
-    foreach item [$canvas find all] {
-        set skip 0;set tags [$canvas gettags $item]
-        foreach tag [concat $textTags {axis_graduation plot_border viewport_margin}] {if {$tag in $tags} {set skip 1;break}}
-        if {!$skip} {lappend items $item}
-    }
-    native2DCanvasClipItems $canvas $scene $items
+    set photos [datasetPublicationV2DictDefault $::GX::Native2DText::photos $canvas {}]
+    ::GX::Native2D::core canvas_clip $scene $canvas [concat $textTags {axis_graduation plot_border viewport_margin}] $photos
+    native2DCanvasTextSweep $canvas
 }
 
 # One renderer-neutral marker list for native canvas and raster preview clients.

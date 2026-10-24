@@ -15,7 +15,7 @@ proc ::GX::native2DRequireAdapter {} {
     if {[catch {set info [::GX::Native2D::core api_info]} reason]} {
         error "The loaded Native2D adapter does not support this framework; restart with the installed shared CORE adapter. $reason"
     }
-    foreach capability {retained_spline_tangents calibrated_reference_images scene_preview_views atomic_symmetric_construction retained_component_solver graphical_dimensions driven_dimensions local_sketch_rank relationship_hit_regions canvas_construction native_viewport_clip retained_control_descriptors epoch_checked_references selection_constraint_compatibility atomic_constraint_driving endpoint_frame point_frame point_distance bridge_c0_c1 bounded_spline_range native_spline_object selection_replace selection_state selection_paged device_point_hit bounded_compare drag_active aspect requested_view direction_marker grid background polar display_sample numeric_pack numeric_companions numeric_gaps binary_points bounded_points object_sample render_lod curve_render object_style fit_selected} {
+    foreach capability {grid_presentation_batch canvas_clip_batch retained_spline_tangents calibrated_reference_images scene_preview_views atomic_symmetric_construction retained_component_solver graphical_dimensions driven_dimensions local_sketch_rank relationship_hit_regions canvas_construction native_viewport_clip retained_control_descriptors epoch_checked_references selection_constraint_compatibility atomic_constraint_driving endpoint_frame point_frame point_distance bridge_c0_c1 bounded_spline_range native_spline_object selection_replace selection_state selection_paged device_point_hit bounded_compare drag_active aspect requested_view direction_marker grid background polar display_sample numeric_pack numeric_companions numeric_gaps binary_points bounded_points object_sample render_lod curve_render object_style fit_selected} {
         if {$capability ni [dict get $info capabilities]} {error "The loaded Native2D adapter lacks required capability '$capability'"}
     }
     return $info
@@ -211,35 +211,21 @@ proc ::GX::native2DCanvasGrid {scene canvas {tag construction_grid} {minimumSpac
     set grid [::GX::Native2D::core grid $scene]
     set background [uiFieldColorFromRGBA [::GX::Native2D::core background $scene]]
     set background [uiFieldColorComposite $background #FFFFFF]
-    set lines [::GX::Native2D::core render_grid $scene]
-    # Select presentation detail from the native owner's actual lines. Snap
-    # spacing and all authored grid state stay unchanged.
-    set coordinates {};set suppressed {}
-    if {$minimumSpacing>0} {
-        foreach line $lines {
-            set classification [dict get $line classification]
-            if {$classification==2} continue
-            lassign [dict get $line a] ax ay;lassign [dict get $line b] bx by
-            set orientation [expr {abs($ax-$bx)<0.5?{x}:{y}}]
-            dict lappend coordinates [list $classification $orientation] [expr {$orientation eq {x}?$ax:$ay}]
-        }
-        dict for {key values} $coordinates {
-            set previous {};foreach value [lsort -real -unique $values] {
-                if {$previous ne {} && $value-$previous<$minimumSpacing} {dict set suppressed $key 1;break}
-                set previous $value
-            }
-        }
-    }
+    # Native batch performs the same density selection on gx2d's actual lines,
+    # returning only visible flat records. Snap/authored grid state is untouched.
+    set lines [::GX::Native2D::core render_grid_presentation $scene $minimumSpacing]
+    set styles {}
     foreach line $lines {
-        lassign [dict get $line a] ax ay;lassign [dict get $line b] bx by
-        set orientation [expr {abs($ax-$bx)<0.5?{x}:{y}}]
-        if {[dict exists $suppressed [list [dict get $line classification] $orientation]]} continue
-        set kind [lindex {minor major axes} [dict get $line classification]]
-        set color [uiFieldColorComposite [uiFieldColorFromRGBA [dict get $grid ${kind}_color]] $background]
-        set options [list -fill [dict get $color rgb] -width [dict get $grid ${kind}_width] -tags $tag]
-        set style [dict get $grid ${kind}_style]
-        if {$style==1} {lappend options -dash {6 3}} elseif {$style==2} {lappend options -dash {1 3}}
-        $canvas create line {*}[dict get $line a] {*}[dict get $line b] {*}$options
+        lassign $line ax ay bx by classification
+        if {![dict exists $styles $classification]} {
+            set kind [lindex {minor major axes} $classification]
+            set color [uiFieldColorComposite [uiFieldColorFromRGBA [dict get $grid ${kind}_color]] $background]
+            set options [list -fill [dict get $color rgb] -width [dict get $grid ${kind}_width] -tags $tag]
+            set style [dict get $grid ${kind}_style]
+            if {$style==1} {lappend options -dash {6 3}} elseif {$style==2} {lappend options -dash {1 3}}
+            dict set styles $classification $options
+        }
+        $canvas create line $ax $ay $bx $by {*}[dict get $styles $classification]
     }
 }
 proc ::GX::native2DCoordinateReadout {scene device} {

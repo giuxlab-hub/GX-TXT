@@ -1,6 +1,7 @@
 /* Small Tcl adapter for the public Native 2D C API. No geometry lives here. */
 #include "gx2d.h"
 #include "gx2d_surface.h"
+#include "gx2d_presentation_batch.h"
 #include "gx2d_csv_provider_v1.h"
 #include "gx2d_preview_categories_v1.h"
 #include "gx2d_preview_plane_v1.h"
@@ -392,7 +393,7 @@ static int command(ClientData data, Tcl_Interp *ip, int argc, Tcl_Obj *const arg
     op = Tcl_GetString(argv[1]);
     if (strcmp(op, "api_info") == 0) {
         if(argc!=2)return fail(ip,"Usage: core api_info");
-        Tcl_SetObjResult(ip,Tcl_NewStringObj("api_id NATIVE2D_API_v1 api_version 1 engine gx2d capabilities {path_validate image_local_roi native_cell_field native_virtual_grid native_cairo_surface native_cairo_export axis_presentation stable_constituent_identity independent_part_direction truthful_composition_traversal compound_subentities retained_network_nodes network_subentity_constraints atomic_dimension_batch multi_object_semantic_selection polygon_region_selection retained_straight_path ordered_path_vertices retained_path_join_split retained_spline_tangents calibrated_reference_images scene_preview_views atomic_symmetric_construction atomic_attached_construction semantic_point_connectivity retained_component_solver graphical_dimensions driven_dimensions local_sketch_rank relationship_hit_regions retained_control_descriptors epoch_checked_references canvas_construction selection_constraint_compatibility atomic_constraint_driving native_viewport_clip defining_control_snap atomic_presentation_snapshots native_selection_sets native_layer_lifecycle native_identity_attributes parent_linked_fragments topology_epoch structured_scientific_measurements exact_supported_projection extended_constraint_lifecycle constraint_diagnostics native_constraint_enforcement rectangular_circular_series retained_sketch exact_sketch_evaluation paged_sketch_sampling coordinate_rescale exact_vertex_snap gizmo_snap_translation gizmo rotation_transaction pivot flat_group_lifecycle affine_objects copy_reflect endpoint_frame point_frame point_distance bridge_c0_c1 bounded_spline_range native_spline_object selection_replace selection_state selection_paged device_point_hit bounded_compare drag_active aspect requested_view direction_marker grid background polar display_sample numeric_pack numeric_companions numeric_row_audit numeric_gaps binary_points bounded_points object_sample render_lod curve_render object_style fit_selected}",-1));
+        Tcl_SetObjResult(ip,Tcl_NewStringObj("api_id NATIVE2D_API_v1 api_version 1 engine gx2d capabilities {grid_presentation_batch canvas_clip_batch path_validate image_local_roi native_cell_field native_virtual_grid native_cairo_surface native_cairo_export axis_presentation stable_constituent_identity independent_part_direction truthful_composition_traversal compound_subentities retained_network_nodes network_subentity_constraints atomic_dimension_batch multi_object_semantic_selection polygon_region_selection retained_straight_path ordered_path_vertices retained_path_join_split retained_spline_tangents calibrated_reference_images scene_preview_views atomic_symmetric_construction atomic_attached_construction semantic_point_connectivity retained_component_solver graphical_dimensions driven_dimensions local_sketch_rank relationship_hit_regions retained_control_descriptors epoch_checked_references canvas_construction selection_constraint_compatibility atomic_constraint_driving native_viewport_clip defining_control_snap atomic_presentation_snapshots native_selection_sets native_layer_lifecycle native_identity_attributes parent_linked_fragments topology_epoch structured_scientific_measurements exact_supported_projection extended_constraint_lifecycle constraint_diagnostics native_constraint_enforcement rectangular_circular_series retained_sketch exact_sketch_evaluation paged_sketch_sampling coordinate_rescale exact_vertex_snap gizmo_snap_translation gizmo rotation_transaction pivot flat_group_lifecycle affine_objects copy_reflect endpoint_frame point_frame point_distance bridge_c0_c1 bounded_spline_range native_spline_object selection_replace selection_state selection_paged device_point_hit bounded_compare drag_active aspect requested_view direction_marker grid background polar display_sample numeric_pack numeric_companions numeric_row_audit numeric_gaps binary_points bounded_points object_sample render_lod curve_render object_style fit_selected}",-1));
         return TCL_OK;
     }
     if (strcmp(op, "scene") == 0) {
@@ -629,6 +630,16 @@ static int command(ClientData data, Tcl_Interp *ip, int argc, Tcl_Obj *const arg
         if(argc==4){if(grid_read(ip,argv[3],&grid)!=TCL_OK)return TCL_ERROR;
             if(status(ip,gx2d_grid_set(node->scene,&grid))!=TCL_OK)return TCL_ERROR;}
         Tcl_SetObjResult(ip,grid_obj(grid));return TCL_OK;
+    }
+    if(strcmp(op,"render_grid_presentation")==0) {
+        double spacing;
+        if(argc!=4||Tcl_GetDoubleFromObj(ip,argv[3],&spacing)!=TCL_OK)return fail(ip,"Usage: core render_grid_presentation scene minimum_spacing_px");
+        if(!isfinite(spacing)||spacing<0||spacing>128)return fail(ip,"Grid presentation spacing must be 0..128 pixels");
+        return gx2d_grid_presentation(ip,node->scene,spacing);
+    }
+    if(strcmp(op,"canvas_clip")==0) {
+        if(argc!=6&&argc!=7)return fail(ip,"Usage: core canvas_clip scene canvas protected_tags managed_text_photos ?items?");
+        return gx2d_canvas_clip(ip,node->scene,argv[3],argv[4],argv[5],argc==7?argv[6]:NULL);
     }
     if(strcmp(op,"render_grid")==0) {
         gx2d_grid_segment *lines;size_t count,j;

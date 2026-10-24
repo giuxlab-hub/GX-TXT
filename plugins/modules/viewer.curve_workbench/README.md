@@ -1,4 +1,4 @@
-# viewer.curve_workbench 2.21.11
+# viewer.curve_workbench 2.21.12
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -16,3 +16,7 @@ in module.ini.
 DEV111-P012 requires the cumulative framework through P012 and its public
 `GUI_UPDATE_SCHEDULER_API_v1`. Only wheel redraws adopt the opt-in CORE service;
 Native zoom, normal editing timers and350ms view persistence remain unchanged.
+
+DEV111-P013 requires the matching CORE native adapter shipped with the patch.
+Existing shared grid/clipping calls use its C++ presentation batches automatically;
+no Viewer-specific algorithm or switch is needed. P012 scheduling is unchanged.

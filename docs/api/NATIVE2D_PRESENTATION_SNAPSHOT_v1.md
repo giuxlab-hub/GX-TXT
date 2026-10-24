@@ -192,3 +192,92 @@ The internal device command `::gx::native2d::text_photo photo font text anchor
 angle rgba` is a host adapter, not an unrestricted Script Bridge or Viewer SDK
 entrypoint. A mismatched older device adapter produces a precise compatibility
 error; normal runtime never rebuilds it.
+
+## DEV111-P013 shared Canvas presentation batching
+
+The existing public host operations remain unchanged:
+
+```tcl
+::GX::native2DCanvasGrid scene canvas ?tag? ?minimumSpacing?
+::GX::native2DCanvasViewportClip canvas scene ?textTags?
+::GX::native2DCanvasClipItems canvas scene items
+```
+
+`tag` defaults to `construction_grid`, `minimumSpacing` to zero device pixels,
+and `textTags` to `{axis_label}`. These are permanent CORE presentation services.
+The installed matching adapter advertises `grid_presentation_batch` and
+`canvas_clip_batch` through `::GX::Native2D::core api_info`. Restart GX-TXT after
+installing P013: an already-loaded old adapter cannot be replaced in process.
+
+The grid host now calls the compatible native extension:
+
+```tcl
+::GX::Native2D::core render_grid_presentation scene minimum_spacing_px
+```
+
+It returns a list of `{ax ay bx by classification}` device records, in the
+original native order. `classification` is 0 minor, 1 major, 2 axes. Minimum
+spacing accepts finite values 0..128 pixels. C++ calls the unchanged
+`gx2d_grid_render`, then performs the existing per-class/orientation density
+selection with sorted unique device coordinates. Authored grid spacing,
+Cartesian/rotated/polar rules, visibility, styles and snapping remain owned by
+Native2D. The host constructs the same Tk lines, preparing color/width/dash
+options once for each class actually used. `render_grid scene` retains its
+existing dictionary representation and semantics for other consumers.
+
+Shared viewport clipping now uses:
+
+```tcl
+::GX::Native2D::core canvas_clip scene canvas protected_tags managed_text_photos ?items?
+```
+
+`protected_tags` is a list of literal tags. The public viewport wrapper combines
+its text tags with `axis_graduation`, `plot_border`, `viewport_margin`; the explicit
+item wrapper passes no protected tags. `managed_text_photos` is the existing CORE
+photo-to-item dictionary for alpha-text images, not a new registry. Omitted
+`items` means all Canvas items. These native operations are host-mediated Tk
+presentation, not new restricted C++ worker/Script SDK grants.
+
+C++ batches current Tk item bounds and presentation using public Canvas commands.
+A conservative bounding box wholly within the viewport needs no clipping. Other
+lines use the **existing** `gx2d_viewport_clip_segment` with half-stroke inset and
+the existing path connectivity tolerance; styles are fetched only when a split
+requires replacement lines. Marker/text omission, rectangle insets, protected
+labels and managed alpha-text cleanup retain their existing behavior. Ordinary
+image items remain under their own presentation owner. No private Tk item
+structures, scientific geometry mutation or independent clipping renderer is used.
+
+There is no retained grid/Canvas cache. Each call reads the current native view,
+grid, item bounds, coordinates and style. Font, unit, scale, scene and widget
+changes therefore require no cache invalidation protocol. The unchanged text
+photo sweep retains its lifecycle ownership. Axis planning, numerical formatting,
+unit conversion, automatic prefix choice and margin rules remain unchanged.
+
+### Scheduling and adoption
+
+`GUI_UPDATE_SCHEDULER_API_v1` continues to choose **when** a Viewer callback runs.
+That callback uses the same shared presenters above, which now choose a cheaper
+implementation of the same output. There is no grid-specific scheduler logic,
+second redraw queue, optimization toggle or per-redraw migration API.
+
+Curve Workbench already calls these shared services. After extraction and restart
+it uses the compiled batches during ordinary and rapid zoom by default. No private
+Workbench grid or clipping algorithm is added; its P012 scheduling and scientific
+callbacks remain byte-identical. Future Native2D Viewers using these public
+presenters receive the same batching without importing Workbench code. Viewers
+with no Native2D dependency can continue using the generic scheduler unchanged.
+
+### Verified scope and limits
+
+Focused local GUI reference states covered multiple visible point curves and a
+native spline, density transitions, mm/um/m axes, exact grid/plans/labels/styles,
+matched accepted zoom coordinates, actual editing/snap/comparison/publication.
+Separate finite Canvas fixtures covered split paths, managed alpha-text images,
+custom protected tags, rotated and polar grids. The supplied Linux x86-64 adapter
+is built by the existing CMake `gx2dtcl` target with the new C++ source. Existing
+Cairo/Tcl/Tk/X11 and compiler dependencies remain required for source rebuilds.
+
+The reported 3–4 second user stall was not reproduced locally. Individual dense
+reference redraws improved measurably; see P013 test results for measured costs
+and instrumentation qualifications. Full Canvas reconstruction and object display
+sampling remain real costs. This patch does not claim to eliminate every stall.
