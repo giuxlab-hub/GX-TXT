@@ -1,0 +1,92 @@
+{
+  "schema": "gxtxt.incremental_patch.v1",
+  "patch_id": "DEV111-P001",
+  "patch_number": 1,
+  "required_predecessor_patch": 0,
+  "created_utc": "2026-10-23T11:25:03.274603+00:00",
+  "baseline": {
+    "version": "0.9.8.10-dev-111",
+    "artifact_revision": "r3",
+    "source_commit": "83b391de4b81a87e4e76f477491371b58cdc3a40",
+    "archive": "gxtxt_pipeline_v09810dev_111_r3.tar.gz",
+    "archive_sha256": "c31721b84e8f66cd385c1df4d82fae76e32ca816f2bec7f74c434ac720d26cfe"
+  },
+  "files": [
+    {
+      "path": "app/gui/modules_page.tcl",
+      "before_sha256": "23ddf23b9ece742c71d45cd34e3a030e826cc9079aa96044e11e80dc3804e919",
+      "after_sha256": "20dd48c0a053b697f95bdc74f8c0e043f6e10b0fdd59cd94a19a9b0c55b76094",
+      "mode": 436
+    },
+    {
+      "path": "app/modules_page_controller.tcl",
+      "before_sha256": "4abe8bad1422349fe9319c931fba766caf903286dd7e63770198f9a99bd67856",
+      "after_sha256": "d0a87881c86ce160a38cf2103aae4df1e5a90dc4639c7ef72561fb7372288e16",
+      "mode": 436
+    },
+    {
+      "path": "app/run_page_redesign.tcl",
+      "before_sha256": "19013249ce770a7f94903ec0cef14f1a60069170e40e8ade22c9ac7e3e62aafa",
+      "after_sha256": "f49e3f0efefbf9273474e286d8e8600245bee98fb1f49806510dc76264b2314c",
+      "mode": 436
+    },
+    {
+      "path": "app/session_controller.tcl",
+      "before_sha256": "e9e2b69e233823dd4394fcf6e54ad4ce638865711e39f076c46361f93cb4dc7c",
+      "after_sha256": "304e34ef1c2f54ffcec37e8152723acf6c06c41053491e2c79523795eb88bdc0",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/module_api_v1.tcl",
+      "before_sha256": "f7b8639c3dfcca3b0a623f8001c14f1888b3e45dbe96487b25473dff327270bf",
+      "after_sha256": "664a3b89edc44e9a1d24b5e5ff959a7747b2e69d2d79b4213cf12a6e714db03f",
+      "mode": 436
+    },
+    {
+      "path": "core/tcl/plot_module_variants.tcl",
+      "before_sha256": "cdb2d645beb43e63528413bb87d3c7f88973b1b29212ac22042122b316125f6f",
+      "after_sha256": "6d0a6557a531188aac02ce6767e64c58a94fe12841e8677b8334a890040df8ff",
+      "mode": 436
+    }
+  ],
+  "unchanged_guards": [
+    {
+      "path": "gxtxt_pipeline.tcl",
+      "sha256": "4da523227e941ddd0a27e942696c8df9f03447a12b02e08838a8832446a9d78f"
+    },
+    {
+      "path": "app/script_workspace_surface.tcl",
+      "sha256": "703aa47985d7d21b6713bf2c0b7cf339e779f5311bf33a4cb4b9f9345754a159"
+    }
+  ],
+  "archives": {
+    "DEV111-P001.zip": {
+      "sha256": "4f40d54d66391a1a0b2051b3c71ecc0e1ed14f614350f568b0664bffd1dd434b",
+      "bytes": 103915
+    },
+    "ROLLBACK.zip": {
+      "sha256": "017ccc04f76067c03fcff2bb83add3a89d1fa087dc9670aa2a1526c9f6a439cf",
+      "bytes": 103397
+    }
+  },
+  "status": "PASS_FOCUSED_VERIFIED_STAGED_NOT_APPLIED",
+  "installed_modified": false,
+  "applicability": [
+    "Only exact r3 touched-file preimages and unchanged source/version guards; wrong or partially applied hashes refuse.",
+    "Predecessor 0; P002 must require post-P001 hashes.",
+    "Restart closed GUI/CLI after user-authorized apply. No hot load.",
+    "Default older Session visibility retains all eligible panes. New visibility key is additive Session/configuration state; Save Config persists it.",
+    "No plugin packages, release archives/markers, original Sessions, Dataset state or authoritative TODO are included or modified."
+  ],
+  "installer_revision": 2,
+  "installer": {
+    "path": "apply.sh",
+    "sha256": "04e16493acc808887e99328c9f37755a2d7f063680cc73d415c81d894aafd4c0",
+    "mode": 493,
+    "executed": false,
+    "default_target": "/home/giu/script-ag/current/gxtxt",
+    "usage": "./apply.sh [FRAMEWORK_ROOT]",
+    "rollback": "./apply.sh --rollback [FRAMEWORK_ROOT]"
+  },
+  "revision_note": "Installer-only revision requested by user. Original six-file payload and rollback ZIPs unchanged. No framework tests repeated; installer not executed."
+}
