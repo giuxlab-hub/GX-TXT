@@ -168,7 +168,14 @@ proc ::GX::CurveWorkbench::_pointerUpSelection {w x y} {
     variable st
     if {[info exists st($w,semanticPointDrag)]&&$st($w,semanticPointDrag) ne {}} {
         set drag $st($w,semanticPointDrag);set st($w,semanticPointDrag) {}
-        ::GX::Native2D::core drag_commit $st($w,scene)
+        if {[catch {::GX::Native2D::core drag_commit $st($w,scene)} message]} {
+            # A rejected native commit restores coordinates but deliberately
+            # leaves the transaction active for its owner to cancel or retry.
+            if {[::GX::Native2D::core drag_active $st($w,scene)]} {::GX::Native2D::core drag_cancel $st($w,scene)}
+            _pointSyncApply $w;_pointList $w;_draw $w
+            set st($w,status) "Point move rejected: $message. Previous geometry restored."
+            return 1
+        }
         if {[dict get $drag moved]} {foreach id [dict get $drag ids] {_syncSamples $w $id}}
         _pointSyncApply $w
         if {[dict get $drag moved]} {_history $w [dict get $drag before] [dict get $drag ids]}

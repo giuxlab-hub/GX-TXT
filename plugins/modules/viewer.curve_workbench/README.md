@@ -1,4 +1,4 @@
-# viewer.curve_workbench 2.21.9
+# viewer.curve_workbench 2.21.10
 
 SPDX-License-Identifier: GPL-3.0-or-later
 

@@ -1,3 +1,13 @@
+## 2.21.10 — DEV111-P011
+
+Defer coordinate-frame visibility/view reconciliation while Native2D owns an
+active drag. Keep Translate/Rotate previews rendering without attempting a
+conflicting scene mutation. Cancel a rejected ordinary point-drag commit through
+the existing Native owner before refreshing the GUI, preserving exact geometry
+and avoiding an orphan transaction. Preserve gizmo/pivot/constraints, History,
+Undo/Redo, P010 comparison/deviation publication and all prior GUI corrections.
+No Native2D engine, public API, scientific algorithm or layout change.
+
 ## 2.21.9 — DEV111-P010
 
 Embed comparison and geometric measurement controls in the existing scrollable

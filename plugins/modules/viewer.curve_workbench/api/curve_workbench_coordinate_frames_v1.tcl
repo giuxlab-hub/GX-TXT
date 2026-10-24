@@ -231,6 +231,9 @@ proc ::GX::CurveWorkbench::_coordinateNormalizeSource {w id target} {
 }
 proc ::GX::CurveWorkbench::_coordinateFrameSync {w {restoreView 1}} {
     variable st
+    # Drag owns the current geometry/frame until commit or cancel. Reapplying
+    # visibility or switching views here is a scene mutation, not preview paint.
+    if {[::GX::Native2D::core drag_active $st($w,scene)]} {return 0}
     if {$st($w,active) eq {}||![dict exists $st($w,curves) $st($w,active)]} {return 0}
     set key [_coordinateFrameKey [_record $w $st($w,active)]]
     set previous {};if {[info exists st($w,coordinateFrameKey)]} {set previous $st($w,coordinateFrameKey)}
