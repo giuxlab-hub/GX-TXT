@@ -60,8 +60,9 @@ proc ::GX::CurveWorkbench::_constraintCoordinateGuard {w spec} {
         foreach key {a b axis} {if {[dict exists $spec $key]&&[dict get $spec $key] eq [dict get $record native]} {lappend ids $id}}
     }
     set ids [lsort -unique $ids];_coordinatePlaneAdmit $w $ids
-    # Native constraints describe the explicitly chosen numeric plane. Image
-    # calibration remains with its existing physical image owner.
+    if {[dict get $spec kind] in {distance angle radius diameter point_line_distance line_distance axis_angle equal_length equal_radius perpendicular}} {_cadCanvasMetricAdmit $w $ids}
+    # Per-axis/componentwise constraints retain their declared coordinate units;
+    # metric relationships require the established common physical frame.
 }
 proc ::GX::CurveWorkbench::_coordinatePlaneParameterLabel {units parameter} {
     set labels [lmap unit $units {expr {$unit eq {}?{numeric}:$unit}}]

@@ -320,7 +320,8 @@ proc ::GX::CurveWorkbench::publish {w requested {ids {}}} {
         dict set manifest options polar_output $polar
     }
     set result [_publicationRunTransform $w $manifest]
-    set st($w,status) "Published $requested: [dict get $result row_count] complete tuples / explicit Native samples with source lineage."
+    set action [expr {[info exists st($w,publicationPrepareOnly)] && $st($w,publicationPrepareOnly) ? {Prepared} : {Published}}]
+    set st($w,status) "$action $requested: [dict get $result row_count] complete tuples / explicit Native samples with source lineage."
     return $result
 }
 proc ::GX::CurveWorkbench::_sourceSnapshotRequire {w record} {

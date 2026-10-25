@@ -4,7 +4,7 @@
 proc ::GX::native2DCadApiInfo {} {
     native2DEnsure
     set info [::GX::Native2D::core api_info]
-    dict set info host_commands {native2DCadCreate native2DCadDispose native2DCadSelectionPresent native2DCadComponentPresent}
+    dict set info host_commands {native2DCadCreate native2DCadDispose native2DCadSelectionPresent native2DCadComponentPresent native2DCadCanvasCreate native2DCadCanvasAttach}
     dict set info cad_families {selection object component control relationship gesture}
     dict set info cad_raw_pointers 0
     dict set info cad_scientific_authority Native2D.C

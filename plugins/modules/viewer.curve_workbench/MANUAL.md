@@ -1004,3 +1004,21 @@ Completed definitions/receipts retain their existing Workspace and Undo/Redo
 format. Uncompared edits to the new Target selector are local to the open GUI;
 Compare commits the explicit pair through that existing owner. No persistent
 format, scientific engine, renderer, cache, module category or GUI system is added.
+
+## DEV111-P018 common CAD interaction host
+
+The existing Select, window/polygon selection, defining-handle editing, Translate,
+Rotate, pivot, Pan and wheel commands now share the public CORE CAD Canvas Host.
+The Workbench layout and commands are preserved. Escape cancels an active native
+edit; accepted edits still use the shared P017 Undo/Redo and Workspace persistence.
+Curve identity, source row indices and physical X/Y declarations remain scientific
+state. Independent screen scales do not imply incompatible physical quantities:
+rotation is available in a valid common Euclidean frame; unlike time/voltage axes
+require explicit physical normalization before metric operations, while component
+edits and per-axis presentation retain their declared native units.
+
+Separate Dataset publication prepares exact source plans before entering the
+existing atomic batch; canonical payloads remain unchanged and output lineage
+retains original source rows. Native driving-constraint compatibility is unchanged;
+where the existing solver offers a reference fallback, it remains a reference
+measurement rather than an approximation of a driving constraint.

@@ -56,6 +56,10 @@ proc ::GX::native2DViewportPanelDestroy {host id} {
 }
 proc ::GX::_native2DViewportPresentationBounds {host} {
     set state [dict get $::GX::ViewportHost::hosts $host]
+    if {[dict exists $state cad_canvas]} {
+        set cadHost [dict get $state cad_canvas]
+        if {[llength [info commands $cadHost]] && ![dict get [$cadHost state] attached]} {return [list [winfo width $host] [winfo height $host] 0 0 0 0]}
+    }
     if {[dict get $state scene] ne {}} {return [::GX::Native2D::core view [dict get $state scene]]}
     # A Plot surface already owns scientific axes and navigation. Reuse only
     # shared panel/chrome layout; do not allocate a synthetic geometry scene.
@@ -723,7 +727,7 @@ proc ::GX::native2DViewportPanelContent {host id widget} {
 }
 
 proc ::GX::native2DViewportHostApiInfo {} {
-    return [dict create api_id NATIVE2D_VIEWPORT_HOST_v1 api_version 1 host_only 1 operations {create panel_create panel_widget panel_target panel_content panel_show panel_destroy panel_collapse layout controls context_menu glyph tooltip tool_state see_widget scroll_wheel dispose curve_create curve_describe curve_navigate curve_hit curve_destroy diagram_create diagram_command diagram_edit diagram_describe diagram_hit_test raster_attach raster_describe raster_tool raster_command} tooltip_commands {native2DViewportTooltip native2DViewportTooltipShow native2DViewportTooltipHide} tooltip_owner hovered_toplevel diagram_commands {native2DGeometryDiagramViewportCreate native2DGeometryDiagramViewportCommand native2DGeometryDiagramViewportEdit native2DGeometryDiagramViewportDescribe native2DGeometryDiagramViewportHitTest} diagram_events {before_edit committed tool_changed probe} diagram_hit_kinds {terminal wire} diagram_authority INTERACTIVE_DOCUMENT_API_v1 diagram_renderer NATIVE2D_API_v1]
+    return [dict create api_id NATIVE2D_VIEWPORT_HOST_v1 api_version 1 host_only 1 operations {create associate_scene panel_create panel_widget panel_target panel_content panel_show panel_destroy panel_collapse layout controls context_menu glyph tooltip tool_state see_widget scroll_wheel dispose curve_create curve_describe curve_navigate curve_hit curve_destroy diagram_create diagram_command diagram_edit diagram_describe diagram_hit_test raster_attach raster_describe raster_tool raster_command} scene_commands {native2DViewportHostScene} tooltip_commands {native2DViewportTooltip native2DViewportTooltipShow native2DViewportTooltipHide} tooltip_owner hovered_toplevel diagram_commands {native2DGeometryDiagramViewportCreate native2DGeometryDiagramViewportCommand native2DGeometryDiagramViewportEdit native2DGeometryDiagramViewportDescribe native2DGeometryDiagramViewportHitTest} diagram_events {before_edit committed tool_changed probe} diagram_hit_kinds {terminal wire} diagram_authority INTERACTIVE_DOCUMENT_API_v1 diagram_renderer NATIVE2D_API_v1]
 }
 
 # Public state-managed existing ttk controls; caller supplies controller truth.
@@ -753,3 +757,13 @@ proc ::GX::native2DViewportToolState {widget active} {
 
 source [file join [file dirname [info script]] native2d_viewport_curve_source.tcl]
 source [file join [file dirname [info script]] native2d_viewport_raster_v1.tcl]
+
+# Reassociate an embedded scientific owner without rebuilding chrome/bindings.
+proc ::GX::native2DViewportHostScene {canvas scene {changed __keep__}} {
+    variable ::GX::ViewportHost::hosts
+    if {![dict exists $hosts $canvas]} {error {Unknown viewport host}}
+    if {$scene ne {}} {native2DEnsure;::GX::Native2D::core view $scene}
+    if {$changed ne {__keep__}} {llength $changed;dict set hosts $canvas changed $changed}
+    dict set hosts $canvas scene $scene
+    return $scene
+}

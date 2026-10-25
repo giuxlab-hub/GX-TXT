@@ -206,3 +206,11 @@ $cad gesture commit
 The accompanying independent contract consumer does not load Workbench. Ordinary
 presentation uses `native2DSpriteSceneSync` with this same scene and object IDs;
 no Viewer-specific geometry cache or topology reconstruction is required.
+
+## Embedded common interaction host (P018)
+
+`native2DCadCanvasCreate parent scene ?options?` and
+`native2DCadCanvasAttach canvas scene ?options?` provide optional reusable input,
+selection, manipulation and presentation coordination over this same context.
+See [CAD Canvas Host](NATIVE2D_CAD_CANVAS_HOST_v1.md) for ownership, callbacks,
+lifecycle and independent embedding. Advanced domain workflows need not migrate.

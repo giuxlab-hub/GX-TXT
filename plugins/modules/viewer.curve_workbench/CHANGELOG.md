@@ -1,3 +1,16 @@
+## 2.21.17 — DEV111-P018
+
+- Adopt the reusable public CORE embedded CAD Canvas Host for common native
+  selection, region/control editing, manipulation, cancellation and navigation.
+  Preserve the existing interface, native C geometry, C++ controller/presentation
+  and P017 History; domain callbacks retain source/units/Workspace ownership.
+- Enforce physical admission before metric manipulation on heterogeneous axes.
+- Prepare exact Dataset Transform plans before reviewed atomic separate-output
+  batches, preventing a worker/parent authority lock cycle while preserving
+  canonical source checks, output lineage, rollback and publication authorities.
+- Keep advanced construction/constraint/dimension tool workflows intact; see the
+  P018 real-GUI evidence and responsibility audit for supported boundaries.
+
 ## 2.21.16 — DEV111-P017
 
 - Move scientific History, Undo/Redo, branching, recovery journals and timeline

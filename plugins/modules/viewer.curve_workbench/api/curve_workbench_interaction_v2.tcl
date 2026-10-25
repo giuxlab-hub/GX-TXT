@@ -343,6 +343,10 @@ proc ::GX::CurveWorkbench::_publishBatchMember {w token ids session module reque
     variable st
     if {$token ne $st($w,token)||$token ne [::GX::interactiveDocumentSessionToken]||$session ne [file normalize [_session]]} {error {Session changed during reviewed batch publication}}
     set id [dict get $request workspace_object];set record [_record $w $id]
+    if {[dict exists $request prepared_plan]} {
+        _sourceSnapshotRequire $w $record
+        return [_publicationRunTransform $w [dict get $request prepared_plan]]
+    }
     if {[dict exists $record sketch_definition]} {
         set definition [::GX::Native2D::core sketch_definition $st($w,scene) [dict get $record native]]
         set sampling [dict create first 0 last 1 total [dict get $request samples] curved_samples [dict get $request samples] forward [dict get [::GX::Native2D::core direction_marker $st($w,scene) [dict get $record native]] forward]]
@@ -379,7 +383,34 @@ proc ::GX::CurveWorkbench::_publishBatchApply {w token ids values} {
         if {[dict exists $output part_index]} {dict set request part_index [dict get $output part_index]}
         lappend requests $request
     }
-    set result [::GX::datasetPublicationV2PublishBatch [_session] viewer.curve_workbench $requests [list ::GX::CurveWorkbench::_publishBatchMember $w $token $ids]]
-    set st($w,status) "Published [dict get $result output_count] separate Datasets: [join [dict get $result dataset_ids] {, }]. Source objects preserved."
-    return $result
+    # Worker planning must finish before the parent enters the canonical batch
+    # transaction: the worker reads that same authority. Retain its standard
+    # validated plans; materialization and all outputs still commit atomically.
+    set frozen [_cooperativeBegin $w {Dataset publication}]
+    set st($w,publicationBatchActive) 1;set plans {};set prepared {}
+    try {
+        set st($w,publicationPrepareOnly) 1
+        set mode [expr {[info exists st($w,publicationRepresentation)] ? $st($w,publicationRepresentation) : {cartesian}}]
+        set arrangement [expr {[info exists st($w,publicationArrangement)] ? $st($w,publicationArrangement) : {table}}]
+        foreach request $requests {
+            set record [_record $w [dict get $request workspace_object]]
+            set direct [expr {![_bulkRecord $record] && ([dict get $record edited] || ![dict exists $record source_request]) && [dict get $record source] eq {} && $mode eq {cartesian} && $arrangement eq {table}}]
+            if {![dict exists $record sketch_definition] && !$direct} {
+                set plan [_publishBatchMember $w $token $ids [_session] viewer.curve_workbench $request]
+                lappend plans [dict get $plan plan_id]
+                dict set request prepared_plan $plan
+                # Transform owns canonical materialization and its provenance;
+                # the batch API explicitly admits a reviewed per-output owner.
+                dict set request publication_module core.dataset_transform
+            }
+            lappend prepared $request
+        }
+        set st($w,publicationPrepareOnly) 0
+        set result [::GX::datasetPublicationV2PublishBatch [_session] viewer.curve_workbench $prepared [list ::GX::CurveWorkbench::_publishBatchMember $w $token $ids]]
+        set st($w,status) "Published [dict get $result output_count] separate Datasets: [join [dict get $result dataset_ids] {, }]. Source objects preserved."
+        return $result
+    } finally {
+        unset -nocomplain st($w,publicationPrepareOnly) st($w,publicationBatchActive)
+        try {foreach plan $plans {::GX::datasetTransformReleasePlan $plan}} finally {_cooperativeEnd $w $frozen}
+    }
 }

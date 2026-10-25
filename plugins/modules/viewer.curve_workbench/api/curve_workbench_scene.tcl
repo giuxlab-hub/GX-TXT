@@ -30,6 +30,7 @@ proc ::GX::CurveWorkbench::_draw {w} {
     _partDraw $w
     _toolStates $w
     _drawSemanticSelection $w
+    if {[info exists st($w,cadCanvas)] && [llength [info commands $st($w,cadCanvas)]]} {$st($w,cadCanvas) overlays}
     set controls [::GX::native2DViewportPanelWidget $w.right.viewport.canvas controls]
     if {[winfo exists $controls.body.fit_selected]} {
         $controls.body.fit_selected state [expr {[dict exists $st($w,curves) $st($w,active)]?"!disabled":"disabled"}]

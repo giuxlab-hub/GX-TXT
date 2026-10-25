@@ -4,6 +4,7 @@
 # constraint and tangent consumers; they never own a separate selection.
 proc ::GX::CurveWorkbench::_cadController {w} {
     variable st
+    if {[info exists st($w,cadController)] && [llength [info commands $st($w,cadController)]] && (![dict get [$st($w,cadController) state] alive] || [dict get [$st($w,cadController) state] scene]!=$st($w,scene))} {::GX::native2DCadDispose $st($w,cadController);unset st($w,cadController);set st($w,semanticSet) 0}
     if {![info exists st($w,cadController)] || ![llength [info commands $st($w,cadController)]]} {
         set st($w,cadController) [::GX::native2DCadCreate $st($w,scene) [expr {[info exists st($w,semanticSet)]?$st($w,semanticSet):0}] $w]
     }
@@ -79,17 +80,12 @@ proc ::GX::CurveWorkbench::_selectReference {w ref additive} {
 proc ::GX::CurveWorkbench::_pointerDownSelection {w x y state} {
     variable st
     if {$st($w,publishBusy)||$st($w,token) ne [::GX::interactiveDocumentSessionToken]} {return 1}
-    if {[info exists st($w,polygonVertices)]&&$st($w,polygonVertices) ne {}} {
-        lappend st($w,polygonVertices) [::GX::Native2D::core world $st($w,scene) [list $x $y]];_draw $w;return 1
-    }
-    if {[info exists st($w,selectionShape)]&&$st($w,selectionShape) eq "polygon"&&$st($w,canvasTool) eq "select"&&$st($w,tool) eq "select"} {
-        set st($w,polygonVertices) [list [::GX::Native2D::core world $st($w,scene) [list $x $y]]]
-        set st($w,polygonMode) [_selectionMode $state]
-        set st($w,toolLabel) {Polygon selection — click vertices; Enter / Finish commits; Escape cancels.}
-        _draw $w;return 1
-    }
     if {$st($w,canvasTool) ne "select"||$st($w,cadTool) ne "none"||$st($w,tool) ne "select"||$st($w,constraintTool) ne {}||$st($w,imageCalibration) ne {}||$st($w,zoomBox) ne {}||$st($w,joinPending) ne {}} {return 0}
     if {[winfo exists $w.inline]} {return 1}
+    if {[info exists st($w,selectionShape)] && $st($w,selectionShape) in {polygon window}} {
+        set host [_cadCanvas $w];$host tool [dict get {window rectangle polygon polygon} $st($w,selectionShape)]
+        return [$host event down $x $y $state]
+    }
     # Existing tangent and relationship interaction keeps its established
     # priority. Their scientific references use the same Native scene.
     foreach handle [_tangentHandles $w] {lassign [dict get $handle device] hx hy;if {hypot($x-$hx,$y-$hy)<=9} {return 0}}
@@ -98,111 +94,31 @@ proc ::GX::CurveWorkbench::_pointerDownSelection {w x y state} {
     if {($ref eq {}||"direction_marker" in [$w.right.viewport.canvas gettags current])&&$st($w,active) ne {}&&[::GX::Native2D::core marker_hit $st($w,scene) [dict get [_record $w $st($w,active)] native] [list $x $y] 5]&&($ref eq {}||[dict get $ref semantic_kind] in {object segment})} {return 0}
     if {[_relationshipPick $w $x $y] ne {}&&($ref eq {}||("constraint_marker" in [$w.right.viewport.canvas gettags current]&&[dict get $ref entity] ne "control"))} {return 0}
     if {"direction_flip" in [$w.right.viewport.canvas gettags current]} {return 0}
-    focus $w.right.viewport.canvas
-    set mode [_selectionMode $state]
-    if {$ref ne {}} {
-        set kind [dict get $ref semantic_kind]
-        set alreadySelected 0
-        foreach member [_semanticMembers $w] {if {[dict get $member valid]&&[dict get $member id]==[dict get $ref object]&&[dict get $member kind] eq $kind&&[dict get $member index]==[dict get $ref index]} {set alreadySelected 1;break}}
-        if {$mode ne "replace"||!$alreadySelected} {_semanticApply $w [list [dict create kind $kind id [dict get $ref object] index [expr {$kind eq "object"?0:[dict get $ref index]}]]] $mode}
-        set id [dict get $ref logical];set focusChanged [expr {$st($w,active) ne $id}];set st($w,active) $id
-        # Retain the focused Treeview row/range anchor during same-curve picks.
-        # The shared scene is already current; rebuilding it resets keyboard
-        # focus and can erase a deferred table request during a point drag.
-        if {$focusChanged||$st($w,selectionObject) ne [dict get $ref object]} {_selectionScene $w}
-        if {$kind eq "point"} {set st($w,pointPageStart) [expr {200*([dict get $ref index]/200)}]}
-        _curveList $w;_pointList $w;_draw $w
-        set record [_record $w $id]
-        # Mutability is checked only after semantic selection. Dataset points
-        # are selectable reference entities, never edited through sampled controls.
-        if {$mode eq "replace"&&$kind eq "control"&&![dict get $record locked]} {_controlDragStart $w $ref $x $y}
-        if {$mode eq "replace"&&$kind eq "point"&&([dict get $record edited]||[dict get $record source] eq {})&&![dict get $record locked]} {
-            set affected {};set eligible {};set reverse [_logicalNativeMap $w]
-            foreach member [_semanticMembers $w] {
-                if {![dict get $member valid]||![dict exists $reverse [dict get $member id]]} continue
-                set logical [dict get $reverse [dict get $member id]];set candidate [_record $w $logical]
-                set style [::GX::Native2D::core object_style $st($w,scene) [dict get $member id]]
-                if {![_curveVisible $w $candidate]||![dict get $style selectable]} continue
-                lappend eligible [dict remove $member topology_epoch valid missing]
-                if {[dict get $member kind] in {point object}&&![dict get $candidate locked]&&([dict get $candidate edited]||[dict get $candidate source] eq {})} {lappend affected $logical}
-            }
-            _semanticApply $w $eligible
-            set affected [lsort -unique $affected]
-            set st($w,semanticPointDrag) [dict create before [_snapshotIds $w $affected] ids $affected id $id moved 0]
-            [_cadController $w] gesture begin_points [list $x $y] [::GX::Native2D::core interaction_resolve $st($w,scene) $ref]
-        }
-    } else {
-        set st($w,drag) [dict create mode semantic_box x $x y $y select_mode $mode]
-        set st($w,box) [list $x $y $x $y]
-    }
-
-    return 1
+    set host [_cadCanvas $w]
+    $host tool [dict get {click select window rectangle polygon polygon} $st($w,selectionShape)]
+    return [$host event down $x $y $state]
 }
+
 proc ::GX::CurveWorkbench::_pointerMoveSelection {w x y} {
     variable st
-    if {[info exists st($w,semanticPointDrag)]&&$st($w,semanticPointDrag) ne {}} {
-        if {[catch {
-            [_cadController $w] gesture plan [list $x $y]
-            [_cadController $w] gesture apply
-        } message]} {
-            [_cadController $w] gesture cancel;set st($w,semanticPointDrag) {}
-            set st($w,status) "Point move rejected: $message. Previous geometry restored.";_viewDrawLater $w;return 1
-        }
-        dict set st($w,semanticPointDrag) moved 1;_viewDrawLater $w;return 1
-    }
-    if {$st($w,drag) ne {}&&[dict get $st($w,drag) mode] eq "semantic_box"} {
-        set st($w,box) [list [dict get $st($w,drag) x] [dict get $st($w,drag) y] $x $y];_viewDrawLater $w;return 1
-    }
-    return 0
-
-    return 1
+    if {![info exists st($w,cadCanvas)]} {return 0}
+    return [$st($w,cadCanvas) event move $x $y]
 }
 proc ::GX::CurveWorkbench::_pointerUpSelection {w x y} {
     variable st
-    if {[info exists st($w,semanticPointDrag)]&&$st($w,semanticPointDrag) ne {}} {
-        set drag $st($w,semanticPointDrag);set st($w,semanticPointDrag) {}
-        if {[catch {[_cadController $w] gesture commit} message]} {
-            # A rejected native commit restores coordinates but deliberately
-            # leaves the transaction active for its owner to cancel or retry.
-            if {[::GX::Native2D::core drag_active $st($w,scene)]} {[_cadController $w] gesture cancel}
-            _pointSyncApply $w;_pointList $w;_draw $w
-            set st($w,status) "Point move rejected: $message. Previous geometry restored."
-            return 1
-        }
-        if {[dict get $drag moved]} {foreach id [dict get $drag ids] {_syncSamples $w $id}}
-        _pointSyncApply $w
-        if {[dict get $drag moved]} {_history $w [dict get $drag before] [dict get $drag ids]}
-        _draw $w;return 1
-    }
-    if {$st($w,drag) ne {}&&[dict get $st($w,drag) mode] eq "semantic_box"} {
-        set drag $st($w,drag);set st($w,drag) {};set st($w,box) {}
-        lassign [::GX::Native2D::core world $st($w,scene) [list [dict get $drag x] [dict get $drag y]]] ax ay
-        lassign [::GX::Native2D::core world $st($w,scene) [list $x $y]] bx by
-        if {hypot($x-[dict get $drag x],$y-[dict get $drag y])>3} {
-            set members [[_cadController $w] selection region [_selectionScope $w] [list [list $ax $ay] [list $bx $ay] [list $bx $by] [list $ax $by]] 65536 object]
-            _semanticApply $w $members [dict get $drag select_mode]
-        } elseif {[dict get $drag select_mode] eq "replace"} {_semanticClear $w}
-        _curveList $w;_pointList $w;_draw $w;return 1
-    }
-    return 0
+    if {![info exists st($w,cadCanvas)]} {return 0}
+    return [$st($w,cadCanvas) event up $x $y]
 }
 proc ::GX::CurveWorkbench::_selectionShape {w shape} {
     variable st
-    _sketchIdle $w
-    set st($w,selectionShape) $shape
-    focus $w.right.viewport.canvas
-    set st($w,toolLabel) [_selectionPrompt $w $shape]
+    _sketchIdle $w;set st($w,selectionShape) $shape
+    [_cadCanvas $w] tool [dict get {click select window rectangle polygon polygon} $shape]
+    focus $w.right.viewport.canvas;set st($w,toolLabel) [_selectionPrompt $w $shape]
 }
 rename ::GX::CurveWorkbench::_constructionFinish ::GX::CurveWorkbench::_constructionFinish_selection057_base
 proc ::GX::CurveWorkbench::_constructionFinish {w} {
     variable st
-    if {[info exists st($w,polygonVertices)]&&$st($w,polygonVertices) ne {}} {
-        if {[llength $st($w,polygonVertices)]<3} {set st($w,status) {Polygon selection needs at least three vertices.};return}
-        set members [[_cadController $w] selection region [_selectionScope $w] $st($w,polygonVertices) 65536 object]
-        _semanticApply $w $members $st($w,polygonMode)
-        set st($w,polygonVertices) {}
-        _curveList $w;_pointList $w;_draw $w;set st($w,status) {Polygon selection committed.};return
-    }
+    if {[info exists st($w,cadCanvas)] && [dict get [$st($w,cadCanvas) state] polygon] ne {}} {$st($w,cadCanvas) event key Return;return}
     tailcall _constructionFinish_selection057_base $w
 }
 rename ::GX::CurveWorkbench::_sketchIdle ::GX::CurveWorkbench::_sketchIdle_selection057_base

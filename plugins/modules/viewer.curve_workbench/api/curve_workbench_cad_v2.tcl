@@ -70,14 +70,10 @@ proc ::GX::CurveWorkbench::_cadTargets {w} {
 }
 proc ::GX::CurveWorkbench::_cadSelectNative {w {ids {}}} {
     variable st
-    if {[::GX::Native2D::core drag_active $st($w,scene)]} {error "Finish or cancel the native transform gesture before changing object selection"}
-    ::GX::Native2D::core clear $st($w,scene)
-    if {$ids eq {}} {
-        if {$st($w,cadTarget) ne "group"&&$st($w,objectSelection) eq {}} {return}
-        set ids [_cadTargets $w]
-    }
-    foreach id $ids {::GX::Native2D::core object_style $st($w,scene) [dict get [_record $w $id] native] {selected 1}}
-    if {$st($w,cadTarget) eq "group"} {::GX::Native2D::core object_style $st($w,scene) [dict get $st($w,groupNative) $st($w,cadGroup)] {selected 1}}
+    if {$ids eq {}} {if {$st($w,cadTarget) ne {group} && $st($w,objectSelection) eq {}} {set natives {}} else {set ids [_cadTargets $w]}}
+    set natives [lmap id $ids {dict get [_record $w $id] native}]
+    if {$st($w,cadTarget) eq {group}} {lappend natives [dict get $st($w,groupNative) $st($w,cadGroup)]}
+    [_cadCanvas $w] activate $natives
 }
 proc ::GX::CurveWorkbench::_cadToolChoice {w} {
     variable st
@@ -122,50 +118,15 @@ proc ::GX::CurveWorkbench::_cadApplyQueuedSelection {w} {
 }
 proc ::GX::CurveWorkbench::_cadCancel {w} {
     variable st
-    if {![info exists st($w,cadDrag)]||$st($w,cadDrag) eq {}} return
-    set drag $st($w,cadDrag);set st($w,cadDrag) {}
-    [_cadController $w] gesture cancel
-    _cadThaw $w [dict get $drag widgets]
-    _cadApplyQueuedSelection $w
-    set st($w,status) "Native CAD gesture cancelled; exact starting geometry restored."
+    if {[info exists st($w,cadCanvas)] && [llength [info commands $st($w,cadCanvas)]]} {$st($w,cadCanvas) cancel}
 }
 rename ::GX::CurveWorkbench::_cancelGesture ::GX::CurveWorkbench::_cancelGesture_cad_base
 proc ::GX::CurveWorkbench::_cancelGesture {w} {_cadCancel $w;_cancelGesture_cad_base $w}
 proc ::GX::CurveWorkbench::_cadGestureBegin {w x y state} {
     variable st
-    if {$st($w,token) ne [::GX::interactiveDocumentSessionToken]} {error "Session lifetime changed; reopen Curve Workbench"}
     _cadSelectNative $w
-    set handle [::GX::Native2D::core gizmo_hit $st($w,scene) [list $x $y] 5]
-    if {$handle eq "none"} {
-        set world [::GX::Native2D::core world $st($w,scene) [list $x $y]]
-        lassign [::GX::Native2D::core tolerance $st($w,scene) 8] tx ty
-        set hit [_hitCurve $w $world [expr {max($tx,$ty)}]]
-        if {$hit ne {}} {
-            set id [lindex $hit 0]
-            switch -- [_selectionMode $state] {
-                add {$w.leftScroll.viewport.content.curves selection add $id}
-                subtract {$w.leftScroll.viewport.content.curves selection remove $id}
-                default {$w.leftScroll.viewport.content.curves selection set $id}
-            }
-            $w.leftScroll.viewport.content.curves focus $id
-        } else {
-            set before [_snapshotIds $w {}]
-            ::GX::Native2D::core pivot $st($w,scene) custom $world
-            _history $w $before {};_draw $w
-            set st($w,status) {Pivot placed. Select a curve and use this pivot to transform it.}
-        }
-        return
-    }
-    set ids {}
-    if {$handle ni {pivot mirror_a mirror_b}} {set ids [_cadTargets $w];_coordinatePlaneAdmit $w $ids}
-    if {$handle ni {pivot mirror_a mirror_b}} {
-        foreach id $ids {set r [_record $w $id];if {[_bulkRecord $r]||[dict get $r locked]} {error "Unlock the targets or Convert to Native before a CAD drag"}}
-    }
-    _pointSyncApply $w
-    set before [_snapshotIds $w $ids]
-    set drag [dict create handle $handle ids $ids before $before active $st($w,active) selected_indices [_selected $w] delta {}]
-    [_cadController $w] gesture begin $handle [list $x $y] [lmap id $ids {dict get [_record $w $id] native}]
-    dict set drag widgets [_cadFreeze $w];set st($w,cadDrag) $drag;set st($w,cadSelectionPending) {}
+    set host [_cadCanvas $w];$host tool $st($w,cadTool)
+    $host event down $x $y $state
 }
 proc ::GX::CurveWorkbench::_pointerDownTransform {w x y state} {
     variable st
@@ -186,49 +147,8 @@ proc ::GX::CurveWorkbench::_pointerMoveTransform {w x y} {
 
     return 1
 }
-proc ::GX::CurveWorkbench::_cadGestureMove {w x y} {
-    variable st
-    set handle [dict get $st($w,cadDrag) handle]
-    set delta [[_cadController $w] gesture plan [list $x $y] $st($w,cadObjectSnap)]
-    if {[dict exists $delta snap_target]} {
-        set candidate [dict get $delta snap_target];set target {}
-        dict for {id record} $st($w,curves) {if {[dict get $record native]==[dict get $candidate object]} {set target $id;break}}
-        if {$target eq {}} {error {Object snap reference has no logical curve identity}}
-        # This scientific-frame admission belongs to the Workbench's explicit
-        # X/Y declaration workflow, before CORE applies its native proposal.
-        _coordinatePlaneAdmit $w [concat [dict get $st($w,cadDrag) ids] [list $target]]
-        dict set delta snap_target [dict merge [dict remove $candidate object] [dict create curve_id $target]]
-        set st($w,status) "Object snap: [dict get [_record $w $target] name], original Native point [dict get $candidate index]"
-    }
-    [_cadController $w] gesture apply
-    dict set st($w,cadDrag) delta $delta
-    _draw $w
-}
-proc ::GX::CurveWorkbench::_cadGestureCommit {w} {
-    variable st
-    set drag $st($w,cadDrag);set handle [dict get $drag handle]
-    if {[catch {[_cadController $w] gesture commit} message options]} {_cadCancel $w;_draw $w;return -options $options "Transform rejected: $message. Original geometry restored."}
-    set st($w,cadDrag) {};_cadThaw $w [dict get $drag widgets]
-    if {$handle in {pivot mirror_a mirror_b}} {
-        _history $w [dict get $drag before] [dict get $drag ids]
-        _cadApplyQueuedSelection $w
-        _draw $w
-        set st($w,status) "Native $handle updated as one undoable action."
-        return
-    }
-    set ids [dict get $drag ids];foreach logical [dict keys [dict get $drag before]] {if {[dict exists $st($w,curves) $logical]&&[dict exists [_record $w $logical] sketch_definition]&&$logical ni $ids} {lappend ids $logical}};set changed 0
-    foreach id $ids {_syncSamples $w $id;if {[dict get [_record $w $id] samples] ne [dict get $drag before $id samples]} {set changed 1}}
-    if {$changed} {
-        set operation [dict create operation gizmo_$handle api_id NATIVE2D_API_v1 targets $ids parameters [dict get $drag delta] lifecycle absolute_native_drag]
-        foreach id $ids {set r [_record $w $id];dict lappend r operations $operation;dict set st($w,curves) $id $r}
-        _selectionScene $w
-        if {$st($w,active) eq [dict get $drag active]} {::GX::Native2D::core selection_replace $st($w,selectionScene) $st($w,selectionObject) [dict get $drag selected_indices]}
-        _history $w [dict get $drag before] $ids
-    } else {_pointList $w;_draw $w}
-    _cadApplyQueuedSelection $w
-    _draw $w
-    set st($w,status) "Native CAD gesture committed as one action."
-}
+proc ::GX::CurveWorkbench::_cadGestureMove {w x y} {[_cadCanvas $w] event move $x $y}
+proc ::GX::CurveWorkbench::_cadGestureCommit {w} {[_cadCanvas $w] event up 0 0}
 proc ::GX::CurveWorkbench::_pointerUpTransform {w x y} {
     variable st
     if {$st($w,cadDrag) eq {}} {return 0}

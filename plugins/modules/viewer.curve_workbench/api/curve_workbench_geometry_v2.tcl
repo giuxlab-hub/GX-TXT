@@ -48,11 +48,15 @@ proc ::GX::CurveWorkbench::_cooperativeEnd {w frozen} {
     if {[winfo exists $w]} {$w configure -cursor $oldCursor}
 }
 proc ::GX::CurveWorkbench::_publicationRunTransform {w manifest} {
-    set frozen [_cooperativeBegin $w {Dataset publication}]
+    variable st
+    set outer [expr {[info exists st($w,publicationBatchActive)] && $st($w,publicationBatchActive)}]
+    if {!$outer} {set frozen [_cooperativeBegin $w {Dataset publication}]}
     try {
-        return [::GX::datasetTransformExecuteResponsive [_session] $manifest [dict create progress_command [list ::GX::CurveWorkbench::_publicationProgress $w] cancel_command [list ::GX::CurveWorkbench::_publicationCancelled $w] chunk_rows 8192]]
+        set command ::GX::datasetTransformExecuteResponsive
+        if {[info exists st($w,publicationPrepareOnly)] && $st($w,publicationPrepareOnly)} {set command ::GX::datasetTransformPlanResponsive}
+        return [$command [_session] $manifest [dict create progress_command [list ::GX::CurveWorkbench::_publicationProgress $w] cancel_command [list ::GX::CurveWorkbench::_publicationCancelled $w] chunk_rows 8192]]
     } finally {
-        _cooperativeEnd $w $frozen
+        if {!$outer} {_cooperativeEnd $w $frozen}
     }
 }
 proc ::GX::CurveWorkbench::_sourceLoadProgress {w source event} {

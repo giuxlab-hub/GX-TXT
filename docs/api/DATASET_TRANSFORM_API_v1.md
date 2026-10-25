@@ -162,6 +162,7 @@ datasetTransformOpenView session manifest_or_plan ?split_member?
 datasetTransformOpenViewStream view ?variable_ids? ?chunk_rows? ?options?
 datasetTransformCloseView view
 datasetTransformExecute session manifest_or_plan
+datasetTransformPlanResponsive session manifest ?options?
 datasetTransformExecuteResponsive session manifest_or_plan ?options?
 datasetTransformCancel job_id
 datasetTransformResponsiveApiInfo
@@ -191,6 +192,17 @@ publication authority. Planning runs as an owned process through public CORE
 Parallel Execution. Materialization yields between complete bounded chunks;
 default `chunk_rows` is 8192, configurable from 1..65536. It retains the complete
 input and never publishes display-reduced data.
+
+`datasetTransformPlanResponsive session manifest ?options?` uses this same
+cooperative planning owner and returns a normal ready `plan_id` without publishing.
+The caller must release it with `datasetTransformReleasePlan` after use. Pass the
+returned plan to `datasetTransformExecuteResponsive` to materialize without starting
+another planning worker; Session, source fingerprints and geometry-owner revisions
+are checked again. Plan before entering a Publication v2 batch transaction, then
+materialize its validated plans inside the existing atomic batch. A worker which
+reads canonical sources must not be started while the parent holds that authority's
+exclusive transaction lock. This additive operation does not change batch atomicity,
+source authority or existing synchronous/execute signatures.
 
 Options are `progress_command`, `cancel_command`, and `chunk_rows`.
 `progress_command` receives a dictionary with `api_id`, `api_version`, opaque

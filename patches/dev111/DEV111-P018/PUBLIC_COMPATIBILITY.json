@@ -1,0 +1,14 @@
+{
+  "patch": "DEV111-P018",
+  "framework": "0.9.8.10-dev-111",
+  "revision": "r3",
+  "requiredPredecessorPatch": 17,
+  "previousPublicCommit": "b6c0770286698c0c25eaa4b42baabe0b09169415",
+  "originalOwnerZipSha256": "33cd78ba275b6fb02bd0fefa32ee651258e8ae3861f3d3d1f3d9a656e9d629ca",
+  "publicPackageSha256": "12e2d3bb272fa0c9b1be4e7db72ddc11469b199c63aa8215f3e07dc0dec23253",
+  "publicFrameworkFiles": 26,
+  "unchangedFunctionalScientificOwner": true,
+  "nonfunctionalPublicDocumentAndManifestAdjustments": 3,
+  "privateEvidenceExcluded": 202,
+  "sourceOnlyValidationSeparate": true
+}

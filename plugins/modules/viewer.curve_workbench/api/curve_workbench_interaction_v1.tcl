@@ -109,17 +109,8 @@ proc ::GX::CurveWorkbench::_selectReference {w ref additive} {
     _selectionScene $w;_curveList $w;_pointList $w;_draw $w
 }
 proc ::GX::CurveWorkbench::_controlDragStart {w ref x y} {
-    variable st
-    set ids [list [dict get $ref logical]]
-    # Pointer bindings must surface a denied frame through the existing inline
-    # notice, before creating a gesture or taking any geometry/History action.
-    if {[catch {_coordinatePlaneAdmit $w $ids} message]} {
-        _notice $w $message
-        return
-    }
-    # Preserve the pick offset: a rounded screen pixel is not the exact control
-    # coordinate. An axis-aligned drag must not perturb a locked other axis.
-    set st($w,handleDrag) [dict create reference $ref coordinate_key [_coordinateControlKey $w $ids] before [_snapshotIds $w $ids] target {} origin [::GX::Native2D::core interaction_resolve $st($w,scene) $ref] pointer [::GX::Native2D::core world $st($w,scene) [list $x $y]]]
+    set host [_cadCanvas $w];$host tool select
+    $host begin control [list $x $y] [list [dict get $ref object]] {} $ref
 }
 proc ::GX::CurveWorkbench::_pointerDownRetained {w x y state} {
     variable st
@@ -160,34 +151,13 @@ proc ::GX::CurveWorkbench::_coordinates {w x y} {
 proc ::GX::CurveWorkbench::_pointerMoveControl {w x y} {
     variable st
     if {$st($w,handleDrag) eq {}} {return 0}
-    set ref [dict get $st($w,handleDrag) reference]
-    if {[catch {_coordinateControlCheck $w [list [dict get $ref logical]] [dict get $st($w,handleDrag) coordinate_key]} message]} {set st($w,handleDrag) {};_toolPreviewClear $w;_sketchIdle $w $message;return 1}
-    set target [_placement $w $x $y [list [dict get $ref object]]]
-    if {[dict get $st($w,snapCandidate) kind] eq "none"&&[dict exists $st($w,handleDrag) origin]} {
-        set target [lmap now $target start [dict get $st($w,handleDrag) pointer] origin [dict get $st($w,handleDrag) origin] {expr {$origin+($now-$start)}}]
-    }
-    if {[catch {set definition [[_cadController $w] control preview $ref $target]} message]} {set st($w,status) "Handle preview: $message";return 1}
-    _toolPreview $w $definition;dict set st($w,handleDrag) target $target;_draw $w
-
-    return 1
+    return [[_cadCanvas $w] event move $x $y]
 }
 proc ::GX::CurveWorkbench::_pointerUpControl {w x y} {
     variable st
-    if {$st($w,canvasTool) ne "select"} {return 1}
+    if {$st($w,canvasTool) ne {select}} {return 1}
     if {$st($w,handleDrag) eq {}} {return 0}
-    set drag $st($w,handleDrag);set st($w,handleDrag) {};_toolPreviewClear $w;set st($w,snapCandidate) {}
-    if {[dict get $drag target] eq {}} {_draw $w;return 1}
-    set ref [dict get $drag reference];set id [dict get $ref logical]
-    if {[catch {
-        _coordinateControlCheck $w [list $id] [dict get $drag coordinate_key]
-        _coordinatePlaneAdmit $w [list $id]
-        [_cadController $w] control edit $ref [dict get $drag target]
-    } message]} {_sketchIdle $w "Edit rejected: $message. Existing geometry and constraints preserved.";return 1}
-
-    try {_syncSamples $w $id;_history $w [dict get $drag before] [list $id]} on error {message options} {_restoreSnapshot $w [dict get $drag before];return -options $options $message}
-    set st($w,status) "Defining handle edited; retained primitive and Native constraints preserved."
-
-    return 1
+    return [[_cadCanvas $w] event up $x $y]
 }
 rename ::GX::CurveWorkbench::_pointList ::GX::CurveWorkbench::_pointList_interaction_base
 proc ::GX::CurveWorkbench::_pointList {w} {

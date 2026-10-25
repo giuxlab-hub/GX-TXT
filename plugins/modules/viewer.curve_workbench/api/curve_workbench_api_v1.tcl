@@ -1,7 +1,7 @@
 # GX-TXT Curve Workbench. Native2D owns planar geometry, selection and view.
 # SPDX-License-Identifier: GPL-3.0-or-later
 namespace eval ::GX::CurveWorkbench {
-    variable version 2.21.16
+    variable version 2.21.17
     variable st
     variable root [file normalize [file join [file dirname [info script]] ../../../..]]
 }
@@ -1032,10 +1032,10 @@ proc ::GX::CurveWorkbench::_hitCurve {w world tolerance} {
 }
 proc ::GX::CurveWorkbench::_pointerDownScientific {w x y state} {
     variable st
+    if {$st($w,tool) eq {pan}} {set host [_cadCanvas $w];$host tool pan;$host event down $x $y $state;set st($w,drag) [dict create mode pan x $x y $y];return 1}
     if {[info exists st($w,publishBusy)]&&$st($w,publishBusy)} {return 1}
     set st($w,drag) [dict create mode none x $x y $y]
     if {"direction_flip" in [$w.right.viewport.canvas gettags current]} {_directionFlip $w;return 1}
-    if {$st($w,tool) eq "pan"} {dict set st($w,drag) mode pan;return 1}
     if {$st($w,tool) eq "select" && $st($w,active) ne ""} {
         set id $st($w,active);set native [dict get [_record $w $id] native]
         if {[::GX::Native2D::core marker_hit $st($w,scene) $native [list $x $y] 5]} {
@@ -1100,8 +1100,7 @@ proc ::GX::CurveWorkbench::_pointerMoveScientific {w x y} {
         ::GX::Native2D::core marker_place $st($w,scene) [dict get $st($w,drag) native] [list $x $y]
         _draw $w
     } elseif {$mode eq "pan"} {
-        ::GX::Native2D::core pan $st($w,scene) [expr {$x-[dict get $st($w,drag) x]}] [expr {$y-[dict get $st($w,drag) y]}]
-        dict set st($w,drag) x $x;dict set st($w,drag) y $y;_viewDrawLater $w
+        [_cadCanvas $w] event move $x $y
     } elseif {$mode eq "box"} {set st($w,box) [list [dict get $st($w,drag) x] [dict get $st($w,drag) y] $x $y];_draw $w} elseif {$mode eq "points"} {
         set world [::GX::Native2D::core world $st($w,scene) [list $x $y]]
         lassign [dict get $st($w,drag) world] ax ay
@@ -1135,6 +1134,7 @@ proc ::GX::CurveWorkbench::_coordinates {w x y} {
 }
 proc ::GX::CurveWorkbench::_pointerUpScientific {w x y} {
     variable st
+    if {$st($w,drag) ne {} && [dict get $st($w,drag) mode] eq {pan}} {[_cadCanvas $w] event up $x $y;set st($w,drag) {};return 1}
     if {[info exists st($w,publishBusy)]&&$st($w,publishBusy)} {return 1}
     if {$st($w,drag) eq {}} {return 1}
     set drag $st($w,drag);set mode [dict get $drag mode];set st($w,drag) {}
@@ -1171,8 +1171,7 @@ proc ::GX::CurveWorkbench::_pointerUpScientific {w x y} {
 }
 proc ::GX::CurveWorkbench::_wheel {w x y delta} {
     variable st
-    ::GX::Native2D::core zoom $st($w,scene) [expr {$delta>0?0.82:1.22}] [list $x $y]
-    _wheelDrawLater $w;_viewPersistLater $w
+    [_cadCanvas $w] event wheel $x $y $delta
 }
 proc ::GX::CurveWorkbench::_fit {w {selected 0}} {
     variable st
@@ -1397,3 +1396,5 @@ source [file join [file dirname [info script]] curve_workbench_coordinate_declar
 source [file join [file dirname [info script]] curve_workbench_coordinate_controls_v1.tcl]
 
 source [file join [file dirname [info script]] curve_workbench_fit_import_v1.tcl]
+
+source [file join [file dirname [info script]] curve_workbench_cad_canvas.tcl]

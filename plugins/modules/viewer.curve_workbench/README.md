@@ -1,4 +1,4 @@
-# viewer.curve_workbench 2.21.16
+# viewer.curve_workbench 2.21.17
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -48,3 +48,10 @@ The manual Workbench supplies scientific capture/restore and descriptive hooks;
 CORE owns RAM History, asynchronous persistence/recovery and the shared controls.
 No additional CAD migration is part of this patch. Final user GUI acceptance is
 required before subsequent CAD development.
+
+DEV111-P018 requires the cumulative CORE through P018. Common CAD interactions
+use `native2DCadCanvasAttach` with the existing native scene/controller. Tool menus,
+scientific unit/source admission, Workspace and P017 History remain unchanged in
+ownership. See `docs/api/NATIVE2D_CAD_CANVAS_HOST_v1.md` in the framework and the
+P018 functional report; another Viewer can embed the same host without importing
+this module. No native binary rebuild is required by P018.
