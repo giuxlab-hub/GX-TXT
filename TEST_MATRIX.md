@@ -255,3 +255,14 @@ The 31 new source-only scripts preserve their original author bytes. Some origin
 
 The P017 step represents an important **intermediate milestone among several**, rather than a final architecture freeze. Real statistical/scientific and performance checks remain governed by separately controlled acceptance environments.
 
+
+## DEV111-P018 — CAD Canvas Host validation sources
+
+| Scope | Source-only reproducibility | Controlled platform runtime |
+| --- | --- | --- |
+| P018 cumulative patch | P017 parent Git SHA, P018 tag, 26 framework file hash identities and public ZIP verification | Actual upgrade on compatible GX-TXT dev111 r3 |
+| CAD Canvas Host | CORE Host interface, Curve Workbench callback wiring, unchanged native C/C++ and History engine | Real pointer drag, cancellation, constraints, Undo/Redo and GUI editing |
+| Dataset Transform responsive | New planning Tcl source and public API contract | Independent controlled scientific source planning |
+| Original test fixtures | 13 original owner Tcl/Python source files with SHA256 | Compatible disposable Linux Tcl/Tk Session and native GUI |
+
+Original user acceptance results are distinct from this public source validation. No new runtime scientific execution has been asserted.

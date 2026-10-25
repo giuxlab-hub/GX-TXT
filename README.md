@@ -162,3 +162,17 @@ The original dev102 opt-in runner is unchanged. The P016/P017 fixtures are not i
 P017 is **one of several milestones**, not the final milestone. Its native CORE History engine, Curve Workbench integration, and other scientific consumers can be tested further in isolated Debian Sessions. The original author’s performance and real GUI receipts remain distinct from this independent source-only publication; the static verifier does not invent a new runtime test result.
 
 P017 original SCRIPT_CATALOG, internal acceptance logs, private host details and unsuitable fixture files were not copied. The curated 31 files have reproducible exact SHA-256 hashes and are not registered as Session Generators. Scientific validators and generators remain independent deliverables.
+
+## DEV111-P018 — CAD Canvas Host validation sources
+
+The validation branch now preserves thirteen additional exact-byte source-only Tcl/Python cases from owner-deposited DEV111-P018 under validation/official_dev111_patches/p018/. The cases include Canvas GUI interactions, common tools, heterogeneous coordinates, navigation, performance helpers, independent consumers and responsibility review.
+
+The new patch-manifest-dev111-p018.json binds the P018 owner/public archives, tag, P017 prerequisite and 26 public framework files. The read-only tools/validate_dev111_p018.py checks source preimages/postimages, public ZIP integrity and unchanged native CAD/History components.
+
+Read-only commands:
+
+    python3 tools/validate_suite.py verify
+    python3 tools/validate_dev111_p018.py --repository /path/to/maintenance-dev111-checkout
+    python3 tools/validate_dev111_p018.py --installed-final /path/to/GX-TXT
+
+The original dev102 test runner is unchanged. The thirteen P018 scripts are not automatically executed: an independently controlled compatible X11/Tcl/Tk/native runtime and disposable scientific Session are required. No independent GUI test is inferred from source-only publication.
