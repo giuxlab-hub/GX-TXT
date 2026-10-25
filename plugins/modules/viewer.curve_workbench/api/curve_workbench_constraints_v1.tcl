@@ -150,7 +150,7 @@ proc ::GX::CurveWorkbench::_joinApply {w token source index values} {
     _coordinatePlaneAdmit $w [lsort -unique [list $source $target]]
     _cancelGesture $w;_pointSyncApply $w
     set before [_snapshotIds $w [list $source]];
-    set receipt [[_cadController $w] relationship join [dict get [_record $w $source] native] $index [dict get [_record $w $target] native] $targetIndex [dict get $values merge] [dict get $values tolerance]]
+    set receipt [[_advancedCore $w] topology apply join_points [list [dict get [_record $w $source] native] [dict get [_record $w $target] native]] [dict create index $index target_index $targetIndex merge [dict get $values merge] tolerance [dict get $values tolerance]]]
     set id "constraint[incr st($w,nextConstraint)]"
     set definition [dict remove $receipt id valid geometry_supported measured_value residual angular_residual enforcement general_solver]
     dict set definition a $source;dict set definition b $target;dict unset definition axis

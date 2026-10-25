@@ -43,6 +43,7 @@ Options (dictionary):
 | Option | Default | Meaning |
 |---|---|---|
 | `bind_events` | 1 | Install host-owned bindtag for pointer, Escape/Return, wheel and resize |
+| `advanced_dispatch` | 1 | Dispatch the same Host's optional advanced-tools controller before basic input |
 | `external_render` | 0 | With 1, the mandatory `refresh` callback owns redraw scheduling/rendering |
 | `selection_target` | `local` | Existing native `local`, `detail` or `object` picking |
 | `object_snap` | 0 | Enable existing native object snapping in manipulation proposals |
@@ -56,6 +57,13 @@ Without external rendering the host uses the shared scheduler (normal16ms, globa
 configured adaptive profile), retained Cairo/grid presentation and transient CAD
 selection/gizmo overlays. It replaces its transient items each frame. It does not
 reconstruct authoritative geometry or cache scientific state privately.
+P019 adds `$host advanced`: the same owned, lazily created controller provides
+[shared advanced construction, topology, controls and direction tools](NATIVE2D_ADVANCED_CAD_TOOLS_v1.md)
+and [constraints, dimensions and configurable editors](NATIVE2D_CAD_TOOLS_RELATIONSHIPS_v1.md).
+Retrieval is read-only and requires a live context/widget; mutations retain domain
+admission. A consumer with established input priorities can set `advanced_dispatch 0`
+and call these public tools explicitly. Workbench uses that route to preserve its
+scientific input priority, logical adoption and P017 History boundaries.
 
 ## Tools, selection, navigation and dispatch
 
@@ -95,8 +103,14 @@ Native hit-testing/selection handles whole objects, segments and supported nativ
 points/controls. Constituents keep their existing component references; this host
 makes no promise of unsupported in-place compound constituent editing. Use existing
 public component/Split/Separate owners where required. Advanced construction,
-constraints and dimensions remain compatible with the same context but their
-complete tool state machines are outside this initial common host.
+constraints and dimensions use the additive P019 controller in this same context.
+Ordinary Motion supplies staged hover previews, B1-Motion supplies drag updates,
+and pointer-down focuses the Canvas before an advanced tool consumes the event.
+Unhandled ordinary Motion continues through the consumer's existing bindtags
+(for example a coordinate readout); consumed CAD previews retain input ownership.
+Explicitly selecting a basic tool cancels staged advanced input, including when
+the basic tool name is unchanged. Escape cancels every owned staged/navigation
+scope; neither cancellation nor presentation submits a scientific History edit.
 
 Move/Rotate use the existing native gizmo and its pivot. Admission runs at begin,
 plan before apply, and commit. Native C++ begin/plan/apply/commit/cancel is the sole
@@ -177,3 +191,14 @@ with an external toolbar, real XTEST selection/Translate/Rotate/control editing,
 region selection, cancellation, P017 Undo/Redo and source/widget cleanup. It loads
 no Curve Workbench files. The production Workbench attaches the same Host class
 and adopted native controller, retaining only logical/scientific domain callbacks.
+
+## Target synchronization during redraw (P019)
+
+`$host targetsMutable` and `state.target_flags_mutable` report whether the native
+CAD target flags may be synchronized. This requires no Host-owned gesture, no
+adopted C++ gesture and no native scientific drag. Pan and control previews can
+own the Host while the C drag flag is false. Render callbacks must defer target
+activation while this value is false; render the current authoritative selection
+instead. Once the owning gesture commits/cancels, the next ordinary refresh may
+synchronize targets. `activate` continues to reject violations; no native guard
+or transaction flag is cleared to permit a redraw.

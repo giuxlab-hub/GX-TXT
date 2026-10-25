@@ -198,7 +198,11 @@ proc ::GX::CurveWorkbench::_historySubmit {w before ids} {
 proc ::GX::CurveWorkbench::_historyRestore {w desired} {
     variable st
     set context [::GX::scientificHistoryViewerRestoreContext $w];set mode [dict get $context mode]
-    set token [_parameterBind $w]
+    # A draft has no Document-scoped parameter context. Binding one here would
+    # project/flush a new Workspace from inside native History restoration.
+    # Its captured parameter definitions are empty until explicit materialization.
+    set token {}
+    if {$st($w,document) ne {}} {set token [_parameterBind $w]}
     set st($w,historyRestoring) 1;set st($w,importTransaction) 1
     try {
         if {$token ne {}} {

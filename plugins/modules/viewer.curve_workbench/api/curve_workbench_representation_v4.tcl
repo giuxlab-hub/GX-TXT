@@ -166,7 +166,7 @@ proc ::GX::CurveWorkbench::_compositionApply {w token ids arrangement values {re
     set consumes [expr {$arrangement ne "compound"}]
     set before [_snapshotIds $w [expr {$consumes?$ids:{}}]];
     set mode [expr {$arrangement eq "compound"?0:2}]
-    if {[catch {set native [[_cadController $w] object join $natives {} $mode [::GX::datasetPublicationV2DictDefault $values tolerance 0]]} message options]} {
+    if {[catch {set native [[_advancedCore $w] topology apply [expr {$mode==0?{compound}:{join_path}}] $natives [dict create tolerance [::GX::datasetPublicationV2DictDefault $values tolerance 0]]]} message options]} {
         if {$mode==2} {error {The selection is not one connected retained network within the selected tolerance. No objects changed.}}
         return -options $options $message
     }
@@ -200,7 +200,7 @@ proc ::GX::CurveWorkbench::_compositionSeparate {w} {
     if {![dict exists $record sketch_definition]||[dict get $record sketch_definition family] ni {composite_path compound}} {error {Select a heterogeneous Path or Compound.}}
     _coordinatePlaneAdmit $w $ids
     set before [_snapshotIds $w {}];set members {};set created {}
-    set natives [[_cadController $w] object separate [dict get $record native]]
+    set natives [[_advancedCore $w] topology apply separate [list [dict get $record native]]]
     try {
         set ordinal 0
         foreach native $natives {
@@ -246,7 +246,7 @@ proc ::GX::CurveWorkbench::_pathSplitCommit {w token parent operation index} {
     set record [_record $w $parent]
     set before [_snapshotIds $w {}];
     set method [dict get {path_split split_path composition_split split_composition} $operation]
-    set nativeIds [[_cadController $w] object $method [dict get $record native] $index]
+    set nativeIds [[_advancedCore $w] topology apply $method [list [dict get $record native]] [dict create index $index]]
     set created {};set members {}
     try {
         foreach native $nativeIds suffix {A B} {

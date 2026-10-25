@@ -6,8 +6,8 @@ proc ::GX::CurveWorkbench::_cadCanvas {w} {
     set cad [_cadController $w]
     if {![info exists st($w,cadCanvas)] || ![llength [info commands $st($w,cadCanvas)]]} {
         set callbacks {}
-        foreach {key suffix} {guard Guard scope Scope targets Targets admit Admit begin Begin selected Selected preview Preview committed Committed cancelled Cancelled rollback Rollback refresh Refresh navigation Navigation error Error} {dict set callbacks $key [list ::GX::CurveWorkbench::_cadCanvas$suffix $w]}
-        set st($w,cadCanvas) [::GX::native2DCadCanvasAttach $w.right.viewport.canvas $st($w,scene) [dict create context $cad bind_events 0 external_render 1 callbacks $callbacks]]
+        foreach {key suffix} {guard Guard scope Scope targets Targets admit Admit begin Begin selected Selected preview Preview committed Committed cancelled Cancelled rollback Rollback refresh Refresh navigation Navigation error Error advanced Advanced} {dict set callbacks $key [list ::GX::CurveWorkbench::_cadCanvas$suffix $w]}
+        set st($w,cadCanvas) [::GX::native2DCadCanvasAttach $w.right.viewport.canvas $st($w,scene) [dict create context $cad bind_events 0 advanced_dispatch 0 external_render 1 callbacks $callbacks]]
     } elseif {[dict get [$st($w,cadCanvas) state] context] ne $cad} {$st($w,cadCanvas) associate $st($w,scene) [dict create context $cad]}
     $st($w,cadCanvas) configure [dict create selection_target $st($w,selectionTarget) object_snap $st($w,cadObjectSnap)]
     return $st($w,cadCanvas)

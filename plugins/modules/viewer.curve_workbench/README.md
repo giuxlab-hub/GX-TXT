@@ -1,4 +1,4 @@
-# viewer.curve_workbench 2.21.17
+# viewer.curve_workbench 2.21.18
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -55,3 +55,8 @@ scientific unit/source admission, Workspace and P017 History remain unchanged in
 ownership. See `docs/api/NATIVE2D_CAD_CANVAS_HOST_v1.md` in the framework and the
 P018 functional report; another Viewer can embed the same host without importing
 this module. No native binary rebuild is required by P018.
+
+DEV111-P019 uses the same public CORE CAD Canvas advanced tools as independent
+consumers. Existing scientific menus and workflows remain available; the shared
+dimension editor resizes to show errors and the reference-measurement offer.
+The accepted P018 cumulative framework is required before applying this patch.

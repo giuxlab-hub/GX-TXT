@@ -1,5 +1,20 @@
 # Curve Workbench
 
+## Advanced editing in DEV111-P019
+
+Use the existing Create, Modify, Constraints, Representation and dimension
+controls. Escape cancels the current proposal without accepting a scientific
+edit; Finish completes a variable-length construction. Invalid driving values
+remain available for correction. Where offered, a reference measurement records
+the actual measured value without driving the geometry. Reference measurements
+remain read-only until explicitly changed to driving.
+
+Join point establishes a native coincidence relationship; Join Path connects
+retained constituents; Compound retains distinct components. These are different
+operations. Use Split or Separate before independently editing a constituent
+where direct manipulation inside a composite is unsupported. Existing physical
+coordinate and read-only source restrictions still apply.
+
 ## Shared History in DEV111-P017
 
 History is managed by CORE in native RAM. Accepted scientific edits are available

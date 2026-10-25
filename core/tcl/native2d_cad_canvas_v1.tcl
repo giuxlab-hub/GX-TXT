@@ -16,11 +16,11 @@ proc ::GX::native2DCadCanvasAttach {canvas scene {options {}}} {
     return [::GX::Native2DCadCanvas::Host new $canvas $scene $options 0]
 }
 oo::class create ::GX::Native2DCadCanvas::Host {
-    variable c scene cad ownsCad ownsCanvas ownsViewport opts cb tool tools gesture polygon last scheduler tag dispatching generation preview
+    variable c scene cad ownsCad ownsCanvas ownsViewport opts cb tool tools gesture polygon last scheduler tag dispatching generation preview advanced
     constructor {canvas source options created} {
         set c $canvas;set scene {};set cad {};set ownsCad 0;set ownsCanvas $created;set ownsViewport 0
-        set tool select;set tools {select rectangle polygon translate rotate pivot mirror pan control points zoom fit};set gesture {};set polygon {};set last {};set scheduler {};set dispatching 0;set generation 0;set preview 0
-        set opts {bind_events 1 external_render 0 selection_target local object_snap 0 tolerance_px 9}
+        set tool select;set tools {select rectangle polygon translate rotate pivot mirror pan control points zoom fit};set gesture {};set polygon {};set last {};set scheduler {};set dispatching 0;set generation 0;set preview 0;set advanced {}
+        set opts {bind_events 1 advanced_dispatch 1 external_render 0 selection_target local object_snap 0 tolerance_px 9}
         set cb {};set tag GXCadCanvas[incr ::GX::Native2DCadCanvas::serial]
         if {![winfo exists $c] || [winfo class $c] ne {Canvas}} {error {CAD host requires an existing Tk Canvas}}
         my associate $source $options
@@ -28,6 +28,8 @@ oo::class create ::GX::Native2DCadCanvas::Host {
         bindtags $c [linsert [bindtags $c] 0 $tag]
     }
     destructor {
+        if {$advanced ne {} && [llength [info commands $advanced]]} {catch {$advanced dispose}}
+        set advanced {}
         catch {my cancel dispose}
         if {$scheduler ne {}} {catch {::GX::guiUpdateSchedulerDispose $scheduler}}
         if {$cad ne {} && $ownsCad} {catch {::GX::native2DCadDispose $cad}}
@@ -40,7 +42,16 @@ oo::class create ::GX::Native2DCadCanvas::Host {
     }
     method canvas {} {return $c}
     method context {} {return $cad}
-    method state {} {return [dict create api_id NATIVE2D_API_v1 canvas $c scene $scene context $cad attached [expr {$cad ne {} && [llength [info commands $cad]] && [dict get [$cad state] alive]}] generation $generation tool $tool enabled_tools $tools active [expr {$gesture ne {}}] gesture $gesture polygon $polygon receipt $last]}
+    method advanced {} {
+        # Access/presentation is read-only, like context/state. Domain admission
+        # belongs to each mutator's Require path: import/publication can redraw
+        # while its owner intentionally forbids a new scientific edit.
+        if {$cad eq {} || ![winfo exists $c] || ![llength [info commands $cad]] || ![dict get [$cad state] alive]} {error {CAD scientific source or widget has closed}}
+        if {$advanced eq {} || ![llength [info commands $advanced]]} {set advanced [::GX::Native2DCadCanvas::Advanced new [self]]}
+        return $advanced
+    }
+    method feedbackObjects {} {if {$preview} {return [list $preview]};return {}}
+    method state {} {return [dict create api_id NATIVE2D_API_v1 canvas $c scene $scene context $cad attached [expr {$cad ne {} && [llength [info commands $cad]] && [dict get [$cad state] alive]}] generation $generation tool $tool enabled_tools $tools active [expr {$gesture ne {}}] target_flags_mutable [my targetsMutable] gesture $gesture polygon $polygon receipt $last]}
     method callback {key data {fallback {}}} {
         if {![dict exists $cb $key] || [dict get $cb $key] eq {}} {return $fallback}
         return [uplevel #0 [list {*}[dict get $cb $key] [dict merge [dict create host [self] canvas $c scene $scene generation $generation] $data]]]
@@ -74,38 +85,51 @@ oo::class create ::GX::Native2DCadCanvas::Host {
         return [self]
     }
     method configuration {changes} {
-        foreach key [dict keys $changes] {if {$key ni {bind_events external_render selection_target object_snap tolerance_px callbacks}} {error "Unknown CAD host option: $key"}}
+        foreach key [dict keys $changes] {if {$key ni {bind_events advanced_dispatch external_render selection_target object_snap tolerance_px callbacks}} {error "Unknown CAD host option: $key"}}
         set nextCB $cb
         if {[dict exists $changes callbacks]} {
             set nextCB [dict get $changes callbacks]
-            foreach key [dict keys $nextCB] {if {$key ni {guard scope targets admit begin selected preview committed cancelled rollback refresh navigation error presentation}} {error "Unknown CAD callback: $key"};llength [dict get $nextCB $key]}
+            foreach key [dict keys $nextCB] {if {$key ni {guard scope targets admit begin selected preview committed cancelled rollback refresh navigation error presentation advanced}} {error "Unknown CAD callback: $key"};llength [dict get $nextCB $key]}
             dict unset changes callbacks
         }
         set next [dict merge $opts $changes]
-        foreach key {bind_events external_render object_snap} {dict set next $key [::GX::uiFieldNormalize {type boolean} [dict get $next $key]]}
+        foreach key {bind_events advanced_dispatch external_render object_snap} {dict set next $key [::GX::uiFieldNormalize {type boolean} [dict get $next $key]]}
         if {[dict get $next selection_target] ni {detail local object}} {error {CAD selection target must be detail, local or object}}
         set tolerance [dict get $next tolerance_px];if {![string is double -strict $tolerance] || $tolerance<=0 || $tolerance>256} {error {CAD tolerance must be positive and bounded}}
         if {[dict get $next external_render] && (![dict exists $nextCB refresh] || [dict get $nextCB refresh] eq {})} {error {External CAD presentation requires its owner's refresh callback}}
         return [list $next $nextCB]
     }
     method configure {{changes {}}} {
-        if {$gesture ne {}} {foreach key {callbacks bind_events external_render} {if {[dict exists $changes $key]} {error {Cancel before replacing CAD callbacks or GUI ownership}}}}
+        if {$gesture ne {}} {foreach key {callbacks bind_events advanced_dispatch external_render} {if {[dict exists $changes $key]} {error {Cancel before replacing CAD callbacks or GUI ownership}}}}
         set prior [dict get $opts bind_events]
         lassign [my configuration $changes] opts cb
         if {$prior!=[dict get $opts bind_events]} {my bindings}
         return $opts
     }
     method bindings {} {
-        foreach event {<Button-1> <B1-Motion> <ButtonRelease-1> <Escape> <Return> <MouseWheel> <Button-4> <Button-5> <Configure>} {bind $tag $event {}}
+        foreach event {<Button-1> <Motion> <B1-Motion> <ButtonRelease-1> <Escape> <Return> <MouseWheel> <Button-4> <Button-5> <Configure>} {bind $tag $event {}}
         if {![dict get $opts bind_events]} return
-        foreach {event args} {<Button-1> {down %x %y %s} <B1-Motion> {move %x %y %s} <ButtonRelease-1> {up %x %y %s} <Escape> {key Escape} <Return> {key Return} <MouseWheel> {wheel %x %y %D} <Button-4> {wheel %x %y 120} <Button-5> {wheel %x %y -120} <Configure> {resize}} {set script "[list [self] bound] $args";if {$event ne {<Configure>}} {append script {;break}};bind $tag $event $script}
+        foreach {event args} {<Button-1> {down %x %y %s} <Motion> {move %x %y %s} <B1-Motion> {move %x %y %s} <ButtonRelease-1> {up %x %y %s} <Escape> {key Escape} <Return> {key Return} <MouseWheel> {wheel %x %y %D} <Button-4> {wheel %x %y 120} <Button-5> {wheel %x %y -120} <Configure> {resize}} {
+            set script "[list [self] bound] $args"
+            if {$event eq {<Motion>}} {
+                # New hover dispatch must not swallow a consumer's existing
+                # coordinate/readout bindings when no CAD tool consumes it.
+                set script [format {if {[%s]} {break}} $script]
+            } elseif {$event ne {<Configure>}} {append script {;break}}
+            bind $tag $event $script
+        }
     }
     method ownerDestroyed {actual} {if {$actual eq $c} {my destroy}}
     method bound {args} {my event {*}$args}
     method tool {{value __query__}} {
         if {$value eq {__query__}} {return $tool}
         if {$value ni {select rectangle polygon translate rotate pivot mirror pan} || $value ni $tools} {error "CAD tool is disabled or unsupported: $value"}
-        if {$value eq $tool} {return $tool}
+        if {$value eq $tool} {
+            # Explicitly choosing a basic tool also leaves a staged advanced
+            # tool. A read-only query above never changes interaction state.
+            if {$advanced ne {} && [llength [info commands $advanced]]} {my cancel tool_change}
+            return $tool
+        }
         my cancel tool_change;set tool $value
         if {$cad ne {} && [dict get [$cad state] alive]} {
             if {$value in {translate rotate pivot mirror}} {
@@ -125,6 +149,7 @@ oo::class create ::GX::Native2DCadCanvas::Host {
     method scope {} {
         set ids [my callback scope [dict create phase scope] [::GX::Native2D::core ids $scene]]
         if {[llength $ids]>65536} {error {CAD scope exceeds65536 objects}}
+        if {$preview} {set ids [lsearch -all -inline -not -exact $ids $preview]}
         return $ids
     }
     method pick {xy {target __default__}} {my valid;if {$target eq {__default__}} {set target [dict get $opts selection_target]};return [$cad selection pick [my scope] $xy [dict get $opts tolerance_px] $target]}
@@ -139,9 +164,18 @@ oo::class create ::GX::Native2DCadCanvas::Host {
         return $last
     }
     method mode {state} {if {$state&1} {return subtract};if {$state&4} {return add};return replace}
+    method targetsMutable {} {
+        if {$cad eq {} || ![llength [info commands $cad]]} {return 0}
+        set context [$cad state]
+        if {![dict get $context alive]} {return 0}
+        # Pan/control previews can own GUI interaction without a C drag. A
+        # directly adopted C++ gesture also retains its own transaction scope.
+        set advancedBusy [expr {$advanced ne {} && [llength [info commands $advanced]] && [$advanced busy]}]
+        return [expr {!$advancedBusy && $gesture eq {} && ![dict get $context gesture] && ![::GX::Native2D::core drag_active $scene]}]
+    }
     method activate {ids} {
         my valid
-        if {$gesture ne {} || [::GX::Native2D::core drag_active $scene]} {error {Finish the native drag before changing CAD target flags}}
+        if {![my targetsMutable]} {error {Finish the native drag before changing CAD target flags}}
         if {[llength $ids]>65536} {error {CAD targets exceed65536 objects}}
         ::GX::Native2D::core clear $scene
         foreach id $ids {::GX::Native2D::core object_style $scene $id {selected 1}}
@@ -176,6 +210,7 @@ oo::class create ::GX::Native2DCadCanvas::Host {
         return 1
     }
     method cancel {{reason cancel}} {
+        if {$advanced ne {} && [llength [info commands $advanced]]} {$advanced cancel $reason}
         set old $gesture;set gesture {};set polygon {}
         if {$old ne {}} {
             if {$cad ne {} && [llength [info commands $cad]] && [dict get [$cad state] alive]} {catch {$cad gesture cancel}}
@@ -302,6 +337,13 @@ oo::class create ::GX::Native2DCadCanvas::Host {
                 if {[llength $args]<2 || [llength $args]>3} {error {CAD pointer input needs two coordinates and optional state}}
                 foreach value [lrange $args 0 1] {if {![string is double -strict $value] || ![expr {abs($value)<Inf && abs($value)<=1e12}]} {error {CAD pointer coordinates must be finite and bounded}}}
             }
+            # Escape terminates every owned input scope, including navigation
+            # temporarily overlapping a staged advanced proposal.
+            if {$phase eq {key} && [lindex $args 0] eq {Escape}} {my cancel escape;my refresh final;return 1}
+            # Advanced tools may consume pointer-down before the basic select
+            # handler; keyboard Finish/Escape must still belong to this Canvas.
+            if {$phase in {down pan_start}} {my valid;focus $c}
+            if {[dict get $opts advanced_dispatch] && $advanced ne {} && [llength [info commands $advanced]] && [$advanced event $phase {*}$args]} {return 1}
             switch -- $phase {
                 down {lassign $args x y state;return [my down [list $x $y] $state]}
                 move {return [my move [lrange $args 0 1]]}
@@ -351,6 +393,7 @@ oo::class create ::GX::Native2DCadCanvas::Host {
             if {[llength $points]>=4} {$c create line {*}$points -fill #536fc1 -dash {4 3} -tags cad_host_feedback}
             foreach {x y} $points {$c create oval [expr {$x-3}] [expr {$y-3}] [expr {$x+3}] [expr {$y+3}] -fill #536fc1 -tags cad_host_feedback}
         }
+        if {$advanced ne {} && [llength [info commands $advanced]]} {$advanced overlays}
     }
     method drawable {} {
         if {$cad eq {} || ![winfo exists $c] || ![llength [info commands $cad]] || ![dict get [$cad state] alive]} {return 0}

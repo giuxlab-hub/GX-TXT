@@ -9,7 +9,7 @@ proc ::GX::CurveWorkbench::_draw {w} {
     _semanticSync $w
     # Gizmo drawing and hit testing use complete CAD target bounds. Point and
     # control membership remain owned by the shared semantic selection set.
-    if {$st($w,cadTool) ne "none"&&$st($w,cadDrag) eq {}&&![::GX::Native2D::core drag_active $st($w,scene)]} {_cadSelectNative $w}
+    if {$st($w,cadTool) ne "none" && $st($w,cadDrag) eq {} && [dict get [[_cadCanvas $w] state] target_flags_mutable]} {_cadSelectNative $w}
     set feedback {}
     foreach key {toolPreview mirrorPreview previewNative} {
         if {[info exists st($w,$key)]&&$st($w,$key) ne {}} {lappend feedback $st($w,$key)}

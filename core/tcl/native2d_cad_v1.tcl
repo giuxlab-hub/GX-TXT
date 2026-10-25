@@ -4,8 +4,10 @@
 proc ::GX::native2DCadApiInfo {} {
     native2DEnsure
     set info [::GX::Native2D::core api_info]
-    dict set info host_commands {native2DCadCreate native2DCadDispose native2DCadSelectionPresent native2DCadComponentPresent native2DCadCanvasCreate native2DCadCanvasAttach}
+    dict set info host_commands {native2DCadCreate native2DCadDispose native2DCadSelectionPresent native2DCadComponentPresent native2DCadCanvasCreate native2DCadCanvasAttach native2DCadConstructionCount native2DCadDimensionKinds}
     dict set info cad_families {selection object component control relationship gesture}
+    dict set info host_tool_families {construction topology constraint dimension control direction}
+    dict set info advanced_tools_host_only 1
     dict set info cad_raw_pointers 0
     dict set info cad_scientific_authority Native2D.C
     return $info

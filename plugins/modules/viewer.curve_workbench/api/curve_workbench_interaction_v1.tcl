@@ -33,9 +33,7 @@ proc ::GX::CurveWorkbench::_placement {w x y {excluded {}}} {
     set result [::GX::Native2D::core interaction_snap $st($w,scene) [list $x $y] 10 $excluded $st($w,cadObjectSnap) 1]
     set st($w,snapCandidate) $result;return [dict get $result point]
 }
-proc ::GX::CurveWorkbench::_createCount {family} {
-    return [dict get {point 1 line 2 construction_line 2 rectangle 2 circle 2 arc 3 ellipse 3 quadratic_bezier 3 cubic_bezier 4 path 0 polyline 0 spline 0} $family]
-}
+proc ::GX::CurveWorkbench::_createCount {family} {return [::GX::native2DCadConstructionCount $family]}
 proc ::GX::CurveWorkbench::_commitDefinition {w definition unit name operation {parents {}}} {
     variable st
     set coordinateUnits [list [dict get $st($w,coordinateConfiguration) x_unit] [dict get $st($w,coordinateConfiguration) y_unit]]
@@ -305,12 +303,7 @@ proc ::GX::CurveWorkbench::_constraintReferences {w} {
     } else {foreach id [_cadSelected $w] {set ref [::GX::Native2D::core interaction_reference $st($w,scene) [dict get [_record $w $id] native] object 0];dict set ref logical $id;lappend result $ref}}
     return $result
 }
-proc ::GX::CurveWorkbench::_constraintOptions {w} {
-    variable st
-    set refs [_constraintReferences $w]
-    if {[llength $refs]<1||[llength $refs]>3} {return {}}
-    return [[_cadController $w] relationship options $refs]
-}
+proc ::GX::CurveWorkbench::_constraintOptions {w} {return [[_advancedRelationships $w] constraint options [_constraintReferences $w]]}
 proc ::GX::CurveWorkbench::_constraintMenu {w} {
     set menu $w.sketchbar.constraints.menu;$menu delete 0 end
     if {[catch {set options [_constraintOptions $w]} message]} {set options {};set ::GX::CurveWorkbench::st($w,status) "Selection changed: $message. Select current geometry again."}

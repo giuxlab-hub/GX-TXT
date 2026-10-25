@@ -130,26 +130,14 @@ proc ::GX::CurveWorkbench::_sketchTool {w family} {
     if {$family eq "line"} {set st($w,toolLabel) {Line — click start, then successive endpoints. Each segment is independent and connected. Esc / Finish stops.}}
 }
 proc ::GX::CurveWorkbench::_constructionPlacement {w x y} {
-    variable st;set excluded {};if {$st($w,toolPreview) ne {}} {lappend excluded $st($w,toolPreview)}
-    set placement [::GX::Native2D::core construction_pick $st($w,scene) [list $x $y] 9 $st($w,constructionPlaces) $excluded 1]
-    set kind [expr {[dict exists $placement reference]?"attach geometry":[dict exists $placement earlier]?"close / share placed point":"none"}]
+    variable st
+    set placement [[_advancedCore $w] construction pick [list $x $y]]
+    set kind [expr {[dict exists $placement reference]?{attach geometry}:[dict exists $placement earlier]?{close / share placed point}:{none}}]
     set st($w,snapCandidate) [dict create point [dict get $placement point] kind $kind]
     return $placement
 }
-# A cursor endpoint at the last placed point may create a degenerate segment.
-# Keep the valid placed prefix visible; both paths use Native construction.
 proc ::GX::CurveWorkbench::_constructionPreview {w {candidate {}}} {
-    variable st
-    set places $st($w,constructionPlaces)
-    if {$places eq {}} return
-    if {$candidate ne {}&&!([dict exists $candidate earlier]&&[dict get $candidate earlier]==[llength $places]-1)} {
-        if {![catch {set definition [::GX::Native2D::core construction_preview $st($w,scene) $st($w,canvasTool) [concat $places [list $candidate]]]}]} {
-            _toolPreview $w $definition;return
-        }
-    }
-    if {[catch {set definition [::GX::Native2D::core construction_preview $st($w,scene) $st($w,canvasTool) $places]}]} {
-        _toolPreviewClear $w
-    } else {_toolPreview $w $definition}
+    return [[_advancedCore $w] construction preview $candidate]
 }
 rename ::GX::CurveWorkbench::_coordinates ::GX::CurveWorkbench::_coordinates_interaction055_base
 proc ::GX::CurveWorkbench::_coordinates {w x y} {
@@ -163,28 +151,23 @@ proc ::GX::CurveWorkbench::_coordinates {w x y} {
 }
 proc ::GX::CurveWorkbench::_pointerDownConstruction {w x y state} {
     variable st
-    if {$st($w,canvasTool) eq "select"} {return 0}
+    if {$st($w,canvasTool) eq {select}} {return 0}
     if {$st($w,publishBusy)} {return 1}
     if {$st($w,token) ne [::GX::interactiveDocumentSessionToken]} {_sketchIdle $w {Session changed — reopen Workbench.};return 1}
-    lassign [::GX::Native2D::core view $st($w,scene)] width height left top right bottom
-    if {$x<$left||$y<$top||$x>$width-$right||$y>$height-$bottom} {return 1}
-    set placement [_constructionPlacement $w $x $y]
-    if {$st($w,canvasTool) eq "line"&&[llength $st($w,constructionPlaces)]==1&&[dict exists $placement earlier]&&[dict get $placement earlier]==0} {_constructionFinish $w;return 1}
-    lappend st($w,constructionPlaces) $placement
-    set st($w,placements) [::GX::Native2D::core construction_points $st($w,scene) $st($w,constructionPlaces)]
-    set required [_createCount $st($w,canvasTool)]
-    # Every variable-length retained construction uses the same native attachment
-    # receipt, including Spline endpoints/interiors. Finish the transaction, not
-    # the creation tool; the next click starts another independent primitive.
-    set attachedEnd [expr {$st($w,canvasTool) in {path polyline spline}&&[dict exists $placement reference]&&[llength $st($w,constructionPlaces)]>=2}]
-    if {$attachedEnd||($required&&[llength $st($w,constructionPlaces)]==$required)||(!$required&&[dict exists $placement earlier]&&[dict get $placement earlier]==0&&[llength $st($w,constructionPlaces)]>=3)} {_createCommit $w} else {_constructionPreview $w;_draw $w}
-
+    set event [[_advancedCore $w] construction click [list $x $y]]
+    if {[dict exists $event outside]} {return 1}
+    if {[dict exists $event finished]} {_constructionFinish $w;return 1}
+    # These are domain/UI readouts; the shared controller owns placements/ready.
+    set st($w,constructionPlaces) [dict get $event places];set st($w,placements) [dict get $event points]
+    if {[dict get $event ready]} {_createCommit $w} else {_draw $w}
     return 1
 }
 proc ::GX::CurveWorkbench::_createCommit {w} {
     variable st
-    if {$st($w,canvasTool) eq "select"||$st($w,constructionPlaces) eq {}} return
-    set family $st($w,canvasTool);set needed [_createCount $family]
+    set shared [[_advancedCore $w] construction state]
+    if {$st($w,canvasTool) eq {select} || $shared eq {} || [dict get $shared places] eq {}} return
+    set st($w,constructionPlaces) [dict get $shared places]
+    set family [dict get $shared family];set needed [_createCount $family]
     if {($needed&&[llength $st($w,constructionPlaces)]!=$needed)||(!$needed&&[llength $st($w,constructionPlaces)]<2)} {_notice $w {Place the remaining defining controls, or Esc to cancel.};return}
     set unit $st($w,sketchUnit)
     set placements $st($w,constructionPlaces);set chain $st($w,chainReferences)
@@ -218,7 +201,7 @@ proc ::GX::CurveWorkbench::_createCommit {w} {
                 }
             }
         }
-        set receipt [::GX::Native2D::core construction_create $st($w,scene) $family $placements 257 $chain {*}$symmetry]
+        set receipt [[_advancedCore $w] construction commit [dict create chain $chain symmetry $symmetry]]
         set native [dict get $receipt id]
         set operation [dict create operation attached_canvas_construction family $family authority Native2D closed [dict get $receipt closed] periodic 0]
         set record [_newRecord $w "[string totitle [string map {_ { }} $family]] [expr {[dict size $st($w,curves)]+1}]" [_sketchSamples $w $native] {} x y {} {} {} {} [lsort -unique $parents] [list $operation]]
@@ -246,12 +229,8 @@ proc ::GX::CurveWorkbench::_createCommit {w} {
         if {$parents ne {}&&![dict exists $receipt mirror_id]} {
             set nativeSeeds [lmap candidate [concat $parents [list $id]] {dict get [_record $w $candidate] native}]
             set reverse [_logicalNativeMap $w];set candidates {}
-            foreach connected [::GX::native2DConnectedObjects $st($w,scene) $nativeSeeds] {lappend candidates [dict get $reverse $connected]}
-            set eligible 1
-            foreach candidate $candidates {
-                set source [_record $w $candidate]
-                if {![dict exists $source sketch_definition]||[dict get $source sketch_definition family] ni {line path polyline spline quadratic_bezier cubic_bezier arc circle ellipse rectangle composite_path}||[dict get $source locked]} {set eligible 0;break}
-            }
+            foreach connected [[_advancedCore $w] topology connected $nativeSeeds] {lappend candidates [dict get $reverse $connected]}
+            set eligible [expr {$candidates ne {}}]
             if {$eligible&&![catch {set path [_compositionApply $w $st($w,token) $candidates auto_path [dict create name Path tolerance 1e-9] 0]}]} {
                 dict set before $path {};set id $path;set resultIds [concat $candidates [list $id]];set joined 1
             }
@@ -285,12 +264,7 @@ proc ::GX::CurveWorkbench::_constructionFinish {w} {
 }
 proc ::GX::CurveWorkbench::_drawConstructionPlaces {w} {
     variable st
-        if {![winfo exists $w.right.viewport.canvas]||$st($w,canvasTool) eq "select"||$st($w,constructionPlaces) eq {}} return
-    foreach point [::GX::Native2D::core construction_points $st($w,scene) $st($w,constructionPlaces)] {
-        lassign [::GX::Native2D::core device $st($w,scene) $point] x y
-        $w.right.viewport.canvas create oval [expr {$x-3}] [expr {$y-3}] [expr {$x+3}] [expr {$y+3}] -fill #237a6a -outline white -tags construction_placement
-    }
-    ::GX::native2DCanvasViewportClip $w.right.viewport.canvas $st($w,scene)
+    if {$st($w,canvasTool) ne {select} && [winfo exists $w.right.viewport.canvas]} {[_advancedCore $w] construction overlay}
 }
 proc ::GX::CurveWorkbench::_selectionTargets {w} {variable st;set ids [_cadSelected $w];if {$ids eq {}} {set ids [list [_active $w]]};return $ids}
 

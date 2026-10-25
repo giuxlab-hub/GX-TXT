@@ -1,3 +1,17 @@
+## 2.21.18 — DEV111-P019
+
+- Preserve every active CAD gesture owner during target-flag synchronization;
+  redraw defers selection flags during Pan as well as native manipulation.
+- Restore draft Undo without implicitly materializing/flushing a Document during
+  native History restoration.
+- Adopt shared CORE advanced construction, exact topology, constraints,
+  dimensions/editor, defining-control and direction-marker coordination through
+  the same embedded CAD Canvas Host used by independent consumers.
+- Keep Dataset interpretation, source rows, units/parameters, logical records,
+  Workspace admission/adoption and P017 History with their existing owners.
+- Present the full dimension rejection/reference offer inside the existing
+  Canvas; preserve read-only rendering during an admitted import/publication.
+
 ## 2.21.17 — DEV111-P018
 
 - Adopt the reusable public CORE embedded CAD Canvas Host for common native

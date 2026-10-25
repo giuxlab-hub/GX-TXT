@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # UI routing/presentation. Geometry, equations, inference, witnesses and picking
 # are Native2D queries. Existing document/relationship IDs own persistence.
-proc ::GX::CurveWorkbench::_isDimension {kind} {expr {$kind in {distance angle radius diameter lock_x lock_y horizontal_distance vertical_distance point_line_distance line_distance axis_angle}}}
+proc ::GX::CurveWorkbench::_isDimension {kind} {expr {$kind in [::GX::native2DCadDimensionKinds]}}
 proc ::GX::CurveWorkbench::_sketchIdle {w {message {Select — geometry, handles, constraints or dimensions.}}} {
     variable st
     set st($w,selectedRelationship) {};set st($w,hoverRelationship) {}
@@ -172,17 +172,20 @@ proc ::GX::CurveWorkbench::_constraintSimple {w kind} {
 }
 proc ::GX::CurveWorkbench::_constraintStart {w kind} {
     variable st
-    _sketchIdle $w;_semanticClear $w;set st($w,constraintTool) $kind;_draw $w
-    set expectation [expr {$kind in {horizontal vertical fixed}?"one object":$kind eq "symmetry"?"two objects/points, then symmetry axis":$kind in {midpoint point_on_line point_on_curve}?"a point, then its line/curve":"two compatible objects or endpoint controls"}]
+    _sketchIdle $w
+    [_advancedRelationships $w] constraint start $kind
+    set st($w,constraintTool) $kind;_draw $w
+    set expectation [expr {$kind in {horizontal vertical fixed}?{one object}:$kind eq {symmetry}?{two objects/points, then symmetry axis}:$kind in {midpoint point_on_line point_on_curve}?{a point, then its line/curve}:{two compatible objects or endpoint controls}}]
     set st($w,toolLabel) "[_constraintTitle $kind] — select $expectation. Esc cancels."
     set st($w,status) {};focus $w.right.viewport.canvas
 }
 proc ::GX::CurveWorkbench::_unfix {w} {
+    if {![_timelineEditable $w]} return
     variable st;set selected [_constraintReferences $w];set ids [lmap ref $selected {dict get $ref logical}];set found {}
     dict for {id r} $st($w,constraints) {if {[dict get $r definition kind] eq "fixed"&&[dict get $r definition a] in $ids} {lappend found $id}}
     if {$found eq {}} {error {Select Fixed geometry first.}}
     set before [_snapshotIds $w {}]
-    foreach id $found {[_cadController $w] relationship remove [dict get $st($w,constraints) $id native];dict unset st($w,constraints) $id}
+    foreach id $found {[_advancedRelationships $w] constraint manage [dict get $st($w,constraints) $id native] remove;dict unset st($w,constraints) $id}
     _history $w $before {};_constraintRefresh $w;_draw $w
 }
 proc ::GX::CurveWorkbench::_constraintCommit {w id spec} {
@@ -195,57 +198,36 @@ proc ::GX::CurveWorkbench::_constraintCommit {w id spec} {
     }
     foreach logical $unitsFor {if {[dict get [_record $w $logical] native]==[dict get $spec a]&&[dict get [_record $w $logical] locked]&&![::GX::datasetPublicationV2DictDefault $spec driven 0]} {error {Geometry is read-only. Unlock the retained primitive or use Representation to convert the Dataset first.}}}
     _constraintCoordinateGuard $w $spec
-    set affected [_sketchAffected $w [lsort -unique $unitsFor]];set before [_snapshotIds $w $affected];
+    set affected [_sketchAffected $w [lsort -unique $unitsFor]];set before [_snapshotIds $w $affected]
     set native [expr {$id eq {}?0:[dict get $st($w,constraints) $id native]}]
-    if {[dict exists $spec annotation]&&[dict get $spec placed]} {
-        set receipt [[_cadController $w] relationship dimension_apply $native $spec [dict get $spec driven] [dict get $spec annotation]]
-    } else {set receipt [[_cadController $w] relationship apply $native $spec]}
-    set reverse [_logicalNativeMap $w]
-    set definition [dict remove $receipt id valid geometry_supported measured_value residual angular_residual enforcement general_solver]
-    foreach key {a b axis} {if {[dict get $definition $key]==0} {dict unset definition $key} else {dict set definition $key [dict get $reverse [dict get $definition $key]]}}
-    if {$id eq {}} {set id constraint[incr st($w,nextConstraint)]}
-    dict set st($w,constraints) $id [dict create id $id name [_constraintTitle [dict get $spec kind]] native [dict get $receipt id] definition $definition]
-    try {
-        foreach logical $affected {if {[dict exists [_record $w $logical] sketch_definition]} {_syncSamples $w $logical}}
-        _history $w $before $affected
-    } on error {message options} {_restoreSnapshot $w $before;return -options $options $message}
-    set st($w,selectedRelationship) $id;set st($w,constraintTool) {};_constraintRefresh $w;_draw $w
-    set st($w,status) "[_constraintTitle [dict get $spec kind]] — [expr {[dict get $receipt driven]?"reference measurement":"Native2D relationship committed"}]."
-    return $id
+    set receipt [[_advancedRelationships $w] constraint apply $native $spec]
+    return [_advancedConstraintAdopt $w $id $spec $receipt $affected $before]
 }
 proc ::GX::CurveWorkbench::_dimensionTool {w {forced {}}} {
     variable st;set refs [_constraintReferences $w]
-    _sketchIdle $w;set st($w,dimForced) $forced;set st($w,dimDriven) 0
-    set st($w,dimRefs) [expr {[llength $refs]<=2?$refs:{}}]
-    set st($w,dimNotice) {}
-    set st($w,constraintTool) dimension
+    _sketchIdle $w
+    set state [[_advancedRelationships $w] dimension start $forced $refs]
+    set st($w,dimForced) $forced;set st($w,dimDriven) 0;set st($w,dimRefs) [dict get $state references]
+    set st($w,dimNotice) {};set st($w,constraintTool) dimension
     set st($w,toolLabel) {Dimension — select geometry/points, move to preview, click to place; Enter commits. Esc cancels.}
     set st($w,status) {};focus $w.right.viewport.canvas
 }
 proc ::GX::CurveWorkbench::_dimensionPreview {w x y} {
     variable st
-    if {$st($w,dimRefs) eq {}} return
-    set p [::GX::Native2D::core world $st($w,scene) [list $x $y]]
-    # Unsupported inference is an ordinary selection/context mismatch, including
-    # whole Splines and incomplete point pairs. Never leave an old preview active.
-    set st($w,dimSpec) {}
-    if {[catch {
-        if {$st($w,dimForced) eq {}} {set spec [[_cadController $w] relationship dimension_infer $st($w,dimRefs) $p]} else {
-            set options [[_cadController $w] relationship options $st($w,dimRefs)]
-            if {![dict exists $options $st($w,dimForced)]} {error {unsupported dimension selection}}
-            set spec [dict get $options $st($w,dimForced)]
-        }
-        _constraintCoordinateGuard $w $spec
-        set g [[_cadController $w] relationship dimension_preview $spec $p]
-    } reason]} {
+    set state [[_advancedRelationships $w] dimension preview [list $x $y]]
+    set st($w,dimRefs) [dict get $state references];set st($w,dimSpec) {}
+    if {[dict get $state references] eq {}} return
+    if {[dict get $state status] eq {rejected}} {
         _draw $w
-        set message {Dimension needs a straight segment, a circle/arc, a defining point, or two compatible points/segments. Select geometry again; Esc cancels.}
+        set message "Dimension — [dict get $state error]. Select compatible geometry; Esc cancels."
         if {$st($w,dimNotice) ne $message} {_notice $w $message;set st($w,dimNotice) $message}
         return
     }
+    set spec [dict get $state specification]
+    _constraintCoordinateGuard $w $spec
     set st($w,dimNotice) {};_noticeHide $w
-    set st($w,dimSpec) $spec;set st($w,dimAnnotation) $p
-    _draw $w;_dimensionDraw $w $g $spec #237a6a dimension_preview
+    set st($w,dimSpec) $spec;set st($w,dimAnnotation) [dict get $state annotation]
+    _draw $w;_dimensionDraw $w [dict get $state geometry] $spec #237a6a dimension_preview
 }
 proc ::GX::CurveWorkbench::_dimensionText {w spec value driven} {
     set kind [dict get $spec kind];set unit [dict get [_dimensionCoordinateInfo $w $spec] display_unit]
@@ -256,115 +238,48 @@ proc ::GX::CurveWorkbench::_dimensionText {w spec value driven} {
 proc ::GX::CurveWorkbench::_dimensionDraw {w geometry spec color tags} {
     variable st
     set selected [expr {$st($w,selectedRelationship) ne {}&&"constraint_$st($w,selectedRelationship)" in $tags}]
-    set dash [expr {[dict get $geometry driven]?{4 3}:{}}]
-    foreach line [dict get $geometry lines] {$w.right.viewport.canvas create line {*}[concat {*}$line] -fill $color -width [expr {$selected?1.2:0.75}] -dash $dash -tags $tags}
-    lassign [dict get $geometry label] x y
-    set text [_dimensionText $w $spec [dict get $geometry value] [dict get $geometry driven]]
-    set width [expr {[font measure TkDefaultFont $text]+14}]
-    $w.right.viewport.canvas create rectangle [expr {$x-$width/2}] [expr {$y-12}] [expr {$x+$width/2}] [expr {$y+12}] -fill white -outline $color -width [expr {$selected?3:1}] -tags $tags
-    $w.right.viewport.canvas create text $x $y -text $text -fill $color -font TkDefaultFont -tags $tags
+    return [[_advancedRelationships $w] dimension draw $w.right.viewport.canvas $geometry [_dimensionText $w $spec [dict get $geometry value] [dict get $geometry driven]] $color [dict create selected $selected tags $tags]]
 }
 proc ::GX::CurveWorkbench::_inlineOpen {w spec annotation {id {}}} {
     variable st
-    if {[winfo exists $w.inline]} {destroy $w.inline}
     set st($w,dimSpec) $spec;set st($w,dimAnnotation) $annotation;set st($w,dimExisting) $id
-    ttk::frame $w.inline -padding 5 -relief ridge -borderwidth 2
-    set st($w,inlineValue) [format %.9g [_dimensionDisplayedValue $w $spec [dict get $spec value]]]
+    set value [format %.9g [_dimensionDisplayedValue $w $spec [dict get $spec value]]]
     set st($w,inlineCoordinateIds) [dict keys $st($w,curves)];set st($w,inlineCoordinateKey) [_coordinateControlKey $w $st($w,inlineCoordinateIds)]
-    if {$id ne {}&&[dict exists $st($w,constraints) $id expression]&&![string is double -strict [dict get $st($w,constraints) $id expression]]} {set st($w,inlineValue) [dict get $st($w,constraints) $id expression]}
-    ttk::label $w.inline.title -text "[_constraintTitle [dict get $spec kind]] · [dict get [_dimensionCoordinateInfo $w $spec] display_unit]" -wraplength 270
-    ttk::entry $w.inline.value -width 18 -textvariable ::GX::CurveWorkbench::st($w,inlineValue)
-    ttk::button $w.inline.commit -text {✓ Enter} -command [list ::GX::CurveWorkbench::_inlineCommit $w]
-    ttk::button $w.inline.reference -text {Create as reference} -command [list ::GX::CurveWorkbench::_inlineCommit $w 1]
-    ttk::label $w.inline.message -text "Numbers use the displayed unit. An explicit unit is accepted. Parameter formulas retain native [dict get [_dimensionCoordinateInfo $w $spec] native_unit] coordinates." -wraplength 270
-    pack $w.inline.title -fill x;pack $w.inline.value $w.inline.commit -side top -fill x
-    pack $w.inline.message -fill x
-    update idletasks
-    lassign [::GX::Native2D::core device $st($w,scene) $annotation] x y
-    set x [expr {max(10,min($x,[winfo width $w.right.viewport.canvas]-295))}];set y [expr {max(10,min($y+18,[winfo height $w.right.viewport.canvas]-[winfo reqheight $w.inline]-10))}]
-    place $w.inline -in $w.right.viewport.canvas -x $x -y $y -width 280;raise $w.inline
-    set imageMeasurement 0
-    foreach field {a b} {if {[dict exists $spec $field]&&[dict get $spec $field]!=0&&[::GX::Native2D::core image_get $st($w,scene) [dict get $spec $field]] ne {}} {set imageMeasurement 1}}
-    if {$imageMeasurement} {
-        $w.inline.commit configure -text {Add reference measurement} -command [list ::GX::CurveWorkbench::_inlineCommit $w 1]
-        $w.inline.message configure -text {Measure the calibrated graphic. Recalibrate it to change its physical scale.}
-    }
-    bind $w.inline.value <Return> "[list ::GX::CurveWorkbench::_inlineCommit $w $imageMeasurement];break"
-    bind $w.inline.value <Escape> "[list ::GX::CurveWorkbench::_sketchIdle $w];break"
-    bind $w.inline <Configure> [list ::GX::CurveWorkbench::_inlineLayout $w]
-    after idle [list ::GX::CurveWorkbench::_inlinePresent $w]
+    if {$id ne {}&&[dict exists $st($w,constraints) $id expression]&&![string is double -strict [dict get $st($w,constraints) $id expression]]} {set value [dict get $st($w,constraints) $id expression]}
+    set referenceOnly 0
+    foreach field {a b} {if {[dict exists $spec $field]&&[dict get $spec $field]!=0&&[::GX::Native2D::core image_get $st($w,scene) [dict get $spec $field]] ne {}} {set referenceOnly 1}}
+    set native [expr {$id eq {}?0:[dict get $st($w,constraints) $id native]}]
+    set message "Numbers use the displayed unit. An explicit unit is accepted. Parameter formulas retain native [dict get [_dimensionCoordinateInfo $w $spec] native_unit] coordinates."
+    if {$referenceOnly} {set message {Measure the calibrated graphic. Recalibrate it to change its physical scale.}}
+    return [[_advancedRelationships $w] dimension editor_create $w.inline [dict create specification $spec existing $native annotation $annotation value $value title "[_constraintTitle [dict get $spec kind]] · [dict get [_dimensionCoordinateInfo $w $spec] display_unit]" message $message canvas $w.right.viewport.canvas anchor_device [::GX::Native2D::core device $st($w,scene) $annotation] reference_only $referenceOnly parse_command [list ::GX::CurveWorkbench::_advancedDimensionParse $w $st($w,inlineCoordinateIds) $st($w,inlineCoordinateKey)] commit_command [list ::GX::CurveWorkbench::_advancedDimensionCommit $w $id] accepted_command [list ::GX::CurveWorkbench::_advancedDimensionAccepted $w] cancel_command [list ::GX::CurveWorkbench::_advancedDimensionCancelled $w] guard_command [list ::GX::CurveWorkbench::_advancedDimensionGuard $w $st($w,token) [winfo id $w]]]]
 }
-proc ::GX::CurveWorkbench::_inlineCommit {w {reference 0}} {
-    variable st
-    if {$st($w,token) ne [::GX::interactiveDocumentSessionToken]} {_sketchIdle $w {Session changed — select current geometry again.};return}
-    set spec $st($w,dimSpec);set text [string trim $st($w,inlineValue)]
-    if {[catch {
-        _coordinateControlCheck $w $st($w,inlineCoordinateIds) $st($w,inlineCoordinateKey)
-        _save $w;set parsed [_dimensionInput $w $spec $text]
-        set value [dict get $parsed value];set expression [dict get $parsed expression]
-        dict set spec value $value;dict set spec annotation $st($w,dimAnnotation);dict set spec placed 1;dict set spec driven $reference
-        set id [_constraintCommit $w $st($w,dimExisting) $spec]
-        dict set st($w,constraints) $id expression $expression
-        _save $w
-    } message]} {
-        $w.inline.message configure -text "Dimension rejected: $message."
-        if {$message in {"constraint violation" "locked"}} {
-            $w.inline.message configure -text {This driving dimension conflicts with the sketch. Create a reference measurement instead?}
-            pack $w.inline.reference -fill x
-        }
-        return
-    }
-    destroy $w.inline;set st($w,dimRefs) {};set st($w,dimSpec) {};set st($w,dimAnnotation) {};set st($w,dimExisting) {}
-    set st($w,constraintTool) dimension;set st($w,toolLabel) {Dimension — select the next geometry, or Esc for Select.}
-    focus $w.right.viewport.canvas;_draw $w
-}
+proc ::GX::CurveWorkbench::_inlineCommit {w {reference 0}} {return [[_advancedRelationships $w] dimension editor_commit $reference]}
 proc ::GX::CurveWorkbench::_dimensionEdit {w} {
     variable st;set id [_constraintSelected $w];set record [dict get $st($w,constraints) $id]
-    set receipt [[_cadController $w] relationship get [dict get $record native]]
+    set receipt [[_advancedRelationships $w] constraint inspect [dict get $record native]]
     if {![_isDimension [dict get $receipt kind]]} {set st($w,status) [_constraintDescription $w $record];return}
     if {[dict get $receipt driven]} {set st($w,status) {Reference dimension is read-only. Use Toggle Driving to drive geometry.};return}
+    [_advancedRelationships $w] dimension edit [dict get $record native]
     _inlineOpen $w $receipt [dict get $receipt annotation] $id
 }
 proc ::GX::CurveWorkbench::_constraintMarkers {w} {
     variable st
-    set st($w,markerRegions) {};set ordinals {}
-    dict for {id record} $st($w,constraints) {
-        set receipt [[_cadController $w] relationship get [dict get $record native]]
-        set kind [dict get $receipt kind];set dimensional [_isDimension $kind]
-        if {$dimensional&&!$st($w,showDimensions)||!$dimensional&&!$st($w,showConstraints)} continue
-        set selected [expr {$id eq $st($w,selectedRelationship)}];set hover [expr {$id eq $st($w,hoverRelationship)}]
-        set color [expr {$selected?"#b45400":$hover?"#146d9b":[dict get $receipt disabled]?"#777777":"#744096"}]
-        set tags [list constraint_marker constraint_$id]
-        if {$dimensional} {
-            set g [[_cadController $w] relationship dimension_geometry [dict get $record native]]
-            if {$st($w,annotationDrag) ne {}&&[dict get $st($w,annotationDrag) id] eq $id} {set g [[_cadController $w] relationship dimension_preview $receipt [dict get $st($w,annotationDrag) target]]}
-            _dimensionDraw $w $g $receipt $color $tags
-            lassign [dict get $g label] labelX labelY
-            set labelText [_dimensionText $w $receipt [dict get $g value] [dict get $g driven]]
-            set halfWidth [expr {max(52,([font measure TkDefaultFont $labelText]+24)/2)}]
-            set halfHeight [expr {max(14,([font metrics TkDefaultFont -linespace]+12)/2)}]
-            dict set st($w,markerRegions) $id [list [expr {$labelX-$halfWidth}] [expr {$labelY-$halfHeight}] [expr {$labelX+$halfWidth}] [expr {$labelY+$halfHeight}]]
-        } else {
-            set p [[_cadController $w] relationship location [dict get $record native]]
-            lassign [::GX::Native2D::core device $st($w,scene) $p] x y
-            set object [dict get $receipt a];set ordinal [::GX::datasetPublicationV2DictDefault $ordinals $object 0];dict incr ordinals $object
-            set x [expr {$x+18+32*($ordinal%4)}];set y [expr {$y+22+30*($ordinal/4)}]
-            set glyph [dict get {fixed F horizontal H vertical V coincident ● parallel ∥ perpendicular ⊥ tangent T equal_length = equal_radius = concentric ◎ collinear CL midpoint M point_on_line PL point_on_curve PC symmetry SY curvature G2} $kind]
-            $w.right.viewport.canvas create rectangle [expr {$x-13}] [expr {$y-12}] [expr {$x+13}] [expr {$y+12}] -fill white -outline $color -width [expr {$selected||$hover?2:1}] -tags $tags
-            $w.right.viewport.canvas create text $x $y -text $glyph -font TkDefaultFont -fill $color -tags $tags
-            dict set st($w,markerRegions) $id [list [expr {$x-17}] [expr {$y-16}] [expr {$x+17}] [expr {$y+16}]]
-        }
-    }
+    set natives {};set reverse {}
+    dict for {id record} $st($w,constraints) {lappend natives [dict get $record native];dict set reverse [dict get $record native] $id}
+    set selected [expr {$st($w,selectedRelationship) ne {}&&[dict exists $st($w,constraints) $st($w,selectedRelationship)]?[dict get $st($w,constraints) $st($w,selectedRelationship) native]:{}}]
+    set hover [expr {$st($w,hoverRelationship) ne {}&&[dict exists $st($w,constraints) $st($w,hoverRelationship)]?[dict get $st($w,constraints) $st($w,hoverRelationship) native]:{}}]
+    set regions [[_advancedRelationships $w] constraint present $w.right.viewport.canvas $natives [dict create selected $selected hover $hover show_constraints $st($w,showConstraints) show_dimensions $st($w,showDimensions) format_command [list ::GX::CurveWorkbench::_dimensionText $w]]]
+    set st($w,markerRegions) {}
+    dict for {native region} $regions {dict set st($w,markerRegions) [dict get $reverse $native] $region}
     _constraintRefresh $w
 }
 proc ::GX::CurveWorkbench::_relationshipPick {w x y} {
     variable st
-    set best {};set score Inf
-    foreach id [lreverse [dict keys $st($w,markerRegions)]] {
-        set candidate [::GX::Native2D::core sketch_relationship_hit_score $st($w,scene) [dict get $st($w,constraints) $id native] [list $x $y] [dict get $st($w,markerRegions) $id]]
-        if {$candidate<=$score&&$candidate<=7} {set best $id;set score $candidate}
-    }
-    return $best
+    set regions {};set reverse {}
+    dict for {id region} $st($w,markerRegions) {set native [dict get $st($w,constraints) $id native];dict set regions $native $region;dict set reverse $native $id}
+    set native [[_advancedRelationships $w] constraint pick [list $x $y] $regions]
+    if {$native eq {}} {return {}}
+    return [dict get $reverse $native]
 }
 proc ::GX::CurveWorkbench::_constraintMarkerSelect {w id} {
     variable st
@@ -421,12 +336,11 @@ proc ::GX::CurveWorkbench::_relationshipAction {w action} {
     set receipt [[_cadController $w] relationship get $native]
     if {![_isDimension [dict get $receipt kind]]} {error {This relationship is not a dimension.}}
     if {$action eq "driven"} {
-        dict set receipt value [dict get $receipt measured_value];dict set receipt driven [expr {![dict get $receipt driven]}]
-        _constraintCommit $w $id $receipt
+        set proposal [[_advancedRelationships $w] constraint reference_proposal $native]
+        _constraintCommit $w $id $proposal
     } else {
         set before [_snapshotIds $w {}]
-        set point [[_cadController $w] relationship location $native]
-        [_cadController $w] relationship state $native [dict create annotation $point placed 1]
+        [_advancedRelationships $w] dimension annotation_reset $native
         _history $w $before {};_draw $w
     }
 }
@@ -436,32 +350,19 @@ proc ::GX::CurveWorkbench::_pointerDownConstraint {w x y state} {
     if {$st($w,token) ne [::GX::interactiveDocumentSessionToken]} {_sketchIdle $w {Session changed — reopen Workbench.};return 1}
     if {[winfo exists $w.inline]} {return 1}
     if {$st($w,constraintTool) eq "dimension"} {
-        set ref [_sketchPick $w $x $y]
-        set another [expr {$ref ne {}&&([llength $st($w,dimRefs)]==0||([llength $st($w,dimRefs)]==1&&([dict get $ref object]!=[dict get [lindex $st($w,dimRefs) 0] object]||[dict get $ref index]!=[dict get [lindex $st($w,dimRefs) 0] index])&&($state&0x5||[dict get $ref entity] eq "control")))}]
-        if {$st($w,dimSpec) eq {}&&$ref ne {}&&[llength $st($w,dimRefs)]>=1&&[dict get [lindex $st($w,dimRefs) 0] entity] ne "control"} {
-            set st($w,dimRefs) {};set another 1
-        }
-        if {$another} {
-            lappend st($w,dimRefs) $ref
-            set members {};foreach reference $st($w,dimRefs) {lappend members [dict create kind [dict get $reference semantic_kind] id [dict get $reference object] index [expr {[dict get $reference entity] eq "object"?0:[dict get $reference index]}]]}
-            _semanticApply $w $members
-            set st($w,dimSpec) {};_dimensionPreview $w $x $y;return 1}
-        if {$st($w,dimSpec) ne {}} {_dimensionPreview $w $x $y;if {$st($w,dimSpec) ne {}} {_inlineOpen $w $st($w,dimSpec) $st($w,dimAnnotation)};return 1}
+        set state [[_advancedRelationships $w] dimension input [_sketchPick $w $x $y] $state]
+        set st($w,dimRefs) [dict get $state references]
+        if {[dict get $state selected]} {set st($w,dimSpec) {};_dimensionPreview $w $x $y;return 1}
+        if {[dict get $state specification] ne {}} {_dimensionPreview $w $x $y;if {$st($w,dimSpec) ne {}} {_inlineOpen $w $st($w,dimSpec) $st($w,dimAnnotation)}}
         return 1
     }
     if {$st($w,constraintTool) ne {}} {
         set ref [_sketchPick $w $x $y];if {$ref eq {}} {return 1}
-        if {$state&0x1} {
-            _semanticApply $w [list [dict create kind [dict get $ref semantic_kind] id [dict get $ref object] index [expr {[dict get $ref entity] eq "object"?0:[dict get $ref index]}]]] subtract
-            _draw $w;return 1
-        }
-        _selectReference $w $ref 1
-        set options [_constraintOptions $w];set kind $st($w,constraintTool)
-        if {[dict exists $options $kind]} {_safe $w [list ::GX::CurveWorkbench::_constraintCommit $w {} [dict get $options $kind]];set st($w,toolLabel) {Select — relationship committed.};return 1}
-        if {[llength $st($w,sketchSelection)]>=[expr {$kind eq "symmetry"?3:$kind eq "fixed"?1:2}]} {
-            _semanticClear $w;_draw $w
-            _notice $w "[_constraintTitle $kind] needs compatible geometry. Select the required points or segments again; Esc cancels."
-        } else {set st($w,status) "[_constraintTitle $kind] — select the next compatible reference. Esc cancels."}
+        set result [[_advancedRelationships $w] constraint input $ref [expr {$state&1?{subtract}:{add}}]]
+        if {!($state&1)} {set st($w,active) [dict get $ref logical];_selectionScene $w;_curveList $w;_pointList $w}
+        if {[dict get $result status] eq {ready}} {_safe $w [list ::GX::CurveWorkbench::_constraintCommit $w {} [dict get $result specification]];set st($w,toolLabel) {Select — relationship committed.};return 1}
+        _draw $w
+        if {[dict get $result status] eq {rejected}} {_notice $w "[_constraintTitle $st($w,constraintTool)] — [dict get $result error]. Select compatible references again; Esc cancels."} else {set st($w,status) "[_constraintTitle $st($w,constraintTool)] — select the next compatible reference. Esc cancels."}
         return 1
     }
     if {$st($w,canvasTool) eq "select"&&$st($w,cadTool) eq "none"} {
@@ -473,7 +374,7 @@ proc ::GX::CurveWorkbench::_pointerDownConstraint {w x y state} {
         if {$id ne {}} {
             _constraintMarkerSelect $w $id
             set record [dict get $st($w,constraints) $id];set spec [dict get $record definition]
-            if {[_isDimension [dict get $spec kind]]&&[dict get $spec placed]} {set st($w,annotationDrag) [dict create id $id before [_snapshotIds $w {}] start [list $x $y] target [dict get $spec annotation] moved 0]}
+            if {[_isDimension [dict get $spec kind]]&&[dict get $spec placed]} {[_advancedRelationships $w] dimension annotation_start [dict get $record native] [list $x $y];set st($w,annotationDrag) [dict create id $id before [_snapshotIds $w {}] start [list $x $y] target [dict get $spec annotation] moved 0]}
             return 1
         }
         set st($w,selectedRelationship) {}
@@ -496,29 +397,24 @@ proc ::GX::CurveWorkbench::_coordinates {w x y} {
 proc ::GX::CurveWorkbench::_pointerMoveAnnotation {w x y} {
     variable st
     if {$st($w,annotationDrag) ne {}} {
-        dict set st($w,annotationDrag) target [::GX::Native2D::core world $st($w,scene) [list $x $y]]
-        dict set st($w,annotationDrag) moved 1;_draw $w;return 1
+        set proposal [[_advancedRelationships $w] dimension annotation_move [list $x $y]]
+        dict set st($w,annotationDrag) target [dict get $proposal target]
+        dict set st($w,annotationDrag) moved [dict get $proposal changed]
+        _draw $w;return 1
     }
     return 0
-
-    return 1
 }
 proc ::GX::CurveWorkbench::_pointerUpConstraint {w x y} {
     variable st
     if {$st($w,token) ne [::GX::interactiveDocumentSessionToken]} {_sketchIdle $w {Session changed — gesture cancelled; reopen Workbench.};return 1}
     if {$st($w,annotationDrag) ne {}} {
         set drag $st($w,annotationDrag);set st($w,annotationDrag) {}
-        if {[dict get $drag moved]} {
-            set id [dict get $drag id]
-            [_cadController $w] relationship state [dict get $st($w,constraints) $id native] [dict create placed 1 annotation [dict get $drag target]]
-            _history $w [dict get $drag before] {}
-        }
+        set receipt [[_advancedRelationships $w] dimension annotation_commit]
+        if {[dict get $receipt changed]} {_history $w [dict get $drag before] {}}
         _draw $w;return 1
     }
     if {$st($w,constraintTool) ne {}} {return 1}
     return 0
-
-    return 1
 }
 # Tool activation is a transition: preserve the requested mode across cleanup.
 proc ::GX::CurveWorkbench::_cadToolChoice {w} {
@@ -595,33 +491,8 @@ proc ::GX::CurveWorkbench::_constraintAction {w action} {
     foreach key {a b axis} {if {[dict exists $spec $key]} {lappend ids [dict get $spec $key]}}
     _cancelGesture $w
     set before [_snapshotIds $w $ids]
-    if {$action eq "remove"} {[_cadController $w] relationship remove [dict get $record native];dict unset st($w,constraints) $id} else {
-        ::GX::Native2D::core constraint_enable $st($w,scene) [dict get $record native] [dict get $spec disabled]
-        set st($w,selectedRelationship) $id
-    }
+    [_advancedRelationships $w] constraint manage [dict get $record native] [expr {$action eq {remove}?{remove}:{toggle}}]
+    if {$action eq {remove}} {dict unset st($w,constraints) $id} else {set st($w,selectedRelationship) $id}
+    foreach logical [_sketchAffected $w $ids] {if {[dict exists [_record $w $logical] sketch_definition]} {_syncSamples $w $logical}}
     _history $w $before $ids;_constraintRefresh $w;_draw $w
-}
-
-rename ::GX::CurveWorkbench::_constraintOptions ::GX::CurveWorkbench::_constraintOptions_sketch054_base
-proc ::GX::CurveWorkbench::_constraintOptions {w} {
-    set options [_constraintOptions_sketch054_base $w];set result {}
-    dict for {kind spec} $options {if {[dict get $spec general_solver]||$kind eq "fixed"} {dict set result $kind $spec}}
-    return $result
-}
-proc ::GX::CurveWorkbench::_inlineLayout {w} {
-    if {![winfo exists $w.inline]} return
-    set info [place info $w.inline]
-    set y [dict get $info -y];set limit [expr {max(5,[winfo height $w.right.viewport.canvas]-[winfo reqheight $w.inline]-8)}]
-    if {$y>$limit} {place configure $w.inline -y $limit}
-}
-
-
-proc ::GX::CurveWorkbench::_inlinePresent {w} {
-    if {![winfo exists $w.inline]} return
-    update idletasks
-    place configure $w.inline -height [winfo reqheight $w.inline]
-    update idletasks
-    _inlineLayout $w
-    raise $w.inline
-    focus $w.inline.value;$w.inline.value selection range 0 end
 }

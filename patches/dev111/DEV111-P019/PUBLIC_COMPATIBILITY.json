@@ -1,0 +1,15 @@
+{
+  "patch": "DEV111-P019",
+  "framework": "0.9.8.10-dev-111",
+  "revision": "r3",
+  "requiredPredecessorPatch": 18,
+  "maintenanceParent": "1b7c3b4cf0ecf73303b2a7cf9346f42d6cd8f42c",
+  "ownerArchiveSha256": "59e6579030c68548b3e76f750f048d356a5503fc4f5342960402c7f9f1679c55",
+  "publicArchiveSha256": "0a7be7162ab8a0996d3b9800f5e592eb3b2d132f063c380abc3afecdca098185",
+  "sourceFiles": 28,
+  "byteIdenticalAuthorOutputs": 26,
+  "moduleManifestsNormalized": 2,
+  "privateEvidenceWithheld": 397,
+  "installer": "unzip -o DEV111-P019-PUBLIC.zip -d /path/to/gxtxt",
+  "rollback": "Restore pre-P019 file backups and remove P019 new files"
+}

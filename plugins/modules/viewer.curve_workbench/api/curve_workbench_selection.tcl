@@ -202,6 +202,7 @@ proc ::GX::CurveWorkbench::_sketchTool {w family} {
     variable st
     if {$family eq "line"} {set family path}
     _sketchTool_path057_base $w $family
+    if {$family ne {select}} {[_advancedCore $w] construction start $family {auto_commit 0}}
     if {$family eq "path"} {set st($w,toolLabel) {Line — click start and successive vertices of one retained path. Enter / Finish commits; click start to close.}}
 }
 

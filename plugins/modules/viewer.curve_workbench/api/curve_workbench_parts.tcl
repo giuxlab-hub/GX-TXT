@@ -34,7 +34,7 @@ proc ::GX::CurveWorkbench::_partAction {w logical part action} {
     set before [_snapshotIds $w [list $logical]]
     set direction [[_cadController $w] component direction $native $part]
     set key [expr {$action eq "flip"?"forward":"visible"}]
-    [_cadController $w] component direction $native $part [dict create $key [expr {![dict get $direction $key]}]]
+    [_advancedCore $w] direction properties $native $part [dict create $key [expr {![dict get $direction $key]}]]
     set st($w,partTarget) [list $logical $part];_history $w $before [list $logical];_draw $w
 }
 proc ::GX::CurveWorkbench::_partProperties {w logical part} {
@@ -47,7 +47,7 @@ proc ::GX::CurveWorkbench::_partPropertiesApply {w logical part values} {
     variable st;if {![_partEditable $w]} return
     set before [_snapshotIds $w [list $logical]]
     dict set values color [::GX::uiFieldColorToRGBA [dict get $values color]]
-    [_cadController $w] component direction [dict get [_record $w $logical] native] $part $values
+    [_advancedCore $w] direction properties [dict get [_record $w $logical] native] $part $values
     _history $w $before [list $logical];_draw $w
 }
 proc ::GX::CurveWorkbench::_pointerDownPart {w x y state} {
@@ -57,13 +57,14 @@ proc ::GX::CurveWorkbench::_pointerDownPart {w x y state} {
     if {![_partEditable $w]} {return 1}
     lassign $target logical part
     set st($w,partTarget) $target;set st($w,partDrag) [dict create logical $logical part $part before [_snapshotIds $w [list $logical]]]
+    [_advancedCore $w] direction start [dict get [_record $w $logical] native] $part
     set st($w,active) $logical;focus $w.right.viewport.canvas;_draw $w;return 1
 }
 proc ::GX::CurveWorkbench::_pointerMovePart {w x y} {
     variable st
     if {[info exists st($w,partDrag)]&&$st($w,partDrag) ne {}} {
         set drag $st($w,partDrag)
-        [_cadController $w] component place [dict get [_record $w [dict get $drag logical]] native] [dict get $drag part] [list $x $y]
+        [_advancedCore $w] direction move [list $x $y]
         _draw $w;return 1
     }
     set target [_partHit $w $x $y]
@@ -74,6 +75,7 @@ proc ::GX::CurveWorkbench::_pointerUpPart {w x y} {
     variable st
     if {![info exists st($w,partDrag)]||$st($w,partDrag) eq {}} {return 0}
     set drag $st($w,partDrag);set st($w,partDrag) {}
+    [_advancedCore $w] direction commit
     _history $w [dict get $drag before] [list [dict get $drag logical]];_draw $w;return 1
 }
 
@@ -81,7 +83,7 @@ proc ::GX::CurveWorkbench::_partCancel {w} {
     variable st
     if {[info exists st($w,partDrag)]&&$st($w,partDrag) ne {}} {
         set before [dict get $st($w,partDrag) before];set st($w,partDrag) {};set st($w,partTarget) {}
-        _restoreSnapshot $w $before
+        [_advancedCore $w] direction cancel
     }
     set st($w,partTarget) {}
 }
@@ -98,7 +100,7 @@ proc ::GX::CurveWorkbench::_pathDirectionAction {w logical key} {
     variable st;if {![_partEditable $w]} return
     set before [_snapshotIds $w [list $logical]];set native [dict get [_record $w $logical] native]
     set marker [[_cadController $w] object direction $native]
-    [_cadController $w] object direction $native [dict create $key [expr {![dict get $marker $key]}]]
+    [_advancedCore $w] direction properties $native {} [dict create $key [expr {![dict get $marker $key]}]]
     _history $w $before [list $logical];_draw $w
 }
 proc ::GX::CurveWorkbench::_pathDirectionProperties {w logical} {

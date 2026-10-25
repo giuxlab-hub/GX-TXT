@@ -1,7 +1,7 @@
 # GX-TXT Curve Workbench. Native2D owns planar geometry, selection and view.
 # SPDX-License-Identifier: GPL-3.0-or-later
 namespace eval ::GX::CurveWorkbench {
-    variable version 2.21.17
+    variable version 2.21.18
     variable st
     variable root [file normalize [file join [file dirname [info script]] ../../../..]]
 }
@@ -791,22 +791,24 @@ proc ::GX::CurveWorkbench::_cancelDirectionDrag {w} {
     set id [dict get $st($w,drag) curve_id]
     set before [dict get $st($w,drag) before $id direction]
     if {[dict exists $st($w,curves) $id]} {
-        ::GX::Native2D::core direction_marker $st($w,scene) [dict get [_record $w $id] native] $before
+        [_advancedCore $w] direction cancel
     }
     set st($w,drag) {}
 }
 proc ::GX::CurveWorkbench::_directionToggle {w} {
+    if {![_timelineEditable $w]} return
     variable st
     set id [_active $w];set before [_snapshotIds $w [list $id]]
-    ::GX::Native2D::core direction_marker $st($w,scene) [dict get [_record $w $id] native] [dict create present 1 visible $st($w,directionShown)]
+    [_advancedCore $w] direction properties [dict get [_record $w $id] native] {} [dict create present 1 visible $st($w,directionShown)]
     _history $w $before [list $id]
 }
 proc ::GX::CurveWorkbench::_directionFlip {w} {
+    if {![_timelineEditable $w]} return
     variable st
     set id [_active $w];set native [dict get [_record $w $id] native]
     set marker [::GX::Native2D::core direction_marker $st($w,scene) $native]
     set before [_snapshotIds $w [list $id]]
-    ::GX::Native2D::core direction_marker $st($w,scene) $native [dict create forward [expr {![dict get $marker forward]}]]
+    [_advancedCore $w] direction properties $native {} [dict create forward [expr {![dict get $marker forward]}]]
     _history $w $before [list $id]
     set st($w,status) "Intended direction flipped. Dataset publication follows this direction."
 }
@@ -845,6 +847,7 @@ proc ::GX::CurveWorkbench::_directionOpen {w} {
     bind $d <Escape> [list destroy $d]
 }
 proc ::GX::CurveWorkbench::_directionApply {w id fields} {
+    if {![_timelineEditable $w]} return
     variable st
     if {[_active $w] ne $id} {error "Active curve changed; reopen Direction settings"}
     set changes {};set row 0
@@ -857,7 +860,7 @@ proc ::GX::CurveWorkbench::_directionApply {w id fields} {
         dict set changes $key $value;incr row
     }
     set before [_snapshotIds $w [list $id]]
-    ::GX::Native2D::core direction_marker $st($w,scene) [dict get [_record $w $id] native] $changes
+    [_advancedCore $w] direction properties [dict get [_record $w $id] native] {} $changes
     _history $w $before [list $id]
 }
 proc ::GX::CurveWorkbench::_gridToggle {w property} {
@@ -1034,12 +1037,15 @@ proc ::GX::CurveWorkbench::_pointerDownScientific {w x y state} {
     variable st
     if {$st($w,tool) eq {pan}} {set host [_cadCanvas $w];$host tool pan;$host event down $x $y $state;set st($w,drag) [dict create mode pan x $x y $y];return 1}
     if {[info exists st($w,publishBusy)]&&$st($w,publishBusy)} {return 1}
-    set st($w,drag) [dict create mode none x $x y $y]
+    # A Canvas command is not a gesture. Admit/record Flip before allocating
+    # the placeholder used by actual scientific pointer interactions.
     if {"direction_flip" in [$w.right.viewport.canvas gettags current]} {_directionFlip $w;return 1}
+    set st($w,drag) [dict create mode none x $x y $y]
     if {$st($w,tool) eq "select" && $st($w,active) ne ""} {
         set id $st($w,active);set native [dict get [_record $w $id] native]
         if {[::GX::Native2D::core marker_hit $st($w,scene) $native [list $x $y] 5]} {
             set st($w,drag) [dict create mode direction curve_id $id native $native before [_snapshotIds $w [list $id]]]
+            [_advancedCore $w] direction start $native {}
             return 1
         }
     }
@@ -1097,7 +1103,7 @@ proc ::GX::CurveWorkbench::_pointerMoveScientific {w x y} {
     if {$st($w,drag) eq {}} {return 1}
     set mode [dict get $st($w,drag) mode]
     if {$mode eq "direction"} {
-        ::GX::Native2D::core marker_place $st($w,scene) [dict get $st($w,drag) native] [list $x $y]
+        [_advancedCore $w] direction move [list $x $y]
         _draw $w
     } elseif {$mode eq "pan"} {
         [_cadCanvas $w] event move $x $y
@@ -1139,6 +1145,7 @@ proc ::GX::CurveWorkbench::_pointerUpScientific {w x y} {
     if {$st($w,drag) eq {}} {return 1}
     set drag $st($w,drag);set mode [dict get $drag mode];set st($w,drag) {}
     if {$mode eq "direction"} {
+        [_advancedCore $w] direction commit
         _history $w [dict get $drag before] [list [dict get $drag curve_id]]
     } elseif {$mode eq "points"} {
         ::GX::Native2D::core drag_commit $st($w,selectionScene)
@@ -1398,3 +1405,5 @@ source [file join [file dirname [info script]] curve_workbench_coordinate_contro
 source [file join [file dirname [info script]] curve_workbench_fit_import_v1.tcl]
 
 source [file join [file dirname [info script]] curve_workbench_cad_canvas.tcl]
+source [file join [file dirname [info script]] curve_workbench_advanced_tools.tcl]
+source [file join [file dirname [info script]] curve_workbench_advanced_constraints.tcl]
