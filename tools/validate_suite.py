@@ -335,15 +335,22 @@ def verify(announce=True):
     if len(patch_p018_sources) != 13:
         raise ValueError("P018 source-only validation fixture inventory incomplete")
 
+    # DEV111-P019 exact-byte original Tcl/Python tests are archived source-only.
+    from validate_dev111_p019 import inventory as _read_p019_inventory
+    patch_p019 = _read_p019_inventory()
+    patch_p019_sources = {item["path"] for item in patch_p019["originalSourceOnlyFixtures"]}
+    if len(patch_p019_sources) != 29:
+        raise ValueError("P019 original Tcl/Python source inventory incomplete")
+
     for candidate in (ROOT / "validation").rglob("*"):
         if candidate.is_symlink():
             raise ValueError("Unexpected symlink: " + str(candidate))
-        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer | recent | recent106 | recent107 | recent108 | recent109 | recent110 | recent111 | patch_sources | patch_p017_sources | patch_p018_sources):
+        if candidate.is_file() and candidate.relative_to(ROOT).as_posix() not in (seen | newer | recent | recent106 | recent107 | recent108 | recent109 | recent110 | recent111 | patch_sources | patch_p017_sources | patch_p018_sources | patch_p019_sources):
             raise ValueError("Unreviewed file inside validation tree: " + str(candidate))
     if not (ROOT / "LICENSE").is_file():
         raise ValueError("GPL license missing")
     if announce:
-        print("PASS: 180 original validation sources through dev-111 P018, including 13 original P018 Tcl/Python cases; SHA-256 verified.")
+        print("PASS: 209 original validation sources through dev-111 P019, including 29 original P019 Tcl/Python cases; SHA-256 verified.")
         print("PASS: reviewed public inputs only, no private test PDFs or deployment scripts.")
         print("Runtime scientific/GUI tests: NOT RUN by source verification.")
     return info

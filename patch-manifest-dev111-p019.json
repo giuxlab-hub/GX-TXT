@@ -1,0 +1,453 @@
+{
+  "schema": "gxtxt.patch-validation-p019/1",
+  "framework": "0.9.8.10-dev-111",
+  "revision": "r3",
+  "officialMain": "4daf135e49378eff1f413310bc17cf32f1928c44",
+  "priorP018Commit": "1b7c3b4cf0ecf73303b2a7cf9346f42d6cd8f42c",
+  "newP019Commit": "3f516f5b726183ea8f53041888bd67438ee050ee",
+  "tag": "v0.9.8.10-dev-111-p019",
+  "predecessorPatch": 18,
+  "publicArchivePath": "patches/dev111/DEV111-P019/DEV111-P019-PUBLIC.zip",
+  "publicArchiveSha256": "0a7be7162ab8a0996d3b9800f5e592eb3b2d132f063c380abc3afecdca098185",
+  "originalArchiveSha256": "59e6579030c68548b3e76f750f048d356a5503fc4f5342960402c7f9f1679c55",
+  "publishedFrameworkFiles": 28,
+  "excludedInternalFiles": 397,
+  "normalizationPaths": [
+    "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+    "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt"
+  ],
+  "files": [
+    {
+      "path": "core/tcl/native2d_cad_canvas_v1.tcl",
+      "publicBeforeSha256": "2c76bbb5091bd6bd8b26373834270f61f1b6ea3294799321a2f66b9bacb5d8ff",
+      "authorBeforeSha256": "2c76bbb5091bd6bd8b26373834270f61f1b6ea3294799321a2f66b9bacb5d8ff",
+      "authorAfterSha256": "2c589887eda8f87cc35c4256e2c6b3a328a243dbe9051b2ac984a7a3eac19ced",
+      "publicAfterSha256": "2c589887eda8f87cc35c4256e2c6b3a328a243dbe9051b2ac984a7a3eac19ced",
+      "sourceExact": true
+    },
+    {
+      "path": "core/tcl/native2d_cad_tools_constraints_v1.tcl",
+      "publicBeforeSha256": null,
+      "authorBeforeSha256": null,
+      "authorAfterSha256": "cfcdb54b907be4045e632a0717b315d01f4b8b63759392ad4783aed990307a25",
+      "publicAfterSha256": "cfcdb54b907be4045e632a0717b315d01f4b8b63759392ad4783aed990307a25",
+      "sourceExact": true
+    },
+    {
+      "path": "core/tcl/native2d_cad_tools_v1.tcl",
+      "publicBeforeSha256": null,
+      "authorBeforeSha256": null,
+      "authorAfterSha256": "834bc8340beda6af5c9e44e99eecfc7016ce6cdd5b8cdd5e47f05137713cfdf5",
+      "publicAfterSha256": "834bc8340beda6af5c9e44e99eecfc7016ce6cdd5b8cdd5e47f05137713cfdf5",
+      "sourceExact": true
+    },
+    {
+      "path": "core/tcl/native2d_cad_v1.tcl",
+      "publicBeforeSha256": "ca8815f26d96a0568bdef735bfc65a56956efb4af09192c0740e7cb2baddd853",
+      "authorBeforeSha256": "ca8815f26d96a0568bdef735bfc65a56956efb4af09192c0740e7cb2baddd853",
+      "authorAfterSha256": "3cee871b03628821bc84d3e000558be902d95027c04132e1300364b75846d860",
+      "publicAfterSha256": "3cee871b03628821bc84d3e000558be902d95027c04132e1300364b75846d860",
+      "sourceExact": true
+    },
+    {
+      "path": "docs/api/NATIVE2D_ADVANCED_CAD_TOOLS_v1.md",
+      "publicBeforeSha256": null,
+      "authorBeforeSha256": null,
+      "authorAfterSha256": "a0bac88a43167f9a1c479605b62c2c79c406c151d379fdfaefc124b5dabace0a",
+      "publicAfterSha256": "a0bac88a43167f9a1c479605b62c2c79c406c151d379fdfaefc124b5dabace0a",
+      "sourceExact": true
+    },
+    {
+      "path": "docs/api/NATIVE2D_CAD_CANVAS_HOST_v1.md",
+      "publicBeforeSha256": "2ec4553c5851c3872df2389fd4ba304572714ce0d79d1c055a6f478681406b4c",
+      "authorBeforeSha256": "2ec4553c5851c3872df2389fd4ba304572714ce0d79d1c055a6f478681406b4c",
+      "authorAfterSha256": "b3e94ecaa3d6884ad10e6ce92a85ccc6979890da7162684d93d502b98f581126",
+      "publicAfterSha256": "b3e94ecaa3d6884ad10e6ce92a85ccc6979890da7162684d93d502b98f581126",
+      "sourceExact": true
+    },
+    {
+      "path": "docs/api/NATIVE2D_CAD_TOOLS_RELATIONSHIPS_v1.md",
+      "publicBeforeSha256": null,
+      "authorBeforeSha256": null,
+      "authorAfterSha256": "42416c435b83fc9c72767d7d76049eaa11c7ed48aadf4500aa67eaba97be956e",
+      "publicAfterSha256": "42416c435b83fc9c72767d7d76049eaa11c7ed48aadf4500aa67eaba97be956e",
+      "sourceExact": true
+    },
+    {
+      "path": "gxtxt_pipeline.tcl",
+      "publicBeforeSha256": "d6201ef9c69f7abd646abe9aa7687f8cf95dd328e5f2dc6f659f8f83e6398545",
+      "authorBeforeSha256": "d6201ef9c69f7abd646abe9aa7687f8cf95dd328e5f2dc6f659f8f83e6398545",
+      "authorAfterSha256": "174d402557bb87cdb0809fa58322059c7983af642813ca63b255b8c48db9b55c",
+      "publicAfterSha256": "174d402557bb87cdb0809fa58322059c7983af642813ca63b255b8c48db9b55c",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/CHANGELOG.md",
+      "publicBeforeSha256": "846e093c3d064d694ff94e0fece32f288e0531d854973a2e3ea04428234b4d73",
+      "authorBeforeSha256": "846e093c3d064d694ff94e0fece32f288e0531d854973a2e3ea04428234b4d73",
+      "authorAfterSha256": "0986131e978c027a7da506cda00490a82a68726300e2425102d18a1008e6211c",
+      "publicAfterSha256": "0986131e978c027a7da506cda00490a82a68726300e2425102d18a1008e6211c",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/MANUAL.md",
+      "publicBeforeSha256": "b3ea668496babe29582acc223c136ff60fda1ba1bf8ecba98296cf4f82f51be9",
+      "authorBeforeSha256": "b3ea668496babe29582acc223c136ff60fda1ba1bf8ecba98296cf4f82f51be9",
+      "authorAfterSha256": "a74d7de2ae798a7c5330109dfc3b3dd2e3698e8b9750850eb3479266278a0212",
+      "publicAfterSha256": "a74d7de2ae798a7c5330109dfc3b3dd2e3698e8b9750850eb3479266278a0212",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/README.md",
+      "publicBeforeSha256": "d0d0f76033579b1df39a9d0393e4168eb25a6379960e5c1a8fd5fe321525ccce",
+      "authorBeforeSha256": "d0d0f76033579b1df39a9d0393e4168eb25a6379960e5c1a8fd5fe321525ccce",
+      "authorAfterSha256": "d548ed190ec2b9c467e7c1476f76dcafb4dc40942ac7072811a37f0c6c85a3df",
+      "publicAfterSha256": "d548ed190ec2b9c467e7c1476f76dcafb4dc40942ac7072811a37f0c6c85a3df",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+      "publicBeforeSha256": "fa5446e674c72c931795beaac814c84014712bb2da29a95c8876c497bee23dad",
+      "authorBeforeSha256": "a4300ebf92ee8930a1f4da8ed25786d4b49ddcd0aaa37ec0975947ad40b3328c",
+      "authorAfterSha256": "5fe35a5accce3167ed525724ec8db008393d3f27157b270f15feefe4da550fd2",
+      "publicAfterSha256": "3f30571e3971977bd73e45e7417ef71a62b150bf6a442821ea57b3caa5be5792",
+      "sourceExact": false
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+      "publicBeforeSha256": "fa5446e674c72c931795beaac814c84014712bb2da29a95c8876c497bee23dad",
+      "authorBeforeSha256": "a4300ebf92ee8930a1f4da8ed25786d4b49ddcd0aaa37ec0975947ad40b3328c",
+      "authorAfterSha256": "5fe35a5accce3167ed525724ec8db008393d3f27157b270f15feefe4da550fd2",
+      "publicAfterSha256": "3f30571e3971977bd73e45e7417ef71a62b150bf6a442821ea57b3caa5be5792",
+      "sourceExact": false
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_advanced_constraints.tcl",
+      "publicBeforeSha256": null,
+      "authorBeforeSha256": null,
+      "authorAfterSha256": "b333926d21c4e2e61e2356aa66d9e48e51e9d280153dbd41877ea7cabbe4bbff",
+      "publicAfterSha256": "b333926d21c4e2e61e2356aa66d9e48e51e9d280153dbd41877ea7cabbe4bbff",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_advanced_tools.tcl",
+      "publicBeforeSha256": null,
+      "authorBeforeSha256": null,
+      "authorAfterSha256": "f36cfe92bfbc335c8879c4b783ae2547ba9c8b4ef345778537e206ee71a9647d",
+      "publicAfterSha256": "f36cfe92bfbc335c8879c4b783ae2547ba9c8b4ef345778537e206ee71a9647d",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_api_v1.tcl",
+      "publicBeforeSha256": "f554cfe1b6c144ae7592add9aff1d1d5fe1ed1f5b20ccdddf97c55250b98334b",
+      "authorBeforeSha256": "f554cfe1b6c144ae7592add9aff1d1d5fe1ed1f5b20ccdddf97c55250b98334b",
+      "authorAfterSha256": "ec0125f3e137e422d8f3c5d58b265fa10ca73d35a5c5ef87d63bad81c3cadb00",
+      "publicAfterSha256": "ec0125f3e137e422d8f3c5d58b265fa10ca73d35a5c5ef87d63bad81c3cadb00",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_cad_canvas.tcl",
+      "publicBeforeSha256": "6d871c464034d47458cc04e42f73ff489505e8eca067b0423bc5ec186e78a076",
+      "authorBeforeSha256": "6d871c464034d47458cc04e42f73ff489505e8eca067b0423bc5ec186e78a076",
+      "authorAfterSha256": "e0256035d25db6fd010e840f0937c116ead1d6b1807bd5382c29af03c4bcac7d",
+      "publicAfterSha256": "e0256035d25db6fd010e840f0937c116ead1d6b1807bd5382c29af03c4bcac7d",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_constraints_v1.tcl",
+      "publicBeforeSha256": "4406aa96731b0ba9c6c57b33d4f0d0622de5660053fac98d198a9d3128c5cc69",
+      "authorBeforeSha256": "4406aa96731b0ba9c6c57b33d4f0d0622de5660053fac98d198a9d3128c5cc69",
+      "authorAfterSha256": "a8c0430725ffbf51609c1cc4847fd5d2b3a3003de8714b29281543cf940545b8",
+      "publicAfterSha256": "a8c0430725ffbf51609c1cc4847fd5d2b3a3003de8714b29281543cf940545b8",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_history.tcl",
+      "publicBeforeSha256": "59d8813817e85a2e6af1b8f65f41a4c5c7712282258e6644475e30cfe28c2b57",
+      "authorBeforeSha256": "59d8813817e85a2e6af1b8f65f41a4c5c7712282258e6644475e30cfe28c2b57",
+      "authorAfterSha256": "2644e889541b2815a2779a9296318498f77c297da40191b2d2d3fba0e1d15940",
+      "publicAfterSha256": "2644e889541b2815a2779a9296318498f77c297da40191b2d2d3fba0e1d15940",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_interaction_v1.tcl",
+      "publicBeforeSha256": "9a59101257ba65954f95a1662a27fc6557d080d2a1d4b5916af16fe0b2eff367",
+      "authorBeforeSha256": "9a59101257ba65954f95a1662a27fc6557d080d2a1d4b5916af16fe0b2eff367",
+      "authorAfterSha256": "3e4fb4ec8da3727852ac472ca91cfeb0cd0730acf256fd575cedd95ee4e57c40",
+      "publicAfterSha256": "3e4fb4ec8da3727852ac472ca91cfeb0cd0730acf256fd575cedd95ee4e57c40",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_interaction_v2.tcl",
+      "publicBeforeSha256": "4ed3c84ef301ac49542cdcb5e1489a62572716e46d1e4f4b33dfec8bd121d90b",
+      "authorBeforeSha256": "4ed3c84ef301ac49542cdcb5e1489a62572716e46d1e4f4b33dfec8bd121d90b",
+      "authorAfterSha256": "6f2c44bc512c8509e32c48fe4dc8ee9eaec37288be1433a591dec451f0dd2e31",
+      "publicAfterSha256": "6f2c44bc512c8509e32c48fe4dc8ee9eaec37288be1433a591dec451f0dd2e31",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_parts.tcl",
+      "publicBeforeSha256": "0b9c64eff93f0f89fbc66334bba4e25d745cc932316bcd2db7751eccb2407085",
+      "authorBeforeSha256": "0b9c64eff93f0f89fbc66334bba4e25d745cc932316bcd2db7751eccb2407085",
+      "authorAfterSha256": "fe491f5823790adf247d79d425acb3237cd1c33fa62567a1a3bbb5131c1417d0",
+      "publicAfterSha256": "fe491f5823790adf247d79d425acb3237cd1c33fa62567a1a3bbb5131c1417d0",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_representation_v4.tcl",
+      "publicBeforeSha256": "34b7db9363af3d7b4ac6d692762c58912a876fc8f39df68a9a8865280e2f5d54",
+      "authorBeforeSha256": "34b7db9363af3d7b4ac6d692762c58912a876fc8f39df68a9a8865280e2f5d54",
+      "authorAfterSha256": "ab0b3db9f404a55e9da5e35de174109ef2677401e41ae4f4964ba0ac418892b5",
+      "publicAfterSha256": "ab0b3db9f404a55e9da5e35de174109ef2677401e41ae4f4964ba0ac418892b5",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_scene.tcl",
+      "publicBeforeSha256": "7e30ce5ca616075e23c103320a9c1f429e9818c3e1e38cc67a555b1af487dc1f",
+      "authorBeforeSha256": "7e30ce5ca616075e23c103320a9c1f429e9818c3e1e38cc67a555b1af487dc1f",
+      "authorAfterSha256": "426c917289d18488e749ba7a4fea7dc65f8cd2dce88cd9aa0d6e13eb3bedc5d3",
+      "publicAfterSha256": "426c917289d18488e749ba7a4fea7dc65f8cd2dce88cd9aa0d6e13eb3bedc5d3",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_selection.tcl",
+      "publicBeforeSha256": "c6e516a73fa903cfa2f57ce26602d8b0dc43278110eaa136225ab593550bf40d",
+      "authorBeforeSha256": "c6e516a73fa903cfa2f57ce26602d8b0dc43278110eaa136225ab593550bf40d",
+      "authorAfterSha256": "0fc1621ea087f1c29f3e7660f418034dd92ab9cee009d1f7d6f52fa85c9cfb59",
+      "publicAfterSha256": "0fc1621ea087f1c29f3e7660f418034dd92ab9cee009d1f7d6f52fa85c9cfb59",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_sketch_constraints_v2.tcl",
+      "publicBeforeSha256": "8148736a00cd7134266ed537b436a15fd50d67ed84f861c98808f57a799ed33b",
+      "authorBeforeSha256": "8148736a00cd7134266ed537b436a15fd50d67ed84f861c98808f57a799ed33b",
+      "authorAfterSha256": "dbd32836bb184d462c83c006e9604e3dd6f07e964892603ab913d7e8abc5c127",
+      "publicAfterSha256": "dbd32836bb184d462c83c006e9604e3dd6f07e964892603ab913d7e8abc5c127",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/module.ini",
+      "publicBeforeSha256": "76bc13cfa09dcde07f59e908f57e190e79e1a9ec8500711a56746874c085707a",
+      "authorBeforeSha256": "76bc13cfa09dcde07f59e908f57e190e79e1a9ec8500711a56746874c085707a",
+      "authorAfterSha256": "2d64b073866b564c459af43e60f0a9e73ca44a20536dca0a1043d295bfc17069",
+      "publicAfterSha256": "2d64b073866b564c459af43e60f0a9e73ca44a20536dca0a1043d295bfc17069",
+      "sourceExact": true
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/plugin-package.ini",
+      "publicBeforeSha256": "0c3534f5758b0c81447f211073f05f79b78737ccd7b3492eac9274b6d2ff70b4",
+      "authorBeforeSha256": "0c3534f5758b0c81447f211073f05f79b78737ccd7b3492eac9274b6d2ff70b4",
+      "authorAfterSha256": "58ba181dc029bd3ad0bcdc0a7dee366d46ff8da9615ec00c4c7e0148d750b424",
+      "publicAfterSha256": "58ba181dc029bd3ad0bcdc0a7dee366d46ff8da9615ec00c4c7e0148d750b424",
+      "sourceExact": true
+    }
+  ],
+  "originalSourceOnlyFixtures": [
+    {
+      "path": "validation/official_dev111_patches/p019/api_probe.tcl",
+      "originalArchiveMember": "validation/dev111_p019/api_probe.tcl",
+      "sha256": "d2c25e19b4a721b66767a07db97a50768037304a9ec66b71591269487701b874",
+      "bytes": 1742,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/constraints_component.tcl",
+      "originalArchiveMember": "validation/dev111_p019/constraints_component.tcl",
+      "sha256": "3af83a58f9ed94320a86fd337bb1e3d5244e640ac7866fbcdb1e509e7e66a390",
+      "bytes": 10687,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/constraints_projection.tcl",
+      "originalArchiveMember": "validation/dev111_p019/constraints_projection.tcl",
+      "sha256": "395eabae442f8a588607dcbee282e8084e6d1172d7c7d5168c5c7492cefbf19e",
+      "bytes": 4423,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/constraints_workbench_load.tcl",
+      "originalArchiveMember": "validation/dev111_p019/constraints_workbench_load.tcl",
+      "sha256": "aef9967c807b3e61c723c31db9269bb0d0b18dcd55795796c33dc5b0d9a0975f",
+      "bytes": 1825,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/deposit.py",
+      "originalArchiveMember": "validation/dev111_p019/deposit.py",
+      "sha256": "375413408f7fcfd92fed906967d77feafa539bf0ff1bc7fa969e1c488b978a4e",
+      "bytes": 1507,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_constrained_drag.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_constrained_drag.tcl",
+      "sha256": "978afc528b6840b0b9d660e6fd6cae261ae2d97e69ae2b4139fd3240738d652d",
+      "bytes": 24548,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_controlled.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_controlled.tcl",
+      "sha256": "45c3b3e4d8fe9812f6de34b58c14a639dba1c3319f87612eba81c90937ac60ba",
+      "bytes": 16201,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_dataset.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_dataset.tcl",
+      "sha256": "4be32cce42c6e7503860f2542d494d2c80fe45858cafde19de8bf316d9020e5e",
+      "bytes": 25399,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_directions.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_directions.tcl",
+      "sha256": "1f1bbc59bf54f67b2e5cf07795490232dfa130100b6a3ffc47df0418191f0ccb",
+      "bytes": 24535,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_final.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_final.tcl",
+      "sha256": "ff51b0a692d3ec8aaeeed0a8e59dafc1c00bd1ed68efc4401222b3d6f26cbf8f",
+      "bytes": 26461,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_final_repro.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_final_repro.tcl",
+      "sha256": "f6f273172173db98905dfe384c0ba28b992c1479029e58b254892e93384f7ba4",
+      "bytes": 20712,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_final_tail.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_final_tail.tcl",
+      "sha256": "aa281ab1b6fbb97e864546defadc45f0d335e10f78aa9e270545cad83e74dfd9",
+      "bytes": 25610,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_helpers.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_helpers.tcl",
+      "sha256": "e98e6efa87d9fbbdca3a29229a6f99eda88a9ba4a23308a8493b24ada425f61e",
+      "bytes": 1397,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_perf.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_perf.tcl",
+      "sha256": "6c0a26b32294d900a18a7b6b22377081dcbc0833ae23e15d3cf86efe6a33af28",
+      "bytes": 22678,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_perf_analyze.py",
+      "originalArchiveMember": "validation/dev111_p019/gui_perf_analyze.py",
+      "sha256": "bb892562fb7fb8b96615746df05e1c3c8ab74f8b5b762ee1bd3ce0d5a7a8552a",
+      "bytes": 3635,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_perf_dimension.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_perf_dimension.tcl",
+      "sha256": "f8286dea176b87f96d9baf0c2f34ec9db1e65992720cb39b9ce3934147997edd",
+      "bytes": 20156,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_perf_run.py",
+      "originalArchiveMember": "validation/dev111_p019/gui_perf_run.py",
+      "sha256": "081b034477bbf7d3e5f061619b73b9aa6620751b303d767359370855513fb26b",
+      "bytes": 2913,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_preservation.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_preservation.tcl",
+      "sha256": "14d3c9607ec9ed2066f91949b83b65e3e40a36dbe476013260ae8550584cba55",
+      "bytes": 24156,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_public_discovery.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_public_discovery.tcl",
+      "sha256": "713cfaf0b9d059df9f8134510c787eee6b8003ca36c580abd67b7331f6f20ec1",
+      "bytes": 1524,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_relations.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_relations.tcl",
+      "sha256": "47789ae5ff5096da88f8215477f3eb0f53bbac5d0434d84873850bd7a5bb428e",
+      "bytes": 23937,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_run.py",
+      "originalArchiveMember": "validation/dev111_p019/gui_run.py",
+      "sha256": "2e25a17bc5f8d5f35e5be199871595c3b55d1a2466845203aefb0e953486a5ee",
+      "bytes": 2995,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_source_admission.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_source_admission.tcl",
+      "sha256": "bf639869ad23e4ebd23d574df3bd18b199d0ee801f51b2b4fd37efd63b2c1b62",
+      "bytes": 14184,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_tangent.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_tangent.tcl",
+      "sha256": "eaa1e05bdaff6c83b10ba77b2c750087b677838a6e2d914962a4b97d5a80c098",
+      "bytes": 18719,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/gui_topology.tcl",
+      "originalArchiveMember": "validation/dev111_p019/gui_topology.tcl",
+      "sha256": "8bea6da0efb0e116941db10c96638573038a6c9450e2e1312b24fe8a055e7311",
+      "bytes": 21269,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/independent_advanced.tcl",
+      "originalArchiveMember": "validation/dev111_p019/independent_advanced.tcl",
+      "sha256": "c1878c3d850d7b99b035689888982cd4e1c577e380bc5bd087541e3f7ed68e1b",
+      "bytes": 37682,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/real_report.py",
+      "originalArchiveMember": "validation/dev111_p019/real_report.py",
+      "sha256": "7933adbf0073bc7d04fe4e8fe2c2c1676aba266e19247797abec0226029f7381",
+      "bytes": 10142,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/real_snapshot.py",
+      "originalArchiveMember": "validation/dev111_p019/real_snapshot.py",
+      "sha256": "a345c2f2632d0fcc68cbd0947764c9f5b22cef8c36312e5e22a66f51f6118813",
+      "bytes": 8128,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/real_transport.py",
+      "originalArchiveMember": "validation/dev111_p019/real_transport.py",
+      "sha256": "e33243ef63055c88cdee225cd9b4c24f43758c42ce5ef668fafd27ce00301f82",
+      "bytes": 6716,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    },
+    {
+      "path": "validation/official_dev111_patches/p019/rollback.py",
+      "originalArchiveMember": "validation/dev111_p019/rollback.py",
+      "sha256": "af38edf5252faaefeb36c95bc4b394c7e87641244c7ccb83e51c64acf9a97f90",
+      "bytes": 1085,
+      "execution": "ORIGINAL_SOURCE_ONLY_NOT_RERUN"
+    }
+  ],
+  "previousPublishedValidationSources": 180,
+  "newlyExecutedRuntimeTests": false,
+  "scope": "INDEPENDENT_SOURCE_AND_PACKAGE_INTEGRITY_ONLY"
+}

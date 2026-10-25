@@ -266,3 +266,14 @@ The P017 step represents an important **intermediate milestone among several**, 
 | Original test fixtures | 13 original owner Tcl/Python source files with SHA256 | Compatible disposable Linux Tcl/Tk Session and native GUI |
 
 Original user acceptance results are distinct from this public source validation. No new runtime scientific execution has been asserted.
+
+## DEV111-P019 — Shared advanced CAD tools validation
+
+| Source area | Reproducible source checks | Independently controlled runtime |
+| --- | --- | --- |
+| Cumulative patch | P018 parent commit, P019 tag, ZIP SHA, 28 public source before/after SHA identities | Applying the patch on separate GX-TXT dev111 r3 instance |
+| Native2D CAD | New shared construction, topology, constraints/dimensions and direction-marker source declarations | GUI gestures, constrained drag, cancel, Undo/Redo on a disposable Session |
+| Curve Workbench | Exact advanced-tools/advanced-constraints adapter and lifecycle source | Editing of heavily constrained cross-path and within-path geometry |
+| Author test scripts | 29 byte-identical original Tcl/Python sources with provenance hashes | Tcl/Tk, scientific Sessions, native binary and X11, executed independently |
+
+The 29 script sources remain independent from Session Generators. User-reported acceptance and historical owner-test evidence are not rewritten or represented as new runs by this static verifier.

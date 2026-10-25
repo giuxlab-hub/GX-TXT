@@ -176,3 +176,17 @@ Read-only commands:
     python3 tools/validate_dev111_p018.py --installed-final /path/to/GX-TXT
 
 The original dev102 test runner is unchanged. The thirteen P018 scripts are not automatically executed: an independently controlled compatible X11/Tcl/Tk/native runtime and disposable scientific Session are required. No independent GUI test is inferred from source-only publication.
+
+## DEV111-P019 — Shared advanced CAD tools validation
+
+The independent validation branch now archives 29 additional exact-byte owner-deposited Tcl/Python source tests for shared native CAD tools and Curve Workbench. The original files live under validation/official_dev111_patches/p019/; original archive paths and SHA256 digests are pinned in patch-manifest-dev111-p019.json.
+
+The new read-only tools/validate_dev111_p019.py verifies the P018-to-P019 Git ancestry, exact ZIP, all 28 public product source paths, shared advanced CAD API declarations and unchanged C/C++ Native2D and History owners. It does not start GUI events or modify scientific Session data.
+
+Example commands:
+
+    python3 tools/validate_suite.py verify
+    python3 tools/validate_dev111_p019.py --repository /path/to/maintenance-dev111
+    python3 tools/validate_dev111_p019.py --installed-final /path/to/gxtxt
+
+Twenty-nine original portable source scripts are distributed as source-only material. Private test receipts, unfinished host-specific runners and author workstation paths remain excluded. They do not execute automatically and do not constitute new independent runtime acceptance results.
