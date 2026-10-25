@@ -2,6 +2,51 @@
   "schema": "gxtxt.pages.hotfix-registry/1",
   "entries": [
     {
+      "id": "dev111-p019-advanced-cad-tools",
+      "source_folder": "DEV111-P019",
+      "doc_name": "README.md",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "3f516f5b726183ea8f53041888bd67438ee050ee",
+      "tag": "v0.9.8.10-dev-111-p019",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p019",
+      "asset_name": "DEV111-P019-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p019/DEV111-P019-PUBLIC.zip",
+      "asset_sha256": "0a7be7162ab8a0996d3b9800f5e592eb3b2d132f063c380abc3afecdca098185",
+      "asset_bytes": 171258,
+      "required_predecessor_patch": 18,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "en": {
+        "label": "DEV111-P019 — Advanced CAD tools",
+        "title": "Shared advanced CAD tools",
+        "intro": "P019 extends the shared CORE CAD tooling for Curve Workbench and other native editing consumers.",
+        "changes": [
+          "Unify construction, topology, defining-control, constraint and dimension editing through public CORE CAD tools.",
+          "Improve constrained-drag target synchronization and safe Undo admission during geometry editing.",
+          "Share direction-marker, relationship and geometric-control workflows with the embedded Native2D Canvas Host.",
+          "Preserve the existing native solver, C++ presentation, scientific Dataset ownership and P017 CORE History."
+        ],
+        "requirement": "For GX-TXT 0.9.8.10-dev-111 revision r3, after P001-r2 through P018 applied cumulatively and in order.",
+        "details": "Close GX-TXT and back up the installed framework. Extract DEV111-P019-PUBLIC.zip into the compatible framework root and restart. To roll back, restore the original P018 files from backup and remove new P019 files."
+      },
+      "it": {
+        "label": "DEV111-P019 — Strumenti CAD avanzati",
+        "title": "Strumenti CAD avanzati condivisi",
+        "intro": "La P019 estende gli strumenti CAD CORE condivisi, utilizzati dal Curve Workbench e dagli altri componenti di editing nativo.",
+        "changes": [
+          "Unifica la gestione di costruzione, topologia, controlli geometrici, vincoli e quote mediante le API pubbliche CORE.",
+          "Migliora la sincronizzazione dei target durante il trascinamento vincolato e la gestione sicura di Undo.",
+          "Condivide marker di direzione, relazioni e controlli geometrici con il CAD Canvas Host Native2D.",
+          "Preserva solver nativo, presentazione C++, proprietà dei Dataset scientifici e CORE History P017."
+        ],
+        "requirement": "Per GX-TXT 0.9.8.10-dev-111 revisione r3, dopo la sequenza cumulativa P001-r2–P018 applicata in ordine.",
+        "details": "Chiudere GX-TXT e conservare il backup del framework. Estrarre DEV111-P019-PUBLIC.zip nella radice dell’installazione compatibile e riavviare. Per il ripristino recuperare i file P018 dal backup e rimuovere quelli introdotti dalla P019."
+      }
+    },
+    {
       "id": "dev111-p018-cad-canvas-host",
       "source_folder": "DEV111-P018",
       "doc_name": "README.md",
