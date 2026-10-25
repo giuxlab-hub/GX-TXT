@@ -2,6 +2,51 @@
   "schema": "gxtxt.pages.hotfix-registry/1",
   "entries": [
     {
+      "id": "dev111-p018-cad-canvas-host",
+      "source_folder": "DEV111-P018",
+      "doc_name": "README.md",
+      "framework": "0.9.8.10-dev-111",
+      "target_release_id": "111",
+      "original_commit": "4daf135e49378eff1f413310bc17cf32f1928c44",
+      "hotfix_branch": "maintenance/dev111",
+      "hotfix_commit": "1b7c3b4cf0ecf73303b2a7cf9346f42d6cd8f42c",
+      "tag": "v0.9.8.10-dev-111-p018",
+      "github_release": "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p018",
+      "asset_name": "DEV111-P018-PUBLIC.zip",
+      "asset_url": "https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p018/DEV111-P018-PUBLIC.zip",
+      "asset_sha256": "12e2d3bb272fa0c9b1be4e7db72ddc11469b199c63aa8215f3e07dc0dec23253",
+      "asset_bytes": 171569,
+      "required_predecessor_patch": 17,
+      "exclusive_compatibility": true,
+      "incompatible_from": "0.9.8.10-dev-112",
+      "en": {
+        "label": "DEV111-P018 — Reusable CAD Canvas Host",
+        "title": "Reusable CORE CAD Canvas Host",
+        "intro": "A new shared Native2D CAD Canvas Host allows Curve Workbench and other scientific consumers to use the same embedded editing interactions.",
+        "changes": [
+          "Add host Create/Attach lifecycle for embedding or adopting an existing Canvas and native CAD context.",
+          "Share selection, navigation, native manipulation and edit lifecycle through the existing CORE services.",
+          "Integrate Curve Workbench with the common host while retaining authoritative C/C++ geometry, presentation and History.",
+          "Extend responsive Dataset Transform planning within established scientific publication services."
+        ],
+        "requirement": "For GX-TXT 0.9.8.10-dev-111 r3 after the complete cumulative P001-r2 to P017 patch sequence. Close the application before installation.",
+        "details": "Preserve an exact backup and unzip DEV111-P018-PUBLIC.zip into the compatible framework root. Restart afterward. Restore previous files from backup and remove P018-added files for rollback."
+      },
+      "it": {
+        "label": "DEV111-P018 — CAD Canvas Host condiviso",
+        "title": "CAD Canvas Host CORE riutilizzabile",
+        "intro": "Il nuovo CAD Canvas Host Native2D permette a Curve Workbench e agli altri componenti scientifici di utilizzare interazioni di editing incorporate e condivise.",
+        "changes": [
+          "Introduce le operazioni Create/Attach per integrare o associare un Canvas esistente al contesto CAD nativo.",
+          "Condivide selezione, navigazione, manipolazione nativa e ciclo di vita delle modifiche attraverso i servizi CORE.",
+          "Integra Curve Workbench con il nuovo host preservando geometria, presentazione e History C/C++ autorevoli.",
+          "Estende la pianificazione responsive di Dataset Transform mantenendo i servizi scientifici di pubblicazione."
+        ],
+        "requirement": "Per GX-TXT 0.9.8.10-dev-111 r3 dopo l’intera sequenza cumulativa P001-r2–P017. Chiudere l’applicazione prima di installare.",
+        "details": "Conservare un backup esatto, estrarre DEV111-P018-PUBLIC.zip nella radice del framework compatibile e riavviare. Per il ripristino recuperare dal backup i file precedenti ed eliminare i file nuovi della P018."
+      }
+    },
+    {
       "id": "dev111-p017-native-core-history",
       "source_folder": "DEV111-P017",
       "doc_name": "README.md",
