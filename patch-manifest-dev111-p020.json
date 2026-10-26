@@ -1,0 +1,54 @@
+{
+    "schema":  "gxtxt.validation-source-archive/1",
+    "framework":  "0.9.8.10-dev-111",
+    "patch":  "DEV111-P020",
+    "tag":  "v0.9.8.10-dev-111-p020",
+    "releaseUrl":  "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p020",
+    "archiveName":  "DEV111-P020.zip",
+    "archiveSha256":  "82071be2df3524783c66ef5a3531be6895ac7203ca6da8491c0852dd0099b214",
+    "sourceFileCount":  7,
+    "files":  [
+                  {
+                      "source":  "validation/dev111_p020/bridge_contract.tcl",
+                      "published":  "validation/official_dev111_patches/p020/dev111_p020/bridge_contract.tcl",
+                      "sha256":  "bbccb3383d8a1bec373b2f4b630b828a58e61964d7163ad963a372051b2e6523",
+                      "bytes":  6019
+                  },
+                  {
+                      "source":  "validation/dev111_p020/core_catalog_smoke.py",
+                      "published":  "validation/official_dev111_patches/p020/dev111_p020/core_catalog_smoke.py",
+                      "sha256":  "37a099a32b8efada4bfc0ec7e28a799233901e94cb29bcdaee3060095cfd934e",
+                      "bytes":  906
+                  },
+                  {
+                      "source":  "validation/dev111_p020/cpp_support_catalog.py",
+                      "published":  "validation/official_dev111_patches/p020/dev111_p020/cpp_support_catalog.py",
+                      "sha256":  "30a8535b9e73dbe26cf058015c5b816948b7fdddf00e4f3ba78f8ee28cb6f818",
+                      "bytes":  8866
+                  },
+                  {
+                      "source":  "validation/dev111_p020/directory_contract.tcl",
+                      "published":  "validation/official_dev111_patches/p020/dev111_p020/directory_contract.tcl",
+                      "sha256":  "41cf635eb2e0f551b4866a10b2b04e71ed6bb28dd7d6d778b0c468267e63d7f0",
+                      "bytes":  1819
+                  },
+                  {
+                      "source":  "validation/dev111_p020/sdk_contract.py",
+                      "published":  "validation/official_dev111_patches/p020/dev111_p020/sdk_contract.py",
+                      "sha256":  "9b99841a9f5c67ecfb14f396da492d4a4878fb00a3e5183c597528e254b0f867",
+                      "bytes":  2298
+                  },
+                  {
+                      "source":  "validation/p020_cad/component_smoke.tcl",
+                      "published":  "validation/official_dev111_patches/p020/p020_cad/component_smoke.tcl",
+                      "sha256":  "637804229926b6b36f7d11247d7b6fd297653641aa10b62acf31fea52e67d3e5",
+                      "bytes":  12044
+                  },
+                  {
+                      "source":  "validation/p020_cad/legacy_bridge_smoke.tcl",
+                      "published":  "validation/official_dev111_patches/p020/p020_cad/legacy_bridge_smoke.tcl",
+                      "sha256":  "e43f1c02734366fb7ab849762aa415a6eb6f1074cb4129f79d1ba7e7c4a9390c",
+                      "bytes":  3546
+                  }
+              ]
+}

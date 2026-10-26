@@ -190,3 +190,9 @@ Example commands:
     python3 tools/validate_dev111_p019.py --installed-final /path/to/gxtxt
 
 Twenty-nine original portable source scripts are distributed as source-only material. Private test receipts, unfinished host-specific runners and author workstation paths remain excluded. They do not execute automatically and do not constitute new independent runtime acceptance results.
+
+## DEV111-P020 — Managed CAD Sketch and STDERR Diagnostics
+
+Original Tcl/Python validation sources are preserved at $targetRel/ with per-file SHA-256 and archive paths in $manifestName.
+
+Release: https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p020
