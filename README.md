@@ -202,3 +202,9 @@ Release: https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p0
 Original Tcl/Python validation sources are preserved at $targetRel/ with per-file SHA-256 and archive paths in $manifestName.
 
 Release: https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p021
+
+## DEV111-P022 — Native3D rendering and Sketch lifecycle
+
+Original Tcl/Python validation sources are preserved at $targetRel/ with per-file SHA-256 and archive paths in $manifestName.
+
+Release: https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p022

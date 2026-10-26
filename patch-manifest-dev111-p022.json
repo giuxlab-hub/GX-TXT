@@ -1,0 +1,144 @@
+{
+    "schema":  "gxtxt.validation-source-archive/1",
+    "framework":  "0.9.8.10-dev-111",
+    "patch":  "DEV111-P022",
+    "tag":  "v0.9.8.10-dev-111-p022",
+    "releaseUrl":  "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p022",
+    "archiveName":  "DEV111-P022.zip",
+    "archiveSha256":  "450d59e503b8e5c49551e97233fa0a3bcf778b13679290b05ce260930b72bc66",
+    "sourceFileCount":  22,
+    "files":  [
+                  {
+                      "source":  "validation/dev111_p022/builder_modes.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/builder_modes.py",
+                      "sha256":  "744b6d9ebbfe8410667cee9d271150e0c9271a1bb1a301d15b1d5b56a00245a3",
+                      "bytes":  1917
+                  },
+                  {
+                      "source":  "validation/dev111_p022/cad_edges_workflow.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/cad_edges_workflow.py",
+                      "sha256":  "72eac56ecb4bcf80e08e63578b1c2651cc330a33765eb49b6fc849be767bad67",
+                      "bytes":  4907
+                  },
+                  {
+                      "source":  "validation/dev111_p022/cad_workflow.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/cad_workflow.py",
+                      "sha256":  "f812bf0f8a3cad7bec7d5a1a5a4820b33047b0ee5c2a65ac55582898527d2517",
+                      "bytes":  6230
+                  },
+                  {
+                      "source":  "validation/dev111_p022/close_yes_workflow.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/close_yes_workflow.py",
+                      "sha256":  "b3ea45d3bbb11fd6c32c30d7f9745540b4c5e68ae4791b724d21a62500e28674",
+                      "bytes":  3206
+                  },
+                  {
+                      "source":  "validation/dev111_p022/fixtures.tcl",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/fixtures.tcl",
+                      "sha256":  "5f19c25de72e69ff40523c047749f04207d44ba95be6c268bcc3e0da1a0058bf",
+                      "bytes":  4673
+                  },
+                  {
+                      "source":  "validation/dev111_p022/fresh_startup.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/fresh_startup.py",
+                      "sha256":  "a336274266b8ef41774433ba456188aa4a0ab50a57fb67982edce2add286ebda",
+                      "bytes":  2755
+                  },
+                  {
+                      "source":  "validation/dev111_p022/gui.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/gui.py",
+                      "sha256":  "a967692f07b3984693586972a7d7db339b2c665eecc05da038b33e7b0f042b18",
+                      "bytes":  12535
+                  },
+                  {
+                      "source":  "validation/dev111_p022/launch.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/launch.py",
+                      "sha256":  "1fa5a7cc6f9f0bbeecf9b4c9d2e28e6d1ff982b6104ed7d3d5b56e522ab7fc2b",
+                      "bytes":  2673
+                  },
+                  {
+                      "source":  "validation/dev111_p022/lifecycle_workflow.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/lifecycle_workflow.py",
+                      "sha256":  "4fa0bb69a24f564d110e0fdfdd7fece5825945e763b4b5ecc1ab1ba164efb012",
+                      "bytes":  3683
+                  },
+                  {
+                      "source":  "validation/dev111_p022/mode_workflow.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/mode_workflow.py",
+                      "sha256":  "c4ed779eeb892d46551458474584c1641be54ddab4b72f77dd0842f62947830a",
+                      "bytes":  2044
+                  },
+                  {
+                      "source":  "validation/dev111_p022/molecule_workflow.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/molecule_workflow.py",
+                      "sha256":  "06b0dceb1cb3a58a8cf83214176d8fee8bc2b4ae4890537531fd0fdc928a400a",
+                      "bytes":  3738
+                  },
+                  {
+                      "source":  "validation/dev111_p022/native_contract.tcl",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/native_contract.tcl",
+                      "sha256":  "78ddc841e243082b97e77231464a20fbec8ab7847413e4738c2a7bcbb21a24b8",
+                      "bytes":  3886
+                  },
+                  {
+                      "source":  "validation/dev111_p022/pending_close_workflow.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/pending_close_workflow.py",
+                      "sha256":  "698a0eff0a7136a5ad3afb3e882c8a24f559a9be2570efd9bad03bbbaf6319c6",
+                      "bytes":  2742
+                  },
+                  {
+                      "source":  "validation/dev111_p022/projection_workflow.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/projection_workflow.py",
+                      "sha256":  "d6adb96a5944174ea9b73b42e04ee8a51aef991ec8274d6e5118dfc376a2c48a",
+                      "bytes":  2955
+                  },
+                  {
+                      "source":  "validation/dev111_p022/remaining_modes.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/remaining_modes.py",
+                      "sha256":  "6bafa68cf5184632151c5edf45d46dc66024e582bea34e4719f0e05b3691da0a",
+                      "bytes":  2542
+                  },
+                  {
+                      "source":  "validation/dev111_p022/replay.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/replay.py",
+                      "sha256":  "7707da836411b86b5d10d725bd454166b1a11125b5dceacdb57722dddff3f8b8",
+                      "bytes":  2424
+                  },
+                  {
+                      "source":  "validation/dev111_p022/report_metrics.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/report_metrics.py",
+                      "sha256":  "5759c628769d65424d74f43502958443c463b47a889d498bfc13a9fdf2b6c717",
+                      "bytes":  5154
+                  },
+                  {
+                      "source":  "validation/dev111_p022/restore_workflow.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/restore_workflow.py",
+                      "sha256":  "e563a3472576f559929cfcd3e383d6648f45c0f14e4f312a0ae0822ee8e9b543",
+                      "bytes":  1920
+                  },
+                  {
+                      "source":  "validation/dev111_p022/snapshot_contract.tcl",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/snapshot_contract.tcl",
+                      "sha256":  "85a4c1741370c978ae5f4684c29be75876ddf1070c37b34978743b6c69e8042b",
+                      "bytes":  1580
+                  },
+                  {
+                      "source":  "validation/dev111_p022/test_cad_workflow.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/test_cad_workflow.py",
+                      "sha256":  "bfbeba22635af076e5b16458a91dd0cb91508cad1cde0a260c540396509a18e5",
+                      "bytes":  3287
+                  },
+                  {
+                      "source":  "validation/dev111_p022/tilted_workflow.py",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/tilted_workflow.py",
+                      "sha256":  "f13837e27e15a59a1a2f749ae9331173d53c16d04c0a9578ceb5ec4773b637b5",
+                      "bytes":  4350
+                  },
+                  {
+                      "source":  "validation/dev111_p022/timing.tcl",
+                      "published":  "validation/official_dev111_patches/p022/dev111_p022/timing.tcl",
+                      "sha256":  "f21381a476e66a216676ac362fdfcd2b338d96226221e08a3768f9fa91a26a03",
+                      "bytes":  3358
+                  }
+              ]
+}
