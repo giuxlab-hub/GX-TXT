@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Updates the Native3D rendering pipeline, camera input, CAD projection and persistent Sketch display.">
+  <title>GX-TXT DEV111-P022 — Native3D rendering and Sketch lifecycle</title>
+  <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p022-native3d-stabilization/">
+  <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p022-native3d-stabilization/">
+  <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p022-native3d-stabilization/">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <link rel="stylesheet" href="../../assets/hotfixes.css">
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header><div class="wrap header">
+    <a class="brand" href="../../" aria-label="GX-TXT"><span class="logo" aria-hidden="true">GX</span><span><strong>GX-TXT</strong><small>Scientific workbench</small></span></a>
+    <nav><a href="../../releases/#dev-111">Releases</a><a href="https://github.com/giuxlab-hub/GX-TXT/">GitHub ↗</a></nav>
+    <div class="lang"><a href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p022-native3d-stabilization/">EN</a> / <a href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p022-native3d-stabilization/">IT</a></div>
+  </div></header>
+  <main id="main">
+    <section class="wrap hotfix-hero">
+      <div class="tag">Patch available · DEV111-P022</div>
+      <h1>Native3D rendering and Sketch lifecycle</h1>
+      <p class="lead">Updates the Native3D rendering pipeline, camera input, CAD projection and persistent Sketch display.</p>
+      <ul class="hotfix-list">
+        <li>Improve explicit Hardware renderer-process initialization and device diagnostics for the supported NVIDIA 390 path.</li>
+        <li>Batch queued camera operations while retaining the order of input events.</li>
+        <li>Reduce intermediate PNG transport cost in common GUI drawing paths.</li>
+        <li>Reuse native coordinate transformations and prepared CAD geometry for projected Sketch presentation.</li>
+        <li>Handle temporarily unmappable camera orientations without altering Sketch data.</li>
+        <li>Keep saved Sketch geometry visible after editor Close, with subsequent reopening of the same Document and History.</li>
+      </ul>
+      <p>Cumulative GX-TXT 0.9.8.10-dev-111 r3 update after DEV111-P021. Consult the packaged instructions for application and rollback details.</p>
+      <div class="buttons">
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p022/DEV111-P022.zip">Download patch ↓</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P022/README.md">Description and files ↗</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p022">Full release notes ↗</a>
+      </div>
+      <p class="hotfix-digest">DEV111-P022.zip SHA-256: <code>450d59e503b8e5c49551e97233fa0a3bcf778b13679290b05ce260930b72bc66</code></p>
+    </section>
+  </main>
+  <footer><div class="wrap"><p>GX-TXT — Giux-Lab · GNU GPL-3.0-or-later</p></div></footer>
+</body>
+</html>

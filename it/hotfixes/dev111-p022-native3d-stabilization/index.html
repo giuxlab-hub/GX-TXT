@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Aggiorna il renderer Native3D, gli eventi della camera, la proiezione CAD e la rappresentazione degli Sketch salvati.">
+  <title>GX-TXT DEV111-P022 — Rendering Native3D e ciclo di vita Sketch</title>
+  <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p022-native3d-stabilization/">
+  <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p022-native3d-stabilization/">
+  <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p022-native3d-stabilization/">
+  <link rel="stylesheet" href="../../../assets/style.css">
+  <link rel="stylesheet" href="../../../assets/hotfixes.css">
+  <link rel="icon" type="image/svg+xml" href="../../../assets/favicon.svg">
+</head>
+<body>
+  <a class="skip" href="#main">Vai al contenuto</a>
+  <header><div class="wrap header">
+    <a class="brand" href="../../../it/" aria-label="GX-TXT"><span class="logo" aria-hidden="true">GX</span><span><strong>GX-TXT</strong><small>Scientific workbench</small></span></a>
+    <nav><a href="../../../it/releases/#dev-111">Release</a><a href="https://github.com/giuxlab-hub/GX-TXT/">GitHub ↗</a></nav>
+    <div class="lang"><a href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p022-native3d-stabilization/">EN</a> / <a href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p022-native3d-stabilization/">IT</a></div>
+  </div></header>
+  <main id="main">
+    <section class="wrap hotfix-hero">
+      <div class="tag">Patch disponibile · DEV111-P022</div>
+      <h1>Rendering Native3D e ciclo di vita Sketch</h1>
+      <p class="lead">Aggiorna il renderer Native3D, gli eventi della camera, la proiezione CAD e la rappresentazione degli Sketch salvati.</p>
+      <ul class="hotfix-list">
+        <li>Migliora l'inizializzazione Hardware del processo renderer e la diagnostica dispositivo nel percorso NVIDIA 390.</li>
+        <li>Raggruppa ordinatamente le operazioni della camera conservando gli input ricevuti.</li>
+        <li>Riduce il costo del trasferimento PNG intermedio nei percorsi grafici GUI condivisi.</li>
+        <li>Riutilizza trasformazioni native e geometria CAD già preparata per la presentazione proiettata.</li>
+        <li>Gestisce orientamenti temporaneamente non proiettabili senza modificare i dati Sketch.</li>
+        <li>Mantiene visibili gli Sketch salvati dopo Close e consente di riaprire Document e History associati.</li>
+      </ul>
+      <p>Aggiornamento cumulativo per GX-TXT 0.9.8.10-dev-111 r3, successivo alla DEV111-P021. Per i dettagli di applicazione e ripristino consultare le istruzioni comprese nell'archivio.</p>
+      <div class="buttons">
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p022/DEV111-P022.zip">Scarica la patch ↓</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P022/README.md">Descrizione e file ↗</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p022">Dettagli della release ↗</a>
+      </div>
+      <p class="hotfix-digest">DEV111-P022.zip SHA-256: <code>450d59e503b8e5c49551e97233fa0a3bcf778b13679290b05ce260930b72bc66</code></p>
+    </section>
+  </main>
+  <footer><div class="wrap"><p>GX-TXT — Giux-Lab · GNU GPL-3.0-or-later</p></div></footer>
+</body>
+</html>
