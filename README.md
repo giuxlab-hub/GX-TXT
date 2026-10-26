@@ -196,3 +196,9 @@ Twenty-nine original portable source scripts are distributed as source-only mate
 Original Tcl/Python validation sources are preserved at $targetRel/ with per-file SHA-256 and archive paths in $manifestName.
 
 Release: https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p020
+
+## DEV111-P021 — Native CAD in the 3D viewport
+
+Original Tcl/Python validation sources are preserved at $targetRel/ with per-file SHA-256 and archive paths in $manifestName.
+
+Release: https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p021

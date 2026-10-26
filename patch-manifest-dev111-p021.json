@@ -1,0 +1,120 @@
+{
+    "schema":  "gxtxt.validation-source-archive/1",
+    "framework":  "0.9.8.10-dev-111",
+    "patch":  "DEV111-P021",
+    "tag":  "v0.9.8.10-dev-111-p021",
+    "releaseUrl":  "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p021",
+    "archiveName":  "DEV111-P021.zip",
+    "archiveSha256":  "6930a0f06b4fcea9b8b4f7d77cd6af234c1c588d87549ec08018c5dd479f074a",
+    "sourceFileCount":  18,
+    "files":  [
+                  {
+                      "source":  "validation/dev111_p021/fresh_startup.py",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021/fresh_startup.py",
+                      "sha256":  "0448dce84c8ad914502e2e0216a95c309b68dd9e38cbff8170dc30cedc72e165",
+                      "bytes":  2755
+                  },
+                  {
+                      "source":  "validation/dev111_p021_presentation/contract.tcl",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021_presentation/contract.tcl",
+                      "sha256":  "c3b7b158b7973ce6a127dfc3b1fa8c3c34d22cb9baf6cd675e3f875335c50675",
+                      "bytes":  7981
+                  },
+                  {
+                      "source":  "validation/dev111_p021_projection/build.py",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021_projection/build.py",
+                      "sha256":  "61d6d314975c7a8ce944ae79abcd237573968af796eb7c4a1d57aad46cd64f2f",
+                      "bytes":  1651
+                  },
+                  {
+                      "source":  "validation/dev111_p021_projection/fit_degenerate.tcl",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021_projection/fit_degenerate.tcl",
+                      "sha256":  "ce8c375f510a11109cd0cb99b2fd016124c3eeef59aeb0591c0ece6822428868",
+                      "bytes":  1879
+                  },
+                  {
+                      "source":  "validation/dev111_p021_projection/negative.tcl",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021_projection/negative.tcl",
+                      "sha256":  "2016bb0de97fa62661be20a0869e1341c0a85036b937c251efeaf9a7e0c63eb0",
+                      "bytes":  2859
+                  },
+                  {
+                      "source":  "validation/dev111_p021_projection/random_planes.tcl",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021_projection/random_planes.tcl",
+                      "sha256":  "f33174245614e920da05e112b09ab60e56e87e89f373f58999478c7e45f19592",
+                      "bytes":  3258
+                  },
+                  {
+                      "source":  "validation/dev111_p021_projection/test.tcl",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021_projection/test.tcl",
+                      "sha256":  "187b203b7d5b0cd0fd43fa0c708954951b38ab3d446de46689bde59c42e71445",
+                      "bytes":  8942
+                  },
+                  {
+                      "source":  "validation/dev111_p021_runtime/fallback.tcl",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021_runtime/fallback.tcl",
+                      "sha256":  "b877bf5abf8895a37c5ee86502c7c0c039bdce17cd939b388d9affa46641cec4",
+                      "bytes":  4644
+                  },
+                  {
+                      "source":  "validation/dev111_p021_runtime/startup.tcl",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021_runtime/startup.tcl",
+                      "sha256":  "65b2263776d6b150583dad81a9c537a567f6f50f6e90f1f5fe8334ddcc76f62f",
+                      "bytes":  4908
+                  },
+                  {
+                      "source":  "validation/dev111_p021_viewer_startup/admission.py",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021_viewer_startup/admission.py",
+                      "sha256":  "97f908b2a4e88ccd4b8fd07a3426db56e2f8e5a1094e6ac0c7ad7344eb712585",
+                      "bytes":  2673
+                  },
+                  {
+                      "source":  "validation/dev111_p021_viewer_startup/desktop.tcl",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021_viewer_startup/desktop.tcl",
+                      "sha256":  "f9b7b5e164b03663952b6c318b2b5542d42807a0cd480e7c0f5577e1dd6d302d",
+                      "bytes":  8171
+                  },
+                  {
+                      "source":  "validation/dev111_p021_viewer_startup/desktop_dri2.tcl",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021_viewer_startup/desktop_dri2.tcl",
+                      "sha256":  "74ea04cbb05ab1f5eb124b98e5310d8d2311f530e44c39302d0a06aea6266bfc",
+                      "bytes":  6595
+                  },
+                  {
+                      "source":  "validation/dev111_p021_viewer_startup/desktop_restart.tcl",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021_viewer_startup/desktop_restart.tcl",
+                      "sha256":  "46fab7dbf6fc33621a268296744f1b251c96fdc37ded7b2127ab4188e5df2724",
+                      "bytes":  5856
+                  },
+                  {
+                      "source":  "validation/dev111_p021_viewer_startup/gui.tcl",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021_viewer_startup/gui.tcl",
+                      "sha256":  "bf538e56159d13657543a5fd7f323976fa4ee16309e8b3922d96564caeedf20d",
+                      "bytes":  6297
+                  },
+                  {
+                      "source":  "validation/dev111_p021_viewer_startup/native_worker_isolated.tcl",
+                      "published":  "validation/official_dev111_patches/p021/dev111_p021_viewer_startup/native_worker_isolated.tcl",
+                      "sha256":  "06b150eda30cc613e7e251494b1b8ac38d8859334d43b2b54b6287348d4a28a0",
+                      "bytes":  2760
+                  },
+                  {
+                      "source":  "validation/p021_projection/build_sprite_alpha.py",
+                      "published":  "validation/official_dev111_patches/p021/p021_projection/build_sprite_alpha.py",
+                      "sha256":  "8cc7606c68dfe47b30a2b4a81936240a2fab159eaabec3023ed812772d6a4909",
+                      "bytes":  2221
+                  },
+                  {
+                      "source":  "validation/p021_projection/component.tcl",
+                      "published":  "validation/official_dev111_patches/p021/p021_projection/component.tcl",
+                      "sha256":  "52f236526626021630eb033cb634f1087c9fbc2133a64be0bd6f9daf0ae93ff8",
+                      "bytes":  11982
+                  },
+                  {
+                      "source":  "validation/p021_projection/sprite_alpha.tcl",
+                      "published":  "validation/official_dev111_patches/p021/p021_projection/sprite_alpha.tcl",
+                      "sha256":  "2b44e1ded88d252738160980e8afc4637502fd006d7a0b1e2328053d9cc08531",
+                      "bytes":  6369
+                  }
+              ]
+}
