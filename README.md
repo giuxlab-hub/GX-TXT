@@ -208,3 +208,9 @@ Release: https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p0
 Original Tcl/Python validation sources are preserved at $targetRel/ with per-file SHA-256 and archive paths in $manifestName.
 
 Release: https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p022
+
+## DEV111-P023-EXP01 — Native resident 3D Sketches
+
+Original Tcl/Python validation sources are preserved at $targetRel/ with per-file SHA-256 and archive paths in $manifestName.
+
+Release: https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p023-exp01

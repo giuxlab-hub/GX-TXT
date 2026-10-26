@@ -1,0 +1,132 @@
+{
+    "schema":  "gxtxt.validation-source-archive/1",
+    "framework":  "0.9.8.10-dev-111",
+    "patch":  "DEV111-P023-EXP01",
+    "tag":  "v0.9.8.10-dev-111-p023-exp01",
+    "releaseUrl":  "https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p023-exp01",
+    "archiveName":  "DEV111-P023-EXP01.zip",
+    "archiveSha256":  "867ec02782210f7a865a617c4146fab1a4722971e0ea008f21e36fe547addba0",
+    "sourceFileCount":  20,
+    "files":  [
+                  {
+                      "source":  "validation/dev111_p023_exp01/authored_smoke.py",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/authored_smoke.py",
+                      "sha256":  "efd07e61ccd0ad2c88175bf5d907702da31527fd522cfd0f9548ef9d688edfb7",
+                      "bytes":  3173
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/cache_contract.tcl",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/cache_contract.tcl",
+                      "sha256":  "661eaee65e37e473e011f464e93cf44c0cbd845829100f2689675334ccdd42e9",
+                      "bytes":  6918
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/counter.tcl",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/counter.tcl",
+                      "sha256":  "26bfa9e1d28f252eb8c16a25687bedaee46c7e2a11a3852c1b20ab0529de77b6",
+                      "bytes":  3541
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/counter_overhead.tcl",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/counter_overhead.tcl",
+                      "sha256":  "01c4b4803fdd0172bcb9bf8c6cd488ecc52ecf19188793e7f3102b3544f2f7e0",
+                      "bytes":  1545
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/finalize_evidence.py",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/finalize_evidence.py",
+                      "sha256":  "0aec3939cc9336029f1fbb80196df0475bb0de850386cbccc35fa3c8064eea20",
+                      "bytes":  4012
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/fixture.tcl",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/fixture.tcl",
+                      "sha256":  "bceaef388614c4e945183d4faa8f68743c31bb13241b97982460ba3b6dd36718",
+                      "bytes":  4677
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/fresh_startup.py",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/fresh_startup.py",
+                      "sha256":  "8c27911f352d937ee1c1663f2151f30dfe933a0aae29a6cac594795f9bf93f99",
+                      "bytes":  2757
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/icon_batch_contract.py",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/icon_batch_contract.py",
+                      "sha256":  "6ea95552acb9cdd82270cc5b2eae26e2b5db4e3fa6274c6f9ddc143696e6eb01",
+                      "bytes":  1292
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/launch.py",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/launch.py",
+                      "sha256":  "1f7511443dfda75fdabb65e9514f7924b2005f924e2ad32b9c69334728343a3b",
+                      "bytes":  2679
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/launch_consumer.py",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/launch_consumer.py",
+                      "sha256":  "d4e879510d982f38e34e0c8d6a8534ed1526e319fc3a9003c0c10dc2625ba9e6",
+                      "bytes":  2568
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/mass_baseline.tcl",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/mass_baseline.tcl",
+                      "sha256":  "c2d618256e62f341b1b01184dd1e54d8c266fec4f5dca196c784ebe93a1ac624",
+                      "bytes":  3485
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/mass_descriptor.tcl",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/mass_descriptor.tcl",
+                      "sha256":  "ac8e6e786d4d37bed4c428458543514282e023c7ec32b9317e15414dd22fc4bd",
+                      "bytes":  5145
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/mass_scene_consumer.tcl",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/mass_scene_consumer.tcl",
+                      "sha256":  "11b6391b8810adfdeb090045025ec690031afccdbe27eeaea8f848a3718cc04e",
+                      "bytes":  3387
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/normal_lifecycle.py",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/normal_lifecycle.py",
+                      "sha256":  "fcc8d0b2fe6e4e751255947b4812e697d5c37e84dd0791c69b55f70330719948",
+                      "bytes":  4613
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/profile_baseline.py",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/profile_baseline.py",
+                      "sha256":  "901641245c85dee84dcad6b91146ddd84ed66244c3d94463940352e6d2dea48a",
+                      "bytes":  7822
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/quick_open_contract.tcl",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/quick_open_contract.tcl",
+                      "sha256":  "7c3fb5f44aa44f4b2423010b16e0d93a16a12f3684ef39b96c64144992e773ef",
+                      "bytes":  9052
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/registry_callers.tcl",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/registry_callers.tcl",
+                      "sha256":  "ae07838612ad3d47b2bde224695f4848c1e60b2c27b7a52174b02832dd8cb989",
+                      "bytes":  1339
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/resident_consumer.tcl",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/resident_consumer.tcl",
+                      "sha256":  "2b32f968d3fc1c781877e26dccb8decd8ee2d02947252a48114e54269979a77d",
+                      "bytes":  6862
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/resident_native_contract.tcl",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/resident_native_contract.tcl",
+                      "sha256":  "1b04e109bb3b8e781264307fd1cfad62acc8a0206819133615f7b1e5c7b2f55d",
+                      "bytes":  2944
+                  },
+                  {
+                      "source":  "validation/dev111_p023_exp01/resident_scenarios.py",
+                      "published":  "validation/official_dev111_patches/p023-exp01/dev111_p023_exp01/resident_scenarios.py",
+                      "sha256":  "d899b549890830cc74e9a12e52f243881f8d83e151022f63d93a352a89030dc4",
+                      "bytes":  8479
+                  }
+              ]
+}
