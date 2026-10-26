@@ -1,0 +1,17 @@
+{
+    "schema":  "gxtxt.dev111.public-patch-source/2",
+    "patch":  "DEV111-P023-EXP01",
+    "framework":  "0.9.8.10-dev-111",
+    "branch":  "maintenance/dev111",
+    "requires":  "DEV111-P022",
+    "tag":  "v0.9.8.10-dev-111-p023-exp01",
+    "archive":  "DEV111-P023-EXP01.zip",
+    "archiveSha256":  "867ec02782210f7a865a617c4146fab1a4722971e0ea008f21e36fe547addba0",
+    "archiveBytes":  9436294,
+    "sourceCommit":  "f0f6d0ed969bf218ae069888411c9f0c9c07b555",
+    "originalArchiveUnmodified":  true,
+    "validationBranch":  "validation",
+    "validationLocation":  "validation/official_dev111_patches/p023-exp01",
+    "license":  "GPL-3.0-or-later",
+    "releaseKind":  "experimental"
+}
