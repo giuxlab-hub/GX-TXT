@@ -1,0 +1,1838 @@
+{
+  "patch": "DEV111-P024",
+  "baseline_patch": "DEV111-P023",
+  "baseline_commit": "f0f6d0ed969bf218ae069888411c9f0c9c07b555",
+  "baseline_archive_sha256": "10e198b25f392362a82bf61b12978138f9708e6f5ea529377dfd7dff24e85407",
+  "source_commit": "a5db6cbca761c3a6e7b5430e8fc17e9d3618761e",
+  "changed_files": [
+    {
+      "path": "app/main_window.tcl",
+      "action": "replace",
+      "before_sha256": "15c4659f3b509ff8dd650e5cedf419f1fd4ce7c73d957d7c76bed64770fc5bd4",
+      "after_sha256": "56b0bad67d849f5803080e527b9aebb4bae53b5ba65f3afd9632d4d3ca2d0550",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "app/print_studio_controller.tcl",
+      "action": "replace",
+      "before_sha256": "1e859f896b0a1183f1a9327751f7d2fa42e4aa508f95853e038cf23fbab74903",
+      "after_sha256": "859a5b3d9e513d401c12c43d6afb04e59fa0590d978f73e9cb7dde3210763a47",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "app/session_controller.tcl",
+      "action": "replace",
+      "before_sha256": "ff2bf721c38c09c66910bb17e3712716b6c79daf129b177f0faba161510ba5b7",
+      "after_sha256": "6c30d3394f6b9d1c9a89586d270c02e1538cf0af955138e542ca162edfa01cbc",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/development/policy_v1.json",
+      "action": "replace",
+      "before_sha256": "edbdc602453f92afd0ed31a8b2b4ed7e8107569c5bf9c91ff36e80d4b9fd8f9b",
+      "after_sha256": "ff93d9837f6eea0403940afd21b11fac583be3146643b7a3cc4ca7ec1edc8121",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/development/sdk/gxtxt_viewer_sdk_v1.hpp",
+      "action": "replace",
+      "before_sha256": "c3b458972c81bcda43866f6baf03b77ca730649e03ddc2a3c5b7ef5100e300c0",
+      "after_sha256": "b55073e021bc8b78f72758122418e17d7e4ca0a6f91f1e252858091932d8a74a",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/development/sdk/trusted_adapter_v1.cpp",
+      "action": "replace",
+      "before_sha256": "6bebcaab5709b5abc2e3bedfd9c84faf22c6a2e875768158230fddb8ee28ce98",
+      "after_sha256": "6e0f8ecc89de84da9eafe41858d91e3e2e3205ccaf6c519f287f835282a23629",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/history/history_engine.cpp",
+      "action": "replace",
+      "before_sha256": "89cfaaf28c4fae80f901a7755a034bd92f68d98ce50ecf3aedba04826b0b36c9",
+      "after_sha256": "7e5ed8f8e50174af2e2eb6f18dd8dba5744fab21f6531f97e75314ec803f90db",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/history/libgxtxt_history.so",
+      "action": "replace",
+      "before_sha256": "b85fecb74a8e369a4397eddd460f126ae0ee287dfbd4092d8a08fe6069ffb23f",
+      "after_sha256": "3b36dabf829e7a2494bd250f1b6507bb874be5ac33487150599263cc7967c010",
+      "before_mode": 509,
+      "after_mode": 509
+    },
+    {
+      "path": "core/python/gxtxt_cpp_policy.py",
+      "action": "replace",
+      "before_sha256": "0f3d450622d930a6d0fbc82fb98ded6776495e9da17085d7701494729c13671f",
+      "after_sha256": "c9b8465ebcea30dbba5c29a48b383354120a7158807220885a7634f25ca180ee",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/python/gxtxt_viewer_development.py",
+      "action": "replace",
+      "before_sha256": "ad3b835719a4ecf5171e57eb12bcbcbc94608e631e2564e894f9c671b4b6f687",
+      "after_sha256": "91d25c15c698f14a84bac278e46d38221801b43175031158a75a2960906990cf",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/python/gxtxt_viewer_native_worker.py",
+      "action": "replace",
+      "before_sha256": "892353ccf8e312e2c9e4733091db2ff1009339be92a39ef5bf78c59a6fa2737e",
+      "after_sha256": "837c22c308caa464610ebf693a57581c2d14641827f12545139a9ad3a24ae80b",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/python/gxtxt_workspace_rpc_v1.py",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "e742df2ee71d6fabaa3fa976fc6918a837a1f4e0d949648cf0be9ed4a8117195",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/python/native_workspace_portable_v1.py",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "6532d50aa3a4b6db8e440b47a5fdc753f646b998e2190f5e6f9666b87a912d23",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/python/session_portable_v1.py",
+      "action": "replace",
+      "before_sha256": "810897b930c33944d184497860964901026b7dddcded7566f1d227bfef4f201f",
+      "after_sha256": "403f57a177001649e9f0d567bb35f636d733cfa7ba493e0e1ed688394d1dbfcb",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/script_bindings/native_workspace.py",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "418345e7828750f777aa45e487f3edbb745c5fe3a22b816e471ac7983d28a53b",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/script_bindings/session_workspace.py",
+      "action": "replace",
+      "before_sha256": "be089e6c4e54fd820a963a455a4de856fd636c431d30fa7f13139e939d31d19d",
+      "after_sha256": "b07c9e21b5b8eeb21c4d49c566afbd5d3ab9e6c21be85673ef74ad6f17946ac8",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/interactive_document_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "60af8fa504912a7e0ae4c1c2f899cb6f7dfd0eec3b427b668d39222404497240",
+      "after_sha256": "f4166406d026d386936f5f3e67611ec8ccaab8202c5b0e9c2688765564fd6905",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/interactive_document_cache_v1.tcl",
+      "action": "replace",
+      "before_sha256": "a74b95d892428810708eb0464b8b5d14dfcf9f79b6837a5c340a5fc62e87ba36",
+      "after_sha256": "ff45441511e47c35db27a5cb24df461ca4c5aa27c70d3dfc337883de07766fae",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/interactive_document_resource_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "76c251f2d1a1506089f23ac93c42960e33060ba07968a9c42e484e383fa8c2eb",
+      "after_sha256": "b449e03dde0be435f87c108f64126f9e2552f2f3a7db46e3b73cecea3ac09c40",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/interactive_document_tex_v1.tcl",
+      "action": "replace",
+      "before_sha256": "5bc867f164417f86566f6a275a39b7931b8a6209d657a445a0105995f1bd36bb",
+      "after_sha256": "5f1b5c7ec31c4ffff5e8143e0b139d87c92ba855375094cdd568ff4e29b7cf2c",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/native3d_geometry_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "e4988f3a95f9e1c947544c22f44cfc72be8a63c045822ae50e54abc148d4f700",
+      "after_sha256": "fef075c3dc114bf4b99b844d4a7b3a4502016e48b053503643333152c9a7ea37",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/native3d_gui_host_v1.tcl",
+      "action": "replace",
+      "before_sha256": "175919871b5b39409e2e4c55a604a200bc190c96cfba0dbe3040165eaffb754f",
+      "after_sha256": "d9698247bbbc4bc50511f157ac403933b7a42d9219778a9cdba1d575a7cd0e72",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/native_workspace_api_v1.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "872e4f79ccf1da4aa3dd61dccf35baeae31bc078e927ded69ad7c937add12d05",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/parameter_service_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "9e8bc6ed917d5c9a28228be74dd98154c6348c560e08a97a4bb70e312b615087",
+      "after_sha256": "291787906e393be064c662b35cfc7be6229e430610af810945d0deebac9ebbcb",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/plugin_install_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "a5fd2903cc834c6ef59106db06cab202efd35077c9088ac34e86b6d1133c8b9b",
+      "after_sha256": "33ca4d796ad28e109eedb28d002a44ff54f2eaeec1899ebcd321e13d1a7c4eef",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/print_document_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "60a392e4cb8f8154cc83d576e11ba5cdc2980933ec9170ef2dbbe56b7fc4652f",
+      "after_sha256": "1823beafe6d90296a9def0992d64068fd4ab6e17b98ce065d18d661646d3cdb7",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/scientific_history_portable.tcl",
+      "action": "replace",
+      "before_sha256": "8e4c57f438618f98665b85f7096a36efd10570e819955161a0bda844059cf2a9",
+      "after_sha256": "936a235f214be5b1c20f4e19d3977b249e3c963e7ef1af5626e17489cbafaa99",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/scientific_recipe_history.tcl",
+      "action": "replace",
+      "before_sha256": "4fd2857e25e25eaad361e024187e2923ea75dc313c7f1d25ef229a97c0443ec3",
+      "after_sha256": "742b0564fff82603815750adf971b5c534dd57467c467c5c124e6fcf7c16e64d",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/session_experiment_worker.tcl",
+      "action": "replace",
+      "before_sha256": "3dab02b59ff9b136de0a966d97b49d249d68b844a00e2e6781a347d62219177b",
+      "after_sha256": "e7b5cd0f919dabde1ff59483d7941cc920aafdaf63285c06d1efab17e715962e",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/session_portable_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "0080ddc397c9aecbe5245f69c1748bd4cf955d3e69ae7a32d6b4d00f9dc36cc5",
+      "after_sha256": "2d6ec0dccfb1111ecf728f5ad20b77fb0335989ad35514b62efc38bf88165a14",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/session_workspace_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "355c1f24a46d0d66b5b22f6372ea51d2140078392e45df213fbe65da51393027",
+      "after_sha256": "6ddd0ece948efea1664f435c57cfd5381d88ec65a1cecd4afd1f75a6c1352e0d",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/session_workspace_gui_host.tcl",
+      "action": "replace",
+      "before_sha256": "1bca625890278234a95a64b0d5708540749f91d4e86a81594c9d3156a0c82a79",
+      "after_sha256": "0f377681703bec1f0ef40996781214124e423ee5a6dd757b3190abcb50a7195a",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/session_workspace_viewer_gui.tcl",
+      "action": "replace",
+      "before_sha256": "39631908596ade571f61319c46757169386eac6798746aa0f54da4eadef64b85",
+      "after_sha256": "d93249d22190918c60d712fd8af76484cad863e241401961676de9ff3a3d8382",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/viewer_development_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "dee85af56ac592ce850b289f7376af2b7c950af36bd2bb1e3d1201cccf4e0827",
+      "after_sha256": "1115bf52104e51f99a5532fa5f0d9c967d63eb8fbbb7fd1446f7a4b2ffe9ecb5",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/viewer_development_workspace_upgrade_v1.tcl",
+      "action": "replace",
+      "before_sha256": "4e25605c42daedeb04f1f9cfcf30c03011f4f8b9b7583ab33d66c9bc6378e47a",
+      "after_sha256": "223b9463c0f14d38414c0f22e36e3d36430c1a15c8ca3616e91f1f11fb0d1cab",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/viewer_gui_design_v1.tcl",
+      "action": "replace",
+      "before_sha256": "e9dc38c3b5b4bd826ea49ba878f971ce41f7337e7cfdde84e965996a90e2b00a",
+      "after_sha256": "782c8d9ebe090bf596674f5189ea9c34088df2b2101db505affb0696fb331e73",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/viewer_workspace_native_v1.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "3ae418a7567fd175d44aaa43a2c82526ca2de06e5c795dd0c7c82f76098cd4b5",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/viewer_workspace_sdk_v1.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "f7bd7678286a1d6527f073b3afd6c1c875885506c2d4d5a39dc16b556697419f",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/workbench_extension_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "becb74360992dd036b8cd1144ea7e57faebb88e5ed9299233e1c2f5cf26312eb",
+      "after_sha256": "2d766c4886dc383ae153b2770d676402a1d161c18ad2a0f8d6d76ce5c770c973",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/workbench_recovery_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "5742a16a35868735eb6a3e770fcfb94acc87150635bdab9e5bea5d916a3eb032",
+      "after_sha256": "992f71eb0753610b6fbf958f6d6fc75fef74449c6362574d24cee3e47b494d72",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/workspace_external_host_v1.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "0050524d9dabd3138ac76c8568d037f57f305f1ac0536a42a2796dd19fdbb8fd",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/workspace_history_archives_v1.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "fcb60f3f4bcdd4499ad98a130bf1fc2bde60eb63485cc133558a378995b5b433",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/workspace_print_v1.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "b2962af5452c461d2c79bf1e6e8ae3c3f2d1f5b370e659adaa93fd7ac842fc5b",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/workspace_scene3d_codecs_v1.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "c7ce6ff31597fc78ef322d316d99b0a0cc69cd4bb48cfbf76677ed84b82cb83b",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/workspace_scientific_codecs_v1.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "5ab9fb7c3932914d882d3c9d4e3a0d5c9e561c42ca7ef67e3de9de2f5ec6c13d",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/workspace_statistics_codecs_v1.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "54ca221b75121355c190ba7ab6fcafc40e61c4afdd9ee457c91d5d645660afd5",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/workspace_statistics_variants_v1.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "42776e548e33eeae06012f31c320766d45d340a8a0e1532799b7fd270bde5595",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/workspace/Makefile",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "45f9d026623c094266a1a2b9173e8498d1f36363f92abe36c8134c21d6d9786f",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/workspace/libgxtxt_workspace.so",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "2fb7da39d041c37cb4c0b05661e0a5111ab56daf3b9083932d7e5c1f90d71530",
+      "before_mode": null,
+      "after_mode": 509
+    },
+    {
+      "path": "core/workspace/viewer_workspace_v1.hpp",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "8a090ada8b74c198e406e5edd452450729cf78555ed49a4f3d3c9d976a736652",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/workspace/workspace_capsule_v1.inc",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "3744dea2015ae2e7c5ef333d83adc571798a77a13583680a339efb73fcd7e811",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/workspace/workspace_json_v1.hpp",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "a3af4e266de0e20aec31ed598da043dd2ecfb91f616429f05e93e823cfa405fc",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/workspace/workspace_tcl.cpp",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "a785f8d6a317e22ad245a6453307b47a130fa09efc1b99a7142394904d130e5d",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/workspace/workspace_transition_v1.inc",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "07b090f249d5934da6fc8dd3410b0db752ed77a82e8f280087857eed5acb544d",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/workspace/workspace_v1.cpp",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "282fe5e9c3976a4c6fde03bb01d8cf9b5969ad08e35959dd10519163207b7ada",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/workspace/workspace_v1.hpp",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "dd0937ff3e330288f983f8724b76385e6d89ced5058e518f798c5cf968c7c151",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "docs/api/NATIVE_WORKSPACE_API_v1.md",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "3017de2d734b21d29cf28c4be1f4b6ed91061896338e336984673f5e00abb57d",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "docs/api/SESSION_WORKSPACE_API_v1.md",
+      "action": "replace",
+      "before_sha256": "d944dd4ad0c591661fd7c01ab57fde793a36fb399de03be3f38a261e2794697c",
+      "after_sha256": "eaf25c551ae10d5bdf802367b51d03d6704d9d54bb42c44a675fc0c7845e938f",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "docs/api/VIEWER_WORKSPACE_SDK_v1.md",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "317d6a79614d3a76c480ac7f61ca71bf878b3e81ca074dc5b1f3560cb6bd0548",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "gxtxt_pipeline.tcl",
+      "action": "replace",
+      "before_sha256": "2101b1a45528ef613af81c152c4a5cb9e38792cb2d900f01f6d267dd52e53e5c",
+      "after_sha256": "43d1b9bfe71fcaa5280b8e696a390cc01aa2bf6bc482e70c04ee6bc02c1df566",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/MANUAL.md",
+      "action": "replace",
+      "before_sha256": "3ff48bb0c5797c76871b1832e3fbd4e3c8bf443cbd18c7191f1425c1c1c2055c",
+      "after_sha256": "0df790449b7d87b4e928ecb75f38dde6490ab18fba27b9e71150f9b5a0324cc8",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/OCTAVE_SCRIPT_EDITOR_API_v1.md",
+      "action": "replace",
+      "before_sha256": "c05ecaba4a20c630cfea4b02650d163a8e276b0d7651df034f5fa1764a4d511f",
+      "after_sha256": "49268e5ebd286818735172c6127d715750e3bae96dc1954feab112f926f037ca",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "4fb14eff578857ce729d91228444656a6e6ad27100f8b83cb2eff6cfde356428",
+      "after_sha256": "0d752b0d2c27861b4a5b06186ab5c9835baa786bbeac26e11c0b573ec4b05624",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/api/octave_script_editor_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "977a2e7b9cc95d5281219dea5a1e2e345b6f4beb1cd2581d33acbe50593529ea",
+      "after_sha256": "a8746bd426c6df372682cfce652dc80b9d686b45a7da5c61c7735b25e3054325",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/module.ini",
+      "action": "replace",
+      "before_sha256": "377c6294866879b3b952c797d7debb81d5939bcf109d447f822a829a86fb3281",
+      "after_sha256": "0da407800fcd6d267e6eb1ce24d48240ecacdfaa60fb23c81380ae7f57841ed3",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "65ca04fad0fc69563aa51a97d40d5aa92399d0710b45f28303a1f24122fac8d5",
+      "after_sha256": "1ac93465dfa9dc848cc66e7471948e0b221bd3a8a07fedc514de3d244bc87240",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/analysis.octave_script/ui/octave_script_editor_ui.tcl",
+      "action": "replace",
+      "before_sha256": "a28b9be9a4dd31c9166479989fdd1c5792d1b212e2087c76d57a8fc6f605493f",
+      "after_sha256": "b36cbd14f945d3e165f983744baecb514db2859e1f7d21bd5a26c7aa9a6f613a",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/math.electromagnetic_simulation/SHA256SUMS",
+      "action": "replace",
+      "before_sha256": "0044b33e49eba460f280c329400f10643bf9deb0645a30516f7de4c5eb63da06",
+      "after_sha256": "d6c16f9105d0946dd2be7c124eead9d83a6907f27e5135c22edd077c804997d0",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/math.electromagnetic_simulation/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "0044b33e49eba460f280c329400f10643bf9deb0645a30516f7de4c5eb63da06",
+      "after_sha256": "d6c16f9105d0946dd2be7c124eead9d83a6907f27e5135c22edd077c804997d0",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/math.electromagnetic_simulation/api/em_simulation_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "3f60b1caab9e8b8fcf42dda1eb8619f0fc5d0988dcbbc55feaa0dcc6fa1e5811",
+      "after_sha256": "dbd84ded10d4eb344916181a168bef664850eb85f406522d8eede6f1c288938b",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/math.electromagnetic_simulation/module.ini",
+      "action": "replace",
+      "before_sha256": "dc0e52dc0b2a9768f086f9c8fcd17dc952720f97bf410f9deefca05b1288f6b9",
+      "after_sha256": "af6554a4c8ad7c7b03a2c8f76a28097a1bd74217050cc385893f67fb96cdb1a9",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/plot.dataset/SHA256SUMS",
+      "action": "replace",
+      "before_sha256": "a49c6b536cd97b39cd846568b39e8f4f777a3512a3ccb3054f4f6da9a20dfc78",
+      "after_sha256": "8434da38bdb4c19a4cebf86dedf8569619c6894b27d200ea9e80f127838075a9",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/plot.dataset/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "a49c6b536cd97b39cd846568b39e8f4f777a3512a3ccb3054f4f6da9a20dfc78",
+      "after_sha256": "a72861edef79ecb4a211c12ca28a7956a6ad5a8d37b78fa4d311869261085960",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/plot.dataset/api/plot_dataset_3d_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "31d264274ae5a42e0df61fd68e885d4e631b3d26ea702fa3b7a0eaa20adf695c",
+      "after_sha256": "b8c4676820a5d4fd6d7041046e55b377842ed62b4f9834095ac1ae5e9860316f",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/plot.dataset/api/plot_dataset_v4_native3d.tcl",
+      "action": "replace",
+      "before_sha256": "966b1abec52c08001ab436ab4b88a0fbde49c3764fcb2e45f359ba063ed3cfdb",
+      "after_sha256": "eeeb9e3acfd492a4e572fed65d4a6ec3dba4a4c691bd02593d5ec840e14d83dc",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/plot.dataset/api/workspace_3d_provider.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "2bda31ba65c62ca04bc426099f3c58d66a6a838a999ff16c090ed33c3e671383",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/plot.dataset/module.ini",
+      "action": "replace",
+      "before_sha256": "1591ac24e459709788d30e793d3262acce28103b17a6e4cfd53f722f9ff6ed56",
+      "after_sha256": "0aac7aae1c95dc109e0ded7b347d6b5637af4bcc0aa30d79631255b879f77ff8",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/plot.dataset/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "cf50b2976f685f4ed1d948d8027529a2135b9df2c8202f44964c303a7a229af0",
+      "after_sha256": "7bcf18c3b1e5282cd7e5e54a13a9dd6b483191cc3ac0a5854cf23447ddec31cb",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/tool.script_module_builder/SHA256SUMS",
+      "action": "replace",
+      "before_sha256": "c6f251a27248b2a783a3276c1a72eb15d4762d01931efa210c359392e609c748",
+      "after_sha256": "a15d5b581f41faa3bf43675a2970f5aa4822eb12ffb4654320c22d840bd4731f",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/tool.script_module_builder/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "c6f251a27248b2a783a3276c1a72eb15d4762d01931efa210c359392e609c748",
+      "after_sha256": "a15d5b581f41faa3bf43675a2970f5aa4822eb12ffb4654320c22d840bd4731f",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/tool.script_module_builder/module.ini",
+      "action": "replace",
+      "before_sha256": "a5530a4a12a61fefedc1c4ede000d3fb4127885213734e449723f1bfc67aef80",
+      "after_sha256": "872ffac4bdf88f312c09b026d1a28ee7cf1e309a39c71a0d0df3dca719058a41",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/tool.script_module_builder/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "b9ddf682f64c1893df0b9de1b99abcc083be25fde9690ea96aaa3eeadd048f8c",
+      "after_sha256": "8460e902c8ccab48f132870375bec437f456d15d42a82c1f0e9272dda27fe6f2",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/tool.script_module_builder/runtime/builder.py",
+      "action": "replace",
+      "before_sha256": "193cec4d65feb0603b59f30009378e21f353cb4249ae95bb5689c410c4f6feb5",
+      "after_sha256": "4c54d8584aba05716458d4810bdb16be025babaf847f831464b9824ffbf282fb",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/SHA256SUMS",
+      "action": "replace",
+      "before_sha256": "81950f628714ef5983229223218bd25fb75015acd5f91195be55e2d04515621e",
+      "after_sha256": "3dd77b5c29e76737598a1101216a915e100593bbcf85088c04a124223c02c7e4",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "81950f628714ef5983229223218bd25fb75015acd5f91195be55e2d04515621e",
+      "after_sha256": "67d5de7dcf80c3a9248770330ea040af080fe49839d77cc0222e3a89f98c51f1",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/api/workbench_3d_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "98627efaa0d9a3c3fcb0c1c573db34d65051f0deb65959fd2646b58b8fdb7460",
+      "after_sha256": "4dd6a7e29341a9307faae9002af20881383cc7c6bd91b0d162127b21255a8f5b",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/api/workbench_3d_history_v1.tcl",
+      "action": "replace",
+      "before_sha256": "656824279a658b41abe5df1fc1ee00dc33442f85c464acced36bddef7bcbb7d4",
+      "after_sha256": "24a5510eb0c0aea4845fbcb4ea268d56e8206599f5a05252e8fcf90efb8181d2",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/api/workbench_3d_lifecycle_v1.tcl",
+      "action": "replace",
+      "before_sha256": "0604511d614b8af0fb5b268a61fff8f8b26223136d62e16ad422b33e21cf9a1b",
+      "after_sha256": "77a3cac05bc02d4789c430df9576fa282eda1dedcc97fe7910581dda68ce276f",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/api/workbench_3d_texture_v1.tcl",
+      "action": "replace",
+      "before_sha256": "83c4f6b150f47f19ab8d0d0df577c0bde52b0fded5dfe25daa43e84e4efd9dee",
+      "after_sha256": "50e303f26c0161c39a58ff7a1147ed0119ff7152185bb00f797fe9c1a8978680",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/api/workspace_native.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "75e8e99af2865ae728530620b7b08380896338861f4e68b6b43af962d717b0ad",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/api/workspace_provider.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "0aef371f5eb56ea958080b818397dcbeece7beadb8e044a64a71f05ae27c207f",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/module.ini",
+      "action": "replace",
+      "before_sha256": "1487f0b7a8b6ea4b001c8c46305aaad983d1510e157fe952e412e7ad9a996205",
+      "after_sha256": "d8d67c6440dc91e08068170b2a3dff16f0cd1ab184b6f9fd4dc9e6c9c923143a",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "86fd419120dfe04c445098506a7e6d4fbeb4e4e510ebbfcb640c8462ec4feaa7",
+      "after_sha256": "3705a48d38a9d058d3e9f07e3164221f6c4725aaba08f0af842bc6e40256db30",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.circuit_workbench/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "6fe85bf572b4cf1b89b1126ef3b5f249cc4c2a8422510333957c34e0176c770a",
+      "after_sha256": "1cf389e37bfa06cbc707663f983dbc09916ef9c937b44a35ca4b2f5d0b5bc343",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.circuit_workbench/module.ini",
+      "action": "replace",
+      "before_sha256": "ef3a44d64210796d1493e62a82e1155ed1ae6ff2400fc4139497be58c40a4395",
+      "after_sha256": "892986ea4a6e22d89b6c35d7755dd5c0e2cf8443922659c8416dfbd6dad7c9d2",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.circuit_workbench/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "b030fb0901d1f8c3f55f3dc5a08777d18d01495056e8fcde1795cb67e51c6780",
+      "after_sha256": "c98a8e0864b66f28b69e36bfbc1669ff76d1d65f41135aa259d86fc8aa51e867",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_digitizer/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "c00ba5ac27624bc37551e5637bf072dd4a6550fedd8baaaed0d5c12b54b80256",
+      "after_sha256": "4b91e581523c6eb0488072f2f58040c94fe52a961de2ad4dc0d915e01eea5632",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_companion_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "1a7d65c93d885e7c30040b7ce8af00e44ff38905cee962e8a5b6b59dc24149c2",
+      "after_sha256": "197a5acadf725807b2b52ce3e0acb21d50cf6785b47bfd982910059bbad291bd",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_numeric_core.tcl",
+      "action": "replace",
+      "before_sha256": "a618faa82ffdd6fdc7adcba55d0082d5f40b0e7098eed7173630b1b080a68615",
+      "after_sha256": "12427c8ded4758795a057b496855a886593e6eb18b85c31ea4eef0ef9d31b2c7",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_digitizer/api/curve_digitizer_viewer_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "53efddefc5a5ad316cef482273a756825d352c99bc6f88d3d3bef3d51e5f6e80",
+      "after_sha256": "ae40d5cf90e8419df50334e43da1376de017f2ab6e03c8a524d565d9486374a6",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_digitizer/api/workspace_provider.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "f8796f99391dcb2f5701c0d42b638ca57419930468e1f80e44f81ade50359e3f",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_digitizer/module.ini",
+      "action": "replace",
+      "before_sha256": "9ac7b7fbaf130fc67bf147287a0aa73ad0fdde18275d0ba19ef2c6f35748aa95",
+      "after_sha256": "6a231e4a231c266031354038898b9e8da8b70c8f941a7cd62554f9119c69573a",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_digitizer/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "48e171810ac02e95c222fe3ad8b9bd618c3e04a52696190b6ded22ae43301087",
+      "after_sha256": "41f2f0c71a06d19e98a599c4eeb7b6ab0779fe60ea27613f2ee19e867dd4c4ee",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_digitizer/python/gxtxt_curve_digitizer.py",
+      "action": "replace",
+      "before_sha256": "4e402eb322d34e0749d2dc4500833fc1be05280023ce02afce5b1d4cc187acf8",
+      "after_sha256": "c9add3d8b109ff650289a1f40c5795a76728599a03d0ccf1e16c54c47a22ac0b",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_viewer/SHA256SUMS",
+      "action": "replace",
+      "before_sha256": "8f9eaca73678d8f15ec81f64f12ddd9145db6a9b9b08be929d44be60829790ed",
+      "after_sha256": "ddc48480a6ff534052c95bd3f818c4bf73d27e8658136ed7ce9c5409f4fe0419",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_viewer/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "8f9eaca73678d8f15ec81f64f12ddd9145db6a9b9b08be929d44be60829790ed",
+      "after_sha256": "ddc48480a6ff534052c95bd3f818c4bf73d27e8658136ed7ce9c5409f4fe0419",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_viewer/api/curve_viewer_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "c4837752094ceb624e59225d0c2f5ff502d6f29d45477e441535d596dd7f74db",
+      "after_sha256": "219bca8c13e9f859dbc8d620176ba64d8eb6ae1c27937885a3ed507ca740e87e",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_viewer/api/workspace_provider.tcl",
+      "action": "replace",
+      "before_sha256": "f5cee5adfdf715130cef815e47d2d72f07b327e40909271b8099da9e29ef2aef",
+      "after_sha256": "9e915e5b6b05f6dee260583d55b7e344d89d89e34b5b14adfdacc39940ddd3db",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_viewer/module.ini",
+      "action": "replace",
+      "before_sha256": "f1231a8a7173c499482a26113c163e47985ba4acb6ee0337073d47d0e04558bc",
+      "after_sha256": "ba516fdc678efc5ec40ca9890134e5c8a112ff17250d8dfe17f56be09ffebaff",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_viewer/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "79d0a4a1ead378fb869537db6790a31f1d44e84f86d1f7f15b83db208c61709d",
+      "after_sha256": "ab18a6dee2aad1b224ea2f426ac5a0eac17f7e2d9999c1e6bb16b603be46b756",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS",
+      "action": "replace",
+      "before_sha256": "5fe35a5accce3167ed525724ec8db008393d3f27157b270f15feefe4da550fd2",
+      "after_sha256": "ad14b25cf8f12da8d94eea3e55ccef91edaf6f0aa1fe5ab0bff81ad00b58415f",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "5fe35a5accce3167ed525724ec8db008393d3f27157b270f15feefe4da550fd2",
+      "after_sha256": "3d710649678713a198c4940c452933a7369738fcda4379ab98cbf9d63efe541f",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "ec0125f3e137e422d8f3c5d58b265fa10ca73d35a5c5ef87d63bad81c3cadb00",
+      "after_sha256": "999acbccf5a74d3573e67e88d2987a429c3802bf15f9e1440bad5f0b388f38bb",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_datasets.tcl",
+      "action": "replace",
+      "before_sha256": "e476f4a02559aeddcd13e9c00a13874fe7b8d7313558d5ec55a1f0703a799a98",
+      "after_sha256": "25c0f1c886a7888b2a7f6cd69232bcb2aee99fc01ff514cebf290e04bba082ec",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_fit_import_v1.tcl",
+      "action": "replace",
+      "before_sha256": "b8cd05f6ba2e59175cc86702acee6ce0ea5a977dd0193e733b4655a891f4f6e3",
+      "after_sha256": "54970238fe69930d44e8b3fd7a9c807e001f6fcf115aa633042ab06ed128f9d4",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_history.tcl",
+      "action": "replace",
+      "before_sha256": "2644e889541b2815a2779a9296318498f77c297da40191b2d2d3fba0e1d15940",
+      "after_sha256": "1b08b0a5958875224ff12ff62585a950b5451f69a7a11b1b42f0cbfa53768fde",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_lifecycle_v1.tcl",
+      "action": "replace",
+      "before_sha256": "795307f5afb6176c30301b8e0602da7ea882213abeb5713adc8ff10693162a16",
+      "after_sha256": "717e4945bc2155a0425e75dd371a699c1c65e3706752ceffc39b5a5ae36130df",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_parameters.tcl",
+      "action": "replace",
+      "before_sha256": "59c4a4c6ae2d13767303b827a7498dc3e716a43b1c1c0b673597525d843103f6",
+      "after_sha256": "b00e9fd10b67d8bbab1097327b2a3dc597718636244cdd71a0d04e1f5bae268e",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_persistence.tcl",
+      "action": "replace",
+      "before_sha256": "58b773ff5743fc40965ce031cab0c2c49ae6a8aaa714c71d641ffa72a74e1db3",
+      "after_sha256": "736737979a7433c98cb3a63af4156640fcb0be2d791d46bbbffafbe13688ce0f",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_recovery_v1.tcl",
+      "action": "replace",
+      "before_sha256": "c95d63075efacb2b09d387cd9606dd1efea534b5e0106a47f495189998e12233",
+      "after_sha256": "f279eed8c69cbfa24e4226f967ecf021f15001d98c737480b1b74785d329b4bb",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_ui.tcl",
+      "action": "replace",
+      "before_sha256": "c5d3ecddf67961a9b5fef817dc41b9d5a20b8170ee137d501e8c9e5f210157be",
+      "after_sha256": "c13371fa03a42ae7eb0cb89bb1cd2a3df3c46c882b2c9fd849854741c46a606c",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/curve_workbench_viewport_v3.tcl",
+      "action": "replace",
+      "before_sha256": "9b7c6cddda165b23e6f6db6f6969519de679a1e4b291c20c1e7fbdea15753acf",
+      "after_sha256": "94cec2e8211704fd7a036d31744323f44dc79a99edfe755b41c5c5fae39f5cdb",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/workspace_native.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "338e517d88dfa367d316d21c9d2c88ec29b66627b6cf71ce3f1ea24c362c23f9",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/api/workspace_provider.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "fe83bc37dc9d24afcfd8f8d7de30cb11b7e9648e06875a3667e8ef0fbb2d159c",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/module.ini",
+      "action": "replace",
+      "before_sha256": "2d64b073866b564c459af43e60f0a9e73ca44a20536dca0a1043d295bfc17069",
+      "after_sha256": "eb49266441febd071675c890132148c5be2608d0c94f269f7745788f4931af3a",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.curve_workbench/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "58ba181dc029bd3ad0bcdc0a7dee366d46ff8da9615ec00c4c7e0148d750b424",
+      "after_sha256": "d18462ed1a519781396efd31459c48bd306fedf7434e412a7a10710084ffd5d0",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dataset_curve_fit/SHA256SUMS",
+      "action": "replace",
+      "before_sha256": "2881d98410cf791278f8eb3477f2d4085f2a7d72459f6473149f355ef7adc37f",
+      "after_sha256": "e894a0da0aa232d660633f836a2297bd0e5551a5a9e37cf547661f489ac7795a",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dataset_curve_fit/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "2881d98410cf791278f8eb3477f2d4085f2a7d72459f6473149f355ef7adc37f",
+      "after_sha256": "bc865e917f6b05734d42ea4e106c6389ff5f9be69fd44dca3718a21bdbd3d441",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dataset_curve_fit/api/curve_fit_complex_v1.tcl",
+      "action": "replace",
+      "before_sha256": "c47f6b613a5a90dec1004b2bc83a70f7a27e06b4a0bc4cc632a30cb99e2e7964",
+      "after_sha256": "0ee81c09c1eb1f18b3bd47b3eb1d4d57dc84332472a8a2b5d6651086eca5d01e",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dataset_curve_fit/api/curve_fit_numeric_source_v2.tcl",
+      "action": "replace",
+      "before_sha256": "9f626727837c28cbaa761cfae237fd030e0583b525d6ccb1942de2cf086af897",
+      "after_sha256": "6064ec68f23eaac3c6963fb64799314144336ef68665dc13f75eb96c8e73cdb1",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dataset_curve_fit/api/curve_fit_statistics_v1.tcl",
+      "action": "replace",
+      "before_sha256": "f402a4382a240857dae277b3fde30fcad2c05adea190df73282cfb7db4d11ae5",
+      "after_sha256": "8f9b50b78603c6834c10c90fd8c3ea9cb5df87db385619b8774c202da2ee2bf7",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dataset_curve_fit/api/curve_fit_surface_gui_v1.tcl",
+      "action": "replace",
+      "before_sha256": "17d3d79f5aad7baea34cab67488fa99a728950664251253b3fdc66499ac72dd9",
+      "after_sha256": "4df34bfc77fc573e82516945fc7bfbbd1cfded965af59c46bceb24e6f6e6fdd0",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dataset_curve_fit/api/curve_fit_surface_v1.tcl",
+      "action": "replace",
+      "before_sha256": "8b69c881f9251eab197493020183b23cac7cf282d08f3a26f559d1ef580c0d8d",
+      "after_sha256": "b2a6dd2f67246f02236ecee1ac9fb8f68390836e2278ef77aa16eca067e8b492",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dataset_curve_fit/api/curve_fit_workspace_v2.tcl",
+      "action": "replace",
+      "before_sha256": "9f81ca3c43d26f2bc380412e6bf1c6a01c992147a22f606ded7dbe42dc501a1a",
+      "after_sha256": "bb8193977e4c1fa5e78fa1afb38906d4fa29a4cc45004101af110ab5873fe168",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dataset_curve_fit/api/dataset_curve_fit_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "fe48a867df47151a6648da3843d18b4c2989516ba0a63718c0ab60cd3f051c41",
+      "after_sha256": "74504af92c1650aa8d357b5121a51fdf066e05bf69aef2040249fb85047accc8",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dataset_curve_fit/api/workspace_native.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "74cb21d3417e811355a3dca5c3ea65a17e1b7d130cd22fa704204fdaa32db31a",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dataset_curve_fit/api/workspace_provider.tcl",
+      "action": "replace",
+      "before_sha256": "89b6b6351297a30d44bd784912cd15bedc8b3b519d2ccd22c30fb8fc145bb9a5",
+      "after_sha256": "dabee4b8e2c765761121ab2b8715650f182dc267ce4677fd092d40304271f6ac",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dataset_curve_fit/module.ini",
+      "action": "replace",
+      "before_sha256": "4c9b7640cdae7aaf3ca121547daad491bb8845382cf05bdaf01064066419fa9f",
+      "after_sha256": "20b6bf0fa8bc6f9ecf391336ef7c30371bf30aafd84882097cd0e4436ffef1f4",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dataset_curve_fit/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "b64e30d79b3b79ae0a70de1560d4148889fec8e1902933ecc73eceb9fdfd5004",
+      "after_sha256": "3aef8cf485155160731de0df2fdf19faff6e6ccfd8ab3ea11aa0b588d8f2955b",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dev107_scientific_xy/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "7d78c71a01892b6d5506c944ea0b80c8fdb3865b34b18cb2a61436c29ce85450",
+      "after_sha256": "9d885b7c40672dabe75f09b987985909f0592c262730552fbb7a65ab19faac3f",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dev107_scientific_xy/module.ini",
+      "action": "replace",
+      "before_sha256": "4c5ce493323bf88a61eedfdfb32125c84b7946ca56bc235d65813744aee4f130",
+      "after_sha256": "de4d176f4950286cb6df4fcd4daa5535832a68d3ae3a5a1bd4669dc0e69bb9fb",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.dev107_scientific_xy/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "a821bf59018f49412573a9bb78ef53e2c2cde9dfaf3da8287cfbbd5122eb6316",
+      "after_sha256": "3e59875d740c4060bfc1968dab1129eb6bccbacc53b07c7c34b24b1b9ec55dce",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.electromagnetics_studio/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "83c2e7592b50ada99ef7deec36a9c1a7e07f0808b30fc3532f8ee49e5e8c8bda",
+      "after_sha256": "0a1b72708a1663e56781df85f44c4568456b16f11155dd3f13c8236397d0b51f",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.electromagnetics_studio/module.ini",
+      "action": "replace",
+      "before_sha256": "d062b2fdf9aa5a8f8ef69a8f343229ab9a5d02ab9b250a3ddd62f6b964736927",
+      "after_sha256": "6fed860b0b1359dea584df1a1c498d99707ccdfc12813ae7c9a83e310c294e73",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.electromagnetics_studio/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "592277ac719a01428af7824b9917529bb49b785328b8f1bdc440d4fe7d9df97f",
+      "after_sha256": "3d6f25c6a1263b53cd0533f5721bf2e576bf121dbc97ff842370390ff6ba2c32",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.interactive_curve_builder/CHANGELOG.md",
+      "action": "replace",
+      "before_sha256": "39a0e280692694fd6681d8c393ed308d515cf8ae7ad92ebd08a278bf4f86a043",
+      "after_sha256": "242689921ea2b40c30696874cbd0308dd6963c79d2065ccc2c480103a84d7d2b",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.interactive_curve_builder/MANUAL.md",
+      "action": "replace",
+      "before_sha256": "98da3a3dd53c8cb9948419ffc0b37851a07f7d9cfd95fd892740f99eb258c45c",
+      "after_sha256": "34294b1151ecd2169877e3ee2bb5b42bffbb22ea7babe6f34c403d42a1c05bf4",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.interactive_curve_builder/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "960f52d94822d69c2996dcc2b60148ef04fe62967b8e61fcd0dd91b6d82f897f",
+      "after_sha256": "41a3ee67e0ff2591396a9dd4949eb6ab32c692fd9b8beaf257775438a89a4111",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.interactive_curve_builder/api/curve_builder_options.tcl",
+      "action": "replace",
+      "before_sha256": "dabab08ae3af5e16289fde05b023d906a82dea228b72f97aeb96503cfe52f32a",
+      "after_sha256": "9e2e181f9a6876027c7b259626ef89a17deb4a48ceb8441782fcfe7d5215084c",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.interactive_curve_builder/api/curve_builder_workspace.tcl",
+      "action": "replace",
+      "before_sha256": "fcadc2bcf42aec51e2af6a2fc7864a4db65856d03c3c95273a5dc45e0f96504b",
+      "after_sha256": "12bbc70f771b24514603990ee9f7c8d89d0d1212150e69dcb8cecf05b7189ef0",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.interactive_curve_builder/api/interactive_curve_builder_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "edc9d7219692e46320752d21f0db83f5d51eb49c12cb21eb6fd98f0b0d026aed",
+      "after_sha256": "9e9bb0a121ca6f58fa1c62901c737d3d8ca91ae8603206b91e823eda382e78ac",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.interactive_curve_builder/api/workspace_provider.tcl",
+      "action": "replace",
+      "before_sha256": "b8e08f8c6d058ad4814afad50e097f197649baa803dd95979d47a901fe136543",
+      "after_sha256": "b243bece5f14915202e18e0f1abc2d8119ca834d973652a2466ad5785da3844a",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.interactive_curve_builder/module.ini",
+      "action": "replace",
+      "before_sha256": "df5c73de5e7d6345f32639cae0fecefcfe85847ddd6f12fab2a93ff109cbe2c2",
+      "after_sha256": "a5ff7861829f40a2b6ced42473845600c6a23c935f12c4cb47609909e2740f43",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.interactive_curve_builder/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "261e217b7ab5f4859d635ebe32bbc278021eed04b863b19ebe8653f20f5c6e36",
+      "after_sha256": "3b602ad5825edadfed80f1288e9570e95b964d9bd77ca81485192f9438fb58fc",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.mathematics_explorer/SHA256SUMS",
+      "action": "replace",
+      "before_sha256": "2890d7a78fed4d413ba68f03a1dab8611cf1dde783776ac9b5665d3fb5314bf9",
+      "after_sha256": "782f8e865de253c222e0f2ceab086a919072ceed6831d36a6a6ebb07ff255a04",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.mathematics_explorer/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "2890d7a78fed4d413ba68f03a1dab8611cf1dde783776ac9b5665d3fb5314bf9",
+      "after_sha256": "7260daaacd18138c08a7010571ad7e34ef58b91f5c931b07045e822ca8d0fd31",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.mathematics_explorer/api/workspace_provider.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "4b69bbe712bde892d297b5e9005547c85bbe92566c8d141bb9cf30bf1d97b0d6",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.mathematics_explorer/lib/science.tcl",
+      "action": "replace",
+      "before_sha256": "a9bf6859abf89460006f72cc57904b60bc45ccc779fa6a123eb07ab107cd7799",
+      "after_sha256": "d3d31be5fe9944456dfc713b2f021d570ece4d9030109adb7198296efccbcbef",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.mathematics_explorer/module.ini",
+      "action": "replace",
+      "before_sha256": "bec1f86483de799f31734b3562f17ae2b928c98fc41651c7aea537dadc6eaeb5",
+      "after_sha256": "771ae1b30f49166b06712b61e383f61562fda1f42eab6ff1e5acfe9e691b60e1",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.mathematics_explorer/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "224a2e1a187d30a20f1626b68a8db7a8184f6633ca284187b9998e015f9d87a6",
+      "after_sha256": "050d0effd61955b97d7e83a030e99676da25977d784b6fa8175d877fc0fd4b67",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.mathematics_explorer/ui/mathematics_explorer_tk.tcl",
+      "action": "replace",
+      "before_sha256": "2bfe2b2d7e1794b9bfd9ceb34b22de0827d70262e9c006c3eb7be989f7d79c4e",
+      "after_sha256": "45f1520b492845ad2ead15f457bb0d27489fb6b0013b8e0e3b1ef17fc78138ed",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.native_3d/SHA256SUMS",
+      "action": "replace",
+      "before_sha256": "e8e44e85bd7a255150d201eb1b73435da98a6513ff1d8286c2a3a40ae5860b3b",
+      "after_sha256": "05169f9f823324ded12b331ddb164d67a8c692870c7e8714fbb8db1ae3b57147",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.native_3d/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "e8e44e85bd7a255150d201eb1b73435da98a6513ff1d8286c2a3a40ae5860b3b",
+      "after_sha256": "ec9c8f4ead02acac541d176cb172ac3e602fea87f487a63a5ee5940ecab4421b",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.native_3d/api/native_3d_viewer_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "3f7eba9656109eb53d431eb9d4a77754072fc3b8aff48cf1a77cf3fe0596921e",
+      "after_sha256": "80e56a16d515c657347f72953a7d2d15a5e00ba0eebdb7270639c40a42f863b9",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.native_3d/api/workspace_provider.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "9fb3aba2d80ccd01e084e53cbe519e3a9b3007c7d91a1f823b90451170e6ff62",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.native_3d/module.ini",
+      "action": "replace",
+      "before_sha256": "0ed81bd171134897155fc26501c06268d4ec46dfd3d1bec9c816f79e7b4fb12a",
+      "after_sha256": "1ccbdef1e2b23c85cb0aa4c2998c1d6530ececb7494cc1d75578b03dcddc5f01",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.native_3d/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "ee207adefd3a29b19bb1aaf269143bf380c66503eb4e8b81bd72f29d436485db",
+      "after_sha256": "5c6c18921406f947f343351a891e3f1e09af54d1be3a0376a35f51e643a7ee6e",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.pdf_ocr/SHA256SUMS",
+      "action": "replace",
+      "before_sha256": "3297b1750502932b7573b9ca9f4daecc3d666f6be52bd056087db0728bfe8ffb",
+      "after_sha256": "303564e82215927007cfad99f8725568de77fecc2dc58ba8074205b56b276f8f",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.pdf_ocr/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "3297b1750502932b7573b9ca9f4daecc3d666f6be52bd056087db0728bfe8ffb",
+      "after_sha256": "a288dc744b4c9e4240bd0ad91a2487872d4004b41f7c6edb1f6a74d279b0ab71",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.pdf_ocr/api/pdf_ocr_viewer_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "0aceb62dcdd9b9d8988ad386a12429bef3c43702c735f8a3f633452938437961",
+      "after_sha256": "f31a37fa263857b7066e41a5b50e402f281834aff63937a2147ea5973ee3215c",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.pdf_ocr/api/workspace_provider.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "8bba3f196fdec5ea654fdd914303e9a0bbb3ae6fcfba927a6b24571f5fcec9be",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.pdf_ocr/module.ini",
+      "action": "replace",
+      "before_sha256": "746e757d3d0c8a62068931b887016d1c58b9dd9529502215291004f3309e0dba",
+      "after_sha256": "c2f269b62d517b64ee90c8aa4dd0ed8961ce14b85fd0c3dda6091f993f256985",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.pdf_ocr/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "5ec6cbf56ea35d048b1ecd541624c817c0e54fdd8e8995ab3d0728b68d878194",
+      "after_sha256": "a77f0c0798dcc503097271509185a3a19b48b7c8c465d39ffd4e70f9fa45e136",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.pdf_ocr/python/pdf_ocr_viewer.py",
+      "action": "replace",
+      "before_sha256": "7381d8e1f0e5b73d1e8708585aa0fe8745e4236c7a17e13e545f1931edcf17ea",
+      "after_sha256": "2d245d9879180711ef1f014a108a28705196a1c423a26079ac037b5477ca9881",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.replicate_curve_analysis/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "9036d3c32b5c2b42dc2321a8995aeb23fad6eac253dbdfd84aa523c10dd022a7",
+      "after_sha256": "05d53e31c300f23b3ecf88f62f5602e1c90132c87638bee84463ed5171e1a8a7",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.replicate_curve_analysis/api/replicate_viewer.tcl",
+      "action": "replace",
+      "before_sha256": "c78d31920a8edb6d3cad2cb0e974159a008517e7a7d49741f7b151de1f57032f",
+      "after_sha256": "8acf528102912b29fa6bba9da7001fb2d90260639f6e16edcd0d6518ed1d89e4",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.replicate_curve_analysis/api/workspace_native.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "73f8df7205cf4908d0660fac1341fb8a75d447df171c898dd87d781273b50369",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.replicate_curve_analysis/api/workspace_provider.tcl",
+      "action": "replace",
+      "before_sha256": "d3bca110a7b41dd32315108f51b4c0e392067f28f840b74bb87575d0b6e41a3f",
+      "after_sha256": "c6893de6fbd33a7840f73904cdb4dc33fd441301dc4fd6340e950b79918ea1e1",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.replicate_curve_analysis/module.ini",
+      "action": "replace",
+      "before_sha256": "f9e4c1cb1e4ace4121e791ebdb70ff8422dfd7bcbf8edd24ae497300c7fbc906",
+      "after_sha256": "3c6daf0a318f6ae3681162b468813948558ac5e37b0b10860f30e47a1447ce93",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.replicate_curve_analysis/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "812cafb6fc34e07d4084c0d42adc43452a7164628222c3a7064c21e5f1bc9a8e",
+      "after_sha256": "6127292729da11b9901b2fcfe79b8099e5398782f73a1b5a1781d2b31dc33fe6",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_3d_workbench/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "43323e9a91a951848dba24523bb288c7ee67e4780d2938b32599809db95d5142",
+      "after_sha256": "ba5213aa1f009c20c7893b06c080700ae6771b1a8d8574098197de82287bff70",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_3d_workbench/module.ini",
+      "action": "replace",
+      "before_sha256": "aed5c3bafdfe48f6ee157eb12e6b5b9a8ef132386bc884df6a8d34dfc65ebee0",
+      "after_sha256": "8ad05567206c3c8ba0b03d9e99952bb54b0add6d666ccde450abd1ca9a310f10",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_3d_workbench/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "9f15e4e9e4bb4c801e9ed6d6bd91f96c19d8bc1a9bb8b209457fc9ae17e43a17",
+      "after_sha256": "656509ba6a401d9c1bacfd1a35321169b596e496a0d5e2229a94ae6d68598918",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_image_inspector/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "5ba0f886fcac410475958721bdb191cf1602bc9e9dc01583abeeff0c3e12444f",
+      "after_sha256": "b187e539a74ba6735d98c63536e3c55cdd5aab9a9f34bdf7fa87d72076b3b3ff",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_image_inspector/api/workspace_native.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "6f7257e0ae7dfbbde0542a4519757aca656042437a66d86bcfe2dd63bce60945",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_image_inspector/api/workspace_provider.tcl",
+      "action": "replace",
+      "before_sha256": "d73eb3cdcb0322b170249656757b1d3b1f54dd1f7b81e73c62a71cd02e3b7eab",
+      "after_sha256": "6a6ee74c7ccc348e955bc245dd18b9178564af64a498cd7d747579d1ae4633cc",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_image_inspector/module.ini",
+      "action": "replace",
+      "before_sha256": "0efbe16cc3ba35f5b6fd319d7afde75133b28d7df0c193c450704282a2606411",
+      "after_sha256": "19bf8aca076fdf779d3ae27a4f22ffc1293a7f8beccd60d1863223c34c765c01",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_image_inspector/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "4b9a24a99ddc8b96b46563366626ab993e940a352d6d309903cc5bdafbee504d",
+      "after_sha256": "772489d1de6debaaab433d195599fd044803b38f8ad926e78f192012126ab0e8",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_image_inspector/runtime/gui.tcl",
+      "action": "replace",
+      "before_sha256": "bdbedc214ac82094d3373998e451306a0c54424d161606aaf04b3a54f84b5697",
+      "after_sha256": "40ac8e660ceea44238349abf4846e174f2d6bce952b50f1554ff11e005a8b848",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_image_inspector/runtime/history_strip.tcl",
+      "action": "replace",
+      "before_sha256": "d97ba832552ba0d6821b08fb61257a88d89645d7378dc7b39c7c432ac391c824",
+      "after_sha256": "7cad585445881152eedf7b6a6962b5189bcebdae06ef24fbee3ecb1ea56972d2",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_latex/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "b07f5b2b12c62b4066e3149c04944cf95bd94fbe3ad95c3f9b5972718375e337",
+      "after_sha256": "f14e1b8a54fb0c22610c8190f328eece26bef314a212b2bc3a0028ee618dc1f0",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_latex/module.ini",
+      "action": "replace",
+      "before_sha256": "b6e21314f93cf624688728649bea3f602e6729b45164ef12ec5212cdf5e8ba4c",
+      "after_sha256": "e4a8170f9c37de904aace321d17ecd53db78b1539d2ebdad095d1de9827e638f",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_latex/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "e03f79fec4a8dccf88b7a31357fe994de332b0bba1a7b5ee0d86caf0a9675104",
+      "after_sha256": "7a1fb3724ce297770ef2eec0e4f0b75d742c0edd4021dbb0470ff10f88afaaa4",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_worksheet/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "b516879973ea1425e5233322ccb171304d88f9e11fc42d41df41d940ea0f2651",
+      "after_sha256": "a883a1c6730363ea519f7cdd3bfff4a5639cf5439fc6818c67f0e243f706bdd4",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_worksheet/api/scientific_worksheet_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "198dbf9ecd86669ffb858cc8e1d74b0538a9951b3e29cc68fcb64219536d338f",
+      "after_sha256": "b40bad0a11eda363bc1eb1186cbf73dda1e050963134c2ec6e86d68626c172d5",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_worksheet/api/scientific_worksheet_model_v2.tcl",
+      "action": "replace",
+      "before_sha256": "47c19e164c6881a9dccda85378cc24308a119ccbdb906d2223cf82986b81e1b0",
+      "after_sha256": "20cba6cfae2530fb383e3ada7221e4bec7eb3fbb4eecc1e29d6b1c34342bdb90",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_worksheet/api/workspace_native.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "6cdceae77e1277f265a38c32fe2b95fd2e653867772fde8f38b8d153c8fd070e",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_worksheet/api/workspace_provider.tcl",
+      "action": "replace",
+      "before_sha256": "0672f4692bdc23e170e53714a93bcf046e55c410de19884df21b30f63651f14e",
+      "after_sha256": "2c7b2219223c891cd8eac6382f42542fdb5df7f57fd0265f6f7ee9c23a9cb899",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_worksheet/module.ini",
+      "action": "replace",
+      "before_sha256": "18e9d262690d9a05184dff8dfc7ee3caad6443fa0a27e3aa57fb7950c9f15f5e",
+      "after_sha256": "9e2983b49464214041a255d490c831de3988034cbc4966acdbcc958190dcf413",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_worksheet/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "a15d5586420d43a13cc8ebe46347bb343db688cb7feed34d7fec9237265e6c97",
+      "after_sha256": "60bca2ab6e186dbd1404dcfdf32d69efa951fd4e8401dbea5d489ff58344112e",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.scientific_worksheet/ui/worksheet_ux_v3.tcl",
+      "action": "replace",
+      "before_sha256": "7f2f9133cc9f5e74db689dba4ab08be803433f04578d697ac55121f55fe40966",
+      "after_sha256": "951c11c1a7525560b48aaf982bb7fc3b8ca04ea8e1759b778176bc2fa61da739",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.signal_analysis/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "b652961299af40ce6bb3477737da299b1a11bb0e460c5840f76d2a5ffc57ccb2",
+      "after_sha256": "001ae0ee3da08c6bf61fc6fa84c6e1f508715d07ac2d97378654fb91a7952e98",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.signal_analysis/module.ini",
+      "action": "replace",
+      "before_sha256": "d8dfd6320da6bcfd7c9eb4de601697fd7c5b1faf16434369c13451a81cfcc5d0",
+      "after_sha256": "cc14699ae8fb9efb07d34ff00d323b08bb372d6f011d13f2f5313b1ff5b35cff",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.signal_analysis/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "6d665a82871b47c8a794f7732de5d16bb86988f5a11db4f3b009f17b8ab54f68",
+      "after_sha256": "3d783c70f7eb973bee1d7740955d1e51b6d38f889e843bcb88d374f77926cb09",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.spectral_library/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "553191f696eea4a1ca9bfd86e8900ab1fc3e4b72035676193d88d9ea49a09472",
+      "after_sha256": "250ab442b8b63fcacd92f410515f06e3b5ebe94d0979b7a71c6ac7419e8b6ca7",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.spectral_library/api/spectral_library_viewer_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "7684f0da86c1441971f249c3cd781c5e94067b37bd4dc15d1094b2990aa9bf72",
+      "after_sha256": "6490385f4cfc1b50edceb6d99207535edc574a02e95cd7033d984801e7adcbb8",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.spectral_library/api/workspace_provider.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "bf1851748f2f45bee2c5fdfbffd7a1b4a287428a531e161628309a7660540230",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.spectral_library/module.ini",
+      "action": "replace",
+      "before_sha256": "7b9b4033683b6bf921c44a8171daa556fd103282e84197b8192861489d1a246f",
+      "after_sha256": "554489a62a439da175cb87ac49d5490258d1b13fe628bbce5d3d79bccc4df04c",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.spectral_library/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "72c1f23c470dbd4134b29503c0ea61b9f25abc45235c5afcab3d75bf8fde60e1",
+      "after_sha256": "7f8de9a836fdb4c3aaa3f33587ba0e56b6b5349f4daf8c773ef0bba12eda8875",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.statistical_analysis/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "49d8ce8056e4f2ecb3f10651b091740eb5c73555e61b3df7745dad4507bbbd89",
+      "after_sha256": "32e1e32340447d54684e169cf1dce6cd6333cb569d9b84060109286ba1d6d83d",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.statistical_analysis/module.ini",
+      "action": "replace",
+      "before_sha256": "8a6d23337ea1f3e12aa1085f9bab4a12c8c47969344752c693bcb36925eb2716",
+      "after_sha256": "915ad48b50a842160538e7c12128dc6178f7eecea79f687d281e248a03ad6943",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.statistical_analysis/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "97efec70430926bf59be02793f4562d2ab280dc98779724002fbb69125ac27a8",
+      "after_sha256": "94f6806b302ad7ce340b5c4eeb21fd5dcfa2941bf89633af997826f6f3165c87",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.table_extractor/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "9aac23f63a6b6045ea822299c2e7ea3ded0d99aaf24b402f7dd3006f53f66caa",
+      "after_sha256": "980b76550fbef0220067cfbd4b29c42b43122b8f489ffa768212cf3bba008fad",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.table_extractor/api/table_extractor_viewer_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "35bb8b3ab4023f60b8ad031299ddd9e914d6cb7990a54581172e9cb09257630a",
+      "after_sha256": "d0c6b36ff34663aece4eddd2eec65f1671ecbddf93dbd9f4d4140d806c3e668f",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.table_extractor/api/workspace_provider.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "31073c6114daac4dffbf41cdd4c63982038869574f2b36fd66e0eaca83fd1b23",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.table_extractor/module.ini",
+      "action": "replace",
+      "before_sha256": "f5a72e72e43208d43dacc0cae6a171c92292ffd6d60ef9dd3e12c6757e6192b6",
+      "after_sha256": "507458b0a4d07ccf20a3a8bf08f119d8c903b7fa7f6021d3f7569ce3a3da27cb",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.table_extractor/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "d5ef83fd3c30db613dc1fa940e23a3ae67e4d67501bd7a965cd1c2b9992fd60f",
+      "after_sha256": "10bd2d2a8e2578efb40db8c5eddc2612500c9cceb8d37816c6dce3cea1ec38ff",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.table_extractor/python/table_extractor.py",
+      "action": "replace",
+      "before_sha256": "bccd37a7115f0403abedac5b89a0d7aac2a5fe78b5f3a19737c32c763a6e244c",
+      "after_sha256": "056ca3101da3112c94d8aad8392146d66953cf40dce6d2c952fea727df91117d",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.test_cad_1/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "608cebcb478073ba1df4ba839fb25c6de10fa22b75c3fdd1a631e0956edad3c2",
+      "after_sha256": "f5899a3e073678e28ff4f3b9d63c26a8e293ef2239e85707ea5842548117e842",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.test_cad_1/module.ini",
+      "action": "replace",
+      "before_sha256": "ce16313c7b2afc5d077d5b3a1d3c7b869b262727bfd5383fbbd2c483bde9fb1e",
+      "after_sha256": "593045b654a45ae818f455e3131acc1a8351a1adf531a53d6cf608e63ab874ca",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.test_cad_1/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "ec725baff113f81481abd20f9995ea6801f21463fcfe5e1380d3dc866839282f",
+      "after_sha256": "301285d686304c9b9991345a21a82fefcfebaba2de19337a582be16765dc7645",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.test_cad_2/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "49f717fd65643416cc1bd2670d9c82adf3140e539c34bc530f75d522c066f38c",
+      "after_sha256": "7962d0cd929f9c456af00cb078044e64ae94641c294db73dff16ddea9eefab67",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.test_cad_2/module.ini",
+      "action": "replace",
+      "before_sha256": "d6279a5c2545b8913173ae5fe7cba7b017589c1f0eb9bf81af00201b12953b95",
+      "after_sha256": "92e166ccbabefc618346f5baca94fb45a6ae599cefc43464c5075cf1c792f165",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.test_cad_2/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "0ea3c12c6d14e48b5941430a6cb055bc6daee521bb3782269b8d37ab701a3c90",
+      "after_sha256": "3ea0514805a09da65e6ec802870bac9e48ba7ff02433429613f97b6caab4decc",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.unified_document_extraction/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "973d0f7a988f0908800644996b3bf5e3111ba49d0a177ac76bda1d04e8fce4f3",
+      "after_sha256": "b606e14491692384aba0d3bfdf219a3b5cb0fe706b3a300f754c59574aaf59be",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.unified_document_extraction/module.ini",
+      "action": "replace",
+      "before_sha256": "0931e121ed3a36dad571f22fa5213b47fdb902532ff34181b8e67dbd462480d1",
+      "after_sha256": "f755279120659e68617ab6b92b33cc46fa65c7d0f6b6b38dd2bc79ef9c149006",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.unified_document_extraction/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "15e34015cc4c513dbdbe3d04dbcc8ae1e3db643983854f61459abb4049695d53",
+      "after_sha256": "1121ee2685d8fc029d5686ba1ebc084873f3e2884a8f8350f8b6a0a900dafa23",
+      "before_mode": 436,
+      "after_mode": 436
+    }
+  ],
+  "protected_files": {
+    "core/native3d/lib/libgx3de.so": "ea25f6ec5cd885ff517a2301f56712840edb188cb1210ad4a94fb337b9282100"
+  },
+  "deleted_files": [],
+  "installed": false,
+  "user_vnc_acceptance": "OPEN",
+  "delivery_type": "installable incremental overlay",
+  "runtime_source_unchanged": false,
+  "accepted_implementation_commit": "bd25960b1e2d6652ae7983fb5d2c8191ef960a59",
+  "release_source_commit": "a5db6cbca761c3a6e7b5430e8fc17e9d3618761e",
+  "implementation_and_binaries_unchanged": true,
+  "mode_policy": "Git archive shared-repository delivery modes; predecessor manifest after_modes authoritative for replaced paths",
+  "dependency_policy": "Changed public docs/api manuals included as runtime-linked API/Builder dependencies"
+}
