@@ -214,3 +214,24 @@ Release: https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p0
 Original Tcl/Python validation sources are preserved at $targetRel/ with per-file SHA-256 and archive paths in $manifestName.
 
 Release: https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p023-exp01
+
+## GX-TXT DEV111 P023–P027 — cumulative patch archive identities
+
+The following official DEV111 patches are archived independently from the prior P023-EXP01 experiment:
+
+- **DEV111-P023**: [Native 3D Sketch Residency and Document Cache](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p023) — `patch-manifest-dev111-p023.json`.
+- **DEV111-P024**: [Native Workspace and Scientific Session Integration](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p024) — `patch-manifest-dev111-p024.json`.
+- **DEV111-P025**: [API Catalog and Scientific Libraries](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p025) — `patch-manifest-dev111-p025.json`.
+- **DEV111-P025-r2**: [API Catalog and Scientific Libraries — Revision 2](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p025-r2) — `patch-manifest-dev111-p025-r2.json`.
+- **DEV111-P026**: [Framework Maintenance, API Catalog and Curve Workbench](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p026) — `patch-manifest-dev111-p026.json`.
+- **DEV111-P027**: [Multifile C++ Viewers, Preview Builder and Typed Script Runner](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p027) — `patch-manifest-dev111-p027.json`.
+
+P025 and P025-r2 are preserved as distinct releases. P025-r2 requires exact P024 rather than original P025; P026 requires P025-r2.
+
+The archive/manifests checker is read-only and checks the exact public ZIP SHA-256 and each declared changed-file SHA-256:
+
+```sh
+python3 tools/validate_dev111_p023_p027.py --repository /path/to/maintenance-dev111
+```
+
+The original delivered patch ZIPs do not contain standalone source-test suites for these milestones. Historical P023-EXP01 validation sources remain independently available under their original identity. No release-deployment helper, private Session or original developer evidence is copied to this branch.
