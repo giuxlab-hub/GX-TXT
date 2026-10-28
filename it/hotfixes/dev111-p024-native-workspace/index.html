@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Introduce un Workspace nativo condiviso per Viewer scientifici, Script, Document e risorse persistenti delle Session.">
+  <title>GX-TXT DEV111-P024 — Workspace nativo e integrazione delle Session scientifiche</title>
+  <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p024-native-workspace/">
+  <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p024-native-workspace/">
+  <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p024-native-workspace/">
+  <link rel="stylesheet" href="../../../assets/style.css">
+  <link rel="stylesheet" href="../../../assets/hotfixes.css">
+  <link rel="icon" type="image/svg+xml" href="../../../assets/favicon.svg">
+</head>
+<body>
+  <a class="skip" href="#main">Vai al contenuto</a>
+  <header><div class="wrap header">
+    <a class="brand" href="../../../it/" aria-label="GX-TXT"><span class="logo" aria-hidden="true">GX</span><span><strong>GX-TXT</strong><small>Scientific workbench</small></span></a>
+    <nav><a href="../../../it/releases/#dev-111">Release</a><a href="https://github.com/giuxlab-hub/GX-TXT/">GitHub ↗</a></nav>
+    <div class="lang"><a href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p024-native-workspace/">EN</a> / <a href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p024-native-workspace/">IT</a></div>
+  </div></header>
+  <main id="main">
+    <section class="wrap hotfix-hero">
+      <div class="tag">Patch disponibile · DEV111-P024</div>
+      <h1>Workspace nativo e integrazione delle Session scientifiche</h1>
+      <p class="lead">Introduce un Workspace nativo condiviso per Viewer scientifici, Script, Document e risorse persistenti delle Session.</p>
+      <ul class="hotfix-list">
+        <li>Aggiunge il motore Workspace nativo C++, l&#x27;integrazione Tcl e le API pubbliche NATIVE_WORKSPACE_API e VIEWER_WORKSPACE_SDK.</li>
+        <li>Coordina Workspace dei Viewer, associazioni ai Document, comandi, selezione, History e transizioni del ciclo di vita.</li>
+        <li>Estende persistenza del Session Workspace e trasporto portabile delle risorse scientifiche e delle configurazioni dei Viewer.</li>
+        <li>Collega gli Script Python e Octave alle API condivise Workspace e Session.</li>
+        <li>Aggiorna gli strumenti scientifici per riutilizzare i servizi Workspace condivisi, inclusi Curve Workbench, Digitizer, plotting, 3D Workbench ed editor Script.</li>
+        <li>Comprende binari nativi, sorgenti corrispondenti e documentazione delle API nell&#x27;archivio incrementale.</li>
+      </ul>
+      <p>Patch incrementale per GX-TXT 0.9.8.10-dev-111, dopo DEV111-P023. Istruzioni di applicazione e ripristino nell&#x27;archivio.</p>
+      <div class="buttons">
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p024/DEV111-P024.zip">Scarica la patch ↓</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P024/README.md">Descrizione e file ↗</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p024">Dettagli della release ↗</a>
+      </div>
+      <p class="hotfix-digest">DEV111-P024.zip SHA-256: <code>e9f8d96bb8da44d7339f6e5e15a411dc5eae81c980b9c2deb68f762e86f169c3</code></p>
+    </section>
+  </main>
+  <footer><div class="wrap"><p>GX-TXT — Giux-Lab · GNU GPL-3.0-or-later</p></div></footer>
+</body>
+</html>
