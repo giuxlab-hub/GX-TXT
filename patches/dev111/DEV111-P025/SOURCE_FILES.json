@@ -1,0 +1,440 @@
+{
+  "patch": "DEV111-P025",
+  "baseline_patch": "DEV111-P024",
+  "baseline_commit": "a5db6cbca761c3a6e7b5430e8fc17e9d3618761e",
+  "baseline_archive_sha256": "e9f8d96bb8da44d7339f6e5e15a411dc5eae81c980b9c2deb68f762e86f169c3",
+  "source_commit": "758a4b3a19286dbd46e17646426770a737083899",
+  "changed_files": [
+    {
+      "path": "GX-TXT_REMAINING_WORK_TODO.md",
+      "action": "replace",
+      "before_sha256": "528790a476cc3214adac7d201d162e05c66d8ca4d4f6b089c36f5326a092861c",
+      "after_sha256": "5c11bbeeaca3b8eed179a98240aba50b4be4b8bcf211f148919ff570835de517",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "GX-TXT_REMAINING_WORK_TODO.md.sha256",
+      "action": "replace",
+      "before_sha256": "6f2cf4554441a003bef2ef4532e9ba4a4a17e0d56d0dc06ae4f2f53f5d7e3c9d",
+      "after_sha256": "d24e1cfea0b836f684c625679321dfd95d36db072b6980467ab7f184c69d470f",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "PATCH_LEVEL.txt",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "1c2e98d8f132da2bd7650b4053073098c0f2f806dbb9a3c8d10c72eb3cb45ddd",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "app/cli_usage.tcl",
+      "action": "replace",
+      "before_sha256": "9cee5f3c6bb5e5f56478d58c2c8c77ffeb0f088529be35d9fa0aa429a7713f84",
+      "after_sha256": "06c78656e17abd2d505d78c5ea6e6a302afa70016a8dc8c070fad44652229f94",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "app/main_window.tcl",
+      "action": "replace",
+      "before_sha256": "56b0bad67d849f5803080e527b9aebb4bae53b5ba65f3afd9632d4d3ca2d0550",
+      "after_sha256": "e432f7f3c1c1e10f971c796fe80c7b40308bb16e70021cfe768b0db07a2b82bc",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/api_catalog/CMakeLists.txt",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "76384b9994a9df27448726f2e7b97786059ae0bf473d45e405384d757427b4ae",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/api_catalog/README.md",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "11593a8e8c09793326186a37c260e6c701ab2d8af3890399afb79fe9db073590",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/api_catalog/api_catalog_tcl.cpp",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "036422b0188c2085e8cc37fb98844c5e25b74517c039ecc974874b111334c558",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/api_catalog/catalog.sqlite",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "7092170e2f470ba24b1d49c58205f8c3728e5ee9d7f46d4290262a884b9748fc",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/api_catalog/libgxtxt_api_catalog.so",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "d92bf574253573a7d27c2a3add869cb16a5bd6b043d83812fa74e21d711f6ddc",
+      "before_mode": null,
+      "after_mode": 509
+    },
+    {
+      "path": "core/api_catalog/source_manifest.json",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "3c56a5ddc7352f2f42729f17ace6da8c987dd78abc2c77e14448eb846e5f7fae",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/python/gxtxt_api_catalog.py",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "1ac16cd54a1c76ef8cfc5d71e076627074226aa925e129583d787b46154a4939",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/python/scientific_reference_content_v1.py",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "1546029bf9c28733ab9f6f35926b5702b46e16a0a2a5eef9fe84cb95d2165643",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/api_catalog_service_v1.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "bc9d1e19a1e04166cbf7cac2cef0c9d941df290ed7d3202d70220f02712b5b23",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/framework_identity_v1.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "536bc2c8cbd99c1a39fee45428b614e3857dcf3b46666c75afc21fe392d22a80",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/scientific_library_credentials_gui_v1.tcl",
+      "action": "replace",
+      "before_sha256": "3c72b82ef94c1f7d63a05ea6304f86de7e6519f2ae5df6eefa2ab336de818f7f",
+      "after_sha256": "8f25c755998343515a56b5cb4cdab46da54a51824fe9d1d8446caaac107554b0",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/scientific_library_manager_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "123435021ce3ca6a95665f25d32a8d9a67a24f56f0d280c0cb0d85b6985219cd",
+      "after_sha256": "d1ef22b7760b655d9c2844aaaa66888616f5f10da390be5e1089e041ef77d18a",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/viewer_development_api_browser_v1.tcl",
+      "action": "replace",
+      "before_sha256": "50a47ec3b885c7477c35a81875b2bbdcdc2eae22b479c8f21d22c00de4b33179",
+      "after_sha256": "8609be81f907dc9b713a37ae5032e62e529b9f4883d8e41b8dcee9137c77dd9b",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/viewer_gui_design_v1.tcl",
+      "action": "replace",
+      "before_sha256": "782c8d9ebe090bf596674f5189ea9c34088df2b2101db505affb0696fb331e73",
+      "after_sha256": "1657a7e970e0c6267a5008be59fe1ad45df6a6c1d7f6c5786a0a5ba72eb99047",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/viewer_workspace_native_v1.tcl",
+      "action": "replace",
+      "before_sha256": "3ae418a7567fd175d44aaa43a2c82526ca2de06e5c795dd0c7c82f76098cd4b5",
+      "after_sha256": "cbcc4cd4e6338cef1d213775edd75374ae1d87e09045dfc46321bf5a3030e0c0",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/workbench_extension_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "2d766c4886dc383ae153b2770d676402a1d161c18ad2a0f8d6d76ce5c770c973",
+      "after_sha256": "cb7ba426119c9c82aeee07b715505e777d8556766afbbb7439e58655df5907bc",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "docs/api/API_CATALOG_SERVICE_API_v1.md",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "00c755c7ba6f8dc593ebe09bbe2af8b138da891144019265d8a6a6d27ae4f3fc",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "docs/api/SCIENTIFIC_LIBRARY_MANAGER_API_v1.md",
+      "action": "replace",
+      "before_sha256": "f98bc4f2dc57c4d5d5f99c6d25acf67fb5975bbe847ea7c75bea606aed52ba1b",
+      "after_sha256": "2bdf15ea0ec96993ac4cae44487fe7ebe7dcd6f021312bb1a0c90d95aeb665a0",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "docs/api/SCIENTIFIC_LIBRARY_P025_SOURCES_v1.md",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "26b3efecb6f4c06ce878fb99aa97fa4aa8fb359f71995f7104eb8d11dcf83434",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "gxtxt_pipeline.tcl",
+      "action": "replace",
+      "before_sha256": "43d1b9bfe71fcaa5280b8e696a390cc01aa2bf6bc482e70c04ee6bc02c1df566",
+      "after_sha256": "3aa37f0b52622e1d3f93ff410f206e11abcabbc02c7cb41e630f3bbbe84523f3",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.reference.json/LICENSE",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.reference.json/README.md",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "0ac48619c82edc1ddc296729a67535a106dccd23f828b9e2330e1be191267ca7",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.reference.json/SHA256SUMS.txt",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "9d096a989bf3fd984c052c44ef7e99d419b90c9f4ae219768fe08cbe384d3874",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.reference.json/api/reference_json_provider.py",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "30d7656699cc581e9610f18eae306be1d7b79f8038a344f5c5ae8f56b20d12ee",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.reference.json/module.ini",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "702fb1fe07f454bad9e20a32527975913c5bab30c683c96122632a0b6b73e7be",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.reference.json/plugin-package.ini",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "2172eb4815cb5e0980510eca1f48e731d1465d21172d117b9718e85277fcda3c",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.spectroscopy.ir.reference/README.md",
+      "action": "replace",
+      "before_sha256": "ae88d1bb387187f68d40d9947b220f53402e04690266122f834b2a2601b2e840",
+      "after_sha256": "99e840546e5026d785ecf014bf3e7c23aa684b4a283776e81b2de2ceafc6a8a6",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.spectroscopy.ir.reference/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "6aeefcaf1f8f758770494290f31e8b90a5f8cf778ac24721f8aa3b24df9441b7",
+      "after_sha256": "567a7a75ba83385680ab94bbe118f82ca0b2d363a9591670e53966267c1be38d",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.spectroscopy.ir.reference/api/ir_library_provider.py",
+      "action": "replace",
+      "before_sha256": "760504c6fe5cc46cd097d59ab8a9e79b57c76d80d54f78dbf42438f38b16bcf6",
+      "after_sha256": "8337dc373ba496fabc01e51c4fbff1d8ad37a82be1215446580b86df3928c8e3",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.spectroscopy.ir.reference/module.ini",
+      "action": "replace",
+      "before_sha256": "7295500234f66ea73af31130dd15a4fa6ef6ff267c0ed77716d6d12f8b8fabe7",
+      "after_sha256": "59bb1f084aea19139c343dc0a86584ab793b5e3bb6abd5ba3b7de7a8c89388cb",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.spectroscopy.ir.reference/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "98225eef8e07c98c53c3eb5ee2178cdd334ecbc2f7a6ee6f9f3ceb775544906d",
+      "after_sha256": "1af46e04163db969761ed13d593356979eedf67f3e8aaa05ecbe28076671e9a1",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.spectroscopy.nmr.reference/README.md",
+      "action": "replace",
+      "before_sha256": "05605e79af19c3b19f52d9493329ff09a838f2d6fdea2614082f90c666a03d01",
+      "after_sha256": "b733a0dc4a3074dbe1a8ee65963577143890ae2b6041ce0b841eb8579ce32e1c",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.spectroscopy.nmr.reference/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "87e928bf4b10ac6e229b3fe11df556ec0a3ddc77328616dce82047deb74d2e47",
+      "after_sha256": "42b097aea2ea4ee81b85dcd6ad9deabd877e982fba7f715d2b6988cc6853f599",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.spectroscopy.nmr.reference/api/nmr_library_provider.py",
+      "action": "replace",
+      "before_sha256": "e1aaf1381ee40ae6b27261c9da90292733e6fbf86b0f7cb59caf85a9747bb782",
+      "after_sha256": "66fdcd5287fdf2e3739831636db45c7d29951c2c21d8eb8dcc683e5f63aaa805",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.spectroscopy.nmr.reference/module.ini",
+      "action": "replace",
+      "before_sha256": "55199d5b0e750375327fbe2e960f3a26bb561a5c40839a4a47a6bab392307881",
+      "after_sha256": "1491cd8f0cde2fc005ccf210c68614861226a2fdb475741bc442ddb0fff9c6cb",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/library.spectroscopy.nmr.reference/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "751e40c974b8f8e781acdbe3cf78c8c1b8489390319c9b783f79ba1d3411c34f",
+      "after_sha256": "6d6fca68c947e9469710fc056365eb086a210531988a3a5cdc2e4dc9a9a50e98",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/tool.script_module_builder/CHANGELOG.md",
+      "action": "replace",
+      "before_sha256": "df18b4d1076fe2a442f8f19ac0da1875cdb768234c442d7d18b08db75a99c99e",
+      "after_sha256": "449e9e9a51d22ef4c2de284e0ad39969b272c999a2e0d9c96fe69eaee2f10980",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/tool.script_module_builder/SHA256SUMS",
+      "action": "replace",
+      "before_sha256": "a15d5b581f41faa3bf43675a2970f5aa4822eb12ffb4654320c22d840bd4731f",
+      "after_sha256": "cf259d62144c68d8cc4e78e08a00b88385b0b3a9a8959adc969355451bc0a85c",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/tool.script_module_builder/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "a15d5b581f41faa3bf43675a2970f5aa4822eb12ffb4654320c22d840bd4731f",
+      "after_sha256": "cf259d62144c68d8cc4e78e08a00b88385b0b3a9a8959adc969355451bc0a85c",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/tool.script_module_builder/module.ini",
+      "action": "replace",
+      "before_sha256": "872ffac4bdf88f312c09b026d1a28ee7cf1e309a39c71a0d0df3dca719058a41",
+      "after_sha256": "59f60362662472c424b0bc59e1e9cc8dd6045cb63b536b2f23d199fb0e1fd3c6",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/tool.script_module_builder/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "8460e902c8ccab48f132870375bec437f456d15d42a82c1f0e9272dda27fe6f2",
+      "after_sha256": "c98e6f38a8da29000c89f98c09df994d5b814c21c87cc54fdf5ec2eba35c4aa4",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/tool.script_module_builder/runtime/builder.py",
+      "action": "replace",
+      "before_sha256": "4c54d8584aba05716458d4810bdb16be025babaf847f831464b9824ffbf282fb",
+      "after_sha256": "5fa479dcab53a9e398a14b0940c042a77bd7629ddfebfae7a42490664c21fd77",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.interface_builder/CHANGELOG.md",
+      "action": "replace",
+      "before_sha256": "29c74b983b158cd50724418f8605b4c71c761190c88d9134864aa6931ddce14c",
+      "after_sha256": "0fea7998e2f0de4f6fe7df1b9113874d21f8c7746673f152309c2e81cec0cb3e",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.interface_builder/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "c994a107941c1b22f3c1d64920bf2dab87d603a3ca5a1fd8ca304ffe0230f8a7",
+      "after_sha256": "ce7fc4730e5ba3d3da0684a50f50279672a4e67d60c58663ce727a94fbf6ff65",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.interface_builder/api/builder.tcl",
+      "action": "replace",
+      "before_sha256": "13e48d0609165964752ca85f4429cdfdc8f75c3ee94416420868cc123d9b00c4",
+      "after_sha256": "95b1e877e757bc490f5bd98815da972119ed3aaeda78a7da713e9b12d594b910",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.interface_builder/module.ini",
+      "action": "replace",
+      "before_sha256": "17cbe2debea2944823a767f7e63c5f893dd0b012c4f219ffffd77ec7731ae0f3",
+      "after_sha256": "c79ec8edc9dbc5df0c4521fcdd3b2c3f2b9bb2773c2d1a681a3576a953cb0494",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.interface_builder/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "74d1431920a733948f19c17d3b928f32c2eccd73699e315b572abad4278638f9",
+      "after_sha256": "8d1db2373e90ce5efbb47044ad98386715f822bca5f5e2120515d5568f856cad",
+      "before_mode": 436,
+      "after_mode": 436
+    }
+  ],
+  "protected_files": {
+    "core/native3d/lib/libgx3de.so": "ea25f6ec5cd885ff517a2301f56712840edb188cb1210ad4a94fb337b9282100"
+  },
+  "deleted_files": [],
+  "installed": false,
+  "user_vnc_acceptance": "OPEN",
+  "delivery_type": "installable incremental overlay",
+  "accepted_implementation_commit": "758a4b3a19286dbd46e17646426770a737083899",
+  "release_source_commit": "758a4b3a19286dbd46e17646426770a737083899",
+  "mode_policy": "Git archive shared-repository delivery modes; predecessor manifest after_modes authoritative for replaced paths",
+  "dependency_policy": "Changed public docs/api manuals included as runtime-linked API/Builder dependencies",
+  "exact_source_blobs_preserved": true,
+  "baseline_implementation_changed": true,
+  "baseline_binary_postimages_changed": true,
+  "preservation_reference": "Final source_commit Git blobs; this is not a claim of unchanged implementation versus baseline_commit"
+}
