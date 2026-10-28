@@ -1,0 +1,278 @@
+{
+  "patch": "DEV111-P023",
+  "baseline_patch": "DEV111-P022",
+  "baseline_commit": "c92f9f90caa1d4196fd23023873171c9d9094c6a",
+  "baseline_archive_sha256": "450d59e503b8e5c49551e97233fa0a3bcf778b13679290b05ce260930b72bc66",
+  "source_commit": "f0f6d0ed969bf218ae069888411c9f0c9c07b555",
+  "changed_files": [
+    {
+      "path": "core/native3d/bin/libgx3de_viewer_tcl.so",
+      "action": "replace",
+      "before_sha256": "27e12c56eea9ae42bd0465e05e34641bec7e07849a75a9f3e7a7716184532d91",
+      "after_sha256": "56d8d4adda1968ea7cbafb3cc76efc3be5046e242e23bb2131a8c1a099036827",
+      "before_mode": 509,
+      "after_mode": 509
+    },
+    {
+      "path": "core/native3d/gx3de_sketch_resources_exp01.inc",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "cc463b6a50bf1ff1524ac239c39ae9201757f302aa222f85d7f9adbb94d69322",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/native3d/gx3de_viewer_tcl.cpp",
+      "action": "replace",
+      "before_sha256": "7f79cee157a68d49f12f2c44d666cf8e29b172d08e47607bfccecd26c4cfb0c3",
+      "after_sha256": "f908f43a2dad03c13d9da9cdd501239431a662266821e5bf5503ad0e343ee6b2",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/native3d/renderer_worker.tcl",
+      "action": "replace",
+      "before_sha256": "94a6b38b22d8374c5fa8f34a29fb74df479684fd533b3a234feb075d031b350e",
+      "after_sha256": "558004dcfe592fd08d1963351a26979184b9f8498e5b04b2c542512dd0a6ea75",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/nativegui/document/Makefile",
+      "action": "replace",
+      "before_sha256": "2cb816e724e9bec208db6ae977a57ac8fe962e341a2124030dd8266039d08e21",
+      "after_sha256": "235e107e69b4dc46a3d658e7fd708fceb8ad1d43ebf5f1004a56b16edffdc6ff",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/nativegui/document/libgxtxt_document.so",
+      "action": "replace",
+      "before_sha256": "dfe9db8dec58a317e89e7c939c142799fe865d62c7d50086ecf95d70a399e4a2",
+      "after_sha256": "5a08da28b6537b7ac58555aed861c614eaccc3a54633d2298eadd6dbf09bc4dd",
+      "before_mode": 509,
+      "after_mode": 509
+    },
+    {
+      "path": "core/nativegui/document/source_capture.cpp",
+      "action": "replace",
+      "before_sha256": "d5fc404a724bd47aae1f4185b4cb79988278ff153a03c181b0b9a7d2aac25246",
+      "after_sha256": "86d1e5eadc22b9f07757d2af96080188b3df9c887cb7fb0991c3c305070d32d2",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/nativegui/document/source_snapshot_cache_v1.inc",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "60d2dfce266535748192f933d2413870d1e88d8fe0223a4318199be12daebebe",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/python/gxtxt_viewer_icons.py",
+      "action": "replace",
+      "before_sha256": "37b53f80d4227ed512e83a70ca439f86b0709cc4c4f975e06293087f5bb64f29",
+      "after_sha256": "5798e5bd36c42100d0be7848ef35e5753a92df22cc038ef446efc5901e86a5de",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/configuration_viewer_commands.tcl",
+      "action": "replace",
+      "before_sha256": "66dd37533db27dd813636a50a4c0d14ce08d200c7ae61add9b7bcd525b34c4fe",
+      "after_sha256": "b962746be5ba8e6c1699dbe7cd0f550da8c7ce8324f360b1b0d5ae873e769fd1",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/interactive_document_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "125dc6df6bdb1ca1a68f50e57bc06330ac3bfb8390e629a8687607cf41a37128",
+      "after_sha256": "60af8fa504912a7e0ae4c1c2f899cb6f7dfd0eec3b427b668d39222404497240",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/interactive_document_cache_v1.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "a74b95d892428810708eb0464b8b5d14dfcf9f79b6837a5c340a5fc62e87ba36",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/interactive_document_lifecycle_v1.tcl",
+      "action": "replace",
+      "before_sha256": "e3368f00a4c4c3c69ba2771d0596a3e2f172272a5ed8fdaf2b3586a5ba945a58",
+      "after_sha256": "0ba1d0ba1ace1982c2999c3f88c66d0ac0fe35a8170abceff48ae377b51fa8a2",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/native2d_cad_presentation_v1.tcl",
+      "action": "replace",
+      "before_sha256": "a0d1e9c88231787e7e5868641ab3ded98f2789b08b06613c11aa30f2b46f8e1c",
+      "after_sha256": "b324ae918bf0cd899c31c0f8c838ae0e8993afdd231361a1290fd6d1865f75e7",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/native2d_cad_projection_v1.tcl",
+      "action": "replace",
+      "before_sha256": "b2c87eb3ddf5b09eab1db0290ccd599276dd94c38d94bdd0f63766bf9c4a3c65",
+      "after_sha256": "c520aabaa78ae7c6ba7a09108cc14613e89f6b73c3ad99ffc170ce3e1f3c871d",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/native3d_cad_surface_v1.tcl",
+      "action": "replace",
+      "before_sha256": "a593164585ff8b48dd5c35462d00190bc9293aa983834ef57d552db658229e97",
+      "after_sha256": "224c72cb588458d65e1e8efcf78d29523cf18c14b85c597790ce03423fdc9ab4",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/native3d_gui_host_v2.tcl",
+      "action": "replace",
+      "before_sha256": "01f7e0936defd642770baa9cbd90fecd011346a443a03d34ec95868f69316ef9",
+      "after_sha256": "80b5c5a731833525fda92cf2af6e423eec7c0650de21df51f322ee3502a56a4e",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/native_cad_sketch_quick_open_exp01.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "4641371509e42e8711239e7c84f3ac86acafcb40a677a6e1e3e263d5dd791982",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/native_cad_sketch_scene_exp01.tcl",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "fbea64751ee4f5904dbbaefbdd041d47c95c916a56c17de8f7b92eb16636d5b4",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/native_cad_sketch_v1.tcl",
+      "action": "replace",
+      "before_sha256": "0e65aa9b0fea7f7449440b9d075b0dacf2d372047a9a18e789ffe03fd42010e7",
+      "after_sha256": "97c51b67be5958ce6763f21e55c9205be5432d9ea95c60e11b2a176cf29cc572",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "core/tcl/viewer_gui_icons_v1.tcl",
+      "action": "replace",
+      "before_sha256": "f956b32f06b724e578c799f3e64d09c24795f93b2cbcc1072a33b699f33f92a0",
+      "after_sha256": "a4dad8e27e7f41d59b2ac144d084432b845d33e72a8f6e5fd0a28032f28ea9a6",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "docs/api/INTERACTIVE_DOCUMENT_SNAPSHOT_CACHE_EXP01.md",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "a3110cfbeeb6502a355332797501f23f9fc06b7bd71f4c13eaef6ed3831fa38f",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "docs/api/NATIVE_CAD_SKETCH_RESIDENCY_EXP01.md",
+      "action": "add",
+      "before_sha256": null,
+      "after_sha256": "a1776530f8fb76089e1a00747c63b0a662e27dba24c1b1006b26ea42a353c44e",
+      "before_mode": null,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/CHANGELOG.md",
+      "action": "replace",
+      "before_sha256": "2b258a5082e877daa60a1e02174a45bfce5162bc5e5374e10605bcec0ff2ac1e",
+      "after_sha256": "0842ff132af0cbeb10e0d7b4d94565172a7ce4b0f34e6bb8a365896ead48002c",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/MANUAL.md",
+      "action": "replace",
+      "before_sha256": "4210b823007b1cbde42a06edd0491f7e76dc0079c58d759d4efb14d92687ce27",
+      "after_sha256": "ea0713cf4688f1449e1b3e7fa9c1b04b0a2cc12d17ee7e1388ff63d4d4d6c9e7",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/SHA256SUMS",
+      "action": "replace",
+      "before_sha256": "08d34ebf782aa3e6a529f6debeaa8636a0a5fbe3aab15cf1aa5ab58c4d473493",
+      "after_sha256": "81950f628714ef5983229223218bd25fb75015acd5f91195be55e2d04515621e",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/SHA256SUMS.txt",
+      "action": "replace",
+      "before_sha256": "08d34ebf782aa3e6a529f6debeaa8636a0a5fbe3aab15cf1aa5ab58c4d473493",
+      "after_sha256": "81950f628714ef5983229223218bd25fb75015acd5f91195be55e2d04515621e",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/api/workbench_3d_api_v1.tcl",
+      "action": "replace",
+      "before_sha256": "2042a606cb9b46ce06408f1bcda0d66dce26e2fb98c11bacdeb210249cd593a7",
+      "after_sha256": "98627efaa0d9a3c3fcb0c1c573db34d65051f0deb65959fd2646b58b8fdb7460",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/api/workbench_3d_organization_v1.tcl",
+      "action": "replace",
+      "before_sha256": "a18ca680953ec28929a7440a536fdbb7445ef45d9bd6a7f51d5f6a7776861bbb",
+      "after_sha256": "0d7bb8cbb1966f60202161c3e8bd9dae191d8d056e71e3e194759ce68fe108c5",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/api/workbench_3d_sketch_v1.tcl",
+      "action": "replace",
+      "before_sha256": "27de183f7b7e06729987ac07af8e5c979d69ceef15904d11c0d17cdccf712fa0",
+      "after_sha256": "e8cb9db5f6d8044fb06a47c7f52af698c448c7a691849c7b757f88b08a4fc1f9",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/module.ini",
+      "action": "replace",
+      "before_sha256": "e3922390cf448016488ac28d49a175f81f6a1b49e76fc6e362cc5400af3aa451",
+      "after_sha256": "1487f0b7a8b6ea4b001c8c46305aaad983d1510e157fe952e412e7ad9a996205",
+      "before_mode": 436,
+      "after_mode": 436
+    },
+    {
+      "path": "plugins/modules/viewer.3d_workbench/plugin-package.ini",
+      "action": "replace",
+      "before_sha256": "513e010b29922f89ea66b20b1520eb8d3935bf19bd7f1e31646e0b64ac300628",
+      "after_sha256": "86fd419120dfe04c445098506a7e6d4fbeb4e4e510ebbfcb640c8462ec4feaa7",
+      "before_mode": 436,
+      "after_mode": 436
+    }
+  ],
+  "protected_files": {
+    "core/native3d/lib/libgx3de.so": "ea25f6ec5cd885ff517a2301f56712840edb188cb1210ad4a94fb337b9282100"
+  },
+  "deleted_files": [],
+  "installed": false,
+  "user_vnc_acceptance": "OPEN",
+  "delivery_type": "installable incremental overlay",
+  "runtime_source_unchanged": true,
+  "accepted_implementation_commit": "f0f6d0ed969bf218ae069888411c9f0c9c07b555",
+  "release_source_commit": "f0f6d0ed969bf218ae069888411c9f0c9c07b555",
+  "implementation_and_binaries_unchanged": true,
+  "mode_policy": "Git archive shared-repository delivery modes; predecessor manifest after_modes authoritative for replaced paths",
+  "dependency_policy": "Changed public docs/api manuals included as runtime-linked API/Builder dependencies"
+}

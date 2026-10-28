@@ -1,0 +1,16 @@
+{
+  "schema": "gxtxt.dev111.public-patch-source/3",
+  "patch": "DEV111-P023",
+  "framework": "0.9.8.10-dev-111",
+  "requires": "DEV111-P022",
+  "tag": "v0.9.8.10-dev-111-p023",
+  "archive": "DEV111-P023.zip",
+  "archiveSha256": "10e198b25f392362a82bf61b12978138f9708e6f5ea529377dfd7dff24e85407",
+  "archiveBytes": 1551590,
+  "sourceCommit": "f0f6d0ed969bf218ae069888411c9f0c9c07b555",
+  "originalArchiveUnchanged": true,
+  "sourceFilesManifest": "SOURCE_FILES.json",
+  "validationBranch": "validation",
+  "validationManifest": "patch-manifest-dev111-p023.json",
+  "license": "GPL-3.0-or-later"
+}
