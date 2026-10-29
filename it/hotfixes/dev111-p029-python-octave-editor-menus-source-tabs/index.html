@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Unifica i menu degli Script Workspace Python e GNU Octave, introduce la chiusura indipendente delle schede sorgente e la navigazione contestuale, semplificando Save All e la presentazione dei pannelli.">
+  <title>GX-TXT DEV111-P029 — Menu degli editor Python e Octave e schede sorgente</title>
+  <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p029-python-octave-editor-menus-source-tabs/">
+  <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p029-python-octave-editor-menus-source-tabs/">
+  <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p029-python-octave-editor-menus-source-tabs/">
+  <link rel="stylesheet" href="../../../assets/style.css">
+  <link rel="stylesheet" href="../../../assets/hotfixes.css">
+  <link rel="icon" type="image/svg+xml" href="../../../assets/favicon.svg">
+</head>
+<body>
+  <a class="skip" href="#main">Vai al contenuto</a>
+  <header><div class="wrap header">
+    <a class="brand" href="../../../it/" aria-label="GX-TXT"><span class="logo" aria-hidden="true">GX</span><span><strong>GX-TXT</strong><small>Scientific workbench</small></span></a>
+    <nav><a href="../../../it/releases/#dev-111">Release</a><a href="https://github.com/giuxlab-hub/GX-TXT/">GitHub ↗</a></nav>
+    <div class="lang"><a href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p029-python-octave-editor-menus-source-tabs/">EN</a> / <a href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p029-python-octave-editor-menus-source-tabs/">IT</a></div>
+  </div></header>
+  <main id="main">
+    <section class="wrap hotfix-hero">
+      <div class="tag">Patch disponibile · DEV111-P029</div>
+      <h1>Menu degli editor Python e Octave e schede sorgente</h1>
+      <p class="lead">Unifica i menu degli Script Workspace Python e GNU Octave, introduce la chiusura indipendente delle schede sorgente e la navigazione contestuale, semplificando Save All e la presentazione dei pannelli.</p>
+      <ul class="hotfix-list">
+        <li>Riorganizza i comandi principali degli editor Python e Octave in una riga File / Edit / Project / View / Run / Help, conservando le operazioni Project esistenti.</li>
+        <li>Distingue Save del file attivo da Save All del progetto e rimuove la riga ridondante Project/Save All/Close e il selettore separato dei sorgenti, mantenendo l&#x27;albero del progetto.</li>
+        <li>Introduce un pulsante di chiusura per ciascuna scheda: chiudendo una scheda inattiva, Save/Discard/Cancel riguarda esattamente quel sorgente, senza cambiare editor attivo in caso di annullamento o rifiuto.</li>
+        <li>Aggiunge un menu overflow contestuale per le schede, identità complete dei sorgenti, navigazione Ctrl+Tab e inversa, Ctrl+W per chiudere la scheda attiva e Ctrl+Shift+S per Save All.</li>
+        <li>Rende accessibili i menu principali tramite F10, Alt, frecce e Spazio; View Focus source/restore panes agisce sul vero Source Surface.</li>
+        <li>Chiudendo l&#x27;ultima scheda si apre una nuova bozza non salvata, conservando Registry, revisione/CAS, Script Job, Runner e debugger.</li>
+        <li>Aggiorna i moduli Python Script alla 1.6.1 e GNU Octave Script alla 1.8.1, con manuali e screenshot. Nessun componente scientifico nativo viene ricompilato.</li>
+        <li>Sono disponibili anche due ZIP dei moduli per host compatibili: la patch completa integra già entrambi i moduli e non richiede di reinstallarli separatamente.</li>
+      </ul>
+      <p>Patch incrementale per GX-TXT 0.9.8.10-dev-111, dopo DEV111-P028-r2. Istruzioni di applicazione e ripristino nell&#x27;archivio.</p>
+      <div class="buttons">
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p029/DEV111-P029.zip">Scarica la patch ↓</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P029/README.md">Descrizione e file ↗</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p029">Dettagli della release ↗</a>
+      </div>
+      <p class="hotfix-digest">DEV111-P029.zip SHA-256: <code>d123201f6bdbea1b6002eb2379eec6905d19cb9a2950faeb48251ac124e83230</code></p>
+    </section>
+  </main>
+  <footer><div class="wrap"><p>GX-TXT — Giux-Lab · GNU GPL-3.0-or-later</p></div></footer>
+</body>
+</html>

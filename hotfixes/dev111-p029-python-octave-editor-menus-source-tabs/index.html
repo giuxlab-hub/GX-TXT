@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Unifies Python and GNU Octave Script Workspace menus, introduces independent closable source tabs and contextual overflow navigation, and simplifies Save All and source-pane presentation.">
+  <title>GX-TXT DEV111-P029 — Python and Octave Script Editor Menus and Source Tabs</title>
+  <link rel="canonical" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p029-python-octave-editor-menus-source-tabs/">
+  <link rel="alternate" hreflang="it" href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p029-python-octave-editor-menus-source-tabs/">
+  <link rel="alternate" hreflang="en" href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p029-python-octave-editor-menus-source-tabs/">
+  <link rel="stylesheet" href="../../assets/style.css">
+  <link rel="stylesheet" href="../../assets/hotfixes.css">
+  <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header><div class="wrap header">
+    <a class="brand" href="../../" aria-label="GX-TXT"><span class="logo" aria-hidden="true">GX</span><span><strong>GX-TXT</strong><small>Scientific workbench</small></span></a>
+    <nav><a href="../../releases/#dev-111">Releases</a><a href="https://github.com/giuxlab-hub/GX-TXT/">GitHub ↗</a></nav>
+    <div class="lang"><a href="https://giuxlab-hub.github.io/GX-TXT/hotfixes/dev111-p029-python-octave-editor-menus-source-tabs/">EN</a> / <a href="https://giuxlab-hub.github.io/GX-TXT/it/hotfixes/dev111-p029-python-octave-editor-menus-source-tabs/">IT</a></div>
+  </div></header>
+  <main id="main">
+    <section class="wrap hotfix-hero">
+      <div class="tag">Patch available · DEV111-P029</div>
+      <h1>Python and Octave Script Editor Menus and Source Tabs</h1>
+      <p class="lead">Unifies Python and GNU Octave Script Workspace menus, introduces independent closable source tabs and contextual overflow navigation, and simplifies Save All and source-pane presentation.</p>
+      <ul class="hotfix-list">
+        <li>Reorganizes the primary commands of the Python and Octave editors into one File / Edit / Project / View / Run / Help menu row, retaining the existing Project actions.</li>
+        <li>Distinguishes active-file Save from project-wide Save All and removes the redundant Project/Save All/Close toolbar row and separate source-reference chooser while keeping the project tree.</li>
+        <li>Adds a dedicated close control for each source tab: closing an inactive tab uses Save/Discard/Cancel on that exact source without changing the active editor when the operation is cancelled or refused.</li>
+        <li>Provides contextual tab overflow with full qualified source identities, Ctrl+Tab and reverse navigation, Ctrl+W to close the active tab, and Ctrl+Shift+S for project-wide Save All.</li>
+        <li>Adds keyboard operation of the themed main menus with F10, Alt, arrows and Space; View Focus source/restore panes operates on the actual Source Surface.</li>
+        <li>Closing the final source tab opens a new unsaved draft, preserving Registry, revision/CAS, Script Job, Runner and debugger ownership.</li>
+        <li>Updates the Python Script module to 1.6.1 and GNU Octave Script to 1.8.1, with corresponding manuals and screenshots. No native scientific component was rebuilt.</li>
+        <li>Two alternative standalone module ZIPs are included for compatible hosts; the complete framework patch already bundles both module updates.</li>
+      </ul>
+      <p>Incremental GX-TXT 0.9.8.10-dev-111 patch after DEV111-P028-r2. Application and rollback instructions are included in the archive.</p>
+      <div class="buttons">
+        <a class="button primary" href="https://github.com/giuxlab-hub/GX-TXT/releases/download/v0.9.8.10-dev-111-p029/DEV111-P029.zip">Download patch ↓</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/blob/maintenance/dev111/patches/dev111/DEV111-P029/README.md">Description and files ↗</a>
+        <a class="button secondary" href="https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p029">Full release notes ↗</a>
+      </div>
+      <p class="hotfix-digest">DEV111-P029.zip SHA-256: <code>d123201f6bdbea1b6002eb2379eec6905d19cb9a2950faeb48251ac124e83230</code></p>
+    </section>
+  </main>
+  <footer><div class="wrap"><p>GX-TXT — Giux-Lab · GNU GPL-3.0-or-later</p></div></footer>
+</body>
+</html>
