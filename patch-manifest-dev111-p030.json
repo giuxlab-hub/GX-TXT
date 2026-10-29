@@ -3342,6 +3342,12 @@
     "version": "2.0.20",
     "qualification": "OWNER_SUPPLIED_UNMODIFIED; NOT_TESTED_BY_OWNER_REQUEST",
     "archiveSha256": "acbc81a77ed1625bde3030e871ec88513a28f08b1317780f8e95b3e2b10ff152",
-    "testScope": "identity-only; no functional/GUI/numerical/installation/API tests"
+    "testScope": "identity-only; no functional/GUI/numerical/installation/API tests",
+    "authorReportedTesting": {
+      "duration": "approximately eight hours",
+      "attribution": "direct statement by module author",
+      "independentlyVerifiedByPublishingAgent": false
+    },
+    "qualificationInterpretation": "No ADDITIONAL agent tests at author's request, to avoid accidental modifications; does not mean untested by author"
   }
 }

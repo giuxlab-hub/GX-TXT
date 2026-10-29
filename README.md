@@ -275,7 +275,7 @@ The following official patch extends the P029 predecessor:
 
 - **DEV111-P030**: [Markdown Documents, Contract Visualizers and Dataset Group Producers](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p030) — `patch-manifest-dev111-p030.json`.
 
-P030 are separate alternative releases. Both require the exact P027 predecessor; P028-r2 must not be overlaid on P028.
+DEV111-P030 requires exact DEV111-P029. Its original archive and seven companion packages are preserved unchanged.
 
 The archive/manifests checker is read-only and checks the exact public ZIP SHA-256 and each declared changed-file SHA-256:
 
@@ -283,4 +283,4 @@ The archive/manifests checker is read-only and checks the exact public ZIP SHA-2
 python3 tools/validate_dev111_p030.py --repository /path/to/maintenance-dev111
 ```
 
-The original delivered patch ZIP contains no standalone Tcl/Python validation source suite. Public manifest checks include the original patch and seven companion Module packages; they do not rerun the author's GUI/scientific workflows. Curve Digitizer 2.0.20 is owner-supplied unchanged, and remains NOT_TESTED_BY_OWNER_REQUEST. No release-deployment helper, private Session or operator evidence is copied to this branch.
+The original delivered patch ZIP contains no standalone Tcl/Python validation source suite. Public manifest checks include the original patch and seven companion Module packages; they do not rerun the author's GUI/scientific workflows. Curve Digitizer 2.0.20 is unchanged. The author reports approximately eight hours of direct testing. NOT_TESTED_BY_OWNER_REQUEST refers ONLY to additional testing by agents, which the author expressly prohibited to protect his already-tested module. The publishing agent verified only the archive identity and checksum, not the author's test evidence. No release-deployment helper, private Session or operator evidence is copied to this branch.

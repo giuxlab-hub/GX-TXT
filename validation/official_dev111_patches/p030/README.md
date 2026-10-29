@@ -6,3 +6,7 @@ Original source commit: `b61349890ff684510625bfc60d394c50fca1da43`.
 Public file checksums and original paths are in [patch-manifest-dev111-p030.json](../../../patch-manifest-dev111-p030.json).
 
 The associated archive contains no standalone Tcl/Python validation scripts. The shared read-only checker verifies the original ZIP and each declared changed file's SHA-256.
+
+## Author testing clarification
+
+The author of Curve Digitizer 2.0.20 reports approximately eight hours of direct testing. He explicitly prohibited agents from repeating tests or modifying the already-tested module to avoid accidental changes. NOT_TESTED_BY_OWNER_REQUEST refers ONLY to additional agent retesting; it does not imply that the author did not test the software. The author-reported duration is not independently certified by this publisher.
