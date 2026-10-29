@@ -1,0 +1,28 @@
+{
+  "schema": "gxtxt.dev111.public-patch-source/3",
+  "patch": "DEV111-P029",
+  "framework": "0.9.8.10-dev-111",
+  "requires": "DEV111-P028-r2",
+  "tag": "v0.9.8.10-dev-111-p029",
+  "archive": "DEV111-P029.zip",
+  "archiveSha256": "d123201f6bdbea1b6002eb2379eec6905d19cb9a2950faeb48251ac124e83230",
+  "archiveBytes": 3440174,
+  "sourceCommit": "3673ccc941fad9965d461c8b16ee1380a3e69173",
+  "originalArchiveUnchanged": true,
+  "sourceFilesManifest": "SOURCE_FILES.json",
+  "validationBranch": "validation",
+  "validationManifest": "patch-manifest-dev111-p029.json",
+  "license": "GPL-3.0-or-later",
+  "alternativeModulePackages": [
+    {
+      "archive": "analysis.python_script_1.6.1_dev111_p029.zip",
+      "archiveSha256": "837614b1edc97608dde0961703de0f11af8104f3c7a094dd7120203552a0f06f",
+      "archiveBytes": 633799
+    },
+    {
+      "archive": "analysis.octave_script_1.8.1_dev111_p029.zip",
+      "archiveSha256": "6094155cd9b01ffb39519a55a377412c3aeb84f2f3c51e435997475f6b80067f",
+      "archiveBytes": 642123
+    }
+  ]
+}
