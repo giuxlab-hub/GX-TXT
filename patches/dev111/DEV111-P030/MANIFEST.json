@@ -1,0 +1,60 @@
+{
+  "schema": "gxtxt.dev111.public-patch-source/3",
+  "patch": "DEV111-P030",
+  "framework": "0.9.8.10-dev-111",
+  "requires": "DEV111-P029",
+  "tag": "v0.9.8.10-dev-111-p030",
+  "archive": "DEV111-P030.zip",
+  "archiveSha256": "71929d3999c2ede5b3d0a85b7fbc0de31cc6773a9834fa8cd6d280a2a3390850",
+  "archiveBytes": 5941528,
+  "sourceCommit": "b61349890ff684510625bfc60d394c50fca1da43",
+  "originalArchiveUnchanged": true,
+  "sourceFilesManifest": "SOURCE_FILES.json",
+  "validationBranch": "validation",
+  "validationManifest": "patch-manifest-dev111-p030.json",
+  "license": "GPL-3.0-or-later",
+  "alternativeModulePackages": [
+    {
+      "archive": "analysis.python_script_1.6.2_dev111_p030.zip",
+      "archiveSha256": "22b27f149a324386f26b9179af26c4dbe8db6b91949f938386a254842ca52f45",
+      "archiveBytes": 689820
+    },
+    {
+      "archive": "analysis.octave_script_1.8.2_dev111_p030.zip",
+      "archiveSha256": "e01f5b8b938207c4e355b137293147118bc532c4d9b16c9a4e938e53f7696839",
+      "archiveBytes": 697784
+    },
+    {
+      "archive": "viewer.development_workspace_1.2.5_dev111_p030.zip",
+      "archiveSha256": "670ff3f1ad02922c89b49c8e3c687444d1b006528bcbb473be532275c3d232d7",
+      "archiveBytes": 1844768
+    },
+    {
+      "archive": "viewer.interface_builder_1.2.9_dev111_p030.zip",
+      "archiveSha256": "4873688af8073c430600176a5e5629b8c5a2574b9a8e65d1b0ce433863f57268",
+      "archiveBytes": 1049655
+    },
+    {
+      "archive": "viewer.markdown_documents_1.0.2_dev111_p030.zip",
+      "archiveSha256": "6a94ff11bd9f8a0801203d3b144f748057634be68183b2999d30c9301a476b2a",
+      "archiveBytes": 84507
+    },
+    {
+      "archive": "preview.markdown_document_1.0.0_dev111_p030.zip",
+      "archiveSha256": "fb8e4429ecd1df42eed79b254871beaf672a2a624c1bc47c79b084ace6847363",
+      "archiveBytes": 79519
+    },
+    {
+      "archive": "viewer.curve_digitizer_2.0.20_publication_classification.zip",
+      "archiveSha256": "acbc81a77ed1625bde3030e871ec88513a28f08b1317780f8e95b3e2b10ff152",
+      "archiveBytes": 413985
+    }
+  ],
+  "ownerSuppliedModuleQualification": {
+    "module": "viewer.curve_digitizer",
+    "version": "2.0.20",
+    "qualification": "OWNER_SUPPLIED_UNMODIFIED; NOT_TESTED_BY_OWNER_REQUEST",
+    "archiveSha256": "acbc81a77ed1625bde3030e871ec88513a28f08b1317780f8e95b3e2b10ff152",
+    "testScope": "identity-only; no functional/GUI/numerical/installation/API tests"
+  }
+}
