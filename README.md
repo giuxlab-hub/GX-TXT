@@ -252,3 +252,19 @@ python3 tools/validate_dev111_p028.py --repository /path/to/maintenance-dev111
 ```
 
 The original delivered patch ZIPs do not contain standalone source-test suites for these milestones. Historical P023-EXP01 validation sources remain independently available under their original identity. No release-deployment helper, private Session or original developer evidence is copied to this branch.
+
+## GX-TXT DEV111 P029 — patch archive and Module identities
+
+The following official patch extends the P028-r2 predecessor:
+
+- **DEV111-P029**: [Python and Octave Script Editor Menus and Source Tabs](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p029) — `patch-manifest-dev111-p029.json`.
+
+P029 are separate alternative releases. Both require the exact P027 predecessor; P028-r2 must not be overlaid on P028.
+
+The archive/manifests checker is read-only and checks the exact public ZIP SHA-256 and each declared changed-file SHA-256:
+
+```sh
+python3 tools/validate_dev111_p029.py --repository /path/to/maintenance-dev111
+```
+
+The original delivered patch ZIP contains no standalone Tcl/Python validation source suite. Public manifest checks include the original patch and two independent Module packages; they do not rerun the author's GUI or scientific workflows. No release-deployment helper, private Session or operator evidence is copied to this branch.
