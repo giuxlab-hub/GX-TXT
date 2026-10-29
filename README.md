@@ -235,3 +235,20 @@ python3 tools/validate_dev111_p023_p027.py --repository /path/to/maintenance-dev
 ```
 
 The original delivered patch ZIPs do not contain standalone source-test suites for these milestones. Historical P023-EXP01 validation sources remain independently available under their original identity. No release-deployment helper, private Session or original developer evidence is copied to this branch.
+
+## GX-TXT DEV111 P028 and P028-r2 — cumulative patch archive identities
+
+The following official DEV111 patches are archived independently from the prior P028 original and alternative revision:
+
+- **DEV111-P028**: [Scientific Libraries, Dataset Groups and Script Projects](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p028) — `patch-manifest-dev111-p028.json`.
+- **DEV111-P028-r2**: [Scientific Libraries, Group Workflows and Script Projects — Revision 2](https://github.com/giuxlab-hub/GX-TXT/releases/tag/v0.9.8.10-dev-111-p028-r2) — `patch-manifest-dev111-p028-r2.json`.
+
+P028 and P028-r2 are separate alternative releases. Both require the exact P027 predecessor; P028-r2 must not be overlaid on P028.
+
+The archive/manifests checker is read-only and checks the exact public ZIP SHA-256 and each declared changed-file SHA-256:
+
+```sh
+python3 tools/validate_dev111_p028.py --repository /path/to/maintenance-dev111
+```
+
+The original delivered patch ZIPs do not contain standalone source-test suites for these milestones. Historical P023-EXP01 validation sources remain independently available under their original identity. No release-deployment helper, private Session or original developer evidence is copied to this branch.
