@@ -1,0 +1,102 @@
+{
+  "schema": "gxtxt.dev111.public-patch-source/4",
+  "patch": "DEV111-P034",
+  "framework": "0.9.8.10-dev-111",
+  "tag": "v0.9.8.10-dev-111-p034",
+  "requires": "DEV111-P033",
+  "archive": "DEV111-P034.zip",
+  "archiveSha256": "12393a90c14ab511785763edcd114fc3c21587bc3323dfe32043b2b65509a48b",
+  "archiveBytes": 6536858,
+  "sourceCommit": "7ae361d67c82f7fce44487a76927c36c846b78b1",
+  "originalArchiveUnchanged": true,
+  "sourceFilesManifest": "SOURCE_FILES.json",
+  "distributionPackages": [
+    {
+      "category": "Module",
+      "name": "math.numeric_1.64.0_dev111_p034.zip",
+      "archiveSha256": "acc943c49e3a4485ea13d2af02e5d8869299b407f96c7b58118c1e1d7e4c3ade",
+      "sha256": "acc943c49e3a4485ea13d2af02e5d8869299b407f96c7b58118c1e1d7e4c3ade",
+      "archiveBytes": 4100335,
+      "archivePath": "patches/dev111/DEV111-P034/math.numeric_1.64.0_dev111_p034.zip",
+      "originalDepositPath": "modules/math.numeric_1.64.0_dev111_p034.zip"
+    },
+    {
+      "category": "Module",
+      "name": "plot.dataset_4.4.0_dev111_p034.zip",
+      "archiveSha256": "4659da9e9e3c8ce6e974207f70c83eadbd425d615f03fc5d8f345509d40a504f",
+      "sha256": "4659da9e9e3c8ce6e974207f70c83eadbd425d615f03fc5d8f345509d40a504f",
+      "archiveBytes": 347864,
+      "archivePath": "patches/dev111/DEV111-P034/plot.dataset_4.4.0_dev111_p034.zip",
+      "originalDepositPath": "modules/plot.dataset_4.4.0_dev111_p034.zip"
+    },
+    {
+      "category": "Module",
+      "name": "preview.curve_digitizer_0.1.10_dev111_p032_standalone.zip",
+      "archiveSha256": "0c15e4bae34d5b8d9467fb25c075d63886dab08ecd23010d125e7e854d9f4de7",
+      "sha256": "0c15e4bae34d5b8d9467fb25c075d63886dab08ecd23010d125e7e854d9f4de7",
+      "archiveBytes": 47616,
+      "archivePath": "patches/dev111/DEV111-P034/preview.curve_digitizer_0.1.10_dev111_p032_standalone.zip",
+      "originalDepositPath": "modules/preview.curve_digitizer_0.1.10_dev111_p032_standalone.zip"
+    },
+    {
+      "category": "Module",
+      "name": "viewer.comparison_example_1.0.2.zip",
+      "archiveSha256": "4cc0878a07dc6a528a6988cfe50be8801fb2993ad0d6cd14c5a90b59badcbb26",
+      "sha256": "4cc0878a07dc6a528a6988cfe50be8801fb2993ad0d6cd14c5a90b59badcbb26",
+      "archiveBytes": 101714,
+      "archivePath": "patches/dev111/DEV111-P034/viewer.comparison_example_1.0.2.zip",
+      "originalDepositPath": "modules/viewer.comparison_example_1.0.2.zip"
+    },
+    {
+      "category": "Module",
+      "name": "viewer.curve_digitizer_2.0.26_dev111_p032_standalone.zip",
+      "archiveSha256": "ded07ad9a85c79f68fa53866edef9a4a186ef06546882940526b56d9894a1198",
+      "sha256": "ded07ad9a85c79f68fa53866edef9a4a186ef06546882940526b56d9894a1198",
+      "archiveBytes": 486658,
+      "archivePath": "patches/dev111/DEV111-P034/viewer.curve_digitizer_2.0.26_dev111_p032_standalone.zip",
+      "originalDepositPath": "modules/viewer.curve_digitizer_2.0.26_dev111_p032_standalone.zip"
+    },
+    {
+      "category": "Module",
+      "name": "viewer.interface_builder_1.2.12_dev111_p034.zip",
+      "archiveSha256": "4a1b1596dd9e6e7b46c2692e841a30dd8c72232c15ebcba3ae1b9e3e968d5747",
+      "sha256": "4a1b1596dd9e6e7b46c2692e841a30dd8c72232c15ebcba3ae1b9e3e968d5747",
+      "archiveBytes": 1052152,
+      "archivePath": "patches/dev111/DEV111-P034/viewer.interface_builder_1.2.12_dev111_p034.zip",
+      "originalDepositPath": "modules/viewer.interface_builder_1.2.12_dev111_p034.zip"
+    }
+  ],
+  "alternativeModulePackages": [
+    {
+      "archive": "math.numeric_1.64.0_dev111_p034.zip",
+      "archiveSha256": "acc943c49e3a4485ea13d2af02e5d8869299b407f96c7b58118c1e1d7e4c3ade",
+      "archiveBytes": 4100335
+    },
+    {
+      "archive": "plot.dataset_4.4.0_dev111_p034.zip",
+      "archiveSha256": "4659da9e9e3c8ce6e974207f70c83eadbd425d615f03fc5d8f345509d40a504f",
+      "archiveBytes": 347864
+    },
+    {
+      "archive": "preview.curve_digitizer_0.1.10_dev111_p032_standalone.zip",
+      "archiveSha256": "0c15e4bae34d5b8d9467fb25c075d63886dab08ecd23010d125e7e854d9f4de7",
+      "archiveBytes": 47616
+    },
+    {
+      "archive": "viewer.comparison_example_1.0.2.zip",
+      "archiveSha256": "4cc0878a07dc6a528a6988cfe50be8801fb2993ad0d6cd14c5a90b59badcbb26",
+      "archiveBytes": 101714
+    },
+    {
+      "archive": "viewer.curve_digitizer_2.0.26_dev111_p032_standalone.zip",
+      "archiveSha256": "ded07ad9a85c79f68fa53866edef9a4a186ef06546882940526b56d9894a1198",
+      "archiveBytes": 486658
+    },
+    {
+      "archive": "viewer.interface_builder_1.2.12_dev111_p034.zip",
+      "archiveSha256": "4a1b1596dd9e6e7b46c2692e841a30dd8c72232c15ebcba3ae1b9e3e968d5747",
+      "archiveBytes": 1052152
+    }
+  ],
+  "license": "GPL-3.0-or-later"
+}
